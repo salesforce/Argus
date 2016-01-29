@@ -1,0 +1,38 @@
+Overview:
+
+    The Argus client executor is designed to run as multiple instances across a
+    cluster of compute resources performing asynchronous operations on behalf
+    of one or more Argus servers.  Once invoked, the client will run until it
+    is interrupted.
+
+    If the client is configured as a COLLECT client, the client will poll for
+    collection jobs to execute.  For each job that is dequeued, the executor
+    will attempt to run the collection and enqueue metric and annotation data
+    to be committed at a later time.
+
+    If the client is configured as a SUBMIT client, the client will poll for
+    metric and annotation data to dequeue and commit into persistent storage.
+
+    If the client is configured as an ALERT client, the client will poll for
+    alert jobs to execute.  For each job that is dequeued, the executor will
+    evaluate the alert trigger conditions and if met, send notification.
+
+Configuration:
+    The client can be configured either by the use of system properties or by
+    specifying the configuration in the command line arguments.  If the
+    configuration is not specified in the command line arguments, then the
+    configuration must be available via the system properties.
+
+    The following properties specify paths to a global and local configuration
+    file respectively.  Initially, global configuration is read if available.
+    Local configuration is read next if available and is used to override the
+    global configuration parameters.  Any configuration property that is not
+    explicitly specified will use the system default.
+
+        argus.config.private.location
+        argus.config.public.location
+
+    For more information, please refer to the Argus server documentation
+    section on configuration.
+
+Supported Arguments:

@@ -1,0 +1,258 @@
+options {
+STATIC = false;
+LOOKAHEAD = 1;
+}
+
+PARSER_BEGIN(AnnotationReader)
+/* Copyright (c) 2014, Salesforce.com, Inc.
+ * All rights reserved.
+ *  
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ *   
+ *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *
+ *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ *      Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products derived from this software
+ *      without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+package com.salesforce.dva.argus.service.annotation;
+
+import com.salesforce.dva.argus.entity.Annotation;
+import java.io.*;
+import java.util.*;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
+import com.salesforce.dva.argus.system.SystemException;
+import static com.salesforce.dva.argus.system.SystemAssert.*;
+
+public class AnnotationReader<T> {
+
+  	private TSDBService tsdbService;
+
+    AnnotationReader(TSDBService tsdbService) {
+        this((Reader)null);
+        this.tsdbService = tsdbService;
+    }
+
+    public static boolean isValid(Collection<String> expressions) {
+        boolean result = true;
+        if(expressions != null) {
+            AnnotationReader reader = new AnnotationReader((TSDBService)null);
+            for(String expression : expressions) {
+                try {
+                    if(!reader.isValidExpression(expression)) {
+                        result = false;
+                        break;
+                    }
+                } catch (Exception ex) {
+                    result = false;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    public static boolean isValid(String expression) {
+        return isValid(Arrays.asList(new String[] {expression}));
+    }
+
+	enum TimeUnit {
+
+        SECOND("s", 1000),
+        MINUTE("m", 60 * SECOND.getValue()),
+        HOUR("h", 60 * MINUTE.getValue()),
+        DAY("d", 24 * HOUR.getValue());
+
+        private final String _unit;
+        private final long _value;
+
+        private TimeUnit(String unit, long value) {
+            _unit = unit;
+            _value = value;
+        }
+
+        public String getUnit() {
+            return _unit;
+        }
+
+        public long getValue() {
+            return _value;
+        }
+
+        public static TimeUnit fromString(String text) {
+			if (text != null) {
+				for (TimeUnit unit : TimeUnit.values()) {
+					if (text.equalsIgnoreCase(unit.getUnit())) {
+						return unit;
+					}
+				}
+			}
+			throw new SystemException(text + ": This time unit is not supported.", new UnsupportedOperationException());
+        }
+    }
+
+}
+
+PARSER_END(AnnotationReader)
+
+SKIP : { " " }
+SKIP : { "\n" | "\r" | "\r\n" }
+
+TOKEN : { < COLON : ":" > }
+TOKEN : { < COMMA : "," > }
+TOKEN : { < HYPHEN : "-" > }
+TOKEN : { < LEFT_CURLY : "{" > }
+TOKEN : { < RIGHT_CURLY : "}" > }
+TOKEN : { < LEFT_PARENTHESIS : "(" > }
+TOKEN : { < RIGHT_PARENTHESIS : ")" > }
+TOKEN : { < TIME_UNIT : "s" | "m" | "h" | "d" > }
+
+TOKEN : { < TIME : (["0"-"9"])* | <HYPHEN>(["0"-"9"])*<TIME_UNIT> > }
+
+TOKEN : { < TSDB_ALLOWED_TEXT : (["0"-"9", "a"-"z", "A"-"Z", ".", "_", "-", "/"])+ > }
+TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
+TOKEN : { < #TAG : <TSDB_ALLOWED_TEXT>"="<TSDB_ALLOWED_TEXT> > }
+
+
+boolean isValidExpression(String expression) :
+{}
+{
+  	{
+  	  	return start(expression, true, (Class<T>) Annotation.class) != null;
+  	}
+}
+
+List<T> parse(String expression, Class<T> clazz) :
+{}
+{
+  	{
+  	  	return start(expression, false, clazz);
+  	}
+}
+
+
+private List<T> start(String expression, boolean syntaxOnly, Class<T> clazz) :
+{
+  	List<T> result;
+}
+{
+  	{
+        requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when only syntax validation is being performed.");
+        ReInit(new StringReader(expression));
+  	}
+	result = expression(syntaxOnly, clazz)<EOF>
+	{ return result; }
+}
+
+
+private List<T> expression(boolean syntaxOnly, Class<T> clazz) :
+{
+  	Long startTimestamp = null;
+  	Long endTimestamp = null;
+  	String scope = null;
+  	String metric = null;
+    String type = null;
+    String user = null;
+  	Map<String, String> tags = new HashMap<String, String>();
+}
+{
+  	startTimestamp = getTime()<COLON>
+  	(endTimestamp = getTime()<COLON>)?
+  	scope = getString() <COLON> metric = getString()
+  	(<LEFT_CURLY> tags = getTags() <RIGHT_CURLY>)?
+  	<COLON>type = getString()
+    (<COLON>user = getString())?
+
+	{
+	  	if(AnnotationQuery.class.equals(clazz)) {			AnnotationQuery query = new AnnotationQuery(scope, metric, tags, type, startTimestamp, endTimestamp);
+            List<AnnotationQuery> queries = new ArrayList<AnnotationQuery>();
+            queries.add(query);
+            return (List<T>) queries;
+	  	} else if(Annotation.class.equals(clazz)) {			if(syntaxOnly) {
+	            return (List<T>) new ArrayList<Annotation>(0);
+	        } else {
+	            AnnotationQuery query = new AnnotationQuery(scope, metric, tags, type, startTimestamp, endTimestamp);
+	            List<AnnotationQuery> queries = new ArrayList<AnnotationQuery>();
+	            queries.add(query);
+	            List<Annotation> annotations = tsdbService.getAnnotations(queries);
+	            if(user == null) {
+	                return (List<T>) annotations;
+	            } else {
+	                List<Annotation> filtered = new ArrayList<Annotation>(annotations.size());
+	                for(Annotation annotation : annotations) {
+	                    Map<String,String> fields = annotation.getFields();
+	                    if(user.equals(fields.get("user")) || fields.get("user") == null) {
+	                        filtered.add(annotation);
+	                    }
+	                }
+	                return (List<T>) filtered;
+	            }
+	        }
+	  	} else {			throw new IllegalArgumentException("Invalid class type: " + clazz);
+	  	}
+	}
+}
+
+private Long getTime() :
+{
+  	Token t = null;
+  	Token t1 = null;
+}
+{
+	t = <TIME>
+	{
+	  	try
+	  	{
+		  	String timeStr = t.image;
+		  	if(timeStr.charAt(0) == '-') {
+				String timeDigits = timeStr.substring(1, timeStr.length() - 1);
+				String timeUnit = timeStr.substring(timeStr.length() - 1);
+	  	  		Long time = Long.parseLong(timeDigits);
+	  	  		TimeUnit unit = TimeUnit.fromString(timeUnit);
+	  	  		return (System.currentTimeMillis() - (time * unit.getValue())) / 1000 * 1000;
+		  	}
+		  	return Long.parseLong(timeStr);
+		} catch(NumberFormatException nfe) {
+		  	throw new SystemException("Could not parse time.", nfe);
+		}
+	}
+}
+
+private String getString() :
+{
+  	Token t = null;
+}
+{
+  	t = <TSDB_ALLOWED_TEXT>
+  	{ return t.image; }
+}
+
+private Map<String, String> getTags() :
+{
+  	Token t = null;
+}
+{
+  	t = <TAGS>
+  	{
+  	  	Map<String, String> tagsMap = new HashMap<String, String>();
+  	  	String tagsStr = t.image;
+  	  	String[] tags = tagsStr.split(",");
+  	  	for(String tag : tags) {
+			String[] tagKVPair = tag.split("=");
+			String tagK = tagKVPair[0];
+			String tagV = tagKVPair[1];
+			tagsMap.put(tagK, tagV);
+  	 	}
+  	 	return tagsMap;
+  	}
+}

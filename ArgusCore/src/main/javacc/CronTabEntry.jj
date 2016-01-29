@@ -1,0 +1,147 @@
+options {
+    JDK_VERSION = "1.5";
+    SUPPORT_CLASS_VISIBILITY_PUBLIC = false;
+    STATIC=false;
+    IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(CronTabEntry)
+/* Copyright (c) 2014, Salesforce.com, Inc.
+ * All rights reserved.
+ *  
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ *   
+ *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *
+ *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
+ *      documentation and/or other materials provided with the distribution.
+ *
+ *      Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products derived from this software
+ *      without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+package com.salesforce.dva.argus.util;
+
+import java.io.StringReader;
+import java.io.Reader;
+import java.util.Calendar;
+import java.util.Date;
+
+class CronTabEntry {
+
+    private String crontab;
+    boolean[] minutes = new boolean[60];
+    boolean[] hours = new boolean[24];
+    boolean[] days = new boolean[31];
+    boolean[] months = new boolean[12];
+    boolean[] weekdays = new boolean[7];
+    private Calendar calendar = Calendar.getInstance();
+
+    public CronTabEntry(String s){
+        this((Reader)(new StringReader(s)));
+        this.crontab = s;
+        try {
+            CronTabExpression();
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(crontab,ex);
+        }
+    }
+
+    @Override
+    public String toString(){
+        return crontab;
+    }
+
+    boolean isRunnable(Date date){
+        calendar.setTime(date);
+        return (
+            minutes[calendar.get(Calendar.MINUTE)] &&
+            hours[calendar.get(Calendar.HOUR_OF_DAY)] &&
+            days[calendar.get(Calendar.DAY_OF_MONTH)-1] &&
+            months[calendar.get(Calendar.MONTH)] &&
+            weekdays[calendar.get(Calendar.DAY_OF_WEEK)-1]
+        );
+
+    }
+
+}
+PARSER_END(CronTabEntry)
+
+SKIP :
+{
+    < SPACE: (" "|"\r"|"\t"|"\n")+ >
+}
+
+TOKEN : /* COMMON */
+{
+    < NUMBER: ( <DIGIT> )+ >
+    | <#DIGIT: ["0" - "9"] >
+    | <#TEXT : (["a" - "z"]|["A" - "Z"])+ >
+}
+
+private void CronTabExpression() : {} {
+    StandardExpression() <EOF>
+}
+
+
+private void StandardExpression() : {} {
+  Entry(minutes) Entry(hours) Entry(days) Entry(months) Entry(weekdays)
+}
+
+private void Entry(boolean[] valid) : {} {
+    LOOKAHEAD(10) ListEntry(valid)
+    | LOOKAHEAD(10) RangeEntry(valid)
+    | LOOKAHEAD(2) StepEntry(valid)
+    | NumericEntry(valid)
+    | AllEntry(valid)
+}
+
+private void ListEntry(boolean[] valid) : {} {
+     (LOOKAHEAD(10) RangeEntry(valid) | NumericEntry(valid))
+     ("," (LOOKAHEAD(10) RangeEntry(valid) | NumericEntry(valid)))+
+}
+
+private void RangeEntry(boolean[] valid) : {
+  int start;
+  int end;
+} {
+    (start = NumericEntry(valid) "-" end = NumericEntry(valid)) {
+        for(int i=start;i<end;i++){
+          if(i>=0 && i<valid.length)
+            valid[i]=true;
+        }
+    }
+}
+
+private void StepEntry(boolean[] valid) : {int step;} {
+    (AllEntry(valid) "/" step = NumericEntry(valid)) {
+        for(int i=0;i<valid.length;i++){
+          if(i%step != 0)
+            valid[i]=false;
+        }
+    }
+}
+
+private int NumericEntry(boolean[] valid) : {Token t;} {
+    t = <NUMBER>
+    {
+       int value = Integer.parseInt(t.image);
+       if(value >=0 && value<valid.length)
+         valid[value] = true;
+       return value;
+    }
+}
+
+private void AllEntry(boolean[] valid) : {Token t;} {
+    t = "*"
+    {
+      for(int i=0; i<valid.length;i++)
+        valid[i] = true;
+    }
+}
+
