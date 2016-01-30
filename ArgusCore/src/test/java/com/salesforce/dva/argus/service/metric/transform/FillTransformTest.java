@@ -523,8 +523,9 @@ public class FillTransformTest {
         constants.add("0m");
         constants.add("100.0");
 
-        Long expectedStartTimestamp = System.currentTimeMillis() - 7L * 86400L * 1000L;
-        Long expectedEndTimestamp = System.currentTimeMillis() - 0L * 60L * 1000L;
+        long now = System.currentTimeMillis();
+        Long expectedStartTimestamp = now - 7L * 86400L * 1000L;
+        Long expectedEndTimestamp = now - 0L * 60L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
         List<Metric> result = fillTransform.transform(null, constants);
 
