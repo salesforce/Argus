@@ -94,6 +94,7 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
     @SLF4JTypeListener.InjectLogger
     private Logger _logger;
     private HConnection _connection;
+    private final SystemConfiguration _config;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -105,7 +106,7 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
     @Inject
     public HbaseSchemaService(SystemConfiguration config) {
     	super(config);
-        _connection = _createHConnection(config);
+        _config = config;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -301,10 +302,10 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
 
         try {
             _logger.info("Scope Puts size = " + scopePuts.size());
-            scopeTable = _connection.getTable(TableType.SCOPE.getTableName());
+            scopeTable = _getHbaseConnection().getTable(TableType.SCOPE.getTableName());
             scopeTable.put(new ArrayList<Put>(scopePuts.values()));
             _logger.info("Metric Puts size = " + metricPuts.size());
-            metricTable = _connection.getTable(TableType.METRIC.getTableName());
+            metricTable = _getHbaseConnection().getTable(TableType.METRIC.getTableName());
             metricTable.put(new ArrayList<Put>(metricPuts.values()));
         } catch (IOException e) {
             throw new SystemException("Failed to put schema records to Hbase.", e);
@@ -344,7 +345,7 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
             String tagValue = _convertToRegex(query.getTagValue());
             String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
-            tableToUse = _connection.getTable(metadata.type.getTableName());
+            tableToUse = _getHbaseConnection().getTable(metadata.type.getTableName());
             _logger.debug("Using table: " + metadata.type.getTableName());
             _logger.debug("Rowkey: " + rowKeyRegex);
             _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
@@ -422,7 +423,7 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
             String tagValue = _convertToRegex(query.getTagValue());
             String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
-            tableToUse = _connection.getTable(metadata.type.getTableName());
+            tableToUse = _getHbaseConnection().getTable(metadata.type.getTableName());
             _logger.debug("Using table: " + metadata.type.getTableName());
             _logger.debug("Rowkey: " + rowKeyRegex);
             _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
@@ -495,6 +496,13 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
         } catch (IOException ioe) {
             _logger.warn("Failed to dispose HConnection instance", ioe);
         }
+    }
+    
+    private synchronized HConnection _getHbaseConnection() {
+        if(_connection == null) {
+            _connection = _createHConnection(_config);            
+        }
+        return _connection;
     }
 
     private String _getValueForType(MetricSchemaRecord record, RecordType type) {
