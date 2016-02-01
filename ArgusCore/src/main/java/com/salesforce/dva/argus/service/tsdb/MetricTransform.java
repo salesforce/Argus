@@ -74,6 +74,11 @@ class MetricTransform {
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Deserializer extends JsonDeserializer<Metric> {
+	TSDBService tsdbService;
+
+        Deserializer(TSDBService tsdbService) {
+	    this.tsdbService = tsdbService;
+        }
 
         @Override
         public Metric deserialize(JsonParser jp, DeserializationContext dc) throws IOException {
@@ -85,7 +90,6 @@ class MetricTransform {
 
             Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
             String tsdbMetricName = node.get("metric").asText();
-            TSDBService tsdbService = SystemMain.getInstance().getServiceFactory().getTSDBService();
             String scope = tsdbService.getScopeFromTSDBMetric(tsdbMetricName);
             String namespace = tsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
 		
@@ -155,6 +159,12 @@ class MetricTransform {
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Serializer extends JsonSerializer<Metric> {
+       
+	TSDBService tsdbService;
+
+        Serializer(TSDBService tsdbService) {
+	    this.tsdbService = tsdbService;
+        }
 
         @Override
         public void serialize(Metric metric, JsonGenerator jgen, SerializerProvider sp) throws IOException {
@@ -162,7 +172,7 @@ class MetricTransform {
 
             for (Map.Entry<Long, String> entry : datapoints.entrySet()) {
                 jgen.writeStartObject();
-                jgen.writeStringField("metric", metric.constructTSDBMetricName());
+                jgen.writeStringField("metric", tsdbService.constructTSDBMetricName(metric.getScope(), metric.getNamespace()));
                 jgen.writeNumberField("timestamp", entry.getKey());
                 jgen.writeStringField("value", entry.getValue());
                 serializeTags(metric, jgen);

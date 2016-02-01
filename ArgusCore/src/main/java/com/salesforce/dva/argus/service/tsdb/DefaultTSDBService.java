@@ -74,11 +74,11 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final int CHUNK_SIZE = 50;
-    private static final ObjectMapper MAPPER = getMapper();
     private static final int TSDB_DATAPOINTS_WRITE_MAX_SIZE = 100;
 
     //~ Instance fields ******************************************************************************************************************************
 
+    private final ObjectMapper _mapper;
     protected Logger _logger = LoggerFactory.getLogger(getClass());
     private CloseableHttpClient _readPort;
     private CloseableHttpClient _writePort;
@@ -102,6 +102,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         requireArgument(config != null, "System configuration cannot be null.");
         _configuration = config;
 
+        _mapper = getMapper();
         int connCount = Integer.parseInt(_configuration.getValue(Property.TSD_CONNECTION_COUNT.getName(),
                 Property.TSD_CONNECTION_COUNT.getDefaultValue()));
         int connTimeout = Integer.parseInt(_configuration.getValue(Property.TSD_ENDPOINT_CONNECTION_TIMEOUT.getName(),
@@ -150,12 +151,12 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         return toAnnotationKey(scope, metric, type, tags);
     }
 
-    private static ObjectMapper getMapper() {
+    private ObjectMapper getMapper() {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule module = new SimpleModule();
 
-        module.addSerializer(Metric.class, new MetricTransform.Serializer());
-        module.addDeserializer(Metric.class, new MetricTransform.Deserializer());
+        module.addSerializer(Metric.class, new MetricTransform.Serializer(this));
+        module.addDeserializer(Metric.class, new MetricTransform.Deserializer(this));
         module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
         module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
         mapper.registerModule(module);
@@ -288,6 +289,15 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         return annotations;
     }
 
+    @Override
+    public String constructTSDBMetricName(String scope, String namespace) {
+        StringBuilder sb = new StringBuilder(scope);
+
+        if (namespace != null && !namespace.isEmpty()) {
+            sb.append(namespace);
+        }
+        return sb.toString();
+    }
 
     @Override
     public String getScopeFromTSDBMetric(String tsdbMetricName) {
@@ -424,7 +434,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     /* Helper method to convert JSON String representation to the corresponding Java entity. */
     private <T> T toEntity(String content, TypeReference<T> type) {
         try {
-            return MAPPER.readValue(content, type);
+            return _mapper.readValue(content, type);
         } catch (IOException ex) {
             throw new SystemException(ex);
         }
@@ -433,7 +443,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     /* Helper method to convert a Java entity to a JSON string. */
     private <T> String fromEntity(T type) {
         try {
-            return MAPPER.writeValueAsString(type);
+            return _mapper.writeValueAsString(type);
         } catch (JsonProcessingException ex) {
             throw new SystemException(ex);
         }
