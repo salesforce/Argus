@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.system.SystemMain;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -84,9 +85,10 @@ class MetricTransform {
 
             Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
             String tsdbMetricName = node.get("metric").asText();
-            String scope = TSDBService.getScopeFromTSDBMetric(tsdbMetricName);
-            String namespace = TSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
-
+            TSDBService tsdbService = SystemMain.getInstance().getServiceFactory().getTSDBService();
+            String scope = tsdbService.getScopeFromTSDBMetric(tsdbMetricName);
+            String namespace = tsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
+		
             // Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
             if (scope.isEmpty()) {
                 return null;

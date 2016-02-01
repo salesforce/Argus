@@ -87,9 +87,7 @@ public interface TSDBService extends Service {
      *
      * @return  The scope of the metric.  May return null.
      */
-    static String getScopeFromTSDBMetric(String tsdbMetricName) {
-        return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
-    }
+    String getScopeFromTSDBMetric(String tsdbMetricName);
     
     /**
      * Calculates the namespace of a metric given it's native TSDB name.
@@ -98,10 +96,6 @@ public interface TSDBService extends Service {
      *
      * @return  The namespace of the metric.  May return null.
      */    
-    static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-    	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
-
-    	return (splits.length == 2) ? NamespaceService.NAMEPSACE_PREFIX + splits[1] : null;
-    }
+    String getNamespaceFromTSDBMetric(String tsdbMetricName);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

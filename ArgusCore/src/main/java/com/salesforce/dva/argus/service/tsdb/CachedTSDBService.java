@@ -562,6 +562,16 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         return _defaultTsdbService.getAnnotations(queries);
     }
 
+    @Override
+    public String getScopeFromTSDBMetric(String tsdbMetricName) {
+	return _defaultTsdbService.getScopeFromTSDBMetric(tsdbMetricName);
+    }
+
+    @Override
+    public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
+	return _defaultTsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
+    }
+	
     //~ Inner Classes ********************************************************************************************************************************
 
     /**

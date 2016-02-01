@@ -288,6 +288,18 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         return annotations;
     }
 
+
+    @Override
+    public String getScopeFromTSDBMetric(String tsdbMetricName) {
+	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
+    }
+
+    @Override
+    public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
+	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
+        return (splits.length == 2) ? NamespaceService.NAMEPSACE_PREFIX + splits[1] : null;
+    }
+
     /* Writes objects in chunks. */
     private <T> void put(List<T> objects, String endpoint, HttpMethod method) {
         if (objects != null) {
