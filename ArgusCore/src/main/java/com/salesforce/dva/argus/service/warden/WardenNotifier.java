@@ -47,7 +47,6 @@ import com.salesforce.dva.argus.service.WardenService;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.DefaultNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import java.math.BigInteger;
 import java.text.MessageFormat;

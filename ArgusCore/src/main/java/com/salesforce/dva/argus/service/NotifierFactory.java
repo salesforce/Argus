@@ -31,12 +31,8 @@
 	 
 package com.salesforce.dva.argus.service;
 
-import java.util.List;
-
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;

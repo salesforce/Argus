@@ -36,7 +36,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 import java.util.Properties;
-import java.util.Map.Entry;
 
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
