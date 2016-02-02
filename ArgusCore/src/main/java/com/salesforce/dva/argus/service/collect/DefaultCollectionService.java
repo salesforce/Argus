@@ -31,7 +31,6 @@
 	 
 package com.salesforce.dva.argus.service.collect;
 
-import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.google.inject.Inject;
@@ -42,9 +41,7 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener.InjectLogger;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.CollectionService;
-import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.service.MQService;
-import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.NamespaceService;
@@ -56,17 +53,13 @@ import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TimeZone;
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ANNOTATION;
@@ -82,6 +75,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
 
     //~ Static fields/initializers *******************************************************************************************************************
 
+	/*
     private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
             @Override
@@ -92,6 +86,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
                 return sdf;
             }
         };
+    */
 
     private static final int BATCH_METRICS = 50;
 
@@ -259,11 +254,6 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         assert (submitter != null) : "Submitter should not be null.";
         assert (metrics != null) : "List of metrics should not be null.";
         _wardenService.assertSubSystemUsePermitted(submitter, SubSystem.POSTING);
-    }
-
-    private String formatLogData(String message, Level level) {
-        return MessageFormat.format("\n [ {0} | {1} | {2} ] {3}", DATE_FORMATTER.get().format(new Date()), Thread.currentThread().getName(),
-            level.levelStr, message);
     }
 
     /*

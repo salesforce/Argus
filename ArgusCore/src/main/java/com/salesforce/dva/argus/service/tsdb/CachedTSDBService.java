@@ -80,7 +80,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     protected Logger _logger = LoggerFactory.getLogger(getClass());
     private final TSDBService _defaultTsdbService;
     private final CacheService _cacheService;
-    private final SystemConfiguration _config;
     private final ObjectMapper _mapper;
 
     //~ Constructors *********************************************************************************************************************************
@@ -88,9 +87,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     @Inject
     private CachedTSDBService(SystemConfiguration config, CacheService cacheService, @NamedBinding TSDBService tsdbService) {
     	super(config);
-        requireArgument(config != null, "System configuration cannot be null.");
         requireArgument(tsdbService != null, "TSDBService cannot be null.");
-        _config = config;
         _cacheService = cacheService;
         _defaultTsdbService = tsdbService;
         _mapper = new ObjectMapper();
