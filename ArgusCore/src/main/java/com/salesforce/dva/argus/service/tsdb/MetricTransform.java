@@ -44,7 +44,6 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.system.SystemMain;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
