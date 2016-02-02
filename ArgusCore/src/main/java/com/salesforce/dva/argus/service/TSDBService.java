@@ -79,6 +79,16 @@ public interface TSDBService extends Service {
      * @return  The query results. Will never be null, but may be empty.
      */
     List<Annotation> getAnnotations(List<AnnotationQuery> queries);
+
+    /**
+     * Constructs a native TSDB metric name from supplied scope and namespace
+     *
+     * @param scope - TSDB scope of a metric
+     * @param namespace - namespace for a metric   
+     *
+     * @return  The native TSDB metric name for this metric.  This method should never return null.
+     */
+     String constructTSDBMetricName(String scope, String namespace);
     
     /**
      * Calculates the scope of a metric given it's native TSDB name.
@@ -87,9 +97,7 @@ public interface TSDBService extends Service {
      *
      * @return  The scope of the metric.  May return null.
      */
-    static String getScopeFromTSDBMetric(String tsdbMetricName) {
-        return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
-    }
+    String getScopeFromTSDBMetric(String tsdbMetricName);
     
     /**
      * Calculates the namespace of a metric given it's native TSDB name.
@@ -98,10 +106,6 @@ public interface TSDBService extends Service {
      *
      * @return  The namespace of the metric.  May return null.
      */    
-    static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-    	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
-
-    	return (splits.length == 2) ? NamespaceService.NAMEPSACE_PREFIX + splits[1] : null;
-    }
+    String getNamespaceFromTSDBMetric(String tsdbMetricName);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
