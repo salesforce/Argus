@@ -75,19 +75,6 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-	/*
-    private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
-
-            @Override
-            protected SimpleDateFormat initialValue() {
-                SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss z");
-
-                sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-                return sdf;
-            }
-        };
-    */
-
     private static final int BATCH_METRICS = 50;
 
     //~ Instance fields ******************************************************************************************************************************
