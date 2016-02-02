@@ -117,7 +117,7 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     private String getEmailSubject(NotificationContext context) {
-        return "Alert Notification: " + context.getNotification().getName();
+        return "[Argus]   Alert Notification: " + context.getNotification().getName();
     }
 
     /**
