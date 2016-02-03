@@ -7,4 +7,4 @@ It's architecture allows any and all of these services to retargeted to new tech
 
 To find out more [see the wiki.](https://github.com/SalesforceEng/Argus/wiki)
 
-![Argus UI](https://raw.github.com/wiki/SalesforceEng/Argus/screenshot.png)
+![Argus UI](https://cloud.githubusercontent.com/assets/15337203/12775758/53f98b02-ca05-11e5-88b0-1fd11afe335f.png)
