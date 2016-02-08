@@ -1,4 +1,5 @@
 /target/
 /nbactions.xml
 /derby.log
-/nb-configuration.xml
+/nb-configuration.xml.extract
+.extract
