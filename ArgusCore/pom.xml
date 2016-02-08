@@ -95,7 +95,6 @@
                         <configuration>
                             <sources>
                                 <source>${project.build.directory}/generated-sources/javacc</source>
-                                <source>${project.build.directory}/generated-sources/annotations</source>
                             </sources>
                         </configuration>
                     </execution>
