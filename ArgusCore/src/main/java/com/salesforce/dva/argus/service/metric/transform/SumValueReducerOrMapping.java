@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -71,7 +71,7 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
                             Map.Entry::getKey,
                             e -> String.valueOf(Double.parseDouble(e.getValue()) + addend)
                     ));
-        } catch (NumberFormatException nfe) {
+        } catch (NullPointerException|NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to sum transform", nfe);
         }
     }

@@ -32,10 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
-import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
-import java.util.function.DoubleBinaryOperator;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of addition transformation.
