@@ -28,42 +28,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.salesforce.dva.argus.entity.Metric;
-import org.apache.commons.lang3.StringUtils;
-import java.util.List;
-import java.util.function.DoubleBinaryOperator;
-import java.util.stream.Collectors;
+import org.junit.Assert;
+import org.junit.Test;
 
-/**
- * Implementation of addition transformation.
- *
- * @author  Raj Sarkapally (rsarkapally@salesforce.com)
- * @author  Bhinav Sura (bhinav.sura@salesforce.com)
- */
-public class SumTransform extends AbstractArithmeticTransform {
+import java.util.Arrays;
 
-    //~ Methods **************************************************************************************************************************************
-    @Override
-    protected String performOperation(List<String> operands) {
-        return Reducers.sumReducer(operands);
-    }
+public class ReducersTest {
+    @Test
+    public void testSumReducer() {
+        String[][] testLists = new String[][] {
+                {"hello", "world"},
+                {},
+                {"", null},
+                {"1.0", null},
+                {"1.0", "2.1"}
+        };
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Sum Transform is not supposed to be used with a constant");
-    }
+        String[] results = new String[] {
+                "0.0",
+                "0.0",
+                "0.0",
+                "1.0",
+                "3.1"
+        };
 
-    @Override
-    public String getResultScopeName() {
-        return TransformFactory.Function.SUM.name();
-    }
+        for (int i = 0; i < results.length; i++) {
+            String[] test = testLists[i];
+            String expResult = results[i];
 
-    @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("This class is deprecated!");
+            String result = Reducers.sumReducer(Arrays.asList(test));
+            Assert.assertEquals(expResult, result);
+        }
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

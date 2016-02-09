@@ -28,42 +28,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.salesforce.dva.argus.entity.Metric;
 import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
-import java.util.function.DoubleBinaryOperator;
-import java.util.stream.Collectors;
 
 /**
- * Implementation of addition transformation.
+ * Implementation of basic reducers with necessary types transformation:
  *
- * @author  Raj Sarkapally (rsarkapally@salesforce.com)
- * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Dmitry Melanchenko (dmelanchenko@salesforce.com)
  */
-public class SumTransform extends AbstractArithmeticTransform {
+public class Reducers {
 
-    //~ Methods **************************************************************************************************************************************
-    @Override
-    protected String performOperation(List<String> operands) {
-        return Reducers.sumReducer(operands);
+    // All reducers are static methods
+    private Reducers() { }
+
+    private static double parseDouble(String s) {
+        try {
+            return Double.parseDouble(s);
+        }
+        catch (NumberFormatException ignore) {
+            return 0.0;
+        }
     }
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Sum Transform is not supposed to be used with a constant");
+    public static String sumReducer(List<String> values) {
+        double result = values.stream()
+                .filter(StringUtils::isNotEmpty)
+                .filter(StringUtils::isNotBlank)
+                .mapToDouble(Reducers::parseDouble)
+                .reduce(0.0, (a, b) -> a + b);
+
+        return String.valueOf(result);
     }
 
-    @Override
-    public String getResultScopeName() {
-        return TransformFactory.Function.SUM.name();
-    }
-
-    @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("This class is deprecated!");
-    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
