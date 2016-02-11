@@ -231,8 +231,6 @@ public final class SystemConfiguration extends Properties {
         SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","argus.properties"),
         MAIL_SERVICE_IMPL_CLASS("service.binding.mail", "com.salesforce.dva.argus.service.mail.DefaultMailService"),
         MAIL_SERVICE_PROPERTY_FILE("service.config.mail","argus.properties"),
-        GOC_SERVICE_IMPL_CLASS("service.binding.goc", "com.salesforce.dva.argus.service.goc.DefaultGOCService"),
-        GOC_SERVICE_PROPERTY_FILE("service.config.goc","argus.properties"),
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.HbaseSchemaService"),
