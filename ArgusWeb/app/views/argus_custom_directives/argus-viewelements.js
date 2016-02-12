@@ -128,6 +128,21 @@ viewElementsModule.directive('agTable', ['DashboardService', 'growl', 'VIEWELEME
     }
 }]);
 
+viewElementsModule.directive('agLogs', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
+    var tableNameIndex = 1;
+    return {
+        restrict: 'E',
+        transclude: true,
+        scope: {},
+        require: '^agDashboard',
+        controller: 'ViewElementCtrl',
+        template: '<div ng-transclude=""></div>',
+        link: function(scope, element, attributes, dashboardCtrl) {
+        	buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.logs, tableNameIndex++, DashboardService, growl);
+        }
+    }
+}]);
+
 function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
 	
 	var elementId = 'element_' + elementType + index;
@@ -142,6 +157,7 @@ function buildViewElement(scope, element, attributes, dashboardCtrl, elementType
         var updatedMetricList=[];
         var updatedAnnotationList=[];
         var updatedOptionList = [];
+        var updatedLogQuery;
 
         for (var key in scope.metrics) {
             if (scope.metrics.hasOwnProperty(key)) {
@@ -170,9 +186,15 @@ function buildViewElement(scope, element, attributes, dashboardCtrl, elementType
 
             }
         }
+        if(scope.logQuery) {
+            var processedLogQuery = augmentExpressionWithControlsData(event, scope.logQuery,controls);
+            if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
+                updatedLogQuery = processedLogQuery;
+            }
+        }
 
         if(updatedMetricList.length>0) {
-            DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedOptionList, elementId, attributes, elementType, scope);
+            DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedLogQuery, updatedOptionList, elementId, attributes, elementType, scope);
         } else {
             growl.error('The valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
             $('#' + elementId).hide();
