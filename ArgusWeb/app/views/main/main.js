@@ -49,7 +49,8 @@ var argusMain = angular.module('argusMain', [
 argusMain.constant('VIEWELEMENT', {
     chart: 'chart',
     heatmap: 'heatmap',
-    table: 'table'
+    table: 'table',
+    logs: 'logs'
 });
 
 argusMain.constant('CHARTTYPE', {
