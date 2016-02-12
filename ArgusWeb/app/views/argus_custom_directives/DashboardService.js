@@ -26,45 +26,91 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             return $http.get(CONFIG.wsUrl + 'dashboards/' + dashboardId);
         };
         
-        this.populateView = function(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
+        this.populateView = function(metricList, annotationExpressionList, logQuery, optionList, divId, attributes, elementType, scope){
+            if(((metricList && metricList.length>0) || (annotationExpressionList && annotationExpressionList.length > 0)) && divId) {
+                switch (elementType) {
+                    case VIEWELEMENT.chart :
+                        populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
+                        break;
+                    case VIEWELEMENT.heatmap :
+                    case VIEWELEMENT.table : 
+                        var metricExpressionList = getMetricExpressionList(metricList);
+                        $http({
+                            method: 'GET',
+                            url: CONFIG.wsUrl + 'metrics',
+                            params: {'expression': metricExpressionList}
 
-            if(metricList && metricList.length>0 && divId) {
 
-                if (metricList && metricList.length > 0) {
-                	if(elementType === VIEWELEMENT.chart){
-                		populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
-                	}else{
-                		var metricExpressionList = getMetricExpressionList(metricList);
-                    $http({
-                        method: 'GET',
-                        url: CONFIG.wsUrl + 'metrics',
-                        params: {'expression': metricExpressionList}
-
-
-                    }).
-                        success(function(data, status, headers, config){
-                        if(data && data.length>0) {
-                            $('#' + divId).show();
-                            if(elementType === VIEWELEMENT.heatmap)
-                                updateHeatmap({}, data, divId, optionList, attributes);
-                            else if(elementType === VIEWELEMENT.table)
-                            	updateTable(data, scope, divId, optionList);
-                        } else {
-                            updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
-                            growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
-
-                        }
                         }).
-                        error(function(data, status, headers, config) {
-                        growl.error(data.message);
-                        $('#' + divId).hide();
-                    });
-                }
-                } else {
-                    growl.error('Valid metric expressions are required to display the chart/table.');
-                    $('#' + divId).hide();
+                            success(function(data, status, headers, config){
+                            if(data && data.length>0) {
+                                $('#' + divId).show();
+                                if(elementType === VIEWELEMENT.heatmap)
+                                    updateHeatmap({}, data, divId, optionList, attributes);
+                                else if(elementType === VIEWELEMENT.table)
+                                    updateTable(data, scope, divId, optionList);
+                            } else {
+                                updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
+                                growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
+
+                            }
+                            }).
+                            error(function(data, status, headers, config) {
+                            growl.error(data.message);
+                            $('#' + divId).hide();
+                        });
+                        break;
+                    default: growl.error("Unsupported metric/annotation view element type: " + elementType);
                 }
             }
+
+            if(logQuery && divId) {
+                switch (elementType) {
+                    case VIEWELEMENT.logs: 
+                        populateLogs(logQuery, optionList, divId);
+                        break;
+                    default: growl.error("Unsupported logline view element type: " + elementType);
+                }
+            }
+
+//
+//            if(metricList && metricList.length>0 && divId) {
+//
+//                if (metricList && metricList.length > 0) { // this should also consider just ag-flags for charts.
+//                	if(elementType === VIEWELEMENT.chart){
+//                		populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
+//                	}else{
+//                            var metricExpressionList = getMetricExpressionList(metricList);
+//                            $http({
+//                                method: 'GET',
+//                                url: CONFIG.wsUrl + 'metrics',
+//                                params: {'expression': metricExpressionList}
+//
+//
+//                            }).
+//                                success(function(data, status, headers, config){
+//                                if(data && data.length>0) {
+//                                    $('#' + divId).show();
+//                                    if(elementType === VIEWELEMENT.heatmap)
+//                                        updateHeatmap({}, data, divId, optionList, attributes);
+//                                    else if(elementType === VIEWELEMENT.table)
+//                                        updateTable(data, scope, divId, optionList);
+//                                } else {
+//                                    updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
+//                                    growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
+//
+//                                }
+//                                }).
+//                                error(function(data, status, headers, config) {
+//                                growl.error(data.message);
+//                                $('#' + divId).hide();
+//                            });
+//                    }
+//                } else {
+//                    growl.error('Valid metric expressions are required to display the chart/table.');
+//                    $('#' + divId).hide();
+//                }
+//            }
         };
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
