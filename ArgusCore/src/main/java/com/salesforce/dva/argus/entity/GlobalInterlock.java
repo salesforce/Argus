@@ -93,6 +93,7 @@ public class GlobalInterlock implements Serializable {
     /** To be used by the persistence infrastructure only. */
     protected GlobalInterlock() {
         this.ipaddr = SystemConfiguration.getHostname();
+        this.lockTime = System.currentTimeMillis();
     }
 
     /**
