@@ -282,10 +282,10 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.ALERT_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEDULING_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.MAIL_SERVICE_PROPERTY_FILE));
-        readFile(properties, _systemConfiguration.getValue(Property.GOC_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.AUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
         return properties;
     }
 }
