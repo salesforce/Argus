@@ -69,12 +69,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 public abstract class AbstractResource {
 
-    //~ Static fields/initializers *******************************************************************************************************************
-
-    private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count";
-
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
     protected final SystemMain system = ArgusWebServletListener.getSystem();
     protected UserService userService = system.getServiceFactory().getUserService();
@@ -257,23 +252,6 @@ public abstract class AbstractResource {
         }
     }
 
-    /**
-     * Helper method to instrument query latency for metric and annotation read operations.
-     *
-     * @param  monitorService  The monitor service to record the latency counters.
-     * @param  query           The query to measure.
-     * @param  start           The start time epoch.
-     */
-    protected void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start) {
-        String timeWindow = TimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
-        Map<String, String> tags = new HashMap<String, String>();
-
-        tags.put("type", "metrics");
-        tags.put("timeWindow", timeWindow);
-        monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
-        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
-    }
-
     //~ Enums ****************************************************************************************************************************************
 
     /**
@@ -289,64 +267,6 @@ public abstract class AbstractResource {
         DELETE,
         HEAD,
         OPTIONS;
-    }
-
-    /**
-     * Specifies the query latency buckets to record performance information for.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    private enum TimeWindow {
-
-        WITHIN_24_HRS("within_24_hrs"),
-        WITHIN_24_HRS_AND_30_DAYS("within_24_hrs_and_30_days"),
-        GREATER_THAN_30_DAYS("greater_than_30_days");
-
-        private String _name;
-
-        /**
-         * Creates a new TimeWindow object.
-         *
-         * @param  name  The name of the time window.
-         */
-        TimeWindow(String name) {
-            setName(name);
-        }
-
-        /**
-         * Returns the bucket name based on the width of the query time window.
-         *
-         * @param   differenceInMillis  The width in milliseconds.
-         *
-         * @return  The corresponding bucket name.
-         */
-        public static String getWindow(long differenceInMillis) {
-            if (differenceInMillis <= 86400000L) {
-                return TimeWindow.WITHIN_24_HRS.getName();
-            } else if (differenceInMillis > 2592000000L) {
-                return TimeWindow.GREATER_THAN_30_DAYS.getName();
-            } else {
-                return TimeWindow.WITHIN_24_HRS_AND_30_DAYS.getName();
-            }
-        }
-
-        /**
-         * Returns the bucket name.
-         *
-         * @return  The bucket name.
-         */
-        public String getName() {
-            return _name;
-        }
-
-        /**
-         * Sets the bucket name.
-         *
-         * @param  name  The bucket name.
-         */
-        public void setName(String name) {
-            this._name = name;
-        }
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

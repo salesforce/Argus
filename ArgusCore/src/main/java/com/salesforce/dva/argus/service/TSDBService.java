@@ -107,5 +107,42 @@ public interface TSDBService extends Service {
      * @return  The namespace of the metric.  May return null.
      */    
     String getNamespaceFromTSDBMetric(String tsdbMetricName);
+    
+    /**
+     * Enumeration of time window for a query
+     *
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     */
+    public static enum QueryTimeWindow {
+    	
+    	WITHIN_24_HRS("within_24_hrs"),
+    	WITHIN_24_HRS_AND_30_DAYS("within_24_hrs_and_30_days"),
+    	GREATER_THAN_30_DAYS("greater_than_30_days");
+    	
+    	private String _name;
+    	
+    	QueryTimeWindow(String name) {
+    		setName(name);
+    	}
+
+		public String getName() {
+			return _name;
+		}
+
+		public void setName(String _description) {
+			this._name = _description;
+		}
+		
+		public static String getWindow(long differenceInMillis) {
+        	if(differenceInMillis <= 86400000L) {
+        		return QueryTimeWindow.WITHIN_24_HRS.getName();
+        	} else if(differenceInMillis > 2592000000L) {
+        		return QueryTimeWindow.GREATER_THAN_30_DAYS.getName();
+        	} else {
+        		return QueryTimeWindow.WITHIN_24_HRS_AND_30_DAYS.getName();
+        	}
+        }
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
