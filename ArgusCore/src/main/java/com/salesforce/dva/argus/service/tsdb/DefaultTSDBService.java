@@ -39,6 +39,7 @@ import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.system.*;
+
 import org.apache.http.*;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
@@ -49,6 +50,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.*;
 import java.text.MessageFormat;
@@ -75,6 +77,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
     private static final int CHUNK_SIZE = 50;
     private static final int TSDB_DATAPOINTS_WRITE_MAX_SIZE = 100;
+    private static final String QUERY_LATENCY_COUNTER = "query.latency";
+    private static final String QUERY_COUNT_COUNTER = "query.count";    
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -86,21 +90,25 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     private final String _readEndpoint;
     private final SystemConfiguration _configuration;
     private final ExecutorService _executorService;
+    private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
     /**
      * Creates a new Default TSDB Service having an equal number of read and write routes.
      *
-     * @param   config  The system _configuration used to configure the service.
+     * @param   config               The system _configuration used to configure the service.
+     * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
      *
      * @throws  SystemException  If an error occurs configuring the service.
      */
     @Inject
-    public DefaultTSDBService(SystemConfiguration config) {
+    public DefaultTSDBService(SystemConfiguration config, MonitorService monitorService) {
     	super(config);
         requireArgument(config != null, "System configuration cannot be null.");
+        requireArgument(monitorService != null, "Monitor service cannot be null.");
         _configuration = config;
+        _monitorService = monitorService;
 
         _mapper = getMapper();
         int connCount = Integer.parseInt(_configuration.getValue(Property.TSD_CONNECTION_COUNT.getName(),
@@ -214,12 +222,14 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         long start = System.currentTimeMillis();
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
         Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
+        Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
         String pattern = _readEndpoint + "/api/query?no_annotations=true&{0}";
 
         for (MetricQuery query : queries) {
             String requestUrl = MessageFormat.format(pattern, query.toString());
 
             futures.put(query, _executorService.submit(new QueryWorker(requestUrl)));
+            queryStartExecutionTime.put(query, System.currentTimeMillis());
         }
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
             try {
@@ -234,6 +244,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                         }
                     }
                 }
+                
+                instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
                 _logger.error("Failed to get metrics from TSDB. Reason: " + e.getMessage());
@@ -265,6 +277,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         String pattern = _readEndpoint + "/api/query?{0}";
 
         for (AnnotationQuery query : queries) {
+        	long start = System.currentTimeMillis();
             String requestUrl = MessageFormat.format(pattern, query.toString());
             HttpResponse response = executeHttpRequest(HttpMethod.GET, requestUrl, null);
             List<AnnotationWrapper> wrappers = toEntity(extractResponse(response), new TypeReference<AnnotationWrappers>() { });
@@ -285,6 +298,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                     }
                 }
             }
+            instrumentQueryLatency(_monitorService, query, start, "annotations");
         }
         return annotations;
     }
@@ -599,7 +613,18 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
             return _defaultValue;
         }
     }
-
+    
+    private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start,
+    		final String measurementType) {
+		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
+		Map<String, String> tags = new HashMap<String, String>();
+		tags.put("type", measurementType);
+		tags.put("timeWindow", timeWindow);
+		tags.put("cached", "false");
+		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
+        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
+	}
+    
     /**
      * Enumeration of supported HTTP methods.
      *

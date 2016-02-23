@@ -319,7 +319,7 @@ public class TSDBServiceIT extends AbstractTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testFractureMetrics() {
-        TSDBService service = new DefaultTSDBService(system.getConfiguration());
+        TSDBService service = new DefaultTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
         Metric metric = new Metric("testscope", "testMetric");
         Map<Long, String> datapoints = new HashMap<>();
 

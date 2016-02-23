@@ -39,11 +39,13 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,21 +76,37 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     private static final Long LOWER_START_TIME_LIMIT_IN_MILLIS = 86400000L;
     private static final Long UPPER_START_TIME_LIMIT_IN_MILLIS = 86400000 * 61L;
     private static final Long END_TIME_LIMIT_IN_MILLIS = 60000L;
+    private static final String QUERY_LATENCY_COUNTER = "query.latency";
+    private static final String QUERY_COUNT_COUNTER = "query.count"; 
 
     //~ Instance fields ******************************************************************************************************************************
 
     protected Logger _logger = LoggerFactory.getLogger(getClass());
     private final TSDBService _defaultTsdbService;
     private final CacheService _cacheService;
+    private final MonitorService _monitorService;
     private final ObjectMapper _mapper;
 
     //~ Constructors *********************************************************************************************************************************
 
+    /**
+     * Creates a new Cached TSDB Service
+     *
+     * @param   config               The system _configuration used to configure the service.
+     * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
+     * @param   cacheService         The caching service to use in the cached tsdb service implementation
+     * @param   tsdbService          The tsdb service to use when data is not present in cache
+     *
+     */
     @Inject
-    private CachedTSDBService(SystemConfiguration config, CacheService cacheService, @NamedBinding TSDBService tsdbService) {
+    private CachedTSDBService(SystemConfiguration config, MonitorService monitorService,
+    		CacheService cacheService, @NamedBinding TSDBService tsdbService) {
     	super(config);
         requireArgument(tsdbService != null, "TSDBService cannot be null.");
+        requireArgument(monitorService != null, "Monitor service cannot be null.");
+        requireArgument(cacheService != null, "Cache service cannot be null.");
         _cacheService = cacheService;
+        _monitorService = monitorService;
         _defaultTsdbService = tsdbService;
         _mapper = new ObjectMapper();
     }
@@ -145,7 +163,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         for (Entry<MetricQuery, List<Metric>> entry : metricsMap.entrySet()) {
             MetricQuery metricQuery = entry.getKey();
 
-            // List<Metric> metrics = entry.getValue();
             MetricQueryTimestamp queryWithTimestamp = map.get(metricQuery);
 
             if (!compulsoryCacheMiss(metricQuery)) {
@@ -391,12 +408,14 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             query.setStartTimestamp(convertTimeStampToStartOfDay(query.getStartTimestamp()));
             query.setEndTimestamp(convertTimeStampToBeginningHour(query.getEndTimestamp()));
 
+            long startExecutionTime = System.currentTimeMillis();
+            
             // fracture metric query into day boundary
             List<String> cacheMetricQueryKeys = constructMetricQueryKeys(query);
 
             try {
-                beforeTime = System.currentTimeMillis();
-
+            	beforeTime = System.currentTimeMillis();
+            	
                 Map<String, List<String>> keyValueMap = _cacheService.getRange(new LinkedHashSet<String>(cacheMetricQueryKeys), 0, -1);
                 boolean allCachedKeysFound = true;
 
@@ -446,7 +465,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                     }
                     afterTime = System.currentTimeMillis();
                     _logger.info("Time spent in trimming data: {}", afterTime - beforeTime);
-
+                    
                     // Make a TSDB query from current time to previous hour boundary from current time
                     MetricQuery metricQueryFromLastHour = new MetricQuery(query.getScope(), query.getMetric(), query.getTags(),
                         query.getEndTimestamp(), System.currentTimeMillis());
@@ -485,6 +504,8 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                         metricsForThisQuery.add(metric);
                     }
                     resultsMap.put(query, metricsForThisQuery);
+                    instrumentQueryLatency(_monitorService, query, startExecutionTime);
+                    
                     afterTime = System.currentTimeMillis();
                     _logger.info("Time spent in mapping tags in tsdb metrics to tags in cache: {}", afterTime - beforeTime);
                 } // end if
@@ -573,7 +594,17 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
 	return _defaultTsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
     }
-	
+    
+    private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start) {
+		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
+		Map<String, String> tags = new HashMap<String, String>();
+		tags.put("type", "metrics");
+		tags.put("timeWindow", timeWindow);
+		tags.put("cached", "true");
+		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
+        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
+	}
+    
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
