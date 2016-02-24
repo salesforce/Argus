@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.MonitorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,13 +48,14 @@ abstract class AbstractCommitter implements Runnable {
     //~ Static fields/initializers *******************************************************************************************************************
 
     protected static final int TIMEOUT = 500;
-    protected static final int POLL_INTERVAL_MS = 10;
+    protected static final int POLL_INTERVAL_MS = 10; 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitter.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
-    protected final CollectionService service;
+    protected final CollectionService collectionService;
     protected final AtomicInteger jobCounter;
+    protected final MonitorService monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -62,9 +65,10 @@ abstract class AbstractCommitter implements Runnable {
      * @param  service     The collection service to use. Cannot be null.
      * @param  jobCounter  The job counter. Cannot be null.
      */
-    AbstractCommitter(CollectionService service, AtomicInteger jobCounter) {
-        this.service = service;
+    AbstractCommitter(CollectionService service, MonitorService monitorService, AtomicInteger jobCounter) {
+        this.collectionService = service;
         this.jobCounter = jobCounter;
+        this.monitorService=monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************

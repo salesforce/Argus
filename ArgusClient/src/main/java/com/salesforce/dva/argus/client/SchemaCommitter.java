@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.MonitorService;
+
 import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,8 +57,8 @@ class SchemaCommitter extends AbstractCommitter {
      * @param  service     The collection service to use. Cannot be null.
      * @param  jobCounter  The job counter. Cannot be null.
      */
-    SchemaCommitter(CollectionService service, AtomicInteger jobCounter) {
-        super(service, jobCounter);
+    SchemaCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        super(collectionService, monitorService, jobCounter);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -66,7 +68,7 @@ class SchemaCommitter extends AbstractCommitter {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                int count = service.commitMetricSchema(METRIC_MESSAGES_CHUNK_SIZE, TIMEOUT);
+                int count = collectionService.commitMetricSchema(METRIC_MESSAGES_CHUNK_SIZE, TIMEOUT);
 
                 if (count > 0) {
                     LOGGER.info(MessageFormat.format("Committed {0} metrics for schema records creation.", count));
@@ -82,7 +84,7 @@ class SchemaCommitter extends AbstractCommitter {
             }
         }
         LOGGER.warn("Ending Schema Committer.");
-        service.dispose();
+        collectionService.dispose();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

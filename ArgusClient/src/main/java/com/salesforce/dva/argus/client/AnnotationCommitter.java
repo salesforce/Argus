@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.MonitorService;
+
 import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -54,8 +56,8 @@ public class AnnotationCommitter extends AbstractCommitter {
      * @param  service     The collection service to use.  Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
-    AnnotationCommitter(CollectionService service, AtomicInteger jobCounter) {
-        super(service, jobCounter);
+    AnnotationCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        super(collectionService, monitorService, jobCounter);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -64,7 +66,7 @@ public class AnnotationCommitter extends AbstractCommitter {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                int count = service.commitAnnotations(ANNOTATION_CHUNK_SIZE, TIMEOUT);
+                int count = collectionService.commitAnnotations(ANNOTATION_CHUNK_SIZE, TIMEOUT);
 
                 if (count > 0) {
                     LOGGER.info(MessageFormat.format("Committed {0} annotations.", count));
@@ -80,7 +82,8 @@ public class AnnotationCommitter extends AbstractCommitter {
             }
         }
         LOGGER.warn(MessageFormat.format("Annotation committer thread interrupted. {} annotations committed by this thread.", jobCounter.get()));
-        service.dispose();
+        collectionService.dispose();
+        monitorService.dispose();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

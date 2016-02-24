@@ -31,8 +31,14 @@
 	 
 package com.salesforce.dva.argus.client;
 
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
+
 import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -45,7 +51,6 @@ public class MetricCommitter extends AbstractCommitter {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final int METRIC_MESSAGES_CHUNK_SIZE = 100;
-
     //~ Constructors *********************************************************************************************************************************
 
     /**
@@ -54,8 +59,8 @@ public class MetricCommitter extends AbstractCommitter {
      * @param  service     The collection service to use.  Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
-    MetricCommitter(CollectionService service, AtomicInteger jobCounter) {
-        super(service, jobCounter);
+    MetricCommitter(CollectionService colletionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        super(colletionService,monitorService, jobCounter);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -64,12 +69,22 @@ public class MetricCommitter extends AbstractCommitter {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                int count = service.commitMetrics(METRIC_MESSAGES_CHUNK_SIZE, TIMEOUT);
+            	List<Metric> dequeuedMetrics = collectionService.commitMetrics(METRIC_MESSAGES_CHUNK_SIZE, TIMEOUT);
 
-                if (count > 0) {
-                    LOGGER.info(MessageFormat.format("Committed {0} metrics.", count));
-                    jobCounter.addAndGet(count);
+            	int noOfDatapointsCommitted=0;
+             	for(Metric metric:dequeuedMetrics){
+             		noOfDatapointsCommitted+=metric.getDatapoints().size();
+            	}
+                if (dequeuedMetrics.size() > 0) {
+                    LOGGER.info(MessageFormat.format("Committed {0} metrics.", dequeuedMetrics.size()));
+                    monitorService.modifyCounter(Counter.COMMIT_CLIENT_METRIC_WRITES, dequeuedMetrics.size(), new HashMap<String,String>());
                 }
+                if(noOfDatapointsCommitted>0){
+                	LOGGER.info(MessageFormat.format("Committed {0} datapoints.", noOfDatapointsCommitted));
+                    jobCounter.addAndGet(noOfDatapointsCommitted);
+                    monitorService.modifyCounter(Counter.COMMIT_CLIENT_DATAPOINT_WRITES, noOfDatapointsCommitted, new HashMap<String,String>());
+                }
+                
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ie) {
                 LOGGER.info("Execution was interrupted.");
@@ -79,8 +94,9 @@ public class MetricCommitter extends AbstractCommitter {
                 LOGGER.info("Error occured while committing metrics. Reason {}", ex.toString());
             }
         }
-        LOGGER.warn(MessageFormat.format("Metric committer thread interrupted. {} metrics committed by this thread.", jobCounter.get()));
-        service.dispose();
+        LOGGER.warn(MessageFormat.format("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get()));
+        collectionService.dispose();
+        monitorService.dispose();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
