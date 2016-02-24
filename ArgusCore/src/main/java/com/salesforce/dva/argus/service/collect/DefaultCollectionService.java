@@ -172,7 +172,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
     }
 
     @Override
-    public int commitMetrics(int messageCount, int timeout) {
+    public List<Metric> commitMetrics(int messageCount, int timeout) {
         requireNotDisposed();
         requireArgument(messageCount > 0, "Message count must be greater than zero.");
         requireArgument(timeout > 0, "The timeout in milliseconds must be greater than zero.");
@@ -188,7 +188,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
             _tsdbService.putMetrics(dequeued);
             _logger.debug("Committed {} metrics.", dequeued.size());
         }
-        return dequeued.size();
+        return dequeued;
     }
 
     @Override
