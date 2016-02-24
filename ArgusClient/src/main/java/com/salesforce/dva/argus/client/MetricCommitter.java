@@ -56,7 +56,8 @@ public class MetricCommitter extends AbstractCommitter {
     /**
      * Creates a new MetricCommitter object.
      *
-     * @param  service     The collection service to use.  Cannot be null.
+     * @param  collectionService     The collection service to use.  Cannot be null.
+     * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
     MetricCommitter(CollectionService colletionService, MonitorService monitorService, AtomicInteger jobCounter) {

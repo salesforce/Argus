@@ -53,7 +53,8 @@ public class AnnotationCommitter extends AbstractCommitter {
     /**
      * Creates a new AnnotationCommitter object.
      *
-     * @param  service     The collection service to use.  Cannot be null.
+     * @param  collectionService     The collection service to use.  Cannot be null.
+     * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The global job counter used to track the number of annotations.
      */
     AnnotationCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {

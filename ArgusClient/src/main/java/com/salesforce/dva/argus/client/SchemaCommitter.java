@@ -54,7 +54,8 @@ class SchemaCommitter extends AbstractCommitter {
     /**
      * Creates a new Committer object.
      *
-     * @param  service     The collection service to use. Cannot be null.
+     * @param  collectionService     The collection service to use. Cannot be null.
+     * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The job counter. Cannot be null.
      */
     SchemaCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
