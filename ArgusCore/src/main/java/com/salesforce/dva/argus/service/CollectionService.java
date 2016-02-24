@@ -73,9 +73,9 @@ public interface CollectionService extends Service {
      * @param   messageCount  The maximum number of metric messages to commit from the queue. Must be a positive non-zero number.
      * @param   timeout       The timeout in milliseconds. Must be a positive non-zero number.
      *
-     * @return  The number of metrics committed.
+     * @return  The list of metrics committed.
      */
-    int commitMetrics(int messageCount, int timeout);
+    List<Metric> commitMetrics(int messageCount, int timeout);
 
     /**
      * Commits metric schema records from the collection queue into the data store. The actual number of records committed will be: Summation<SUB>(from i=1 to

@@ -185,7 +185,9 @@ public interface MonitorService extends Service {
         ALERTS_MAX("argus.core", "alerts.max"),
         DATAPOINT_READS("argus.core", "datapoint.reads"),
         DATAPOINT_WRITES("argus.core", "datapoint.writes"),
-        UNIQUE_USERS("argus.core", "users.unique");
+        UNIQUE_USERS("argus.core", "users.unique"),
+        COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes"),
+    	COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes");
 
         private final String _scope;
         private final String _metric;
