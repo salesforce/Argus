@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.tsdb;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 /**
@@ -48,11 +49,12 @@ public class SingletonTSDBService extends DefaultTSDBService {
     /**
      * Creates a new SingletonTSDBService object.
      *
-     * @param  config  The system configuration.  Cannot be null.
+     * @param  config               The system configuration.  Cannot be null.
+     * @param  monitorService       The monitor service used to collect query time window counters. Cannot be null.
      */
     @Inject
-    private SingletonTSDBService(SystemConfiguration config) {
-        super(config);
+    private SingletonTSDBService(SystemConfiguration config, MonitorService monitorService) {
+        super(config, monitorService);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

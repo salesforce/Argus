@@ -128,30 +128,12 @@ public class MetricResources extends AbstractResource {
         SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        final MonitorService monitorService = system.getServiceFactory().getMonitorService();
         List<Metric> metrics = new ArrayList<Metric>();
 
         for (String expression : expressions) {
-            long start = System.currentTimeMillis();
             List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
 
             metrics.addAll(metricsForThisExpression);
-
-            if (!metricsForThisExpression.isEmpty()) {
-                MetricQuery query = metricsForThisExpression.get(0).getQuery();
-                long maxDiff = query.getEndTimestamp() - query.getStartTimestamp();
-
-                for (int i = 1; i < metricsForThisExpression.size(); i++) {
-                    MetricQuery q = metricsForThisExpression.get(i).getQuery();
-                    long diff = q.getEndTimestamp() - q.getStartTimestamp();
-
-                    if (diff > maxDiff) {
-                        maxDiff = diff;
-                        query = q;
-                    }
-                }
-                instrumentQueryLatency(monitorService, query, start);
-            }
         }
         metricService.dispose();
         return metrics;

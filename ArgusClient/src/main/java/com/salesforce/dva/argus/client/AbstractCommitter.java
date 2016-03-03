@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.CollectionService;
+import com.salesforce.dva.argus.service.MonitorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,25 +48,28 @@ abstract class AbstractCommitter implements Runnable {
     //~ Static fields/initializers *******************************************************************************************************************
 
     protected static final int TIMEOUT = 500;
-    protected static final int POLL_INTERVAL_MS = 10;
+    protected static final int POLL_INTERVAL_MS = 10; 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitter.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
-    protected final CollectionService service;
+    protected final CollectionService collectionService;
     protected final AtomicInteger jobCounter;
+    protected final MonitorService monitorService;
 
     //~ Constructors *********************************************************************************************************************************
 
     /**
      * Creates a new Committer object.
      *
-     * @param  service     The collection service to use. Cannot be null.
+     * @param  collectionService     The collection service to use. Cannot be null.
+     * @param  monitorService 	The monitoring service to use. Cannot be null.
      * @param  jobCounter  The job counter. Cannot be null.
      */
-    AbstractCommitter(CollectionService service, AtomicInteger jobCounter) {
-        this.service = service;
+    AbstractCommitter(CollectionService collectionService, MonitorService monitorService, AtomicInteger jobCounter) {
+        this.collectionService = collectionService;
         this.jobCounter = jobCounter;
+        this.monitorService=monitorService;
     }
 
     //~ Methods **************************************************************************************************************************************

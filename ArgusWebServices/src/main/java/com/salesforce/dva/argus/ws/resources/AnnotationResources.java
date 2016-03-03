@@ -121,31 +121,10 @@ public class AnnotationResources extends AbstractResource {
         SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
 
         AnnotationService annotationService = system.getServiceFactory().getAnnotationService();
-        MonitorService monitorService = system.getServiceFactory().getMonitorService();
         List<Annotation> annotations = new ArrayList<>();
 
         for (String expression : expressions) {
-            long start = System.currentTimeMillis();
-
             annotations.addAll(annotationService.getAnnotations(expression));
-
-            List<AnnotationQuery> queries = annotationService.getQueries(expression);
-
-            // Single expression can consist of multiple queries. We will take the query with the longest time and instrument that.
-            if (!queries.isEmpty()) {
-                AnnotationQuery query = queries.get(0);
-                long maxDiff = query.getEndTimestamp() - query.getStartTimestamp();
-
-                for (int i = 1; i < queries.size(); i++) {
-                    long diff = queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp();
-
-                    if (diff > maxDiff) {
-                        maxDiff = diff;
-                        query = queries.get(i);
-                    }
-                }
-                instrumentQueryLatency(monitorService, query, start);
-            }
         }
         return annotations;
     }
