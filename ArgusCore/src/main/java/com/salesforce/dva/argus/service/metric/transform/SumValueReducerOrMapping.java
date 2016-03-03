@@ -33,9 +33,10 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
-import java.util.HashMap;
+
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Calculates an arithmetic sum. If a constant is provided, it is added to each data point in the set of input metrics, otherwise the data point
@@ -49,15 +50,7 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
 
     @Override
     public String reduce(List<String> values) {
-        Double sum = 0.0;
-
-        for (String value : values) {
-            if (value == null) {
-                continue;
-            }
-            sum += Double.parseDouble(value);
-        }
-        return String.valueOf(sum);
+        return Reducers.sumReducer(values);
     }
 
     @Override
@@ -70,20 +63,17 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for sum transform, only exactly one constant allowed.");
 
-        Map<Long, String> sumDatapoints = new HashMap<Long, String>();
-
         try {
             double addend = Double.parseDouble(constants.get(0));
 
-            for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-                String sumValue = String.valueOf(Double.parseDouble(entry.getValue()) + addend);
-
-                sumDatapoints.put(entry.getKey(), String.valueOf(sumValue));
-            }
-        } catch (NumberFormatException nfe) {
+            return originalDatapoints.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            e -> String.valueOf(Double.parseDouble(e.getValue()) + addend)
+                    ));
+        } catch (NullPointerException|NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to sum transform", nfe);
         }
-        return sumDatapoints;
     }
 
     @Override
