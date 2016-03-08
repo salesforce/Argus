@@ -67,6 +67,14 @@ public interface UserService extends Service {
      * @return  The administrative user. Will never return null.
      */
     PrincipalUser findAdminUser();
+    
+    /**
+     * Retrieves the system wide default non-privileged user, creating it if necessary. This is the user that will be used 
+     * when the system is configured to use NoAuthService.
+     *
+     * @return  The default user. Will never return null.
+     */
+    PrincipalUser findDefaultUser();
 
     /**
      * Deletes a user.
