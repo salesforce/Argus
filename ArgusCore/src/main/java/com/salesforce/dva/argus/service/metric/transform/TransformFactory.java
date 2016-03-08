@@ -170,6 +170,8 @@ public class TransformFactory {
                 return new MetricZipperTransform(new DivideValueZipper());
             case NORMALIZE_V:
                 return new MetricZipperTransform(new DivideValueZipper());
+            case GROUPBY:
+            	return new GroupByTransform(this);
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
@@ -235,7 +237,8 @@ public class TransformFactory {
         INCLUDE("INCLUDE", "Retains metrics based on the matching of a regular expression against the metric name."),
         EXCLUDE("EXCLUDE", "Culls metrics based on the matching of a regular expression against the metric name."),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
-        HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation.");
+        HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
+        GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation.");
 
         private final String _name;
         private final String _description;

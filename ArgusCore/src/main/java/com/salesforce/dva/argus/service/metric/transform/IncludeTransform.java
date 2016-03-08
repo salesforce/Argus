@@ -58,7 +58,7 @@ public class IncludeTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
-            "Include/Exclude transform require regex, only exactly one constant allowed.");
+            "Include transform require regex, only exactly one constant allowed.");
         SystemAssert.requireArgument(!constants.get(0).equals(""), "Expression can't be an empty string");
 
         List<Metric> includeMetricList = new ArrayList<Metric>();
