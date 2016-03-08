@@ -58,7 +58,6 @@ import java.util.concurrent.TimeUnit;
 public class DownsampleTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
-
     /**
      * Implements down sampling.
      *

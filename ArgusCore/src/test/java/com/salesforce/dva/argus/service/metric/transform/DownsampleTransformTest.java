@@ -105,6 +105,7 @@ public class DownsampleTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("-min");
+
         downsampleTransform.transform(metrics, constants);
     }
 
