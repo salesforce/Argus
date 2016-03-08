@@ -76,6 +76,15 @@ public class UserServiceTest extends AbstractTest {
         assertNotNull(admin);
         assertEquals(BigInteger.ONE, admin.getId());
     }
+    
+    @Test
+    public void testDefaultUserExistence() {
+        UserService userService = system.getServiceFactory().getUserService();
+        PrincipalUser defaultUser = userService.findUserByUsername("default");
+
+        assertNotNull(defaultUser);
+        assertEquals(BigInteger.valueOf(2), defaultUser.getId());
+    }
 
     @Test
     public void testUniqueUserCount() {

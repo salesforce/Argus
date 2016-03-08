@@ -150,6 +150,28 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         }
         return result;
     }
+    
+    @Override
+    @Transactional
+    public synchronized PrincipalUser findDefaultUser() {
+        requireNotDisposed();
+
+        PrincipalUser result;
+
+        _logger.debug("Retrieving the administrative user.");
+        if ((result = findUserByPrimaryKey(BigInteger.valueOf(2))) == null) {
+            try {
+                Method method = PrincipalUser.class.getDeclaredMethod("createDefaultUser", new Class<?>[0]);
+
+                method.setAccessible(true);
+                result = updateUser(PrincipalUser.class.cast(method.invoke(null, new Object[0])));
+                method.setAccessible(false);
+            } catch (Exception ex) {
+                throw new SystemException(ex);
+            }
+        }
+        return result;
+    }
 
     @Override
     @Transactional

@@ -175,6 +175,15 @@ public class PrincipalUser extends JPAEntity implements Serializable {
         result.setPrivileged(true);
         return result;
     }
+    
+    /* Method provided to be called using reflection to discretely create the admin user if needed. */
+    private static PrincipalUser createDefaultUser() {
+        PrincipalUser result = new PrincipalUser("default", "default@default.com");
+
+        result.id = BigInteger.valueOf(2);
+        result.setPrivileged(false);
+        return result;
+    }
 
     //~ Methods **************************************************************************************************************************************
 
