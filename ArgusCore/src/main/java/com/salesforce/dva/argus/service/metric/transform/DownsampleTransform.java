@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Down samples the one or more metric.<br/>
@@ -97,6 +98,75 @@ public class DownsampleTransform implements Transform {
         }
     }
 
+    /**
+     * Creating timestamp for downsampling in order to be consistent with TSDB downsampling func on hour/minute level
+     *      
+     * @param   millitimestamp       original transform timestamp in milliseconds.
+     * @param   timeunit  The time unit of down sampling to perform.
+     *
+     * @return  new timestamp.
+     *
+     * @throws  UnsupportedOperationException  If an unknown down sampling type is specified.
+     * 
+     * i.e.
+     * on hour level, 01:01:30 => 01:00:00
+     * on minute level, 01:01:30 => 01:01:00 
+     * on second level, 01:01:30 => 01:01:30 
+     */
+    public static Long downsamplerTimestamp(Long millitimestamp, String unitStr) {
+
+        InternalTimeUnit unit = InternalTimeUnit.fromString(unitStr);
+
+        switch (unit) {
+            case HOUR:
+            	return TimeUnit.MILLISECONDS.toHours(millitimestamp) * 60 * 60 * 1000;                
+            case MINUTE:
+            	return TimeUnit.MILLISECONDS.toMinutes(millitimestamp) * 60 * 1000;                
+            case SECOND:
+            	return TimeUnit.MILLISECONDS.toSeconds(millitimestamp) * 1000;                            
+            default:
+                throw new UnsupportedOperationException(unitStr);
+        }
+    }
+    
+    private enum InternalTimeUnit { 	 
+
+        HOUR("h"),
+        MINUTE("m"),
+        SECOND("s");
+
+        /** The timeunit name. */
+        public final String unit;
+
+        //~ Constructors *********************************************************************************************************************************
+
+        private InternalTimeUnit(String unit) {
+            this.unit = unit;
+        }
+        
+        public static InternalTimeUnit fromString(String unitStr) {
+            if ( unitStr != null) {
+                for (InternalTimeUnit unit : InternalTimeUnit.values()) {
+                    if (unitStr.equalsIgnoreCase(unit.getUnit())) {
+                        return unit;
+                    }
+                }
+            }
+            throw new IllegalArgumentException(unitStr);
+        }
+
+        //~ Methods **************************************************************************************************************************************
+
+        /**
+         * Returns the time unit.
+         *
+         * @return  The time unit.
+         */
+        public String getUnit() {
+            return unit;
+        }
+    }
+    
     //~ Methods **************************************************************************************************************************************
 
     @Override
@@ -121,19 +191,19 @@ public class DownsampleTransform implements Transform {
         // init windowSize
         String windowSizeStr = expArr[0];
         Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
-
+        String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
         // init downsample type
         Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev"));
         String downsampleType = expArr[1];
 
         SystemAssert.requireArgument(typeSet.contains(downsampleType), "Please input a valid type.");
         for (Metric metric : metrics) {
-            metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType));
+            metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType, windowUnit));
         }
         return metrics;
     }
 
-    private Map<Long, String> createDownsampleDatapoints(Map<Long, String> originalDatapoints, long windowSize, String type) {
+    private Map<Long, String> createDownsampleDatapoints(Map<Long, String> originalDatapoints, long windowSize, String type, String windowUnit) {
         Map<Long, String> downsampleDatapoints = new HashMap<Long, String>();
         Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
         List<String> values = new ArrayList<>();
@@ -145,14 +215,14 @@ public class DownsampleTransform implements Transform {
 
             if (values.isEmpty()) {
                 values.add(value);
-                windowStart = timestamp;
+                windowStart = downsamplerTimestamp(timestamp, windowUnit);
             } else {
                 if (timestamp > windowStart + windowSize) {
                     String fillingValue = downsamplerReducer(values, type);
 
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
-                    windowStart = timestamp;
+                    windowStart = downsamplerTimestamp(timestamp, windowUnit);
                 }
                 values.add(value);
             }
