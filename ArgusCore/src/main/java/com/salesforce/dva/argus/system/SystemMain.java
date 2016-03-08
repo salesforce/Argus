@@ -112,6 +112,7 @@ public final class SystemMain extends SystemService {
             _log.info("{} started.", getName());
             _persistService.start();
             _serviceFactory.getUserService().findAdminUser();
+            _serviceFactory.getUserService().findDefaultUser();
         } catch (Exception ex) {
             _log.error(getName() + " startup aborted.", ex);
         } finally {
