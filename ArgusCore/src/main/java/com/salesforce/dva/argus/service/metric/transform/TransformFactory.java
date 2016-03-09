@@ -171,7 +171,7 @@ public class TransformFactory {
             case NORMALIZE_V:
                 return new MetricZipperTransform(new DivideValueZipper());
             case GROUPBY:
-            	return new GroupByTransform(this);
+            	throw new UnsupportedOperationException(functionName);
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
