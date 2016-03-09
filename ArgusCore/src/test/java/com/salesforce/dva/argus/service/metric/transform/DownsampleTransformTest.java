@@ -527,5 +527,40 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
+    
+    @Test//_W-2905322
+    public void testDownsampleTransformBug_OnHourLevel() {
+        Transform downsampleTransform = new DownsampleTransform();
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+
+        datapoints_1.put(1453798890000L, "1");
+        datapoints_1.put(1453802750000L, "2");
+        datapoints_1.put(1453806510000L, "3");
+        datapoints_1.put(1453809690000L, "4");
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1h-min");
+
+        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        
+        expected_1.put(1453798800000L, "1.0");
+        expected_1.put(1453802400000L, "2.0");
+        expected_1.put(1453806000000L, "3.0");
+        expected_1.put(1453809600000L, "4.0");
+
+        List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 1);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
