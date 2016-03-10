@@ -36,9 +36,7 @@ import com.salesforce.dva.argus.entity.CronJob;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -51,13 +49,11 @@ import java.util.Arrays;
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class RunnableJob extends DefaultService implements Job {
+public class RunnableJob implements Job {
 
     //~ Static fields/initializers *******************************************************************************************************************
-
-    public RunnableJob(SystemConfiguration sysConfig) {
-		super(sysConfig);
-	}
+	
+    public RunnableJob() {}
 
 	/** The lock type key name. */
     public static final String LOCK_TYPE = "LockType";
@@ -96,7 +92,7 @@ public class RunnableJob extends DefaultService implements Job {
             job = (CronJob) map.get(CRON_JOB);
         }
         try {
-            if (!isDisposed()) {
+            if (!alertService.isDisposed()) {
                 if (LockType.ALERT_SCHEDULING.equals(lockType)) {
                     alertService.enqueueAlerts(Arrays.asList(new Alert[] { Alert.class.cast(job) }));
                 } else {

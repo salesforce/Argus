@@ -32,9 +32,9 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.salesforce.dva.argus.service.NamespaceService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
+
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -259,18 +259,19 @@ public class Metric extends TSDBEntity implements Serializable {
         StringBuilder tagListBuffer = new StringBuilder();
 
         tagListBuffer.append("{");
-        for (String tag : sortedTags.keySet()) {
-            tagListBuffer.append(tag.concat(","));
+        for (String tagKey : sortedTags.keySet()) {
+            tagListBuffer.append(tagKey).append('=').append(sortedTags.get(tagKey)).append(',');
         }
 
         String tagList = tagListBuffer.toString();
 
         tagList = tagList.substring(0, tagList.length() - 1).concat("}");
 
-        Object[] params = { getNamespace(), getScope(), getDisplayName(), tagList };
+        Object[] params = { getNamespace(), getScope(), getMetric(), tagList };
         String format = "{0}:{1}:{2}" + "{3}";
 
         return MessageFormat.format(format, params);
     }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

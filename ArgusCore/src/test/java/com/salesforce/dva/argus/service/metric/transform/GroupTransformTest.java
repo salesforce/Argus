@@ -44,19 +44,21 @@ public class GroupTransformTest {
 
     private static final String TEST_NAMESPACE = "test-namespace";
     private static final String TEST_SCOPE = "test-scope";
-    private static final String TEST_DISPLAYNAME = "test-displayname";
-    private static final String TEST_TAG_1 = "tag1";
-    private static final String TEST_TAG_2 = "tag2";
+    private static final String TEST_METRIC = "test-metric";
+    private static final String TEST_TAGK_1 = "tag1";
+    private static final String TEST_TAGV_1 = "value1";
+    private static final String TEST_TAGK_2 = "tag2";
+    private static final String TEST_TAGV_2 = "value2";
     private static final Map<String, String> TEST_TAGS = new HashMap<String, String>() {
 
             {
-                put(TEST_TAG_1, "value1");
-                put(TEST_TAG_2, "value2");
+                put(TEST_TAGK_1, TEST_TAGV_1);
+                put(TEST_TAGK_2, TEST_TAGV_2);
             }
         };
 
-    private static final String TEST_METRIC_NAME_LITERAL = TEST_NAMESPACE + ":" + TEST_SCOPE + ":" + TEST_DISPLAYNAME + "\\{" + TEST_TAG_1 + "," +
-        TEST_TAG_2 + "\\}";
+    private static final String TEST_METRIC_NAME_LITERAL = TEST_NAMESPACE + ":" + TEST_SCOPE + ":" + TEST_METRIC + 
+    		"\\{" + TEST_TAGK_1 + "=" + TEST_TAGV_1 + "," + TEST_TAGK_2 + "=" + TEST_TAGV_2 + "\\}";
     private static final String TEST_METRIC_NAME_REGEX = "test-namespace(.*)\\}$";
     private static final String TEST_METRIC_NAME_BAD = "test-literal-bad";
     private static final String TEST_METRIC_TYPE_INCLUSIVE = "inclusive";
@@ -69,7 +71,7 @@ public class GroupTransformTest {
 
         datapoints.put(1000L, "1");
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
@@ -99,10 +101,9 @@ public class GroupTransformTest {
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
 
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -112,10 +113,9 @@ public class GroupTransformTest {
         datapoints_2.put(2000L, "100");
         datapoints_2.put(3000L, "1000");
 
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -125,10 +125,9 @@ public class GroupTransformTest {
         datapoints_3.put(2000L, "99");
         datapoints_3.put(3000L, "999");
 
-        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -163,10 +162,9 @@ public class GroupTransformTest {
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
 
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_DISPLAYNAME);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -176,10 +174,9 @@ public class GroupTransformTest {
         datapoints_2.put(2000L, "100");
         datapoints_2.put(3000L, "1000");
 
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_DISPLAYNAME);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -192,7 +189,6 @@ public class GroupTransformTest {
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -227,10 +223,9 @@ public class GroupTransformTest {
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
 
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -240,10 +235,9 @@ public class GroupTransformTest {
         datapoints_2.put(200L, "100");
         datapoints_2.put(300L, "1000");
 
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -256,7 +250,6 @@ public class GroupTransformTest {
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -297,7 +290,6 @@ public class GroupTransformTest {
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -310,7 +302,6 @@ public class GroupTransformTest {
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -323,7 +314,6 @@ public class GroupTransformTest {
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -358,10 +348,9 @@ public class GroupTransformTest {
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
 
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -371,10 +360,9 @@ public class GroupTransformTest {
         datapoints_2.put(200L, "100");
         datapoints_2.put(300L, "1000");
 
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -387,7 +375,6 @@ public class GroupTransformTest {
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -427,7 +414,6 @@ public class GroupTransformTest {
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -440,7 +426,6 @@ public class GroupTransformTest {
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
         metric_2.setNamespace(TEST_NAMESPACE);
-        metric_2.setDisplayName(TEST_DISPLAYNAME);
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
@@ -453,7 +438,6 @@ public class GroupTransformTest {
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
         metric_3.setNamespace(TEST_METRIC_NAME_BAD);
-        metric_3.setDisplayName(TEST_METRIC_NAME_BAD);
         metric_3.setDatapoints(datapoints_3);
 
         List<Metric> metrics = new ArrayList<Metric>();
@@ -488,10 +472,9 @@ public class GroupTransformTest {
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
 
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
@@ -529,7 +512,6 @@ public class GroupTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
         metric_1.setNamespace(TEST_NAMESPACE);
-        metric_1.setDisplayName(TEST_DISPLAYNAME);
         metric_1.setTags(TEST_TAGS);
 
         List<Metric> metrics = new ArrayList<Metric>();
