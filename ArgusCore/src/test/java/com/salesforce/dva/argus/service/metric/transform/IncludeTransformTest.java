@@ -44,10 +44,8 @@ public class IncludeTransformTest {
 
     private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
-    private static final String TEST_DISPLAYNAME_1 = "TGIF, Yeah!!!!!!";
-    private static final String TEST_DISPLAYNAME_2 = "Sat is awesome:)";
-    private static final String TEST_DISPLAYNAME_3 = "Sun is my big appetite day:(";
     private static final String TEST_NAMESPACE = "test-namespace";
+    
     private static final String TEST_TAG_1 = "tag1";
     private static final String TEST_TAG_2 = "tag2";
     private static final Map<String, String> TEST_TAGS = new HashMap<String, String>() {
@@ -60,7 +58,7 @@ public class IncludeTransformTest {
 
     private static final String TEST_BAD_STRING = "It is Mon again:(";
     private static final String TEST_INCLUDE_LITERAL = "Everyday is a holiday.";
-    private static final String TEST_INCLUDE_REGEX = ".*S(.*):[()].*";
+    private static final String TEST_INCLUDE_REGEX = ".*test-metric[1-2].*";
 
     @Test(expected = UnsupportedOperationException.class)
     public void testIncludeTransformWithoutMetrics() {
@@ -103,21 +101,21 @@ public class IncludeTransformTest {
     @Test
     public void testIncludeTransformRegex() {
         Transform includeTransform = new IncludeTransform();
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC + "1");
 
-        metric_1.setDisplayName(TEST_DISPLAYNAME_1);
+        //metric_1.setDisplayName(TEST_DISPLAYNAME_1);
         metric_1.setNamespace(TEST_NAMESPACE);
         metric_1.setTags(TEST_TAGS);
 
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC + "2");
 
-        metric_2.setDisplayName(TEST_DISPLAYNAME_2);
+        //metric_2.setDisplayName(TEST_DISPLAYNAME_2);
         metric_2.setNamespace(TEST_NAMESPACE);
         metric_2.setTags(TEST_TAGS);
 
-        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC + "3");
 
-        metric_3.setDisplayName(TEST_DISPLAYNAME_3);
+        //metric_3.setDisplayName(TEST_DISPLAYNAME_3);
         metric_3.setNamespace(TEST_NAMESPACE);
         metric_3.setTags(TEST_TAGS);
 
@@ -134,8 +132,8 @@ public class IncludeTransformTest {
         List<Metric> result = includeTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 2);
-        assertEquals(TEST_DISPLAYNAME_2, result.get(0).getDisplayName());
-        assertEquals(TEST_DISPLAYNAME_3, result.get(1).getDisplayName());
+        assertEquals("test-metric1", result.get(0).getMetric());
+        assertEquals("test-metric2", result.get(1).getMetric());
     }
 
     @Test
@@ -143,19 +141,19 @@ public class IncludeTransformTest {
         Transform includeTransform = new IncludeTransform();
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric_1.setDisplayName(TEST_DISPLAYNAME_1);
+        //metric_1.setDisplayName(TEST_DISPLAYNAME_1);
         metric_1.setNamespace(TEST_NAMESPACE);
         metric_1.setTags(TEST_TAGS);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric_2.setDisplayName(TEST_DISPLAYNAME_2);
+        //metric_2.setDisplayName(TEST_DISPLAYNAME_2);
         metric_2.setNamespace(TEST_NAMESPACE);
         metric_2.setTags(TEST_TAGS);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric_3.setDisplayName(TEST_DISPLAYNAME_3);
+        //metric_3.setDisplayName(TEST_DISPLAYNAME_3);
         metric_3.setNamespace(TEST_NAMESPACE);
         metric_3.setTags(TEST_TAGS);
 
@@ -167,7 +165,7 @@ public class IncludeTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        constants.add(TEST_INCLUDE_LITERAL);
+        constants.add(TEST_METRIC);
 
         List<Metric> result = includeTransform.transform(metrics, constants);
 
