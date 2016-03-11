@@ -3,7 +3,7 @@ Argus  [![Build Status](https://travis-ci.org/SalesforceEng/Argus.svg?branch=mas
 
 Argus is a time series monitoring and alerting platform.  It consists of discrete services to configure alerts, ingest and transform metrics & events, send notifications, create namespaces, and to both establish and enforce policies and quotas for usage.
 
-It's architecture allows any and all of these services to retargeted to new technology as it becomes available with little to no impact on the users.
+Its architecture allows any and all of these services to retargeted to new technology as it becomes available with little to no impact on the users.
 
 To find out more [see the wiki.](https://github.com/SalesforceEng/Argus/wiki)
 
