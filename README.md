@@ -31,7 +31,7 @@ mvn test
 
 ### Running The Integration Tests
 
-The integration tests for Argus use the `LDAPAuthService` implementation of the `AuthService` interface and the `DefaultTSDBService` implementation of the `TSDBService` interface (which is targets OpenTSDB).  In order to run the integration tests you must update the `argus-build.properties` file to correctly setup the external LDAP you'll be testing against and the OpenTSDB endpoints to use.  The snippet below shows the specific properties that should be modified in the `argus-build.properties` file.  Of course, after you make these updates, you must re-install the resource filter dependencies as described above and execute the `clean` goal, before running the integration tests.
+The integration tests for Argus use the `LDAPAuthService` implementation of the `AuthService` interface and the `DefaultTSDBService` implementation of the `TSDBService` interface (which targets OpenTSDB).  In order to run the integration tests you must update the `argus-build.properties` file to correctly setup the external LDAP you'll be testing against and the OpenTSDB endpoints to use.  The snippet below shows the specific properties that should be modified in the `argus-build.properties` file.  Of course, after you make these updates, you must re-install the resource filter dependencies as described above and execute the `clean` goal, before running the integration tests.
 
 ```
 # The LDAP endpoint to use
@@ -60,7 +60,7 @@ mvn verify
 
 ### Generating Coverage Reports
 
-Coverage is calculated everytime tests are run for all modules with the exception of ArgusUI.  In order to generate a coverage report for a module, just `cd` into the module subdirectory and run the report generation target.
+Coverage is calculated everytime tests are run for all modules with the exception of ArgusWeb.  In order to generate a coverage report for a module, just `cd` into the module subdirectory and run the report generation target.
 
 ```
 mvn jacoco:report
