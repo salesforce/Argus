@@ -67,3 +67,7 @@ mvn jacoco:report
 ```
 
 Coverage reports are generated in the `target/site/jacoco` directory.
+
+### Deploying & Running Argus
+
+Please [see the wiki](https://github.com/SalesforceEng/Argus/wiki) for information on how to deploy, configure and run Argus.
