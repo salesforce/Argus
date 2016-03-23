@@ -165,6 +165,7 @@ TOKEN : { < UNION : "UNION" > }
 TOKEN : { < COUNT : "COUNT" > }
 TOKEN : { < GROUP : "GROUP" > }
 TOKEN : { < ABOVE : "ABOVE" > }
+TOKEN : { < CONSECTIVEABOVE : "CONSECTIVEABOVE" > }
 TOKEN : { < BELOW : "BELOW" > }
 TOKEN : { < PROPAGATE : "PROPAGATE" > }
 TOKEN : { < MOVING : "MOVING" > }
@@ -378,6 +379,9 @@ private String functionName() :
 	t = <ABOVE>
 	{ return t.image; }
 	|	
+    t = <CONSECTIVEABOVE>
+    { return t.image; }
+    |    
 	t = <BELOW>
 	{ return t.image; }
 	|	

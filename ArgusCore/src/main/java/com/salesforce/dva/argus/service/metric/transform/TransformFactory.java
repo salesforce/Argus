@@ -160,6 +160,8 @@ public class TransformFactory {
                 return new MetricMappingTransform(new ShiftValueMapping());
             case MOVING:
                 return new MetricMappingTransform(new MovingValueMapping());
+            case CONSECTIVEABOVE:
+            	return new MetricMappingTransform(new ConsectiveAboveValueMapping());
             case SUM_V:
                 return new MetricZipperTransform(new SumValueZipper());
             case SCALE_V:
@@ -238,7 +240,8 @@ public class TransformFactory {
         EXCLUDE("EXCLUDE", "Culls metrics based on the matching of a regular expression against the metric name."),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
-        GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation.");
+        GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation."),
+        CONSECTIVEABOVE("CONSECTIVEABOVE","this is just for test use");
 
         private final String _name;
         private final String _description;
