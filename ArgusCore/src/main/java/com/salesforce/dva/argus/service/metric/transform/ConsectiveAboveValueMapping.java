@@ -96,36 +96,4 @@ public class ConsectiveAboveValueMapping implements ValueMapping{
 		return TransformFactory.Function.CONSECTIVEABOVE.name();
 	}
 }
-
-
-//Another implementation. Much more efficent but this stacks up in memory, so please don't use this one.
-//private Map<Long, String> originalDatapoints;
-//private ArrayList<Long> keyList;
-//private Map<Long, String> resultMetric = new TreeMap<Long, String>();
-//private int threshold=0;
-//private int consective=0;
-//
-//private Object crawler(int i,int cum){
-//	if(i==keyList.size()){	
-//		if(cum>=consective){
-//			for(long j:keyList.subList(i-cum, i)){
-//				System.out.println(j);
-//			}
-//		}
-//		return null;
-//	}
-//	Double value=Double.parseDouble(originalDatapoints.get(keyList.get(i)));
-//	System.out.println("currently-"+value);
-//	if (value>=threshold){//collect you
-//		return crawler(i+1,cum+1);
-//	}else{//not collecting
-//		if(cum>=consective){
-//			for(long j:keyList.subList(i-cum, i)){
-//				System.out.println(j);
-//			}
-//		}
-//		return crawler(i+1,0);
-//	}
-//}
-
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
