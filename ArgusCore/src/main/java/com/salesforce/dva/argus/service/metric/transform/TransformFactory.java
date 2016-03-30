@@ -154,6 +154,8 @@ public class TransformFactory {
                 return new MetricMappingTransform(new CullAboveValueMapping());
             case CULL_BELOW:
                 return new MetricMappingTransform(new CullBelowValueMapping());
+            case CONSECTIVE:
+            	return new MetricMappingTransform(new ConsectiveValueMapping());
             case LOG:
                 return new MetricMappingTransform(new LogValueMapping());
             case SHIFT:
@@ -221,6 +223,7 @@ public class TransformFactory {
         DOWNSAMPLE("DOWNSAMPLE", "Down samples the one or more metric."),
         CULL_ABOVE("CULL_ABOVE", "Removes data points from metrics if their evaluated value is above a limit. "),
         CULL_BELOW("CULL_BELOW", "Removes data points from metrics if their evaluated value is below a limit. "),
+        CONSECTIVE("CONSECTIVE","Filter out all values that is not consective"),
         SHIFT("SHIFT", "Shifts the timestamp for each data point by the specified constant."),
         LOG("LOG", "Calculates the logarithm according to the specified base."),
         JOIN("JOIN", "Joins multiple lists of metrics into a single list."),
