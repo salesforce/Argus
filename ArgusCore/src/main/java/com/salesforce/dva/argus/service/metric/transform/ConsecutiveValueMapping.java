@@ -44,7 +44,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
  *
  * @author  Ethan Wang (ethan.wang@salesforce.com)
  */
-public class ConsectiveValueMapping implements ValueMapping {
+public class ConsecutiveValueMapping implements ValueMapping {
 	private long threshold;
 	private long connectDistance;
 	private ArrayList<Long> keyList;
@@ -118,7 +118,7 @@ public class ConsectiveValueMapping implements ValueMapping {
 	
 	@Override
 	public String name() {
-		return TransformFactory.Function.CONSECTIVE.name();
+		return TransformFactory.Function.CONSECUTIVE.name();
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
