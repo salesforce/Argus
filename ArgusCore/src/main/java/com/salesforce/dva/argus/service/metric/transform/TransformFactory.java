@@ -236,6 +236,7 @@ public class TransformFactory {
         FILL_CALCULATE("FILL_CALCULATE", "Creates a constant line based on the calculated value."),
         INCLUDE("INCLUDE", "Retains metrics based on the matching of a regular expression against the metric name."),
         EXCLUDE("EXCLUDE", "Culls metrics based on the matching of a regular expression against the metric name."),
+        CONSECTIVE("CONSECTIVE","Filter out all values that is not consective"),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
         GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation.");
