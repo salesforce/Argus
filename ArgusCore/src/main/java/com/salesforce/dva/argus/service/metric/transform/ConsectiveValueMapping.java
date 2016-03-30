@@ -56,25 +56,19 @@ public class ConsectiveValueMapping implements ValueMapping {
         SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");    
         this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
         this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
-        
-        
+              
         Map<Long, String> resultMetric = new TreeMap<Long, String>();
         this.keyList=new ArrayList<Long>();
         this.resultKeyList=new ArrayList<Long>();
 		keyList.addAll(originalDatapoints.keySet());
 		Collections.sort(keyList);
 		
-		System.out.println("THIS RUN!");
 		if (keyList.size()>0){
 			connect(0,new ArrayList<>(Arrays.asList(keyList.get(0))));
 		}
-		System.out.println(originalDatapoints);
-		System.out.println(this.resultKeyList);
 		for(Long resultKey:resultKeyList){
 			resultMetric.put(resultKey, originalDatapoints.get(resultKey));
 		}
-		
-		System.out.println(resultMetric);
 		return resultMetric;
 	}
 	
