@@ -184,6 +184,7 @@ TOKEN : { < SHIFT : "SHIFT" > }
 TOKEN : { < DOWNSAMPLE : "DOWNSAMPLE" > }
 TOKEN : { < DEVIATION : "DEVIATION" > }
 TOKEN : { < JOIN : "JOIN" > }
+TOKEN : { < CONSECTIVE : "CONSECTIVE" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
 
@@ -428,6 +429,9 @@ private String functionName() :
 	|	
 	t = <JOIN>
 	{ return t.image; }
+    |    
+    t = <CONSECTIVE>
+    { return t.image; }
 	|
 	t = <HW_FORECAST>
 	{ return t.image; }
