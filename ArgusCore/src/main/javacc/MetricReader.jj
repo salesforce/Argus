@@ -179,6 +179,7 @@ TOKEN : { < FILL_CALCULATE : "FILL_CALCULATE" > }
 TOKEN : { < LOG : "LOG" > }
 TOKEN : { < CULL_ABOVE : "CULL_ABOVE" > }
 TOKEN : { < CULL_BELOW : "CULL_BELOW" > }
+TOKEN : { < CONSECTIVE : "CONSECTIVE" > }
 TOKEN : { < SORT : "SORT" > }
 TOKEN : { < SHIFT : "SHIFT" > }
 TOKEN : { < DOWNSAMPLE : "DOWNSAMPLE" > }
@@ -412,6 +413,9 @@ private String functionName() :
 	{ return t.image; }
 	|	
 	t = <CULL_BELOW>
+	{ return t.image; }
+	|
+	t = <CONSECTIVE>
 	{ return t.image; }
 	|	
 	t = <SORT>
