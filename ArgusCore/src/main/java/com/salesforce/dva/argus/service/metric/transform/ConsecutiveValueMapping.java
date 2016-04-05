@@ -40,7 +40,10 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 /**
- * CONSECUTIVE: Returns all datapoint's for which the interval between adjacent datapoints is less than or equal to the specified time interval, for consective specified time threshold .
+ * Returns all datapoint's for which the interval between adjacent datapoints is less than or equal to the specified time interval, for consecutive specified time threshold.
+ * 
+ * @param	metric	Time series to be eveluate and transform. Cannot be null or empty
+ * @param	constants	The constants requires two values: The first one is a time value. It is a desired goal that all adjacent datapoints lasts longer than should be returned; The second one is a time value. It is the default interval distance between any two data points in time series.
  *
  * @author  Ethan Wang (ethan.wang@salesforce.com)
  */
@@ -50,6 +53,15 @@ public class ConsecutiveValueMapping implements ValueMapping {
 	private ArrayList<Long> keyList;
 	private ArrayList<Long> resultKeyList;
 	
+    /**
+     * mapping method implementation<br>
+     * This is the start point of this transform. It firstly verifies if all inputs are legal, then it crawls forward on this series and collects every qualified adjacent datapoints along the way.
+     * 
+     * @param	originalDatapoints	Time series to be eveluate and transform. Cannot be null or empty.
+     * @param	constants	The constants requires two values. Details see above. Both time value and can be null but can not be empty.
+     *	
+     * @return	resultMetric	A new time series that has been transformed.
+     */
 	@Override
 	public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
 		SystemAssert.requireArgument(constants != null, "This transform needs constants");
