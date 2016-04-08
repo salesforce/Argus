@@ -1,6 +1,22 @@
 language: java
 jdk: oraclejdk8
 
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "flpW3KsinJRlPCfeSy8jK9kEV84VygguCjHsaulmVzb8648obP8Re5vgLurfzvODFkq9zTW8O+EdGznBy9Px/xJRbadRpZQO9FmVS5XaE4Ea+7FGK7NKE3zicrdFC2G7YsL5393kSdSgILzOgrm9h+7F0sShDl+lIA/J6Sgc1cz2TITwL6eOW5MU0fSCeTSli3R5zblt3peO/tbk9nrB4+krAyoMqRAvAkwa0/RbhLq1mjGeJ6G/pDfGJP/myqdZds3jrjyJ2Eavoqn3zlz+nW/p5soHLEXryyrr1MKxdHInU9vQ1g/t76Rg8QqTeqFfGGiYuHNL2b0jajeoAUJmYHjgMl4fqO4xsvpKW1uxqx52+V0gGWeCHEFsrjVVMP7NXr0VqUoxOc8LOfmSzRBHx517Stu82XApIQEGHw9Kr0VGK/0K9SAky69w4aDwWzyirT0rUvWmGAtC7Pi7pA8zpyeWnNxU5BbEM7sJJuGR6+hLgH1+/HU5lXCEKGBdImEImErdQkS//PhiXVc0ntnBAOHrsE4GTnY5sR3E4URGVRBTLIqZPKTkdFm3j5jZfcE58Ijlh66Mcw5Awlxrt0eIjZiNeBGS5JVOPCvSzIR1k78+jpd57O4ziN0RdFSIwYNx34+1yx1z19/5aVtSkJKZrpGJG9dBEYWZ80+M7KnJE4Y="
+
+addons:
+  coverity_scan:
+    project:
+      name: "jbhatt-salesforce/Warden-Service"
+      description: "Build submitted via Travis CI"
+    notification_email: jbhatt@salesforce.com
+    build_command_prepend: "mvn clean"
+    build_command:   "mvn -DskipTests=true compile"
+    branch_pattern: coverity_scan
+
 before_script:
   - pip install --user codecov
 
