@@ -3,7 +3,7 @@ jdk: oraclejdk8
 
 env:
   global:
-   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #  The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "eyqFG/54+4GfN9ZaVqKlrBKvVlQro/cWJCYyj3njUV6zC65C9HyHVa2rZGDqTvZEsKKPTudY1CsjvbtfF/18xulYTzGI5sEvz7fBrwpxQ/qZVgMK7MrN5SJKJbrbPFTVhVH6DCeY1OT+gWNmA1xQoCArGLZNvUaYkeq/nctY3qzRYHk3MqkkCy67rGT6EbdSIKlZxbp5bl+QmCjbSKTxuB1E0QbjxrzPUyvXtl+ECMuAdT9jaFejilBNBoGexKTqFqjp2Ih0p7bcy1yLA6MarpOcsnvBXj6EONCQsmoQUyyc3fFdh1CGEVN8/5+ZZathAd4zbIMPBxpnSbkFSISTZ4j1Otv+mplAAkGNyLT2v8VFzCiOKn18VeNCTiwcnclDd4CMng1Br/5WbnbupS1sGd40I9+bapWi/7WhfDZkp06JF5uXPoM+3EKIveHhOXkvokgSeZ0aZxP/KhdwqUkSiSBlv6iomzAoHfpY5MQHUofjBmOb3+W3Szj4qzbQkIbRezrHRm/6jDAKIBw+s7g9MCfmqfkepvc5OFH7uegZzq3M/flhPIVAmW4OffNtFZJC7W+6ItPwr8vrmPFbYEGuyZbZNohQ2O//ndu8nk4QYxLYP6n67DrgG/GCJVaS8AxeQswrt5kYE0XRp8Uw0BWvC9ipnnoUbBLAh7AcoytZw9U="
 
