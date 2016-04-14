@@ -154,6 +154,8 @@ public class TransformFactory {
                 return new MetricMappingTransform(new CullAboveValueMapping());
             case CULL_BELOW:
                 return new MetricMappingTransform(new CullBelowValueMapping());
+            case CONSECUTIVE:
+                return new MetricMappingTransform(new ConsecutiveValueMapping());
             case LOG:
                 return new MetricMappingTransform(new LogValueMapping());
             case SHIFT:
@@ -236,6 +238,7 @@ public class TransformFactory {
         FILL_CALCULATE("FILL_CALCULATE", "Creates a constant line based on the calculated value."),
         INCLUDE("INCLUDE", "Retains metrics based on the matching of a regular expression against the metric name."),
         EXCLUDE("EXCLUDE", "Culls metrics based on the matching of a regular expression against the metric name."),
+        CONSECUTIVE("CONSECUTIVE","Filter out all values that are non-consecutive"),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
         GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation.");
