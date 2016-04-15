@@ -31,12 +31,12 @@ class DefaultWardenClientService implements WardenClientService {
 	}
 	
 	@Override
-	void updateMetric(Policy policy, String username, double value){
+	public void updateMetric(Policy policy, String username, double value){
 		
 	}
 	
 	@Override
-	void modifyMetric(Policy policy, String username, double delta){
+	public void modifyMetric(Policy policy, String username, double delta){
 	
 	}
 	
