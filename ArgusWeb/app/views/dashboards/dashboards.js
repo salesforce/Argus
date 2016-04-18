@@ -29,20 +29,45 @@ var argusDashboards = angular.module('argusDashboards', [
 argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', 'Dashboards',
     function (Storage, $scope, growl, Dashboards) {
 		$scope.searchText = Storage.get("dashboards-searchText") == null ? "" : Storage.get("dashboards-searchText");
-        $scope.dashboards = Dashboards.query();
+        Dashboards.query().$promise.then(function(dashboards) {
+        	$scope.allDashboards = dashboards;
+        	$scope.getDashboards(false);
+        });
+        $scope.dashboards = [];
+        $scope.shared = false;
         
         $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
         $scope.itemsPerPage = Storage.get("dashboards-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("dashboards-itemsPerPage");
+        
+        $scope.getDashboards = function(shared) {
+        	$scope.dashboards = [];
+        	if(shared) {
+        		$scope.shared = true;
+        		for(var i in $scope.allDashboards) {
+        			if($scope.allDashboards[i].shared) {
+        				$scope.dashboards.push($scope.allDashboards[i]);
+        			}
+        		}
+        	} else {
+        		$scope.shared = false;
+        		for(var i in $scope.allDashboards) {
+        			if(!$scope.allDashboards[i].shared) {
+        				$scope.dashboards.push($scope.allDashboards[i]);
+        			}
+        		}
+        	}
+        };
         
         $scope.addDashboard = function () {
             var dashboard = {
                 name: 'new-dashboard-' + Date.now(),
                 description: 'A new dashboard',
-                shared: true,
+                shared: $scope.shared,
                 content: $scope.getContentTemplate()
             };
             Dashboards.save(dashboard, function (result) {
                 $scope.dashboards.push(result);
+                $scope.allDashboards.push(result);
                 growl.success('Created "' + dashboard.name + '"');
             }, function (error) {
                 growl.error('Failed to create "' + dashboard.name + '"');
@@ -51,6 +76,9 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         $scope.removeDashboard = function (dashboard) {
             Dashboards.delete({dashboardId: dashboard.id}, function (result) {
                 $scope.dashboards = $scope.dashboards.filter(function (element) {
+                    return element.id !== dashboard.id;
+                });
+                $scope.allDashboards = $scope.allDashboards.filter(function (element) {
                     return element.id !== dashboard.id;
                 });
                 growl.success('Deleted "' + dashboard.name + '"');
