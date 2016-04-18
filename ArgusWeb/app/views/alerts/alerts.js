@@ -203,7 +203,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
         $scope.addNotification = function () {
             var notification = {
                 name: 'new-notification-' + Date.now(),
-                notifierName: "com.salesforce.perfeng.argus.service.alert.notifier.EmailNotifier",
+                notifierName: "com.salesforce.dva.argus.service.alert.notifier.EmailNotifier",
                 subscriptions: [],
                 metricsToAnnotate: [],
                 cooldownPeriod: 3600000,
