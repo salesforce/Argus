@@ -296,9 +296,9 @@ public class GOCNotifier extends AuditNotifier {
         /** The GOC password with which to authenticate. */
         GOC_PWD("notifier.property.goc.password", "test_password"),
         /** The GOC proxy host. */
-        GOC_PROXY_HOST("notifier.property.goc.proxy.host", "default_host_name"),
+        GOC_PROXY_HOST("notifier.property.goc.proxy.host", ""),
         /** The GOC port. */
-        GOC_PROXY_PORT("notifier.property.goc.proxy.port", "8080"),
+        GOC_PROXY_PORT("notifier.property.goc.proxy.port", ""),
         /** The GOC client ID. */
         GOC_CLIENT_ID("notifier.property.goc.client.id", "default_client_id"),
         /** The GOC client secret. */
@@ -434,7 +434,7 @@ public class GOCNotifier extends AuditNotifier {
             gocData.addProperty(SM_LASTNOTIFIEDAT__C_FIELD, smLastNotifiedAtc);
             gocData.addProperty(SM_SEVERITY__C_FIELD, smSeverityc);
             gocData.addProperty(SM_SOURCEDOMAIN__C_FIELD, smSourceDomainc);
-            gocData.addProperty(SR_ACTIONABLE__C_FIELD, srActionablec);
+            //gocData.addProperty(SR_ACTIONABLE__C_FIELD, srActionablec);
             return gocData.toString();
         }
 
@@ -701,6 +701,10 @@ public class GOCNotifier extends AuditNotifier {
                         logger.debug("access_token '{}'", token);
                         theEndpointInfo = new EndpointInfo(endpoint, token);
                     }
+                    else {
+                    	logger.error("Failure - getting oauth2 token, check username/password: '{}'", post.getResponseBodyAsString());
+                    } 
+
                 } catch (Exception e) {
                     logger.error("Failure - exception getting access_token '{}'", e);
                 } finally {
