@@ -215,8 +215,8 @@ public class Policy extends JPAEntity {
 	public String getMetricName() {
 		String scope = getSubSystem() == null ? getService() : getService() + "." + getSubSystem(); 
 		
-		Object[] params = {scope, getName(), getUsers().get(0)};        
-		String format = "{0}:{1}'{'user={3}'}'";
+		Object[] params = {getTimeUnit(), scope, getName(), getUsers().get(0), getAggregator()};        
+		String format = "{0}:{1}:{2}'{'user={3}'}':{4}";
         return MessageFormat.format(format, params);
 	}
 	
