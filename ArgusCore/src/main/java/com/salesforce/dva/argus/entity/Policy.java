@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
+import java.text.MessageFormat;
 import java.util.List;
 
 import javax.persistence.Basic;
@@ -40,7 +41,6 @@ import com.salesforce.dva.argus.util.Cron;
  *   <li>NAME</li>
  *   <li>OWNER</li>
  *   <li>USER</li>
- *   <li>SUB_SYSTEM</li>
  *   <li>METRIC_NAME</li>
  *   <li>TRIGGER_TYPE</li>
  *   <li>AGGREGATOR</li>
@@ -58,7 +58,7 @@ import com.salesforce.dva.argus.util.Cron;
 @NamedQueries(
 	    {
 	        @NamedQuery(
-	            name = "Policy.findByName", query = "SELECT r FROM Policy r WHERE r.name = :name AND r.service = :service"
+	            name = "Policy.findByNameAndService", query = "SELECT r FROM Policy r WHERE r.name = :name AND r.service = :service"
 	        )
 	    }
 	)
@@ -76,20 +76,16 @@ public class Policy extends JPAEntity {
 	@Basic(optional = false)
 	@Column(nullable = false)
     @ElementCollection
-    private List<String> listOfOwner;
+    private List<String> owners;
 	
 	@Basic(optional = false)
 	@Column(nullable = false)
     @ElementCollection
-    private List<String> listOfUser;
+    private List<String> users;
 	
 	@Basic(optional = true)
-	@Column(name = "sub_system", nullable = false)
+	@Column(name = "sub_system")
     private String subSystem;
-	
-	@Basic(optional = false)
-    @Column(name = "metric_name", nullable = false)
-    private String metricName;
 	
 	@Basic(optional = false)
     @Enumerated(EnumType.STRING)
@@ -141,16 +137,14 @@ public class Policy extends JPAEntity {
      * @param  defaultValue The default value for this policy. Cannot be null.
      * @param  cronEntry  	The cron entry for this policy. Cannot be null.
      */
-    public Policy(PrincipalUser creator, String service, String name, List<String> owner, List<String> user, String subSystem,
-			String metricName, TriggerType triggerType, String aggregator, List<Double> threshold, String timeUnit,
+	public Policy(PrincipalUser creator, String service, String name, List<String> owners, List<String> users,
+			 TriggerType triggerType, String aggregator, List<Double> threshold, String timeUnit,
 			double defaultValue, String cronEntry) {
 		super(creator);
 		setService(service);
 		setName(name);
-		setOwner(owner);
-		setUser(user);
-		setSubSystem(subSystem);
-		setMetricName(metricName);
+		setOwners(owners);
+		setUsers(users);
 		setTriggerType(triggerType);
 		setAggregator(aggregator);
 		setThreshold(threshold);
@@ -172,14 +166,15 @@ public class Policy extends JPAEntity {
      *
      * @return  The corresponding policy or null if no policy having the specified name exists for this name.
      */
-    public static Policy findByName(EntityManager em, String name) {
+    public static Policy findByNameAndService(EntityManager em, String name, String service) {
         requireArgument(em != null, "Entity manager can not be null.");
         requireArgument(name != null, "Policy name cannot be null or empty.");
 
-        TypedQuery<Policy> query = em.createNamedQuery("Policy.findByName", Policy.class);
+        TypedQuery<Policy> query = em.createNamedQuery("Policy.findByNameAndService", Policy.class);
         
         try {
             query.setParameter("name", name);
+            query.setParameter("service", service);
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getSingleResult();
         } catch (NoResultException ex) {
@@ -199,17 +194,17 @@ public class Policy extends JPAEntity {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public List<String> getOwner() {
-		return listOfOwner;
+	public List<String> getOwners() {
+		return owners;
 	}
-	public void setOwner(List<String> owner) {
-		this.listOfOwner = owner;
+	public void setOwners(List<String> owners) {
+		this.owners = owners;
 	}
-	public List<String> getUser() {
-		return listOfUser;
+	public List<String> getUsers() {
+		return users;
 	}
-	public void setUser(List<String> user) {
-		this.listOfUser = user;
+	public void setUsers(List<String> users) {
+		this.users = users;
 	}
 	public String getSubSystem() {
 		return subSystem;
@@ -218,14 +213,17 @@ public class Policy extends JPAEntity {
 		this.subSystem = subSystem;
 	}
 	public String getMetricName() {
-		return metricName;
+		String scope = getSubSystem() == null ? getService() : getService() + "." + getSubSystem(); 
+		
+		Object[] params = {scope, getName(), getUsers().get(0)};        
+		String format = "{0}:{1}'{'user={3}'}'";
+        return MessageFormat.format(format, params);
 	}
-	public void setMetricName(String metricName) {
-		this.metricName = metricName;
-	}
+	
 	public TriggerType getTriggerType() {
 		return triggerType;
 	}
+	
 	public void setTriggerType(TriggerType triggerType) {
 		this.triggerType = triggerType;
 	}
@@ -260,15 +258,16 @@ public class Policy extends JPAEntity {
 		if(Cron.isValid(cronEntry)){
 			this.cronEntry = cronEntry;
 		}else{
-			throw new RuntimeException("Please provide a valid cron entry string.");
+			throw new IllegalArgumentException("Please provide a valid cron entry string.");
 		}		
 	}
 
-	public List<SuspensionLevel> getSuspensionLevelList() {
+	public List<SuspensionLevel> getSuspensionLevels() {
+		suspensionLevelList.sort((s1, s2) -> s1.getLevelNumber() - s2.getLevelNumber());
 		return suspensionLevelList;
 	}
 
-	public void setSuspensionLevelList(List<SuspensionLevel> suspensionLevelList) {
+	public void setSuspensionLevels(List<SuspensionLevel> suspensionLevelList) {
 		this.suspensionLevelList = suspensionLevelList;
 	}
     

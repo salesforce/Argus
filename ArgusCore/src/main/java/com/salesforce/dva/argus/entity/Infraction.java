@@ -111,13 +111,13 @@ public class Infraction extends JPAEntity {
 	    }
 	    
 	    /**
-	     * Find the infraction for a given user-policy combination.
+	     * Find the infractions for a given user-policy combination.
 	     *
 	     * @param   em         The EntityManager to use.
 	     * @param   userName   The userName for which to retrieve record.
 	     * @param   policy   The policy for which to retrieve record.
 	     *
-	     * @return  The infraction for the given user-policy combination. Null if no such record exists.
+	     * @return  The infractions for the given user-policy combination. Null if no such record exists.
 	     */
 	    public static List<Infraction> findByPolicyAndUserName(EntityManager em, Policy policy, String userName) {
 	        TypedQuery<Infraction> query = em.createNamedQuery("Infraction.findByPolicyAndUserName", Infraction.class);
