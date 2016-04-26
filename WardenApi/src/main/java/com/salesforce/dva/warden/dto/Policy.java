@@ -6,16 +6,15 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-
-import com.salesforce.dva.warden.entity.SuspensionLevel;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Policy Dto.
  *
- * @author  Ruofan Zhang (rzhang@salesforce.com)
+ * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
 @SuppressWarnings("serial")
-//@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Policy extends com.salesforce.dva.warden.dto.Entity {
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -31,14 +30,14 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 	    private String timeUnit;
 	    private double defaultValue;
 	    private String cronEntry;
-	    private List<BigInteger> suspensionLevelIdList = new ArrayList<BigInteger>();
+	    private List<BigInteger> suspensionLevels = new ArrayList<BigInteger>();
 
 		public String getServcie() {
 			return servcie;
 		}
 
-		public void setServcie(String servcie) {
-			this.servcie = servcie;
+		public void setService(String service) {
+			this.servcie = service;
 		}
 
 		public String getName() {
@@ -129,12 +128,12 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			this.cronEntry = cronEntry;
 		}
 
-		public List<BigInteger> getSuspensionLevelIdList() {
-			return suspensionLevelIdList;
+		public List<BigInteger> getSuspensionLevels() {
+			return suspensionLevels;
 		}
-
-		public void addSuspensionLevelIdList(SuspensionLevel suspensionLevel) {
-			this.getSuspensionLevelIdList().add(suspensionLevel.getId());
+		
+		public void setSuspensionLevels(List<BigInteger> suspensionLevels) {
+			 this.suspensionLevels = suspensionLevels;
 		}
 		
 		@Override
@@ -147,7 +146,7 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			result.setModifiedById(BigInteger.TEN);
 			result.setModifiedDate(new Date());
 			
-			result.setServcie("example-service");
+			result.setService("example-service");
 			result.setName("example-name");
 			result.setOwner(Arrays.asList("example-owner"));
 			result.setUser(Arrays.asList("example-user"));

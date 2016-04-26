@@ -1,6 +1,4 @@
-/**
- * 
- */
+
 package com.salesforce.dva.warden;
 
 import java.util.List;

@@ -31,14 +31,10 @@ package com.salesforce.dva.warden.dto;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 	 
-/*
- * To change this license header, choose License Headers in Project Properties. To change this template file, choose Tools | Templates and open the
- * template in the editor.
- */
 /**
  * The base DTO object class.
  *
- * @author  Tom Valine (tvaline@salesfoce.com)
+ * @author  Jigna Bhatt (jbhatt@salesfoce.com)
  */
 public abstract class Base {
 
