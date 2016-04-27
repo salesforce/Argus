@@ -99,7 +99,9 @@ public class AlertServiceIT extends AbstractTest {
             for (int i = 0; i < expectedNotifications; i++) {
                 for (int j = 0; j < 1 + random.nextInt(5); j++) {
                     alertService.enqueueAlerts(Arrays.asList(new Alert[] { alert }));
+                    sleep(5000);
                 }
+                sleep(10000);
                 alertService.executeScheduledAlerts(10, 100);
                 try {
                     Thread.sleep(2 * cooldownPeriod);
@@ -159,7 +161,10 @@ public class AlertServiceIT extends AbstractTest {
             notification.setTriggers(alert.getTriggers());
             alert = alertService.updateAlert(alert);
             for (int i = 0; i < expectedNotifications; i++) {
+            	
+            	sleep(5000);
                 alertService.enqueueAlerts(Arrays.asList(new Alert[] { alert }));
+                sleep(5000);
                 alertService.executeScheduledAlerts(10, 100);
             }
 
@@ -271,6 +276,14 @@ public class AlertServiceIT extends AbstractTest {
         result.setUnits(createRandomName());
         result.setTag(tagName, tagValue);
         return result;
+    }
+    
+    private void sleep(long millis){
+    	try {
+			Thread.sleep(millis);
+		} catch (InterruptedException e) {
+			fail("Thread interrupted.");
+		}
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
