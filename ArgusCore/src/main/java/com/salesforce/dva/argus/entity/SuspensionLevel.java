@@ -2,6 +2,8 @@ package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
+import java.util.List;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -45,6 +47,10 @@ import javax.persistence.UniqueConstraint;
         @NamedQuery(
                 name = "SuspensionLevel.findByPolicyAndLevel", 
                 query = "SELECT r FROM SuspensionLevel r WHERE r.policy = :policy and r.levelNumber = :levelNumber"
+        ),
+        @NamedQuery(
+                name = "SuspensionLevel.findByPolicy", 
+                query = "SELECT r FROM SuspensionLevel r WHERE r.policy = :policy"
         )
     }
 )
@@ -94,31 +100,57 @@ public class SuspensionLevel extends JPAEntity {
     }
   //~ Methods **************************************************************************************************************************************
     /**
-     * Finds an suspension time given its name and owner.
+     * Finds an suspension given its policy and level number.
      *
      * @param   em        			The entity manager to use. Cannot be null.
-     * @param   policyId  			The policy id associated with this suspension level. Cannot be null.
-     * @param   infractionCount		The infraction count associated with this suspension level. Cannot be null.
+     * @param   policy  			The policy associated with this suspension level. Cannot be null.
+     * @param   levelNumber			The level number associated with this suspension level. Cannot be null.
      *
-     * @return  The corresponding suspension time or null if no suspension level having the specified policy and infraction count exist.
+     * @return  The corresponding suspension or null if no suspension level having the specified policy and level number exist.
      */
-    public static SuspensionLevel findByPolicyAndLevel(EntityManager em, Policy policy, int level) {
+    public static SuspensionLevel findByPolicyAndLevel(EntityManager em, Policy policy, int levelNumber) {
         requireArgument(em != null, "Entity manager can not be null.");
         requireArgument(policy != null , "Policy cannot be null");
-        requireArgument(level > 0, "Level must be greater than zero.");
+        requireArgument(levelNumber > 0, "Level must be greater than zero.");
 
         TypedQuery<SuspensionLevel> query = em.createNamedQuery("SuspensionLevel.findByPolicyAndLevel", SuspensionLevel.class);
 
         
         try {
-            query.setParameter("policyId", policy);
-            query.setParameter("level", level);
+            query.setParameter("policy", policy);
+            query.setParameter("levelNumber", levelNumber);
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getSingleResult();
         } catch (NoResultException ex) {
             return null;
         }
     }
+    
+    
+    /**
+     * Finds suspensions given its policy.
+     *
+     * @param   em        			The entity manager to use. Cannot be null.
+     * @param   policy  			The policy associated with this suspension level. Cannot be null.
+     *
+     * @return  The corresponding suspensions or null if no suspension level having the specified policy exist.
+     */
+    public static List<SuspensionLevel> findByPolicy(EntityManager em, Policy policy) {
+        requireArgument(em != null, "Entity manager can not be null.");
+        requireArgument(policy != null , "Policy cannot be null");
+
+        TypedQuery<SuspensionLevel> query = em.createNamedQuery("SuspensionLevel.findByPolicy", SuspensionLevel.class);
+
+        
+        try {
+            query.setParameter("policy", policy);
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+            return query.getResultList();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+    
     
     public Policy getPolicy() {
 		return policy;

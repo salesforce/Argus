@@ -59,7 +59,13 @@ import com.salesforce.dva.argus.util.Cron;
 	    {
 	        @NamedQuery(
 	            name = "Policy.findByNameAndService", query = "SELECT r FROM Policy r WHERE r.name = :name AND r.service = :service"
-	        )
+	        ),
+	        @NamedQuery(
+		            name = "Policy.findByService", query = "SELECT r FROM Policy r WHERE r.service = :service"
+		        ),
+	        @NamedQuery(
+		            name = "Policy.findByName", query = "SELECT r FROM Policy r WHERE r.name = :name"
+		        )
 	    }
 	)
 public class Policy extends JPAEntity {
@@ -159,17 +165,19 @@ public class Policy extends JPAEntity {
     }
   //~ Methods **************************************************************************************************************************************
     /**
-     * Finds a policy given its name.
+     * Finds a policy given its name and service.
      *
-     * @param   em      The entity manager to use. Cannot be null.
-     * @param   name  	The name of the policy. Cannot be null or empty.
+     * @param   em      	The entity manager to use. Cannot be null.
+     * @param   name  		The name of the policy. Cannot be null or empty.
+     * @param   service  	The service of the policy. Cannot be null or empty.
      *
      * @return  The corresponding policy or null if no policy having the specified name exists for this name.
      */
     public static Policy findByNameAndService(EntityManager em, String name, String service) {
         requireArgument(em != null, "Entity manager can not be null.");
-        requireArgument(name != null, "Policy name cannot be null or empty.");
-
+        requireArgument(name != null && !name.isEmpty(), "Policy name cannot be null or empty.");
+        requireArgument(service != null && !service.isEmpty(), "Policy service cannot be null or empty.");
+        
         TypedQuery<Policy> query = em.createNamedQuery("Policy.findByNameAndService", Policy.class);
         
         try {
@@ -177,6 +185,51 @@ public class Policy extends JPAEntity {
             query.setParameter("service", service);
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+    /**
+     * Finds policies with given service.
+     *
+     * @param   em      	The entity manager to use. Cannot be null.
+     * @param   service  	The service of the policy. Cannot be null or empty.
+     *
+     * @return  The corresponding policies or null if no policy having the specified service exists for this service.
+     */
+    public static List<Policy> findByService(EntityManager em, String service) {
+        requireArgument(em != null, "Entity manager can not be null.");
+        requireArgument(service != null && !service.isEmpty(), "Policy service cannot be null or empty.");
+        
+        TypedQuery<Policy> query = em.createNamedQuery("Policy.findByService", Policy.class);
+        
+        try {
+            query.setParameter("service", service);
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+            return query.getResultList();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+    
+    /**
+     * Finds policies with given name.
+     *
+     * @param   em      	The entity manager to use. Cannot be null.
+     * @param   name  		The name of the policy. Cannot be null or empty.
+     *
+     * @return  The corresponding policies or null if no policy having the specified name exists for this policy name.
+     */
+    public static List<Policy> findByName(EntityManager em, String name) {
+        requireArgument(em != null, "Entity manager can not be null.");
+        requireArgument(name != null && !name.isEmpty(), "Policy name cannot be null or empty.");
+        
+        TypedQuery<Policy> query = em.createNamedQuery("Policy.findByName", Policy.class);
+        
+        try {
+            query.setParameter("name", name);
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+            return query.getResultList();
         } catch (NoResultException ex) {
             return null;
         }
@@ -215,8 +268,8 @@ public class Policy extends JPAEntity {
 	public String getMetricName() {
 		String scope = getSubSystem() == null ? getService() : getService() + "." + getSubSystem(); 
 		
-		Object[] params = {getTimeUnit(), scope, getName(), getUsers().get(0), getAggregator()};        
-		String format = "{0}:{1}:{2}'{'user={3}'}':{4}";
+		Object[] params = {scope, getName()};        
+		String format = "{0}:{1}";
         return MessageFormat.format(format, params);
 	}
 	

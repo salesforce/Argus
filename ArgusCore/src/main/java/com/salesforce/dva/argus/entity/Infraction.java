@@ -1,5 +1,7 @@
 package com.salesforce.dva.argus.entity;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
 import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -10,6 +12,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
+import javax.persistence.Query;
 import javax.persistence.Table;
 import javax.persistence.TypedQuery;
 
@@ -138,7 +141,7 @@ public class Infraction extends JPAEntity {
 	     * @return  True if a suspension is active.
 	     */
 	    public boolean isSuspended() {
-	        return System.currentTimeMillis() < getExpirationTimestamp() || isSuspendedIndefinitely();
+	        return (System.currentTimeMillis() < getExpirationTimestamp()) || isSuspendedIndefinitely();
 	    }
 	    /**
 	     * Indicates if the user is suspended indefinitely.
@@ -149,6 +152,8 @@ public class Infraction extends JPAEntity {
 	        return expirationTimestamp == -1L;
 	    }
 	    
+	    
+	  
 		public Policy getPolicy() {
 			return policy;
 		}
@@ -171,10 +176,10 @@ public class Infraction extends JPAEntity {
 			return infractionTimestamp;
 		}
 
-		public void setInfractionTimestamp(Long infractionTimestamp) {
+
+		public void setInfractionTimestamp(Long infractionTimestamp){
 			this.infractionTimestamp = infractionTimestamp;
 		}
-
 		public Long getExpirationTimestamp() {
 			return expirationTimestamp;
 		}

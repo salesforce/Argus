@@ -292,6 +292,7 @@
     <modules>
         <module>ArgusCore</module>
         <module>ArgusWebServices</module>
+        <module>WardenWebServices</module>
         <module>ArgusClient</module>
         <module>WardenClient</module>
         <module>WardenApi</module>
