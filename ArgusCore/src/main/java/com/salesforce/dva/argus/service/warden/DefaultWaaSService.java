@@ -1,0 +1,529 @@
+package com.salesforce.dva.argus.service.warden;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.math.BigInteger;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+
+import org.slf4j.Logger;
+
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.persist.Transactional;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Infraction;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Policy;
+import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.SuspensionLevel;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.inject.SLF4JTypeListener;
+import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.AnnotationService;
+import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.DashboardService;
+import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.ServiceManagementService;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.UserService;
+//import com.salesforce.dva.argus.service.WaaSMonitorService;
+import com.salesforce.dva.argus.service.WaaSService;
+import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
+import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.system.SystemException;
+
+public class DefaultWaaSService extends DefaultJPAService implements WaaSService{
+
+    //~ Static fields/initializers ******************************************************************************************************************* 
+    
+	private static final String WAAS_ALERT_NAME_PREFIX = "waas-";
+    private static final String WAAS_NOTIFICATION_NAME = "WaaS Notification";
+    private static final String WAAS_ANNOTATION_SOURCE = "ARGUS-WaaS";
+    private static final String WAAS_ANNOTATION_TYPE = "WaaS";
+    
+	//~ Instance fields ******************************************************************************************************************************
+
+    @SLF4JTypeListener.InjectLogger
+    private Logger _logger;
+    @Inject
+    private Provider<EntityManager> emf;
+    private final AlertService _alertService;
+    //private final WaaSMonitorService _waaSMonitorService;
+    private final UserService _userService;
+    private final MetricService _metricService;
+    private final ServiceManagementService _serviceManagementRecordService;
+    private final DashboardService _dashboardService;
+    private final AnnotationService _annotationService;
+    private final TSDBService _tsdbService;
+    private final PrincipalUser _adminUser;  
+    
+    //~ Constructors *********************************************************************************************************************************
+
+    /**
+     * Creates a new DefaultWardenService object.
+     *
+     * @param  alertService              The alert service user to create warden alerts when necessary. Cannot be null.
+     * @param  waaSMonitorService        The WaaaS monitor service used to collect warden policy metric policys. Cannot be null.
+     * @param  userService               The user service. Cannot be null.
+     * @param  metricService             The metric service. Cannot be null.
+     * @param  serviceManagementService  The service management service. Cannot be null.
+     * @param  dashboardService          The dashboard service. Cannot be null.
+     * @param  auditService              The audit service. Cannot be null.
+     * @param  annotationService         The annotation service. Cannot be null.
+     * @param  tsdbService  			 The tsdb service. Cannot be null.
+     * @param  _sysConfig Service properties
+     */
+    @Inject
+    protected DefaultWaaSService(AlertService alertService,UserService userService, MetricService metricService,
+        ServiceManagementService serviceManagementService, DashboardService dashboardService, AuditService auditService,
+        AnnotationService annotationService, TSDBService tsdbService, SystemConfiguration _sysConfig) {
+        super(auditService, _sysConfig);
+        requireArgument(alertService != null, "Alert service cannot be null.");
+        //requireArgument(waaSMonitorService != null, "Monitor service cannot be null.");
+        requireArgument(userService != null, "User service cannot be null.");
+        requireArgument(metricService != null, "Metric service cannot be null.");
+        requireArgument(serviceManagementService != null, "Service management service cannot be null.");
+        requireArgument(dashboardService != null, "Dashboard service cannot be null.");
+        requireArgument(annotationService != null, "Annotation service cannot be null.");
+        requireArgument(tsdbService != null, "TSDB service cannot be null.");
+        _alertService = alertService;
+        //_waaSMonitorService = waaSMonitorService;
+        _userService = userService;
+        _metricService = metricService;
+        _serviceManagementRecordService = serviceManagementService;
+        _dashboardService = dashboardService;
+        _annotationService = annotationService;
+        _tsdbService = tsdbService;
+        _adminUser = _userService.findAdminUser();       
+    }
+	 
+  //~ Methods **************************************************************************************************************************************
+    
+    @Override
+    public void dispose() {
+        super.dispose();
+        _alertService.dispose();
+        //_waaSMonitorService.dispose();
+        _userService.dispose();
+        _metricService.dispose();
+        _serviceManagementRecordService.dispose();
+        _dashboardService.dispose();
+        _tsdbService.dispose();
+        
+    }
+	
+	 @Override
+	 @Transactional
+		public Policy upsertPolicy(String user, Policy policy, double value) {
+		 	requireNotDisposed();
+	        requireArgument(user != null, "Cannot update policy without user.");
+	        requireArgument(policy != null, "Cannot update policy without a policy.");
+	        requireArgument(Double.valueOf(value) != null , "Cannot update policy without value.");
+	        
+	        EntityManager em = emf.get();
+	        Policy p = Policy.findByNameAndService(em, policy.getName(), policy.getService());	        
+	        
+	        if(p == null){
+	        	p = policy;
+	        }
+	        
+	        if(!p.getThreshold().get(0).equals(value)){
+	        	p.setThreshold(Arrays.asList(value));
+	        }
+
+        	Policy result = mergeEntity(em, p);
+        	em.flush();	        
+        	
+        	_updateWardenAlertsForUser(user, policy);
+        	
+	        return result;
+		}
+
+	    @Override
+	    @Transactional
+	    public SuspensionLevel upsertSuspensionLevel(Policy policy, int level, int infractionCount, long suspensionTime) {
+	        requireNotDisposed();
+	        requireArgument(policy != null, "Cannot update suspension level without policy.");
+	        requireArgument(level > 0, "Level must be greater than zero.");
+	        requireArgument(infractionCount > 0 , "Infraction count must be greater than zero.");
+	        requireArgument(suspensionTime > 0L , "Suspension time must be greater than zero.");
+	
+	       EntityManager em = emf.get();
+	       SuspensionLevel suspensionLevel = SuspensionLevel.findByPolicyAndLevel(em, policy, level);
+
+	        if(suspensionLevel == null){
+	        	PrincipalUser creator = _userService.findUserByUsername(policy.getOwners().get(0));
+	        	suspensionLevel = new SuspensionLevel(creator, policy, level, infractionCount, suspensionTime);
+	       
+	        }else{
+	        	suspensionLevel.setInfractionCount(infractionCount);
+	        	suspensionLevel.setSuspensionTime(suspensionTime);
+	        	
+	        }
+	        
+	        SuspensionLevel result = mergeEntity(em, suspensionLevel);
+	        em.flush();
+	        
+	        return result;
+	    }
+		
+		@Override
+		public boolean isSuspended(String user, Policy policy) {
+			
+			requireNotDisposed();
+			
+			requireArgument(user != null, "User cannot be null while checking for user suspension.");
+	        requireArgument(policy != null, "Policy cannot be null while checking for user suspension.");
+			
+	        EntityManager em = emf.get();
+	        
+	        List<Infraction> infractionList = Infraction.findByPolicyAndUserName(em, policy, user);
+	        
+	        //no infraction happens for this policy-user combination
+	        if (infractionList == null || infractionList.isEmpty()){
+	        	return false;
+	        }
+	        	   
+	        Comparator<Infraction> byInfractionTime = (i1, i2) -> i1.getInfractionTimestamp().compareTo(i2.getInfractionTimestamp());
+	        Optional<Infraction> latestInfraction = infractionList.stream()
+					.sorted(byInfractionTime.reversed()).findFirst();
+	        return (latestInfraction.get().isSuspendedIndefinitely() || (latestInfraction.get().isSuspended()))? true : false;	        
+		}
+
+		@Override
+		@Transactional
+		public void reinstateUser(String user, Policy policy){
+
+			requireNotDisposed();
+			
+			requireArgument(user != null, "User cannot be null while checking for user suspension.");
+	        requireArgument(policy != null, "Policy cannot be null while checking for user suspension.");
+	        
+	        EntityManager em = emf.get();
+	        
+	        List<Infraction> infractionList = Infraction.findByPolicyAndUserName(em, policy, user);
+	        
+	        //if reinstate is needed, delete all the infraction history
+	        if(_validReinstatable(infractionList)){
+	        	for(Infraction infraction : infractionList){
+		        	deleteEntity(em, infraction);
+		        	em.flush();
+	        }
+	        
+	        //create annotation for reinstate
+	        _createReinstateAnnotation(user, policy);
+	        }
+		}
+		
+		private void _createReinstateAnnotation(String user, Policy policy) {
+			//for the scope => policy.getService(), is this correct?
+			Annotation annotation = new Annotation(WAAS_ANNOTATION_SOURCE, user, WAAS_ANNOTATION_TYPE, policy.getService(),
+	                policy.getMetricName(), System.currentTimeMillis());
+	            Map<String, String> fields = new TreeMap<>();
+	            
+	            fields.put("Reinstated policy", policy.getName().toString());
+	            fields.put("Reinstated service", policy.getService().toString());
+	            fields.put("Reinstated metric", policy.getMetricName().toString());
+	            fields.put("Reinstated user", policy.getUsers().get(0).toString());	           
+	            
+	            annotation.setFields(fields);
+	            _annotationService.updateAnnotation(_userService.findUserByUsername(user), annotation);
+			
+		}
+		
+		private boolean _validReinstatable(List<Infraction> infractionList) {
+			//no infraction happens for this policy-user combination
+	        if (infractionList == null || infractionList.isEmpty())
+	        	return false;
+	        
+	        //check if the user is suspended indefinitely
+	        Comparator<Infraction> byInfractionTime = (i1, i2) -> i1.getInfractionTimestamp().compareTo(i2.getInfractionTimestamp());
+	        Optional<Infraction> latestInfraction = infractionList.stream()
+					.sorted(byInfractionTime.reversed()).findFirst();
+	        if( !latestInfraction.isPresent() || latestInfraction.get().getExpirationTimestamp()!=-1L )
+	        	return false;
+	        
+	        return true;
+		}
+		
+		@Override
+		@Transactional
+		public void suspendUser(String user, Policy policy){
+
+			requireNotDisposed();
+			
+			requireArgument(user != null, "User cannot be null while checking for user suspension.");
+	        requireArgument(policy != null, "Policy cannot be null while checking for user suspension.");
+			
+	        if (_userService.findUserByUsername(user).isPrivileged()) {
+	            throw new IllegalArgumentException("Admin user cannot be suspended!");
+	        }
+	        
+			EntityManager em = emf.get();
+			Long infractionTime = System.currentTimeMillis();
+			Infraction infraction = new Infraction(_adminUser, policy, _userService.findUserByUsername(user), infractionTime, 0L);
+
+			Long expirationTime = _calculateExpirationTime(user, policy, infractionTime);
+			infraction.setExpirationTimestamp(expirationTime);
+			
+			mergeEntity(em, infraction);
+
+			em.flush();		
+		}
+
+	private Long _calculateExpirationTime(String user, Policy policy, Long infractionTimestamp) {
+
+		List<SuspensionLevel> suspensionLevels = policy.getSuspensionLevels();
+		
+		//if suspensionLevels is not defined, just set default value;
+		if(suspensionLevels.isEmpty() || suspensionLevels == null)
+			return 0L;
+
+		// parse policy time unit
+		Long timeunitInMillis = _parsePolicyTimeUnit(policy.getTimeUnit());
+
+		// retrieve all infraction records
+		EntityManager em = emf.get();
+		List<Infraction> infractionList = Infraction.findByPolicyAndUserName(em, policy, user);
+		
+		return _calculateBasedOnCountAndLevel(suspensionLevels, infractionList, infractionTimestamp, timeunitInMillis);
+	}
+	
+		private Long _calculateBasedOnCountAndLevel(List<SuspensionLevel> suspensionLevels, List<Infraction> infractionList, Long infractionTimestamp, Long timeunitInMillis){
+			
+			// create a map <count, suspensionTimestamp> for looking up suspension period
+			Map<Integer, Long> levelMap = suspensionLevels.stream()
+					.collect(Collectors.toMap(SuspensionLevel::getInfractionCount, SuspensionLevel::getSuspensionTime));
+
+			// find out the count of infraction in the latest timeunit
+			//***Note***
+			//Here, timeunit window includes past timestamp excludes start timestamp,[past ts, current ts)
+			//in this way if we have mutiple infractions happen at start timestamp, the same logical guaranteed
+			long latestCount = infractionList.stream()
+					.sorted((i1, i2) -> i1.getInfractionTimestamp().compareTo(i2.getInfractionTimestamp()))
+					.filter(i -> (i.getInfractionTimestamp() >= infractionTimestamp - timeunitInMillis) && (i.getInfractionTimestamp() < infractionTimestamp))
+					.count();
+			
+			// compare the latest count with the count in suspenion levels
+			// if the updated count is bigger than the biggest level number, return -1
+			// if the updated count is smaller than the smallest level number , return 0
+			// otherwise find out the first biggest count smaller than(or equal to) updated count, and return the timestamp
+			Comparator<Entry<Integer, Long>> byCount = (entry1, entry2) -> entry1.getKey().compareTo(entry2.getKey());
+			Stream<Entry<Integer, Long>> levelStream = levelMap.entrySet().stream();
+			
+			if(levelMap.entrySet().stream().max(byCount).get().getKey() < latestCount + 1)
+				return -1L;
+			if(levelMap.entrySet().stream().min(byCount).get().getKey() > latestCount + 1)
+				return 0L;
+					
+			Optional<Entry<Integer, Long>> val = levelStream.sorted(byCount.reversed())
+					.filter(entry -> entry.getKey() <= latestCount + 1).findFirst();
+
+			return val.isPresent()? val.get().getValue() + infractionTimestamp : 0L;
+		}
+		
+		
+		private Long _parsePolicyTimeUnit(String policyTimeUnit) {
+			try{
+	            TimeUnit unitValue = TimeUnit.fromString(policyTimeUnit.substring(policyTimeUnit.length() - 1));
+
+	            long digitValue = Long.parseLong(policyTimeUnit.substring(0, policyTimeUnit.length() - 1));
+
+	            return digitValue * unitValue.getValue() / 1000;
+	        } catch (Exception t) {
+	            return Long.parseLong(policyTimeUnit);
+	        }
+		}
+
+		private void _updateWardenAlertsForUser(String user, Policy policy) {
+	        /* Enable alert for this policy or create one if it doesn't exist. */
+	        Alert wardenAlert = _alertService.findAlertByNameAndOwner(_constructWardenAlertName(user, policy), _adminUser);
+
+	        if (wardenAlert == null) {
+	            wardenAlert = _constructWardenAlertForUser(user, policy);
+	        }
+	        wardenAlert.setEnabled(true);
+	        _alertService.updateAlert(wardenAlert);
+	    }
+		
+		/**
+	     * Create a warden alert which will annotate the corresponding warden metric with suspension events.
+	     *
+	     * @param   user     The user for which the notification should be created.  Cannot be null.
+	     * @param   policy  The policy policy for which the notification should be created.  Cannot be null.
+	     *
+	     * @return  The warden alert.
+	     */
+	    private Alert _constructWardenAlertForUser(String user, Policy policy) {
+	        String alertName = _constructWardenAlertName(user, policy);
+	        Alert alert = new Alert(_adminUser, _adminUser, alertName, _constructMetricExpression(user, policy), policy.getCronEntry());
+	        List<Trigger> triggers = new ArrayList<>();
+	       
+	        double threshold = policy.getThreshold().get(0);
+	        
+	        Trigger trigger = new Trigger(alert, policy.getTriggerType(), "policy-value-" + policy.getTriggerType().toString() + "-policy-threshold",
+	        		threshold, 0.0, 0L);
+
+	        triggers.add(trigger);
+
+	        List<Notification> notifications = new ArrayList<>();
+	        Notification notification = new Notification(WAAS_NOTIFICATION_NAME, alert, WaaSNotifier.class.getName(), new ArrayList<String>(), 3600000);
+	        List<String> metricAnnotationList = new ArrayList<String>();
+	       
+	        String metricExpression = _constructMetricExpression(user, policy);
+	        
+	        String wardenMetricAnnotation = metricExpression.substring(metricExpression.indexOf(':') + 1);
+	        metricAnnotationList.add(wardenMetricAnnotation);
+	        notification.setMetricsToAnnotate(metricAnnotationList);
+	        notification.setTriggers(triggers);
+	        notifications.add(notification);
+	        alert.setTriggers(triggers);
+	        alert.setNotifications(notifications);
+	        return alert;
+	    }
+	    
+	    private String _constructMetricExpression(String user, Policy policy) {
+	    	
+	    	Object[] params = {policy.getTimeUnit(), policy.getMetricName() , user, policy.getAggregator()};
+			String format = "-{0}:{1}'{'user={2},host=*'}':{3}";
+	        return MessageFormat.format(format, params);
+	    }
+	    
+	    private static String _constructWardenAlertName(String user, Policy policy) {
+	        assert (user != null) : "User cannot be null.";
+	        assert (policy != null) : "policy cannot be null.";
+	        
+	        return WAAS_ALERT_NAME_PREFIX + user + "-" + policy.getMetricName();
+	    }
+	    
+		public enum TimeUnit {
+
+	        SECOND("s", 1000),
+	        MINUTE("m", 60 * SECOND.getValue()),
+	        HOUR("h", 60 * MINUTE.getValue()),
+	        DAY("d", 24 * HOUR.getValue());
+
+	        private final String _unit;
+	        private final long _value;
+
+	        private TimeUnit(String unit, long value) {
+	            _unit = unit;
+	            _value = value;
+	        }
+
+	        public String getUnit() {
+	            return _unit;
+	        }
+
+	        public long getValue() {
+	            return _value;
+	        }
+
+	        public static TimeUnit fromString(String text) {
+	                        if (text != null) {
+	                                for (TimeUnit unit : TimeUnit.values()) {
+	                                        if (text.equalsIgnoreCase(unit.getUnit())) {
+	                                                return unit;
+	                                        }
+	                                }
+	                        }
+	                        throw new SystemException(text + ": This time unit is not supported.", new UnsupportedOperationException());
+	        }
+	    }
+
+	@Override
+	@Transactional
+	public Policy getPolicy(BigInteger policyId){
+		requireNotDisposed();
+		requireArgument(policyId != null && policyId.signum() == 1, "Policy id cannot be null and must be positive.");
+		
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		Policy result = Policy.findByPrimaryKey(em, policyId, Policy.class);
+
+		return result;
+	}
+	
+	@Override
+	@Transactional
+	public Policy getPolicy(String name, String service) {
+		requireNotDisposed();
+		requireArgument(name != null && !name.isEmpty(), "Name cannot be null or empty.");
+		requireArgument(service != null && !service.isEmpty(), "Service cannot be null or empty.");
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		Policy result = Policy.findByNameAndService(em, name, service);
+
+		return result;
+	}
+	
+	@Override
+	@Transactional
+	public List<Policy> getPoliciesForService(String service) {
+		requireNotDisposed();
+		requireArgument(service != null && !service.isEmpty(), "Service cannot be null or empty.");
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		List<Policy> result = Policy.findByService(em, service);
+
+		return result;
+	}
+	
+	@Override
+	@Transactional
+	public List<Policy> getPoliciesForName(String name) {
+		requireNotDisposed();
+		requireArgument(name != null && !name.isEmpty(), "Name cannot be null or empty.");
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		List<Policy> result = Policy.findByName(em, name);
+
+		return result;
+	}
+	
+	@Override
+	@Transactional
+	public List<Infraction> getInfractions(String userName, Policy policy) {
+		requireNotDisposed();
+		requireArgument(userName != null && !userName.isEmpty(), "userName cannot be null or empty.");
+		requireArgument(policy != null, "policy cannot be null or empty.");
+			
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		List<Infraction> result = Infraction.findByPolicyAndUserName(em, policy, userName);
+
+		return result;
+	}
+	
+	@Override
+	@Transactional
+	public List<SuspensionLevel> getSuspensionLevels(Policy policy) {
+		requireNotDisposed();
+		requireArgument(policy != null , "policy cannot be null or empty.");
+			
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		List<SuspensionLevel> result = SuspensionLevel.findByPolicy(em, policy);
+
+		return result;
+	}
+}
