@@ -1,5 +1,3 @@
-package com.salesforce.dva.warden.dto;
-
 /*
  * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
@@ -30,7 +28,9 @@ package com.salesforce.dva.warden.dto;
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
+package com.salesforce.dva.warden.dto;
+
 /**
  * The base DTO object class.
  *

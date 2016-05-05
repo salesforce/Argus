@@ -1,13 +1,14 @@
+
 package com.salesforce.dva.warden.dto;
 
 import java.math.BigInteger;
 
 @SuppressWarnings("serial")
-public class SuspensionLevel extends com.salesforce.dva.warden.dto.Entity{
+public class SuspensionLevel extends Entity{
 
 	BigInteger policy_id;
-	int level_number;
-	int infraction_count;
+	Integer level_number;
+	Integer infraction_count;
 	BigInteger suspension_time;
 	
 	public BigInteger getPolicy_id() {
@@ -16,43 +17,43 @@ public class SuspensionLevel extends com.salesforce.dva.warden.dto.Entity{
 
 
 
-	public void setPolicy_id(BigInteger policy_id) {
+	public void setPolicyId(BigInteger policy_id) {
 		this.policy_id = policy_id;
 	}
 
 
 
-	public int getLevel_number() {
+	public Integer getLevelNumber() {
 		return level_number;
 	}
 
 
 
-	public void setLevel_number(int level_number) {
+	public void setLevelNumber(Integer level_number) {
 		this.level_number = level_number;
 	}
 
 
 
-	public int getInfraction_count() {
+	public Integer getInfractionCount() {
 		return infraction_count;
 	}
 
 
 
-	public void setInfraction_count(int infraction_count) {
+	public void setInfractionCount(Integer infraction_count) {
 		this.infraction_count = infraction_count;
 	}
 
 
 
-	public BigInteger getSuspension_time() {
+	public BigInteger getSuspensionTime() {
 		return suspension_time;
 	}
 
 
 
-	public void setSuspension_time(BigInteger suspension_time) {
+	public void setSuspensionTime(BigInteger suspension_time) {
 		this.suspension_time = suspension_time;
 	}
 
@@ -63,10 +64,10 @@ public class SuspensionLevel extends com.salesforce.dva.warden.dto.Entity{
 
 		SuspensionLevel result = new SuspensionLevel();
 		
-		result.setPolicy_id(BigInteger.ONE);
-		result.setLevel_number(1);
-		result.setInfraction_count(4);
-		result.setSuspension_time(BigInteger.TEN);
+		result.setPolicyId(BigInteger.ONE);
+		result.setLevelNumber(1);
+		result.setInfractionCount(4);
+		result.setSuspensionTime(BigInteger.TEN);
 		
 		return null;
 	}
