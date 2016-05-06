@@ -6,12 +6,18 @@ import com.salesforce.dva.warden.client.WardenClientService;
 import com.salesforce.dva.warden.dto.Policy;
 import com.salesforce.dva.warden.dto.WardenEvent;
 
-abstract class DefaultWardenClientService implements WardenClientService {
+class DefaultWardenClientService implements WardenClientService {
 	
 	@Override
 	public void register(List<Policy> policies, int port) {
 		//infraction history for each user identified in the policy
-		//cache 3rd party in-memory cache. local cache. 
+		//*****The classes you may want these classes*******
+		//cache 3rd party in-memory cache. local cache. users and suspentions. for database objects
+		//argus, orchestra project has a http client & ArgusService.java is DefaultWardenClientService.java
+		//sheduler - push usage data back to the server
+		//metric registry - big map. for storing metric and its values in cache until ready to be pushed to the server.
+		//Look @ arguswebservices DTOs <--> JPA Entitties in ArgusCore. 
+		
 		//_registerAsServerListener();
 		//_populateCache(policies);
 		//_reconcilePolicies(policies);
@@ -22,6 +28,16 @@ abstract class DefaultWardenClientService implements WardenClientService {
 	public void unregister() {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+	public void updateMetric(Policy policy, String username, double value){
+		
+	}
+	
+	@Override
+	public void modifyMetric(Policy policy, String username, double delta){
+	
 	}
 	
 	@Override
