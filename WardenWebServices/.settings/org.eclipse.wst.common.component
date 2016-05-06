@@ -8,6 +8,9 @@
         <dependent-module archiveName="argus-core-4.0-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/argus-core/argus-core">
             <dependency-type>uses</dependency-type>
         </dependent-module>
+        <dependent-module archiveName="warden-api-4.0-SNAPSHOT.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/warden-api/warden-api">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
         <property name="java-output-path" value="/argus-webservices/target/classes"/>
         <property name="context-root" value="warden-webservices"/>
     </wb-module>
