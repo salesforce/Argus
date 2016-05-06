@@ -1,5 +1,3 @@
-package com.salesforce.dva.warden.dto;
-
 /*
  * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
@@ -30,7 +28,9 @@ package com.salesforce.dva.warden.dto;
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
+package com.salesforce.dva.warden.dto;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
@@ -38,7 +38,7 @@ import java.util.Date;
 /**
  * The base entity DTO.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
 @SuppressWarnings("serial")
 public abstract class Entity extends Base implements Serializable {

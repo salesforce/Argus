@@ -1,3 +1,4 @@
+
 package com.salesforce.dva.warden.dto;
 
 import java.math.BigInteger;
@@ -9,35 +10,35 @@ import java.math.BigInteger;
  */
 
 @SuppressWarnings("serial")
-public class Infraction extends com.salesforce.dva.warden.dto.Entity{
+public class Infraction extends Entity{
 	
-	BigInteger policy_id;
-	int user_id;
-	BigInteger infraction_timestamp;
-	BigInteger expiration_timestamp;
+	private BigInteger policy_id;
+	private BigInteger user_id;
+	private Long infraction_timestamp;
+	private Long expiration_timestamp;
 	
-	public BigInteger getPolicy_id() {
+	public BigInteger getPolicyId() {
 		return policy_id;
 	}
-	public void setPolicy_id(BigInteger policy_id) {
+	public void setPolicyId(BigInteger policy_id) {
 		this.policy_id = policy_id;
 	}
-	public int getUser_id() {
+	public BigInteger getUserId() {
 		return user_id;
 	}
-	public void setUser_id(int user_id) {
+	public void setUserId(BigInteger user_id) {
 		this.user_id = user_id;
 	}
-	public BigInteger getInfraction_timestamp() {
+	public Long getInfractionTimestamp() {
 		return infraction_timestamp;
 	}
-	public void setInfraction_timestamp(BigInteger infraction_timestamp) {
+	public void setInfractionTimestamp(Long infraction_timestamp) {
 		this.infraction_timestamp = infraction_timestamp;
 	}
-	public BigInteger getExpiration_timestamp() {
+	public Long getExpirationTimestamp() {
 		return expiration_timestamp;
 	}
-	public void setExpiration_timestamp(BigInteger expiration_timestamp) {
+	public void setExpirationTimestamp(Long expiration_timestamp) {
 		this.expiration_timestamp = expiration_timestamp;
 	}
 	
@@ -46,10 +47,10 @@ public class Infraction extends com.salesforce.dva.warden.dto.Entity{
 		
 		Infraction result = new Infraction();
 		
-		result.setPolicy_id(BigInteger.ONE);
-		result.setUser_id(1);
-		result.setInfraction_timestamp(BigInteger.ONE);
-		result.setExpiration_timestamp(BigInteger.TEN);
+		result.setPolicyId(BigInteger.ONE);
+		result.setUserId(BigInteger.ONE);
+		result.setInfractionTimestamp((long) 1);
+		result.setExpirationTimestamp((long) 10);
 		
 		return null;
 	}

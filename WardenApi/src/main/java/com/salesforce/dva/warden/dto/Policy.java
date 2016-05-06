@@ -1,3 +1,4 @@
+
 package com.salesforce.dva.warden.dto;
 
 import java.math.BigInteger;
@@ -6,7 +7,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Policy Dto.
@@ -15,29 +18,29 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 @SuppressWarnings("serial")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Policy extends com.salesforce.dva.warden.dto.Entity {
+public class Policy extends Entity {
 	//~ Instance fields ******************************************************************************************************************************
 
-	    private String servcie;		
+	    private String service;		
 	    private String name;
-	    private List<String> owner  = new ArrayList<String>();
-	    private List<String> user  = new ArrayList<String>();
+	    private List<String> owners  = new ArrayList<String>();
+	    private List<String> users  = new ArrayList<String>();
 	    private String subSystem;
 	    private String metricName;
-	    private String triggerType;
-	    private String aggregator;
+	    private TriggerType triggerType;
+	    private Aggregator aggregator;
 	    private List<Double> threshold;	    
 	    private String timeUnit;
-	    private double defaultValue;
+	    private Double defaultValue;
 	    private String cronEntry;
-	    private List<BigInteger> suspensionLevels = new ArrayList<BigInteger>();
+	    private List<BigInteger> suspensionLevelIds = new ArrayList<BigInteger>();
 
 		public String getServcie() {
-			return servcie;
+			return service;
 		}
 
 		public void setService(String service) {
-			this.servcie = service;
+			this.service = service;
 		}
 
 		public String getName() {
@@ -49,19 +52,19 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 		}
 
 		public List<String> getOwner() {
-			return owner;
+			return owners;
 		}
 
 		public void setOwner(List<String> owner) {
-			this.owner = owner;
+			this.owners = owner;
 		}
 
 		public List<String> getUser() {
-			return user;
+			return users;
 		}
 
 		public void setUser(List<String> user) {
-			this.user = user;
+			this.users = user;
 		}
 
 		public String getSubSystem() {
@@ -80,20 +83,20 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			this.metricName = metricName;
 		}
 
-		public String getTriggerType() {
+		public TriggerType getTriggerType() {
 			return triggerType;
 		}
 
 		public void setTriggerType(String triggerType) {
-			this.triggerType = triggerType;
+			this.triggerType = TriggerType.fromString(triggerType);
 		}
 
-		public String getAggregator() {
+		public Aggregator getAggregator() {
 			return aggregator;
 		}
 
 		public void setAggregator(String aggregator) {
-			this.aggregator = aggregator;
+			this.aggregator = Aggregator.fromString(aggregator);
 		}
 
 		public List<Double> getThreshold() {
@@ -112,11 +115,11 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			this.timeUnit = timeUnit;
 		}
 
-		public double getDefaultValue() {
+		public Double getDefaultValue() {
 			return defaultValue;
 		}
 
-		public void setDefaultValue(double defaultValue) {
+		public void setDefaultValue(Double defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
@@ -129,12 +132,116 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 		}
 
 		public List<BigInteger> getSuspensionLevels() {
-			return suspensionLevels;
+			return suspensionLevelIds;
 		}
 		
 		public void setSuspensionLevels(List<BigInteger> suspensionLevels) {
-			 this.suspensionLevels = suspensionLevels;
+			 this.suspensionLevelIds = suspensionLevels;
 		}
+		
+		 //~ Enums ****************************************************************************************************************************************
+
+	    /**
+	     * The type of trigger.
+	     *
+	     */
+	    public enum TriggerType {
+
+	        /** Greater than. */
+	        GREATER_THAN,
+	        /** Greater than or equal to. */
+	        GREATER_THAN_OR_EQ,
+	        /** Less than. */
+	        LESS_THAN,
+	        /** Less than or equal to. */
+	        LESS_THAN_OR_EQ,
+	        /** Equal to. */
+	        EQUAL,
+	        /** Not equal to. */
+	        NOT_EQUAL,
+	        /** Between. */
+	        BETWEEN,
+	        /** Not between. */
+	        NOT_BETWEEN;
+
+	        /**
+	         * Converts a string to a trigger type.
+	         *
+	         * @param   name  The trigger type name.
+	         *
+	         * @return  The corresponding trigger type.
+	         *
+	         * @throws  IllegalArgumentException  If no corresponding trigger type is found.
+	         */
+	        @JsonCreator
+	        public static TriggerType fromString(String name) {
+	            for (TriggerType t : TriggerType.values()) {
+	                if (t.toString().equalsIgnoreCase(name)) {
+	                    return t;
+	                }
+	            }
+	            throw new IllegalArgumentException("Trigger Type does not exist.");
+	        }
+
+	        /**
+	         * Returns the name of the trigger type.
+	         *
+	         * @return  The name of the trigger type.
+	         */
+	        @JsonValue
+	        public String value() {
+	            return this.toString();
+	        }
+	    }
+	    
+	    /**
+	     * The supported methods for aggregation and downsampling.
+	     *
+	     */
+	    public enum Aggregator {
+
+	        MIN("min"),
+	        MAX("max"),
+	        SUM("sum"),
+	        AVG("avg"),
+	        DEV("dev"),
+	        ZIMSUM("zimsum"),
+	        MINMIN("minmin"),
+	        MINMAX("minmax");
+
+	        private final String _description;
+
+	        private Aggregator(String description) {
+	            _description = description;
+	        }
+
+	        /**
+	         * Returns the element corresponding to the given name.
+	         *
+	         * @param   name  The aggregator name.
+	         *
+	         * @return  The corresponding aggregator element.
+	         */
+	        public static Aggregator fromString(String name) {
+	            if (name != null && !name.isEmpty()) {
+	                for (Aggregator aggregator : Aggregator.values()) {
+	                    if (name.equalsIgnoreCase(aggregator.name())) {
+	                        return aggregator;
+	                    }
+	                }
+	            }
+	            return null;
+	        }
+
+	        /**
+	         * Returns the short hand description of the method.
+	         *
+	         * @return  The method description.
+	         */
+	        public String getDescription() {
+	            return _description;
+	        }
+	    }
 		
 		@Override
 		public Object createExample() {
@@ -148,8 +255,8 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			
 			result.setService("example-service");
 			result.setName("example-name");
-			result.setOwner(Arrays.asList("example-owner"));
-			result.setUser(Arrays.asList("example-user"));
+			result.setOwner(Arrays.asList("example-owners"));
+			result.setUser(Arrays.asList("example-users"));
 			result.setSubSystem("example-subSystem");
 			result.setMetricName("example-metricName");
 			result.setTriggerType("NOT_BETWEEN");
@@ -161,4 +268,5 @@ public class Policy extends com.salesforce.dva.warden.dto.Entity {
 			
 			return result;
 		}
+		
 }
