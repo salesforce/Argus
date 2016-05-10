@@ -208,7 +208,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
             query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
-            return null;
+            return new ArrayList<>(0);
         }
     }
 

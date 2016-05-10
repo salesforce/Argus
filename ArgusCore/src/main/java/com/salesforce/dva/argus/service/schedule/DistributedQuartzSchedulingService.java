@@ -38,6 +38,15 @@ import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
+/**
+ * A distributed version of the QuartzSchedulingService. It consists of a single master (which also acts as a slave) and 
+ * multiple slaves. The master periodically gets all enabled job ids from the RDBMS and enqueues it onto the TaskQueue. 
+ * The slaves periodically poll the TaskQueue for job ids. Once all the jobs have been dequeued by the slaves, they go 
+ * ahead and schedule them using the QuartzScheduler. On each poll, if no jobs have been dequeued, the slaves go back to 
+ * sleep and wait for the next cycle.
+ *
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ */
 public class DistributedQuartzSchedulingService extends DefaultService implements SchedulingService {
 
 	//~ Static fields/initializers *******************************************************************************************************************

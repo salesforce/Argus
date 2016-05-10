@@ -137,6 +137,13 @@ public interface AlertService extends Service {
      */
     Alert findAlertByPrimaryKey(BigInteger id);
     
+    /**
+     * Finds alerts for the given list of primary keys.
+     *
+     * @param   ids  The primary keys for the alerts to find. Cannot be null or empty and must be a positive non-zero number.
+     *
+     * @return  The list of alerts or an empty list if no alerts exist for the given primary keys.
+     */
     List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids);
 
     /**
@@ -182,6 +189,14 @@ public interface AlertService extends Service {
      * @return  The list of alerts for the given status. Will never be null but may be empty.
      */
     List<Alert> findAlertsByStatus(boolean enabled);
+    
+    /**
+     * Returns a list of alert ids by status (enabled alert ids or disabled alert ids).
+     *
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  The list of alert ids for the given status. Will never be null but may be empty.
+     */
     List<BigInteger> findAlertIdsByStatus(boolean enabled);
 
     /**

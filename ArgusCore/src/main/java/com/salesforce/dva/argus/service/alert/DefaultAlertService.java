@@ -257,15 +257,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
         requireNotDisposed();
         requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
 
-        long start = System.currentTimeMillis();
         EntityManager em = emf.get();
 
         em.getEntityManagerFactory().getCache().evictAll();
 
         List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
 
-        _logger.debug("Query for alerts having id {} resulted in : {}", ids, result);
-        _logger.debug("Query took {}ms to complete", (System.currentTimeMillis() - start));
+        _logger.debug("Query for alerts having ids {} resulted in : {}", ids, result);
         return result;
     }
 
