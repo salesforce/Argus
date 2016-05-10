@@ -267,12 +267,12 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
     }
     
     /**
-     * Finds alerts by status (enabled/disabled).
+     * Finds alert ids by status (enabled/disabled).
      *
      * @param   em       The entity manager to user. Cannot be null.
      * @param   enabled  Alert status (true for enabled jobs and false for disabled jobs).
      *
-     * @return  The list of alerts for the given status. Will never be null but may be empty.
+     * @return  The list of alert ids for the given status. Will never be null but may be empty.
      */
     public static List<BigInteger> findIDsByStatus(EntityManager em, boolean enabled) {
         requireArgument(em != null, "Entity manager can not be null.");
