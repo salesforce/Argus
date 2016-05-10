@@ -55,7 +55,9 @@ import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+
 import org.slf4j.Logger;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -70,6 +72,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
@@ -245,6 +248,24 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
         Alert result = Alert.findByPrimaryKey(em, id, Alert.class);
 
         _logger.debug("Query for alert having id {} resulted in : {}", id, result);
+        return result;
+    }
+    
+    @Override
+    @Transactional
+    public List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids) {
+        requireNotDisposed();
+        requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
+
+        long start = System.currentTimeMillis();
+        EntityManager em = emf.get();
+
+        em.getEntityManagerFactory().getCache().evictAll();
+
+        List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
+
+        _logger.debug("Query for alerts having id {} resulted in : {}", ids, result);
+        _logger.debug("Query took {}ms to complete", (System.currentTimeMillis() - start));
         return result;
     }
 
@@ -576,6 +597,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
         requireNotDisposed();
         return Alert.findByStatus(emf.get(), enabled);
     }
+    
+    @Override
+    @Transactional
+    public List<BigInteger> findAlertIdsByStatus(boolean enabled) {
+        requireNotDisposed();
+        return Alert.findIDByStatus(emf.get(), enabled);
+    }
 
     @Override
     @Transactional
@@ -779,6 +807,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
          *
          * @param  id         The alert ID.  Cannot be null.
          * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
+         * @param  uiid       The unique process id that enqueues the alert. Cannot be null.
          */
         public AlertIdWithTimestamp(BigInteger id, Long timestamp) {
             this.alertId = id;

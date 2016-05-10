@@ -160,7 +160,8 @@ public interface MQService extends Service {
         /** The name of the queue into which submitted annotation data is put. */
         ANNOTATION("argusAnnotationQueue"),
         /** The name of the queue into which scheduled collection jobs are put. */
-        COLLECTION_JOB("argusCollectionJobQueue");
+        COLLECTION_JOB("argusCollectionJobQueue"),
+        TASKQUEUE("argusTaskQueue");
 
         private final String _queueName;
 

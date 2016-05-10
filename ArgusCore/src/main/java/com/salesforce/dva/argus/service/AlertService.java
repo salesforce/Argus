@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Properties;
@@ -135,6 +136,8 @@ public interface AlertService extends Service {
      * @return  The alert or null if no alert exists for the primary key.
      */
     Alert findAlertByPrimaryKey(BigInteger id);
+    
+    List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids);
 
     /**
      * Finds an alert by its name and owner.
@@ -179,6 +182,7 @@ public interface AlertService extends Service {
      * @return  The list of alerts for the given status. Will never be null but may be empty.
      */
     List<Alert> findAlertsByStatus(boolean enabled);
+    List<BigInteger> findAlertIdsByStatus(boolean enabled);
 
     /**
      * Returns a list of alerts whose name start with prefix.
@@ -245,7 +249,8 @@ public interface AlertService extends Service {
                     return n;
                 }
             }
-            return null;
+            
+            throw new IllegalArgumentException("No such notifier class: " + notifierClassName);
         }
 
         /**

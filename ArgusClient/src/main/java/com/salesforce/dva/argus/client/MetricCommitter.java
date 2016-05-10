@@ -72,15 +72,15 @@ public class MetricCommitter extends AbstractCommitter {
             try {
             	List<Metric> dequeuedMetrics = collectionService.commitMetrics(METRIC_MESSAGES_CHUNK_SIZE, TIMEOUT);
 
-            	int noOfDatapointsCommitted=0;
-             	for(Metric metric:dequeuedMetrics){
-             		noOfDatapointsCommitted+=metric.getDatapoints().size();
+            	int noOfDatapointsCommitted = 0;
+             	for(Metric metric : dequeuedMetrics){
+             		noOfDatapointsCommitted += metric.getDatapoints().size();
             	}
                 if (dequeuedMetrics.size() > 0) {
                     LOGGER.info(MessageFormat.format("Committed {0} metrics.", dequeuedMetrics.size()));
                     monitorService.modifyCounter(Counter.COMMIT_CLIENT_METRIC_WRITES, dequeuedMetrics.size(), new HashMap<String,String>());
                 }
-                if(noOfDatapointsCommitted>0){
+                if(noOfDatapointsCommitted > 0){
                 	LOGGER.info(MessageFormat.format("Committed {0} datapoints.", noOfDatapointsCommitted));
                     jobCounter.addAndGet(noOfDatapointsCommitted);
                     monitorService.modifyCounter(Counter.COMMIT_CLIENT_DATAPOINT_WRITES, noOfDatapointsCommitted, new HashMap<String,String>());
