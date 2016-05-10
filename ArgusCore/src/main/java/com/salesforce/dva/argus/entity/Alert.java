@@ -100,7 +100,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
             query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
         ),
         @NamedQuery(
-        	name = "Alert.findIDByStatus",
+        	name = "Alert.findIDsByStatus",
         	query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
         ),
         @NamedQuery(
@@ -274,7 +274,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
      *
      * @return  The list of alerts for the given status. Will never be null but may be empty.
      */
-    public static List<BigInteger> findIDByStatus(EntityManager em, boolean enabled) {
+    public static List<BigInteger> findIDsByStatus(EntityManager em, boolean enabled) {
         requireArgument(em != null, "Entity manager can not be null.");
 
         TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDByStatus", BigInteger.class);

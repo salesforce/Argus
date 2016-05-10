@@ -602,7 +602,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
     @Transactional
     public List<BigInteger> findAlertIdsByStatus(boolean enabled) {
         requireNotDisposed();
-        return Alert.findIDByStatus(emf.get(), enabled);
+        return Alert.findIDsByStatus(emf.get(), enabled);
     }
 
     @Override
