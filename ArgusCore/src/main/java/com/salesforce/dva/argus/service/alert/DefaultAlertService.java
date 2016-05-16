@@ -805,7 +805,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
          *
          * @param  id         The alert ID.  Cannot be null.
          * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
-         * @param  uiid       The unique process id that enqueues the alert. Cannot be null.
          */
         public AlertIdWithTimestamp(BigInteger id, Long timestamp) {
             this.alertId = id;

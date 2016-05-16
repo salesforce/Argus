@@ -240,6 +240,8 @@ public class DistributedQuartzSchedulingService extends DefaultService implement
     private class SchedulingThread extends Thread {
 
     	private static final long SLAVE_SLEEP_IN_MILLIS = 60000;
+    	private static final int TASK_DEQUE_LIMIT = 1000;
+    	private static final int TASK_DEQUE_TIMEOUT = 500;
         private final LockType lockType;
 
         /**
@@ -294,10 +296,9 @@ public class DistributedQuartzSchedulingService extends DefaultService implement
                     }
                     
                     //Initialize argusTaskQueue streams and drain any tasks previously added to the queue.
-                    int limit = 1000;
-                    List<BigInteger> alertIds = _mqService.dequeue(MQQueue.TASKQUEUE.getQueueName(), BigInteger.class, 500, limit);
-                    while(alertIds.size() >= limit) {
-                    	alertIds = _mqService.dequeue(MQQueue.TASKQUEUE.getQueueName(), BigInteger.class, 500, limit);
+                    while(_mqService.dequeue(MQQueue.TASKQUEUE.getQueueName(), BigInteger.class, 
+                    		TASK_DEQUE_TIMEOUT, TASK_DEQUE_LIMIT).size() == TASK_DEQUE_LIMIT) {
+                    	continue;
                     }
                     
                     while (!isInterrupted() && _isSchedulingServiceEnabled()) {
@@ -330,14 +331,16 @@ public class DistributedQuartzSchedulingService extends DefaultService implement
         	
         	List<BigInteger> alertIds = new ArrayList<>();
             while(true) {
-            	List<BigInteger> ids = _mqService.dequeue(MQQueue.TASKQUEUE.getQueueName(), BigInteger.class, 500, 1000);
-            	if(ids.size() == 0) {
+            	List<BigInteger> ids = _mqService.dequeue(MQQueue.TASKQUEUE.getQueueName(), BigInteger.class, 
+            			TASK_DEQUE_TIMEOUT, TASK_DEQUE_LIMIT);
+            	if(ids.size() < TASK_DEQUE_LIMIT) {
+            		alertIds.addAll(ids);
             		break;
             	}
             	alertIds.addAll(ids);
             }
             
-            //There is nothing new to be scheduled. No need to dispose, re-initialize scheduler and re-schedule jobs.
+            //There is nothing new to be scheduled. No need to dispose, re-initialize scheduler or re-schedule jobs.
             if(alertIds.isEmpty()) {
             	return scheduler;
             }
