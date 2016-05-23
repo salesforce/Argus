@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Down samples the one or more metric.<br/>
@@ -113,58 +112,9 @@ public class DownsampleTransform implements Transform {
      * on minute level, 01:01:30 => 01:01:00 
      * on second level, 01:01:30 => 01:01:30 
      */
-    public static Long downsamplerTimestamp(Long millitimestamp, String unitStr) {
+    public static Long downsamplerTimestamp(Long millitimestamp, long windowSize) {
 
-        InternalTimeUnit unit = InternalTimeUnit.fromString(unitStr);
-
-        switch (unit) {
-            case HOUR:
-            	return TimeUnit.MILLISECONDS.toHours(millitimestamp) * 60 * 60 * 1000;                
-            case MINUTE:
-            	return TimeUnit.MILLISECONDS.toMinutes(millitimestamp) * 60 * 1000;                
-            case SECOND:
-            	return TimeUnit.MILLISECONDS.toSeconds(millitimestamp) * 1000;                            
-            default:
-                throw new UnsupportedOperationException(unitStr);
-        }
-    }
-    
-    private enum InternalTimeUnit { 	 
-
-        HOUR("h"),
-        MINUTE("m"),
-        SECOND("s");
-
-        /** The timeunit name. */
-        public final String unit;
-
-        //~ Constructors *********************************************************************************************************************************
-
-        private InternalTimeUnit(String unit) {
-            this.unit = unit;
-        }
-        
-        public static InternalTimeUnit fromString(String unitStr) {
-            if ( unitStr != null) {
-                for (InternalTimeUnit unit : InternalTimeUnit.values()) {
-                    if (unitStr.equalsIgnoreCase(unit.getUnit())) {
-                        return unit;
-                    }
-                }
-            }
-            throw new IllegalArgumentException(unitStr);
-        }
-
-        //~ Methods **************************************************************************************************************************************
-
-        /**
-         * Returns the time unit.
-         *
-         * @return  The time unit.
-         */
-        public String getUnit() {
-            return unit;
-        }
+    	return millitimestamp-(millitimestamp%windowSize);
     }
     
     //~ Methods **************************************************************************************************************************************
@@ -205,9 +155,9 @@ public class DownsampleTransform implements Transform {
 
     private Map<Long, String> createDownsampleDatapoints(Map<Long, String> originalDatapoints, long windowSize, String type, String windowUnit) {
         Map<Long, String> downsampleDatapoints = new HashMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
+        TreeMap<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
         List<String> values = new ArrayList<>();
-        Long windowStart = 0L;
+        Long windowStart = downsamplerTimestamp(sortedDatapoints.firstKey(),windowSize);
 
         for (Map.Entry<Long, String> entry : sortedDatapoints.entrySet()) {
             Long timestamp = entry.getKey();
@@ -215,14 +165,13 @@ public class DownsampleTransform implements Transform {
 
             if (values.isEmpty()) {
                 values.add(value);
-                windowStart = downsamplerTimestamp(timestamp, windowUnit);
             } else {
-                if (timestamp > windowStart + windowSize) {
+                if (timestamp >= windowStart + windowSize) {
                     String fillingValue = downsamplerReducer(values, type);
 
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
-                    windowStart = downsamplerTimestamp(timestamp, windowUnit);
+                    windowStart = downsamplerTimestamp(timestamp, windowSize);
                 }
                 values.add(value);
             }
