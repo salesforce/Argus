@@ -67,3 +67,16 @@ $ bower install
 ```sh
 $ grunt
 ```
+
+> NOTE: You can update the following .json files to reflect the environment you want to build for.
+#
+```sh
+./config/local.json
+$ grunt replace:local
+
+./config/development.json
+$ grunt replace:development
+
+./config/production.json
+$ grunt replace:production
+```
