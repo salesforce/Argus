@@ -12,7 +12,7 @@ ArgusWeb
 
 ##### Install NodeJS
 #
-> **Recommended** - You can use Homebrew to install NodeJS.  This will isntall the latest version.
+> **Recommended** - You can use Homebrew to install NodeJS.  This will install the latest version.
 
 ```sh
 $ brew install node
