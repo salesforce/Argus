@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.dva.argus.zookeeper;
+package com.salesforce.dva.argus.util.zookeeper;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 

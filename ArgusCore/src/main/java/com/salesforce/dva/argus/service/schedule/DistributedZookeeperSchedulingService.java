@@ -66,9 +66,9 @@ import com.salesforce.dva.argus.service.SchedulingService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.zookeeper.ClientNode;
-import com.salesforce.dva.argus.zookeeper.ClientNode.ClientsResult;
-import com.salesforce.dva.argus.zookeeper.Barrier;
+import com.salesforce.dva.argus.util.zookeeper.Barrier;
+import com.salesforce.dva.argus.util.zookeeper.ClientNode;
+import com.salesforce.dva.argus.util.zookeeper.ClientNode.ClientsResult;
 
 /**
  * Distributed scheduling  using zookeeper
