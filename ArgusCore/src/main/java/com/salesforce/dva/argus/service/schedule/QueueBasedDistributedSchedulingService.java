@@ -47,7 +47,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
-public class DistributedQuartzSchedulingService extends DefaultService implements SchedulingService {
+public class QueueBasedDistributedSchedulingService extends DefaultService implements SchedulingService {
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
@@ -85,7 +85,7 @@ public class DistributedQuartzSchedulingService extends DefaultService implement
      * @param  config                          The system configuration used to configure the service.
      */
     @Inject
-    DistributedQuartzSchedulingService(AlertService alertService, GlobalInterlockService globalInterlockService, UserService userService,
+    QueueBasedDistributedSchedulingService(AlertService alertService, GlobalInterlockService globalInterlockService, UserService userService,
         ServiceManagementService serviceManagementRecordService, AuditService auditService, SystemConfiguration config, MQService mqService) {
     	super(config);
         requireArgument(alertService != null, "Alert service cannot be null.");

@@ -107,7 +107,8 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
             name = "Alert.findByPrefix",
             query = "SELECT a FROM Alert a where a.name LIKE :name AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
         ), @NamedQuery(name = "Alert.setEnabled", query = "UPDATE Alert a SET a.enabled=true WHERE a = :alert"),
-        @NamedQuery(name = "Alert.setDisabled", query = "UPDATE Alert a SET a.enabled=false WHERE a = :alert")
+        @NamedQuery(name = "Alert.setDisabled", query = "UPDATE Alert a SET a.enabled=false WHERE a = :alert"),
+        @NamedQuery(name = "Alert.countByStatus", query = "SELECT count(a) from Alert a where a.enabled= :enabled")
     }
 )
 public class Alert extends JPAEntity implements Serializable, CronJob {
@@ -275,13 +276,58 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
      * @return  The list of alert ids for the given status. Will never be null but may be empty.
      */
     public static List<BigInteger> findIDsByStatus(EntityManager em, boolean enabled) {
+       requireArgument(em != null, "Entity manager can not be null.");
+
+       TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDByStatus", BigInteger.class);
+       query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+       try {
+           query.setParameter("enabled", enabled);
+           return query.getResultList();
+       } catch (NoResultException ex) {
+    	   return new ArrayList<>(0);
+       }
+    }
+    
+    /**
+     * Finds alert count by status (enabled/disabled).
+     *
+     * @param   em       The entity manager to user. Cannot be null.
+     * @param   enabled  Alert status (true for enabled jobs and false for disabled jobs).
+     *
+     * @return   alert count by status
+     */
+    public static int alertCountByStatus(EntityManager em, boolean enabled) {
         requireArgument(em != null, "Entity manager can not be null.");
 
-        TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDByStatus", BigInteger.class);
+        TypedQuery<Long> query = em.createNamedQuery("Alert.countByStatus", Long.class);
 
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
         try {
             query.setParameter("enabled", enabled);
+            return query.getSingleResult().intValue();
+        } catch (NoResultException ex) {
+            return 0;
+        }
+    }
+    
+    /**
+     * Finds alerts by status (enabled/disabled).
+     *
+     * @param   em       The entity manager to user. Cannot be null.
+     * @param   enabled  Alert status (true for enabled jobs and false for disabled jobs).
+     *
+     * @return  The list of alerts for the given status. Will never be null but may be empty.
+     */
+    public static List<Alert> findByLimitOffsetStatus(EntityManager em, int limit, int offset, boolean enabled) {
+        requireArgument(em != null, "Entity manager can not be null.");
+
+        TypedQuery<Alert> query = em.createNamedQuery("Alert.findByStatus", Alert.class);
+
+        query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+        try {
+            query.setParameter("enabled", enabled);
+            query.setFirstResult(offset);
+            query.setMaxResults(limit);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);

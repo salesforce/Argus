@@ -180,7 +180,7 @@ public interface AlertService extends Service {
      * @return  The list of all alerts. Will never be null, but may be empty.
      */
     List<Alert> findAllAlerts();
-
+    
     /**
      * Returns a list of alerts by status (enabled alerts or disabled alerts).
      *
@@ -199,6 +199,26 @@ public interface AlertService extends Service {
      */
     List<BigInteger> findAlertIdsByStatus(boolean enabled);
 
+    /**
+     * Returns the total count of alerts by status (enabled alerts or disabled alerts).
+     *
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  Alert count
+     */
+    int alertCountByStatus(boolean enabled);
+
+    /**
+     * Returns a list of alerts by status (enabled alerts or disabled alerts), from a given offset.
+     *
+     * @param   limit    Number of alerts to fetch
+     * @param   offset   Position from where to start fetching the alerts
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  The list of alerts for the given status. Will never be null but may be empty.
+     */
+    List<Alert> findAlertsByLimitOffsetStatus(int limit, int offset, boolean enabled);
+    
     /**
      * Returns a list of alerts whose name start with prefix.
      *
