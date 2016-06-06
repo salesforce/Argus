@@ -33,11 +33,14 @@ package com.salesforce.dva.argus.entity;
 
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.util.Cron;
+
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -95,6 +98,10 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
         @NamedQuery(
             name = "Alert.findByStatus",
             query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+        ),
+        @NamedQuery(
+        	name = "Alert.findIDsByStatus",
+        	query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
         ),
         @NamedQuery(
             name = "Alert.findByPrefix",
@@ -258,6 +265,27 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
+    }
+    
+    /**
+     * Finds alert ids by status (enabled/disabled).
+     *
+     * @param   em       The entity manager to user. Cannot be null.
+     * @param   enabled  Alert status (true for enabled jobs and false for disabled jobs).
+     *
+     * @return  The list of alert ids for the given status. Will never be null but may be empty.
+     */
+    public static List<BigInteger> findIDsByStatus(EntityManager em, boolean enabled) {
+       requireArgument(em != null, "Entity manager can not be null.");
+
+       TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDByStatus", BigInteger.class);
+       query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+       try {
+           query.setParameter("enabled", enabled);
+           return query.getResultList();
+       } catch (NoResultException ex) {
+    	   return new ArrayList<>(0);
+       }
     }
     
     /**

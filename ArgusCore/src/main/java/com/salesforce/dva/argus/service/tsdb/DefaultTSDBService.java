@@ -315,12 +315,12 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
     @Override
     public String getScopeFromTSDBMetric(String tsdbMetricName) {
-	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
+    	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
     }
 
     @Override
     public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
+    	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
         return (splits.length == 2) ? NamespaceService.NAMEPSACE_PREFIX + splits[1] : null;
     }
 
@@ -771,14 +771,14 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         }
     }
     
-      @Override
-       public Properties getServiceProperties() {
-               Properties serviceProps= new Properties();
+	@Override
+	public Properties getServiceProperties() {
+		Properties serviceProps = new Properties();
 
-               for(Property property:Property.values()){
-                       serviceProps.put(property.getName(), property.getDefaultValue());
-               }
-               return serviceProps;
-       }
+		for (Property property : Property.values()) {
+			serviceProps.put(property.getName(), property.getDefaultValue());
+		}
+		return serviceProps;
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
