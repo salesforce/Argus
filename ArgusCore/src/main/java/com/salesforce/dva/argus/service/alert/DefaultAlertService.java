@@ -55,7 +55,9 @@ import com.salesforce.dva.argus.service.NotifierFactory;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+
 import org.slf4j.Logger;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -70,6 +72,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
@@ -81,8 +84,8 @@ import static java.math.BigInteger.ZERO;
  *
  * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com)
  */
-public class DefaultAlertService extends DefaultJPAService implements AlertService {
-
+public class DefaultAlertService extends DefaultJPAService implements AlertService {    
+    
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
@@ -247,6 +250,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.debug("Query for alert having id {} resulted in : {}", id, result);
 		return result;
 	}
+	
+	@Override
+    @Transactional
+    public List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids) {
+        requireNotDisposed();
+        requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
+
+        EntityManager em = emf.get();
+
+        em.getEntityManagerFactory().getCache().evictAll();
+
+        List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
+
+        _logger.debug("Query for alerts having ids {} resulted in : {}", ids, result);
+        return result;
+    }
 
 	@Override
 	@Transactional
@@ -576,7 +595,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return Alert.findByStatus(emf.get(), enabled);
 	}
-
+	
+	@Override
+	@Transactional
+	public List<BigInteger> findAlertIdsByStatus(boolean enabled) {
+		requireNotDisposed();
+		return Alert.findIDsByStatus(emf.get(), enabled);
+	}
 
 	@Override
 	@Transactional
