@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
+import java.util.Objects;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -40,14 +42,14 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Id;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 
 /**
  * DistributedSchedulingLock object uses database record to distribute the jobs across schedulers. 
@@ -57,15 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 @Entity
 @Table(name = "DISTRIBUTED_SCHEDULING_LOCK")
-@NamedQueries(
-	    {
-	        @NamedQuery(
-	            name = "DistributedSchedulingLock.findById",
-	            query =
-	                "SELECT a FROM DistributedSchedulingLock a WHERE a.id = :id"
-	        )
-	    }
-	)
+
 public class DistributedSchedulingLock { 
 	
 	 //~ Static fields/initializers *******************************************************************************************************************
@@ -135,25 +129,26 @@ public class DistributedSchedulingLock {
 	     * @param   schedulingRefreshInterval The time in millis scheduler refresh jobs
 	     * @return  The distributed schedule object.
 	     */
-		  public static DistributedSchedulingLock updateNGetDistributedScheduleByType(EntityManager em, long type, int jobsBlockSize, long schedulingRefreshInterval) throws OptimisticLockException {
+		  public static DistributedSchedulingLock updateNGetDistributedScheduleByType(EntityManager em, LockType type, int jobsBlockSize, long schedulingRefreshInterval) throws OptimisticLockException {
 		        EntityTransaction tx = null;
 
+		        long id=type.ordinal()+1;
 		        try {
 		            tx = em.getTransaction();
 		            tx.begin();
 
-		            DistributedSchedulingLock distributedSchedulingLock = getDistributedScheduleByType(em, type);
+		            DistributedSchedulingLock distributedSchedulingLock = getDistributedScheduleByType(em, id);
 
 		            if(distributedSchedulingLock == null){
-			        	 distributedSchedulingLock = new DistributedSchedulingLock(type);
+			        	 distributedSchedulingLock = new DistributedSchedulingLock(id);
 			        	 distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
-			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em)); 
+			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, type)); 
 			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMinutes(System.currentTimeMillis()+schedulingRefreshInterval)); 
 			        	 distributedSchedulingLock = em.merge(distributedSchedulingLock);
 			        	 em.flush();
 			         }else if(System.currentTimeMillis() > distributedSchedulingLock.getNextScheduleStartTime()){
 			        	 distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
-			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em)); 
+			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em,type)); 
 			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMinutes(System.currentTimeMillis()+schedulingRefreshInterval));
 			        	 distributedSchedulingLock = em.merge(distributedSchedulingLock);
 			        	 em.flush();
@@ -177,9 +172,14 @@ public class DistributedSchedulingLock {
 		      
 		    }
 		
-		 private static long getTotalEnabledJobCount(EntityManager em){
-		    		return Alert.alertCountByStatus(em, true);
-		    }
+		 private static long getTotalEnabledJobCount(EntityManager em, LockType type){
+			 switch(type){
+			 case ALERT_SCHEDULING:
+				 return Alert.alertCountByStatus(em, true);
+			 default:
+				 return 0;
+			 }
+	    }
 
 		 private static long _toMinutes(long millis){
 			 return millis-(millis % (60*1000));
@@ -217,4 +217,33 @@ public class DistributedSchedulingLock {
 			this.nextScheduleStartTime = nextScheduleStartTime;
 		}
 
+		  @Override
+		    public int hashCode() {
+		        int hash = 3;
+
+		        hash = 59 * hash + Objects.hashCode(this.id);
+		        return hash;
+		    }
+
+		    @Override
+		    public boolean equals(Object obj) {
+		        if (obj == null) {
+		            return false;
+		        }
+		        if (getClass() != obj.getClass()) {
+		            return false;
+		        }
+
+		        final DistributedSchedulingLock other = DistributedSchedulingLock.class.cast(obj);
+
+		        if (!Objects.equals(this.id, other.id)) {
+		            return false;
+		        }
+		        return true;
+		    }
+
+		    @Override
+		    public String toString() {
+		        return "DistributedSchedulingLock{" + "id=" + id + ", jobCount=" + jobCount + ", currentIndex=" + currentIndex + ", nextScheduleStartTime=" + nextScheduleStartTime + '}';
+		    }
 }
