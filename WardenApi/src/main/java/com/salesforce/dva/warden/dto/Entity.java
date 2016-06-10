@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.dva.warden.dto;
 
 import java.io.Serializable;
@@ -40,26 +39,24 @@ import java.util.Date;
  *
  * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
-@SuppressWarnings("serial")
-public abstract class Entity extends Base implements Serializable {
-
-    //~ Instance fields ******************************************************************************************************************************
-
+@SuppressWarnings( "serial" )
+public abstract class Entity
+    extends Base
+    implements Serializable
+{
     private BigInteger id;
     private BigInteger createdById;
     private Date createdDate;
     private BigInteger modifiedById;
     private Date modifiedDate;
 
-
-    //~ Methods **************************************************************************************************************************************
-
     /**
      * Returns the entity ID.
      *
      * @return  The entity ID.
      */
-    public BigInteger getId() {
+    public BigInteger getId(  )
+    {
         return id;
     }
 
@@ -68,7 +65,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @param  id  The entity ID.
      */
-    public void setId(BigInteger id) {
+    public void setId( BigInteger id )
+    {
         this.id = id;
     }
 
@@ -77,7 +75,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @return  The created date.
      */
-    public Date getCreatedDate() {
+    public Date getCreatedDate(  )
+    {
         return createdDate;
     }
 
@@ -86,7 +85,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @param  createdDate  The created date.
      */
-    public void setCreatedDate(Date createdDate) {
+    public void setCreatedDate( Date createdDate )
+    {
         this.createdDate = createdDate;
     }
 
@@ -95,7 +95,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @return  The ID of the creator.
      */
-    public BigInteger getCreatedById() {
+    public BigInteger getCreatedById(  )
+    {
         return createdById;
     }
 
@@ -104,7 +105,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @param  createdById  The ID of the creator.
      */
-    public void setCreatedById(BigInteger createdById) {
+    public void setCreatedById( BigInteger createdById )
+    {
         this.createdById = createdById;
     }
 
@@ -113,7 +115,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @return  The ID of the last person who modified the entity.
      */
-    public BigInteger getModifiedById() {
+    public BigInteger getModifiedById(  )
+    {
         return modifiedById;
     }
 
@@ -122,7 +125,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @param  modifiedById  The ID of the person who most recently modified the entity.
      */
-    public void setModifiedById(BigInteger modifiedById) {
+    public void setModifiedById( BigInteger modifiedById )
+    {
         this.modifiedById = modifiedById;
     }
 
@@ -131,7 +135,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @return  The modified on date.
      */
-    public Date getModifiedDate() {
+    public Date getModifiedDate(  )
+    {
         return modifiedDate;
     }
 
@@ -140,7 +145,8 @@ public abstract class Entity extends Base implements Serializable {
      *
      * @param  modifiedDate  The modified on date.
      */
-    public void setModifiedDate(Date modifiedDate) {
+    public void setModifiedDate( Date modifiedDate )
+    {
         this.modifiedDate = modifiedDate;
     }
 }

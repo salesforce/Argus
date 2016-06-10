@@ -1,5 +1,5 @@
 package com.salesforce.dva.warden.entity;
 
-public class Entity {
-
+public class Entity
+{
 }

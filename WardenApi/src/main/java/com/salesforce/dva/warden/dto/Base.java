@@ -28,25 +28,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.dva.warden.dto;
+
 
 /**
  * The base DTO object class.
  *
  * @author  Jigna Bhatt (jbhatt@salesfoce.com)
  */
-public abstract class Base {
-
-    //~ Methods **************************************************************************************************************************************
-
+public abstract class Base
+{
     /**
-     * Implementations of this method are required to generate an instance of the DTO object containing sample data that can be serialized and 
+     * Implementations of this method are required to generate an instance of the DTO object containing sample data that can be serialized and
      * included in documentation.
      *
      * @return  An instance of the object populated with sample data.
      */
-    public abstract Object createExample();
+    public abstract Object createExample(  );
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
-
