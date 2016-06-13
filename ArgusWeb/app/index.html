@@ -10,7 +10,6 @@
         <link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">
         <link rel="stylesheet" href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css"/>
-        <link rel="stylesheet" href="bower_components/selectize/dist/css/selectize.default.css">
         <script src="bower_components/jquery/dist/jquery.min.js"></script>
         <script src="bower_components/angular/angular.js"></script>
         <script src="bower_components/angular-resource/angular-resource.js"></script>
@@ -45,10 +44,11 @@
         <script src="bower_components/moment/moment.js"></script>
         <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
 		<script src="bower_components/selectize/dist/js/standalone/selectize.min.js"></script>
-		<script src="bower_components/angular-selectize2/dist/selectize.js"></script>
+		<script src="bower_components/angular-selectize2/dist/angular-selectize.js"></script>
         <script src="views/main/main.js"></script>
         <script src="views/main/config.js"></script>
         <script src="views/about/about.js"></script>
+        <script src="views/admin/admin.js"></script>
         <script src="views/alerts/alerts.js"></script>
         <script src="views/namespace/namespace.js"></script>
         <script src="views/dashboards/dashboards.js"></script>
@@ -100,6 +100,7 @@
                         <li><a href="#viewmetrics">Metrics</a></li>
                         <li><a href="#namespace">Namespace</a></li>
                         <li><a href="#about">About</a></li>
+                        <li><a href="#admin" ng-show='isPrivileged()'>Admin</a></li>
                         <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
                     </ul>
                 </div>
@@ -109,8 +110,7 @@
 
 
         <div class="container" style="width: 93%;">
-            <div ng-view>
-            </div>
+            <div ng-view></div>
         </div>
     </body>
     
