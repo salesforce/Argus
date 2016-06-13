@@ -10,3 +10,8 @@ nbactions.xml
 nb-configuration.xml
 argus-build.properties
 .DS_Store
+config/
+tomcat/
+update_tomcat.sh
+.idea/
+*.iml
