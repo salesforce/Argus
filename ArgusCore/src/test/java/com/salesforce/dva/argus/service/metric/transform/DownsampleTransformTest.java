@@ -166,6 +166,7 @@ public class DownsampleTransformTest {
         Transform downsampleTransform = new DownsampleTransform();
         Map<Long, String> datapoints_1 = new HashMap<Long, String>();
 
+        datapoints_1.put(0L, "1");
         datapoints_1.put(1000L, "1");
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
@@ -190,9 +191,11 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "2.0");
-        expected_1.put(4000L, "5.0");
-        expected_1.put(7000L, "8.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(2000L, "2.5");
+        expected_1.put(4000L, "4.5");
+        expected_1.put(6000L, "6.5");
+        expected_1.put(8000L, "8.5");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -229,9 +232,11 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "1.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(2000L, "2.0");
         expected_1.put(4000L, "4.0");
-        expected_1.put(7000L, "7.0");
+        expected_1.put(6000L, "6.0");
+        expected_1.put(8000L, "8.0");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -268,9 +273,50 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "3.0");
-        expected_1.put(4000L, "6.0");
-        expected_1.put(7000L, "9.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(2000L, "3.0");
+        expected_1.put(4000L, "5.0");
+        expected_1.put(6000L, "7.0");
+        expected_1.put(8000L, "9.0");
+
+        List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 1);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+    }
+    
+    @Test
+    public void testDownsampleTransformShouldReturnSameMetric() {
+        Transform downsampleTransform = new DownsampleTransform();
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+
+        datapoints_1.put(1000L, "1");
+        datapoints_1.put(2000L, "2");
+        datapoints_1.put(3000L, "3");
+        datapoints_1.put(4000L, "4");
+        datapoints_1.put(5000L, "5");
+       
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1s-sum");
+
+        Map<Long, String> expected_1 = new HashMap<Long, String>();
+
+        expected_1.put(1000L, "1.0");
+        expected_1.put(2000L, "2.0");
+        expected_1.put(3000L, "3.0");
+        expected_1.put(4000L, "4.0");
+        expected_1.put(5000L, "5.0");
+        
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -307,9 +353,11 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "6.0");
-        expected_1.put(4000L, "15.0");
-        expected_1.put(7000L, "24.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(2000L, "5.0");
+        expected_1.put(4000L, "9.0");
+        expected_1.put(6000L, "13.0");
+        expected_1.put(8000L, "17.0");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -322,15 +370,18 @@ public class DownsampleTransformTest {
         Transform downsampleTransform = new DownsampleTransform();
         Map<Long, String> datapoints_1 = new HashMap<Long, String>();
 
+        datapoints_1.put(0L, "0");
         datapoints_1.put(1000L, "1");
         datapoints_1.put(2000L, "2");
         datapoints_1.put(3000L, "3");
         datapoints_1.put(4000L, "4");
-        datapoints_1.put(5000L, "6");
-        datapoints_1.put(6000L, "8");
-        datapoints_1.put(7000L, "9");
-        datapoints_1.put(8000L, "12");
-        datapoints_1.put(9000L, "15");
+        datapoints_1.put(5000L, "5");
+        datapoints_1.put(6000L, "6");
+        datapoints_1.put(7000L, "7");
+        datapoints_1.put(8000L, "8");
+        datapoints_1.put(9000L, "9");
+        datapoints_1.put(10000L, "9");
+       
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -342,14 +393,14 @@ public class DownsampleTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        constants.add("2s-dev");
+        constants.add("3s-dev");
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "1.0");
-        expected_1.put(4000L, "2.0");
-        expected_1.put(7000L, "3.0");
-
+        expected_1.put(0L, "1.0");
+        expected_1.put(3000L, "1.0");
+        expected_1.put(6000L, "1.0");
+        expected_1.put(9000L, "0.0");
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);
@@ -402,15 +453,19 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "2.0");
-        expected_1.put(4000L, "5.0");
-        expected_1.put(7000L, "8.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(2000L, "2.5");
+        expected_1.put(4000L, "4.5");
+        expected_1.put(6000L, "6.5");
+        expected_1.put(8000L, "8.5");
 
         Map<Long, String> expected_2 = new HashMap<Long, String>();
 
-        expected_2.put(1000L, "200.0");
-        expected_2.put(4000L, "500.0");
-        expected_2.put(7000L, "800.0");
+        expected_2.put(0L, "100.0");
+        expected_2.put(2000L, "250.0");
+        expected_2.put(4000L, "450.0");
+        expected_2.put(6000L, "650.0");
+        expected_2.put(8000L, "850.0");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -448,7 +503,7 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "5.0");
+        expected_1.put(0L, "5.0");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -479,9 +534,9 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "1.0");
-        expected_1.put(5000L, "5.0");
-        expected_1.put(9000L, "9.0");
+        expected_1.put(0L, "1.0");
+        expected_1.put(4000L, "5.0");
+        expected_1.put(8000L, "9.0");
 
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
@@ -518,10 +573,11 @@ public class DownsampleTransformTest {
 
         Map<Long, String> expected_1 = new HashMap<Long, String>();
 
-        expected_1.put(1000L, "0.0");
+        expected_1.put(0L, "0.0");
+        expected_1.put(2000L, "0.0");
         expected_1.put(4000L, "0.0");
-        expected_1.put(7000L, "0.0");
-
+        expected_1.put(6000L, "0.0");
+        expected_1.put(8000L, "0.0");
         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);

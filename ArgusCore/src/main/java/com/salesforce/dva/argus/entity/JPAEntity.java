@@ -100,6 +100,7 @@ import static java.math.BigInteger.ZERO;
 @NamedQueries(
     {
         @NamedQuery(name = "JPAEntity.findByPrimaryKey", query = "SELECT e FROM JPAEntity e WHERE e.id = :id AND e.deleted = :deleted"),
+        @NamedQuery(name = "JPAEntity.findByPrimaryKeys", query = "SELECT e FROM JPAEntity e WHERE e.id IN :ids AND e.deleted = :deleted"),
         @NamedQuery(
             name = "JPAEntity.findByDeleteMarker", query = "SELECT e FROM JPAEntity e WHERE e.deleted = :deleted"
         )
@@ -181,6 +182,33 @@ public abstract class JPAEntity implements Serializable, Identifiable {
             return query.getSingleResult();
         } catch (NoResultException ex) {
             return null;
+        }
+    }
+    
+    /**
+     * Finds JPA entities by their primary keys.
+     *
+     * @param   <E>   The JPA entity type.
+     * @param   em    The entity manager to use.  Cannot be null.
+     * @param   ids    The list of IDs of the entities to find.  Must be a non-null non-empty list.
+     * @param   type  The runtime type to cast the result value to.
+     *
+     * @return  The corresponding entity or null if no entity exists.
+     */
+    public static <E extends Identifiable> List<E> findByPrimaryKeys(EntityManager em, List<BigInteger> ids, Class<E> type) {
+        requireArgument(em != null, "The entity manager cannot be null.");
+        requireArgument(ids != null && !ids.isEmpty(), "IDs cannot be null or empty.");
+        requireArgument(type != null, "The entity type cannot be null.");
+
+        TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByPrimaryKeys", type);
+
+        query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+        try {
+            query.setParameter("ids", ids);
+            query.setParameter("deleted", false);
+            return query.getResultList();
+        } catch (NoResultException ex) {
+            return new ArrayList<>(0);
         }
     }
 
