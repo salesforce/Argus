@@ -32,16 +32,12 @@
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.MetricDto;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.TreeSet;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -52,6 +48,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Provides methods to query and transform metrics.
@@ -67,6 +65,7 @@ public class MetricResources extends AbstractResource {
     private final String COMMA = ",";
     private final String NEW_LINE = "\n";
     private final String EMPTY = "";
+    private final long DEFAULT_TTL = 1800;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -115,6 +114,31 @@ public class MetricResources extends AbstractResource {
     }
 
     /**
+     * Start an async batch metric query
+     *
+     * @param   req          HTTPServlet request. Cannot be null.
+     *
+     * @return  Batch ID where metric-processing metadata is returned
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/batch")
+    @Description("Start an async batch metric query")
+    public Response getAsyncMetricsJSON(@Context HttpServletRequest req,
+        @QueryParam("ttl") long ttl,
+        @QueryParam("expression") List<String> expressions) {
+        if (ttl == 0) {
+            ttl = DEFAULT_TTL;
+        }
+        Map<String, Object> body = new HashMap<>();
+        String batchId = _getAsyncResponse(req, expressions, ttl);
+        body.put("href", "/batches/" + batchId);
+        body.put("id", batchId);
+        return Response.accepted(body).build();
+    }
+
+
+    /**
      * Download the metric data for a given query. 
      * Single expression can consist of multiple queries. We will take the query with the longest time and instrument that.
      *
@@ -137,6 +161,16 @@ public class MetricResources extends AbstractResource {
         }
         metricService.dispose();
         return metrics;
+    }
+
+    private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, long ttl) {
+        validateAndGetOwner(req, null);
+        SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
+
+        final MetricService metricService = system.getServiceFactory().getMetricService();
+        // TODO: are all these parameters needed?
+        PrincipalUser owner = validateAndGetOwner(req, null);
+        return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
     }
 
     private String _convertToCSV(List<Metric> metrics) {

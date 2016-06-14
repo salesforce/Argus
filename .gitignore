@@ -10,3 +10,32 @@ nbactions.xml
 nb-configuration.xml
 argus-build.properties
 .DS_Store
+
+# Eclipse ignore
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# Eclipse Core
+.project
+
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
+
+# Java annotation processor (APT)
+.factorypath
+
+# Intellij
+.idea/
+*.iml
+
+Makefile
+

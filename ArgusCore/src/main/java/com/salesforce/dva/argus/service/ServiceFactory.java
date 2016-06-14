@@ -85,6 +85,8 @@ public final class ServiceFactory {
     Provider<CacheService> _cacheServiceProvider;
     @Inject
     Provider<DiscoveryService> _discoveryServiceProvider;
+    @Inject
+    Provider<MetricQueueService> _metricQueueServiceProvider;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -275,6 +277,15 @@ public final class ServiceFactory {
      */
     public synchronized DiscoveryService getDiscoveryService() {
         return _discoveryServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the metric queue service.
+     *
+     * @return  An instance of the metric queue service.
+     */
+    public synchronized MetricQueueService getMetricQueueService() {
+        return _metricQueueServiceProvider.get();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

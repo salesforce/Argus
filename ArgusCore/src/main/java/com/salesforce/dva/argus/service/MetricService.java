@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+
 import java.util.List;
 
 /**
@@ -94,6 +95,8 @@ public interface MetricService extends Service {
      *          return null. Returns an empty list if all expressions return nothing.
      */
     List<Metric> getMetrics(String expression, long offset);
+
+    String getAsyncMetrics(List<String> expressions, long offset, long ttl, String ownerName);
 
     /**
      * Returns a list of <tt>MetricQuery</tt> objects corresponding to the given expression.
