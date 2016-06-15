@@ -1,14 +1,13 @@
 package com.salesforce.dva.argus.entity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.salesforce.dva.argus.service.CacheService;
-import com.salesforce.dva.argus.service.MetricQueueService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by cguan on 6/1/16.
@@ -28,43 +27,32 @@ public class BatchMetricQuery implements Serializable {
         _status = Status.QUEUED;
         _priority = Priority.fromInt(priority);
         _ttl = ttl;
-        _ownerName = ownerName;
         _batchId = UUID.randomUUID().toString();
+        _ownerName = ownerName;
         _queries = new ArrayList<>(expressions.size());
         for (String expression: expressions) {
-            _queries.add(new AsyncBatchedMetricQuery(expression, offset, _batchId));
+            _queries.add(new AsyncBatchedMetricQuery(expression, offset, _batchId, _priority));
         }
     }
 
-    // TODO: restructure to service
-    private BatchMetricQuery(MetricQueueService metricQueueService, String json) {
-        try {
-            Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
-            _status = Status.fromInt((Integer) batchData.get("status"));
-            _priority = Priority.fromInt((Integer) batchData.get("priority"));
-            _ttl = (Integer) batchData.get("ttl");
-            _ownerName = (String) batchData.get("ownerName");
-            _batchId = (String) batchData.get("batchId");
-            _queries = new ArrayList<>();
-
-            Long[] queueIds = MAPPER.readValue((String) batchData.get("queueIds"), Long[].class);
-            for (Long queueId: queueIds) {
-                _queries.add(metricQueueService.findById(queueId));
-            }
-            updateStatus();
-        } catch (Exception ex) {
-            LOGGER.error("Exception in BatchMetricQuery construction from JSON: {}", ex.toString());
-        }
+    public BatchMetricQuery(Status status, Priority priority, int ttl, String batchId, String ownerName,
+                            List<AsyncBatchedMetricQuery> queries) {
+        _status = status;
+        _priority = priority;
+        _ttl = ttl;
+        _batchId = batchId;
+        _ownerName = ownerName;
+        _queries = queries;
     }
 
-    private void updateStatus() {
+    public void updateStatus() {
         boolean allDone = true;
         if (_status == Status.DONE) {
             return;
         }
         for (AsyncBatchedMetricQuery query: _queries) {
             Status status = query.getStatus();
-            allDone &= (query.getStatus() == Status.DONE);
+            allDone &= (status == Status.DONE);
             if (status == Status.PROCESSING) {
                 _status = Status.PROCESSING;
                 break;
@@ -73,6 +61,7 @@ public class BatchMetricQuery implements Serializable {
         if (allDone) {
             _status = Status.DONE;
         }
+        LOGGER.info("BatchMetricQuery.updateStatus/to " + _status);
     }
 
     public Status getStatus() {
@@ -98,46 +87,6 @@ public class BatchMetricQuery implements Serializable {
 
     public List<AsyncBatchedMetricQuery> getQueries() {
         return _queries;
-    }
-
-    // Invariant: never called again after all queries finish
-    public synchronized void save(CacheService cacheService) {
-        // TODO: account for TTL. This method also "requires" that queueIds are already in place?
-        Map<String,Object> batchData = new HashMap<>();
-        try {
-            batchData.put("priority", _priority.toInt());
-            batchData.put("ttl", _ttl);
-            batchData.put("ownerName", _ownerName);
-            batchData.put("batchId", _batchId);
-            List<Long> queueIds = new ArrayList<>(_queries.size());
-            for (AsyncBatchedMetricQuery query: _queries) {
-                queueIds.add(query.getQueueId());
-            }
-            String queueIdsJson = MAPPER.writeValueAsString(queueIds);
-            batchData.put("queueIds", queueIdsJson);
-
-            Status oldStatus = _status;
-            updateStatus();
-            batchData.put("status", _status.toInt());
-            String json = MAPPER.writeValueAsString(batchData);
-            if (oldStatus != _status && _status == Status.DONE) {
-                cacheService.put(ROOT + _batchId, json , _ttl);
-            } else {
-                cacheService.put(ROOT + _batchId, json , Integer.MAX_VALUE);
-            }
-        } catch (JsonProcessingException ex) {
-            LOGGER.error("Exception in AsyncBatchedMetricQuery.save: {}", ex.toString());
-        }
-    }
-
-    public static BatchMetricQuery findById(CacheService cacheService, MetricQueueService metricQueueService, String id) {
-        // TODO: move getting batch entity to CacheBasedBatchService that implements generic getter?
-        String json = cacheService.get(ROOT + id);
-        if (json != null) {
-            return new BatchMetricQuery(metricQueueService, json);
-        } else {
-            return null;
-        }
     }
 
     public enum Priority {

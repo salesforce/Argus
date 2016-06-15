@@ -1,14 +1,5 @@
 package com.salesforce.dva.argus.entity;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.salesforce.dva.argus.service.CacheService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Created by cguan on 6/1/16.
  */
@@ -18,32 +9,28 @@ public class AsyncBatchedMetricQuery {
     long _queueId;
     String _batchId;
     BatchMetricQuery.Status _status;
+    BatchMetricQuery.Priority _priority;
     Metric _result;
     private static final String ROOT = "async/";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(AsyncBatchedMetricQuery.class);
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId) {
+
+    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, BatchMetricQuery.Priority priority) {
         _expression = expression;
         _offset = offset;
         _batchId = batchId;
+        _priority = priority;
         _status = BatchMetricQuery.Status.QUEUED;
     }
 
-    public AsyncBatchedMetricQuery(String json) {
-        try {
-            Map<String, Object> queryData = MAPPER.readValue(json, Map.class);
-            _expression = (String) queryData.get("expression");
-            _offset = Long.valueOf((Integer) queryData.get("offset"));
-            _queueId = Long.valueOf((Integer) queryData.get("queueId"));
-            _batchId = (String) queryData.get("batchId");
-            _status = BatchMetricQuery.Status.fromInt((Integer) queryData.get("status"));
-            String metricJson = (String) queryData.get("metric");
-            _result = MAPPER.readValue(metricJson, Metric.class);
-        } catch (Exception ex) {
-            LOGGER.error("Exception in AsyncBatchedMetricQuery construction from JSON: {}", ex.toString());
-            ex.printStackTrace();
-        }
+    public AsyncBatchedMetricQuery(String expression, long offset, long queueId, String batchId,
+                                   BatchMetricQuery.Status status, BatchMetricQuery.Priority priority, Metric result) {
+        _expression = expression;
+        _offset = offset;
+        _queueId = queueId;
+        _batchId = batchId;
+        _status = status;
+        _priority = priority;
+        _result = result;
     }
 
     public String getExpression() {
@@ -62,6 +49,10 @@ public class AsyncBatchedMetricQuery {
         return _queueId;
     }
 
+    public String getBatchId() {
+        return _batchId;
+    }
+
     public BatchMetricQuery.Status getStatus() {
         return _status;
     }
@@ -70,28 +61,15 @@ public class AsyncBatchedMetricQuery {
         _status = status;
     }
 
+    public BatchMetricQuery.Priority getPriority() {
+        return _priority;
+    }
+
     public Metric getResult() {
         return _result;
     }
 
     public void setResult(Metric result) {
         _result = result;
-    }
-
-    public synchronized void save(CacheService cacheService) {
-        // TODO: account for TTL
-        Map<String,Object> queryData = new HashMap<>();
-        try {
-            queryData.put("expression", _expression);
-            queryData.put("offset", _offset);
-            queryData.put("queueId", _queueId);
-            queryData.put("batchId", _batchId);
-            queryData.put("status", _status.toInt());
-            queryData.put("metric", MAPPER.writeValueAsString(_result));
-            String json = MAPPER.writeValueAsString(queryData);
-            cacheService.put(ROOT + String.valueOf(_queueId), json, Integer.MAX_VALUE);
-        } catch (JsonProcessingException ex) {
-            LOGGER.error("Exception in AsyncBatchedMetricQuery.save: {}", ex.toString());
-        }
     }
 }

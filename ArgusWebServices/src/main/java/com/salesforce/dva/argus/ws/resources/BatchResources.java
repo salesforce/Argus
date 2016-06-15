@@ -1,8 +1,7 @@
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
-import com.salesforce.dva.argus.service.CacheService;
-import com.salesforce.dva.argus.service.MetricQueueService;
+import com.salesforce.dva.argus.service.BatchService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.BatchDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
@@ -27,8 +26,7 @@ public class BatchResources {
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchResources.class);
     //~ Instance fields ******************************************************************************************************************************
 
-    private CacheService cacheService = ArgusWebServletListener.getSystem().getServiceFactory().getCacheService();
-    private MetricQueueService metricQueueService = ArgusWebServletListener.getSystem().getServiceFactory().getMetricQueueService();
+    private BatchService batchService = ArgusWebServletListener.getSystem().getServiceFactory().getBatchService();
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -36,11 +34,12 @@ public class BatchResources {
     @Description("Return a batch query's status and results if done")
     public Response getBatchById(@Context HttpServletRequest req,
         @PathParam("batchId") String batchId) {
-        BatchMetricQuery batch = BatchMetricQuery.findById(cacheService, metricQueueService, batchId);
+        BatchMetricQuery batch = batchService.findBatchById(batchId);
         if (batch == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
         try {
+            batch.updateStatus();
             return Response.ok(BatchDto.transformToDto(batch), MediaType.APPLICATION_JSON).build();
         } catch (Exception ex) {
             LOGGER.error("Exception in BatchResources: {}", ex.toString());

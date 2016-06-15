@@ -11,5 +11,5 @@ public interface MetricQueueService {
 
     AsyncBatchedMetricQuery dequeueAndProcess(int priority);
 
-    AsyncBatchedMetricQuery findById(long id);
+    AsyncBatchedMetricQuery findQueryById(int priority, long id);
 }

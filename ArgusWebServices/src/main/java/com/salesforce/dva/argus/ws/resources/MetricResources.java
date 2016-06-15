@@ -168,7 +168,6 @@ public class MetricResources extends AbstractResource {
         SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        // TODO: are all these parameters needed?
         PrincipalUser owner = validateAndGetOwner(req, null);
         return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
     }
