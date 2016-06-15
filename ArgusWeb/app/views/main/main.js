@@ -42,8 +42,7 @@ var argusMain = angular.module('argusMain', [
     'angulartics.piwik',
     'argusConfig',
     'ui.bootstrap',
-    'ui.bootstrap.datetimepicker',
-    'selectize'
+    'ui.bootstrap.datetimepicker'
 ]);
 
 argusMain.constant('VIEWELEMENT', {
