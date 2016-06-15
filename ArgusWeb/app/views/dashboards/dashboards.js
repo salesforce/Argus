@@ -103,7 +103,7 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
   
             template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
             template += "<br><br>\n";
-            template += "<h4>Argus heap used - Chart</h4>\n\n";
+            template += "<h4>Argus mem heap used - Chart</h4>\n\n";
             
             template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
             template += "<ag-chart name='Chart'>\n\n";
