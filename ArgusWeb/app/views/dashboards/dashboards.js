@@ -92,18 +92,18 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         	var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
             
         	template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
-        	template += "<ag-date type='datetime' name='start' label='Start Date' default='-25d'></ag-date>\n";
+        	template += "<ag-date type='datetime' name='start' label='Start Date' default='-2d'></ag-date>\n";
             template += "<ag-date type='datetime' name='end' label='End Date' default='-0d'></ag-date>\n";
-            template += "<ag-text type='text' name='scope' label='Scope' default='na5.s1'></ag-text>\n";
-            template += "<ag-text type='text' name='metric' label='Metric' default='p95apt'></ag-text>\n";
-            template += "<ag-text type='text' name='tags' label='Tags' default='feature=*'></ag-text>\n"; 
+            template += "<ag-text type='text' name='scope' label='Scope' default='argus.jvm'></ag-text>\n";
+            template += "<ag-text type='text' name='metric' label='Metric' default='mem.heap.used'></ag-text>\n";
+            template += "<ag-text type='text' name='tags' label='Tags' default='host=*'></ag-text>\n"; 
             template += "<ag-text type='text' name='aggregator' label='Aggregator' default='avg'></ag-text>\n";
             template += "<!-- A button used to submit the query. -->\n";
             template += "<ag-submit>Submit</ag-submit>\n\n";
   
             template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
             template += "<br><br>\n";
-            template += "<h4>S1 APT by Feature (P95) - Chart</h4>\n\n";
+            template += "<h4>Argus heap used - Chart</h4>\n\n";
             
             template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
             template += "<ag-chart name='Chart'>\n\n";
