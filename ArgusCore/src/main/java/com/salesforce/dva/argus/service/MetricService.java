@@ -96,7 +96,7 @@ public interface MetricService extends Service {
      */
     List<Metric> getMetrics(String expression, long offset);
 
-    String getAsyncMetrics(List<String> expressions, long offset, long ttl, String ownerName);
+    String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName);
 
     /**
      * Returns a list of <tt>MetricQuery</tt> objects corresponding to the given expression.

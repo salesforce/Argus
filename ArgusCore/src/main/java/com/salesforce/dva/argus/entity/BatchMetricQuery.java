@@ -16,7 +16,7 @@ import java.util.*;
 public class BatchMetricQuery implements Serializable {
     private Status _status;
     private Priority _priority;
-    private long _ttl;
+    private int _ttl;
     private String _batchId;
     private String _ownerName;
     private List<AsyncBatchedMetricQuery> _queries;
@@ -24,7 +24,7 @@ public class BatchMetricQuery implements Serializable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
 
-    public BatchMetricQuery(List<String> expressions, long offset, int priority, long ttl, String ownerName) {
+    public BatchMetricQuery(List<String> expressions, long offset, int priority, int ttl, String ownerName) {
         _status = Status.QUEUED;
         _priority = Priority.fromInt(priority);
         _ttl = ttl;
@@ -36,21 +36,42 @@ public class BatchMetricQuery implements Serializable {
         }
     }
 
+    // TODO: restructure to service
     private BatchMetricQuery(MetricQueueService metricQueueService, String json) {
         try {
             Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
             _status = Status.fromInt((Integer) batchData.get("status"));
             _priority = Priority.fromInt((Integer) batchData.get("priority"));
-            _ttl = Long.valueOf((Integer) batchData.get("ttl"));
+            _ttl = (Integer) batchData.get("ttl");
             _ownerName = (String) batchData.get("ownerName");
             _batchId = (String) batchData.get("batchId");
             _queries = new ArrayList<>();
+
             Long[] queueIds = MAPPER.readValue((String) batchData.get("queueIds"), Long[].class);
             for (Long queueId: queueIds) {
                 _queries.add(metricQueueService.findById(queueId));
             }
+            updateStatus();
         } catch (Exception ex) {
             LOGGER.error("Exception in BatchMetricQuery construction from JSON: {}", ex.toString());
+        }
+    }
+
+    private void updateStatus() {
+        boolean allDone = true;
+        if (_status == Status.DONE) {
+            return;
+        }
+        for (AsyncBatchedMetricQuery query: _queries) {
+            Status status = query.getStatus();
+            allDone &= (query.getStatus() == Status.DONE);
+            if (status == Status.PROCESSING) {
+                _status = Status.PROCESSING;
+                break;
+            }
+        }
+        if (allDone) {
+            _status = Status.DONE;
         }
     }
 
@@ -62,7 +83,7 @@ public class BatchMetricQuery implements Serializable {
         return _priority;
     }
 
-    public long getTtl() {
+    public int getTtl() {
         return _ttl;
     }
 
@@ -79,11 +100,11 @@ public class BatchMetricQuery implements Serializable {
         return _queries;
     }
 
+    // Invariant: never called again after all queries finish
     public synchronized void save(CacheService cacheService) {
         // TODO: account for TTL. This method also "requires" that queueIds are already in place?
         Map<String,Object> batchData = new HashMap<>();
         try {
-            batchData.put("status", _status.toInt());
             batchData.put("priority", _priority.toInt());
             batchData.put("ttl", _ttl);
             batchData.put("ownerName", _ownerName);
@@ -94,8 +115,16 @@ public class BatchMetricQuery implements Serializable {
             }
             String queueIdsJson = MAPPER.writeValueAsString(queueIds);
             batchData.put("queueIds", queueIdsJson);
+
+            Status oldStatus = _status;
+            updateStatus();
+            batchData.put("status", _status.toInt());
             String json = MAPPER.writeValueAsString(batchData);
-            cacheService.put(ROOT + _batchId, json , Integer.MAX_VALUE);
+            if (oldStatus != _status && _status == Status.DONE) {
+                cacheService.put(ROOT + _batchId, json , _ttl);
+            } else {
+                cacheService.put(ROOT + _batchId, json , Integer.MAX_VALUE);
+            }
         } catch (JsonProcessingException ex) {
             LOGGER.error("Exception in AsyncBatchedMetricQuery.save: {}", ex.toString());
         }

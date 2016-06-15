@@ -54,7 +54,7 @@ public class AsyncMetricService extends DefaultService implements MetricService 
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String getAsyncMetrics(List<String> expressions, long offset, long ttl, String ownerName) {
+    public String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName) {
         int priority = 1;
         BatchMetricQuery batchQuery = new BatchMetricQuery(expressions, offset, priority, ttl, ownerName);
         for (AsyncBatchedMetricQuery query: batchQuery.getQueries()) {

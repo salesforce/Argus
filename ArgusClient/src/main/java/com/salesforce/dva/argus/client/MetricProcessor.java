@@ -44,11 +44,6 @@ public class MetricProcessor implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 AsyncBatchedMetricQuery query = metricQueueService.dequeueAndProcess(1);
-                if (query != null) {
-                    LOGGER.info("Processed metric query with expression " + query.getExpression());
-                } else {
-                    LOGGER.info("No query to dequeue");
-                }
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ex) {
                 LOGGER.info("Execution was interrupted.");

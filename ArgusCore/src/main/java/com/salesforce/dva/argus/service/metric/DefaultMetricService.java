@@ -126,7 +126,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
     }
 
     @Override
-    public String getAsyncMetrics(List<String> expressions, long offset, long ttl, String ownerName) {
+    public String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName) {
         throw new UnsupportedOperationException();
     }
 

@@ -65,7 +65,7 @@ public class MetricResources extends AbstractResource {
     private final String COMMA = ",";
     private final String NEW_LINE = "\n";
     private final String EMPTY = "";
-    private final long DEFAULT_TTL = 1800;
+    private final int DEFAULT_TTL = 1800;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -125,7 +125,7 @@ public class MetricResources extends AbstractResource {
     @Path("/batch")
     @Description("Start an async batch metric query")
     public Response getAsyncMetricsJSON(@Context HttpServletRequest req,
-        @QueryParam("ttl") long ttl,
+        @QueryParam("ttl") int ttl,
         @QueryParam("expression") List<String> expressions) {
         if (ttl == 0) {
             ttl = DEFAULT_TTL;
@@ -163,7 +163,7 @@ public class MetricResources extends AbstractResource {
         return metrics;
     }
 
-    private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, long ttl) {
+    private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, int ttl) {
         validateAndGetOwner(req, null);
         SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
 
