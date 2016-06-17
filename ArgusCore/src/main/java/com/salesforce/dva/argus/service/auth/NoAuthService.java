@@ -22,7 +22,7 @@ public class NoAuthService extends DefaultService implements AuthService {
 
 	@Override
 	public PrincipalUser getUser(String username, String password) {
-		return _userService.findDefaultUser();
+		return _userService.findAdminUser();
 	}
 
 }
