@@ -90,9 +90,12 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             BatchMetricQuery.Status newStatus = batch.getStatus();
             batchData.put("status", newStatus.toInt());
             String json = MAPPER.writeValueAsString(batchData);
-            LOGGER.info("CachedBasedBatchService.updateBatch/status changed from " + oldStatus + " to " + newStatus);
+            // Enforce cache TTL if batch status now changes to done
             if (oldStatus != newStatus && newStatus == BatchMetricQuery.Status.DONE) {
                 _cacheService.put(ROOT + batchId, json , ttl);
+                for (AsyncBatchedMetricQuery query: batch.getQueries()) {
+                    _metricQueueService.updateQueryWithTtl(query, ttl);
+                }
             } else {
                 _cacheService.put(ROOT + batchId, json , Integer.MAX_VALUE);
             }

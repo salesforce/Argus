@@ -12,4 +12,8 @@ public interface MetricQueueService {
     AsyncBatchedMetricQuery dequeueAndProcess(int priority);
 
     AsyncBatchedMetricQuery findQueryById(int priority, long id);
+
+    void updateQuery(AsyncBatchedMetricQuery query);
+
+    void updateQueryWithTtl(AsyncBatchedMetricQuery query, int ttl);
 }

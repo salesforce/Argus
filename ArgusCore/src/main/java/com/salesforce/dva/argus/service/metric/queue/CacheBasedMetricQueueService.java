@@ -129,13 +129,8 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
     }
 
     public AsyncBatchedMetricQuery findQueryById(int priority, long id) {
-        String rootPath;
         BatchMetricQuery.Priority priorityEnum = BatchMetricQuery.Priority.fromInt(priority);
-        if (priorityEnum == BatchMetricQuery.Priority.HIGH) {
-            rootPath = ROOT_HIGH;
-        } else {
-            rootPath = ROOT_LOW;
-        }
+        String rootPath = _getRootPathFromPriority(priorityEnum);
         String json = _cacheService.get(rootPath + id);
         if (json == null) {
             return null;
@@ -158,13 +153,18 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
     }
 
     public void updateQuery(AsyncBatchedMetricQuery query) {
-        String rootPath;
-        if (BatchMetricQuery.Priority.fromInt(query.getPriority().toInt()) == BatchMetricQuery.Priority.HIGH) {
-            rootPath = ROOT_HIGH;
-        } else {
-            rootPath = ROOT_LOW;
-        }
-        ObjectMapper mapper = new ObjectMapper();
+        String rootPath = _getRootPathFromPriority(query.getPriority());
+        String json = _serializeQueryToJson(query);
+        _cacheService.put(rootPath + String.valueOf(query.getQueueId()), json, Integer.MAX_VALUE);
+    }
+
+    public void updateQueryWithTtl(AsyncBatchedMetricQuery query, int ttl) {
+        String rootPath = _getRootPathFromPriority(query.getPriority());
+        String json = _serializeQueryToJson(query);
+        _cacheService.put(rootPath + String.valueOf(query.getQueueId()), json, ttl);
+    }
+
+    private String _serializeQueryToJson(AsyncBatchedMetricQuery query) {
         Map<String,Object> queryData = new HashMap<>();
         try {
             queryData.put("expression", query.getExpression());
@@ -173,11 +173,19 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
             queryData.put("batchId", query.getBatchId());
             queryData.put("status", query.getStatus().toInt());
             queryData.put("priority", query.getPriority().toInt());
-            queryData.put("metric", mapper.writeValueAsString(query.getResult()));
-            String json = mapper.writeValueAsString(queryData);
-            _cacheService.put(rootPath + String.valueOf(query.getQueueId()), json, Integer.MAX_VALUE);
+            queryData.put("metric", MAPPER.writeValueAsString(query.getResult()));
+            return MAPPER.writeValueAsString(queryData);
         } catch (JsonProcessingException ex) {
-            LOGGER.error("Exception in CachedBasedMetricQueueService.updateQuery: {}", ex.toString());
+            LOGGER.error("Exception in CachedBasedMetricQueueService.serializeQueryToJson: {}", ex.toString());
+            return null;
+        }
+    }
+
+    private String _getRootPathFromPriority(BatchMetricQuery.Priority priority) {
+        if (BatchMetricQuery.Priority.fromInt(priority.toInt()) == BatchMetricQuery.Priority.HIGH) {
+            return ROOT_HIGH;
+        } else {
+            return ROOT_LOW;
         }
     }
 }
