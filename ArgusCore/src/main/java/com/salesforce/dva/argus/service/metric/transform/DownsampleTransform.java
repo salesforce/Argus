@@ -70,7 +70,6 @@ public class DownsampleTransform implements Transform {
      */
     public static String downsamplerReducer(List<String> values, String reducerType) {
         List<Double> operands = new ArrayList<Double>();
-
         for (String str : values) {
             if (str == null || str.equals("")) {
                 operands.add(0.0);
@@ -78,9 +77,7 @@ public class DownsampleTransform implements Transform {
                 operands.add(Double.parseDouble(str));
             }
         }
-
         InternalReducerType type = InternalReducerType.fromString(reducerType);
-
         switch (type) {
             case AVG:
                 return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
@@ -92,6 +89,9 @@ public class DownsampleTransform implements Transform {
                 return String.valueOf((new Sum()).evaluate(Doubles.toArray(operands), 0, operands.size()));
             case DEVIATION:
                 return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+            case COUNT:
+            	values.removeAll(Collections.singleton(null));
+            	return String.valueOf((float)values.size());
             default:
                 throw new UnsupportedOperationException(reducerType);
         }
@@ -113,7 +113,6 @@ public class DownsampleTransform implements Transform {
      * on second level, 01:01:30 => 01:01:30 
      */
     public static Long downsamplerTimestamp(Long millitimestamp, long windowSize) {
-
     	return millitimestamp-(millitimestamp%windowSize);
     }
     
@@ -143,7 +142,7 @@ public class DownsampleTransform implements Transform {
         Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
         String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
         // init downsample type
-        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev"));
+        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev", "count"));
         String downsampleType = expArr[1];
 
         SystemAssert.requireArgument(typeSet.contains(downsampleType), "Please input a valid type.");
@@ -168,7 +167,6 @@ public class DownsampleTransform implements Transform {
             } else {
                 if (timestamp >= windowStart + windowSize) {
                     String fillingValue = downsamplerReducer(values, type);
-
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
                     windowStart = downsamplerTimestamp(timestamp, windowSize);
@@ -178,7 +176,6 @@ public class DownsampleTransform implements Transform {
         }
         if (!values.isEmpty()) {
             String fillingValue = downsamplerReducer(values, type);
-
             downsampleDatapoints.put(windowStart, fillingValue);
         }
         return downsampleDatapoints;
@@ -194,9 +191,7 @@ public class DownsampleTransform implements Transform {
 
         try {
             timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
-
             long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
-
             return timeDigits * timeunit.getValue() / 1000;
         } catch (Exception t) {
             throw new IllegalArgumentException("Fail to parse window size!");

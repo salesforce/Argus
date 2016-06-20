@@ -191,7 +191,6 @@ public class TransformFactory {
      * @author  Bhinav Sura (bsura@salesforce.com)
      */
     public enum Function {
-
         IDENTITY("IDENTITY", "Performs an identity transform such that input = output"),
         SUM("SUM", "Performs an addition of the input metrics"),
         DIFF("DIFF", "Difference between timeseries"),

@@ -20,7 +20,7 @@
     "angulartics": "~0.17.2",
     "angular-bootstrap": "~0.12.1",
     "angular-bootstrap-datetimepicker": "~0.3.12",
-    "angular-selectize2": "^3.0.1"
+    "angular-selectize2": "~3.0.1"
   },
   "resolutions": {
     "codemirror": "~4.8",
