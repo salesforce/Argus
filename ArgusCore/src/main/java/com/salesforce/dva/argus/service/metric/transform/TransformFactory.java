@@ -174,8 +174,10 @@ public class TransformFactory {
                 return new MetricZipperTransform(new DivideValueZipper());
             case GROUPBY:
             	throw new UnsupportedOperationException(functionName);
-            case ANOMALY_GAUSSIAN:
-                return new AnomalyDetectionGaussianTransform();
+            case ANOMALY_GAUSSIAN_DENSITY:
+                return new AnomalyDetectionGaussianDensityTransform();
+            case ANOMALY_GAUSSIAN_ZSCORE:
+                return new AnomalyDetectionGaussianZScoreTransform();
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
@@ -244,7 +246,8 @@ public class TransformFactory {
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
         GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation."),
-        ANOMALY_GAUSSIAN("ANOMALY_GAUSSIAN", "Calculates the probability of each value of the metric being an anomaly by using a Gaussian Distribution technique.");
+        ANOMALY_GAUSSIAN_DENSITY("ANOMALY_GAUSSIAN_DENSITY", "Calculates an anomaly score (0-100) for each value of the metric based on the probability density of each value with a Gaussian distribution."),
+        ANOMALY_GAUSSIAN_ZSCORE("ANOMALY_GAUSSIAN_ZSCORE", "Calculates an anomaly score (0-100) for each value of the metric based on the z-score of each value with a Gaussian distribution.");
 
         private final String _name;
         private final String _description;
