@@ -32,6 +32,7 @@ var argusMain = angular.module('argusMain', [
     'argusNamespace',
     'argusDashboards',
     'argusViewMetrics',
+    'argusBatches',
     'argusControls',
     'argusDashboardService',
     'argusViewElements',
@@ -70,6 +71,10 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 when('/viewmetrics', {
                     templateUrl: 'views/viewmetrics/viewmetrics.html',
                     controller: 'ViewMetricsCtrl'
+                }).
+                when('/batches', {
+                    templateUrl: 'views/batches/batches.html',
+                    controller: 'BatchExpressionsCtrl'
                 }).
                 when('/dashboards', {
                     templateUrl: 'views/dashboards/dashboard-list.html',

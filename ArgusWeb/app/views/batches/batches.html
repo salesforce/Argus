@@ -1,0 +1,28 @@
+<section>
+    <form novalidate class="form-horizontal">
+        <div ng-repeat="expression in expressions">
+            <div ng-class="{'input-group': $last}">
+                <input type="text" class="form-control" placeholder="Enter metric expression..." ng-model='expression.expression'>
+                <span class="input-group-btn">
+                    <button class="btn btn-danger" type="button" ng-show="$last" ng-click="removeExpression()">-</button>
+                </span>
+            </div><!-- /input-group -->
+            <br />
+        </div>
+    </form>
+    <div class="text-center">
+        <div class="btn-group">
+            <button class="btn btn-success" ng-click='addExpression()'>Add expression</button>
+            <button class="btn btn-primary" ng-click='submitBatch()'>Submit batch</button>
+        </div>
+    </div>
+    <br><br>
+    <div ng-show="submitted">
+        <pre style="white-space: pre-wrap;" ng-bind="batchState"></pre>
+        <div class="text-center">
+            <button class="btn btn-warning" ng-click="refreshBatch()">Refresh</button>
+        </div>
+    </div>
+    <div growl inline="true" reference="batches-error"></div>
+    <div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+</section>
