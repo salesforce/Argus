@@ -117,8 +117,10 @@ public class MetricResources extends AbstractResource {
      * Start an async batch metric query
      *
      * @param   req          HTTPServlet request. Cannot be null.
+     * @param   ttl          Time to live for the batch results when all computation finishes
+     * @param   expressions  Expressions for metrics. Cannot be null but may be empty.
      *
-     * @return  Batch ID where metric-processing metadata is returned
+     * @return  Batch ID and path to where metric-processing metadata is returned
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)

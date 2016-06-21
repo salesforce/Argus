@@ -11,11 +11,16 @@ import java.util.List;
  * Created by cguan on 6/7/16.
  */
 public class BatchDto {
+
+    //~ Instance fields ******************************************************************************************************************************
+
     private String status;
     private String priority;
     private long ttl;
     private String ownerName;
     private List<QueryDto> queries;
+
+    //~ Methods **************************************************************************************************************************************
 
     public static BatchDto transformToDto(BatchMetricQuery batch) {
         BatchDto result = new BatchDto();

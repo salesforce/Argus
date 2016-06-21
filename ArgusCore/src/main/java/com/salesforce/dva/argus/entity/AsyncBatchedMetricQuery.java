@@ -4,6 +4,13 @@ package com.salesforce.dva.argus.entity;
  * Created by cguan on 6/1/16.
  */
 public class AsyncBatchedMetricQuery {
+
+    //~ Static fields/initializers *******************************************************************************************************************
+
+    private static final String ROOT = "async/";
+
+    //~ Instance fields ******************************************************************************************************************************
+
     String _expression;
     long _offset;
     long _queueId;
@@ -11,8 +18,8 @@ public class AsyncBatchedMetricQuery {
     BatchMetricQuery.Status _status;
     BatchMetricQuery.Priority _priority;
     Metric _result;
-    private static final String ROOT = "async/";
 
+    //~ Constructors *********************************************************************************************************************************
 
     public AsyncBatchedMetricQuery(String expression, long offset, String batchId, BatchMetricQuery.Priority priority) {
         _expression = expression;
@@ -32,6 +39,8 @@ public class AsyncBatchedMetricQuery {
         _priority = priority;
         _result = result;
     }
+
+    //~ Methods **************************************************************************************************************************************
 
     public String getExpression() {
         return _expression;
@@ -73,3 +82,4 @@ public class AsyncBatchedMetricQuery {
         _result = result;
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

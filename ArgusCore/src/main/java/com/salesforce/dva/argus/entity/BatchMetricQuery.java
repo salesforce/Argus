@@ -10,18 +10,28 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Created by cguan on 6/1/16.
+ * Default implementation of the batch service.
+ *
+ * @author Colby Guan (cguan@salesforce.com)
  */
 public class BatchMetricQuery implements Serializable {
+
+    //~ Static fields/initializers *******************************************************************************************************************
+
+    private static final String ROOT = "batch/";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
+
+    //~ Instance fields ******************************************************************************************************************************
+
     private Status _status;
     private Priority _priority;
     private int _ttl;
     private String _batchId;
     private String _ownerName;
     private List<AsyncBatchedMetricQuery> _queries;
-    private static final String ROOT = "batch/";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
+
+    //~ Constructors *********************************************************************************************************************************
 
     public BatchMetricQuery(List<String> expressions, long offset, int priority, int ttl, String ownerName) {
         _status = Status.QUEUED;
@@ -44,6 +54,8 @@ public class BatchMetricQuery implements Serializable {
         _ownerName = ownerName;
         _queries = queries;
     }
+
+    //~ Methods **************************************************************************************************************************************
 
     public void updateStatus() {
         boolean allDone = true;
@@ -121,6 +133,8 @@ public class BatchMetricQuery implements Serializable {
         }
     }
 
+    //~ Enums ****************************************************************************************************************************************
+
     public enum Status {
         QUEUED("queued"),
         PROCESSING("processing"),
@@ -158,3 +172,4 @@ public class BatchMetricQuery implements Serializable {
         }
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

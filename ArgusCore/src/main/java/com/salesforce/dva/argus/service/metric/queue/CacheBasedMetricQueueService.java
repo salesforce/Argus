@@ -26,17 +26,17 @@ import java.util.Map;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
- * Created by cguan on 6/1/16.
+ * Default implementation of the metric queue service.
+ *
+ * @author  Colby Guan (cguan@salesforce.com)
  */
 public class CacheBasedMetricQueueService extends DefaultService implements MetricQueueService {
+
+    //~ Static fields/initializers *******************************************************************************************************************
+
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheBasedMetricQueueService.class);
     private static final Object cacheLock = new Object();
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final SystemConfiguration _config;
-    private final CacheService _cacheService;
-    private final BatchService _batchService;
-    private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
-
     // Keys to store async queries at
     private static final String ROOT_LOW = "async/low/";
     private static final String ROOT_HIGH = "async/high/";
@@ -44,6 +44,15 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
     private static final String LOW_TAIL = ROOT_LOW + "back";
     private static final String HIGH_HEAD = ROOT_HIGH + "front";
     private static final String HIGH_TAIL = ROOT_HIGH + "back";
+
+    //~ Instance fields ******************************************************************************************************************************
+
+    private final SystemConfiguration _config;
+    private final CacheService _cacheService;
+    private final BatchService _batchService;
+    private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
+
+    //~ Constructors *********************************************************************************************************************************
 
     @Inject
     public CacheBasedMetricQueueService(SystemConfiguration config, CacheService cacheService,
@@ -63,6 +72,8 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
             _cacheService.put(HIGH_TAIL, String.valueOf(0), Integer.MAX_VALUE);
         }
     }
+
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public synchronized void enqueue(AsyncBatchedMetricQuery query, int priority) {
@@ -189,3 +200,4 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
         }
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

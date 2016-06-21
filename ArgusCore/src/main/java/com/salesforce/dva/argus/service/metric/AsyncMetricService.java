@@ -15,9 +15,12 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import java.util.List;
 
 /**
- * Created by cguan on 6/1/16.
+ * Asynchronous extension of the default metric service.
+ *
+ * @author  Colby Guan (cguan@salesforce.com)
  */
 public class AsyncMetricService extends DefaultMetricService {
+
     //~ Instance fields ******************************************************************************************************************************
 
     private final MetricQueueService _metricQueueService;
@@ -49,3 +52,4 @@ public class AsyncMetricService extends DefaultMetricService {
         return batchQuery.getBatchId();
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

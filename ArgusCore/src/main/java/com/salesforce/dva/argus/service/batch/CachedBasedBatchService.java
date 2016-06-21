@@ -1,6 +1,5 @@
 package com.salesforce.dva.argus.service.batch;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
@@ -13,33 +12,43 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
- * Created by cguan on 6/15/16.
+ * Default implementation of the batch service.
+ *
+ * @author Colby Guan (cguan@salesforce.com)
  */
 public class CachedBasedBatchService extends DefaultService implements BatchService {
+
+    //~ Static fields/initializers *******************************************************************************************************************
+
     private static final String ROOT = "batch/";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
+
+    //~ Instance fields ******************************************************************************************************************************
 
     private final SystemConfiguration _config;
     private final CacheService _cacheService;
     private final MetricQueueService _metricQueueService;
 
+    //~ Constructors *********************************************************************************************************************************
+
     @Inject
     public CachedBasedBatchService (SystemConfiguration config, CacheService cacheService, MetricQueueService metricQueueService) {
         super(config);
         requireArgument(cacheService != null, "Cache service cannot be null.");
+        requireArgument(metricQueueService != null, "Metric queue service cannot be null.");
         _config = config;
         _cacheService = cacheService;
         _metricQueueService = metricQueueService;
     }
+
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public BatchMetricQuery findBatchById(String id) {
@@ -72,6 +81,7 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
     public void updateBatch(BatchMetricQuery batch) {
         Map<String,Object> batchData = new HashMap<>();
         try {
+            // Put batch JSON to cache
             int ttl = batch.getTtl();
             String batchId = batch.getBatchId();
             batchData.put("priority", batch.getPriority().toInt());
@@ -99,8 +109,45 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             } else {
                 _cacheService.put(ROOT + batchId, json , Integer.MAX_VALUE);
             }
-        } catch (JsonProcessingException ex) {
-            LOGGER.error("Exception in AsyncBatchedMetricQuery.saveToCache: {}", ex.toString());
+
+            // Update user JSON in cache
+            String userBatchesJson = _cacheService.get(ROOT + batch.getOwnerName());
+            Map<String,Object> userBatches;
+            if (userBatchesJson == null) {
+                userBatches = new HashMap<>();
+                userBatches.put(batch.getBatchId(), newStatus.toInt());
+            } else {
+                userBatches = MAPPER.readValue(userBatchesJson, Map.class);
+                userBatches.put(batch.getBatchId(), newStatus.toInt());
+            }
+            String updatedBatchesJson = MAPPER.writeValueAsString(userBatches);
+            _cacheService.put(ROOT + batch.getOwnerName(), updatedBatchesJson, Integer.MAX_VALUE);
+        } catch (Exception ex) {
+            LOGGER.error("Exception in CacheBasedBatchService.saveToCache: {}", ex.toString());
+        }
+    }
+
+    @Override
+    public Map<String, String> findBatchesByOwnerName(String ownerName) {
+        String userBatchesJson = _cacheService.get(ROOT + ownerName);
+        try {
+            Map<String, String> userBatches = MAPPER.readValue(userBatchesJson, Map.class);
+            List<String> toRemove = new LinkedList<>();
+            for (String id: userBatches.keySet()) {
+                if (_cacheService.get(ROOT + id) == null) {
+                    toRemove.add(id);
+                }
+            }
+            for (String id: toRemove) {
+                userBatches.remove(id);
+            }
+            userBatchesJson = MAPPER.writeValueAsString(userBatches);
+            _cacheService.put(ROOT + ownerName, userBatchesJson, Integer.MAX_VALUE);
+            return userBatches;
+        } catch (IOException ex) {
+            LOGGER.error("Exception in CachedBasedBatchServce.findBatchesByOwnerName: {}", ex.toString());
+            return null;
         }
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

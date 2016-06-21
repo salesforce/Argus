@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by cguan on 6/6/16.
  */
 public class MetricProcessor implements Runnable {
+
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final long POLL_INTERVAL_MS = 500;
@@ -56,3 +57,4 @@ public class MetricProcessor implements Runnable {
         }
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
