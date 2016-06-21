@@ -697,5 +697,24 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
+    
+    @Test
+    public void testDownsampleTransformMetricIsAllNull() {
+    	Transform downsampleTransform = new DownsampleTransform();
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+        metric_1.setDatapoints(datapoints_1);
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("3s-count");
+        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        List<Metric> result = downsampleTransform.transform(metrics, constants);
+        assertEquals(result.size(), 1);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
