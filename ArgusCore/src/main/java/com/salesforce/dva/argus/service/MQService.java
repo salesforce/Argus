@@ -154,13 +154,11 @@ public interface MQService extends Service {
         ALERT("argusAlertQueue"),
         /** The name of the queue into which submitted metric data is put. */
         METRIC("argusMetricQueue"),
-// /** The name of the queue into which submitted metric schema is put. */
-// METRIC_SCHEMA("argusMetricSchemaQueue"),
-
         /** The name of the queue into which submitted annotation data is put. */
         ANNOTATION("argusAnnotationQueue"),
-        /** The name of the queue into which scheduled collection jobs are put. */
-        COLLECTION_JOB("argusCollectionJobQueue");
+        /** The name of the queue into which all enabled jobs are put. 
+         * The scheduler then enqueues them and determines whether they are to be scheduled or not. */
+        TASKQUEUE("argusTaskQueue");
 
         private final String _queueName;
 
