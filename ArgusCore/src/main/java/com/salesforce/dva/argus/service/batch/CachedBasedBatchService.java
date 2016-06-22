@@ -130,6 +130,9 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
     @Override
     public Map<String, String> findBatchesByOwnerName(String ownerName) {
         String userBatchesJson = _cacheService.get(ROOT + ownerName);
+        if (userBatchesJson == null) {
+        	return null;
+        }
         try {
             Map<String, String> userBatches = MAPPER.readValue(userBatchesJson, Map.class);
             List<String> toRemove = new LinkedList<>();
@@ -144,7 +147,7 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             userBatchesJson = MAPPER.writeValueAsString(userBatches);
             _cacheService.put(ROOT + ownerName, userBatchesJson, Integer.MAX_VALUE);
             return userBatches;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             LOGGER.error("Exception in CachedBasedBatchServce.findBatchesByOwnerName: {}", ex.toString());
             return null;
         }

@@ -6,10 +6,24 @@ var argusBatches = angular.module('argusBatches', [
 
 argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batches',
     function($scope, AsyncMetrics, Batches) {
+        $scope.batches = [];
         $scope.expressions = [{expression: ''}];
-        $scope.batchState = 'Refresh for current batch status';
-        $scope.submitted = false;
+        $scope.currBatchState = 'Refresh for current batch status';
         $scope.currBatchId = '';
+        var statusToString = ['queued', 'processing', 'done'];
+
+        $scope.getBatches = function() {
+            Batches.query().$promise.then(function(batchMap) {
+                $scope.batches = [];
+                for (var id in batchMap) {
+                    if (id.length == 36) {
+                        $scope.batches.push({id: id, status: statusToString[batchMap[id]]});
+                    }
+                }
+            });
+
+        };
+        $scope.getBatches();
         
         $scope.addExpression = function() {
             $scope.expressions.push({expression: ''});
@@ -34,15 +48,20 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
                 .then(function success(response) {
                     $scope.submitted = true;
                     $scope.currBatchId = response.data.id;
+                    $scope.getBatches();
+                    $scope.refreshBatchState($scope.currBatchId);
+                    $scope.expressions = [{expression: ''}];
                 }, function error(response) {
                     console.log('Error in batches.submitBatch:\n' + response);
                 });
-        }
+        };
 
-        $scope.refreshBatch = function() {
+        $scope.refreshBatchState = function(batchId) {
+           if (batchId != null) {
+                $scope.currBatchId = batchId;
+            }
             Batches.query({batchId: $scope.currBatchId}, function(data) {
-                $scope.batchState = JSON.stringify(data);
-                console.log(JSON.stringify(data));
+                $scope.currBatchState = angular.toJson(data, 2);
             });
         }
     }]);
