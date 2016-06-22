@@ -8,4 +8,5 @@ release.properties
 logs/
 nbactions.xml
 nb-configuration.xml
+argus-build.properties
 .DS_Store
