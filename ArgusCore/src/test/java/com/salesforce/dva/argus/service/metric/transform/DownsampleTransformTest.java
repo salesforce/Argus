@@ -701,19 +701,19 @@ public class DownsampleTransformTest {
     @Test
     public void testDownsampleTransformMetricIsAllNull() {
     	Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, String> datapoints = new HashMap<Long, String>();
         
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
-        metric_1.setDatapoints(datapoints_1);
+        Metric metric = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+        metric.setDatapoints(datapoints);
         List<Metric> metrics = new ArrayList<Metric>();
-        metrics.add(metric_1);
+        metrics.add(metric);
 
         List<String> constants = new ArrayList<String>();
         constants.add("3s-count");
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, String> expected = new HashMap<Long, String>();
         List<Metric> result = downsampleTransform.transform(metrics, constants);
         assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
+        assertEquals(expected, result.get(0).getDatapoints());
     }
     
 }
