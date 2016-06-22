@@ -1,17 +1,16 @@
 
-<div class='row' style='padding-bottom:5px;'>
-    <div class='col-md-3 h3' style='margin:0;padding:6px;padding-left:15px;'>Alert List</div>
+<div class='row'>
+    <div class='col-md-3 h3'>Alert list</div>
     <div class='col-md-5 text-right'>
         <dir-pagination-controls></dir-pagination-controls>
     </div>
-     <div class='col-md-1'>
-     <select class="form-control" ng-model="itemsPerPage"  ng-options="val for val in itemsPerPageOptions">
-     </select>
+    <div class='col-md-1'>
+        <select class="form-control" ng-model="itemsPerPage"  ng-options="val for val in itemsPerPageOptions"></select>
     </div>
     <div class='col-md-3'>
         <span class="pull-right input-group">
             <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
-            <span class="input-group-btn" style='padding-right:5px;'>
+            <span class="input-group-btn">
                 <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
                     <span class="glyphicon glyphicon-remove-circle"></span>
                 </button>
@@ -24,7 +23,13 @@
 </div>
 <table class="table table-striped table-bordered">
     <tr>
-        <th>ID</th><th>Name</th><th>CRON Entry</th><th>Created</th><th>Last Modified</th><th>Owner</th><th>State</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>CRON Entry</th>
+        <th>Created</th>
+        <th>Last Modified</th>
+        <th>Owner</th>
+        <th>State</th>
         <th class="col-centered">
             <button class="btn btn-success btn-sm" type="button" ng-click="addAlert()">
                 <i class="glyphicon glyphicon-plus"></i>
