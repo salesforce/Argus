@@ -5,7 +5,7 @@ import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 /**
  * Created by cguan on 6/13/16.
  */
-public interface MetricQueueService {
+public interface MetricQueueService extends Service {
 
     void enqueue(AsyncBatchedMetricQuery query, int priority);
 

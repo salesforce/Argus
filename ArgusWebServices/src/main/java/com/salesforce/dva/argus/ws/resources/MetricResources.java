@@ -166,11 +166,10 @@ public class MetricResources extends AbstractResource {
     }
 
     private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, int ttl) {
-        validateAndGetOwner(req, null);
         SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
+        PrincipalUser owner = validateAndGetOwner(req, null);
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        PrincipalUser owner = validateAndGetOwner(req, null);
         return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
     }
 

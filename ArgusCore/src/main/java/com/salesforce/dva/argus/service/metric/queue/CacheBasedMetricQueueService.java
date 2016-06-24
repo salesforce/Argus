@@ -83,7 +83,6 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
         } else {
             tailPath = LOW_TAIL;
         }
-
         long tailId = Long.valueOf(_cacheService.get(tailPath)) + 1;
         _cacheService.put(tailPath, String.valueOf(tailId), Integer.MAX_VALUE);
         LOGGER.info("MetricQueueService.enqueue/" + tailId + "/" + query.getExpression());
