@@ -87,8 +87,8 @@ public final class ServiceFactory {
     Provider<DiscoveryService> _discoveryServiceProvider;
     @Inject
     Provider<WaaSService> _waaSServiceProvider;
-//    @Inject
-//    Provider<WaaSMonitorService> _waaSMonitorServiceProvider;
+    @Inject
+    Provider<WaaSMonitorService> _waaSMonitorServiceProvider;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -290,13 +290,13 @@ public final class ServiceFactory {
         return _waaSServiceProvider.get();
     }
     
-//    /**
-//     * Returns an instance of the WaaS Monitor service.
-//     *
-//     * @return  An instance of the WaaS monitor service.
-//     */
-//    public synchronized WaaSMonitorService getWaaSMonitorService() {
-//        return _waaSMonitorServiceProvider.get();
-//    }
+    /**
+     * Returns an instance of the WaaS Monitor service.
+     *
+     * @return  An instance of the WaaS monitor service.
+     */
+    public synchronized WaaSMonitorService getWaaSMonitorService() {
+        return _waaSMonitorServiceProvider.get();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

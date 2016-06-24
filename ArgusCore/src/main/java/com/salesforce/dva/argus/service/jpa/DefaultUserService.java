@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.jpa;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
+import com.salesforce.dva.argus.entity.Policy;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AuditService;
@@ -43,6 +44,8 @@ import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.List;
+
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -179,5 +182,23 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         return PrincipalUser.findUniqueUserCount(emf.get());
     }
+    
+    /**
+	 * Return all principal users, called by /user GET
+	 * 
+	 * 
+	 * @return The list of users
+	 */	
+	@Override
+	@Transactional
+	public List<PrincipalUser> getPrincipalUsers() {
+		requireNotDisposed();
+		EntityManager em = emf.get();
+		em.getEntityManagerFactory().getCache().evictAll();
+
+		List<PrincipalUser> result = PrincipalUser.findAll(em);
+
+		return result;
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -30,76 +30,32 @@
  */
 	 
 package com.salesforce.dva.argus.service;
-
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import java.math.BigInteger;
+
 import java.util.List;
 
 /**
- * Provides methods relevant to system users.
+ * Provides methods to push metrics to TSDB
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
-public interface UserService extends Service {
+public interface WaaSMonitorService extends Service {
 
     //~ Methods **************************************************************************************************************************************
 
-    /**
-     * Retrieves a principal user based on the user name.
-     *
-     * @param   userName  The user name of the user to retrieve. Cannot be null or empty.
-     *
-     * @return  The principal user or null if no user exists for the given user name.
-     */
-    PrincipalUser findUserByUsername(String userName);
 
-    /**
-     * Retrieves a principal user based on the primary key ID.
-     *
-     * @param   id  The primary key ID. Cannot be null and must be a positive non-zero number.
-     *
-     * @return  The principal user or null if no user exists for the give primary key ID.
-     */
-    PrincipalUser findUserByPrimaryKey(BigInteger id);
+    /** Starts recording counters to TSDB in the background. */
+    void startPushingMetrics();
 
-    /**
-     * Retrieves the system wide administrative user, creating it if necessary.
-     *
-     * @return  The administrative user. Will never return null.
-     */
-    PrincipalUser findAdminUser();
-    
-    /**
-     * Retrieves the system wide default non-privileged user, creating it if necessary. This is the user that will be used 
-     * when the system is configured to use NoAuthService.
-     *
-     * @return  The default user. Will never return null.
-     */
-    PrincipalUser findDefaultUser();
+    /** Stops recording counters. */
+    void stopPushingMetrics();
 
-    /**
-     * Deletes a user.
-     *
-     * @param  user  The user to delete. Cannot be the administrative user.
-     */
-    void deleteUser(PrincipalUser user);
 
-    /**
-     * Updates a user, creating it if necessary.
-     *
-     * @param   user  The user to update. Cannot be null.
-     *
-     * @return  The updated user. Will never return null.
-     */
-    PrincipalUser updateUser(PrincipalUser user);
+	void submitMetrics(PrincipalUser remoteUser, List<Metric> legalMetrics);
 
-    /**
-     * Returns the unique user count.
-     *
-     * @return  The unique user count.
-     */
-    long getUniqueUserCount();
+	List<Metric> commitMetrics(int messageCount, int timeout);
 
-	List<PrincipalUser> getPrincipalUsers();
+	void submitMetric(PrincipalUser submitter, Metric metric);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

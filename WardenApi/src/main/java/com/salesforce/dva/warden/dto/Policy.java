@@ -33,9 +33,9 @@ public class Policy extends Entity {
 	    private String timeUnit;
 	    private Double defaultValue;
 	    private String cronEntry;
-	    private List<BigInteger> suspensionLevelIds = new ArrayList<BigInteger>();
+	    private List<BigInteger> suspensionLevels = new ArrayList<BigInteger>();
 
-		public String getServcie() {
+		public String getService() {
 			return service;
 		}
 
@@ -51,19 +51,19 @@ public class Policy extends Entity {
 			this.name = name;
 		}
 
-		public List<String> getOwner() {
+		public List<String> getOwners() {
 			return owners;
 		}
 
-		public void setOwner(List<String> owner) {
+		public void setOwners(List<String> owner) {
 			this.owners = owner;
 		}
 
-		public List<String> getUser() {
+		public List<String> getUsers() {
 			return users;
 		}
 
-		public void setUser(List<String> user) {
+		public void setUsers(List<String> user) {
 			this.users = user;
 		}
 
@@ -132,11 +132,11 @@ public class Policy extends Entity {
 		}
 
 		public List<BigInteger> getSuspensionLevels() {
-			return suspensionLevelIds;
+			return suspensionLevels;
 		}
 		
 		public void setSuspensionLevels(List<BigInteger> suspensionLevels) {
-			 this.suspensionLevelIds = suspensionLevels;
+			 this.suspensionLevels = suspensionLevels;
 		}
 		
 		 //~ Enums ****************************************************************************************************************************************
@@ -255,8 +255,8 @@ public class Policy extends Entity {
 			
 			result.setService("example-service");
 			result.setName("example-name");
-			result.setOwner(Arrays.asList("example-owners"));
-			result.setUser(Arrays.asList("example-users"));
+			result.setOwners(Arrays.asList("example-owners"));
+			result.setUsers(Arrays.asList("example-users"));
 			result.setSubSystem("example-subSystem");
 			result.setMetricName("example-metricName");
 			result.setTriggerType("NOT_BETWEEN");

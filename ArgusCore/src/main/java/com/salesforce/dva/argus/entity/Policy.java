@@ -2,8 +2,12 @@ package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
+import java.math.BigInteger;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
@@ -20,10 +24,13 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
 
-import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+import com.salesforce.dva.warden.dto.Policy.TriggerType;
+import com.salesforce.dva.warden.dto.Policy.Aggregator;
 import com.salesforce.dva.argus.util.Cron;
-
+import com.salesforce.dva.argus.util.WaaSObjectConverter;
 /**
  * The entity encapsulates information about the policy.
  *
@@ -65,6 +72,9 @@ import com.salesforce.dva.argus.util.Cron;
 		        ),
 	        @NamedQuery(
 		            name = "Policy.findByName", query = "SELECT r FROM Policy r WHERE r.name = :name"
+		        ),
+	        @NamedQuery(
+		            name = "Policy.findAll", query = "SELECT r FROM Policy r"
 		        )
 	    }
 	)
@@ -100,7 +110,7 @@ public class Policy extends JPAEntity {
 	
 	@Basic(optional = false)
     @Column(nullable = false)
-    private String aggregator;
+    private Aggregator aggregator;
     
 	@Basic(optional = false)
     @Column(nullable = false)
@@ -112,17 +122,17 @@ public class Policy extends JPAEntity {
     
 	@Basic(optional = false)
     @Column(name = "default_value",nullable = false)
-    private double defaultValue;
+    private Double defaultValue;
     
 	@Basic(optional = false)
     @Column(name = "cron_entry", nullable = false)
     private String cronEntry;
     
     @OneToMany(mappedBy="policy", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SuspensionLevel> suspensionLevelList;
+    private List<SuspensionLevel> suspensionLevels;
     
     @OneToMany(mappedBy="policy", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Infraction> infractionList;
+    private List<Infraction> infractions;
     
   //~ Constructors *********************************************************************************************************************************
 
@@ -144,8 +154,8 @@ public class Policy extends JPAEntity {
      * @param  cronEntry  	The cron entry for this policy. Cannot be null.
      */
 	public Policy(PrincipalUser creator, String service, String name, List<String> owners, List<String> users,
-			 TriggerType triggerType, String aggregator, List<Double> threshold, String timeUnit,
-			double defaultValue, String cronEntry) {
+			 TriggerType triggerType, Aggregator aggregator, List<Double> threshold, String timeUnit,
+			Double defaultValue, String cronEntry) {
 		super(creator);
 		setService(service);
 		setName(name);
@@ -208,7 +218,7 @@ public class Policy extends JPAEntity {
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getResultList();
         } catch (NoResultException ex) {
-            return null;
+            return new ArrayList<>();
         }
     }
     
@@ -231,9 +241,40 @@ public class Policy extends JPAEntity {
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getResultList();
         } catch (NoResultException ex) {
-            return null;
+        	return new ArrayList<>();
         }
     }
+    //=====================web service methods starts from here=======================
+    /**
+     * Finds all the policies.
+     *
+     * @param   em      	The entity manager to use. Cannot be null. 
+     * 
+     * @return  The corresponding policies or null if no policy exists.
+     */
+    public static List<Policy> findAll(EntityManager em) {
+        requireArgument(em != null, "Entity manager can not be null.");
+        
+        TypedQuery<Policy> query = em.createNamedQuery("Policy.findAll", Policy.class);
+        
+        try {
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+            return query.getResultList();
+        } catch (NoResultException ex) {
+        	return new ArrayList<>();
+        }
+    }
+   
+    
+//    public static com.salesforce.dva.argus.entity.Policy transformToEntity(
+//			com.salesforce.dva.warden.dto.Policy policyDto) {
+//    	if (policyDto == null) {
+//            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
+//        }
+//    	
+//    	com.salesforce.dva.argus.entity.Policy result = WaaSObjectConverter.createDtoObject(com.salesforce.dva.argus.entity.Policy.class, policyDto);
+//        return result;
+//	}
     
 	public String getService() {
 		return service;
@@ -280,10 +321,10 @@ public class Policy extends JPAEntity {
 	public void setTriggerType(TriggerType triggerType) {
 		this.triggerType = triggerType;
 	}
-	public String getAggregator() {
+	public Aggregator getAggregator() {
 		return aggregator;
 	}
-	public void setAggregator(String aggregator) {
+	public void setAggregator(Aggregator aggregator) {
 		this.aggregator = aggregator;
 	}
 	public List<Double> getThreshold() {
@@ -316,13 +357,51 @@ public class Policy extends JPAEntity {
 	}
 
 	public List<SuspensionLevel> getSuspensionLevels() {
-		suspensionLevelList.sort((s1, s2) -> s1.getLevelNumber() - s2.getLevelNumber());
-		return suspensionLevelList;
+		suspensionLevels.sort((s1, s2) -> s1.getLevelNumber() - s2.getLevelNumber());
+		return suspensionLevels;
 	}
 
 	public void setSuspensionLevels(List<SuspensionLevel> suspensionLevelList) {
-		this.suspensionLevelList = suspensionLevelList;
+		this.suspensionLevels = suspensionLevelList;
 	}
-    
-    
+
+	@Override
+    public int hashCode() {
+        int hash = 5;
+
+        hash = 31 * hash + Objects.hashCode(this.name);
+        hash = 31 * hash + Objects.hashCode(this.service);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Policy other = (Policy) obj;
+
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.service, other.service)) {
+            return false;
+        }
+        return true;
+    }
+
+	@Override
+	public String toString() {
+		Object[] params = { getService(), getName(), getOwners().get(0), getUsers().get(0), getTriggerType().toString(), getAggregator().toString(),
+				getThreshold().get(0).toString(), getTimeUnit(), String.valueOf(getDefaultValue()), getCronEntry()};
+		String format = "Policy{ service = {0}, name = {1}, owner = {2}, user = {3}, "
+				+ "triggerType = {4}, aggregator = {5}, threshold = {6}, timeUnit = {7}, "
+				+ " defaultValue = {8}, cronEntry = {9}}";
+
+		return MessageFormat.format(format, params);
+	}
 }

@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.entity;
 
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -82,7 +85,10 @@ import javax.persistence.TypedQuery;
         @NamedQuery(name = "PrincipalUser.findByUserName", query = "SELECT p FROM PrincipalUser p WHERE p.userName = :userName"),
         @NamedQuery(
             name = "PrincipalUser.findUniqueUserCount", query = "SELECT count(p.id) FROM PrincipalUser p"
-        )
+        ),
+        @NamedQuery(
+	            name = "PrincipalUser.findAll", query = "SELECT p FROM PrincipalUser p"
+	        )
     }
 )
 public class PrincipalUser extends JPAEntity implements Serializable {
@@ -164,6 +170,26 @@ public class PrincipalUser extends JPAEntity implements Serializable {
             return query.setParameter("userName", userName).getSingleResult();
         } catch (NoResultException ex) {
             return null;
+        }
+    }
+    
+    /**
+     * Finds all the principal users.
+     *
+     * @param   em      	The entity manager to use. Cannot be null. 
+     * 
+     * @return  The corresponding principal users or null if no users exists.
+     */
+    public static List<PrincipalUser> findAll(EntityManager em) {
+        requireArgument(em != null, "Entity manager can not be null.");
+        
+        TypedQuery<PrincipalUser> query = em.createNamedQuery("PrincipalUser.findAll", PrincipalUser.class);
+        
+        try {
+            query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+            return query.getResultList();
+        } catch (NoResultException ex) {
+        	return new ArrayList<>();
         }
     }
 

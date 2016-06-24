@@ -2,7 +2,10 @@ package com.salesforce.dva.argus.entity;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
+import java.math.BigInteger;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.Objects;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -16,6 +19,10 @@ import javax.persistence.NoResultException;
 import javax.persistence.Table;
 import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response.Status;
+
+import com.salesforce.dva.argus.util.WaaSObjectConverter;
 
 /**
  * The entity encapsulates information about the suspension levels for a given policy.
@@ -46,7 +53,7 @@ import javax.persistence.UniqueConstraint;
     {
         @NamedQuery(
                 name = "SuspensionLevel.findByPolicyAndLevel", 
-                query = "SELECT r FROM SuspensionLevel r WHERE r.policy = :policy and r.levelNumber = :levelNumber"
+                query = "SELECT r FROM SuspensionLevel r WHERE r.policy = :policy and r.id = :id"
         ),
         @NamedQuery(
                 name = "SuspensionLevel.findByPolicy", 
@@ -108,17 +115,17 @@ public class SuspensionLevel extends JPAEntity {
      *
      * @return  The corresponding suspension or null if no suspension level having the specified policy and level number exist.
      */
-    public static SuspensionLevel findByPolicyAndLevel(EntityManager em, Policy policy, int levelNumber) {
+    public static SuspensionLevel findByPolicyAndLevel(EntityManager em, Policy policy, BigInteger id) {
         requireArgument(em != null, "Entity manager can not be null.");
         requireArgument(policy != null , "Policy cannot be null");
-        requireArgument(levelNumber > 0, "Level must be greater than zero.");
+        requireArgument(id.signum() == 1, "Level must be greater than zero.");
 
         TypedQuery<SuspensionLevel> query = em.createNamedQuery("SuspensionLevel.findByPolicyAndLevel", SuspensionLevel.class);
 
         
         try {
             query.setParameter("policy", policy);
-            query.setParameter("levelNumber", levelNumber);
+            query.setParameter("id", id);
             query.setHint("javax.persistence.cache.storeMode", "REFRESH");
             return query.getSingleResult();
         } catch (NoResultException ex) {
@@ -151,7 +158,7 @@ public class SuspensionLevel extends JPAEntity {
         }
     }
     
-    
+   
     public Policy getPolicy() {
 		return policy;
 	}
@@ -183,4 +190,41 @@ public class SuspensionLevel extends JPAEntity {
 	public void setSuspensionTime(long suspensionTime) {
 		this.suspensionTime = suspensionTime;
 	}
+	 
+	@Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 97 * hash + Objects.hashCode(this.policy);
+        hash = 97 * hash + Objects.hashCode(this.levelNumber);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final SuspensionLevel other = (SuspensionLevel) obj;
+
+        if (!Objects.equals(this.policy, other.policy)) {
+            return false;
+        }
+        if (!Objects.equals(this.levelNumber, other.levelNumber)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+    	Object[] params = { getPolicy(), getLevelNumber(), getInfractionCount(), getSuspensionTime()};
+    	String format = "SuspensionLevel{ policy = {0}, levelNumber = {1,number,#}, infractionCount = {2,number,#}, suspensionTime = {3,number,#}";
+    	
+        return MessageFormat.format(format, params);
+    }
 }
