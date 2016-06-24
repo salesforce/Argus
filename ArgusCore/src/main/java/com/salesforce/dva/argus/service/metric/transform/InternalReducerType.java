@@ -52,7 +52,8 @@ public enum InternalReducerType {
     NAME("name"),
     DEVIATION("dev"),
     SUM("sum"),
-    MEDIAN("median");
+    MEDIAN("median"),
+	COUNT("count");
 
     //~ Instance fields ******************************************************************************************************************************
 
