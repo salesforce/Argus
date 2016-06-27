@@ -38,7 +38,17 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         
         $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
         $scope.itemsPerPage = Storage.get("dashboards-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("dashboards-itemsPerPage");
+
+        $scope.selectedTab = 1;
         
+        $scope.isTabSelected = function (tab) {
+            return $scope.selectedTab === tab;
+        };
+
+        $scope.selectTab = function (tab) {
+            $scope.selectedTab = tab;
+        };
+
         $scope.getDashboards = function(shared) {
         	$scope.dashboards = [];
         	if(shared) {
@@ -73,6 +83,7 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
                 growl.error('Failed to create "' + dashboard.name + '"');
             });
         };
+
         $scope.removeDashboard = function (dashboard) {
             Dashboards.delete({dashboardId: dashboard.id}, function (result) {
                 $scope.dashboards = $scope.dashboards.filter(function (element) {

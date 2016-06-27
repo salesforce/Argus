@@ -1,41 +1,43 @@
 <section>
     <!-- Navigation tabs -->
     <ul class='nav nav-tabs'>
-        <li ng-class="{active:isTabSelected(1)}"><a href ng-click='getDashboards(false)'>{{getRemoteUser()}}'s Dashboards</a></li>
-        <li ng-class="{active:isTabSelected(2)}"><a href ng-click='getDashboards(true)'>Shared</a></li>
+        <li ng-class="{active:isTabSelected(1)}"><a href ng-click='getDashboards(false);selectTab(1)'>{{getRemoteUser()}}'s Dashboards</a></li>
+        <li ng-class="{active:isTabSelected(2)}"><a href ng-click='getDashboards(true);selectTab(2)'>Shared</a></li>
     </ul>
-    <br/>
 
+		<div class='row'>
+		    <div class='col-md-3 h3'>Dashboard list</div>
+		    
+		    <div class='col-md-5 text-right'>
+		        <dir-pagination-controls></dir-pagination-controls>
+		    </div>
 
-	<div class='row' style='padding-bottom:5px;'>
-	    <div class='col-md-3 h3' style='margin:0;padding:6px;padding-left:15px;'>Dashboard List</div>
-	    
-	   
-	    <div class='col-md-5 text-right'>
-	        <dir-pagination-controls></dir-pagination-controls>
-	    </div>
-	     <div class='col-md-1'>
-	     <select class="form-control" ng-model="itemsPerPage"  ng-options="val for val in itemsPerPageOptions">
-	     </select>
-	    </div>
-	    <div class='col-md-3'>
-	        <span class="pull-right input-group">
-	            <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
-	            <span class="input-group-btn" style='padding-right:5px;'>
-	                <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
-	                    <span class="glyphicon glyphicon-remove-circle"></span>
-	                </button>
-	                <button class="btn btn-default active" ng-show="!searchText">
-	                    <span class="glyphicon glyphicon-filter"></span>
-	                </button>
-	            </span>
-	        </span>
-	    </div>
-	</div>
+				<div class='col-md-1'>
+						<select class="form-control" ng-model="itemsPerPage" ng-options="val for val in itemsPerPageOptions"></select>
+				</div>
+		    <div class='col-md-3'>
+		        <span class="pull-right input-group">
+		            <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
+		            <span class="input-group-btn">
+		                <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
+		                    <span class="glyphicon glyphicon-remove-circle"></span>
+		                </button>
+		                <button class="btn btn-default active" ng-show="!searchText">
+		                    <span class="glyphicon glyphicon-filter"></span>
+		                </button>
+		            </span>
+		        </span>
+		    </div>
+		</div>
 	
 	<table class="table table-striped table-bordered">
 	    <tr>
-	        <th>ID</th><th>Name</th><th>Description</th><th>Created</th><th>Last Modified</th><th>Owner</th>
+	        <th>ID</th>
+	        <th>Name</th>
+	        <th>Description</th>
+	        <th>Created</th>
+	        <th>Last Modified</th>
+	        <th>Owner</th>
 	        <th class="col-centered">
 	            <button class="btn btn-success btn-sm" type="button" ng-click="addDashboard()" tooltip-placement="top" tooltip="Create a new Dashboard">
 	                <i class="glyphicon glyphicon-plus"></i>
