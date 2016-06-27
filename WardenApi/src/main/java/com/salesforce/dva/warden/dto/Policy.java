@@ -35,7 +35,7 @@ public class Policy
     private String cronEntry;
     private List<BigInteger> suspensionLevelIds = new ArrayList<BigInteger>(  );
 
-    public String getServcie(  )
+    public String getService(  )
     {
         return service;
     }
@@ -55,22 +55,22 @@ public class Policy
         this.name = name;
     }
 
-    public List<String> getOwner(  )
+    public List<String> getOwners(  )
     {
         return owners;
     }
 
-    public void setOwner( List<String> owner )
+    public void setOwners( List<String> owner )
     {
         this.owners = owner;
     }
 
-    public List<String> getUser(  )
+    public List<String> getUsers(  )
     {
         return users;
     }
 
-    public void setUser( List<String> user )
+    public void setUsers( List<String> user )
     {
         this.users = user;
     }
@@ -100,9 +100,9 @@ public class Policy
         return triggerType;
     }
 
-    public void setTriggerType( String triggerType )
+    public void setTriggerType( TriggerType triggerType )
     {
-        this.triggerType = TriggerType.fromString( triggerType );
+        this.triggerType = triggerType;
     }
 
     public Aggregator getAggregator(  )
@@ -110,17 +110,17 @@ public class Policy
         return aggregator;
     }
 
-    public void setAggregator( String aggregator )
+    public void setAggregator( Aggregator aggregator )
     {
-        this.aggregator = Aggregator.fromString( aggregator );
+        this.aggregator = aggregator;
     }
 
-    public List<Double> getThreshold(  )
+    public List<Double> getThresholds(  )
     {
         return threshold;
     }
 
-    public void setThreshold( List<Double> threshold )
+    public void setThresholds( List<Double> threshold )
     {
         this.threshold = threshold;
     }
