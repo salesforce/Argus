@@ -18,14 +18,18 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 body {
-    min-height: 2000px;
+    /* min-height: 2000px; */
     padding-top: 70px;
 }
 
-label{
+label {
     display: inline-block;
     padding-top: 5px;
 }
+
+.nav {margin-top: 10px; margin-bottom: 10px;}
+.navbar-fixed-top .nav {margin-top: 0; margin-bottom: 0;}
+.h3 {margin-top: 10px;}
 
 .growl-container.growl-fixed.top-center {
     top : 2em!important;
@@ -100,3 +104,11 @@ label{
   // white-space: nowrap; /*whether to display in one line or not*/
   word-wrap: break-word;
 }
+
+/* vertical align table cells */
+.table > thead > tr > th,
+.table > tbody > tr > th,
+.table > tfoot > tr > th,
+.table > thead > tr > td,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {vertical-align: middle;}
