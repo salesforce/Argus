@@ -85,8 +85,6 @@ public final class ServiceFactory {
     Provider<CacheService> _cacheServiceProvider;
     @Inject
     Provider<DiscoveryService> _discoveryServiceProvider;
-    @Inject
-    Provider<DistributedSchedulingLockService> _distributedSchedulingLockServiceProvider;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -278,14 +276,6 @@ public final class ServiceFactory {
     public synchronized DiscoveryService getDiscoveryService() {
         return _discoveryServiceProvider.get();
     }
-    
-    /**
-     * Returns an instance of the Discovery service.
-     *
-     * @return  An instance of the Discovery service.
-     */
-    public synchronized DistributedSchedulingLockService getDistributedSchedulingLockService() {
-        return _distributedSchedulingLockServiceProvider.get();
-    }
+  
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
