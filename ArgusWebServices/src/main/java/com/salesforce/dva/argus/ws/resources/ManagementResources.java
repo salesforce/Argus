@@ -116,7 +116,7 @@ public class ManagementResources extends AbstractResource {
      * @throws  WebApplicationException   Throws this exception if the user does not exist or the user is not authorized to carry out this operation.
      */
     @PUT
-    @Path("wardenpolicyforuser")
+    @Path("/wardenpolicyforuser")
     @Produces(MediaType.APPLICATION_JSON)
     @Description("Updates a warden policy for a user.")
     public Response updateWardenPolicyForUser(@Context HttpServletRequest req,

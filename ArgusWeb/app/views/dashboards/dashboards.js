@@ -38,7 +38,17 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         
         $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
         $scope.itemsPerPage = Storage.get("dashboards-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("dashboards-itemsPerPage");
+
+        $scope.selectedTab = 1;
         
+        $scope.isTabSelected = function (tab) {
+            return $scope.selectedTab === tab;
+        };
+
+        $scope.selectTab = function (tab) {
+            $scope.selectedTab = tab;
+        };
+
         $scope.getDashboards = function(shared) {
         	$scope.dashboards = [];
         	if(shared) {
@@ -73,6 +83,7 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
                 growl.error('Failed to create "' + dashboard.name + '"');
             });
         };
+
         $scope.removeDashboard = function (dashboard) {
             Dashboards.delete({dashboardId: dashboard.id}, function (result) {
                 $scope.dashboards = $scope.dashboards.filter(function (element) {
@@ -94,16 +105,16 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         	template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
         	template += "<ag-date type='datetime' name='start' label='Start Date' default='-25d'></ag-date>\n";
             template += "<ag-date type='datetime' name='end' label='End Date' default='-0d'></ag-date>\n";
-            template += "<ag-text type='text' name='scope' label='Scope' default='na5.s1'></ag-text>\n";
-            template += "<ag-text type='text' name='metric' label='Metric' default='p95apt'></ag-text>\n";
-            template += "<ag-text type='text' name='tags' label='Tags' default='feature=*'></ag-text>\n"; 
+            template += "<ag-text type='text' name='scope' label='Scope' default='argus.jvm'></ag-text>\n";
+            template += "<ag-text type='text' name='metric' label='Metric' default='mem.heap.used'></ag-text>\n";
+            template += "<ag-text type='text' name='tags' label='Tags' default='host=*'></ag-text>\n"; 
             template += "<ag-text type='text' name='aggregator' label='Aggregator' default='avg'></ag-text>\n";
             template += "<!-- A button used to submit the query. -->\n";
             template += "<ag-submit>Submit</ag-submit>\n\n";
   
             template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
             template += "<br><br>\n";
-            template += "<h4>S1 APT by Feature (P95) - Chart</h4>\n\n";
+            template += "<h4>Argus mem heap used - Chart</h4>\n\n";
             
             template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
             template += "<ag-chart name='Chart'>\n\n";
