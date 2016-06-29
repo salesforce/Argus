@@ -27,6 +27,7 @@ public class BatchMetricQuery implements Serializable {
     private Status _status;
     private Priority _priority;
     private int _ttl;
+    private long _createdDate;
     private String _batchId;
     private String _ownerName;
     private List<AsyncBatchedMetricQuery> _queries;
@@ -37,6 +38,7 @@ public class BatchMetricQuery implements Serializable {
         _status = Status.QUEUED;
         _priority = Priority.fromInt(priority);
         _ttl = ttl;
+        _createdDate = System.currentTimeMillis();
         _batchId = UUID.randomUUID().toString();
         _ownerName = ownerName;
         _queries = new ArrayList<>(expressions.size());
@@ -45,11 +47,12 @@ public class BatchMetricQuery implements Serializable {
         }
     }
 
-    public BatchMetricQuery(Status status, Priority priority, int ttl, String batchId, String ownerName,
+    public BatchMetricQuery(Status status, Priority priority, int ttl, long createdDate, String batchId, String ownerName,
                             List<AsyncBatchedMetricQuery> queries) {
         _status = status;
         _priority = priority;
         _ttl = ttl;
+        _createdDate = createdDate;
         _batchId = batchId;
         _ownerName = ownerName;
         _queries = queries;
@@ -86,6 +89,10 @@ public class BatchMetricQuery implements Serializable {
 
     public int getTtl() {
         return _ttl;
+    }
+
+    public long getCreatedDate() {
+        return _createdDate;
     }
 
     public String getBatchId()

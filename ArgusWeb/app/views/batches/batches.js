@@ -6,8 +6,10 @@ var argusBatches = angular.module('argusBatches', [
 
 argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batches',
     function($scope, AsyncMetrics, Batches) {
+        $('[data-toggle="tooltip"]').tooltip();
         $scope.batches = [];
         $scope.expressions = [{expression: ''}];
+        $scope.currTtl = '';
         $scope.currBatchState = 'Refresh for current batch status';
         $scope.currBatchId = '';
         var statusToString = ['queued', 'processing', 'done'];
@@ -21,10 +23,9 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
                     }
                 }
             });
-
         };
         $scope.getBatches();
-        
+
         $scope.addExpression = function() {
             $scope.expressions.push({expression: ''});
         };
@@ -44,13 +45,15 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
                     params.expression.push($scope.expressions[i].expression);
                 }
             }
+            params.ttl = $scope.currTtl;
             AsyncMetrics.create(params)
                 .then(function success(response) {
+                    $scope.expressions = [{expression: ''}];
+                    $scope.currTtl = '';
                     $scope.submitted = true;
                     $scope.currBatchId = response.data.id;
                     $scope.getBatches();
                     $scope.refreshBatchState($scope.currBatchId);
-                    $scope.expressions = [{expression: ''}];
                 }, function error(response) {
                     console.log('Error in batches.submitBatch:\n' + response);
                 });
@@ -62,6 +65,14 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
             }
             Batches.query({batchId: $scope.currBatchId}, function(data) {
                 $scope.currBatchState = angular.toJson(data, 2);
+            }, function() {
+                $scope.currBatchState = "Batch has expired";
+                for (var i = 0; i < $scope.batches.length; i++) {
+                    if ($scope.batches[i].id == $scope.currBatchId) {
+                        $scope.batches.splice(i, 1);
+                        break;
+                    }
+                }
             });
         }
     }]);

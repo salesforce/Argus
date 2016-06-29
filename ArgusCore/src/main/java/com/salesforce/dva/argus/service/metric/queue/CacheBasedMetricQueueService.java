@@ -148,8 +148,8 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
         try {
             Map<String, Object> queryData = MAPPER.readValue(json, Map.class);
             String expression = (String) queryData.get("expression");
-            long offset = Long.valueOf((Integer) queryData.get("offset"));
-            long queueId = Long.valueOf((Integer) queryData.get("queueId"));
+            long offset = Long.valueOf(queryData.get("offset").toString());
+            long queueId = Long.valueOf(queryData.get("queueId").toString());
             String batchId = (String) queryData.get("batchId");
             BatchMetricQuery.Status status = BatchMetricQuery.Status.fromInt((Integer) queryData.get("status"));
             String metricJson = (String) queryData.get("metric");

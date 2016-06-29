@@ -3,6 +3,7 @@ package com.salesforce.dva.argus.ws.resources;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.BatchService;
+import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.BatchDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
@@ -43,6 +44,8 @@ public class BatchResources extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getBatches(@Context HttpServletRequest req) {
         PrincipalUser owner = validateAndGetOwner(req, null);
+        SystemAssert.requireArgument(owner != null, "Owner cannot be null");
+        
         Map<String,String> batches = batchService.findBatchesByOwnerName(owner.getUserName());
         if (batches == null) {
             return Response.status(Response.Status.NOT_FOUND).build();

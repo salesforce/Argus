@@ -12,7 +12,6 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -60,7 +59,8 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
             BatchMetricQuery.Status status = BatchMetricQuery.Status.fromInt((Integer) batchData.get("status"));
             BatchMetricQuery.Priority priority = BatchMetricQuery.Priority.fromInt((Integer) batchData.get("priority"));
-            int ttl = (Integer) batchData.get("ttl");
+            int ttl = Integer.valueOf(batchData.get("ttl").toString());
+            long createdDate = Long.valueOf(batchData.get("createdDate").toString());
             String ownerName = (String) batchData.get("ownerName");
             String batchId = (String) batchData.get("batchId");
             List<AsyncBatchedMetricQuery> queries = new ArrayList<>();
@@ -69,7 +69,7 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             for (Long queueId: queueIds) {
                 queries.add(_metricQueueService.findQueryById(priority.toInt(), queueId));
             }
-            BatchMetricQuery batch = new BatchMetricQuery(status, priority, ttl, batchId, ownerName, queries);
+            BatchMetricQuery batch = new BatchMetricQuery(status, priority, ttl, createdDate, batchId, ownerName, queries);
             return batch;
         } catch (Exception ex) {
             LOGGER.error("Exception in BatchMetricQuery construction from JSON: {}", ex.toString());
@@ -86,6 +86,7 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             String batchId = batch.getBatchId();
             batchData.put("priority", batch.getPriority().toInt());
             batchData.put("ttl", ttl);
+            batchData.put("createdDate", batch.getCreatedDate());
             batchData.put("ownerName", batch.getOwnerName());
             batchData.put("batchId", batchId);
             List<Long> queueIds = new ArrayList<>(batch.getQueries().size());

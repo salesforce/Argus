@@ -16,7 +16,8 @@ public class BatchDto {
 
     private String status;
     private String priority;
-    private long ttl;
+    private int ttl;
+    private long createdDate;
     private String ownerName;
     private List<QueryDto> queries;
 
@@ -27,6 +28,7 @@ public class BatchDto {
         result.status = batch.getStatus().toString();
         result.priority = batch.getPriority().toString();
         result.ttl = batch.getTtl();
+        result.createdDate = batch.getCreatedDate();
         result.ownerName = batch.getOwnerName();
 
         List<AsyncBatchedMetricQuery> batchQueries = batch.getQueries();
@@ -67,39 +69,26 @@ public class BatchDto {
         return status;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
-    }
 
     public String getPriority() {
         return priority;
     }
 
-    public void setPriority(String priority) {
-        this.priority = priority;
-    }
-
-    public long getTtl() {
+    public int getTtl() {
         return ttl;
     }
 
-    public void setTtl(long ttl) {
-        this.ttl = ttl;
+
+    public long getCreatedDate() {
+        return createdDate;
     }
 
     public String getOwnerName() {
         return ownerName;
     }
 
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
-    }
-
     public List<QueryDto> getQueries() {
         return queries;
     }
 
-    public void setQueries(List<QueryDto> queries) {
-        this.queries = queries;
-    }
 }

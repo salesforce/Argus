@@ -21,10 +21,18 @@
                 <br />
             </div>
         </form>
-        <div class="text-center">
-            <div class="btn-group">
-                <button class="btn btn-success" ng-click='addExpression()'>Add expression</button>
-                <button class="btn btn-primary" ng-click='submitBatch()'>Submit batch</button>
+        <div class="row">
+            <div class="col-md-offset-3 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" ng-click='addExpression()'>Add expression</button>
+                    </span>
+                    <input type="text" class="form-control" placeholder="TTL (Default: 30 min.)" data-toggle="tooltip"
+                           data-placement="bottom" title="Seconds to keep results after computation" ng-model='currTtl'>
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" ng-click='submitBatch()'>Submit batch</button>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
