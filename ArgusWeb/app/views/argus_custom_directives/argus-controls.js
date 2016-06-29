@@ -36,7 +36,7 @@ controlsModule.directive('agDashboardResource', ['DashboardService','$sce','$com
 
             DashboardService.getDashboardById(dashboardID).success(function (data){
 
-                element.html('<div> <h4>' +  data.name + ' - ' + data.description + '</h4> <br>' + $sce.trustAsHtml(data.content) + '</div>');
+                element.html('<div>' + $sce.trustAsHtml(data.content) + '</div>');
                 $compile(element.contents())(scope);
                 //scope.$broadcast('submitButtonEvent', {});
 

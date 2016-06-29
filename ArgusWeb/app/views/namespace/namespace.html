@@ -1,13 +1,13 @@
 
-<div class='row' style='padding-bottom:5px;'>
-    <div class='col-md-3 h3' style='margin:0;padding:6px;padding-left:15px;'>Namespace List</div>
+<div class='row'>
+    <div class='col-md-3 h3'>Namespace list</div>
     <div class='col-md-6 text-right'>
         <dir-pagination-controls></dir-pagination-controls>
     </div>
     <div class='col-md-3'>
         <span class="pull-right input-group">
             <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
-            <span class="input-group-btn" style='padding-right:5px;'>
+            <span class="input-group-btn">
                 <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
                     <span class="glyphicon glyphicon-remove-circle"></span>
                 </button>
@@ -24,37 +24,30 @@
     <tr>
         <th>Namespace Name</th>
         <th>Created</th>
-         <th>Last Modified</th>
-         
+        <th>Last Modified</th>
         <th>Users</th>
-        <th class="col-centered">
-            
-        </th>
+        <th class="col-centered"></th>
     </tr>
     <tr dir-paginate="namepsace in namespaces | filter:searchText |  orderBy:'qualifier' | itemsPerPage:8">
-      
         <td>{{namepsace.qualifier}}</td>
         <td>{{namepsace.createdDate | date:'medium'}}</td>
         <td>{{namepsace.modifiedDate | date:'medium'}}</td>
-        
-        <td><textarea ng-model= "namepsace.usernames" rows="3" cols="60">  </textarea></td>
-        
-        <td>
-            <input class="btn btn-primary" type="submit" ng-click="updateNamespace(namepsace)" value="Update" />
-        </td>
+        <td><textarea ng-model= "namepsace.usernames" rows="2" cols="50"></textarea></td>
+        <td><input class="btn btn-primary" type="submit" ng-click="updateNamespace(namepsace)" value="Update" /></td>
     </tr>
     
 </table>
 
-
-<table width="50%" frame="box">
-<tr><td><label>Namespace Name: </label> </td> <td><input type="text" ng-model="qulifier" size="28" placeholder="Enter namespace name .."/> </td></tr>
-<tr>
-
-<td>
-<label>Users:</label> </td> <td><textarea ng-model="users" rows="2" cols="27" placeholder="Enter user names separated by comma .."></textarea> 
-</td>
-
-</tr>
-<tr><td colspan="2" align="center"><input class="btn btn-primary" type="submit" ng-click="saveNamespace()" value="Create Namespace" /></td></tr>
+<h3>Create a new Namespace</h3>
+<table class="table table-striped table-bordered">
+    <tr>
+        <td><label>Namespace Name</label></td>
+        <td><label>Users</label></td>
+        <td><label>Create</label></td>
+    </tr>
+    <tr>
+        <td><input type="text" ng-model="qulifier" size="34" placeholder="Enter namespace name"/></td>
+        <td><textarea ng-model="users" rows="2" cols="50" placeholder="Enter user names separated by comma"></textarea></td>
+        <td><input class="btn btn-primary" type="submit" ng-click="saveNamespace()" value="Create Namespace" /></td>
+    </tr>
 </table>
