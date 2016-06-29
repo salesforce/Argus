@@ -224,7 +224,8 @@ public abstract class AbstractTest {
                 }
             }
         }
-        SystemMain system = SystemMain.getInstance(config);
+        system.stop();
+        system = SystemMain.getInstance(config);
         system.start();
         return system;
     } 
