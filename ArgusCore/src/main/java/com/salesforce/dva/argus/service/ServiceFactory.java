@@ -276,5 +276,6 @@ public final class ServiceFactory {
     public synchronized DiscoveryService getDiscoveryService() {
         return _discoveryServiceProvider.get();
     }
+  
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
