@@ -52,6 +52,60 @@ viewElementsModule.controller('metricElementCtrl', function($scope) {
     
 });
 
+viewElementsModule.directive('agStatusIndicator', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
+    var metricNameIndex = 1;
+    return {
+        restrict: 'E',
+        transclude: true,
+        scope: {
+            serviceName: '@name',
+            hi: '@hi',
+            lo: '@lo'
+        },
+        require: '^agDashboard',
+        controller: 'ViewElementCtrl',
+        template:'<div ng-transclude=""> </div>',
+        link: function(scope, element, attributes, dashboardCtrl) {
+            var metricExpression;
+            var indicatorHTML = 
+                '<div class="serviceItem">' +
+                    '<div class="serviceName">' + attributes.name + '</div>' +
+                    '<div id="'+ attributes.name + '-status" class="statusIndicator"></div>' +
+                '</div>';
+            
+            // render status indicator
+            element.html(indicatorHTML);
+
+            // set metricExpression from scope
+            for (var key in scope.metrics) {
+                if (scope.metrics.hasOwnProperty(key)) {
+                    metricExpression = scope.metrics[key].expression;
+                }
+            }
+
+            // get datapoints from metric expression
+            if ( metricExpression) {
+                DashboardService.getMetricData(metricExpression)
+                    .then(function( result ) {
+                        var datapoints = result.data[0].datapoints;
+                        var lastStatusVal = Object.keys(datapoints).sort().reverse()[0];
+                        lastStatusVal = datapoints[lastStatusVal];
+
+                        // update status indicator
+                        if (lastStatusVal < attributes.lo) {
+                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+                        } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
+                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+                        } else if (lastStatusVal > attributes.hi) {
+                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+                        }
+                    });
+            }
+
+        }
+    }
+}]);
+
 viewElementsModule.directive('agChart', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
     var chartNameIndex=1;
     return {
@@ -131,7 +185,8 @@ viewElementsModule.directive('agTable', ['DashboardService', 'growl', 'VIEWELEME
 function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
 	
 	var elementId = 'element_' + elementType + index;
-    element.prepend('<div id=' + elementId + '></div>');
+    var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
+    element.prepend('<div id=' + elementId + ' '+ smallChartCss +'></div>');
     
     scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
         console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
@@ -231,22 +286,22 @@ viewElementsModule.directive('agMetric', function() {
     var metricNameIndex=100;
     return {
         restrict: 'E',
-        require: ['?^agChart', '?^agHeatmap', '?^agTable'], 
+        require: ['?^agChart', '?^agStatusIndicator', '?^agHeatmap', '?^agTable'],
         scope:{
             expression:'@'
         },
         controller: 'metricElementCtrl',
         template: '',
         link: function(scope, element, attributes, controllers){
-        	var elementCtrl;
-        	if(controllers[0]) {
-        		elementCtrl = controllers[0];
-        	} else if (controllers[1]) {
-        		elementCtrl = controllers[1];
-        	} else {
+            var elementCtrl;
+            if(controllers[0]) {
+                elementCtrl = controllers[0];
+            } else if (controllers[1]) {
+                elementCtrl = controllers[1];
+            } else {
                 elementCtrl = controllers[2];
             }
-        	
+
             var metricName='metric_'+ metricNameIndex++;
 
             var value = '';
