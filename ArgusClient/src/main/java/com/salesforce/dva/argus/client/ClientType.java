@@ -45,6 +45,6 @@ enum ClientType {
     ALERT,
     /* Alpha feature, not currently supported. */
     COMMIT_SCHEMA,
-    PROCESS_METRICS
+    PROCESS_QUERIES
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

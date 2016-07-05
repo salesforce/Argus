@@ -5,12 +5,14 @@ import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.BatchService;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.MetricQueueService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.Logger;
 
 import java.util.List;
 
@@ -22,7 +24,8 @@ import java.util.List;
 public class AsyncMetricService extends DefaultMetricService {
 
     //~ Instance fields ******************************************************************************************************************************
-
+    @SLF4JTypeListener.InjectLogger
+    private Logger _logger;
     private final MetricQueueService _metricQueueService;
     private final CacheService _cacheService;
     private final BatchService _batchService;
@@ -43,6 +46,7 @@ public class AsyncMetricService extends DefaultMetricService {
 
     @Override
     public String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName) {
+        _logger.debug("ASYNCMETRICSERVICE GOOD LOGGER");
         int priority = 1;
         BatchMetricQuery batchQuery = new BatchMetricQuery(expressions, offset, priority, ttl, ownerName);
         for (AsyncBatchedMetricQuery query: batchQuery.getQueries()) {

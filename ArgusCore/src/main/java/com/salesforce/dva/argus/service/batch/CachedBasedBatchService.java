@@ -9,9 +9,9 @@ import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MetricQueueService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.salesforce.dva.argus.system.SystemException;
 
+import java.io.IOException;
 import java.util.*;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -27,7 +27,6 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
 
     private static final String ROOT = "batch/";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -71,9 +70,8 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             }
             BatchMetricQuery batch = new BatchMetricQuery(status, priority, ttl, createdDate, batchId, ownerName, queries);
             return batch;
-        } catch (Exception ex) {
-            LOGGER.error("Exception in BatchMetricQuery construction from JSON: {}", ex.toString());
-            return null;
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 
@@ -90,7 +88,7 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             batchData.put("ownerName", batch.getOwnerName());
             batchData.put("batchId", batchId);
             List<Long> queueIds = new ArrayList<>(batch.getQueries().size());
-            for (AsyncBatchedMetricQuery query: batch.getQueries()) {
+            for (AsyncBatchedMetricQuery query : batch.getQueries()) {
                 queueIds.add(query.getQueueId());
             }
             String queueIdsJson = MAPPER.writeValueAsString(queueIds);
@@ -103,17 +101,17 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             String json = MAPPER.writeValueAsString(batchData);
             // Enforce cache TTL if batch status now changes to done
             if (oldStatus != newStatus && newStatus == BatchMetricQuery.Status.DONE) {
-                _cacheService.put(ROOT + batchId, json , ttl);
-                for (AsyncBatchedMetricQuery query: batch.getQueries()) {
+                _cacheService.put(ROOT + batchId, json, ttl);
+                for (AsyncBatchedMetricQuery query : batch.getQueries()) {
                     _metricQueueService.updateQueryWithTtl(query, ttl);
                 }
             } else {
-                _cacheService.put(ROOT + batchId, json , Integer.MAX_VALUE);
+                _cacheService.put(ROOT + batchId, json, Integer.MAX_VALUE);
             }
 
             // Update user JSON in cache
             String userBatchesJson = _cacheService.get(ROOT + batch.getOwnerName());
-            Map<String,Object> userBatches;
+            Map<String, Object> userBatches;
             if (userBatchesJson == null) {
                 userBatches = new HashMap<>();
                 userBatches.put(batch.getBatchId(), newStatus.toInt());
@@ -123,8 +121,8 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             }
             String updatedBatchesJson = MAPPER.writeValueAsString(userBatches);
             _cacheService.put(ROOT + batch.getOwnerName(), updatedBatchesJson, Integer.MAX_VALUE);
-        } catch (Exception ex) {
-            LOGGER.error("Exception in CacheBasedBatchService.saveToCache: {}", ex.toString());
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 
@@ -148,9 +146,8 @@ public class CachedBasedBatchService extends DefaultService implements BatchServ
             userBatchesJson = MAPPER.writeValueAsString(userBatches);
             _cacheService.put(ROOT + ownerName, userBatchesJson, Integer.MAX_VALUE);
             return userBatches;
-        } catch (Exception ex) {
-            LOGGER.error("Exception in CachedBasedBatchServce.findBatchesByOwnerName: {}", ex.toString());
-            return null;
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 }

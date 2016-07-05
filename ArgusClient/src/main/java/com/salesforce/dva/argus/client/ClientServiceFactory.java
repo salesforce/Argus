@@ -58,7 +58,7 @@ class ClientServiceFactory {
                 return startCommitSchemaClientService(system, jobCounter);
             case COMMIT_ANNOTATIONS:
                 return startCommitAnnotationsClientService(system, jobCounter);
-            case PROCESS_METRICS:
+            case PROCESS_QUERIES:
                 return startProcessMetricsClientService(system, jobCounter);
             default:
                 return startCommitMetricsClientService(system, jobCounter);

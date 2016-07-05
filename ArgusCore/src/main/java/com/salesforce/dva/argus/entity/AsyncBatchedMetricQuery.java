@@ -11,13 +11,13 @@ public class AsyncBatchedMetricQuery {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    String _expression;
-    long _offset;
-    long _queueId;
-    String _batchId;
-    BatchMetricQuery.Status _status;
-    BatchMetricQuery.Priority _priority;
-    Metric _result;
+    private String _expression;
+    private long _offset;
+    private long _queueId;
+    private String _batchId;
+    private BatchMetricQuery.Status _status;
+    private BatchMetricQuery.Priority _priority;
+    private Metric _result;
 
     //~ Constructors *********************************************************************************************************************************
 

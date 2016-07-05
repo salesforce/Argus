@@ -108,6 +108,8 @@ public class BatchMetricQuery implements Serializable {
         return _queries;
     }
 
+    //~ Enums ****************************************************************************************************************************************
+
     public enum Priority {
         HIGH("high"),
         LOW("low");
@@ -139,8 +141,6 @@ public class BatchMetricQuery implements Serializable {
             return _key;
         }
     }
-
-    //~ Enums ****************************************************************************************************************************************
 
     public enum Status {
         QUEUED("queued"),

@@ -1,12 +1,12 @@
 package com.salesforce.dva.argus.service.metric.queue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.BatchService;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -17,8 +17,8 @@ import com.salesforce.dva.argus.service.metric.ParseException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +33,8 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public class CacheBasedMetricQueueService extends DefaultService implements MetricQueueService {
 
     //~ Static fields/initializers *******************************************************************************************************************
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CacheBasedMetricQueueService.class);
+    @SLF4JTypeListener.InjectLogger
+    private Logger LOGGER;
     private static final Object cacheLock = new Object();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     // Keys to store async queries at
@@ -155,10 +155,8 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
             String metricJson = (String) queryData.get("metric");
             Metric result = MAPPER.readValue(metricJson, Metric.class);
             return new AsyncBatchedMetricQuery(expression, offset, queueId, batchId, status, priorityEnum, result);
-        } catch (Exception ex) {
-            LOGGER.error("Exception in AsyncBatchedMetricQuery construction from JSON: {}", ex.toString());
-            ex.printStackTrace();
-            return null;
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 
@@ -185,9 +183,8 @@ public class CacheBasedMetricQueueService extends DefaultService implements Metr
             queryData.put("priority", query.getPriority().toInt());
             queryData.put("metric", MAPPER.writeValueAsString(query.getResult()));
             return MAPPER.writeValueAsString(queryData);
-        } catch (JsonProcessingException ex) {
-            LOGGER.error("Exception in CachedBasedMetricQueueService.serializeQueryToJson: {}", ex.toString());
-            return null;
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 

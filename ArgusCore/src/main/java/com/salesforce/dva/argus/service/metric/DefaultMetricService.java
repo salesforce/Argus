@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
@@ -43,7 +44,6 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,8 +59,8 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public class DefaultMetricService extends DefaultService implements MetricService {
 
     //~ Instance fields ******************************************************************************************************************************
-
-    private final static Logger _logger = LoggerFactory.getLogger(DefaultMetricService.class);
+    @SLF4JTypeListener.InjectLogger
+    private Logger _logger;
     private final MonitorService _monitorService;
     private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
     private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
