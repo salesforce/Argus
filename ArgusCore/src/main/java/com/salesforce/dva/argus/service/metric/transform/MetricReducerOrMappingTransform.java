@@ -55,7 +55,7 @@ public class MetricReducerOrMappingTransform implements Transform {
     protected final ValueReducerOrMapping valueReducerOrMapping;
     protected final String defaultScope;
     protected final String defaultMetricName;
-    private static final String FULLJOIN = "FULL";
+    private static final String FULLJOIN = "UNION";
     private Boolean fulljoinIndicator=false;
 
     //~ Constructors *********************************************************************************************************************************

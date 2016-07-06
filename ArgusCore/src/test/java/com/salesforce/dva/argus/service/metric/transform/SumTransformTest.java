@@ -322,7 +322,7 @@ public class SumTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        constants.add("full");
+        constants.add("union");
         Map<Long, String> expected = new HashMap<Long, String>();
         expected.put(100L, "10.0");
         expected.put(200L, "100.0");
