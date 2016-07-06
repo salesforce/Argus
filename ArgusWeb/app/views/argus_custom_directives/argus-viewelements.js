@@ -27,8 +27,8 @@ viewElementsModule.controller('ViewElementCtrl', function($scope) {
     $scope.annotations={};
     $scope.options={};
 
-    this.updateMetric = function(name,expression, metricSpecicOptions) {
-        var metric={'expression':expression,'metricSpecicOptions':metricSpecicOptions};
+    this.updateMetric = function(name,expression, metricSpecificOptions) {
+        var metric={'expression':expression,'metricSpecificOptions':metricSpecificOptions};
     	$scope.metrics[name]=metric;
     };
 
@@ -76,31 +76,41 @@ viewElementsModule.directive('agStatusIndicator', ['DashboardService', 'growl', 
             // render status indicator
             element.html(indicatorHTML);
 
-            // set metricExpression from scope
-            for (var key in scope.metrics) {
-                if (scope.metrics.hasOwnProperty(key)) {
-                    metricExpression = scope.metrics[key].expression;
-                }
-            }
+            // listen to scope for event and controls info
+            scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
+                console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
 
-            // get datapoints from metric expression
-            if ( metricExpression) {
-                DashboardService.getMetricData(metricExpression)
-                    .then(function( result ) {
-                        var datapoints = result.data[0].datapoints;
-                        var lastStatusVal = Object.keys(datapoints).sort().reverse()[0];
-                        lastStatusVal = datapoints[lastStatusVal];
+                for (var key in scope.metrics) {
+                    if (scope.metrics.hasOwnProperty(key)) {
+                        // get metricExpression from scope
+                        metricExpression = scope.metrics[key].expression;
 
-                        // update status indicator
-                        if (lastStatusVal < attributes.lo) {
-                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
-                        } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
-                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
-                        } else if (lastStatusVal > attributes.hi) {
-                            $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+                        // process mertricExpression from controls if present
+                        if ( controls ) {
+                            metricExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
                         }
-                    });
-            }
+                    }
+                }
+
+                // get datapoints from metric expression
+                if ( metricExpression) {
+                    DashboardService.getMetricData(metricExpression)
+                        .then(function( result ) {
+                            var datapoints = result.data[0].datapoints;
+                            var lastStatusVal = Object.keys(datapoints).sort().reverse()[0];
+                            lastStatusVal = datapoints[lastStatusVal];
+
+                            // update status indicator
+                            if (lastStatusVal < attributes.lo) {
+                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+                            } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
+                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+                            } else if (lastStatusVal > attributes.hi) {
+                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+                            }
+                        });
+                }
+            });
 
         }
     }
@@ -200,12 +210,16 @@ function buildViewElement(scope, element, attributes, dashboardCtrl, elementType
 
         for (var key in scope.metrics) {
             if (scope.metrics.hasOwnProperty(key)) {
-            	var metric = scope.metrics[key];
-                var processedExpression = augmentExpressionWithControlsData(event, metric.expression,controls);
+                // get metricExpression from scope
+                var metrics = scope.metrics[key];
+                var metricExpression = metrics.expression;
+                var metricSpecificOptions = metrics.metricSpecificOptions;
+                var processedExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
+
                 if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
                 	var processedMetric={};
                 	processedMetric['expression']=processedExpression;
-                	processedMetric['metricSpecicOptions']=getMetricSpecificOptionsInArray(metric.metricSpecicOptions);
+                	processedMetric['metricSpecificOptions']=getMetricSpecificOptionsInArray(metricSpecificOptions);
                     updatedMetricList.push(processedMetric);
                 }
             }
@@ -234,49 +248,14 @@ function buildViewElement(scope, element, attributes, dashboardCtrl, elementType
         }
     }
     
-    function getMetricSpecificOptionsInArray(metricSpecicOptions){
-    	
+    function getMetricSpecificOptionsInArray(metricSpecificOptions){
     	var options=[];
-    	for (var key in metricSpecicOptions) {
-            if (metricSpecicOptions.hasOwnProperty(key)) {
-            	options.push({'name': key, 'value': metricSpecicOptions[key]});
-
+    	for (var key in metricSpecificOptions) {
+            if (metricSpecificOptions.hasOwnProperty(key)) {
+            	options.push({'name': key, 'value': metricSpecificOptions[key]});
             }
         }
     	return options;
-    }
-    
-    function augmentExpressionWithControlsData(event, expression, controls) {
-        var result = expression;
-        
-        for(var controlIndex in controls) {
-            var controlName = '\\$' + controls[controlIndex].name + '\\$';
-            var controlValue = controls[controlIndex].value;
-            var controlType = controls[controlIndex].type;
-            if(controlType === "agDate") {
-            	controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
-            }
-            controlValue = controlValue == undefined ? "" : controlValue;
-            //controlValue = controlValue == undefined ? "" : 
-            	//isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
-            result = result.replace(new RegExp(controlName, "g"), controlValue);
-            
-            /*
-            if(controlValue) {
-            	result = result.replace(new RegExp(controlName, "g"), controlValue);
-            } else {
-            	result = result.replace(new RegExp(controlName, "g"), "");
-            }
-            
-            /*
-            if(result.indexOf("{}") != -1) {
-            	result = result.replace("{}", "");
-            }
-            */
-        }
-        
-        result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
-        return result;
     }
     
 }

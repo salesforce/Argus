@@ -87,6 +87,24 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
 
             return metricData;
         };
+
+        this.augmentExpressionWithControlsData = function(event, expression, controls) {
+            var result = expression;
+                
+            for (var controlIndex in controls) {
+                var controlName = '\\$' + controls[controlIndex].name + '\\$';
+                var controlValue = controls[controlIndex].value;
+                var controlType = controls[controlIndex].type;
+                if ( controlType === "agDate" ) {
+                    controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
+                }
+                controlValue = controlValue == undefined ? "" : controlValue;
+                result = result.replace(new RegExp(controlName, "g"), controlValue);
+            }
+    
+            result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
+            return result;
+        }
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 	         
@@ -121,7 +139,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
 	       	 
 	       	for(var i=0;i<metricList.length;i++){
                 var metricExpression = metricList[i].expression;
-                var metricOptions=metricList[i].metricSpecicOptions;
+                var metricOptions=metricList[i].metricSpecificOptions;
                 populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount);
 	       	}
 	       	//populateAnnotations(annotationExpressionList, chart);
