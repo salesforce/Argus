@@ -48,6 +48,7 @@ import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.CollectionService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.GlobalInterlockService;
 import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.service.MQService;
@@ -68,6 +69,7 @@ import com.salesforce.dva.argus.service.audit.DefaultAuditService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
 import com.salesforce.dva.argus.service.history.DefaultHistoryService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
+import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
 import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
@@ -250,6 +252,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultHistoryService.class, HistoryService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(DefaultDiscoveryService.class, DiscoveryService.class);
+        bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {
