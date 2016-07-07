@@ -1,116 +1,114 @@
 <!doctype html>
 <html lang="en" ng-app="argusMain">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="img/argus_icon.png" rel="shortcut icon" />
-        <link href="css/main.css" rel="stylesheet">
-        <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet">
-        <link rel="stylesheet" type="text/css" href="bower_components/codemirror/lib/codemirror.css">
-        <link rel="stylesheet" href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css"/>
-        <link rel="stylesheet" href="bower_components/selectize/dist/css/selectize.default.css">
-        <script src="bower_components/jquery/dist/jquery.min.js"></script>
-        <script src="bower_components/angular/angular.js"></script>
-        <script src="bower_components/angular-resource/angular-resource.js"></script>
-        <script src="bower_components/angular-route/angular-route.js"></script>
-        <script src="bower_components/angular-growl-v2/build/angular-growl.js"></script>
-        <script src="bower_components/angular-animate/angular-animate.js"></script>
-        <script src="bower_components/angular-utils-pagination/dirPagination.js"></script>
-        <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
-        <script src="bower_components/bootstrap/js/dropdown.js"></script>
-        <script src="bower_components/bootstrap/js/affix.js"></script>
-        <script src="bower_components/bootstrap/js/alert.js"></script>
-        <script src="bower_components/bootstrap/js/button.js"></script>
-        <script src="bower_components/bootstrap/js/modal.js"></script>
-        <script src="bower_components/bootstrap/js/tooltip.js"></script>
-        <script src="bower_components/bootstrap/js/popover.js"></script>
-        <script src="bower_components/bootstrap/js/transition.js"></script>
-        <script src="bower_components/highstock-release/highstock.js"></script>
-        <script src="bower_components/highstock-release/highcharts-3d.js"></script>
-        <script src="bower_components/highstock-release/highcharts-more.js"></script>
-        <script src="bower_components/highstock-release/modules/data.js"></script>
-        <script src="bower_components/highstock-release/modules/heatmap.js"></script>
-        <script src="bower_components/highstock-release/modules/no-data-to-display.js"></script>
-        <script src="bower_components/codemirror/lib/codemirror.js"></script>
-        <script src="bower_components/codemirror/mode/xml/xml.js"></script>
-        <script src="bower_components/codemirror/mode/properties/properties.js"></script>
-        <script src="bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
-        <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
-        <script src="bower_components/ngstorage/ngStorage.js"></script>
-        <script src="bower_components/at-table/dist/angular-table.js"></script>
-        <script src="bower_components/angulartics/src/angulartics.js"></script>
-        <script src="bower_components/angulartics/src/angulartics-piwik.js"></script>
-        <script src="bower_components/moment/moment.js"></script>
-        <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
-	    <script src="views/main/main.js"></script>
-        <script src="views/main/config.js"></script>
-        <script src="views/about/about.js"></script>
-        <script src="views/alerts/alerts.js"></script>
-        <script src="views/namespace/namespace.js"></script>
-        <script src="views/dashboards/dashboards.js"></script>
-        <script src="views/viewmetrics/viewmetrics.js"></script>
-        <script src="views/argus_custom_directives/argus-controls.js"></script>
-        <script src="views/argus_custom_directives/DashboardService.js"></script>
-        <script src="views/argus_custom_directives/argus-viewelements.js"></script>
-        <script src="views/login/login.js"></script>
-        <script src="views/mockups/mockups.js"></script>
-        <script src="views/spinning_wheel/spinning-wheel.js">
-        </script>
-        
-        <!-- Piwik -->
-		<script type="text/javascript">
-			var userString = window.localStorage.getItem("ngStorage-user");
-			var user = JSON.parse(userString);
-			
-			var _paq = _paq || [];
-			if(user)
-	        	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
-		</script>
-		<!-- End Piwik Code -->
-
-		<title>Argus</title>
-
-        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-          <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-          <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-        <![endif]-->
-    </head>
-
-    <body ng-controller="MainCtrl">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     
-        <div growl limit-messages="3"></div>
+    <link href="img/argus_icon.png" rel="shortcut icon" />
+    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet" />
+    <link href="bower_components/codemirror/lib/codemirror.css" rel="stylesheet" />
+    <link href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css" rel="stylesheet" />
+    <link href="css/main.css" rel="stylesheet" />
+    
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/angular-growl-v2/build/angular-growl.js"></script>
+    <script src="bower_components/angular-animate/angular-animate.js"></script>
+    <script src="bower_components/angular-utils-pagination/dirPagination.js"></script>
+    <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+    <script src="bower_components/bootstrap/js/dropdown.js"></script>
+    <script src="bower_components/bootstrap/js/affix.js"></script>
+    <script src="bower_components/bootstrap/js/alert.js"></script>
+    <script src="bower_components/bootstrap/js/button.js"></script>
+    <script src="bower_components/bootstrap/js/modal.js"></script>
+    <script src="bower_components/bootstrap/js/tooltip.js"></script>
+    <script src="bower_components/bootstrap/js/popover.js"></script>
+    <script src="bower_components/bootstrap/js/transition.js"></script>
+    <script src="bower_components/highstock-release/highstock.js"></script>
+    <script src="bower_components/highstock-release/highcharts-3d.js"></script>
+    <script src="bower_components/highstock-release/highcharts-more.js"></script>
+    <script src="bower_components/highstock-release/modules/data.js"></script>
+    <script src="bower_components/highstock-release/modules/heatmap.js"></script>
+    <script src="bower_components/highstock-release/modules/no-data-to-display.js"></script>
+    <script src="bower_components/codemirror/lib/codemirror.js"></script>
+    <script src="bower_components/codemirror/mode/xml/xml.js"></script>
+    <script src="bower_components/codemirror/mode/properties/properties.js"></script>
+    <script src="bower_components/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+    <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
+    <script src="bower_components/ngstorage/ngStorage.js"></script>
+    <script src="bower_components/at-table/dist/angular-table.js"></script>
+    <script src="bower_components/angulartics/src/angulartics.js"></script>
+    <script src="bower_components/angulartics/src/angulartics-piwik.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
+    <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
+    <script src="views/main/main.js"></script>
+    <script src="views/main/config.js"></script>
+    <script src="views/about/about.js"></script>
+    <script src="views/alerts/alerts.js"></script>
+    <script src="views/namespace/namespace.js"></script>
+    <script src="views/dashboards/dashboards.js"></script>
+    <script src="views/viewmetrics/viewmetrics.js"></script>
+    <script src="views/argus_custom_directives/argus-controls.js"></script>
+    <script src="views/argus_custom_directives/DashboardService.js"></script>
+    <script src="views/argus_custom_directives/argus-viewelements.js"></script>
+    <script src="views/login/login.js"></script>
+    <script src="views/mockups/mockups.js"></script>
+    <script src="views/spinning_wheel/spinning-wheel.js"></script>
+    <script src="utils/autoFocus.js"></script>
 
-        <nav class="navbar navbar-default navbar-fixed-top">
-            <div style="width: 93%;" class="container">
-                <div class="navbar-header">
-                    <a href="#dashboards">
-                        <img src="img/argus_logo_rgb.png" alt='' style="height:50px;" class='pull-left'>
-                    </a>
-                    <p class='navbar-text' ng-show='isLoggedIn()'>Welcome {{getRemoteUser()}}</p>
-                </div>
-                <div id="navbar" class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#dashboards">Dashboards</a></li>
-                        <li><a href="#alerts">Alerts</a></li>
-                        <li><a href="#viewmetrics">Metrics</a></li>
-                        <li><a href="#namespace">Namespace</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
-                    </ul>
-                </div>
+    <!-- Piwik -->
+    <script type="text/javascript">
+    	var userString = window.localStorage.getItem("ngStorage-user");
+    	var user = JSON.parse(userString);
+    	
+    	var _paq = _paq || [];
+    	if(user)
+        	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
+    </script>
+    <!-- End Piwik Code -->
+
+    <title>Argus</title>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body ng-controller="MainCtrl">
+
+    <div growl limit-messages="3"></div>
+
+    <nav class="navbar navbar-default navbar-fixed-top">
+        <div style="width: 93%;" class="container">
+            <div class="navbar-header">
+                <a href="#dashboards">
+                    <img src="img/argus_logo_rgb.png" alt='' style="height:50px;" class='pull-left'>
+                </a>
+                <p class='navbar-text' ng-show='isLoggedIn()'>Welcome {{getRemoteUser()}}</p>
             </div>
-
-        </nav>
-
-
-        <div class="container" style="width: 93%;">
-            <div ng-view>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#dashboards">Dashboards</a></li>
+                    <li><a href="#alerts">Alerts</a></li>
+                    <li><a href="#viewmetrics">Metrics</a></li>
+                    <li><a href="#namespace">Namespace</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
+                </ul>
             </div>
         </div>
-    </body>
-    
-    
+
+    </nav>
+
+    <div class="container" style="width: 93%;">
+        <div ng-view></div>
+    </div>
+</body>
+
 </html>

@@ -2,12 +2,17 @@
 <div  ag-spinning-wheel ng-show="showloading"><img src="img/ajax-loader.gif" alt=“loading” > </div>
 -->
 <section>
+
+    <h3 style="margin-top: 10px;">{{dashboard.name}}</h3>
+    <h5 style="margin-bottom: 20px;">{{dashboard.description}}</h5>
+
     <ul class='nav nav-tabs'>
         <li ng-class="{active:isTabSelected(1)}"><a href ng-click='selectTab(1)'>View</a></li>
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click='selectTab(2)'>Edit</a></li>
         <li ng-class="{active:isTabSelected(3)}"><a href ng-click='selectTab(3)'>History</a></li>
     </ul>
-    <br/>
+    <br />
+    
     <div ng-show='isTabSelected(1)'>
         <ag-dashboard-resource></ag-dashboard-resource>
     </div>
@@ -27,8 +32,8 @@
                         <div class="form-inline" style="padding-top:5px;">
                             <label for='shared'>Shared?</label>
                             <button id="shared" class="btn btn-default" ng-click="dashboard.shared = !dashboard.shared">
-                                <span  ng-show='dashboard.shared'>Yes</span>
-                                <span  ng-show='!dashboard.shared'>No</span>
+                                <span ng-show='dashboard.shared'>Yes</span>
+                                <span ng-show='!dashboard.shared'>No</span>
                             </button>
                         </div>
                         <br/>
@@ -55,34 +60,37 @@
         </div>
 
         <div ng-if="jobHistoryError == ''">
-
-        <table class="table table-striped table-bordered">
-            <tr><th>Date</th><th>Host</th><th>Detail</th></tr>
-            <tr ng-repeat="entry in history| orderBy:'-createdDate'">
-                <td>{{entry.createdDate|date:'short'}}</td>
-                <td>{{entry.hostName}}</td>
-                <td>{{entry.message}}</td>
-            </tr>
-        </table>
-            </div>
+            <table class="table table-striped table-bordered">
+                <tr>
+                    <th>Date</th>
+                    <th>Host</th>
+                    <th>Detail</th>
+                </tr>
+                <tr ng-repeat="entry in history| orderBy:'-createdDate'">
+                    <td>{{entry.createdDate|date:'short'}}</td>
+                    <td>{{entry.hostName}}</td>
+                    <td>{{entry.message}}</td>
+                </tr>
+            </table>
+        </div>
     </div>
 
 <db-dashboard name='EPT dashboard'>
-<db-controls>
-<db-control name='scope' labelname='Scope: ' > </db-control>
-<db-control name='metric' labelname='Metric: '> </db-control>
-<db-control name='startdate' labelname='Start Date: '> </db-control>
-<db-control name='enddate' labelname='End Date: '> </db-control>
+    <db-controls>
+        <db-control name='scope' labelname='Scope: ' > </db-control>
+        <db-control name='metric' labelname='Metric: '> </db-control>
+        <db-control name='startdate' labelname='Start Date: '> </db-control>
+        <db-control name='enddate' labelname='End Date: '> </db-control>
 
-<db-submit-button></db-submit-button>
+        <db-submit-button></db-submit-button>
 
-</db-controls>
-<db-views>
-    <db-view name="CPU"></db-view>
-    <db-view name="Free Memory"></db-view>
-    <db-view name="Used Memory"></db-view>
+    </db-controls>
 
-</db-views>
+    <db-views>
+        <db-view name="CPU"></db-view>
+        <db-view name="Free Memory"></db-view>
+        <db-view name="Used Memory"></db-view>
+    </db-views>
 
 </db-dashboard>
 
