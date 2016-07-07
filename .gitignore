@@ -9,6 +9,7 @@ logs/
 nbactions.xml
 nb-configuration.xml
 argus-build.properties
+.settings/
 .DS_Store
 .idea
 .Project
