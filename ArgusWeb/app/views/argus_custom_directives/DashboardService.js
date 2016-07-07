@@ -126,7 +126,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 highChartOptions['scrollbar'] = {enabled: false};
                 highChartOptions['navigator'] = {enabled: false};
 
-                highChartOptions.chart.width = '400';
+                // highChartOptions.chart.width = '400';
                 highChartOptions.chart.height = '100';
                 highChartOptions.chart.borderWidth = 0;
             }
