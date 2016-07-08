@@ -187,8 +187,8 @@ TOKEN : { < JOIN : "JOIN" > }
 TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
-TOKEN : { < ANOMALY_GAUSSIAN_DENSITY : "ANOMALY_GAUSSIAN_DENSITY" > }
-TOKEN : { < ANOMALY_GAUSSIAN_ZSCORE : "ANOMALY_GAUSSIAN_ZSCORE" > }
+TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
+TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 
 
 TOKEN : { < COLON : ":" > }
@@ -441,10 +441,10 @@ private String functionName() :
 	t = <HW_DEVIATION>
 	{ return t.image; }
 	|
-	t = <ANOMALY_GAUSSIAN_DENSITY>
+	t = <ANOMALY_DENSITY>
 	{ return t.image; }
 	|
-	t = <ANOMALY_GAUSSIAN_ZSCORE>
+	t = <ANOMALY_ZSCORE>
 	{ return t.image; }
 }
 

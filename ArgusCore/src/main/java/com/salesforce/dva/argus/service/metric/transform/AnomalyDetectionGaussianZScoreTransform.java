@@ -43,7 +43,7 @@ public class AnomalyDetectionGaussianZScoreTransform extends AnomalyDetectionGau
 
     @Override
     public String getResultScopeName() {
-        return TransformFactory.Function.ANOMALY_GAUSSIAN_ZSCORE.name();
+        return TransformFactory.Function.ANOMALY_ZSCORE.name();
     }
 
     public String getResultMetricName() {

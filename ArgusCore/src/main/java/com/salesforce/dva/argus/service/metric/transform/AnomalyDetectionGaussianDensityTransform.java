@@ -43,7 +43,7 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
 
     @Override
     public String getResultScopeName() {
-        return TransformFactory.Function.ANOMALY_GAUSSIAN_DENSITY.name();
+        return TransformFactory.Function.ANOMALY_DENSITY.name();
     }
 
     public String getResultMetricName() {
