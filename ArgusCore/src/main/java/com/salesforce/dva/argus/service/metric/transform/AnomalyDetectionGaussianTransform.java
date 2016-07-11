@@ -84,7 +84,7 @@ public abstract class AnomalyDetectionGaussianTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... metrics) {
-        throw new UnsupportedOperationException("This class is deprecated!");
+        throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
     }
 
     //Fits the mean and variance parameters to the data
