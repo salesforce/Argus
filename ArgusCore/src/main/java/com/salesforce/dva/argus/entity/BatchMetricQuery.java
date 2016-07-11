@@ -1,8 +1,6 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -20,12 +18,10 @@ public class BatchMetricQuery implements Serializable {
 
     private static final String ROOT = "batch/";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(BatchMetricQuery.class);
 
     //~ Instance fields ******************************************************************************************************************************
 
     private Status _status;
-    private Priority _priority;
     private int _ttl;
     private long _createdDate;
     private String _batchId;
@@ -34,23 +30,21 @@ public class BatchMetricQuery implements Serializable {
 
     //~ Constructors *********************************************************************************************************************************
 
-    public BatchMetricQuery(List<String> expressions, long offset, int priority, int ttl, String ownerName) {
+    public BatchMetricQuery(List<String> expressions, long offset, int ttl, String ownerName) {
         _status = Status.QUEUED;
-        _priority = Priority.fromInt(priority);
         _ttl = ttl;
         _createdDate = System.currentTimeMillis();
         _batchId = UUID.randomUUID().toString();
         _ownerName = ownerName;
         _queries = new ArrayList<>(expressions.size());
         for (String expression: expressions) {
-            _queries.add(new AsyncBatchedMetricQuery(expression, offset, _batchId, _priority));
+            _queries.add(new AsyncBatchedMetricQuery(expression, offset, _batchId));
         }
     }
 
-    public BatchMetricQuery(Status status, Priority priority, int ttl, long createdDate, String batchId, String ownerName,
+    public BatchMetricQuery(Status status, int ttl, long createdDate, String batchId, String ownerName,
                             List<AsyncBatchedMetricQuery> queries) {
         _status = status;
-        _priority = priority;
         _ttl = ttl;
         _createdDate = createdDate;
         _batchId = batchId;
@@ -76,15 +70,10 @@ public class BatchMetricQuery implements Serializable {
         if (allDone) {
             _status = Status.DONE;
         }
-        LOGGER.info("BatchMetricQuery.updateStatus/to " + _status);
     }
 
     public Status getStatus() {
         return _status;
-    }
-
-    public Priority getPriority() {
-        return _priority;
     }
 
     public int getTtl() {
@@ -109,38 +98,6 @@ public class BatchMetricQuery implements Serializable {
     }
 
     //~ Enums ****************************************************************************************************************************************
-
-    public enum Priority {
-        HIGH("high"),
-        LOW("low");
-
-        private final String _key;
-
-        Priority(String key) {
-            _key = key;
-        }
-
-        public static Priority fromInt(int priority) {
-            if (priority >= 1) {
-                return HIGH;
-            } else {
-                return LOW;
-            }
-        }
-        
-        public int toInt() {
-        	if (this == HIGH) {
-        		return 1;
-        	} else {
-        		return 0;
-        	}
-        }
-
-        @Override
-        public String toString() {
-            return _key;
-        }
-    }
 
     public enum Status {
         QUEUED("queued"),

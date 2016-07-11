@@ -156,7 +156,7 @@ class ClientServiceFactory {
         });
         system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
-            service.submit(new MetricProcessor(system.getServiceFactory().getMetricQueueService(), system.getServiceFactory().getMetricService(), jobCounter));
+            service.submit(new MetricProcessor(system.getServiceFactory().getBatchService()));
         }
         return service;
     }

@@ -6,7 +6,6 @@ import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.BatchService;
-import com.salesforce.dva.argus.service.MetricQueueService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.TSDBService;
 import org.junit.Test;
@@ -24,7 +23,6 @@ public class AsyncMetricServiceIT extends AbstractTest {
     @Test
     public void testQueueAndProcessAsyncMetric() throws InterruptedException {
         MetricService metricService = system.getServiceFactory().getMetricService();
-        MetricQueueService metricQueueService = system.getServiceFactory().getMetricQueueService();
         BatchService batchService = system.getServiceFactory().getBatchService();
         TSDBService tsdbService = system.getServiceFactory().getTSDBService();
 
@@ -55,8 +53,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
             // Start async metric pipeline
             String batchId = metricService.getAsyncMetrics(expressions, -10000000, expectedTtl, expectedOwnerName);
 
-            metricQueueService.dequeueAndProcess(1);
-            Thread.sleep(3 * 1000);
+            batchService.executeNextQuery(3000);
 
             BatchMetricQuery result = batchService.findBatchById(batchId);
             assertEquals(result.getStatus().toString(), BatchMetricQuery.Status.DONE.toString());
@@ -72,7 +69,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
             assertTrue(_datapointsBetween(resultDatapoints, currentTime - 20000000, System.currentTimeMillis() - 10000000));
         } finally {
             metricService.dispose();
-            metricQueueService.dispose();
+            batchService.dispose();
             tsdbService.dispose();
         }
     }

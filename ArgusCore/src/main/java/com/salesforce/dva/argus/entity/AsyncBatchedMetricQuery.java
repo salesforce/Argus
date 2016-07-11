@@ -1,77 +1,88 @@
 package com.salesforce.dva.argus.entity;
 
+import java.io.Serializable;
+import java.util.UUID;
+
+import static com.salesforce.dva.argus.entity.BatchMetricQuery.Status;
+
 /**
  * Created by cguan on 6/1/16.
  */
-public class AsyncBatchedMetricQuery {
-
-    //~ Static fields/initializers *******************************************************************************************************************
-
-    private static final String ROOT = "async/";
+public class AsyncBatchedMetricQuery implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
 
     private String _expression;
     private long _offset;
-    private long _queueId;
     private String _batchId;
+    private String _queryId;
     private BatchMetricQuery.Status _status;
-    private BatchMetricQuery.Priority _priority;
     private Metric _result;
 
     //~ Constructors *********************************************************************************************************************************
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, BatchMetricQuery.Priority priority) {
+    public AsyncBatchedMetricQuery(String expression, long offset, String batchId) {
         _expression = expression;
         _offset = offset;
         _batchId = batchId;
-        _priority = priority;
-        _status = BatchMetricQuery.Status.QUEUED;
+        _queryId = UUID.randomUUID().toString();
+        _status = Status.QUEUED;
     }
 
-    public AsyncBatchedMetricQuery(String expression, long offset, long queueId, String batchId,
-                                   BatchMetricQuery.Status status, BatchMetricQuery.Priority priority, Metric result) {
+    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, String queryId,
+                                   Status status, Metric result) {
         _expression = expression;
         _offset = offset;
-        _queueId = queueId;
         _batchId = batchId;
+        _queryId = queryId;
         _status = status;
-        _priority = priority;
         _result = result;
+    }
+
+    public AsyncBatchedMetricQuery() {
     }
 
     //~ Methods **************************************************************************************************************************************
 
+
     public String getExpression() {
         return _expression;
+    }
+
+    public void setExpression(String expression) {
+        _expression = expression;
     }
 
     public long getOffset() {
         return _offset;
     }
 
-    public void setQueueId(long queueId) {
-        _queueId = queueId;
-    }
-
-    public long getQueueId() {
-        return _queueId;
+    public void setOffset(long offset) {
+        _offset = offset;
     }
 
     public String getBatchId() {
         return _batchId;
     }
 
-    public BatchMetricQuery.Status getStatus() {
+    public void setBatchId(String batchId) {
+        _batchId = batchId;
+    }
+
+    public String getQueryId() {
+        return _queryId;
+    }
+
+    public void setQueryId(String queryId) {
+        _queryId = queryId;
+    }
+
+    public Status getStatus() {
         return _status;
     }
 
-    public void setStatus(BatchMetricQuery.Status status) {
+    public void setStatus(Status status) {
         _status = status;
-    }
-
-    public BatchMetricQuery.Priority getPriority() {
-        return _priority;
     }
 
     public Metric getResult() {

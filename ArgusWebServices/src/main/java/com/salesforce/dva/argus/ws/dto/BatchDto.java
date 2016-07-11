@@ -15,7 +15,6 @@ public class BatchDto {
     //~ Instance fields ******************************************************************************************************************************
 
     private String status;
-    private String priority;
     private int ttl;
     private long createdDate;
     private String ownerName;
@@ -26,7 +25,6 @@ public class BatchDto {
     public static BatchDto transformToDto(BatchMetricQuery batch) {
         BatchDto result = new BatchDto();
         result.status = batch.getStatus().toString();
-        result.priority = batch.getPriority().toString();
         result.ttl = batch.getTtl();
         result.createdDate = batch.getCreatedDate();
         result.ownerName = batch.getOwnerName();
@@ -69,15 +67,9 @@ public class BatchDto {
         return status;
     }
 
-
-    public String getPriority() {
-        return priority;
-    }
-
     public int getTtl() {
         return ttl;
     }
-
 
     public long getCreatedDate() {
         return createdDate;

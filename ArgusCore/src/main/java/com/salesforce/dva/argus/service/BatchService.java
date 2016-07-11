@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.Map;
  *
  * @author  Colbert Guan (cguan@salesforce.com)
  */
-public interface BatchService {
+public interface BatchService extends Service {
 
     //~ Methods **************************************************************************************************************************************
 
@@ -32,10 +33,14 @@ public interface BatchService {
     Map<String, String> findBatchesByOwnerName(String ownerName);
 
     /**
-     * Updates a batch, creating it if necessary.
+     * Updates a batch's metadata, creating an entry if necessary.
      *
      * @param   batch   The batch to update
      */
     void updateBatch(BatchMetricQuery batch);
+
+    void enqueueBatch(BatchMetricQuery batch);
+
+    AsyncBatchedMetricQuery executeNextQuery(int timeout);
 
 }

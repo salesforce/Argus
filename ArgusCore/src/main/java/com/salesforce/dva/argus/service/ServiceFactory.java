@@ -86,8 +86,6 @@ public final class ServiceFactory {
     @Inject
     Provider<DiscoveryService> _discoveryServiceProvider;
     @Inject
-    Provider<MetricQueueService> _metricQueueServiceProvider;
-    @Inject
     Provider<BatchService> _batchServiceProvider;
 
 
@@ -280,15 +278,6 @@ public final class ServiceFactory {
      */
     public synchronized DiscoveryService getDiscoveryService() {
         return _discoveryServiceProvider.get();
-    }
-
-    /**
-     * Returns an instance of the metric queue service.
-     *
-     * @return  An instance of the metric queue service.
-     */
-    public synchronized MetricQueueService getMetricQueueService() {
-        return _metricQueueServiceProvider.get();
     }
 
     /**
