@@ -156,6 +156,9 @@ public class DownsampleTransform implements Transform {
         Map<Long, String> downsampleDatapoints = new HashMap<Long, String>();
         TreeMap<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
         List<String> values = new ArrayList<>();
+        if (sortedDatapoints.isEmpty()){
+        	return downsampleDatapoints;
+        }
         Long windowStart = downsamplerTimestamp(sortedDatapoints.firstKey(),windowSize);
 
         for (Map.Entry<Long, String> entry : sortedDatapoints.entrySet()) {
