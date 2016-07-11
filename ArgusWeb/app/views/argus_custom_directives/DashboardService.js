@@ -35,107 +35,183 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 		populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
                 	}else{
                 		var metricExpressionList = getMetricExpressionList(metricList);
-                    $http({
-                        method: 'GET',
-                        url: CONFIG.wsUrl + 'metrics',
-                        params: {'expression': metricExpressionList}
+                        $http({
+                            method: 'GET',
+                            url: CONFIG.wsUrl + 'metrics',
+                            params: {'expression': metricExpressionList}
+                        }).success(function(data, status, headers, config){
+                            if(data && data.length>0) {
+                                $('#' + divId).show();
+                                if(elementType === VIEWELEMENT.heatmap)
+                                    updateHeatmap({}, data, divId, optionList, attributes);
+                                else if(elementType === VIEWELEMENT.table)
+                                	updateTable(data, scope, divId, optionList);
+                            } else {
+                                updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
+                                growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
 
-
-                    }).
-                        success(function(data, status, headers, config){
-                        if(data && data.length>0) {
-                            $('#' + divId).show();
-                            if(elementType === VIEWELEMENT.heatmap)
-                                updateHeatmap({}, data, divId, optionList, attributes);
-                            else if(elementType === VIEWELEMENT.table)
-                            	updateTable(data, scope, divId, optionList);
-                        } else {
-                            updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
-                            growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
-
-                        }
-                        }).
-                        error(function(data, status, headers, config) {
-                        growl.error(data.message);
-                        $('#' + divId).hide();
-                    });
-                }
+                            }
+                        }).error(function(data, status, headers, config) {
+                            growl.error(data.message);
+                            $('#' + divId).hide();
+                        });
+                    }
                 } else {
                     growl.error('Valid metric expressions are required to display the chart/table.');
                     $('#' + divId).hide();
                 }
             }
         };
+
+        this.getMetricData = function(metricExpression) {
+            if (!metricExpression) return;
+
+            var metricData = 
+                $http({
+                    method: 'GET',
+                    url: CONFIG.wsUrl + 'metrics',
+                    params: {'expression': metricExpression}
+                }).
+                success(function(data, status, headers, config) {
+                    if ( data && data.length > 0 ) {
+                        return data[0];
+                    } else{
+                        growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
+                        return;
+                    }
+                }).
+                error(function(data, status, headers, config) {
+                    growl.error(data.message);
+                    return;
+                });
+
+            return metricData;
+        };
+
+        this.augmentExpressionWithControlsData = function(event, expression, controls) {
+            var result = expression;
+                
+            for (var controlIndex in controls) {
+                var controlName = '\\$' + controls[controlIndex].name + '\\$';
+                var controlValue = controls[controlIndex].value;
+                var controlType = controls[controlIndex].type;
+                if ( controlType === "agDate" ) {
+                    controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
+                }
+                controlValue = controlValue == undefined ? "" : controlValue;
+                result = result.replace(new RegExp(controlName, "g"), controlValue);
+            }
+    
+            result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
+            return result;
+        }
+
+        this.updateIndicatorStatus = updateIndicatorStatus;
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 	         
         	var objMetricCount={};
         	objMetricCount.totalCount=metricList.length;
         	
-        	 $('#' + divId).empty();
-	         $('#' + divId).show();
-	         var series=[];
-	       	 var chartType = attributes.type ? attributes.type : 'LINE';
-	         var highChartOptions = getOptionsByChartType(config,chartType);
-	         setCustomOptions(highChartOptions,optionList);
+        	$('#' + divId).empty();
+	        $('#' + divId).show();
+
+	        var series=[];
+	       	var chartType = attributes.type ? attributes.type : 'LINE';
+            // smallChart currently viewed in the 'Services Dashboard'
+            var smallChart = attributes.smallchart ? true : false;
+            var highChartOptions = getOptionsByChartType(config, chartType, smallChart);
+
+	        setCustomOptions(highChartOptions,optionList);
 	         
-	         $('#' + divId).highcharts('StockChart', highChartOptions);
+	        $('#' + divId).highcharts('StockChart', highChartOptions);
 	         
-	         var chart = $('#' + divId).highcharts('StockChart');
+	        var chart = $('#' + divId).highcharts('StockChart');
+            
+            // show loading spinner & hide 'no data message' during api request
+            chart.showLoading();
+            chart.hideNoData();
 	       	 
-	       	 for(var i=0;i<metricList.length;i++){
-		       	 var metricExpression = metricList[i].expression;
-		       	 var metricOptions=metricList[i].metricSpecicOptions;
-		       	populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,annotationExpressionList,objMetricCount);
-	       	 }
-	       	 //populateAnnotations(annotationExpressionList, chart);
-       }
+	       	for(var i=0;i<metricList.length;i++){
+                var metricExpression = metricList[i].expression;
+                var metricOptions=metricList[i].metricSpecificOptions;
+                populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount);
+	       	}
+	       	//populateAnnotations(annotationExpressionList, chart);
+        }
+
+        function updateIndicatorStatus(attributes, lastStatusVal) {
+            if (lastStatusVal < attributes.lo) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+            } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+            } else if (lastStatusVal > attributes.hi) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+            }
+        }
         
-        function populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,annotationExpressionList,objMetricCount){
-        	 $http({
-                 method: 'GET',
-                 url: CONFIG.wsUrl + 'metrics',
-                 params: {'expression': metricExpression}
-             }).
-                 success(function(data, status, headers, config){
-                 if(data && data.length>0) {
-                	 var seriesWithOptions = copySeriesDataNSetOptions(data,metricOptions);
-                	 Array.prototype.push.apply(series,seriesWithOptions)
-                 } else{
-                	 growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
-                 }
-                 objMetricCount.totalCount=objMetricCount.totalCount-1;
+        function populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount){
+            $http({
+                method: 'GET',
+                url: CONFIG.wsUrl + 'metrics',
+                params: {'expression': metricExpression}
+            }).
+                success(function(data, status, headers, config){
+                if(data && data.length>0) {
+                    
+                    // check to update services dashboard
+                    if (attributes.smallchart) {
+                        // get last status values & broadcast to 'agStatusIndicator' directive
+                        var lastStatusVal = Object.keys(data[0].datapoints).sort().reverse()[0];
+                        lastStatusVal = data[0].datapoints[lastStatusVal];
+                        // updateServiceStatus(attributes, lastStatusVal);
+                        updateIndicatorStatus(attributes, lastStatusVal);
+                    }
+                    
+                    var seriesWithOptions = copySeriesDataNSetOptions(data,metricOptions);
+                    Array.prototype.push.apply(series,seriesWithOptions)
+                } else{
+                	growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
+                }
+                objMetricCount.totalCount=objMetricCount.totalCount-1;
                  
-                 if(objMetricCount.totalCount==0){
-            		 bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
-            	 }
-                 }).
-                 error(function(data, status, headers, config) {
-                	 growl.error(data.message);
-                	 objMetricCount.totalCount=objMetricCount.totalCount-1;
-                	 if(objMetricCount.totalCount==0){
-                		 bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
-                	 }
-             });
-        	
-        	
+                if(objMetricCount.totalCount==0){
+            		bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
+            	}
+            }).
+                error(function(data, status, headers, config) {
+                	growl.error(data.message);
+                	objMetricCount.totalCount=objMetricCount.totalCount-1;
+                	if(objMetricCount.totalCount==0){
+                	   bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
+                	}
+                });
         }
         
         function bindDataToChart(divId,highChartOptions,series,annotationExpressionList){
-        		// $("#" + divId).empty();
-        		 highChartOptions.series=series;
-        		 $('#' + divId).highcharts('StockChart', highChartOptions);
-        		 var chart = $('#' + divId).highcharts('StockChart');
-        		 populateAnnotations(annotationExpressionList, chart);
+            // $("#" + divId).empty();
+    		highChartOptions.series=series;
+    		$('#' + divId).highcharts('StockChart', highChartOptions);
+    		var chart = $('#' + divId).highcharts('StockChart');
+            
+            // hide the loading spinner after data loads.
+            chart.hideLoading();
+            
+            // check if data exists, otherwise, show the 'no data' message.
+            if ( !chart.hasData() ) {
+                chart.showNoData();
+            }
+    		
+            populateAnnotations(annotationExpressionList, chart);
         }
        
-       function getMetricExpressionList(metrics){
+        function getMetricExpressionList(metrics){
 	       	var result = [];
 	       	for(var i=0;i<metrics.length; i++){
 	       		result.push(metrics[i].expression);
 	       	}
 	       	return result;
-       }
+        }
         
         function updateTable(data, scope, divId, options) {
         	if(data && data.length > 0) {
@@ -257,7 +333,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
         };
 
         
-        function getOptionsByChartType(config, chartType){
+        function getOptionsByChartType(config, chartType, smallChart){
             var options = config ? angular.copy(config) : {};
             options.legend = {
                 enabled: true,
@@ -279,7 +355,26 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             	type: 'datetime',
             	ordinal: false
             };
-            options.lang = {noData: 'No Data to Display'};
+            
+            options.lang = {
+                loading: '',    // override default 'Loading...' msg from displaying under spinner img.
+                noData: 'No Data to Display'
+            };
+
+            // loading spinner for graph
+            options.loading = {
+                labelStyle: {
+                    top: '25%',
+                    backgroundImage: 'url("img/ajax-loader.gif")',
+                    backgroundSize: '80px 80px',
+                    backgroundRepeat: 'no-repeat',
+                    display: 'inline-block',
+                    width: '80px',
+                    height: '80px',
+                    backgroundColor: '#FFF'
+                }
+            };
+
             if(chartType && chartType.toUpperCase() === 'AREA'){
                 options.plotOptions = {series: {animation: false}};
                 options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5, type: 'area'};
@@ -304,6 +399,25 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 options.plotOptions = {series: {animation: false}};
                 options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
             }
+
+            // override options for a 'small' chart, e.g. 'Services Status' dashboard 
+            if ( smallChart ) {
+                options.legend.enabled = false;
+                options.rangeSelector.enabled = false;
+
+                options['scrollbar'] = {enabled: false};
+                options['navigator'] = {enabled: false};
+
+                options.chart.height = '120';
+                options.chart.borderWidth = 0;
+
+                // reset loading options, no spinner required
+                options.lang = {
+                    loading: 'Loading...'
+                };
+                options.loading = {};
+            }
+
             return options;
         };
 
