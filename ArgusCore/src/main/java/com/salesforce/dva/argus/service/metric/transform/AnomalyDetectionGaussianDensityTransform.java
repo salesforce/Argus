@@ -46,6 +46,7 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
         return TransformFactory.Function.ANOMALY_DENSITY.name();
     }
 
+    @Override
     public String getResultMetricName() {
         return RESULT_METRIC_NAME;
     }
@@ -58,6 +59,7 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
      * @param value the value of the data point
      * @return the negative log of the probability density of the data point
      */
+    @Override
     public double calculateAnomalyScore(double value) {
         double probabilityDensity = (1.0/Math.sqrt(2.0 * Math.PI * variance)) *
                 Math.exp((-1.0 * Math.pow((value - mean), 2.0)) / (2.0 * variance));

@@ -46,6 +46,7 @@ public class AnomalyDetectionGaussianZScoreTransform extends AnomalyDetectionGau
         return TransformFactory.Function.ANOMALY_ZSCORE.name();
     }
 
+    @Override
     public String getResultMetricName() {
         return RESULT_METRIC_NAME;
     }
@@ -57,6 +58,7 @@ public class AnomalyDetectionGaussianZScoreTransform extends AnomalyDetectionGau
      * @param value the value of the data point
      * @return the absolute value of the z-score of the data point
      */
+    @Override
     public double calculateAnomalyScore(double value) {
         double zScore = (value - mean) / Math.sqrt(variance);
         //Taking absolute value for a more human-readable anomaly score
