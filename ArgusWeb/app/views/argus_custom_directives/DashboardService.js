@@ -105,6 +105,8 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
         }
+
+        this.updateIndicatorStatus = updateIndicatorStatus;
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 	         
@@ -116,26 +118,19 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
 
 	        var series=[];
 	       	var chartType = attributes.type ? attributes.type : 'LINE';
-            var highChartOptions = getOptionsByChartType(config, chartType);
-            
-            // override highChartOptions for a 'small' chart
-            if ( attributes.smallchart ) {
-                highChartOptions.legend.enabled = false;
-                highChartOptions.rangeSelector.enabled = false;
+            // smallChart currently viewed in the 'Services Dashboard'
+            var smallChart = attributes.smallchart ? true : false;
+            var highChartOptions = getOptionsByChartType(config, chartType, smallChart);
 
-                highChartOptions['scrollbar'] = {enabled: false};
-                highChartOptions['navigator'] = {enabled: false};
-
-                // highChartOptions.chart.width = '400';
-                highChartOptions.chart.height = '100';
-                highChartOptions.chart.borderWidth = 0;
-            }
-            
 	        setCustomOptions(highChartOptions,optionList);
 	         
 	        $('#' + divId).highcharts('StockChart', highChartOptions);
 	         
 	        var chart = $('#' + divId).highcharts('StockChart');
+            
+            // show loading spinner & hide 'no data message' during api request
+            chart.showLoading();
+            chart.hideNoData();
 	       	 
 	       	for(var i=0;i<metricList.length;i++){
                 var metricExpression = metricList[i].expression;
@@ -145,7 +140,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
 	       	//populateAnnotations(annotationExpressionList, chart);
         }
 
-        function updateServiceStatus(attributes, lastStatusVal) {
+        function updateIndicatorStatus(attributes, lastStatusVal) {
             if (lastStatusVal < attributes.lo) {
                 $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
             } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
@@ -169,7 +164,8 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                         // get last status values & broadcast to 'agStatusIndicator' directive
                         var lastStatusVal = Object.keys(data[0].datapoints).sort().reverse()[0];
                         lastStatusVal = data[0].datapoints[lastStatusVal];
-                        updateServiceStatus(attributes, lastStatusVal);
+                        // updateServiceStatus(attributes, lastStatusVal);
+                        updateIndicatorStatus(attributes, lastStatusVal);
                     }
                     
                     var seriesWithOptions = copySeriesDataNSetOptions(data,metricOptions);
@@ -197,7 +193,16 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
     		highChartOptions.series=series;
     		$('#' + divId).highcharts('StockChart', highChartOptions);
     		var chart = $('#' + divId).highcharts('StockChart');
-    		populateAnnotations(annotationExpressionList, chart);
+            
+            // hide the loading spinner after data loads.
+            chart.hideLoading();
+            
+            // check if data exists, otherwise, show the 'no data' message.
+            if ( !chart.hasData() ) {
+                chart.showNoData();
+            }
+    		
+            populateAnnotations(annotationExpressionList, chart);
         }
        
         function getMetricExpressionList(metrics){
@@ -328,7 +333,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
         };
 
         
-        function getOptionsByChartType(config, chartType){
+        function getOptionsByChartType(config, chartType, smallChart){
             var options = config ? angular.copy(config) : {};
             options.legend = {
                 enabled: true,
@@ -350,7 +355,26 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             	type: 'datetime',
             	ordinal: false
             };
-            options.lang = {noData: 'No Data to Display'};
+            
+            options.lang = {
+                loading: '',    // override default 'Loading...' msg from displaying under spinner img.
+                noData: 'No Data to Display'
+            };
+
+            // loading spinner for graph
+            options.loading = {
+                labelStyle: {
+                    top: '25%',
+                    backgroundImage: 'url("img/ajax-loader.gif")',
+                    backgroundSize: '80px 80px',
+                    backgroundRepeat: 'no-repeat',
+                    display: 'inline-block',
+                    width: '80px',
+                    height: '80px',
+                    backgroundColor: '#FFF'
+                }
+            };
+
             if(chartType && chartType.toUpperCase() === 'AREA'){
                 options.plotOptions = {series: {animation: false}};
                 options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5, type: 'area'};
@@ -375,6 +399,25 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 options.plotOptions = {series: {animation: false}};
                 options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
             }
+
+            // override options for a 'small' chart, e.g. 'Services Status' dashboard 
+            if ( smallChart ) {
+                options.legend.enabled = false;
+                options.rangeSelector.enabled = false;
+
+                options['scrollbar'] = {enabled: false};
+                options['navigator'] = {enabled: false};
+
+                options.chart.height = '120';
+                options.chart.borderWidth = 0;
+
+                // reset loading options, no spinner required
+                options.lang = {
+                    loading: 'Loading...'
+                };
+                options.loading = {};
+            }
+
             return options;
         };
 

@@ -78,8 +78,6 @@ viewElementsModule.directive('agStatusIndicator', ['DashboardService', 'growl', 
 
             // listen to scope for event and controls info
             scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
-                console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
-
                 for (var key in scope.metrics) {
                     if (scope.metrics.hasOwnProperty(key)) {
                         // get metricExpression from scope
@@ -101,13 +99,7 @@ viewElementsModule.directive('agStatusIndicator', ['DashboardService', 'growl', 
                             lastStatusVal = datapoints[lastStatusVal];
 
                             // update status indicator
-                            if (lastStatusVal < attributes.lo) {
-                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
-                            } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
-                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
-                            } else if (lastStatusVal > attributes.hi) {
-                                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
-                            }
+                            DashboardService.updateIndicatorStatus(attributes, lastStatusVal);
                         });
                 }
             });
