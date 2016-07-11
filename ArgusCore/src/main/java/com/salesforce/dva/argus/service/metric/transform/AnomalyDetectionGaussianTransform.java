@@ -48,7 +48,7 @@ import java.util.Map.Entry;
  *
  * @author  Shouvik Mani (shouvik.mani@salesforce.com)
  */
-public abstract class AnomalyDetectionGaussianTransform implements Transform {
+public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetectionTransform {
 
     //Parameters for Gaussian distribution
     protected double mean;
@@ -71,20 +71,11 @@ public abstract class AnomalyDetectionGaussianTransform implements Transform {
 
         fitParameters(metricData);
         Metric predictions = predictAnomalies(metricData);
+        Metric predictionsNormalized = normalizePredictions(predictions);
 
         List<Metric> resultMetrics = new ArrayList<>();
-        resultMetrics.add(predictions);
+        resultMetrics.add(predictionsNormalized);
         return resultMetrics;
-    }
-
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Anomaly Detection Transform is not supposed to be used with constants");
-    }
-
-    @Override
-    public List<Metric> transform(List<Metric>... metrics) {
-        throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
     }
 
     //Fits the mean and variance parameters to the data
@@ -146,13 +137,6 @@ public abstract class AnomalyDetectionGaussianTransform implements Transform {
         }
         return sumSquareDiff/metricData.size();
     }
-
-    @Override
-    abstract public String getResultScopeName();
-
-    abstract public String getResultMetricName();
-
-    abstract public double calculateAnomalyScore(double value);
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
