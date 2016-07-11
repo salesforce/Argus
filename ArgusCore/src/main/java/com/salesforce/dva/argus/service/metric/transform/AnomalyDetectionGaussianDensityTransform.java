@@ -56,6 +56,11 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
      * describes the relative likelihood of the point occurring in the
      * Gaussian distribution.
      *
+     * Large variances in data causes floating point underflow during the
+     * probability density calculation. Since we cannot take the negative
+     * log of 0.0, data points that cause underflow are omitted from the
+     * anomaly score results.
+     *
      * @param value the value of the data point
      * @return the negative log of the probability density of the data point
      */
@@ -63,13 +68,7 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
     public double calculateAnomalyScore(double value) {
         double probabilityDensity = (1.0/Math.sqrt(2.0 * Math.PI * variance)) *
                 Math.exp((-1.0 * Math.pow((value - mean), 2.0)) / (2.0 * variance));
-        /**
-         * Large variances in data causes floating point underflow during the
-         * probability density calculation. Since we cannot take the negative
-         * log of 0.0, data points that cause underflow are omitted from the
-         * anomaly score results.
-         *
-         */
+
         if (probabilityDensity == 0.0) {
             throw new ArithmeticException("Cannot take the log of 0.");
         }
