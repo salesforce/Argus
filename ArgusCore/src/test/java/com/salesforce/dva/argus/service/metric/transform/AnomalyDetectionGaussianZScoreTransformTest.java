@@ -72,9 +72,9 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
         Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
 
-        expected.put(1000L, 1.22);
+        expected.put(1000L, 100.0);
         expected.put(2000L, 0.0);
-        expected.put(3000L, 1.22);
+        expected.put(3000L, 100.0);
 
         assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
         assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
@@ -97,14 +97,14 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
         Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
 
-        expected.put(1000L, 0.49);
-        expected.put(2000L, 0.49);
-        expected.put(3000L, 0.48);
-        expected.put(4000L, 0.48);
-        expected.put(5000L, 0.49);
-        expected.put(6000L, 0.41);
-        expected.put(7000L, 2.52);
-        expected.put(8000L, 0.49);
+        expected.put(1000L, 3.59);
+        expected.put(2000L, 3.63);
+        expected.put(3000L, 3.18);
+        expected.put(4000L, 3.39);
+        expected.put(5000L, 3.62);
+        expected.put(6000L, 0.0);
+        expected.put(7000L, 100.0);
+        expected.put(8000L, 3.61);
 
         assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
         assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
@@ -114,6 +114,47 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
         assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
         assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
+    }
+
+    @Test
+    public void gaussianZScoreTransformSimpleTest3() {
+        metricData.put(1000L, "0");
+        metricData.put(2000L, "8");
+        metricData.put(3000L, "-98");
+        metricData.put(4000L, "400");
+        metricData.put(5000L, "-268");
+        metricData.put(6000L, "-900");
+        metricData.put(7000L, "68");
+        metricData.put(8000L, "300");
+        metricData.put(9000L, "-12");
+        metricData.put(10000L, "314");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(1000L, 1.37);
+        expected.put(2000L, 2.28);
+        expected.put(3000L, 8.27);
+        expected.put(4000L, 47.11);
+        expected.put(5000L, 27.72);
+        expected.put(6000L, 100.0);
+        expected.put(7000L, 9.14);
+        expected.put(8000L, 35.68);
+        expected.put(9000L, 0.0);
+        expected.put(10000L, 37.28);
+
+        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
+        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
+        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
+        assertEquals(expected.get(4000L), Double.parseDouble(resultDatapoints.get(4000L)), 0.01);
+        assertEquals(expected.get(5000L), Double.parseDouble(resultDatapoints.get(5000L)), 0.01);
+        assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
+        assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
+        assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
+        assertEquals(expected.get(9000L), Double.parseDouble(resultDatapoints.get(9000L)), 0.01);
+        assertEquals(expected.get(10000L), Double.parseDouble(resultDatapoints.get(10000L)), 0.01);
     }
 
     @Test

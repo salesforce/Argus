@@ -72,9 +72,9 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         List<Metric> results = gaussianDensityTransform.transform(metrics);
         Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
 
-        expected.put(1000L, 3.07);
-        expected.put(2000L, 2.32);
-        expected.put(3000L, 3.07);
+        expected.put(1000L, 99.99);
+        expected.put(2000L, 0.0);
+        expected.put(3000L, 99.99);
 
         assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
         assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
@@ -97,14 +97,14 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         List<Metric> results = gaussianDensityTransform.transform(metrics);
         Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
 
-        expected.put(1000L, 12.48);
-        expected.put(2000L, 12.49);
-        expected.put(3000L, 12.48);
-        expected.put(4000L, 12.48);
-        expected.put(5000L, 12.49);
-        expected.put(6000L, 12.45);
-        expected.put(7000L, 15.56);
-        expected.put(8000L, 12.49);
+        expected.put(1000L, 1.11);
+        expected.put(2000L, 1.12);
+        expected.put(3000L, 0.97);
+        expected.put(4000L, 1.04);
+        expected.put(5000L, 1.11);
+        expected.put(6000L, 0.0);
+        expected.put(7000L, 100.0);
+        expected.put(8000L, 1.12);
 
         assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
         assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
@@ -114,6 +114,47 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
         assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
         assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
+    }
+
+    @Test
+    public void gaussianDensityTransformSimpleTest3() {
+        metricData.put(1000L, "0");
+        metricData.put(2000L, "8");
+        metricData.put(3000L, "-98");
+        metricData.put(4000L, "400");
+        metricData.put(5000L, "-268");
+        metricData.put(6000L, "-900");
+        metricData.put(7000L, "68");
+        metricData.put(8000L, "300");
+        metricData.put(9000L, "-12");
+        metricData.put(10000L, "314");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(1000L, 0.03);
+        expected.put(2000L, 0.08);
+        expected.put(3000L, 0.80);
+        expected.put(4000L, 22.58);
+        expected.put(5000L, 7.99);
+        expected.put(6000L, 100.0);
+        expected.put(7000L, 0.96);
+        expected.put(8000L, 13.08);
+        expected.put(9000L, 0.0);
+        expected.put(10000L, 14.25);
+
+        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
+        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
+        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
+        assertEquals(expected.get(4000L), Double.parseDouble(resultDatapoints.get(4000L)), 0.01);
+        assertEquals(expected.get(5000L), Double.parseDouble(resultDatapoints.get(5000L)), 0.01);
+        assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
+        assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
+        assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
+        assertEquals(expected.get(9000L), Double.parseDouble(resultDatapoints.get(9000L)), 0.01);
+        assertEquals(expected.get(10000L), Double.parseDouble(resultDatapoints.get(10000L)), 0.01);
     }
 
     @Test
@@ -166,7 +207,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
 
         for (long i = 1; i < 10001; i++) {
-            expected.put(i, 343.89);
+            expected.put(i, 0.0);
             assertEquals(expected.get(i), Double.parseDouble(resultDatapoints.get(i)), 0.01);
         }
         //Omitted point
