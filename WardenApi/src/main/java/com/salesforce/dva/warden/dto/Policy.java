@@ -289,13 +289,13 @@ public class Policy
 
         result.setService( "example-service" );
         result.setName( "example-name" );
-        result.setOwner( Arrays.asList( "example-owners" ) );
-        result.setUser( Arrays.asList( "example-users" ) );
+        result.setOwners( Arrays.asList( "example-owners" ) );
+        result.setUsers( Arrays.asList( "example-users" ) );
         result.setSubSystem( "example-subSystem" );
         result.setMetricName( "example-metricName" );
-        result.setTriggerType( "NOT_BETWEEN" );
-        result.setAggregator( "sum" );
-        result.setThreshold( Arrays.asList( 0.0 ) );
+        result.setTriggerType( TriggerType.NOT_BETWEEN );
+        result.setAggregator( Aggregator.SUM );
+        result.setThresholds( Arrays.asList( 0.0 ) );
         result.setTimeUnit( "5min" );
         result.setDefaultValue( 0.0 );
         result.setCronEntry( "0 */4 * * *" );

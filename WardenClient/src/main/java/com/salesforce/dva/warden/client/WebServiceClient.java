@@ -5,8 +5,8 @@ import java.util.List;
 
 import com.salesforce.dva.warden.dto.Policy;
 
-public interface WardenWebServiceClient {
+public interface WebServiceClient {
 
-	List<Policy> GetPolicies() throws IOException;
+	List<Policy> getPolicies() throws IOException;
 
 }

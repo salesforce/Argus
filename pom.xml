@@ -220,7 +220,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+             <!-- <plugin>
                 <groupId>triemax</groupId>
                 <artifactId>jalopy-maven</artifactId>
                 <version>1.9.5-328</version>
@@ -270,7 +270,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin> --> 
         </plugins>
     </build>
     <reporting>
