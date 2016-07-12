@@ -31,6 +31,7 @@ var argusMain = angular.module('argusMain', [
     'argusAlerts',
     'argusNamespace',
     'argusDashboards',
+    'argusBreadcrumbs',
     'argusViewMetrics',
     'argusControls',
     'argusDashboardService',
@@ -42,7 +43,8 @@ var argusMain = angular.module('argusMain', [
     'angulartics.piwik',
     'argusConfig',
     'ui.bootstrap',
-    'ui.bootstrap.datetimepicker'
+    'ui.bootstrap.datetimepicker',
+    'filters'
 ]);
 
 argusMain.constant('VIEWELEMENT', {
@@ -68,43 +70,53 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         $routeProvider.
                 when('/viewmetrics', {
                     templateUrl: 'views/viewmetrics/viewmetrics.html',
-                    controller: 'ViewMetricsCtrl'
+                    controller: 'ViewMetricsCtrl',
+                    label: 'Metrics'
                 }).
                 when('/dashboards', {
                     templateUrl: 'views/dashboards/dashboard-list.html',
-                    controller: 'DashboardListCtrl'
+                    controller: 'DashboardListCtrl',
+                    label: 'Dashboard List'
                 }).
                 when('/dashboards/:dashboardId', {
                     templateUrl: 'views/dashboards/dashboard-detail.html',
-                    controller: 'DashboardDetailCtrl'
+                    controller: 'DashboardDetailCtrl',
+                    label: '{{dashboards.dashboardId}}'
                 }).
                 when('/alerts', {
                     templateUrl: 'views/alerts/alert-list.html',
-                    controller: 'AlertListCtrl'
+                    controller: 'AlertListCtrl',
+                    label: 'Alert List'
                 }).
                 when('/alerts/:alertId', {
                     templateUrl: 'views/alerts/alert-detail.html',
-                    controller: 'AlertDetailCtrl'
+                    controller: 'AlertDetailCtrl',
+                    label: '{{alerts.alertId}}'
                 }).
                 when('/about', {
                     templateUrl: 'views/about/about.html',
-                    controller: 'AboutDetailCtrl'
+                    controller: 'AboutDetailCtrl',
+                    label: 'About Argus'
                 }).
                 when('/login', {
                     templateUrl: 'views/login/login.html',
-                    controller: 'LoginCtrl'
+                    controller: 'LoginCtrl',
+                    label: 'User Login'
                 }).
                 when('/topkheatmap', {
                     templateUrl: 'views/mockups/topkheatmap.html',
-                    controller: 'TopkheatmapCtrl'
+                    controller: 'TopkheatmapCtrl',
+                    label: 'Top Heatmap'
                 }).
                 when('/topkheatmaporg', {
                     templateUrl: 'views/mockups/topkheatmaporg.html',
-                    controller: 'TopkheatmapCtrlOrg'
+                    controller: 'TopkheatmapCtrlOrg',
+                    label: 'Top Heatmap org'
                 }).
                 when('/namespace', {
                     templateUrl: 'views/namespace/namespace.html',
-                    controller: 'NamespaceCtrl'
+                    controller: 'NamespaceCtrl',
+                    label: 'Namespace'
                 }).
                 otherwise({
                     redirectTo: '/dashboards'

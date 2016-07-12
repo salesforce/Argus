@@ -58,7 +58,9 @@
     <script src="views/login/login.js"></script>
     <script src="views/mockups/mockups.js"></script>
     <script src="views/spinning_wheel/spinning-wheel.js"></script>
+    <script src="utils/filters.js"></script>
     <script src="utils/autoFocus.js"></script>
+    <script src="utils/breadcrumbs.js"></script>
 
     <!-- Piwik -->
     <script type="text/javascript">
@@ -107,6 +109,9 @@
     </nav>
 
     <div class="container" style="width: 93%;">
+        <!-- breadcrumbs -->
+        <breadcrumbs-html></breadcrumbs-html>
+        
         <div ng-view></div>
     </div>
 </body>

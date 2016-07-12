@@ -27,6 +27,9 @@ label {
     padding-top: 5px;
 }
 
+.breadcrumb {display:inline-block;}
+.breadcrumb > li + li:before {display:none;}
+
 .nav {margin-top: 10px; margin-bottom: 10px;}
 .navbar-fixed-top .nav {margin-top: 0; margin-bottom: 0;}
 .h3 {margin-top: 10px;}
