@@ -23,60 +23,61 @@ var argusAlerts = angular.module('argusAlerts', [
     'ngResource'
 ]);
 
-argusAlerts.controller('AlertListCtrl', ['Storage', '$scope', 'growl', 'Alerts',
-    function (Storage, $scope, growl, Alerts) {
-		$scope.searchText = Storage.get("alerts-searchText") == null ? "" : Storage.get("alerts-searchText");
-        $scope.alerts = Alerts.query();
-        $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
-        $scope.itemsPerPage = Storage.get("alerts-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("alerts-itemsPerPage");
-        
-        $scope.addAlert = function () {
-            var alert = {
-                name: 'new-alert-' + Date.now(),
-                expression: "-1h:scope:metric{tagKey=tagValue}:avg",
-                cronEntry: "0 */4 * * *"
-            };
-            Alerts.save(alert, function (result) {
-                $scope.alerts.push(result);
-                growl.success('Created "' + alert.name + '"');
-            }, function (error) {
-                growl.error('Failed to create "' + alert.name + '"');
-            });
+argusAlerts.controller('AlertListCtrl', ['Storage', '$scope', 'growl', 'Alerts', function (Storage, $scope, growl, Alerts) {
+		
+    $scope.searchText = Storage.get("alerts-searchText") == null ? "" : Storage.get("alerts-searchText");
+    $scope.alerts = Alerts.query();
+    $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
+    $scope.itemsPerPage = Storage.get("alerts-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("alerts-itemsPerPage");
+    
+    $scope.addAlert = function () {
+        var alert = {
+            name: 'new-alert-' + Date.now(),
+            expression: "-1h:scope:metric{tagKey=tagValue}:avg",
+            cronEntry: "0 */4 * * *"
         };
-        $scope.enableAlert = function (alert, enabled) {
-            if (!alert.enabled === enabled) {
-                var updated = angular.copy(alert);
-                updated.enabled = enabled;
-                Alerts.update({alertId: alert.id}, updated, function (result) {
-                    alert.enabled = enabled;
-                    growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
-                }, function (error) {
-                    growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
-                });
-            }
-        };
-        $scope.removeAlert = function (alert) {
-            Alerts.delete({alertId: alert.id}, function (result) {
-                $scope.alerts = $scope.alerts.filter(function (element) {
-                    return element.id !== alert.id;
-                });
-                growl.success('Deleted "' + alert.name + '"');
-            }, function (error) {
-                growl.error('Failed to delete "' + alert.name + '"');
-            });
-        };
-        
-        $scope.$watch('searchText', function(newValue, oldValue) {
-        	newValue = newValue == null ? "" : newValue;
-        	Storage.set("alerts-searchText", newValue);
+        Alerts.save(alert, function (result) {
+            $scope.alerts.push(result);
+            growl.success('Created "' + alert.name + '"');
+        }, function (error) {
+            growl.error('Failed to create "' + alert.name + '"');
         });
-        
-        $scope.$watch('itemsPerPage', function(newValue, oldValue) {
-        	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
-        	Storage.set("alerts-itemsPerPage", newValue);
-        });
+    };
 
-    }]);
+    $scope.enableAlert = function (alert, enabled) {
+        if (!alert.enabled === enabled) {
+            var updated = angular.copy(alert);
+            updated.enabled = enabled;
+            Alerts.update({alertId: alert.id}, updated, function (result) {
+                alert.enabled = enabled;
+                growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
+            }, function (error) {
+                growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+            });
+        }
+    };
+
+    $scope.removeAlert = function (alert) {
+        Alerts.delete({alertId: alert.id}, function (result) {
+            $scope.alerts = $scope.alerts.filter(function (element) {
+                return element.id !== alert.id;
+            });
+            growl.success('Deleted "' + alert.name + '"');
+        }, function (error) {
+            growl.error('Failed to delete "' + alert.name + '"');
+        });
+    };
+    
+    $scope.$watch('searchText', function(newValue, oldValue) {
+    	newValue = newValue == null ? "" : newValue;
+    	Storage.set("alerts-searchText", newValue);
+    });
+    
+    $scope.$watch('itemsPerPage', function(newValue, oldValue) {
+    	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
+    	Storage.set("alerts-itemsPerPage", newValue);
+    });
+}]);
 
 argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggerMap','JobExecutionDetails',
     function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggerMap,JobExecutionDetails) {
@@ -96,11 +97,12 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
         $scope.updateAlert = function () {
             if ($scope.isAlertDirty()) {
                 var alert = $scope.alert;
+                
                 Alerts.update({alertId: alert.id}, alert, function (result) {
                     $scope.unmodifiedAlert = angular.copy(alert);
                     growl.success(('Updated "') + alert.name + '"');
-                $scope.fetchHistory();
-                $scope.fetchJobExecutionDetails();
+                    $scope.fetchHistory();
+                    $scope.fetchJobExecutionDetails();
                 }, function (error) {
                     growl.error('Failed to update "' + alert.name + '"');
                 });
@@ -122,6 +124,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
             var toUpdate = $scope.unmodifiedTriggers.filter(function (element) {
                 return element.id === trigger.id;
             });
+
             if (toUpdate.length === 1 && !angular.equals(toUpdate[0], trigger)) {
                 Triggers.update({alertId: trigger.alertId, triggerId: trigger.id}, trigger, function (result) {
                     $scope.unmodifiedTriggers.filter(function (element) {
@@ -151,6 +154,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
             var toUpdate = $scope.unmodifiedNotifications.filter(function (element) {
                 return element.id === notification.id;
             });
+
             if (toUpdate.length === 1 && !angular.equals(toUpdate[0], notification)) {
                 Notifications.update({alertId: notification.alertId, notificationId: notification.id}, notification, function (result) {
                     $scope.unmodifiedNotifications.filter(function (element) {
@@ -189,6 +193,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
                 inertia: 0,
                 alertId: $scope.alert.id
             };
+            
             Triggers.save({alertId: $scope.alert.id}, trigger, function (result) {
                 angular.copy(result, $scope.triggers);
                 $scope.unmodifiedTriggers = angular.copy($scope.triggers);
@@ -209,6 +214,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
                 cooldownPeriod: 3600000,
                 alertId: $scope.alert.id
             };
+            
             Notifications.save({alertId: $scope.alert.id}, notification, function (result) {
                 angular.copy(result, $scope.notifications);
                 $scope.unmodifiedNotifications = angular.copy($scope.notifications);
@@ -218,7 +224,6 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
             }, function (error) {
                 growl.error('Failed to create "' + notification.name + '"');
             });
-            
         };
 
         $scope.removeTrigger = function (trigger) {
@@ -321,11 +326,13 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
             }
             return ids;
         };
+
         $scope.alertId = $routeParams.alertId;
         $scope.triggers = [];
         $scope.notifications = [];
         $scope.unmodifiedTriggers = [];
         $scope.unmodifiedNotifications = [];
+        
         if ($scope.alertId > 0) {
             Alerts.get({alertId: $scope.alertId}, function (alert) {
                 $scope.alert = alert;
@@ -334,12 +341,14 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
                 growl.error('Failed to get alert "' + $scope.alertId + '"');
                 $location.path('/alerts');
             });
+            
             Triggers.query({alertId: $scope.alertId}, function (triggers) {
                 $scope.triggers = triggers;
                 $scope.unmodifiedTriggers = angular.copy(triggers);
             }, function (error) {
                 growl.error('Failed to get triggers for alert "' + $scope.alertId + '"');
             });
+            
             Notifications.query({alertId: $scope.alertId}, function (notifications) {
                 $scope.notifications = notifications;
                 $scope.unmodifiedNotifications = angular.copy(notifications);
@@ -359,6 +368,8 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
         $scope.resetNotifications();
     }]);
 
+
+// TODO:  move these factories to new 'services' folder
 argusAlerts.factory('Alerts', ['$resource', 'CONFIG',
     function ($resource, CONFIG) {
         return $resource(CONFIG.wsUrl + 'alerts/:alertId', {}, {

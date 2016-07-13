@@ -23,80 +23,60 @@ var argusNamespace = angular.module('argusNamespace', [
     'ngResource'
 ]);
 
-argusNamespace.controller('NamespaceCtrl', ['Storage', '$scope', 'growl', 'Namespace',
-                                         function (Storage, $scope, growl, Namespace) {
+argusNamespace.controller('NamespaceCtrl', ['Storage', '$scope', 'growl', 'Namespace', function (Storage, $scope, growl, Namespace) {
 	
-	$scope.searchText = Storage.get("namespace-searchText") == null ? "" : Storage.get("namespace-searchText");
-	$scope.addnamespaceflag=false;
+    $scope.searchText = Storage.get("namespace-searchText") == null ? "" : Storage.get("namespace-searchText");
+	$scope.addnamespaceflag = false;
     $scope.namespaces = Namespace.query();
     
     $scope.updateNamespace = function(namespace){
-    	 //if ($scope.isAlertDirty()) { TODO: uncomment this
-    	var userNames=namespace.usernames.toString();
-    	namespace.usernames=(userNames && userNames.length>0)? userNames.split(','):[];
+        //if ($scope.isAlertDirty()) { TODO: uncomment this
+    	var userNames = namespace.usernames.toString();
+    	namespace.usernames = (userNames && userNames.length > 0) ? userNames.split(',') : [];
     	
     		Namespace.update({namespaceId: namespace.id}, namespace, function (result) {
-                 growl.success(('Updated namespace "') + namespace.qualifier + '"');
+                growl.success(('Updated namespace "') + namespace.qualifier + '"');
                  
-                 for(var i=0; i<$scope.namespaces.length;i++){
+                for (var i=0; i < $scope.namespaces.length; i++){
                 	var oldNamespace = $scope.namespaces[i];
-                	if(oldNamespace.id==result.id){
-                		$scope.namespaces[i]=result;
+                	if (oldNamespace.id == result.id){
+                		$scope.namespaces[i] = result;
                 		break;
                 	}
-                	
-                 }
-            
-             }, function (error) {
-            	 growl.error('Failed to update namespace "' + namespace.qualifier + '"' + (error && error.data && error.data.message)?error.data.message:error.statusText);
-             });
-         //}
+                }
+            }, function (error) {
+                growl.error('Failed to update namespace "' + namespace.qualifier + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
+            });
+        //}
     };
-	
-    
-    
-    
+
     $scope.saveNamespace = function () {
-    	
-    	 var newNamespace = {};
-    	 var userNames = $scope.users;
+    	var newNamespace = {};
+    	var userNames = $scope.users;
     	 
-    	 newNamespace.qualifier=$scope.qulifier;
-    	 newNamespace.usernames=(userNames && userNames.length>0)? userNames.split(','):[];
+    	newNamespace.qualifier = $scope.qulifier;
+    	newNamespace.usernames = (userNames && userNames.length > 0) ? userNames.split(',') : [];
     	 
-    	 Namespace.save(newNamespace, function (result) {
-    		 $scope.namespaces.push(result);
-    		 $scope.qulifier="";
-    		 $scope.users="";
+    	Namespace.save(newNamespace, function (result) {
+    		$scope.namespaces.push(result);
+    		$scope.qulifier = "";
+    		$scope.users = "";
     		 
-    		 growl.success('Created namespace "' + newNamespace.qualifier + '"');
-                 
-             }, function (error) {
-            	 growl.error('Failed to create "' + newNamespace.qualifier + '"' + (error && error.data && error.data.message)?error.data.message:error.statusText);
-             });
+    		growl.success('Created namespace "' + newNamespace.qualifier + '"');
+        }, function (error) {
+            growl.error('Failed to create "' + newNamespace.qualifier + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
+        });
     };
     
     $scope.$watch('searchText', function(newValue, oldValue) {
     	newValue = newValue == null ? "" : newValue;
     	Storage.set("namespace-searchText", newValue);
     });
-	
 }]);
 
-
-argusNamespace.factory('Namespace', ['$resource', 'CONFIG',
-                                 function ($resource, CONFIG) {
+// TODO: move to new 'services' folder
+argusNamespace.factory('Namespace', ['$resource', 'CONFIG', function ($resource, CONFIG) {
 	return $resource(CONFIG.wsUrl + 'namespace/:namespaceId', {}, {
         update: {method: 'PUT'}
     });
-	
- }]);
-
-
-
-/*
-argusNamespace.factory('NamespaceUsers', ['$resource', 'CONFIG',
-                                     function ($resource, CONFIG) {
-                                         return $resource(CONFIG.wsUrl + 'namespace/:namespaceId/users');
-                                     }]);
-*/
+}]);

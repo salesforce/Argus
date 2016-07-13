@@ -125,7 +125,6 @@ chartsModule.directive('agChart', ['$rootScope','DashboardService','growl',funct
     }
 }]);
 
-
 chartsModule.directive('agMetric', function(){
     var metricNameIndex=100;
     return {
@@ -206,7 +205,6 @@ chartsModule.directive('agOption', function(){
         }
     }
 });
-
 
 chartsModule.directive('agMetricOption', function(){
     return{

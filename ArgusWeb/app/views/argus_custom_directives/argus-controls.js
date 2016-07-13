@@ -28,25 +28,22 @@ controlsModule.directive('agDashboardResource', ['DashboardService','$sce','$com
         link: function(scope,element,attribute){
 
             var dashboardID;
-            if(attribute.id && attribute.id>0) {
-               dashboardID = attribute.id;
+            if (attribute.id && attribute.id > 0) {
+                dashboardID = attribute.id;
             }else{
-                dashboardID=scope.dashboardId;
+                dashboardID = scope.dashboardId;
             }
 
-            DashboardService.getDashboardById(dashboardID).success(function (data){
-
-                element.html('<div>' + $sce.trustAsHtml(data.content) + '</div>');
-                $compile(element.contents())(scope);
-                //scope.$broadcast('submitButtonEvent', {});
-
-            });
-
+            DashboardService.getDashboardById(dashboardID)
+                .success(function (data){
+                    element.html('<div>' + $sce.trustAsHtml(data.content) + '</div>');
+                    $compile(element.contents())(scope);
+                });
         }
     }
 }]);
 
-controlsModule.directive('agDashboard', ['$rootScope',function($rootScope){
+controlsModule.directive('agDashboard', ['$rootScope', function($rootScope){
 
     return{
         restrict:'E',
@@ -88,20 +85,16 @@ controlsModule.directive('agDashboard', ['$rootScope',function($rootScope){
             	console.log(eventName + ' was broadcast');
             	$scope.$broadcast(eventName, data);
             }
-
         },
         link:function(scope,element,attributes){
-            if(!attributes.onload || attributes.onload == true) {
+            if (!attributes.onload || attributes.onload == true) {
                 scope.$broadcast('submitButtonEvent', scope.controls);
             }
-
         }
     }
 }]);
 
-
-controlsModule.directive('agText', ['CONFIG',function(CONFIG){
-
+controlsModule.directive('agText', ['CONFIG', function(CONFIG){
     return{
         restrict:'EA',
         scope:{
@@ -120,7 +113,6 @@ controlsModule.directive('agText', ['CONFIG',function(CONFIG){
         }
     }
 }]);
-
 
 controlsModule.directive('agDropdown', ['CONFIG', 'Tags', function(CONFIG, Tags){
     return{
@@ -180,12 +172,9 @@ controlsModule.directive('agDropdown', ['CONFIG', 'Tags', function(CONFIG, Tags)
             });
         }
     }
-    
 }]);
 
-
-controlsModule.directive('agDate', ['CONFIG',function(CONFIG){
-
+controlsModule.directive('agDate', ['CONFIG', function(CONFIG){
     return{
         restrict:'E',
         scope:{
@@ -214,9 +203,7 @@ controlsModule.directive('agDate', ['CONFIG',function(CONFIG){
     }
 }]);
 
-
-controlsModule.directive('agSubmit', ['$rootScope','$http',function($rootScope,$http){
-
+controlsModule.directive('agSubmit', ['$rootScope','$http', function($rootScope,$http){
     return{
         restrict:'E',
         require:'^agDashboard',
@@ -236,15 +223,4 @@ controlsModule.directive('agSubmit', ['$rootScope','$http',function($rootScope,$
             });
         }
     }
-
 }]);
-
-//TODO delete the following
-
-controlsModule.directive('agTrans', function(){
-    return{
-        restrict:'E',
-        transclude:true,
-        template:'<div ng-transclude=""> </div>'
-    }
-})

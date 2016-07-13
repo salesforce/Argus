@@ -138,7 +138,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount);
 	       	}
 	       	//populateAnnotations(annotationExpressionList, chart);
-        }
+        };
 
         function updateIndicatorStatus(attributes, lastStatusVal) {
             if (lastStatusVal < attributes.lo) {
@@ -148,9 +148,9 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             } else if (lastStatusVal > attributes.hi) {
                 $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
             }
-        }
+        };
         
-        function populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount){
+        function populateSeries(metricExpression, metricOptions, highChartOptions, series, divId, attributes, annotationExpressionList ,objMetricCount){
             $http({
                 method: 'GET',
                 url: CONFIG.wsUrl + 'metrics',
@@ -186,9 +186,9 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 	   bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
                 	}
                 });
-        }
+        };
         
-        function bindDataToChart(divId,highChartOptions,series,annotationExpressionList){
+        function bindDataToChart(divId, highChartOptions, series, annotationExpressionList){
             // $("#" + divId).empty();
     		highChartOptions.series=series;
     		$('#' + divId).highcharts('StockChart', highChartOptions);
@@ -203,7 +203,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             }
     		
             populateAnnotations(annotationExpressionList, chart);
-        }
+        };
        
         function getMetricExpressionList(metrics){
 	       	var result = [];
@@ -211,7 +211,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
 	       		result.push(metrics[i].expression);
 	       	}
 	       	return result;
-        }
+        };
         
         function updateTable(data, scope, divId, options) {
         	if(data && data.length > 0) {
@@ -328,11 +328,11 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             
             populateAnnotations(annotationExpressionList, chart);
         };
+
         function resetChart(chart){
             chart.zoomOut();
         };
 
-        
         function getOptionsByChartType(config, chartType, smallChart){
             var options = config ? angular.copy(config) : {};
             options.legend = {
@@ -439,11 +439,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             }else {
                 $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, 'LINE'));
             }
-        }
-        
-        function resetHeatmap(heatmap){
-            
-        }
+        };
         
         function getOptionsByHeatmapType(config, top){
             var options = config ? angular.copy(config) : {};
@@ -494,13 +490,13 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 }
             }];
             return options;
-        }
+        };
         
         function compareAverage(a,b) {
             if (getAverage(a) < getAverage(b)) return 1;
             if (getAverage(a) > getAverage(b)) return -1;
             return 0;
-        }
+        };
         
         function getTimeSpan(data) {
             var begin = 9999999999999;
@@ -513,7 +509,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             }
             var span = Math.floor(end/1000/60/60) - Math.floor(begin/1000/60/60) + 1;
             return {begin: begin, end: end, span: span};
-        }
+        };
         
         function getTimeAxis(timeSpan) {
             var hours = [
@@ -529,7 +525,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             }
             axis.push('<b><i>Average</i></b>');
             return axis;
-        }
+        };
         
         function getAverage(data) {
             var total = 0;
@@ -542,7 +538,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 return total / count;
             else
                 return 0;
-        }
+        };
         
         function getHourlyAverage(timeSpan, data) {
             var sums = Array.apply(null, Array(timeSpan.span)).map(Number.prototype.valueOf,0);
@@ -559,7 +555,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 else avgs.push(null);
             }
             return avgs;
-        }
+        };
         
         function copyHeatmapSeries(data, timeSpan) {
             var table = data.map(getHourlyAverage.bind(null, timeSpan));
@@ -574,7 +570,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 }
             }
             return dataSeries;
-        }
+        };
 
         function copySeries(data) {
             var result = [];
@@ -651,7 +647,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             }
         };
 
-        function addAlertFlag(annotationExpression,chart) {
+        function addAlertFlag(annotationExpression, chart) {
             Annotations.query({expression: annotationExpression}, function (data) {
                 if(data && data.length>0) {
                     var forName = createSeriesName(data[0]);
@@ -697,9 +693,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
             return result;
         };
 
-
-
-        function setCustomOptions(options,optionList){
+        function setCustomOptions(options, optionList){
           for(var idx in optionList) {
                 var propertyName = optionList[idx].name;
                 var propertyValue = optionList[idx].value;
@@ -707,9 +701,9 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 copyProperties(result,options);
             }
             return options;
-        }
+        };
 
-        function copyProperties(from,to){
+        function copyProperties(from, to){
             for (var key in from) {
                 if (from.hasOwnProperty(key)) {
                     if(!to[key] || typeof from[key] == 'string' || from[key] instanceof String ){//if from[key] is not an object and is last property then just copy so that it will overwrite the existing value
@@ -719,7 +713,7 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                     }
                 }
             }
-        }
+        };
 
         //It constructs the object tree.
         function constructObjectTree(name, value) {
@@ -749,10 +743,10 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
        			return parseInt(value);
        		}
         	return value;
-        }
-
+        };
     }]);
 
+// TODO: move factories to new 'services' folder
 dashboardServiceModule.factory('Metrics', ['$resource', 'CONFIG',
     function ($resource, CONFIG) {
         return $resource(CONFIG.wsUrl + 'metrics', {}, {
@@ -767,8 +761,8 @@ dashboardServiceModule.factory('Annotations', ['$resource', 'CONFIG',
         });
     }]);
 
+// TODO: move this service to separate file for 'tags', within new 'services' folder
 dashboardServiceModule.service('Tags', ['CONFIG', '$http', '$q', function(CONFIG, $http, $q) {
-	
 	this.getDropdownOptions = function(key) {
 		var request = $http({
 			method: 'GET',
@@ -777,8 +771,6 @@ dashboardServiceModule.service('Tags', ['CONFIG', '$http', '$q', function(CONFIG
 				tagk: key
 			}
 		});
-		
 		return request;
 	}
-	
 }]);

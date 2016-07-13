@@ -22,7 +22,6 @@
 var viewElementsModule = angular.module('argusViewElements', ['argusControls', 'angular-table']);
 
 viewElementsModule.controller('ViewElementCtrl', function($scope) {
-	
     $scope.metrics={};
     $scope.annotations={};
     $scope.options={};
@@ -39,19 +38,18 @@ viewElementsModule.controller('ViewElementCtrl', function($scope) {
     this.updateOption = function(name,value){
         $scope.options[name]=value;
     };
-    
 });
 
 viewElementsModule.controller('metricElementCtrl', function($scope) {
-	
     $scope.metricOptions={};
 
     this.updateOption = function(name,value){
         $scope.metricOptions[name]=value;
     };
-    
 });
 
+
+// TODO: Move directives into new 'directives' folder
 viewElementsModule.directive('agStatusIndicator', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
     var metricNameIndex = 1;
     return {
@@ -147,28 +145,6 @@ viewElementsModule.directive('agHeatmap', ['DashboardService', 'growl', 'VIEWELE
     }
 }]);
 
-
-/**Segment size or Offset can be specified in terms of seconds, minutes, hours or days.
- * For e.g.: segmentOffset="7d" segmentSize="5h"
- * 
- * The last digit will always be either of "s", "m", "h" or "d". And the first to penultimate digits will be the amount.
-**/
-var TimeUnit = Object.freeze({"SECOND": {"key": "s", "value": 1000}, 
-							  "MINUTE": {"key": "m", "value": 60*1000},
-							  "HOUR": {"key": "h", "value": 3600*1000},
-							  "DAY": {"key": "d", "value": 24*3600*1000},});
-function getMillis(str) {
-	var timeUnit = str.substring(str.length-1);
-	var time = parseInt(str.substring(0, str.lenght-1));
-	
-	
-	if(timeUnit === TimeUnit.SECOND.key || timeUnit == TimeUnit.MINUTE.key || 
-			timeUnit == TimeUnit.HOUR.key || timeUnit == TimeUnit.DAY.key) {
-		return time * 100;
-	}
-	
-}
-
 viewElementsModule.directive('agTable', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
     var tableNameIndex = 1;
     return {
@@ -183,75 +159,6 @@ viewElementsModule.directive('agTable', ['DashboardService', 'growl', 'VIEWELEME
         }
     }
 }]);
-
-function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
-	
-	var elementId = 'element_' + elementType + index;
-    var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
-    element.prepend('<div id=' + elementId + ' '+ smallChartCss +'></div>');
-    
-    scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
-        console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
-        populateView(event, controls);
-    });
-
-    function populateView(event, controls) {
-        var updatedMetricList=[];
-        var updatedAnnotationList=[];
-        var updatedOptionList = [];
-
-        for (var key in scope.metrics) {
-            if (scope.metrics.hasOwnProperty(key)) {
-                // get metricExpression from scope
-                var metrics = scope.metrics[key];
-                var metricExpression = metrics.expression;
-                var metricSpecificOptions = metrics.metricSpecificOptions;
-                var processedExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
-
-                if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
-                	var processedMetric={};
-                	processedMetric['expression']=processedExpression;
-                	processedMetric['metricSpecificOptions']=getMetricSpecificOptionsInArray(metricSpecificOptions);
-                    updatedMetricList.push(processedMetric);
-                }
-            }
-        }
-
-        for (var key in scope.annotations) {
-            if (scope.annotations.hasOwnProperty(key)) {
-                var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
-                if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
-                    updatedAnnotationList.push(processedExpression);
-                }
-            }
-        }
-        for (var key in scope.options) {
-            if (scope.options.hasOwnProperty(key)) {
-                updatedOptionList.push({name: key, value: scope.options[key]});
-
-            }
-        }
-
-        if(updatedMetricList.length>0) {
-            DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedOptionList, elementId, attributes, elementType, scope);
-        } else {
-            growl.error('The valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
-            $('#' + elementId).hide();
-        }
-    }
-    
-    function getMetricSpecificOptionsInArray(metricSpecificOptions){
-    	var options=[];
-    	for (var key in metricSpecificOptions) {
-            if (metricSpecificOptions.hasOwnProperty(key)) {
-            	options.push({'name': key, 'value': metricSpecificOptions[key]});
-            }
-        }
-    	return options;
-    }
-    
-}
-
 
 viewElementsModule.directive('agMetric', function() {
     var metricNameIndex=100;
@@ -322,34 +229,6 @@ viewElementsModule.directive('agFlags', function() {
     }
 });
 
-/*
-viewElementsModule.directive('segments', function() {
-    var flagNameIndex=100;
-    return {
-        restrict: 'A',
-        require: ['agChart', 'segmentOffset'],
-        template: '',
-        priority: 0,
-        link: function(scope, element, attributes, chartCtrl){
-            console.log("I am segments");
-        }
-    }
-});
-
-viewElementsModule.directive('segmentOffset', function() {
-    var flagNameIndex=100;
-    return {
-        restrict: 'A',
-        require: 'agChart',
-        template: '',
-        priority: 1,
-        link: function(scope, element, attributes, chartCtrl){
-            console.log("I am segment offset");
-        }
-    }
-});
-*/
-
 viewElementsModule.directive('agOption', function() {
     return {
         restrict:'E',
@@ -380,3 +259,93 @@ viewElementsModule.directive('agOption', function() {
         }
     }
 });
+
+
+/**Segment size or Offset can be specified in terms of seconds, minutes, hours or days.
+ * For e.g.: segmentOffset="7d" segmentSize="5h"
+ * 
+ * The last digit will always be either of "s", "m", "h" or "d". And the first to penultimate digits will be the amount.
+**/
+// TODO: move to new 'utils' folder
+var TimeUnit = Object.freeze({"SECOND": {"key": "s", "value": 1000}, 
+                              "MINUTE": {"key": "m", "value": 60*1000},
+                              "HOUR": {"key": "h", "value": 3600*1000},
+                              "DAY": {"key": "d", "value": 24*3600*1000},});
+
+function getMillis(str) {
+    var timeUnit = str.substring(str.length-1);
+    var time = parseInt(str.substring(0, str.lenght-1));
+    
+    if (timeUnit === TimeUnit.SECOND.key || timeUnit == TimeUnit.MINUTE.key || 
+        timeUnit == TimeUnit.HOUR.key || timeUnit == TimeUnit.DAY.key) {
+        return time * 100;
+    }
+}
+
+// TODO: break up into multiple service components
+function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
+    var elementId = 'element_' + elementType + index;
+    var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
+    element.prepend('<div id=' + elementId + ' ' + smallChartCss +'></div>');
+    
+    scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
+        console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
+        populateView(event, controls);
+    });
+
+    function populateView(event, controls) {
+        var updatedMetricList = [];
+        var updatedAnnotationList = [];
+        var updatedOptionList = [];
+
+        // TODO: move these 3 items to 'utils' folder
+        for (var key in scope.metrics) {
+            if (scope.metrics.hasOwnProperty(key)) {
+                // get metricExpression from scope
+                var metrics = scope.metrics[key];
+                var metricExpression = metrics.expression;
+                var metricSpecificOptions = metrics.metricSpecificOptions;
+                var processedExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
+
+                if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
+                    var processedMetric = {};
+                    processedMetric['expression'] = processedExpression;
+                    processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
+                    updatedMetricList.push(processedMetric);
+                }
+            }
+        }
+
+        for (var key in scope.annotations) {
+            if (scope.annotations.hasOwnProperty(key)) {
+                var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
+                if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
+                    updatedAnnotationList.push(processedExpression);
+                }
+            }
+        }
+
+        for (var key in scope.options) {
+            if (scope.options.hasOwnProperty(key)) {
+                updatedOptionList.push({name: key, value: scope.options[key]});
+            }
+        }
+
+        if (updatedMetricList.length > 0) {
+            DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedOptionList, elementId, attributes, elementType, scope);
+        } else {
+            growl.error('The valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
+            $('#' + elementId).hide();
+        }
+    }
+    
+    function getMetricSpecificOptionsInArray(metricSpecificOptions){
+        var options=[];
+        for (var key in metricSpecificOptions) {
+            if (metricSpecificOptions.hasOwnProperty(key)) {
+                options.push({'name': key, 'value': metricSpecificOptions[key]});
+            }
+        }
+        return options;
+    }
+}
