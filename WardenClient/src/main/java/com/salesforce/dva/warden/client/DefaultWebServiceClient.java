@@ -25,19 +25,24 @@ import java.util.List;
 class DefaultWebServiceClient
     implements WebServiceClient
 {
-    private HttpClient wardenHttpClient;
+	private HttpClient httpClient;
     private final String endpoint;
     private static final Logger LOGGER = LoggerFactory.getLogger( WebServiceClient.class.getName(  ) );
+    
+    DefaultWebServiceClient(HttpClient httpClient)
+    {
+        requireArgument( httpClient != null , "Illegal endpoint URL." );
+        requireArgument( ( httpClient.endpoint != null ) && ( ! httpClient.endpoint.isEmpty(  ) ), "Illegal endpoint URL." );
+        requireArgument( httpClient.maxConn >= 2, "At least two connections are required." );
+        requireArgument( httpClient.connTimeout >= 1, "Timeout must be greater than 0." );
+        requireArgument( httpClient.connRequestTimeout >= 1, "Request timeout must be greater than 0." );
+        this.endpoint = httpClient.endpoint;
+        this.httpClient = httpClient;
+    }
 
     DefaultWebServiceClient( String endpoint, int maxConn, int timeout, int reqTimeout )
     {
-        requireArgument( ( endpoint != null ) && ( ! endpoint.isEmpty(  ) ), "Illegal endpoint URL." );
-        requireArgument( maxConn >= 2, "At least two connections are required." );
-        requireArgument( timeout >= 1, "Timeout must be greater than 0." );
-        requireArgument( reqTimeout >= 1, "Request timeout must be greater than 0." );
-
-        this.endpoint = endpoint;
-        this.wardenHttpClient = new HttpClient( endpoint, maxConn, timeout, reqTimeout );
+        this(new HttpClient(endpoint, maxConn, timeout, reqTimeout));
     }
 
     public boolean login( String username, String password )
@@ -52,7 +57,7 @@ class DefaultWebServiceClient
         try
         {
             StringEntity entity = new StringEntity( HttpClient.toJson( creds ) );
-            response = wardenHttpClient.executeHttpRequest( RequestType.POST, requestUrl, entity );
+            response = httpClient.executeHttpRequest( RequestType.POST, requestUrl, entity );
             EntityUtils.consume( response.getEntity(  ) );
         } catch ( IOException ex )
         {
@@ -81,8 +86,8 @@ class DefaultWebServiceClient
 
         try
         {
-            response = wardenHttpClient.executeHttpRequest( RequestType.GET, requestUrl, null );
-            wardenHttpClient.clearCookies(  );
+            response = httpClient.executeHttpRequest( RequestType.GET, requestUrl, null );
+            httpClient.clearCookies(  );
             EntityUtils.consume( response.getEntity(  ) );
         } catch ( IOException ex )
         {
@@ -109,11 +114,10 @@ class DefaultWebServiceClient
                              throws IOException
     {
         login( "raj", "abc" );
-
         String endpoint = "argusuri";
         String requestUrl = endpoint + "/policy";
         HttpResponse response = null;
-        response = wardenHttpClient.executeHttpRequest( RequestType.GET, requestUrl, null );
+        response = httpClient.executeHttpRequest( RequestType.GET, requestUrl, null );
         EntityUtils.consume( response.getEntity(  ) );
 
         ObjectMapper mapper = new ObjectMapper(  );
@@ -175,10 +179,10 @@ class DefaultWebServiceClient
     {
         try
         {
-            wardenHttpClient.dispose(  );
+            httpClient.dispose(  );
         } finally
         {
-            wardenHttpClient = null;
+            httpClient = null;
         }
     }
 }

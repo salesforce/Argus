@@ -55,7 +55,98 @@ public class Policy
         this.name = name;
     }
 
-    public List<String> getOwners(  )
+    @Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((aggregator == null) ? 0 : aggregator.hashCode());
+		result = prime * result + ((cronEntry == null) ? 0 : cronEntry.hashCode());
+		result = prime * result + ((defaultValue == null) ? 0 : defaultValue.hashCode());
+		result = prime * result + ((metricName == null) ? 0 : metricName.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((owners == null) ? 0 : owners.hashCode());
+		result = prime * result + ((service == null) ? 0 : service.hashCode());
+		result = prime * result + ((subSystem == null) ? 0 : subSystem.hashCode());
+		result = prime * result + ((suspensionLevelIds == null) ? 0 : suspensionLevelIds.hashCode());
+		result = prime * result + ((threshold == null) ? 0 : threshold.hashCode());
+		result = prime * result + ((timeUnit == null) ? 0 : timeUnit.hashCode());
+		result = prime * result + ((triggerType == null) ? 0 : triggerType.hashCode());
+		result = prime * result + ((users == null) ? 0 : users.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Policy other = (Policy) obj;
+		if (aggregator != other.aggregator)
+			return false;
+		if (cronEntry == null) {
+			if (other.cronEntry != null)
+				return false;
+		} else if (!cronEntry.equals(other.cronEntry))
+			return false;
+		if (defaultValue == null) {
+			if (other.defaultValue != null)
+				return false;
+		} else if (!defaultValue.equals(other.defaultValue))
+			return false;
+		if (metricName == null) {
+			if (other.metricName != null)
+				return false;
+		} else if (!metricName.equals(other.metricName))
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (owners == null) {
+			if (other.owners != null)
+				return false;
+		} else if (!owners.equals(other.owners))
+			return false;
+		if (service == null) {
+			if (other.service != null)
+				return false;
+		} else if (!service.equals(other.service))
+			return false;
+		if (subSystem == null) {
+			if (other.subSystem != null)
+				return false;
+		} else if (!subSystem.equals(other.subSystem))
+			return false;
+		if (suspensionLevelIds == null) {
+			if (other.suspensionLevelIds != null)
+				return false;
+		} else if (!suspensionLevelIds.equals(other.suspensionLevelIds))
+			return false;
+		if (threshold == null) {
+			if (other.threshold != null)
+				return false;
+		} else if (!threshold.equals(other.threshold))
+			return false;
+		if (timeUnit == null) {
+			if (other.timeUnit != null)
+				return false;
+		} else if (!timeUnit.equals(other.timeUnit))
+			return false;
+		if (triggerType != other.triggerType)
+			return false;
+		if (users == null) {
+			if (other.users != null)
+				return false;
+		} else if (!users.equals(other.users))
+			return false;
+		return true;
+	}
+
+	public List<String> getOwners(  )
     {
         return owners;
     }
