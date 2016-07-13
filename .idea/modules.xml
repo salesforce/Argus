@@ -3,6 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Argus.iml" filepath="$PROJECT_DIR$/.idea/Argus.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ArgusClient/argus-client.iml" filepath="$PROJECT_DIR$/ArgusClient/argus-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ArgusCore/argus-core.iml" filepath="$PROJECT_DIR$/ArgusCore/argus-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ArgusWebServices/argus-webservices.iml" filepath="$PROJECT_DIR$/ArgusWebServices/argus-webservices.iml" />
     </modules>
   </component>
 </project>
