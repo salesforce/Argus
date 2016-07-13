@@ -28,6 +28,7 @@ var argusMain = angular.module('argusMain', [
     'angular-growl',
     'angularUtils.directives.dirPagination',
     'argusAbout',
+    'argusAdmin',
     'argusAlerts',
     'argusNamespace',
     'argusDashboards',
@@ -98,6 +99,10 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                     controller: 'AboutDetailCtrl',
                     label: 'About Argus'
                 }).
+                when('/admin', {
+                    templateUrl: 'views/admin/admin.html',
+                    controller: 'AdminDetailCtrl'
+                }).
                 when('/login', {
                     templateUrl: 'views/login/login.html',
                     controller: 'LoginCtrl',
@@ -121,6 +126,7 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 otherwise({
                     redirectTo: '/dashboards'
                 });
+
         growlProvider.onlyUniqueMessages(false);
         growlProvider.globalDisableCloseButton(true);
         growlProvider.globalDisableCountDown(true);
@@ -130,13 +136,13 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         
         $analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
         $analyticsProvider.withAutoBase(true);  /* Records full path */
-
     }]);
 
 argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
 
         $rootScope.$on('$locationChangeStart', function (event, next, current) {
             var loggedIn = Auth.isLoggedIn();
+            var isPrivileged = Auth.isPrivileged();
             var target = Auth.getTarget();
             var path = $location.path();
             
@@ -213,6 +219,9 @@ argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scop
             return Auth.isLoggedIn();
         };
 
+        $scope.isPrivileged = function () {
+            return Auth.isPrivileged();
+        };
     }]);
 
 argusMain.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
@@ -251,6 +260,9 @@ argusMain.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage
             },
             isLoggedIn: function () {
                 return this.remoteUser() !== null;
+            },
+            isPrivileged: function () {
+                return this.remoteUser().privileged;
             }
         };
     }]);
