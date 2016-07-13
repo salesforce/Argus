@@ -250,7 +250,7 @@ argusMain.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage
                 return this.remoteUser() !== null;
             },
             isPrivileged: function () {
-                return this.remoteUser().privileged;
+                return this.remoteUser() ? this.remoteUser().privileged : null;
             }
         };
     }]);
