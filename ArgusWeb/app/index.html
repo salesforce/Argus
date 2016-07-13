@@ -48,6 +48,7 @@
     <script src="views/main/main.js"></script>
     <script src="views/main/config.js"></script>
     <script src="views/about/about.js"></script>
+    <script src="views/admin/admin.js"></script>
     <script src="views/alerts/alerts.js"></script>
     <script src="views/namespace/namespace.js"></script>
     <script src="views/dashboards/dashboards.js"></script>
@@ -99,6 +100,7 @@
                     <li><a href="#viewmetrics">Metrics</a></li>
                     <li><a href="#namespace">Namespace</a></li>
                     <li><a href="#about">About</a></li>
+                    <li><a href="#admin" ng-show='isPrivileged()'>Admin</a></li>
                     <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
                 </ul>
             </div>
