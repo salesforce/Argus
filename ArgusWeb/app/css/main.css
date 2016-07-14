@@ -31,6 +31,16 @@ label {
 .navbar-fixed-top .nav {margin-top: 0; margin-bottom: 0;}
 .h3 {margin-top: 10px;}
 
+.rowIndicator {position:relative; margin-bottom:.5em;}
+.serviceItem {position:absolute; top:9px; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
+.rowIndicator.largeLabel .serviceItem {padding:.5em 1em;}
+.serviceItem .serviceName {margin-bottom:.5em; font-size:14px; font-weight:bold;}
+.serviceItem .statusIndicator {display:inline-block; width:15px; height:15px; border:solid 1px; border-radius:10px;}
+.serviceItem .statusIndicator.red {background-color:red; border-color:red;}
+.serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
+.serviceItem .statusIndicator.green {background-color:green; border-color:green;}
+.smallChart {padding-left:8em; width:100%;}
+
 .growl-container.growl-fixed.top-center {
     top : 2em!important;
     width: 25%!important;
