@@ -6,17 +6,21 @@ import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.AsyncBatchedMetricQuery;
 import com.salesforce.dva.argus.entity.BatchMetricQuery;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.*;
+import com.salesforce.dva.argus.service.BatchService;
+import com.salesforce.dva.argus.service.CacheService;
+import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.service.metric.ParseException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.BATCH;
 import static com.salesforce.dva.argus.entity.BatchMetricQuery.Status;
+import static com.salesforce.dva.argus.service.MQService.MQQueue.BATCH;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
@@ -29,6 +33,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final String ROOT = "batch/";
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBatchService.class);
     private static final String QUERIES = "/queries/";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int DEFAULT_TTL = 2592000;
@@ -69,11 +74,13 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             String batchId = (String) batchData.get("batchId");
             List<AsyncBatchedMetricQuery> queries = new ArrayList<>();
 
-            String[] queryIds = MAPPER.readValue((String) batchData.get("queueIds"), String[].class);
-            for (String queryId: queryIds) {
-                queries.add(_findQueryById(batchId, queryId));
+            int[] indices = MAPPER.readValue((String) batchData.get("indices"), int[].class);
+            for (int index: indices) {
+                queries.add(_findQueryById(batchId, index));
             }
+            // TODO: If there are no more race conditions then don't need to read/write status to cache
             BatchMetricQuery batch = new BatchMetricQuery(status, ttl, createdDate, batchId, ownerName, queries);
+            batch.updateStatus();
             return batch;
         } catch (IOException ex) {
             throw new SystemException(ex);
@@ -90,8 +97,11 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             Map<String, String> userBatches = MAPPER.readValue(userBatchesJson, Map.class);
             List<String> toRemove = new LinkedList<>();
             for (String id: userBatches.keySet()) {
-                if (_cacheService.get(ROOT + id) == null) {
+                BatchMetricQuery userBatch = findBatchById(id);
+                if (userBatch == null) {
                     toRemove.add(id);
+                } else {
+                    userBatches.put(id, String.valueOf(userBatch.getStatus().toInt()));
                 }
             }
             for (String id: toRemove) {
@@ -106,55 +116,14 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     }
 
     @Override
-    public void updateBatch(BatchMetricQuery batch) {
-        Map<String,Object> batchData = new HashMap<>();
-        try {
-            // Put batch JSON to cache
-            int ttl = batch.getTtl();
-            String batchId = batch.getBatchId();
-            batchData.put("ttl", ttl);
-            batchData.put("createdDate", batch.getCreatedDate());
-            batchData.put("ownerName", batch.getOwnerName());
-            batchData.put("batchId", batchId);
-            List<String> queueIds = new ArrayList<>(batch.getQueries().size());
-            for (AsyncBatchedMetricQuery query : batch.getQueries()) {
-                queueIds.add(query.getQueryId());
-            }
-            String queueIdsJson = MAPPER.writeValueAsString(queueIds);
-            batchData.put("queueIds", queueIdsJson);
-
-            BatchMetricQuery.Status oldStatus = batch.getStatus();
-            batch.updateStatus();
-            BatchMetricQuery.Status newStatus = batch.getStatus();
-            batchData.put("status", newStatus.toInt());
-            String json = MAPPER.writeValueAsString(batchData);
-            // Enforce cache TTL if batch status now changes to done
-            if (oldStatus != newStatus && newStatus == BatchMetricQuery.Status.DONE) {
-                _cacheService.put(ROOT + batchId, json, ttl);
-                for (AsyncBatchedMetricQuery query : batch.getQueries()) {
-                    _updateQuery(query, ttl);
-                }
-            } else {
-                _cacheService.put(ROOT + batchId, json, DEFAULT_TTL);
-                for (AsyncBatchedMetricQuery query : batch.getQueries()) {
-                    _updateQuery(query, DEFAULT_TTL);
-                }
-            }
-
-            // Update user JSON in cache
-            String userBatchesJson = _cacheService.get(ROOT + batch.getOwnerName());
-            Map<String, Object> userBatches;
-            if (userBatchesJson == null) {
-                userBatches = new HashMap<>();
-            } else {
-                userBatches = MAPPER.readValue(userBatchesJson, Map.class);
-            }
-            userBatches.put(batch.getBatchId(), newStatus.toInt());
-            String updatedBatchesJson = MAPPER.writeValueAsString(userBatches);
-            _cacheService.put(ROOT + batch.getOwnerName(), updatedBatchesJson, DEFAULT_TTL);
-        } catch (IOException ex) {
-            throw new SystemException(ex);
+    public synchronized void updateBatch(BatchMetricQuery batch) {
+        String json = _serializeBatchToJson(batch);
+        _cacheService.put(ROOT + batch.getBatchId(), json, DEFAULT_TTL);
+        for (AsyncBatchedMetricQuery query : batch.getQueries()) {
+            _updateQuery(query, DEFAULT_TTL);
         }
+
+        _updateUserBatches(batch);
     }
 
     @Override
@@ -170,28 +139,77 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         }
         query.setStatus(Status.PROCESSING);
         _updateQuery(query, DEFAULT_TTL);
+
         MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
         try {
             List<Metric> results = reader.parse(query.getExpression(), query.getOffset(), Metric.class);
-            query.setStatus(BatchMetricQuery.Status.DONE);
+            query.setStatus(Status.DONE);
             if (results.size() == 0) {
-                _updateQuery(query, DEFAULT_TTL);
                 return null;
             }
             query.setResult(results.get(0));
             _updateQuery(query, DEFAULT_TTL);
 
-            // Update corresponding batch
             BatchMetricQuery batch = findBatchById(query.getBatchId());
-            updateBatch(batch);
+            if (batch.getStatus() == Status.DONE) {
+                _enforceTtl(batch);
+            }
             return query;
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
+            query.setStatus(Status.ERROR);
+            query.setMessage(ex.toString());
+            _updateQuery(query, DEFAULT_TTL);
             throw new SystemException("Failed to parse the given expression", ex);
         }
     }
 
-    private AsyncBatchedMetricQuery _findQueryById(String batchId, String queryId) {
-        String json = _cacheService.get(ROOT + batchId + QUERIES + queryId);
+    private void _enforceTtl(BatchMetricQuery batch) {
+        String json = _serializeBatchToJson(batch);
+        _cacheService.put(ROOT + batch.getBatchId(), json, batch.getTtl());
+        for (AsyncBatchedMetricQuery query : batch.getQueries()) {
+            _updateQuery(query, batch.getTtl());
+        }
+    }
+
+    private String _serializeBatchToJson(BatchMetricQuery batch) {
+        Map<String,Object> batchData = new HashMap<>();
+        try {
+            batchData.put("status", batch.getStatus().toInt());
+            batchData.put("ttl", batch.getTtl());
+            batchData.put("createdDate", batch.getCreatedDate());
+            batchData.put("ownerName", batch.getOwnerName());
+            batchData.put("batchId", batch.getBatchId());
+            List<Integer> indices = new ArrayList<>(batch.getQueries().size());
+            for (AsyncBatchedMetricQuery query : batch.getQueries()) {
+                indices.add(query.getIndex());
+            }
+            String indicesJson = MAPPER.writeValueAsString(indices);
+            batchData.put("indices", indicesJson);
+            return MAPPER.writeValueAsString(batchData);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        }
+    }
+
+    private void _updateUserBatches(BatchMetricQuery batch) {
+        try {
+            String userBatchesJson = _cacheService.get(ROOT + batch.getOwnerName());
+            Map<String, Object> userBatches;
+            if (userBatchesJson == null) {
+                userBatches = new HashMap<>();
+            } else {
+                userBatches = MAPPER.readValue(userBatchesJson, Map.class);
+            }
+            userBatches.put(batch.getBatchId(), null);
+            String updatedBatchesJson = MAPPER.writeValueAsString(userBatches);
+            _cacheService.put(ROOT + batch.getOwnerName(), updatedBatchesJson, DEFAULT_TTL);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        }
+    }
+
+    private AsyncBatchedMetricQuery _findQueryById(String batchId, int index) {
+        String json = _cacheService.get(ROOT + batchId + QUERIES + index);
         if (json == null) {
             return null;
         }
@@ -200,9 +218,10 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             String expression = (String) queryData.get("expression");
             long offset = Long.valueOf(queryData.get("offset").toString());
             BatchMetricQuery.Status status = BatchMetricQuery.Status.fromInt((Integer) queryData.get("status"));
+            String message = (String) queryData.get("message");
             String metricJson = (String) queryData.get("metric");
             Metric result = MAPPER.readValue(metricJson, Metric.class);
-            return new AsyncBatchedMetricQuery(expression, offset, batchId, queryId, status, result);
+            return new AsyncBatchedMetricQuery(expression, offset, batchId, index, status, result, message);
         } catch (IOException ex) {
             throw new SystemException(ex);
         }
@@ -213,11 +232,12 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         try {
             queryData.put("expression", query.getExpression());
             queryData.put("offset", query.getOffset());
-            queryData.put("queueId", query.getQueryId());
+            queryData.put("index", query.getIndex());
             queryData.put("batchId", query.getBatchId());
             queryData.put("status", query.getStatus().toInt());
+            queryData.put("message", query.getMessage());
             queryData.put("metric", MAPPER.writeValueAsString(query.getResult()));
-            _cacheService.put(ROOT + query.getBatchId() + QUERIES + query.getQueryId(), MAPPER.writeValueAsString(queryData), ttl);
+            _cacheService.put(ROOT + query.getBatchId() + QUERIES + query.getIndex(), MAPPER.writeValueAsString(queryData), ttl);
         } catch (IOException ex) {
             throw new SystemException(ex);
         }

@@ -37,8 +37,8 @@ public class BatchMetricQuery implements Serializable {
         _batchId = UUID.randomUUID().toString();
         _ownerName = ownerName;
         _queries = new ArrayList<>(expressions.size());
-        for (String expression: expressions) {
-            _queries.add(new AsyncBatchedMetricQuery(expression, offset, _batchId));
+        for (int i = 0; i < expressions.size(); i++) {
+            _queries.add(new AsyncBatchedMetricQuery(expressions.get(i), offset, _batchId, i));
         }
     }
 
@@ -56,19 +56,25 @@ public class BatchMetricQuery implements Serializable {
 
     public void updateStatus() {
         boolean allDone = true;
+        boolean hasError = false;
         if (_status == Status.DONE) {
             return;
         }
         for (AsyncBatchedMetricQuery query: _queries) {
             Status status = query.getStatus();
-            allDone &= (status == Status.DONE);
+            if (status == Status.ERROR) {
+                hasError = true;
+            }
             if (status == Status.PROCESSING) {
                 _status = Status.PROCESSING;
-                break;
+                return;
             }
+            allDone &= (status == Status.DONE || status == status.ERROR);
         }
-        if (allDone) {
+        if (allDone && !hasError) {
             _status = Status.DONE;
+        } else if (hasError) {
+            _status = Status.ERROR;
         }
     }
 
@@ -100,9 +106,14 @@ public class BatchMetricQuery implements Serializable {
     //~ Enums ****************************************************************************************************************************************
 
     public enum Status {
+        /** Status if the batch has no queries being processed */
         QUEUED("queued"),
+        /** Status if the batch has at least one query being processed */
         PROCESSING("processing"),
-        DONE("done");
+        /** Status if all the queries in the batch have been evaluated */
+        DONE("done"),
+        /** Status if all queries have been evaluated , but at least one of the queries resulted in an error */
+        ERROR("error");
 
         private final String _key;
 
@@ -111,12 +122,14 @@ public class BatchMetricQuery implements Serializable {
         }
 
         public static Status fromInt(int status) {
-            if (status >= 2) {
+            if (status == 2) {
                 return DONE;
             } else if (status == 1) {
                 return PROCESSING;
-            } else {
+            } else if (status == 0) {
                 return QUEUED;
+            } else {
+                return ERROR;
             }
         }
         
@@ -125,9 +138,11 @@ public class BatchMetricQuery implements Serializable {
         		return 2;
         	} else if (this == PROCESSING) {
         		return 1;
-        	} else {
+        	} else if (this == QUEUED) {
         		return 0;
-        	}
+        	} else {
+                return 3;
+            }
         }
 
         @Override

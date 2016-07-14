@@ -32,7 +32,7 @@ public class BatchDto {
         List<AsyncBatchedMetricQuery> batchQueries = batch.getQueries();
         result.queries = new ArrayList<>(batchQueries.size());
         for (AsyncBatchedMetricQuery query: batchQueries) {
-            result.queries.add(new QueryDto(query.getExpression(), query.getResult()));
+            result.queries.add(new QueryDto(query.getExpression(), query.getResult(), query.getMessage()));
         }
         return result;
     }
@@ -40,10 +40,12 @@ public class BatchDto {
     private static class QueryDto {
         String expression;
         Metric result;
+        String message;
 
-        QueryDto(String expression, Metric result) {
+        QueryDto(String expression, Metric result, String message) {
             this.expression = expression;
             this.result = result;
+            this.message = message;
         }
 
         public String getExpression() {
@@ -60,6 +62,14 @@ public class BatchDto {
 
         public void setResult(Metric result) {
             this.result = result;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
         }
     }
 

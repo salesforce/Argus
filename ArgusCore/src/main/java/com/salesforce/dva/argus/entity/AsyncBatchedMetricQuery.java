@@ -1,7 +1,6 @@
 package com.salesforce.dva.argus.entity;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 import static com.salesforce.dva.argus.entity.BatchMetricQuery.Status;
 
@@ -15,28 +14,30 @@ public class AsyncBatchedMetricQuery implements Serializable {
     private String _expression;
     private long _offset;
     private String _batchId;
-    private String _queryId;
-    private BatchMetricQuery.Status _status;
+    private int _index;
+    private Status _status;
     private Metric _result;
+    private String _message;
 
     //~ Constructors *********************************************************************************************************************************
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId) {
+    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, int index) {
         _expression = expression;
         _offset = offset;
         _batchId = batchId;
-        _queryId = UUID.randomUUID().toString();
+        _index = index;
         _status = Status.QUEUED;
     }
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, String queryId,
-                                   Status status, Metric result) {
+    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, int index,
+                                   Status status, Metric result, String message) {
         _expression = expression;
         _offset = offset;
         _batchId = batchId;
-        _queryId = queryId;
+        _index = index;
         _status = status;
         _result = result;
+        _message = message;
     }
 
     public AsyncBatchedMetricQuery() {
@@ -69,12 +70,12 @@ public class AsyncBatchedMetricQuery implements Serializable {
         _batchId = batchId;
     }
 
-    public String getQueryId() {
-        return _queryId;
+    public int getIndex() {
+        return _index;
     }
 
-    public void setQueryId(String queryId) {
-        _queryId = queryId;
+    public void setIndex(int index) {
+        _index = index;
     }
 
     public Status getStatus() {
@@ -91,6 +92,14 @@ public class AsyncBatchedMetricQuery implements Serializable {
 
     public void setResult(Metric result) {
         _result = result;
+    }
+
+    public String getMessage() {
+        return _message;
+    }
+
+    public void setMessage(String message) {
+        _message = message;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -12,9 +12,10 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
         $scope.currTtl = '';
         $scope.currBatchState = 'Refresh for current batch status';
         $scope.currBatchId = '';
-        var statusToString = ['queued', 'processing', 'done'];
+        var statusToString = ['queued', 'processing', 'done', 'error'];
 
-        $scope.getBatches = function() {
+        $scope.getBatches = function(is) {
+            $scope.batches = [{id: 'Loading...', status: 'Loading...'}];
             Batches.query().$promise.then(function(batchMap) {
                 $scope.batches = [];
                 for (var id in batchMap) {
@@ -49,7 +50,6 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
             AsyncMetrics.create(params)
                 .then(function success(response) {
                     $scope.expressions = [{expression: ''}];
-                    $scope.currTtl = '';
                     $scope.submitted = true;
                     $scope.currBatchId = response.data.id;
                     $scope.getBatches();
@@ -60,13 +60,34 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
         };
 
         $scope.refreshBatchState = function(batchId) {
-           if (batchId != null) {
+            if (batchId != null) {
                 $scope.currBatchId = batchId;
             }
+            if ($scope.currBatchId == '') {
+                $scope.currBatchState = 'No batch selected';
+                return;
+            }
+            $scope.currBatchState = 'Loading...';
             Batches.query({batchId: $scope.currBatchId}, function(data) {
+                if (data.queries) {
+                    for (var i in data.queries) {
+                        var query = data.queries[i];
+                        if (query.result && query.result.datapoints && Object.keys(query.result.datapoints).length > 10) {
+                            var firstTen = Object.keys(query.result.datapoints).slice(0, 10);
+                            var numDatapointsLeft = Object.keys(query.result.datapoints).length - 10;
+                            var truncatedDatapoints = {};
+                            for (var j in firstTen) {
+                                var time = firstTen[j];
+                                truncatedDatapoints[time] = query.result.datapoints[time];
+                            }
+                            query.result.datapoints = truncatedDatapoints;
+                            query.result.datapoints['and'] = numDatapointsLeft + ' more datapoints';
+                        }
+                    }
+                }
                 $scope.currBatchState = angular.toJson(data, 2);
             }, function() {
-                $scope.currBatchState = "Batch has expired";
+                $scope.currBatchState = 'Batch has expired';
                 for (var i = 0; i < $scope.batches.length; i++) {
                     if ($scope.batches[i].id == $scope.currBatchId) {
                         $scope.batches.splice(i, 1);

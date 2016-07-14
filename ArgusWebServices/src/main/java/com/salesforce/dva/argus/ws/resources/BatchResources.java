@@ -38,7 +38,7 @@ public class BatchResources extends AbstractResource {
      *
      * @param   req          HTTPServlet request. Cannot be null.
      *
-     * @return  List of filtered batches
+     * @return  Filtered batches in the form of a map from UUID to status
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)

@@ -19,7 +19,7 @@ public interface BatchService extends Service {
      *
      * @param   id  The ID of the batch. Cannot be null and must be in canonical UUID format.
      *
-     * @return  The Dashboard if one exists or null if no such Dashboard exists.
+     * @return  The batch if one exists or null if no such batch exists.
      */
     BatchMetricQuery findBatchById(String id);
 
@@ -28,7 +28,7 @@ public interface BatchService extends Service {
      *
      * @param   ownerName   The username for which to retrieve batches. Cannot be null.
      *
-     * @return  A list of batches created by this username or an empty list if there are none.
+     * @return  A list of the owner's batches in the form of a mapping of UUIDs to statuses.
      */
     Map<String, String> findBatchesByOwnerName(String ownerName);
 
@@ -39,8 +39,20 @@ public interface BatchService extends Service {
      */
     void updateBatch(BatchMetricQuery batch);
 
+    /**
+     * Enqueues the queries of a batch to be processed by the next available processor client
+     *
+     * @param   batch   The batch to enqueue
+     */
     void enqueueBatch(BatchMetricQuery batch);
 
+    /**
+     * Dequeues and processes the next individual query of a batch
+     *
+     * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
+     *
+     * @return  The individual query object that was dequeued.
+     */
     AsyncBatchedMetricQuery executeNextQuery(int timeout);
 
 }

@@ -36,7 +36,10 @@ public class MetricProcessor implements Runnable {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                AsyncBatchedMetricQuery query = batchService.executeNextQuery(10000);
+                AsyncBatchedMetricQuery query = batchService.executeNextQuery(5000);
+                if (query != null) {
+                    LOGGER.info("MetricProcessor/finished " + query.getExpression() + " of batch " + query.getBatchId());
+                }
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ex) {
                 LOGGER.info("Execution was interrupted.");
