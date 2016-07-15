@@ -2,7 +2,6 @@
 <div  ag-spinning-wheel ng-show="showloading"><img src="img/ajax-loader.gif" alt=“loading” > </div>
 -->
 <section>
-
     <h3 style="margin-top: 10px;">{{dashboard.name}}</h3>
     <h5 style="margin-bottom: 20px;">{{dashboard.description}}</h5>
 
@@ -11,7 +10,6 @@
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click='selectTab(2)'>Edit</a></li>
         <li ng-class="{active:isTabSelected(3)}"><a href ng-click='selectTab(3)'>History</a></li>
     </ul>
-    <br />
     
     <div ng-show='isTabSelected(1)'>
         <ag-dashboard-resource></ag-dashboard-resource>

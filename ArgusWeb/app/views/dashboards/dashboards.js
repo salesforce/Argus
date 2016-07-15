@@ -113,7 +113,6 @@ argusDashboards.controller('DashboardListCtrl', ['Auth', 'Storage', '$scope', 'g
             template += "<ag-submit>Submit</ag-submit>\n\n";
   
             template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
-            template += "<br><br>\n";
             template += "<h4>Argus mem heap used - Chart</h4>\n\n";
             
             template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";

@@ -121,6 +121,7 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 otherwise({
                     redirectTo: '/dashboards'
                 });
+
         growlProvider.onlyUniqueMessages(false);
         growlProvider.globalDisableCloseButton(true);
         growlProvider.globalDisableCountDown(true);
@@ -130,7 +131,6 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         
         $analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
         $analyticsProvider.withAutoBase(true);  /* Records full path */
-
     }]);
 
 argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {

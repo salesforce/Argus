@@ -105,12 +105,11 @@
                 </ul>
             </div>
         </div>
-
     </nav>
 
     <div class="container" style="width: 93%;">
-        <!-- breadcrumbs -->
-        <breadcrumbs-html></breadcrumbs-html>
+        <!-- breadcrumb navigation -->
+        <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
         
         <div ng-view></div>
     </div>
