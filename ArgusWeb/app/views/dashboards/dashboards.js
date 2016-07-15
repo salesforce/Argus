@@ -26,8 +26,8 @@ var argusDashboards = angular.module('argusDashboards', [
     'ui.codemirror'
 ]);
 
-argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', 'Dashboards',
-    function (Storage, $scope, growl, Dashboards) {
+argusDashboards.controller('DashboardListCtrl', ['Auth', 'Storage', '$scope', 'growl', 'Dashboards',
+    function (Auth, Storage, $scope, growl, Dashboards) {
 		$scope.searchText = Storage.get("dashboards-searchText") == null ? "" : Storage.get("dashboards-searchText");
         Dashboards.query().$promise.then(function(dashboards) {
         	$scope.allDashboards = dashboards;
@@ -131,12 +131,12 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         };
         
         $scope.isDisabled = function(dashboard) {
-        	var remoteUser = Storage.get('user');
-        	if(remoteUser.privileged || remoteUser.userName === dashboard.ownerName) {
+            var remoteUser = Auth.remoteUser();
+        	if(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
         		return false;
         	}
         	return true;
-        }
+        };
         
         $scope.$watch('searchText', function(newValue, oldValue) {
         	newValue = newValue == null ? "" : newValue;
