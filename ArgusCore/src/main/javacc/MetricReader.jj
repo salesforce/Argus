@@ -142,7 +142,6 @@ TOKEN : { < #NOT : "!" > }
 TOKEN : { < #TIME_UNIT : "s" | "m" | "h" | "d" > }
 
 TOKEN : { < IDENTITY : "IDENTITY" > }
-TOKEN : { < HEIMDALL_TOTALAVA : "HEIMDALL_TOTALAVA" > }
 TOKEN : { < SUM : "SUM" > }
 TOKEN : { < SUM_V : "SUM_V" > }
 TOKEN : { < DIVIDE : "DIVIDE" > }
@@ -152,7 +151,6 @@ TOKEN : { < DIFF_V : "DIFF_V" > }
 TOKEN : { < MULTIPLY : "MULTIPLY" > }
 TOKEN : { < SCALE : "SCALE" > }
 TOKEN : { < SCALE_V : "SCALE_V" > }
-TOKEN : { < SCALE_MATCH : "SCALE_MATCH" > }
 TOKEN : { < AVERAGE : "AVERAGE" > }
 TOKEN : { < INTEGRAL : "INTEGRAL" > }
 TOKEN : { < DERIVATIVE : "DERIVATIVE" > }
@@ -181,12 +179,10 @@ TOKEN : { < LIMIT : "LIMIT" > }
 TOKEN : { < RANGE : "RANGE" > }
 TOKEN : { < FILL : "FILL" > }
 TOKEN : { < FILL_CALCULATE : "FILL_CALCULATE" > }
-TOKEN : { < FILTER : "FILTER" > }
 TOKEN : { < LOG : "LOG" > }
 TOKEN : { < CULL_ABOVE : "CULL_ABOVE" > }
 TOKEN : { < CULL_BELOW : "CULL_BELOW" > }
 TOKEN : { < SORT : "SORT" > }
-TOKEN : { < P90 : "P90" > }
 TOKEN : { < SHIFT : "SHIFT" > }
 TOKEN : { < DOWNSAMPLE : "DOWNSAMPLE" > }
 TOKEN : { < DEVIATION : "DEVIATION" > }
@@ -303,9 +299,6 @@ private String functionName() :
 	t = <IDENTITY>
 	{ return t.image; }			
 	|
-	t = <HEIMDALL_TOTALAVA>
-	{ return t.image; }
-	|
 	t = <MULTIPLY>
 	{ return t.image; }
 	|
@@ -355,9 +348,6 @@ private String functionName() :
 	{ return t.image; } 
 	|
 	t = <SCALE_V>
-	{ return t.image; } 
-	|
-	t = <SCALE_MATCH>
 	{ return t.image; } 
 	|
 	t = <DIFF>
@@ -420,9 +410,6 @@ private String functionName() :
 	t = <FILL_CALCULATE>
 	{ return t.image; }
 	|
-	t = <FILTER>
-	{ return t.image; }
-	|
 	t = <LOG>
 	{ return t.image; }
 	|	
@@ -434,10 +421,7 @@ private String functionName() :
 	|	
 	t = <SORT>
 	{ return t.image; }
-	|	
-	t = <P90>
-	{ return t.image; }
-	|	
+	|
 	t = <SHIFT>
 	{ return t.image; }
 	|	
