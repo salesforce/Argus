@@ -53,7 +53,6 @@ breadcrumbModule.factory('breadcrumbs', ['$rootScope', '$location', function($ro
   return breadcrumbsService;
 }]);
 
-
 breadcrumbModule.directive('breadcrumbsHtml', function() {
     "use strict";
     return {
