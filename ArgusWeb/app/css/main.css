@@ -24,6 +24,8 @@ label {
     padding-top: 5px;
 }
 
+#navbar .activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+
 .breadcrumb {
   position:absolute;
   display:inline-block; 

@@ -94,13 +94,14 @@
                 </a>
                 <p class='navbar-text' ng-show='isLoggedIn()'>Welcome {{getRemoteUser()}}</p>
             </div>
+
             <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#dashboards">Dashboards</a></li>
-                    <li><a href="#alerts">Alerts</a></li>
-                    <li><a href="#viewmetrics">Metrics</a></li>
-                    <li><a href="#namespace">Namespace</a></li>
-                    <li><a href="#about">About</a></li>
+                    <li ng-class="{'activeTab': activeTab == 'dashboards'}"><a href="#dashboards">Dashboards</a></li>
+                    <li ng-class="{'activeTab': activeTab == 'alerts'}"><a href="#alerts">Alerts</a></li>
+                    <li ng-class="{'activeTab': activeTab == 'metrics'}"><a href="#viewmetrics">Metrics</a></li>
+                    <li ng-class="{'activeTab': activeTab == 'namespace'}"><a href="#namespace">Namespace</a></li>
+                    <li ng-class="{'activeTab': activeTab == 'about'}"><a href="#about">About</a></li>
                     <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
                 </ul>
             </div>

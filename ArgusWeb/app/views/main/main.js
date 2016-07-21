@@ -71,32 +71,38 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 when('/viewmetrics', {
                     templateUrl: 'views/viewmetrics/viewmetrics.html',
                     controller: 'ViewMetricsCtrl',
-                    label: 'Metrics'
+                    label: 'Metrics',
+                    activeTab: 'metrics'
                 }).
                 when('/dashboards', {
                     templateUrl: 'views/dashboards/dashboard-list.html',
                     controller: 'DashboardListCtrl',
-                    label: 'Dashboard List'
+                    label: 'Dashboard List',
+                    activeTab: 'dashboards'
                 }).
                 when('/dashboards/:dashboardId', {
                     templateUrl: 'views/dashboards/dashboard-detail.html',
                     controller: 'DashboardDetailCtrl',
-                    label: '{{dashboards.dashboardId}}'
+                    label: '{{dashboards.dashboardId}}',
+                    activeTab: 'dashboards'
                 }).
                 when('/alerts', {
                     templateUrl: 'views/alerts/alert-list.html',
                     controller: 'AlertListCtrl',
-                    label: 'Alert List'
+                    label: 'Alert List',
+                    activeTab: 'alerts'
                 }).
                 when('/alerts/:alertId', {
                     templateUrl: 'views/alerts/alert-detail.html',
                     controller: 'AlertDetailCtrl',
-                    label: '{{alerts.alertId}}'
+                    label: '{{alerts.alertId}}',
+                    activeTab: 'alerts'
                 }).
                 when('/about', {
                     templateUrl: 'views/about/about.html',
                     controller: 'AboutDetailCtrl',
-                    label: 'About Argus'
+                    label: 'About Argus',
+                    activeTab: 'about'
                 }).
                 when('/login', {
                     templateUrl: 'views/login/login.html',
@@ -116,7 +122,8 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 when('/namespace', {
                     templateUrl: 'views/namespace/namespace.html',
                     controller: 'NamespaceCtrl',
-                    label: 'Namespace'
+                    label: 'Namespace',
+                    activeTab: 'namespace'
                 }).
                 otherwise({
                     redirectTo: '/dashboards'
@@ -158,7 +165,6 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
             	event.preventDefault();
             	$route.reload();
             }
-            
         });
         
         (function(config) {
@@ -176,7 +182,7 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
         
     }]);
 
-argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scope, Auth, $location) {
+argusMain.controller('MainCtrl', ['$rootScope', '$scope', 'Auth', '$location', function ($rootScope, $scope, Auth, $location) {
 
 		/*
         $scope.$watch(Auth.remoteUser, function (value, oldValue) {
@@ -188,6 +194,10 @@ argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scop
             }
         }, true);
         */
+
+        $rootScope.$on('$routeChangeSuccess', function (event, current, previous) {
+            $scope.activeTab = current.$$route.activeTab;
+        });
 
         $scope.login = function (username, password) {
         	if(username.indexOf("@") != -1) {
