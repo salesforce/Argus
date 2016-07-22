@@ -372,6 +372,11 @@
             <artifactId>asynchbase</artifactId>
             <version>1.7.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.brandtg</groupId>
+            <artifactId>stl-java</artifactId>
+            <version>0.1.1</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>

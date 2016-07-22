@@ -172,6 +172,8 @@ public class TransformFactory {
                 return new MetricZipperTransform(new DivideValueZipper());
             case NORMALIZE_V:
                 return new MetricZipperTransform(new DivideValueZipper());
+            case ANOMALY_STL:
+                return new AnomalySTLTransform();
             case GROUPBY:
             	throw new UnsupportedOperationException(functionName);
             default:
@@ -240,6 +242,7 @@ public class TransformFactory {
         CONSECUTIVE("CONSECUTIVE","Filter out all values that are non-consecutive"),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
+        ANOMALY_STL("ANOMALY_STL", "Performs a seasonal trend decomposition and returns the probability that each point is an anomaly based on the residual component."),
         GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation.");
 
         private final String _name;
