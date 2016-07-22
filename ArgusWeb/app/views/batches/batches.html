@@ -1,10 +1,14 @@
 <section>
     <div>
-        <div class="page-header"><h1>Batch HUD <small>Info about the focused batch</small></h1></div>
-        <pre style="white-space: pre-wrap; max-height: 350px; overflow: scroll;" ng-bind="currBatchState">
-        </pre>
+        <div class="page-header"><h1>Batch HUD <small>Info about the focused batch</small></h1>
+        </div>
+        <pre style="white-space: pre-wrap; max-height: 350px; overflow: scroll;" ng-show="hudMode == 0" ng-bind="currBatchState"></pre>
+        <div id="graphs-container" ng-show="hudMode == 1"></div>
         <div class="text-center">
-            <button class="btn btn-warning" ng-click="refreshBatchState()">Refresh</button>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-default" ng-click="toggleHudMode()">Switch to {{hudModes[hudMode]}} view</button>
+                <button class="btn btn-warning" ng-click="refreshBatchState()"><strong>Refresh</strong></button>
+            </div>
             <div>{{currBatchId != '' ? '(' + currBatchId + ')' : ''}}</div>
         </div>
     </div>
