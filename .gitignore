@@ -9,6 +9,7 @@ logs/
 nbactions.xml
 nb-configuration.xml
 argus-build.properties
+.settings/
 .DS_Store
 
 # Eclipse ignore
@@ -25,7 +26,7 @@ local.properties
 .recommenders
 
 # Eclipse Core
-.project
+.[pP]roject
 
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
@@ -38,4 +39,4 @@ local.properties
 *.iml
 
 Makefile
-
+property
