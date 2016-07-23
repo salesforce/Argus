@@ -50,31 +50,39 @@ public class BatchMetricQuery implements Serializable {
         _batchId = batchId;
         _ownerName = ownerName;
         _queries = queries;
+        _updateStatus();
     }
 
     //~ Methods **************************************************************************************************************************************
 
-    public void updateStatus() {
-        boolean allDone = true;
-        boolean hasError = false;
-        if (_status == Status.DONE) {
+    private void _updateStatus() {
+        boolean doneWithoutErrors = true;
+        boolean doneWithErrors = true;
+        boolean finishedOne = false;
+        if (_status == Status.DONE || _status == Status.ERROR) {
             return;
         }
         for (AsyncBatchedMetricQuery query: _queries) {
             Status status = query.getStatus();
-            if (status == Status.ERROR) {
-                hasError = true;
-            }
             if (status == Status.PROCESSING) {
                 _status = Status.PROCESSING;
                 return;
             }
-            allDone &= (status == Status.DONE || status == status.ERROR);
+            boolean queryFinished = (status == Status.DONE || status == Status.ERROR);
+            if (queryFinished) {
+                finishedOne = true;
+            }
+            doneWithErrors &= queryFinished;
+            doneWithoutErrors &= (status == Status.DONE);
         }
-        if (allDone && !hasError) {
-            _status = Status.DONE;
-        } else if (hasError) {
+        if (!doneWithoutErrors && doneWithErrors) {
             _status = Status.ERROR;
+        } else if (doneWithoutErrors) {
+            _status = Status.DONE;
+        } else if (finishedOne) {
+            _status = Status.PROCESSING;
+        } else {
+            _status = Status.QUEUED;
         }
     }
 

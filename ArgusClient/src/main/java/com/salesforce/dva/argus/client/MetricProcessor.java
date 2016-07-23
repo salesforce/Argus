@@ -38,7 +38,7 @@ public class MetricProcessor implements Runnable {
             try {
                 AsyncBatchedMetricQuery query = batchService.executeNextQuery(5000);
                 if (query != null) {
-                    LOGGER.info("MetricProcessor/finished " + query.getExpression() + " of batch " + query.getBatchId());
+                    LOGGER.info("Finished processing " + query.getExpression() + " of batch " + query.getBatchId());
                 }
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ex) {
@@ -47,7 +47,6 @@ public class MetricProcessor implements Runnable {
                 break;
             } catch (Throwable ex) {
                 LOGGER.warn("Exception in MetricProcessor: {}", ex.toString());
-                ex.printStackTrace();
             }
         }
     }

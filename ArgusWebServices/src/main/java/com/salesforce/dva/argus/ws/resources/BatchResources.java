@@ -72,7 +72,6 @@ public class BatchResources extends AbstractResource {
         if (batch == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
-        batch.updateStatus();
         return Response.ok(BatchDto.transformToDto(batch), MediaType.APPLICATION_JSON).build();
     }
 }

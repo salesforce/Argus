@@ -33,13 +33,6 @@ public interface BatchService extends Service {
     Map<String, String> findBatchesByOwnerName(String ownerName);
 
     /**
-     * Updates a batch's metadata, creating an entry if necessary.
-     *
-     * @param   batch   The batch to update
-     */
-    void updateBatch(BatchMetricQuery batch);
-
-    /**
      * Enqueues the queries of a batch to be processed by the next available processor client
      *
      * @param   batch   The batch to enqueue

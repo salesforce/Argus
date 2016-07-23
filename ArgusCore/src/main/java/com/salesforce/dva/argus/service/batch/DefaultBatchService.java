@@ -80,7 +80,6 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             }
             // TODO: If there are no more race conditions then don't need to read/write status to cache
             BatchMetricQuery batch = new BatchMetricQuery(status, ttl, createdDate, batchId, ownerName, queries);
-            batch.updateStatus();
             return batch;
         } catch (IOException ex) {
             throw new SystemException(ex);
@@ -116,18 +115,8 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     }
 
     @Override
-    public synchronized void updateBatch(BatchMetricQuery batch) {
-        String json = _serializeBatchToJson(batch);
-        _cacheService.put(ROOT + batch.getBatchId(), json, DEFAULT_TTL);
-        for (AsyncBatchedMetricQuery query : batch.getQueries()) {
-            _updateQuery(query, DEFAULT_TTL);
-        }
-
-        _updateUserBatches(batch);
-    }
-
-    @Override
     public void enqueueBatch(BatchMetricQuery batch) {
+        _createBatch(batch);
         _mqService.enqueue(BATCH.getQueueName(), batch.getQueries());
     }
 
@@ -151,7 +140,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             _updateQuery(query, DEFAULT_TTL);
 
             BatchMetricQuery batch = findBatchById(query.getBatchId());
-            if (batch.getStatus() == Status.DONE) {
+            if (batch.getStatus() == Status.DONE || batch.getStatus() == Status.ERROR) {
                 _enforceTtl(batch);
             }
             return query;
@@ -159,8 +148,22 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             query.setStatus(Status.ERROR);
             query.setMessage(ex.toString());
             _updateQuery(query, DEFAULT_TTL);
+            BatchMetricQuery batch = findBatchById(query.getBatchId());
+            if (batch.getStatus() == Status.ERROR) {
+                _enforceTtl(batch);
+            }
             throw new SystemException("Failed to parse the given expression", ex);
         }
+    }
+
+    private void _createBatch(BatchMetricQuery batch) {
+        String json = _serializeBatchToJson(batch);
+        _cacheService.put(ROOT + batch.getBatchId(), json, DEFAULT_TTL);
+        for (AsyncBatchedMetricQuery query : batch.getQueries()) {
+            _updateQuery(query, DEFAULT_TTL);
+        }
+
+        _updateUserBatches(batch);
     }
 
     private void _enforceTtl(BatchMetricQuery batch) {

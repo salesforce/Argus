@@ -34,6 +34,8 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
                         $scope.batches.push({id: id, status: statusToString[batchMap[id]]});
                     }
                 }
+            }, function() {
+                $scope.batches = [];
             });
         };
         $scope.getBatches();
