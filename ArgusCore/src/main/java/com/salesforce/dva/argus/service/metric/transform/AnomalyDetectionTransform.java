@@ -33,11 +33,10 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.system.SystemAssert;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -46,12 +45,38 @@ import java.util.Map.Entry;
  * @author  Shouvik Mani (shouvik.mani@salesforce.com)
  */
 public abstract class AnomalyDetectionTransform implements Transform {
-    @Override
-    abstract public List<Metric> transform(List<Metric> metrics);
 
     @Override
+    /**
+     * This implementation of transform() handles contextual anomaly detection, which
+     * identifies anomalies within pre-defined intervals of the metric
+     *
+     * Ex: ANOMALY_DENSITY(-100d:-0d:foo:bar:sum, $7d), where the interval is 7 days
+     */
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Anomaly Detection Transform is not supposed to be used with constants");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics");
+        SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+
+        Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
+        Map<Long, String> predictionDatapoints = new HashMap<>();
+
+        long detectionIntervalInSeconds = getDetectionIntervalInSeconds(constants.get(0));
+
+        //Create a sorted array of the metric's timestamps
+        Map<Long, String> completeDatapoints = metrics.get(0).getDatapoints();
+        Long[] timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
+        Arrays.sort(timestamps);
+
+        int currentIndex = 0;
+        currentIndex = advanceCurrentIndexByInterval(currentIndex, predictionDatapoints,
+                        timestamps, detectionIntervalInSeconds);
+        calculateContextualAnomalyScores(predictionDatapoints, completeDatapoints, timestamps,
+                currentIndex, detectionIntervalInSeconds);
+
+        predictions.setDatapoints(predictionDatapoints);
+        List<Metric> resultMetrics = new ArrayList<>();
+        resultMetrics.add(predictions);
+        return resultMetrics;
     }
 
     @Override
@@ -132,6 +157,114 @@ public abstract class AnomalyDetectionTransform implements Transform {
         minMax.put("max", max);
         return minMax;
     }
+
+    private long getDetectionIntervalInSeconds(String detectionInterval) {
+        try {
+            //Parse constant for anomaly detection interval
+            String detectionIntervalValue = detectionInterval.substring(0, detectionInterval.length() - 1);
+            String detectionIntervalUnit = detectionInterval.substring(detectionInterval.length() - 1);
+            Long timeValue = Long.parseLong(detectionIntervalValue);
+            MetricReader.TimeUnit timeUnit = MetricReader.TimeUnit.fromString(detectionIntervalUnit);
+            //Convert interval to seconds
+            long detectionIntervalInSeconds = timeValue * timeUnit.getValue() / 1000;
+            return detectionIntervalInSeconds;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid expression for anomaly detection interval constant.");
+        }
+    }
+
+    /**
+     * Advances currentIndex to a point where it is one anomaly detection
+     * interval beyond the first timestamp. Sets the anomaly scores for
+     * these intermediate points to 0 in the predictions metric (since
+     * there is not enough data in its past for a complete interval).
+     *
+     * @param currentIndex index that gets advanced to one anomaly detection interval
+     *                     beyond the first timestamp
+     * @param predictionDatapoints datapoints that get filled with anomaly scores of 0
+     * @param timestamps sorted timestamps of the original metric
+     * @param detectionIntervalInSeconds anomaly detection interval
+     * @return new advanced value of currentIndex
+     */
+    private int advanceCurrentIndexByInterval(int currentIndex, Map<Long, String> predictionDatapoints,
+                                               Long[] timestamps, long detectionIntervalInSeconds) {
+        //Projected end of interval
+        long firstIntervalEndTime = timestamps[0] + detectionIntervalInSeconds;
+        while (true) {
+            if (currentIndex >= timestamps.length || timestamps[currentIndex] > firstIntervalEndTime) {
+                //Stop once the interval ends (or the entire metric is exhausted)
+                break;
+            } else {
+                predictionDatapoints.put(timestamps[currentIndex], "0.0");
+                currentIndex += 1;
+            }
+        }
+        return currentIndex;
+    }
+
+    /**
+     * Creates an interval for each data point (after currentIndex) in the metric
+     * and calculates the anomaly score for that data point using only other data
+     * points in that same interval, i.e. "a moving contextual anomaly score"
+     *
+     * @param predictionDatapoints data points to fill with contextual anomaly scores
+     * @param completeDatapoints original metric data points
+     * @param timestamps sorted timestamps of the original metric
+     * @param currentIndex index at which to start contextual anomaly detection
+     * @param detectionIntervalInSeconds anomaly detection interval
+     */
+    private void calculateContextualAnomalyScores(Map<Long, String> predictionDatapoints,
+                                                  Map<Long, String> completeDatapoints,
+                                                  Long[] timestamps,
+                                                  int currentIndex, long detectionIntervalInSeconds) {
+        for (int i = currentIndex; i < timestamps.length; i++) {
+            long timestampAtCurrentIndex = timestamps[i];
+            long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
+
+            Metric intervalMetric = createIntervalMetric(i, completeDatapoints, timestamps,
+                                        projectedIntervalStartTime);
+            List<Metric> intervalRawDataMetrics = new ArrayList<>();
+            intervalRawDataMetrics.add(intervalMetric);
+
+            //Apply the anomaly detection transform to each interval separately
+            Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0);
+            Map<Long, String> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+            predictionDatapoints.put(timestamps[i],
+                    intervalAnomaliesMetricData.get(timestamps[i]));
+        }
+    }
+
+    /**
+     * Creates an interval metric containing data points from a starting point
+     * (defined by the detection interval) to an ending point (currentDatapointIndex)
+     *
+     * @param currentDatapointIndex index of the current data point to create an interval for,
+     *                              will serve as the ending point of the interval
+     * @param completeDatapoints original metric data points
+     * @param timestamps sorted timestamps of the original metric
+     * @param projectedIntervalStartTime starting point of the interval
+     * @return Metric containing data points for the interval
+     */
+    private Metric createIntervalMetric(int currentDatapointIndex, Map<Long, String> completeDatapoints,
+                                        Long[] timestamps, long projectedIntervalStartTime) {
+        Metric intervalMetric = new Metric(getResultScopeName(), getResultMetricName());
+        Map<Long, String> intervalMetricData = new HashMap<>();
+
+        //Decrease intervalStartIndex until it's at the start of the interval
+        int intervalStartIndex = currentDatapointIndex;
+        while (intervalStartIndex >= 0 && timestamps[intervalStartIndex] >= projectedIntervalStartTime) {
+            long tempTimestamp = timestamps[intervalStartIndex];
+            //Fill in the intervalMetricData as we traverse backwards through the interval
+            intervalMetricData.put(tempTimestamp, completeDatapoints.get(tempTimestamp));
+            intervalStartIndex--;
+        }
+
+        intervalMetric.setDatapoints(intervalMetricData);
+        return intervalMetric;
+    }
+
+    @Override
+    abstract public List<Metric> transform(List<Metric> metrics);
 
     @Override
     abstract public String getResultScopeName();

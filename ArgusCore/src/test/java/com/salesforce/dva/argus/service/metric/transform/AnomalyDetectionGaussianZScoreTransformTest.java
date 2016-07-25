@@ -76,9 +76,9 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(2000L, 0.0);
         expected.put(3000L, 100.0);
 
-        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
-        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
-        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
     }
 
     @Test
@@ -106,14 +106,9 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(7000L, 100.0);
         expected.put(8000L, 3.61);
 
-        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
-        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
-        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
-        assertEquals(expected.get(4000L), Double.parseDouble(resultDatapoints.get(4000L)), 0.01);
-        assertEquals(expected.get(5000L), Double.parseDouble(resultDatapoints.get(5000L)), 0.01);
-        assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
-        assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
-        assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
     }
 
     @Test
@@ -145,16 +140,186 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(9000L, 0.0);
         expected.put(10000L, 37.28);
 
-        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
-        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
-        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
-        assertEquals(expected.get(4000L), Double.parseDouble(resultDatapoints.get(4000L)), 0.01);
-        assertEquals(expected.get(5000L), Double.parseDouble(resultDatapoints.get(5000L)), 0.01);
-        assertEquals(expected.get(6000L), Double.parseDouble(resultDatapoints.get(6000L)), 0.01);
-        assertEquals(expected.get(7000L), Double.parseDouble(resultDatapoints.get(7000L)), 0.01);
-        assertEquals(expected.get(8000L), Double.parseDouble(resultDatapoints.get(8000L)), 0.01);
-        assertEquals(expected.get(9000L), Double.parseDouble(resultDatapoints.get(9000L)), 0.01);
-        assertEquals(expected.get(10000L), Double.parseDouble(resultDatapoints.get(10000L)), 0.01);
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
+    }
+
+    @Test
+    public void gaussianZScoreTransformWithDetectionIntervalTest1() {
+        metricData.put(2L, "-1.20");
+        metricData.put(4L, "-1.64");
+        metricData.put(6L, "-1.68");
+        metricData.put(8L, "-0.46");
+        metricData.put(10L, "-1.21");
+        metricData.put(12L, "-0.29");
+        metricData.put(14L, "0.32");
+        metricData.put(16L, "0.35");
+        metricData.put(18L, "-2.26");
+        metricData.put(20L, "-1.41");
+        metricData.put(22L, "0.47");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<>();
+        String detectionInterval = "10s";
+        constants.add(detectionInterval);
+
+        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(2L, 0.0);
+        expected.put(4L, 0.0);
+        expected.put(6L, 0.0);
+        expected.put(8L, 0.0);
+        expected.put(10L, 0.0);
+        expected.put(12L, 0.0);
+        expected.put(14L, 100.0);
+        expected.put(16L, 70.43);
+        expected.put(18L, 100.0);
+        expected.put(20L, 19.04);
+        expected.put(22L, 47.20);
+
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
+    }
+
+    @Test
+    public void gaussianZScoreTransformWithDetectionIntervalTest2() {
+        metricData.put(0L, "0.35");
+        metricData.put(10800L, "-0.16");
+        metricData.put(21600L, "1.82");
+        metricData.put(32400L, "-0.37");
+        metricData.put(43200L, "-2.16");
+        metricData.put(54000L, "-0.05");
+        metricData.put(64800L, "-1.76");
+        metricData.put(75600L, "2.13");
+        metricData.put(86400L, "0.18");
+        metricData.put(97200L, "-0.07");
+        metricData.put(108000L, "0.81");
+        metricData.put(118800L, "0.47");
+        metricData.put(129600L, "0.60");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<>();
+        String detectionInterval = "12h";
+        constants.add(detectionInterval);
+
+        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(0L, 0.0);
+        expected.put(10800L, 0.0);
+        expected.put(21600L, 0.0);
+        expected.put(32400L, 0.0);
+        expected.put(43200L, 0.0);
+        expected.put(54000L, 5.55);
+        expected.put(64800L, 51.23);
+        expected.put(75600L, 100.0);
+        expected.put(86400L, 10.55);
+        expected.put(97200L, 3.17);
+        expected.put(108000L, 24.43);
+        expected.put(118800L, 9.69);
+        expected.put(129600L, 32.82);
+
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
+    }
+
+    @Test
+    public void gaussianZScoreTransformWithDetectionIntervalTest3() {
+        metricData.put(0L, "0.64");
+        metricData.put(151200L, "-1.13");
+        metricData.put(302400L, "0.00");
+        metricData.put(453600L, "0.90");
+        metricData.put(604800L, "-0.96");
+        metricData.put(756000L, "-0.52");
+        metricData.put(907200L, "0.24");
+        metricData.put(1058400L, "-0.01");
+        metricData.put(1209600L, "0.53");
+        metricData.put(1360800L, "-0.34");
+        metricData.put(1512000L, "1.11");
+        metricData.put(1663200L, "-0.21");
+        metricData.put(1814400L, "0.54");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<>();
+        String detectionInterval = "7d";
+        constants.add(detectionInterval);
+
+        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(0L, 0.0);
+        expected.put(151200L, 0.0);
+        expected.put(302400L, 0.0);
+        expected.put(453600L, 0.0);
+        expected.put(604800L, 0.0);
+        expected.put(756000L, 0.0);
+        expected.put(907200L, 26.66);
+        expected.put(1058400L, 0.0);
+        expected.put(1209600L, 79.17);
+        expected.put(1360800L, 57.40);
+        expected.put(1512000L, 100.0);
+        expected.put(1663200L, 29.94);
+        expected.put(1814400L, 1.72);
+
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
+    }
+
+    @Test
+    /**
+     * Edge Case: When the detection interval is greater than the time range
+     * of the metric, the transform should return 0 for the anomaly score of
+     * every point (since there is not enough data to learn from)
+     */
+    public void gaussianZScoreTransformWithDetectionIntervalTest4() {
+        metricData.put(0L, "10");
+        metricData.put(1000L, "-1.13");
+        metricData.put(2000L, "0.00");
+        metricData.put(3000L, "0.90");
+        metricData.put(4000L, "-0.96");
+        metricData.put(5000L, "-0.52");
+        metricData.put(6000L, "0.24");
+        metricData.put(7000L, "-0.01");
+        metricData.put(8000L, "0.53");
+        metricData.put(9000L, "-0.34");
+        metricData.put(10000L, "1.11");
+        metricData.put(11000L, "-0.21");
+        metricData.put(12000L, "0.54");
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        List<String> constants = new ArrayList<>();
+        String detectionInterval = "100d";  //Detection interval > time range of metricData
+        constants.add(detectionInterval);
+
+        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        Map<Long, String> resultDatapoints = results.get(0).getDatapoints();
+
+        expected.put(0L, 0.0);
+        expected.put(1000L, 0.0);
+        expected.put(2000L, 0.0);
+        expected.put(3000L, 0.0);
+        expected.put(4000L, 0.0);
+        expected.put(5000L, 0.0);
+        expected.put(6000L, 0.0);
+        expected.put(7000L, 0.0);
+        expected.put(8000L, 0.0);
+        expected.put(9000L, 0.0);
+        expected.put(10000L, 0.0);
+        expected.put(11000L, 0.0);
+        expected.put(12000L, 0.0);
+
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
     }
 
     @Test
@@ -178,11 +343,9 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(4000L, 0.0);
         expected.put(5000L, 0.0);
 
-        assertEquals(expected.get(1000L), Double.parseDouble(resultDatapoints.get(1000L)), 0.01);
-        assertEquals(expected.get(2000L), Double.parseDouble(resultDatapoints.get(2000L)), 0.01);
-        assertEquals(expected.get(3000L), Double.parseDouble(resultDatapoints.get(3000L)), 0.01);
-        assertEquals(expected.get(4000L), Double.parseDouble(resultDatapoints.get(4000L)), 0.01);
-        assertEquals(expected.get(5000L), Double.parseDouble(resultDatapoints.get(5000L)), 0.01);
+        for (Long timestamp : expected.keySet()) {
+            assertEquals(expected.get(timestamp), Double.parseDouble(resultDatapoints.get(timestamp)), 0.01);
+        }
     }
 
     @Test(expected = MissingDataException.class)
