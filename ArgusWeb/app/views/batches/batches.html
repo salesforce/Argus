@@ -7,7 +7,7 @@
         <div class="text-center">
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-default" ng-click="toggleHudMode()">Switch to {{hudModes[hudMode]}} view</button>
-                <button class="btn btn-warning" ng-click="refreshBatchState()"><strong>Refresh</strong></button>
+                <button class="btn btn-warning" ng-click="refreshBatchState()">Refresh</button>
             </div>
             <div>{{currBatchId != '' ? '(' + currBatchId + ')' : ''}}</div>
         </div>
@@ -51,6 +51,10 @@
                 <td>{{batch.status}}</td>
             </tr>
         </table>
+        <div class="text-center">
+            <button class="btn btn-warning" ng-click="getBatches()">Refresh list</button>
+        </div>
+        <br />
     </div>
     <div growl inline="true" reference="batches-error"></div>
 </section>

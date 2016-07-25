@@ -133,10 +133,9 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         try {
             List<Metric> results = reader.parse(query.getExpression(), query.getOffset(), Metric.class);
             query.setStatus(Status.DONE);
-            if (results.size() == 0) {
-                return null;
+            if (results.size() != 0) {
+                query.setResult(results.get(0));
             }
-            query.setResult(results.get(0));
             _updateQuery(query, DEFAULT_TTL);
 
             BatchMetricQuery batch = findBatchById(query.getBatchId());
