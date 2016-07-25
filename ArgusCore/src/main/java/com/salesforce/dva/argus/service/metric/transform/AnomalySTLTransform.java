@@ -38,54 +38,65 @@ import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
 import org.apache.commons.math3.distribution.*;
-import org.apache.commons.math3.exception.NullArgumentException;
 
 /**
  * Created by vmuruganantham on 7/13/16.
  */
 public class AnomalySTLTransform implements Transform {
 
+    //~ Variables **************************************************************************************************************************************
+
+    private double max_norm_prob = normPDF(0);
+
     //~ Methods **************************************************************************************************************************************
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
+        List<String> l = new ArrayList<String>();
+        l.add(0, "52");
+        return transform(metrics, l);
+    }
+
+    @Override
+    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
-        SystemAssert.requireState(metrics.size() != 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(metrics.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(constants.size() <= 2, "Anomaly Detection Transform can only be used with one or two integer constants.");
+
+        // argument passed in to determine what one "season" is; later passed to StlDecomposition
+        int season = Integer.parseInt(constants.get(0));
 
         Metric metric = metrics.get(0);
         Map<Long, String> datapoints = metric.getDatapoints();
+
         double[] values = new double[datapoints.size()];
         List<Long> time_list = new ArrayList<>(datapoints.keySet());
         Collections.sort(time_list);
         double[] times = new double[datapoints.size()];
+
         for (int i = 0; time_list.size() > i; i++) {
             values[i] = Double.parseDouble(datapoints.get(time_list.get(i)));
             times[i] = (double) time_list.get(i);
         }
 
         // The argument to StlDecomposition specifies what fraction of a year one season is
-        StlResult stl = new StlDecomposition(12).decompose(times, values);
+        // The decomposition then splits up the timeseries into trend, seasonal, and residual components
+        StlResult stl = new StlDecomposition(season).decompose(times, values);
+
+        // Trend and seasonal components of stl can also be accessed using stl.getTrend() and stl.getSeasonal() respectively
         double[] remainder = stl.getRemainder();
 
-        double mean = 0;
-        for (double resid : remainder) {
-            mean += resid;
-        }
-        mean /= remainder.length;
-
-        double sd = 0;
-        for (double resid : remainder) {
-            sd += Math.pow(resid - mean, 2);
-        }
-        sd = Math.sqrt(sd);
+        double mean = calcMean(remainder);
+        double sd = calcSD(remainder, mean);
 
         HashMap<Long, String> remainder_map = new HashMap<>();
         NormalDistribution norm = new NormalDistribution(mean, sd);
+
         for (int i = 0; i < time_list.size(); i++) {
-            remainder_map.put((long) times[i], Double.toString(norm.probability(remainder[i])));
+            remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
         }
 
-        Metric remainder_metric = new Metric(getResultScopeName(), "residual");
+        Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
         remainder_metric.setDatapoints(remainder_map);
         List<Metric> result = new ArrayList<>(metrics.size());
         result.add(0, remainder_metric);
@@ -93,9 +104,46 @@ public class AnomalySTLTransform implements Transform {
         return result;
     }
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
+    // Computes anomaly score based on time series statistics (mean and standard deviation)
+    // Input: value of datapoint, mean of time series, standard deviation of time series
+    // Output: anomaly score between 0 and 100
+    private double anomalyScore(double x, double mean, double sd) {
+        x = (x - mean) / sd;
+        x = normPDF(x);
+        x = (max_norm_prob - x)/max_norm_prob;
+        x *= 100;
+        return x;
+    }
+
+    // Calculates probability of a point corresponding to the standard normal distribution
+    // Input: point on normal distribution
+    // Output: probability of given point occurring
+    private double normPDF(double x) {
+        return Math.exp(-x*x / 2) / (Math.sqrt(2 * Math.PI));
+    }
+
+    // Calculates mean of array
+    // Input: array of doubles
+    // Output: mean of array
+    private double calcMean(double[] arr) {
+        double mean = 0;
+        for (double resid : arr) {
+            mean += resid;
+        }
+        mean /= arr.length;
+        return mean;
+    }
+
+    // Calculates standard deviation of array
+    // Input: array of doubles
+    // Output: standard deviation of array
+    private double calcSD(double[] arr, double mean) {
+        double sd = 0;
+        for (double resid : arr) {
+            sd += Math.pow(resid - mean, 2);
+        }
+        sd = Math.sqrt(sd/arr.length);
+        return sd;
     }
 
     @Override

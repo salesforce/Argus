@@ -438,6 +438,9 @@ private String functionName() :
 	|
 	t = <HW_DEVIATION>
 	{ return t.image; }
+	|
+	t = <ANOMALY_STL>
+	{ return t.image; }
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, boolean syntaxOnly, Class<T> clazz) :
