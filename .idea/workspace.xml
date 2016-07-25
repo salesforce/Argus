@@ -4,7 +4,6 @@
     <list default="true" id="6575bcfa-c3c5-4e8a-ba88-5cd966fc9ea1" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/transform/AnomalySTLTransform.java" afterPath="$PROJECT_DIR$/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/transform/AnomalySTLTransform.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ArgusCore/src/main/javacc/MetricReader.jj" afterPath="$PROJECT_DIR$/ArgusCore/src/main/javacc/MetricReader.jj" />
     </list>
     <ignored path="Argus.iws" />
     <ignored path=".idea/workspace.xml" />
