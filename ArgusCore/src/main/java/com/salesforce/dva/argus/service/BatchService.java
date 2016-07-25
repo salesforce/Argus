@@ -48,4 +48,11 @@ public interface BatchService extends Service {
      */
     AsyncBatchedMetricQuery executeNextQuery(int timeout);
 
+    /**
+     * Deletes a batch by its ID.
+     *
+     * @param   id  The ID of the batch. Cannot be null and must be in canonical UUID format.
+     */
+    void deleteBatch(String id);
+
 }

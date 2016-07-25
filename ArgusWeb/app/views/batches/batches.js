@@ -62,6 +62,7 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
             params.ttl = $scope.currTtl;
             AsyncMetrics.create(params)
                 .then(function success(response) {
+                    growl.success('Submitted ' + response.data.id);
                     $scope.expressions = [{expression: ''}];
                     $scope.submitted = true;
                     $scope.currBatchId = response.data.id;
@@ -86,6 +87,17 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
             } else {
                 Batches.query({batchId: $scope.currBatchId}, displayBatchAsGraphs, displayBatchAsError);
             }
+        };
+
+        $scope.deleteBatch = function(batchId) {
+            Batches.delete({batchId: batchId}, function() {
+                $scope.batches = $scope.batches.filter(function(batch) {
+                    return batch.id !== batchId;
+                });
+                growl.success('Deleted ' + batchId);
+            }, function() {
+                growl.error('Failed to delete ' + batchId);
+            });
         };
 
         // These functions and the below constant may better refactor into an angular service? Somewhat copied from viewmetrics

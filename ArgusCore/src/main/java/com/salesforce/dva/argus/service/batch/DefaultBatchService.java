@@ -13,8 +13,6 @@ import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -33,7 +31,6 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final String ROOT = "batch/";
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBatchService.class);
     private static final String QUERIES = "/queries/";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int DEFAULT_TTL = 2592000;
@@ -51,6 +48,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     public DefaultBatchService(SystemConfiguration config, CacheService cacheService, MQService mqService, Provider<MetricReader<Metric>> metricsprovider) {
         super(config);
         requireArgument(cacheService != null, "Cache service cannot be null.");
+        requireArgument(mqService != null, "MQ service cannot be null.");
         _config = config;
         _cacheService = cacheService;
         _mqService = mqService;
@@ -78,7 +76,6 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             for (int index: indices) {
                 queries.add(_findQueryById(batchId, index));
             }
-            // TODO: If there are no more race conditions then don't need to read/write status to cache
             BatchMetricQuery batch = new BatchMetricQuery(status, ttl, createdDate, batchId, ownerName, queries);
             return batch;
         } catch (IOException ex) {
@@ -152,6 +149,23 @@ public class DefaultBatchService extends DefaultService implements BatchService 
                 _enforceTtl(batch);
             }
             throw new SystemException("Failed to parse the given expression", ex);
+        }
+    }
+
+    @Override
+    public void deleteBatch(String id) {
+        String json = _cacheService.get(ROOT + id);
+        requireArgument(json != null, "No such batch exists");
+        _cacheService.delete(ROOT + id);
+        try {
+            Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
+
+            int[] indices = MAPPER.readValue((String) batchData.get("indices"), int[].class);
+            for (int index: indices) {
+                _cacheService.delete(ROOT + id + QUERIES + index);
+            }
+        } catch (IOException ex) {
+            throw new SystemException(ex);
         }
     }
 

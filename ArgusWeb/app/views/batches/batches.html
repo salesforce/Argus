@@ -44,11 +44,17 @@
         <div class="page-header"><h1>My Batches <small>Click on id to check status</small></h1></div>
         <table class="table table-striped table-bordered">
             <tr>
-                <th>ID</th><th>Status</th>
+                <th>ID</th><th>Status</th><th></th>
             </tr>
             <tr ng-repeat="batch in batches">
                 <td><a ng-click="refreshBatchState(batch.id)">{{batch.id}}</a></td>
                 <td>{{batch.status}}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" type="button" 
+                            ng-confirm='Delete "{{batch.id}}"?' ng-confirm-action='deleteBatch(batch.id)'>
+                        <i class="glyphicon glyphicon-trash"></i>
+                    </button>
+                </td>
             </tr>
         </table>
         <div class="text-center">
