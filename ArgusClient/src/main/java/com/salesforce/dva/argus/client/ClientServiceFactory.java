@@ -58,6 +58,8 @@ class ClientServiceFactory {
                 return startCommitSchemaClientService(system, jobCounter);
             case COMMIT_ANNOTATIONS:
                 return startCommitAnnotationsClientService(system, jobCounter);
+            case PROCESS_QUERIES:
+                return startProcessMetricsClientService(system, jobCounter);
             default:
                 return startCommitMetricsClientService(system, jobCounter);
         }
@@ -136,6 +138,25 @@ class ClientServiceFactory {
             });
         for (int i = 0; i < threadPoolCount; i++) {
             service.submit(new SchemaCommitter(system.getServiceFactory().getCollectionService(),system.getServiceFactory().getMonitorService(), jobCounter));
+        }
+        return service;
+    }
+
+    private static ExecutorService startProcessMetricsClientService(SystemMain system, AtomicInteger jobCounter) {
+        int configuredCount = Integer.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.CLIENT_THREADS));
+        int threadPoolCount = Math.max(configuredCount, 2);
+        ExecutorService service = Executors.newFixedThreadPool(threadPoolCount, new ThreadFactory() {
+
+            AtomicInteger id = new AtomicInteger(0);
+
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, MessageFormat.format("metricprocessorclient-{0}", id.getAndIncrement()));
+            }
+        });
+        system.getServiceFactory().getMonitorService().startRecordingCounters();
+        for (int i = 0; i < threadPoolCount; i++) {
+            service.submit(new MetricProcessor(system.getServiceFactory().getBatchService()));
         }
         return service;
     }
