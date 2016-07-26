@@ -195,10 +195,12 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
     		var chart = $('#' + divId).highcharts('StockChart');
             
             // hide the loading spinner after data loads.
-            chart.hideLoading();
+            if (chart) {
+                chart.hideLoading();
+            }
             
             // check if data exists, otherwise, show the 'no data' message.
-            if ( !chart.hasData() ) {
+            if ( chart && !chart.hasData() ) {
                 chart.showNoData();
             }
     		
