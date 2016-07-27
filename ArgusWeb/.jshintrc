@@ -1,5 +1,5 @@
 {
-  "globalstrict": true,
+  "strict": "global",
   "globals": {
     "angular": false,
     "describe": false,
@@ -8,6 +8,7 @@
     "beforeEach": false,
     "afterEach": false,
     "module": false,
-    "inject": false
+    "inject": false,
+    "$": false
   }
 }
