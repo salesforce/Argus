@@ -158,7 +158,9 @@ public interface MQService extends Service {
         ANNOTATION("argusAnnotationQueue"),
         /** The name of the queue into which all enabled jobs are put. 
          * The scheduler then enqueues them and determines whether they are to be scheduled or not. */
-        TASKQUEUE("argusTaskQueue");
+        TASKQUEUE("argusTaskQueue"),
+        /** The name of the queue into which individual queries of batches are put. */
+        BATCH("argusBatchQueue");
 
         private final String _queueName;
 
