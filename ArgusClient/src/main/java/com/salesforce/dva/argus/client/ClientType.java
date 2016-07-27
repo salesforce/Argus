@@ -44,6 +44,7 @@ enum ClientType {
     COMMIT_ANNOTATIONS,
     ALERT,
     /* Alpha feature, not currently supported. */
-    COMMIT_SCHEMA
+    COMMIT_SCHEMA,
+    PROCESS_QUERIES
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
