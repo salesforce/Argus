@@ -37,6 +37,8 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
+
+import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
 import org.apache.commons.math3.distribution.*;
 
 /**
@@ -53,7 +55,12 @@ public class AnomalySTLTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         List<String> l = new ArrayList<String>();
-        l.add(0, "52");
+        int size = metrics.get(0).getDatapoints().size();
+        if (size >= 52 * 2) {
+            l.add(0, "52");
+        } else {
+            l.add(0, Integer.toString(size/2));
+        }
         return transform(metrics, l);
     }
 
@@ -61,7 +68,15 @@ public class AnomalySTLTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireState(metrics.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(metrics.get(0) != null, "Anomaly Detection Transform cannot be used with a null metric.");
         SystemAssert.requireState(constants.size() <= 2, "Anomaly Detection Transform can only be used with one or two integer constants.");
+        SystemAssert.requireState(metrics.get(0).getDatapoints().size() >= 4, "STL Anomaly Detection Transform can only be used if there are at least 4 points.");
+
+        if (constants.size() == 0) {
+            return transform(metrics);
+        }
+
+        SystemAssert.requireState(Integer.parseInt(constants.get(0)) >= 2, "STL Anomaly Detection Transform can only be used with a season size of at least 2.");
 
         // argument passed in to determine what one "season" is; later passed to StlDecomposition
         int season = Integer.parseInt(constants.get(0));
