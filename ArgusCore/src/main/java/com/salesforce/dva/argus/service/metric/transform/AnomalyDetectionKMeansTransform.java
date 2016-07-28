@@ -107,13 +107,13 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     private void trainModel(Map<Long, String> metricData) throws Exception {
         //Model has a single metric_value attribute
         Attribute value = new Attribute("metric_value");
-        ArrayList<Attribute> attributes = new ArrayList<>();
-        attributes.add(value);
+        FastVector attributes = new FastVector();
+        attributes.addElement(value);
 
         trainingData = new Instances("metric_value_data", attributes, 0);
         for (String val : metricData.values()) {
             double[] valArray = new double[] { Double.parseDouble(val) };
-            Instance instance = new DenseInstance(1.0, valArray);
+            Instance instance = new Instance(1.0, valArray);
             trainingData.add(instance);
         }
 
@@ -122,8 +122,6 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         model.setNumClusters(k);
         model.setMaxIterations(20);
         model.setPreserveInstancesOrder(true);
-        model.setInitializationMethod(new SelectedTag(SimpleKMeans.KMEANS_PLUS_PLUS,
-                SimpleKMeans.TAGS_SELECTION));  //For using k-means++ algorithm
         model.buildClusterer(trainingData);
 
         clusterCentroids = model.getClusterCentroids();
@@ -138,13 +136,13 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
      */
     private void setMeanDistancesToCentroids() {
         meanDistancesToCentroids = new HashMap<>();
-        for (int i = 0; i < clusterCentroids.size(); i++) {    //For each centroid
+        for (int i = 0; i < clusterCentroids.numInstances(); i++) {    //For each centroid
             int countAssignedInstances = 0;
             double sumDistancesToCentroid = 0.0;
-            Instance centroidInstance = clusterCentroids.get(i);
-            for (int j = 0; j < trainingData.size(); j++) {       //For each data point
+            Instance centroidInstance = clusterCentroids.instance(i);
+            for (int j = 0; j < trainingData.numInstances(); j++) {       //For each data point
                  if (i == centroidAssignments[j]) {
-                     Instance valueInstance = trainingData.get(j);
+                     Instance valueInstance = trainingData.instance(j);
                      double distanceToCentroid = Math.abs(valueInstance.value(0) -
                                                     centroidInstance.value(0));
                      sumDistancesToCentroid += distanceToCentroid;
@@ -204,9 +202,9 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     @Override
     public double calculateAnomalyScore(double value) {
         int instanceIndex = metricDataValues.indexOf(value);
-        Instance valueInstance = trainingData.get(instanceIndex);
+        Instance valueInstance = trainingData.instance(instanceIndex);
         //Centroid that is assigned to valueInstance
-        Instance centroidInstance = clusterCentroids.get(centroidAssignments[instanceIndex]);
+        Instance centroidInstance = clusterCentroids.instance(centroidAssignments[instanceIndex]);
 
         if (meanDistancesToCentroids.get(centroidInstance) == 0.0) {
             throw new ArithmeticException("Cannot divide by 0");

@@ -374,8 +374,8 @@
         </dependency>
         <dependency>
             <groupId>nz.ac.waikato.cms.weka</groupId>
-            <artifactId>weka-dev</artifactId>
-            <version>3.9.0</version>
+            <artifactId>weka-stable</artifactId>
+            <version>3.6.14</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
