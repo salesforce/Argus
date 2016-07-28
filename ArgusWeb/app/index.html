@@ -4,14 +4,14 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
     <link href="img/argus_icon.png" rel="shortcut icon" />
     <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet" />
     <link href="bower_components/codemirror/lib/codemirror.css" rel="stylesheet" />
     <link href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css" rel="stylesheet" />
     <link href="css/main.css" rel="stylesheet" />
-    
+
     <script src="bower_components/jquery/dist/jquery.min.js"></script>
     <script src="bower_components/angular/angular.js"></script>
     <script src="bower_components/angular-resource/angular-resource.js"></script>
@@ -59,64 +59,62 @@
     <script src="views/login/login.js"></script>
     <script src="views/mockups/mockups.js"></script>
     <script src="views/spinning_wheel/spinning-wheel.js"></script>
+    <script src="utils/filters.js"></script>
     <script src="utils/autoFocus.js"></script>
+    <script src="utils/breadcrumbs.js"></script>
 
-        <!-- Piwik -->
-		<script type="text/javascript">
-			var userString = window.localStorage.getItem("ngStorage-user");
-			var user = JSON.parse(userString);
+    <!-- Piwik -->
+    <script type="text/javascript">
+    	var userString = window.localStorage.getItem("ngStorage-user");
+    	var user = JSON.parse(userString);
 
-			var _paq = _paq || [];
-			if(user)
-	        	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
-		</script>
-		<!-- End Piwik Code -->
+    	var _paq = _paq || [];
+    	if(user)
+        	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
+    </script>
+    <!-- End Piwik Code -->
 
-		<title>Argus</title>
+    <title>Argus</title>
 
-        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-          <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-          <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-        <![endif]-->
-    </head>
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
 
-    <body ng-controller="MainCtrl">
+<body ng-controller="MainCtrl">
 
-        <div growl limit-messages="3"></div>
+<div growl limit-messages="3"></div>
 
-        <nav class="navbar navbar-default navbar-fixed-top">
-            <div style="width: 93%;" class="container">
-                <div class="navbar-header">
-                    <a href="#dashboards">
-                        <img src="img/argus_logo_rgb.png" alt='' style="height:50px;" class='pull-left'>
-                    </a>
-                    <p class='navbar-text' ng-show='isLoggedIn()'>Welcome {{getRemoteUser()}}</p>
-                </div>
-                <div id="navbar" class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#dashboards">Dashboards</a></li>
-                        <li><a href="#alerts">Alerts</a></li>
-                        <li><a href="#viewmetrics">Metrics</a></li>
-                        <li><a href="#namespace">Namespace</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div id="navbar" class="navbar-collapse collapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#dashboards">Dashboards</a></li>
-                    <li><a href="#alerts">Alerts</a></li>
-                    <li><a href="#viewmetrics">Metrics</a></li>
-                    <li><a href="#batches">Batches</a></li>
-                    <li><a href="#namespace">Namespace</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
-                </ul>
-            </div>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div style="width: 93%;" class="container">
+        <div class="navbar-header">
+            <a href="#dashboards">
+                <img src="img/argus_logo_rgb.png" alt='' style="height:50px;" class='pull-left'>
+            </a>
+            <p class='navbar-text' ng-show='isLoggedIn()'>Welcome {{getRemoteUser()}}</p>
         </div>
-    </body>
 
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li ng-class="{'activeTab': activeTab == 'dashboards'}"><a href="#dashboards">Dashboards</a></li>
+                <li ng-class="{'activeTab': activeTab == 'alerts'}"><a href="#alerts">Alerts</a></li>
+                <li ng-class="{'activeTab': activeTab == 'metrics'}"><a href="#viewmetrics">Metrics</a></li>
+                <li ng-class="{'activeTab': activeTab == 'namespace'}"><a href="#namespace">Namespace</a></li>
+                <li ng-class="{'activeTab': activeTab == 'about'}"><a href="#about">About</a></li>
+                <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container" style="width: 93%;">
+    <!-- breadcrumb navigation -->
+    <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
+
+    <div ng-view></div>
+</div>
+</body>
 
 </html>
