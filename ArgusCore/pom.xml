@@ -377,6 +377,11 @@
             <artifactId>stl-java</artifactId>
             <version>0.1.1</version>
         </dependency>
+        <dependency>
+            <groupId>nz.ac.waikato.cms.weka</groupId>
+            <artifactId>weka-stable</artifactId>
+            <version>3.6.14</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>

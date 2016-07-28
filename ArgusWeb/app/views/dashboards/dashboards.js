@@ -26,8 +26,8 @@ var argusDashboards = angular.module('argusDashboards', [
     'ui.codemirror'
 ]);
 
-argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', 'Dashboards',
-    function (Storage, $scope, growl, Dashboards) {
+argusDashboards.controller('DashboardListCtrl', ['Auth', 'Storage', '$scope', 'growl', 'Dashboards',
+    function (Auth, Storage, $scope, growl, Dashboards) {
 		$scope.searchText = Storage.get("dashboards-searchText") == null ? "" : Storage.get("dashboards-searchText");
         Dashboards.query().$promise.then(function(dashboards) {
         	$scope.allDashboards = dashboards;
@@ -113,7 +113,6 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
             template += "<ag-submit>Submit</ag-submit>\n\n";
   
             template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
-            template += "<br><br>\n";
             template += "<h4>Argus mem heap used - Chart</h4>\n\n";
             
             template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
@@ -131,12 +130,12 @@ argusDashboards.controller('DashboardListCtrl', ['Storage', '$scope', 'growl', '
         };
         
         $scope.isDisabled = function(dashboard) {
-        	var remoteUser = Storage.get('user');
-        	if(remoteUser.privileged || remoteUser.userName === dashboard.ownerName) {
+            var remoteUser = Auth.remoteUser();
+        	if(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
         		return false;
         	}
         	return true;
-        }
+        };
         
         $scope.$watch('searchText', function(newValue, oldValue) {
         	newValue = newValue == null ? "" : newValue;

@@ -118,6 +118,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
     @Basic(optional = false)
     @Column(name = "name")
     private String name;
+    @Column(length = 2048)
     private String expression;
     private String cronEntry;
     private boolean enabled = false;

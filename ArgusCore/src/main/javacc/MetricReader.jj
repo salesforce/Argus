@@ -187,7 +187,14 @@ TOKEN : { < JOIN : "JOIN" > }
 TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
+<<<<<<< HEAD
 TOKEN : { < ANOMALY_STL : "ANOMALY_STL" > }
+=======
+TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
+TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
+TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
+
+>>>>>>> 112debeffd54e9e81be0332d0f58231f414674d1
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -441,6 +448,15 @@ private String functionName() :
 	|
 	t = <ANOMALY_STL>
 	{ return t.image; }
+    |
+	t = <ANOMALY_DENSITY>
+	{ return t.image; }
+	|
+	t = <ANOMALY_ZSCORE>
+	{ return t.image; }
+	|
+    t = <ANOMALY_KMEANS>
+    { return t.image; }
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, boolean syntaxOnly, Class<T> clazz) :
