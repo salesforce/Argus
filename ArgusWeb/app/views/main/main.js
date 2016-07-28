@@ -31,7 +31,9 @@ var argusMain = angular.module('argusMain', [
     'argusAlerts',
     'argusNamespace',
     'argusDashboards',
+    'argusBreadcrumbs',
     'argusViewMetrics',
+    'argusBatches',
     'argusControls',
     'argusDashboardService',
     'argusViewElements',
@@ -42,7 +44,8 @@ var argusMain = angular.module('argusMain', [
     'angulartics.piwik',
     'argusConfig',
     'ui.bootstrap',
-    'ui.bootstrap.datetimepicker'
+    'ui.bootstrap.datetimepicker',
+    'filters'
 ]);
 
 argusMain.constant('VIEWELEMENT', {
@@ -68,47 +71,69 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         $routeProvider.
                 when('/viewmetrics', {
                     templateUrl: 'views/viewmetrics/viewmetrics.html',
-                    controller: 'ViewMetricsCtrl'
+                    controller: 'ViewMetricsCtrl',
+                    label: 'Metrics',
+                    activeTab: 'metrics'
+                }).
+                when('/batches', {
+                    templateUrl: 'views/batches/batches.html',
+                    controller: 'BatchExpressionsCtrl'
                 }).
                 when('/dashboards', {
                     templateUrl: 'views/dashboards/dashboard-list.html',
-                    controller: 'DashboardListCtrl'
+                    controller: 'DashboardListCtrl',
+                    label: 'Dashboard List',
+                    activeTab: 'dashboards'
                 }).
                 when('/dashboards/:dashboardId', {
                     templateUrl: 'views/dashboards/dashboard-detail.html',
-                    controller: 'DashboardDetailCtrl'
+                    controller: 'DashboardDetailCtrl',
+                    label: '{{dashboards.dashboardId}}',
+                    activeTab: 'dashboards'
                 }).
                 when('/alerts', {
                     templateUrl: 'views/alerts/alert-list.html',
-                    controller: 'AlertListCtrl'
+                    controller: 'AlertListCtrl',
+                    label: 'Alert List',
+                    activeTab: 'alerts'
                 }).
                 when('/alerts/:alertId', {
                     templateUrl: 'views/alerts/alert-detail.html',
-                    controller: 'AlertDetailCtrl'
+                    controller: 'AlertDetailCtrl',
+                    label: '{{alerts.alertId}}',
+                    activeTab: 'alerts'
                 }).
                 when('/about', {
                     templateUrl: 'views/about/about.html',
-                    controller: 'AboutDetailCtrl'
+                    controller: 'AboutDetailCtrl',
+                    label: 'About Argus',
+                    activeTab: 'about'
                 }).
                 when('/login', {
                     templateUrl: 'views/login/login.html',
-                    controller: 'LoginCtrl'
+                    controller: 'LoginCtrl',
+                    label: 'User Login'
                 }).
                 when('/topkheatmap', {
                     templateUrl: 'views/mockups/topkheatmap.html',
-                    controller: 'TopkheatmapCtrl'
+                    controller: 'TopkheatmapCtrl',
+                    label: 'Top Heatmap'
                 }).
                 when('/topkheatmaporg', {
                     templateUrl: 'views/mockups/topkheatmaporg.html',
-                    controller: 'TopkheatmapCtrlOrg'
+                    controller: 'TopkheatmapCtrlOrg',
+                    label: 'Top Heatmap org'
                 }).
                 when('/namespace', {
                     templateUrl: 'views/namespace/namespace.html',
-                    controller: 'NamespaceCtrl'
+                    controller: 'NamespaceCtrl',
+                    label: 'Namespace',
+                    activeTab: 'namespace'
                 }).
                 otherwise({
                     redirectTo: '/dashboards'
                 });
+
         growlProvider.onlyUniqueMessages(false);
         growlProvider.globalDisableCloseButton(true);
         growlProvider.globalDisableCountDown(true);
@@ -118,7 +143,6 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         
         $analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
         $analyticsProvider.withAutoBase(true);  /* Records full path */
-
     }]);
 
 argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
@@ -146,7 +170,6 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
             	event.preventDefault();
             	$route.reload();
             }
-            
         });
         
         (function(config) {
@@ -164,7 +187,7 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
         
     }]);
 
-argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scope, Auth, $location) {
+argusMain.controller('MainCtrl', ['$rootScope', '$scope', 'Auth', '$location', function ($rootScope, $scope, Auth, $location) {
 
 		/*
         $scope.$watch(Auth.remoteUser, function (value, oldValue) {
@@ -176,6 +199,10 @@ argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scop
             }
         }, true);
         */
+
+        $rootScope.$on('$routeChangeSuccess', function (event, current, previous) {
+            $scope.activeTab = current.$$route.activeTab;
+        });
 
         $scope.login = function (username, password) {
         	if(username.indexOf("@") != -1) {

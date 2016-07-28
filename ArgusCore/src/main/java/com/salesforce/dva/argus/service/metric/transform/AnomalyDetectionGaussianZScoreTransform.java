@@ -28,23 +28,42 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
-package com.salesforce.dva.argus.client;
+
+package com.salesforce.dva.argus.service.metric.transform;
 
 /**
- * Indicates the supported client types.
+ * Gaussian-based anomaly detection using z-score calculation.
+ * Source: http://trevorwhitney.com/data_mining/anomaly_detection
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Shouvik Mani (shouvik.mani@salesforce.com)
  */
-enum ClientType {
+public class AnomalyDetectionGaussianZScoreTransform extends AnomalyDetectionGaussianTransform {
 
-    //~ Enum constants *******************************************************************************************************************************
+    private static final String RESULT_METRIC_NAME = "z-score (abs value)";
 
-    COMMIT_METRICS,
-    COMMIT_ANNOTATIONS,
-    ALERT,
-    /* Alpha feature, not currently supported. */
-    COMMIT_SCHEMA,
-    PROCESS_QUERIES
+    @Override
+    public String getResultScopeName() {
+        return TransformFactory.Function.ANOMALY_ZSCORE.name();
+    }
+
+    @Override
+    public String getResultMetricName() {
+        return RESULT_METRIC_NAME;
+    }
+
+    /**
+     * Calculates the z-score of the data point, which measures how many
+     * standard deviations the data point is away from the mean.
+     *
+     * @param value the value of the data point
+     * @return the absolute value of the z-score of the data point
+     */
+    @Override
+    public double calculateAnomalyScore(double value) {
+        double zScore = (value - mean) / Math.sqrt(variance);
+        //Taking absolute value for a more human-readable anomaly score
+        return Math.abs(zScore);
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
