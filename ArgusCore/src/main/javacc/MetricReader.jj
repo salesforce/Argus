@@ -191,6 +191,9 @@ TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
 TOKEN : { < foreach : "foreach" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
+TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
+TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
+TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
 
 
 TOKEN : { < COLON : ":" > }
@@ -445,6 +448,15 @@ private String functionName() :
 	|
 	t = <HW_DEVIATION>
 	{ return t.image; }
+	|
+	t = <ANOMALY_DENSITY>
+	{ return t.image; }
+	|
+	t = <ANOMALY_ZSCORE>
+	{ return t.image; }
+	|
+    t = <ANOMALY_KMEANS>
+    { return t.image; }
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, boolean syntaxOnly, Class<T> clazz) :
@@ -452,7 +464,8 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 {
   	{
   	  	if(MetricQuery.class.equals(clazz)) {
-  	  		return (List<T>) result;  	  	} else if(Metric.class.equals(clazz)) {
+  	  		return (List<T>) result;
+  	  	} else if(Metric.class.equals(clazz)) {
   	  	  	if(syntaxOnly) {
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
@@ -471,7 +484,8 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
 	  	} else {
-	  	  	throw new IllegalArgumentException("Invalid class type: " + clazz);	  	}
+	  	  	throw new IllegalArgumentException("Invalid class type: " + clazz);
+	  	}
 	}
 }
 
@@ -508,7 +522,9 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
 	        query.setDownsampler(downsampler);
 	        query.setDownsamplingPeriod(downsamplingPeriod);
 	        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
-	        return (List<T>) queries;	  	} else if(Metric.class.equals(clazz)) {			if(syntaxOnly) {
+	        return (List<T>) queries;
+	  	} else if(Metric.class.equals(clazz)) {
+			if(syntaxOnly) {
 	            return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	        } else {
 	          	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
@@ -528,7 +544,8 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
 	            }
 	            return (List<T>) metrics;
 	        }
-	  	} else {			throw new IllegalArgumentException("Invalid class type: " + clazz);
+	  	} else {
+			throw new IllegalArgumentException("Invalid class type: " + clazz);
 	  	}
 	}
 }
