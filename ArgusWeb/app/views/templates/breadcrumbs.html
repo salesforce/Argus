@@ -1,0 +1,9 @@
+<ul class="breadcrumb" ng-if="breadcrumbs.getAll().length > 1">
+		<li ng-repeat="breadcrumb in breadcrumbs.getAll()">
+				<span class="divider" ng-if="!$first" style="padding-left:.45em;">/</span>
+				<ng-switch on="$last">
+						<span ng-switch-when="true"></span>
+						<span ng-switch-default><a href="{{breadcrumb.path}}"><span class="glyphicon glyphicon-th-list"></span></a></span>
+				</ng-switch>
+		</li>
+</ul>

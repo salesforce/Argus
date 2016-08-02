@@ -89,77 +89,77 @@ argus.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTem
         $httpProvider.interceptors.push('UnauthorizedInterceptor');
         paginationTemplateProvider.setPath('bower_components/angular-utils-pagination/dirPagination.tpl.html');
         $routeProvider.
-                when('/viewmetrics', {
-                    templateUrl: 'views/viewmetrics/viewmetrics.html',
-                    controller: 'ViewMetricsCtrl',
-                    label: 'Metrics',
-                    activeTab: 'metrics'
-                }).
-                when('/batches', {
-                    templateUrl: 'views/batches/batches.html',
-                    controller: 'BatchExpressionsCtrl',
-                    activeTab: 'batches'
-                }).
-                when('/dashboards', {
-                    templateUrl: 'views/dashboards/dashboard-list.html',
-                    controller: 'DashboardListCtrl',
-                    label: 'Dashboard List',
-                    activeTab: 'dashboards'
-                }).
-                when('/dashboards/:dashboardId', {
-                    templateUrl: 'views/dashboards/dashboard-detail.html',
-                    controller: 'DashboardDetailCtrl',
-                    label: '{{dashboards.dashboardId}}',
-                    activeTab: 'dashboards'
-                }).
-                when('/alerts', {
-                    templateUrl: 'js/templates/alert-list.html',
-                    controller: 'Alerts',
-                    label: 'Alerts List',
-                    activeTab: 'alerts'
-                }).
-                when('/alerts/:alertId', {
-                    templateUrl: 'js/templates/alert-detail.html',
-                    controller: 'AlertsDetail',
-                    label: '{{alerts.alertId}}',
-                    activeTab: 'alerts'
-                }).
-                when('/about', {
-                    templateUrl: 'js/templates/about.html',
-                    controller: 'About',
-                    label: 'About Argus',
-                    activeTab: 'about'
-                }).
-                when('/admin', {
-                    templateUrl: 'js/templates/admin.html',
-                    controller: 'Admin',
-                    activeTab: 'admin'
-                }).
-                when('/login', {
-                    templateUrl: 'js/templates/login.html',
-                    controller: 'Login',
-                    label: 'User Login',
-                    activeTab: ''
-                }).
-                when('/topkheatmap', {
-                    templateUrl: 'views/mockups/topkheatmap.html',
-                    controller: 'TopkheatmapCtrl',
-                    label: 'Top Heatmap'
-                }).
-                when('/topkheatmaporg', {
-                    templateUrl: 'views/mockups/topkheatmaporg.html',
-                    controller: 'TopkheatmapCtrlOrg',
-                    label: 'Top Heatmap org'
-                }).
-                when('/namespace', {
-                    templateUrl: 'js/templates/namespace.html',
-                    controller: 'Namespace',
-                    label: 'Namespace',
-                    activeTab: 'namespace'
-                }).
-                otherwise({
-                    redirectTo: '/dashboards'
-                });
+            when('/viewmetrics', {
+                templateUrl: 'views/viewmetrics/viewmetrics.html',
+                controller: 'ViewMetricsCtrl',
+                label: 'Metrics',
+                activeTab: 'metrics'
+            }).
+            when('/batches', {
+                templateUrl: 'views/batches/batches.html',
+                controller: 'BatchExpressionsCtrl',
+                activeTab: 'batches'
+            }).
+            when('/dashboards', {
+                templateUrl: 'views/dashboards/dashboard-list.html',
+                controller: 'DashboardListCtrl',
+                label: 'Dashboard List',
+                activeTab: 'dashboards'
+            }).
+            when('/dashboards/:dashboardId', {
+                templateUrl: 'views/dashboards/dashboard-detail.html',
+                controller: 'DashboardDetailCtrl',
+                label: '{{dashboards.dashboardId}}',
+                activeTab: 'dashboards'
+            }).
+            when('/alerts', {
+                templateUrl: 'js/templates/alert-list.html',
+                controller: 'Alerts',
+                label: 'Alerts List',
+                activeTab: 'alerts'
+            }).
+            when('/alerts/:alertId', {
+                templateUrl: 'js/templates/alert-detail.html',
+                controller: 'AlertsDetail',
+                label: '{{alerts.alertId}}',
+                activeTab: 'alerts'
+            }).
+            when('/about', {
+                templateUrl: 'js/templates/about.html',
+                controller: 'About',
+                label: 'About Argus',
+                activeTab: 'about'
+            }).
+            when('/admin', {
+                templateUrl: 'js/templates/admin.html',
+                controller: 'Admin',
+                activeTab: 'admin'
+            }).
+            when('/login', {
+                templateUrl: 'js/templates/login.html',
+                controller: 'Login',
+                label: 'User Login',
+                activeTab: ''
+            }).
+            when('/topkheatmap', {
+                templateUrl: 'views/mockups/topkheatmap.html',
+                controller: 'TopkheatmapCtrl',
+                label: 'Top Heatmap'
+            }).
+            when('/topkheatmaporg', {
+                templateUrl: 'views/mockups/topkheatmaporg.html',
+                controller: 'TopkheatmapCtrlOrg',
+                label: 'Top Heatmap org'
+            }).
+            when('/namespace', {
+                templateUrl: 'js/templates/namespace.html',
+                controller: 'Namespace',
+                label: 'Namespace',
+                activeTab: 'namespace'
+            }).
+            otherwise({
+                redirectTo: '/dashboards'
+            });
 
         growlProvider.onlyUniqueMessages(false);
         growlProvider.globalDisableCloseButton(true);
@@ -179,21 +179,21 @@ argus.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', funct
         var target = Auth.getTarget();
         var path = $location.path();
         
-        if(loggedIn) {
-        	if(path === '/login') {
+        if (loggedIn) {
+        	if (path === '/login') {
         		event.preventDefault();
         		Auth.setTarget(null);
         		$location.path(target === null ? '/dashboards' : target);
         	} else {
         		Auth.setTarget(path);
         	}
-        } else if(!loggedIn && path !== '/login') {
+        } else if (!loggedIn && path !== '/login') {
         	console.log('DENY');
         	growl.error("You are not logged in.");
         	event.preventDefault();
         	Auth.setTarget(path);
         	$location.path('/login');
-        } else if(!angular.isDefined(current)) {
+        } else if (!angular.isDefined(current)) {
         	event.preventDefault();
         	$route.reload();
         }
