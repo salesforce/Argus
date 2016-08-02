@@ -19,7 +19,7 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
 
-var viewElementsModule = angular.module('argusViewElements', ['argusControls', 'angular-table']);
+var viewElementsModule = angular.module('argusViewElements', []);
 
 viewElementsModule.controller('ViewElementCtrl', function($scope) {
     $scope.metrics={};

@@ -21,35 +21,69 @@
 
 /* App Module */
 
-var argusMain = angular.module('argusMain', [
+var argus = angular.module('argus', [
     'ngRoute',
     'ngAnimate',
     'ngStorage',
     'angular-growl',
     'angularUtils.directives.dirPagination',
-    'argusAbout',
-    'argusAdmin',
-    'argusAlerts',
-    'argusNamespace',
-    'argusDashboards',
-    'argusBreadcrumbs',
-    'argusViewMetrics',
-    'argusBatches',
-    'argusControls',
-    'argusDashboardService',
-    'argusViewElements',
-    'argusLogin',
-    'argusMockups',
-    'argusSpinningWheel',
     'angulartics',
     'angulartics.piwik',
-    'argusConfig',
     'ui.bootstrap',
     'ui.bootstrap.datetimepicker',
-    'filters'
+
+    // Argus specific
+    // 'argusControls',
+    'argusViewElements',
+    
+    'argusDashboards',
+    'argusDashboardService',
+    
+    'argusViewMetrics',
+    'argusBatches',
+    
+    'argusMockups',
+    'argusConfig',
+    
+    // controllers
+    'argus.controllers.about',
+    'argus.controllers.admin',
+    'argus.controllers.alerts',
+    'argus.controllers.alerts.detail',
+    'argus.controllers.login',
+    'argus.controllers.main',
+    'argus.controllers.namespace',
+    
+    // services
+    'argus.services.admin.reinstateuser',
+    'argus.services.alerts',
+    'argus.services.auth',
+    'argus.services.breadcrumbs',
+    'argus.services.history',
+    'argus.services.interceptor',
+    'argus.services.jobexecutiondetails',
+    'argus.services.namespace',
+    'argus.services.notifications',
+    'argus.services.storage',
+    'argus.services.triggers',
+    'argus.services.triggersmap',
+    
+    // directives
+    'argus.directives',
+    'argus.directives.breadcrumbs',
+    'argus.directives.dashboardResource',
+    'argus.directives.controls.dashboard',
+    'argus.directives.controls.date',
+    'argus.directives.controls.dropdown',
+    'argus.directives.controls.submit',
+    'argus.directives.controls.text',
+
+    // utils
+    'filters',
+    'constants'
 ]);
 
-argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTemplateProvider', '$analyticsProvider',
+argus.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTemplateProvider', '$analyticsProvider',
     function ($routeProvider, $httpProvider, growlProvider, paginationTemplateProvider, $analyticsProvider) {
         $httpProvider.defaults.withCredentials = true;
         $httpProvider.interceptors.push('UnauthorizedInterceptor');
@@ -58,45 +92,54 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                 when('/viewmetrics', {
                     templateUrl: 'views/viewmetrics/viewmetrics.html',
                     controller: 'ViewMetricsCtrl',
-                    label: 'Metrics'
+                    label: 'Metrics',
+                    activeTab: 'metrics'
                 }).
                 when('/batches', {
                     templateUrl: 'views/batches/batches.html',
-                    controller: 'BatchExpressionsCtrl'
+                    controller: 'BatchExpressionsCtrl',
+                    activeTab: 'batches'
                 }).
                 when('/dashboards', {
                     templateUrl: 'views/dashboards/dashboard-list.html',
                     controller: 'DashboardListCtrl',
-                    label: 'Dashboard List'
+                    label: 'Dashboard List',
+                    activeTab: 'dashboards'
                 }).
                 when('/dashboards/:dashboardId', {
                     templateUrl: 'views/dashboards/dashboard-detail.html',
                     controller: 'DashboardDetailCtrl',
-                    label: '{{dashboards.dashboardId}}'
+                    label: '{{dashboards.dashboardId}}',
+                    activeTab: 'dashboards'
                 }).
                 when('/alerts', {
-                    templateUrl: 'views/alerts/alert-list.html',
-                    controller: 'AlertListCtrl',
-                    label: 'Alert List'
+                    templateUrl: 'js/templates/alert-list.html',
+                    controller: 'Alerts',
+                    label: 'Alerts List',
+                    activeTab: 'alerts'
                 }).
                 when('/alerts/:alertId', {
-                    templateUrl: 'views/alerts/alert-detail.html',
-                    controller: 'AlertDetailCtrl',
-                    label: '{{alerts.alertId}}'
+                    templateUrl: 'js/templates/alert-detail.html',
+                    controller: 'AlertsDetail',
+                    label: '{{alerts.alertId}}',
+                    activeTab: 'alerts'
                 }).
                 when('/about', {
-                    templateUrl: 'views/about/about.html',
-                    controller: 'AboutDetailCtrl',
-                    label: 'About Argus'
+                    templateUrl: 'js/templates/about.html',
+                    controller: 'About',
+                    label: 'About Argus',
+                    activeTab: 'about'
                 }).
                 when('/admin', {
-                    templateUrl: 'views/admin/admin.html',
-                    controller: 'AdminDetailCtrl'
+                    templateUrl: 'js/templates/admin.html',
+                    controller: 'Admin',
+                    activeTab: 'admin'
                 }).
                 when('/login', {
-                    templateUrl: 'views/login/login.html',
-                    controller: 'LoginCtrl',
-                    label: 'User Login'
+                    templateUrl: 'js/templates/login.html',
+                    controller: 'Login',
+                    label: 'User Login',
+                    activeTab: ''
                 }).
                 when('/topkheatmap', {
                     templateUrl: 'views/mockups/topkheatmap.html',
@@ -109,9 +152,10 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                     label: 'Top Heatmap org'
                 }).
                 when('/namespace', {
-                    templateUrl: 'views/namespace/namespace.html',
-                    controller: 'NamespaceCtrl',
-                    label: 'Namespace'
+                    templateUrl: 'js/templates/namespace.html',
+                    controller: 'Namespace',
+                    label: 'Namespace',
+                    activeTab: 'namespace'
                 }).
                 otherwise({
                     redirectTo: '/dashboards'
@@ -128,10 +172,10 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
         $analyticsProvider.withAutoBase(true);  /* Records full path */
     }]);
 
-argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
+argus.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
+
     $rootScope.$on('$locationChangeStart', function (event, next, current) {
         var loggedIn = Auth.isLoggedIn();
-        var isPrivileged = Auth.isPrivileged();
         var target = Auth.getTarget();
         var path = $location.path();
         
@@ -153,7 +197,6 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
         	event.preventDefault();
         	$route.reload();
         }
-        
     });
     
     (function(config) {
@@ -168,203 +211,4 @@ argusMain.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', f
 		g.src = config.piwikUrl + "piwik.js";
 		s.parentNode.insertBefore(g, s);
 	})(CONFIG);        
-}]);
-
-argusMain.controller('MainCtrl', ['$scope', 'Auth', '$location', function ($scope, Auth, $location) {
-
-	/*
-    $scope.$watch(Auth.remoteUser, function (value, oldValue) {
-        if (angular.isUndefined(value) || value === null || (!value && oldValue)) {
-            $location.path('/login');
-        } else {
-            var target = Auth.getTarget();
-            $location.path(target === null || target === '/login' ? '/' : target);
-        }
-    }, true);
-    */
-
-    $scope.login = function (username, password) {
-    	if(username.indexOf("@") != -1) {
-    		username = username.substring(0, username.indexOf("@"));
-    	}
-        Auth.login(username, password);
-    };
-
-    $scope.logout = function () {
-        Auth.logout();
-    };
-
-    $scope.getRemoteUser = function () {
-        var user = Auth.remoteUser();
-        if (user) {
-            return user.userName;
-        } else {
-            return null;
-        }
-    };
-
-    $scope.isLoggedIn = function () {
-        return Auth.isLoggedIn();
-    };
-
-    $scope.isPrivileged = function () {
-        return Auth.isPrivileged();
-    };
-}]);
-
-// TODO move constants to new 'utils' folder
-
-argusMain.constant('VIEWELEMENT', {
-    chart: 'chart',
-    heatmap: 'heatmap',
-    table: 'table'
-});
-
-argusMain.constant('CHARTTYPE', {
-    line: 'line',
-    area: 'area'
-});
-
-argusMain.constant('HEATMAPTYPE', {
-});
-
-
-// TODO move factories to new 'services' folder
-argusMain.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
-    return{
-        login: function (username, password) {
-            var creds = {
-                username: username,
-                password: password
-            };
-            $resource(CONFIG.wsUrl + 'auth/login', {}, {}).save(creds, function (result) {
-                Storage.set('user', result);
-                var target = Storage.get('target');
-                $location.path(target === null || target === '/login' ? '/' : target);
-            }, function (error) {
-                Storage.reset();
-                growl.error('Login failed');
-            });
-        },
-        logout: function () {
-            Storage.reset();
-            $resource(CONFIG.wsUrl + 'auth/logout', {}, {}).get({}, function (result) {
-                growl.info('You are now logged out');
-                $location.path('/login');
-            }, function (error) {
-                growl.error('Logout failed');
-            });
-        },
-        setTarget: function (target) {
-            Storage.set('target', target);
-        },
-        getTarget: function () {
-            return Storage.get('target');
-        },
-        remoteUser: function () {
-            return Storage.get('user');
-        },
-        isLoggedIn: function () {
-            return this.remoteUser() !== null;
-        },
-        isPrivileged: function () {
-            return this.remoteUser().privileged;
-        }
-    };
-}]);
-
-argusMain.factory('Storage', ['$rootScope', '$localStorage', function ($rootScope, $localStorage) {
-    $rootScope.storage = $localStorage;
-    return {
-        set: function (key, value) {
-            $rootScope.storage[key] = value;
-        },
-        get: function (key) {
-            var result = $rootScope.storage[key];
-            return angular.isDefined(result) ? result : null;
-        },
-        clear: function (key) {
-            delete $rootScope.storage[key];
-        },
-        reset: function () {
-            $rootScope.storage.$reset();
-        }
-    };
-}]);
-
-argusMain.factory("UnauthorizedInterceptor", ['$q', '$location', 'Storage', function ($q, $location, Storage) {
-    return {
-        responseError: function (rejection) {
-            if(rejection.status === 401 || rejection.status === 0) {
-                var url = rejection.config.url;
-                var suffix = '/login';
-                if (url.indexOf(suffix, url.length - suffix.length) === -1) {
-                    var target = Storage.get('target');
-                    Storage.reset();
-                    Storage.set('target', target);
-                    $location.path('/login');
-                    return;
-                }
-            }
-            return $q.reject(rejection);
-        }
-    };
-}]);
-
-argusMain.factory('History', ['$resource', 'CONFIG', function ($resource, CONFIG) {
-    return $resource(CONFIG.wsUrl + 'audit/entity/:id', {id: '@id', limit: '20'}, {});
-}]);
-
-argusMain.factory('JobExecutionDetails', ['$resource', 'CONFIG', function ($resource, CONFIG) {
-    return $resource(CONFIG.wsUrl + 'history/job/:id', {id: '@id', limit: '20'}, {});
-}]);
-
-
-// TODO: move directives to new 'directives' folder
-argusMain.directive('ngConfirm', [function () {
-    return {
-        restrict: 'A',
-        link: function (scope, element, attrs) {
-            element.bind('click', function () {
-                var message = attrs.ngConfirm;
-                if (message && confirm(message)) {
-                    scope.$apply(attrs.ngConfirmAction);
-                }
-            });
-        }
-    };
-}]);
-
-argusMain.directive('stopEvent', function () {
-    return {
-        restrict: 'A',
-        link: function (scope, element, attr) {
-            element.bind('click', function (e) {
-                e.stopPropagation();
-            });
-        }
-    };
-});
-
-// TODO: move filters to new 'filters' folder
-argusMain.filter('urlencode', function () {
-    return window.encodeURIComponent;
-});
-
-argusMain.filter('newline', function(){
-    return function(data) {
-        if (data && data.length > 0) {
-
-           var  retvalue = data.replace(/</g, '&lt');
-            retvalue = retvalue.replace(/>/g, '&gt');
-            retvalue=retvalue.replace(/\n/g, '<br/>');
-            return retvalue;
-        } else return "";
-    }
-});
-
-argusMain.filter('trustedhtml', ['$sce', function ($sce) {
-    return function (text) {
-        return $sce.trustAsHtml(text);
-    };
 }]);

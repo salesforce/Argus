@@ -19,17 +19,14 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
 
-var argusNamespace = angular.module('argusNamespace', [
-    'ngResource'
-]);
-
-argusNamespace.controller('NamespaceCtrl', ['Storage', '$scope', 'growl', 'Namespace', function (Storage, $scope, growl, Namespace) {
+angular.module('argus.controllers.namespace', ['ngResource'])
+.controller('Namespace', ['Storage', '$scope', 'growl', 'Namespace', function (Storage, $scope, growl, Namespace) {
 	
     $scope.searchText = Storage.get("namespace-searchText") == null ? "" : Storage.get("namespace-searchText");
 	$scope.addnamespaceflag = false;
     $scope.namespaces = Namespace.query();
     
-    $scope.updateNamespace = function(namespace){
+    $scope.updateNamespace = function(namespace) {
         //if ($scope.isAlertDirty()) { TODO: uncomment this
     	var userNames = namespace.usernames.toString();
     	namespace.usernames = (userNames && userNames.length > 0) ? userNames.split(',') : [];
@@ -71,12 +68,5 @@ argusNamespace.controller('NamespaceCtrl', ['Storage', '$scope', 'growl', 'Names
     $scope.$watch('searchText', function(newValue, oldValue) {
     	newValue = newValue == null ? "" : newValue;
     	Storage.set("namespace-searchText", newValue);
-    });
-}]);
-
-// TODO: move to new 'services' folder
-argusNamespace.factory('Namespace', ['$resource', 'CONFIG', function ($resource, CONFIG) {
-	return $resource(CONFIG.wsUrl + 'namespace/:namespaceId', {}, {
-        update: {method: 'PUT'}
     });
 }]);

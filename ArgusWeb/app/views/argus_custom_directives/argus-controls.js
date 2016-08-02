@@ -19,9 +19,9 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
 
-var controlsModule = angular.module('argusControls',[]);
+var controlsModule = angular.module('argusControls', []);
 
-controlsModule.directive('agDashboardResource', ['DashboardService','$sce','$compile','$rootScope','$timeout', function(DashboardService,$sce,$compile,$rootScope,$timeout){
+controlsModule.directive('agDashboardResource', ['DashboardService', '$sce', '$compile', '$rootScope', '$timeout', function(DashboardService, $sce, $compile, $rootScope, $timeout) {
     return{
         restrict:'E',
         scope:false,

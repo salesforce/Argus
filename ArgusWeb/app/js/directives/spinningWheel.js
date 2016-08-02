@@ -19,41 +19,18 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
 
-var argusAdmin = angular.module('argusAdmin', ['ngResource']);
+angular.module('argus.directives', [])
+.directive('spinningWheel', ['$http', function ($http) {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+            scope.showloading = function () {
+                return $http.pendingRequests.length > 0;
+            };
 
-argusAdmin.controller('AdminDetailCtrl', ['$scope', 'CONFIG', 'Auth', 'growl', 'ReinstateUser',
-		function ($scope, CONFIG, Auth, growl, ReinstateUser) {
-				$scope.config = CONFIG;
-
-				// check for admin, otherwise don't render view
-				$scope.isPrivileged = Auth.isPrivileged();
-
-        $scope.submitUser = function () {
-						if ($scope.username === '' || $scope.subsystem === '') return;
-
-						var userInfo = {
-								username: $scope.username,
-								subsystem: $scope.subsystem
-						};
-
-						// submit request to reinstate a specific user
-						ReinstateUser.update(userInfo, function (result) {
-								// reset $scope values after submission
-								// $scope.username = "";
-								// $scope.subsystem = "";
-
-								growl.success('User: "' + result + '" successfully reinstated!"');
-						}, function (error) {
-								growl.error('Failed to reinstate user: "' + $scope.username + ' - ' + error + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
-						});
-				};
-		}
-]);
-
-argusAdmin.factory('ReinstateUser', ['$resource', 'CONFIG',
-		function ($resource, CONFIG) {
-				return $resource(CONFIG.wsUrl + 'management/reinstateuser', {}, {
-						update: {method: 'PUT'}
-				});
-		}
-]);
+            scope.$watch(scope.showloading, function (v) {
+                scope.showloading = v;
+            });
+        }
+    };
+}]);

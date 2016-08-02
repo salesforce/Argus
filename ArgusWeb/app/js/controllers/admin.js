@@ -19,9 +19,32 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
 
-var argusAbout = angular.module('argusAbout', []);
+angular.module('argus.controllers.admin', ['ngResource'])
+.controller('Admin', ['$scope', 'CONFIG', 'Auth', 'growl', 'ReinstateUser',
+		function ($scope, CONFIG, Auth, growl, ReinstateUser) {
+				$scope.config = CONFIG;
 
-argusAbout.controller('AboutDetailCtrl', ['$scope', 'CONFIG',
-    function ($scope, CONFIG) {
-        $scope.config = CONFIG;
-    }]);
+				// check for admin, otherwise don't render view
+				$scope.isPrivileged = Auth.isPrivileged();
+
+        $scope.submitUser = function () {
+						if ($scope.username === '' || $scope.subsystem === '') return;
+
+						var userInfo = {
+								username: $scope.username,
+								subsystem: $scope.subsystem
+						};
+
+						// submit request to reinstate a specific user
+						ReinstateUser.update(userInfo, function (result) {
+								// reset $scope values after submission
+								// $scope.username = "";
+								// $scope.subsystem = "";
+
+								growl.success('User: "' + result + '" successfully reinstated!"');
+						}, function (error) {
+								growl.error('Failed to reinstate user: "' + $scope.username + ' - ' + error + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
+						});
+				};
+		}
+]);

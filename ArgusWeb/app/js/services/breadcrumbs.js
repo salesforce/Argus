@@ -17,11 +17,37 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-'use strict';
 
-var argusLogin = angular.module('argusLogin', []);
+angular.module('argus.services.breadcrumbs', [])
+.factory('breadcrumbs', ['$rootScope', '$location', function($rootScope, $location) {
 
-argusLogin.controller('LoginCtrl', ['$scope', function ($scope) {
-        $scope.username = null;
-        $scope.password = null;
-    }]);
+  var breadcrumbs = [];
+  var breadcrumbsService = {};
+
+  // we want to update breadcrumbs only when a route is actually changed
+  // as $location.path() will get updated imediatelly (even if route change fails!)
+  $rootScope.$on('$routeChangeSuccess', function(event, current) {
+
+    var pathElements = $location.path().split('/'), result = [], i;
+    var breadcrumbPath = function (index) {
+      return '/app/#/' + (pathElements.slice(0, index + 1)).join('/');
+    };
+
+    pathElements.shift();
+    for (i=0; i < pathElements.length; i++) {
+      result.push({name: pathElements[i], path: breadcrumbPath(i)});
+    }
+
+    breadcrumbs = result;
+  });
+
+  breadcrumbsService.getAll = function() {
+    return breadcrumbs;
+  };
+
+  breadcrumbsService.getFirst = function() {
+    return breadcrumbs[0] || {};
+  };
+
+  return breadcrumbsService;
+}]);
