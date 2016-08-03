@@ -105,10 +105,15 @@ public class AnomalySTLTransform implements Transform {
         double sd = calcSD(remainder, mean);
 
         HashMap<Long, String> remainder_map = new HashMap<>();
-        NormalDistribution norm = new NormalDistribution(mean, sd);
 
-        for (int i = 0; i < time_list.size(); i++) {
-            remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+        if (constants.size() == 2 && constants.get(1).equals("resid")) {
+            for (int i = 0; i < time_list.size(); i++) {
+                remainder_map.put((long) times[i], Double.toString(remainder[i]));
+            }
+        } else {
+            for (int i = 0; i < time_list.size(); i++) {
+                remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+            }
         }
 
         Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
