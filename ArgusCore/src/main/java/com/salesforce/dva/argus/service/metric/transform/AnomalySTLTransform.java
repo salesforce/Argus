@@ -68,15 +68,23 @@ public class AnomalySTLTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireState(metrics.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
-        SystemAssert.requireState(metrics.get(0) != null, "Anomaly Detection Transform cannot be used with a null metric.");
-        SystemAssert.requireState(constants.size() <= 2, "Anomaly Detection Transform can only be used with one or two integer constants.");
-        SystemAssert.requireState(metrics.get(0).getDatapoints().size() >= 4, "STL Anomaly Detection Transform can only be used if there are at least 4 points.");
+        SystemAssert.requireState(metrics.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
+                "metric.");
+        SystemAssert.requireState(constants.size() <= 2, "Anomaly Detection Transform can only be used with one or " +
+                "two integer constants.");
+        SystemAssert.requireState(metrics.get(0).getDatapoints().size() >= 4, "STL Anomaly Detection Transform can " +
+                "only be used if there are at least 4 points.");
 
         if (constants.size() == 0) {
             return transform(metrics);
+        } else if (constants.size() == 2) {
+            SystemAssert.requireState(constants.get(1).equals("resid") || constants.get(1).equals("anomalyScore"),
+                    "The only options for STL Anomaly Detection Transform are '$resid' to view the residuals or " +
+                    "'$anomalyScore' to view the anomaly Score. Entering no option defaults to '$anomalyScore'.");
         }
 
-        SystemAssert.requireState(Integer.parseInt(constants.get(0)) >= 2, "STL Anomaly Detection Transform can only be used with a season size of at least 2.");
+        SystemAssert.requireState(Integer.parseInt(constants.get(0)) >= 2, "STL Anomaly Detection Transform can only " +
+                "be used with a season size of at least 2.");
 
         // argument passed in to determine what one "season" is; later passed to StlDecomposition
         int season = Integer.parseInt(constants.get(0));
@@ -105,10 +113,19 @@ public class AnomalySTLTransform implements Transform {
         double sd = calcSD(remainder, mean);
 
         HashMap<Long, String> remainder_map = new HashMap<>();
-        NormalDistribution norm = new NormalDistribution(mean, sd);
 
-        for (int i = 0; i < time_list.size(); i++) {
-            remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+        if (constants.size() == 2 && constants.get(1).equals("resid")) {
+            for (int i = 0; i < time_list.size(); i++) {
+                remainder_map.put((long) times[i], Double.toString(remainder[i]));
+            }
+        } else if (constants.size() == 2 && constants.get(1).equals("anomalyScore")) {
+            for (int i = 0; i < time_list.size(); i++) {
+                remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+            }
+        } else {
+            for (int i = 0; i < time_list.size(); i++) {
+                remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+            }
         }
 
         Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
