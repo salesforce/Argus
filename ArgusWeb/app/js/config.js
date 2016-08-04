@@ -17,52 +17,15 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-var breadcrumbModule = angular.module('argusBreadcrumbs', []);
-breadcrumbModule.factory('breadcrumbs', ['$rootScope', '$location', function($rootScope, $location) {
-
-  var breadcrumbs = [];
-  var breadcrumbsService = {};
-
-  // we want to update breadcrumbs only when a route is actually changed
-  // as $location.path() will get updated imediatelly (even if route change fails!)
-  $rootScope.$on('$routeChangeSuccess', function(event, current) {
-    
-    var _contextRootPath = $location.absUrl().substr(0, $location.absUrl().lastIndexOf("#"));
-    var pathElements = $location.path().split('/'), result = [], i;
-    var breadcrumbPath = function (index) {
-      return _contextRootPath + '#/' + (pathElements.slice(0, index + 1)).join('/');
-    };
-
-    pathElements.shift();
-    for (i=0; i < pathElements.length; i++) {
-      result.push({name: pathElements[i], path: breadcrumbPath(i)});
-    }
-
-    breadcrumbs = result;
-  });
-
-  breadcrumbsService.getAll = function() {
-    return breadcrumbs;
-  };
-
-  breadcrumbsService.getFirst = function() {
-    return breadcrumbs[0] || {};
-  };
-
-  return breadcrumbsService;
-}]);
-
-breadcrumbModule.directive('breadcrumbsHtml', function() {
-    "use strict";
-    return {
-        restrict: 'E',
-        templateUrl: 'views/templates/breadcrumbs.html',
-        scope: {},
-        controller: ['$scope', 'breadcrumbs', function ($scope, breadcrumbs) {
-            $scope.breadcrumbs = breadcrumbs;
-        }],
-        link: function(scope, element, attribute) {
-        }
-    }
+angular.module("argus.urlConfig", [])
+.constant('CONFIG', {
+    version: '4.0-SNAPSHOT',
+    wsUrl: 'http://localhost:8080/argusws/',
+    emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
+    feedUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-user',
+    wikiUrl: 'https://sites.google.com/a/mycompany.com/argus',
+    issueUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev',
+    templatePath: '/app/views/argus_custom_directives/templates/',
+    piwikUrl: (('https:' == document.location.protocol) ? 'https' : 'http') + '://localhost/piwik/',
+    piwikSiteId: '3'
 });

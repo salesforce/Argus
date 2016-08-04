@@ -1,77 +1,77 @@
 <!doctype html>
 <html lang="en" ng-app="argus">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link href="img/argus_icon.png" rel="shortcut icon" />
-    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet" />
-    <link href="bower_components/codemirror/lib/codemirror.css" rel="stylesheet" />
-    <link href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css" rel="stylesheet" />
-    <link href="css/main.css" rel="stylesheet" />
+<link href="img/argus_icon.png" rel="shortcut icon" />
+<link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="bower_components/angular-growl-v2/build/angular-growl.css" rel="stylesheet" />
+<link href="bower_components/codemirror/lib/codemirror.css" rel="stylesheet" />
+<link href="bower_components/angular-bootstrap-datetimepicker/src/css/datetimepicker.css" rel="stylesheet" />
+<link href="css/main.css" rel="stylesheet" />
 
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/angular/angular.js"></script>
-    <script src="bower_components/angular-resource/angular-resource.js"></script>
-    <script src="bower_components/angular-route/angular-route.js"></script>
-    <script src="bower_components/angular-growl-v2/build/angular-growl.js"></script>
-    <script src="bower_components/angular-animate/angular-animate.js"></script>
-    <script src="bower_components/angular-utils-pagination/dirPagination.js"></script>
-    <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+<script src="bower_components/angular/angular.js"></script>
+<script src="bower_components/angular-resource/angular-resource.js"></script>
+<script src="bower_components/angular-route/angular-route.js"></script>
+<script src="bower_components/angular-growl-v2/build/angular-growl.js"></script>
+<script src="bower_components/angular-animate/angular-animate.js"></script>
+<script src="bower_components/angular-utils-pagination/dirPagination.js"></script>
+<script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
 
-    <!-- Piwik -->
-    <script type="text/javascript">
-    	var userString = window.localStorage.getItem("ngStorage-user");
-    	var user = JSON.parse(userString);
+<!-- Piwik -->
+<script type="text/javascript">
+	var userString = window.localStorage.getItem("ngStorage-user");
+	var user = JSON.parse(userString);
+	var _paq = _paq || [];
+	if(user)
+    	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
+</script>
+<!-- End Piwik Code -->
 
-    	var _paq = _paq || [];
-    	if(user)
-        	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
-    </script>
-    <!-- End Piwik Code -->
+<title>Argus</title>
 
-    <title>Argus</title>
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
 </head>
 
 <body ng-controller="Main">
 
 <div growl limit-messages="3"></div>
 
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div style="width: 93%;" class="container">
-            <div class="navbar-header">
-                <a href="#dashboards"><img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left"></a>
-                <p class="navbar-text" ng-show="isLoggedIn()">Welcome {{getRemoteUser()}}</p>
-            </div>
-
-            <div id="navbar" class="navbar-collapse collapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <li ng-class="{'activeTab': activeTab == 'dashboards'}"><a href="#dashboards">Dashboards</a></li>
-                    <li ng-class="{'activeTab': activeTab == 'alerts'}"><a href="#alerts">Alerts</a></li>
-                    <li ng-class="{'activeTab': activeTab == 'metrics'}"><a href="#viewmetrics">Metrics</a></li>
-                    <li ng-class="{'activeTab': activeTab == 'batches'}"><a href="#batches">Batches</a></li>
-                    <li ng-class="{'activeTab': activeTab == 'namespace'}"><a href="#namespace">Namespace</a></li>
-                    <li ng-class="{'activeTab': activeTab == 'about'}"><a href="#about">About</a></li>
-                    <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
-                </ul>
-            </div>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div style="width: 93%;" class="container">
+        <div class="navbar-header">
+            <a href="#dashboards"><img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left"></a>
+            <p class="navbar-text" ng-show="isLoggedIn()">Welcome {{getRemoteUser()}}</p>
         </div>
-    </nav>
 
-    <div class="container" style="width: 93%;">
-        <!-- breadcrumb navigation -->
-        <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
-
-        <div ng-view></div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li ng-class="{'activeTab': activeTab == 'dashboards'}"><a href="#dashboards">Dashboards</a></li>
+                <li ng-class="{'activeTab': activeTab == 'alerts'}"><a href="#alerts">Alerts</a></li>
+                <li ng-class="{'activeTab': activeTab == 'metrics'}"><a href="#viewmetrics">Metrics</a></li>
+                <li ng-class="{'activeTab': activeTab == 'batches'}"><a href="#batches">Batches</a></li>
+                <li ng-class="{'activeTab': activeTab == 'namespace'}"><a href="#namespace">Namespace</a></li>
+                <li ng-class="{'activeTab': activeTab == 'about'}"><a href="#about">About</a></li>
+                <li><a href="#/login" ng-click='logout()' ng-show='isLoggedIn()'>Logout</a></li>
+            </ul>
+        </div>
     </div>
+</nav>
+
+<div class="container" style="width: 93%;">
+    <!-- breadcrumb navigation -->
+    <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
+
+    <div ng-view></div>
+</div>
+
 </body>
 
 <!-- Bootstrap -->
@@ -105,38 +105,51 @@
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
 
-<!-- Argus -->
-<script src="views/main/main.js"></script>
-<script src="views/main/config.js"></script>
-<script src="views/batches/batches.js"></script>
-<script src="views/dashboards/dashboards.js"></script>
-<script src="views/viewmetrics/viewmetrics.js"></script>
-<script src="views/argus_custom_directives/DashboardService.js"></script>
-<script src="views/argus_custom_directives/argus-viewelements.js"></script>
-<script src="views/mockups/mockups.js"></script>
+<!-- Argus module -->
+<script src="js/argus.js"></script>
+<script src="js/config.js"></script>
+<script src="js/argusConfig.js"></script>
+
+<!-- utils -->
+<script src="js/utils/constants.js"></script>
+<script src="js/utils/filters.js"></script>
 
 <!-- controllers -->
 <script src="js/controllers/about.js"></script>
 <script src="js/controllers/admin.js"></script>
 <script src="js/controllers/alerts.js"></script>
 <script src="js/controllers/alertsDetail.js"></script>
+<script src="js/controllers/batches.js"></script>
+<script src="js/controllers/dashboards.js"></script>
+<script src="js/controllers/dashboardsDetail.js"></script>
 <script src="js/controllers/login.js"></script>
 <script src="js/controllers/main.js"></script>
+<script src="js/controllers/metricElements.js"></script>
 <script src="js/controllers/namespace.js"></script>
+<script src="js/controllers/viewElements.js"></script>
+<script src="js/controllers/viewMetrics.js"></script>
 
 <!-- services -->
-<script src="js/services/alerts.js"></script>
 <script src="js/services/auth.js"></script>
 <script src="js/services/breadcrumbs.js"></script>
-<script src="js/services/history.js"></script>
+<script src="js/services/dashboard.js"></script>
 <script src="js/services/unauthorizedInterceptor.js"></script>
-<script src="js/services/jobExecutionDetails.js"></script>
-<script src="js/services/namespace.js"></script>
-<script src="js/services/notifications.js"></script>
-<script src="js/services/reinstateUser.js"></script>
 <script src="js/services/storage.js"></script>
-<script src="js/services/triggers.js"></script>
-<script src="js/services/triggersMap.js"></script>
+<script src="js/services/tags.js"></script>
+
+<script src="js/services/factories/alerts.js"></script>
+<script src="js/services/factories/asyncMetrics.js"></script>
+<script src="js/services/factories/annotations.js"></script>
+<script src="js/services/factories/batches.js"></script>
+<script src="js/services/factories/dashboards.js"></script>
+<script src="js/services/factories/history.js"></script>
+<script src="js/services/factories/jobExecutionDetails.js"></script>
+<script src="js/services/factories/metrics.js"></script>
+<script src="js/services/factories/namespace.js"></script>
+<script src="js/services/factories/notifications.js"></script>
+<script src="js/services/factories/reinstateUser.js"></script>
+<script src="js/services/factories/triggers.js"></script>
+<script src="js/services/factories/triggersMap.js"></script>
 
 <!-- directives -->
 <script src="js/directives/autoFocus.js"></script>
@@ -147,12 +160,15 @@
 <script src="js/directives/controls/dropdown.js"></script>
 <script src="js/directives/controls/submit.js"></script>
 <script src="js/directives/controls/text.js"></script>
+<script src="js/directives/charts/chart.js"></script>
+<script src="js/directives/charts/flags.js"></script>
+<script src="js/directives/charts/heatmap.js"></script>
+<script src="js/directives/charts/metric.js"></script>
+<script src="js/directives/charts/option.js"></script>
+<script src="js/directives/charts/statusIndicator.js"></script>
+<script src="js/directives/charts/table.js"></script>
 <script src="js/directives/ngConfirm.js"></script>
 <script src="js/directives/stopEvent.js"></script>
 <script src="js/directives/spinningWheel.js"></script>
-
-<!-- utils -->
-<script src="js/utils/constants.js"></script>
-<script src="js/utils/filters.js"></script>
 
 </html>

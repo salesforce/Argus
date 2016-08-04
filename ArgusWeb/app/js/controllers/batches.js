@@ -1,10 +1,5 @@
-'use strict';
-
-var argusBatches = angular.module('argusBatches', [
-    'ngResource'
-]);
-
-argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batches', 'growl', 'BATCH_CHART_OPTIONS', 
+angular.module('argus.controllers.batches', ['ngResource'])
+.controller('BatchExpressions', ['$scope', 'AsyncMetrics', 'Batches', 'growl', 'BATCH_CHART_OPTIONS', 
     function($scope, AsyncMetrics, Batches, growl, BATCH_CHART_OPTIONS) {
         $('[data-toggle="tooltip"]').tooltip();
         $scope.hudModes = ['graphs', 'JSON'];
@@ -182,69 +177,4 @@ argusBatches.controller('BatchExpressionsCtrl', ['$scope', 'AsyncMetrics', 'Batc
             }
             return result;
         }
-    }]);
-
-argusBatches.constant('BATCH_CHART_OPTIONS', {
-    credits: {
-        enabled: false
-    },
-    rangeSelector: {
-        selected: 1,
-        inputEnabled: false
-    },
-    xAxis: {
-        type: 'datetime',
-        ordinal: false
-    },
-    lang: {
-        noData: 'No Data to Display'
-    },
-    legend: {
-        enabled: true,
-        maxHeight: 62,
-        itemStyle: {
-            fontWeight: 'normal',
-            fontSize: '10px'
-        },
-        navigation : {
-            style : {
-                fontWeight: 'normal',
-                fontSize: '10px'
-            }
-        }
-    },
-    plotOptions :{
-        series: {
-            animation: false,
-            connectNulls: true
-        }, 
-        line : {
-            gapSize:1.5
-        }
-    },
-    chart: {
-        animation: false,
-        borderWidth: 1,
-        borderColor: 'lightGray',
-        borderRadius: 5
-    }
-});
-
-argusBatches.factory('AsyncMetrics', ['$http', 'CONFIG', function ($http, CONFIG) {
-    return {
-        create: function (params) {
-            return $http({
-                url: CONFIG.wsUrl + 'metrics/batch',
-                method: 'GET',
-                params: params
-            });
-        }
-    };
-}]);
-
-argusBatches.factory('Batches', ['$resource', 'CONFIG',
-    function ($resource, CONFIG) {
-        return $resource(CONFIG.wsUrl + 'batches/:batchId', {}, {
-            query: {method: 'GET', params: {batchId: ''}}
-        });
     }]);

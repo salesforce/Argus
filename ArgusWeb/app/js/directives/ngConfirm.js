@@ -1,4 +1,4 @@
-angular.module('argus.directives', [])
+angular.module('argus.directives.confirm', [])
 .directive('ngConfirm', [function () {
     return {
         restrict: 'A',

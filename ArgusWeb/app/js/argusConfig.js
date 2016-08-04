@@ -20,95 +20,33 @@
 'use strict';
 
 /* App Module */
-
-var argus = angular.module('argus', [
-    'ngRoute',
-    'ngAnimate',
-    'ngStorage',
-    'angular-growl',
-    'angularUtils.directives.dirPagination',
-    'angulartics',
-    'angulartics.piwik',
-    'ui.bootstrap',
-    'ui.bootstrap.datetimepicker',
-
-    // Argus specific
-    // 'argusControls',
-    'argusViewElements',
-    
-    'argusDashboards',
-    'argusDashboardService',
-    
-    'argusViewMetrics',
-    'argusBatches',
-    
-    'argusMockups',
-    'argusConfig',
-    
-    // controllers
-    'argus.controllers.about',
-    'argus.controllers.admin',
-    'argus.controllers.alerts',
-    'argus.controllers.alerts.detail',
-    'argus.controllers.login',
-    'argus.controllers.main',
-    'argus.controllers.namespace',
-    
-    // services
-    'argus.services.admin.reinstateuser',
-    'argus.services.alerts',
-    'argus.services.auth',
-    'argus.services.breadcrumbs',
-    'argus.services.history',
-    'argus.services.interceptor',
-    'argus.services.jobexecutiondetails',
-    'argus.services.namespace',
-    'argus.services.notifications',
-    'argus.services.storage',
-    'argus.services.triggers',
-    'argus.services.triggersmap',
-    
-    // directives
-    'argus.directives',
-    'argus.directives.breadcrumbs',
-    'argus.directives.dashboardResource',
-    'argus.directives.controls.dashboard',
-    'argus.directives.controls.date',
-    'argus.directives.controls.dropdown',
-    'argus.directives.controls.submit',
-    'argus.directives.controls.text',
-
-    // utils
-    'filters',
-    'constants'
-]);
-
-argus.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTemplateProvider', '$analyticsProvider',
+angular.module('argus.config', [])
+.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTemplateProvider', '$analyticsProvider',
     function ($routeProvider, $httpProvider, growlProvider, paginationTemplateProvider, $analyticsProvider) {
         $httpProvider.defaults.withCredentials = true;
         $httpProvider.interceptors.push('UnauthorizedInterceptor');
         paginationTemplateProvider.setPath('bower_components/angular-utils-pagination/dirPagination.tpl.html');
         $routeProvider.
             when('/viewmetrics', {
-                templateUrl: 'views/viewmetrics/viewmetrics.html',
-                controller: 'ViewMetricsCtrl',
+                templateUrl: 'js/templates/viewmetrics.html',
+                controller: 'ViewMetrics',
                 label: 'Metrics',
                 activeTab: 'metrics'
             }).
             when('/batches', {
-                templateUrl: 'views/batches/batches.html',
-                controller: 'BatchExpressionsCtrl',
+                templateUrl: 'js/templates/batches.html',
+                controller: 'BatchExpressions',
                 activeTab: 'batches'
             }).
             when('/dashboards', {
-                templateUrl: 'views/dashboards/dashboard-list.html',
-                controller: 'DashboardListCtrl',
+                templateUrl: 'js/templates/dashboard-list.html',
+                controller: 'Dashboards',
                 label: 'Dashboard List',
                 activeTab: 'dashboards'
             }).
             when('/dashboards/:dashboardId', {
-                templateUrl: 'views/dashboards/dashboard-detail.html',
-                controller: 'DashboardDetailCtrl',
+                templateUrl: 'js/templates/dashboard-detail.html',
+                controller: 'DashboardsDetail',
                 label: '{{dashboards.dashboardId}}',
                 activeTab: 'dashboards'
             }).
@@ -141,16 +79,6 @@ argus.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTem
                 label: 'User Login',
                 activeTab: ''
             }).
-            when('/topkheatmap', {
-                templateUrl: 'views/mockups/topkheatmap.html',
-                controller: 'TopkheatmapCtrl',
-                label: 'Top Heatmap'
-            }).
-            when('/topkheatmaporg', {
-                templateUrl: 'views/mockups/topkheatmaporg.html',
-                controller: 'TopkheatmapCtrlOrg',
-                label: 'Top Heatmap org'
-            }).
             when('/namespace', {
                 templateUrl: 'js/templates/namespace.html',
                 controller: 'Namespace',
@@ -170,9 +98,9 @@ argus.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTem
         
         $analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
         $analyticsProvider.withAutoBase(true);  /* Records full path */
-    }]);
+}])
 
-argus.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
+.run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {
 
     $rootScope.$on('$locationChangeStart', function (event, next, current) {
         var loggedIn = Auth.isLoggedIn();

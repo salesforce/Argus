@@ -1,21 +1,21 @@
 <section>
     <!-- Navigation tabs -->
-    <ul class='nav nav-tabs'>
-        <li ng-class="{active:isTabSelected(1)}"><a href ng-click='getDashboards(false);selectTab(1)'>{{getRemoteUser()}}'s Dashboards</a></li>
-        <li ng-class="{active:isTabSelected(2)}"><a href ng-click='getDashboards(true);selectTab(2)'>Shared</a></li>
+    <ul class="nav nav-tabs">
+        <li ng-class="{active:isTabSelected(1)}"><a href ng-click="getDashboards(false);selectTab(1)">{{getRemoteUser()}}'s Dashboards</a></li>
+        <li ng-class="{active:isTabSelected(2)}"><a href ng-click="getDashboards(true);selectTab(2)">Shared</a></li>
     </ul>
 
-		<div class='row'>
-		    <div class='col-md-3 h3'>Dashboard list</div>
+		<div class="row">
+		    <div class="col-md-3 h3">Dashboard list</div>
 		    
-		    <div class='col-md-5 text-right'>
+		    <div class="col-md-5 text-right">
 		        <dir-pagination-controls></dir-pagination-controls>
 		    </div>
 
-				<div class='col-md-1'>
+				<div class="col-md-1">
 						<select class="form-control" ng-model="itemsPerPage" ng-options="val for val in itemsPerPageOptions"></select>
 				</div>
-		    <div class='col-md-3'>
+		    <div class="col-md-3">
 		        <span class="pull-right input-group">
 		            <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
 		            <span class="input-group-btn">
@@ -44,7 +44,7 @@
 	            </button>
 	        </th>
 	    </tr>
-	    <tr dir-paginate="dashboard in dashboards | filter:searchText |  orderBy:'name' | itemsPerPage:itemsPerPage">
+	    <tr dir-paginate="dashboard in dashboards | filter:searchText | orderBy:'name' | itemsPerPage:itemsPerPage">
 	        <td>{{dashboard.id}}</td>
 	        <td><a href="#/dashboards/{{dashboard.id}}">{{dashboard.name}}</a></td>
 	        <td>{{dashboard.description}}</td>
@@ -52,8 +52,8 @@
 	        <td>{{dashboard.modifiedDate| date:'medium'}}</td>
 	        <td>{{dashboard.ownerName}}</td>
 	        <td>
-	            <button class="btn btn-warning btn-sm" type="button" ng-disabled='isDisabled(dashboard)'
-	                    ng-confirm='Delete "{{dashboard.name}}"?' ng-confirm-action='removeDashboard(dashboard)'>
+	            <button class="btn btn-warning btn-sm" type="button" ng-disabled="isDisabled(dashboard)"
+	                    ng-confirm="Delete '{{dashboard.name}}'?" ng-confirm-action="deleteDashboard(dashboard)">
 	                <i class="glyphicon glyphicon-trash"></i>
 	            </button>
 	        </td>

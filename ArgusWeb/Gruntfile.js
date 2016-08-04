@@ -14,7 +14,7 @@ module.exports = function(grunt) {
 					expand: true,
 					flatten: true,
 					src: ['./config/config.js'],
-					dest: './app/views/main/'
+					dest: './app/js/'
 				}]
 			},
 			development: {
@@ -27,7 +27,7 @@ module.exports = function(grunt) {
 					expand: true,
 					flatten: true,
 					src: ['./config/config.js'],
-					dest: './app/views/main/'
+					dest: './app/js/'
 				}]
 			},
 			production: {
@@ -40,7 +40,7 @@ module.exports = function(grunt) {
 					expand: true,
 					flatten: true,
 					src: ['./config/config.js'],
-					dest: './app/views/main/'
+					dest: './app/js/'
 				}]
 			}
 		}

@@ -1,25 +1,5 @@
-/*! Copyright (c) 2016, Salesforce.com, Inc.
- * All rights reserved.
- *  
- * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
- *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
- *
- *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
- *      documentation and/or other materials provided with the distribution.
- *
- *      Neither the name of Salesforce.com nor the names of its contributors may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-var dashboardServiceModule = angular.module('argusDashboardService', []);
-
-dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$resource', 'CONFIG', 'VIEWELEMENT', 'Metrics', '$sce', '$http', 'Annotations', 'growl',
+angular.module('argus.services.dashboard', [])
+.service('DashboardService', ['$filter', '$compile', '$resource', 'CONFIG', 'VIEWELEMENT', 'Metrics', '$sce', '$http', 'Annotations', 'growl',
     function ($filter, $compile, $resource, CONFIG, VIEWELEMENT, Metrics, $sce, $http,Annotations,growl) {
 
         this.getDashboardById = function(dashboardId){
@@ -104,9 +84,11 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
     
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
-        }
+        };
 
         this.updateIndicatorStatus = updateIndicatorStatus;
+
+        this.buildViewElement = buildViewElement;
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 	         
@@ -147,6 +129,73 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
                 $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
             } else if (lastStatusVal > attributes.hi) {
                 $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+            }
+        };
+
+        function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
+            var elementId = 'element_' + elementType + index;
+            var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
+            element.prepend('<div id=' + elementId + ' ' + smallChartCss +'></div>');
+            
+            scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
+                console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
+                populateView(event, controls);
+            });
+
+            function populateView(event, controls) {
+                var updatedMetricList = [];
+                var updatedAnnotationList = [];
+                var updatedOptionList = [];
+
+                // TODO: move these 3 items to 'utils' folder
+                for (var key in scope.metrics) {
+                    if (scope.metrics.hasOwnProperty(key)) {
+                        // get metricExpression from scope
+                        var metrics = scope.metrics[key];
+                        var metricExpression = metrics.expression;
+                        var metricSpecificOptions = metrics.metricSpecificOptions;
+                        var processedExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
+
+                        if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
+                            var processedMetric = {};
+                            processedMetric['expression'] = processedExpression;
+                            processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
+                            updatedMetricList.push(processedMetric);
+                        }
+                    }
+                }
+
+                for (var key in scope.annotations) {
+                    if (scope.annotations.hasOwnProperty(key)) {
+                        var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
+                        if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
+                            updatedAnnotationList.push(processedExpression);
+                        }
+                    }
+                }
+
+                for (var key in scope.options) {
+                    if (scope.options.hasOwnProperty(key)) {
+                        updatedOptionList.push({name: key, value: scope.options[key]});
+                    }
+                }
+
+                if (updatedMetricList.length > 0) {
+                    DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedOptionList, elementId, attributes, elementType, scope);
+                } else {
+                    growl.error('The valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
+                    $('#' + elementId).hide();
+                }
+            }
+            
+            function getMetricSpecificOptionsInArray(metricSpecificOptions){
+                var options=[];
+                for (var key in metricSpecificOptions) {
+                    if (metricSpecificOptions.hasOwnProperty(key)) {
+                        options.push({'name': key, 'value': metricSpecificOptions[key]});
+                    }
+                }
+                return options;
             }
         };
         
@@ -190,9 +239,9 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
         
         function bindDataToChart(divId, highChartOptions, series, annotationExpressionList){
             // $("#" + divId).empty();
-    		highChartOptions.series=series;
-    		$('#' + divId).highcharts('StockChart', highChartOptions);
-    		var chart = $('#' + divId).highcharts('StockChart');
+		    		highChartOptions.series=series;
+		    		$('#' + divId).highcharts('StockChart', highChartOptions);
+		    		var chart = $('#' + divId).highcharts('StockChart');
             
             // hide the loading spinner after data loads.
             if (chart) {
@@ -747,32 +796,3 @@ dashboardServiceModule.service('DashboardService', ['$filter', '$compile', '$res
         	return value;
         };
     }]);
-
-// TODO: move factories to new 'services' folder
-dashboardServiceModule.factory('Metrics', ['$resource', 'CONFIG',
-    function ($resource, CONFIG) {
-        return $resource(CONFIG.wsUrl + 'metrics', {}, {
-            query: {method: 'GET', isArray: true}
-        });
-    }]);
-
-dashboardServiceModule.factory('Annotations', ['$resource', 'CONFIG',
-    function ($resource, CONFIG) {
-        return $resource(CONFIG.wsUrl + 'annotations', {}, {
-            query: {method: 'GET', isArray: true}
-        });
-    }]);
-
-// TODO: move this service to separate file for 'tags', within new 'services' folder
-dashboardServiceModule.service('Tags', ['CONFIG', '$http', '$q', function(CONFIG, $http, $q) {
-	this.getDropdownOptions = function(key) {
-		var request = $http({
-			method: 'GET',
-			url: CONFIG.wsUrl + 'schema/tags',
-			params: {
-				tagk: key
-			}
-		});
-		return request;
-	}
-}]);
