@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.tsdb;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
-import com.salesforce.dva.argus.service.NamespaceService;
 import com.salesforce.dva.argus.system.SystemException;
 
 import java.io.UnsupportedEncodingException;
@@ -368,11 +367,11 @@ public class AnnotationQuery {
         long start = Math.max(0, getStartTimestamp() - 1);
         long end = Math.max(start, getEndTimestamp() + 1);
         
-        String key = DefaultTSDBService.toAnnotationKey(_scope, _metric, _type, _tags);
-        String tsdbMetricName = new StringBuilder(_type).append(NamespaceService.NAMEPSACE_PREFIX).append(key).toString(); 
+        String scope = DefaultTSDBService.toAnnotationKey(_scope, _metric, _type, _tags);
+        //When creating the corresponding argus Metric for the annotations, _type is used as metric name. 
+        String tsdbMetricName = DefaultTSDBService.constructTSDBMetricName(new Metric(scope, _type));
         Map<String, String> tags = new HashMap<>(getTags());
-
-        //tags.put(ReservedField.METRIC.getKey(), _type);
+        
         try {
             return MessageFormat.format(pattern, start, end, tsdbMetricName, toTagParameterArray(tags));
         } catch (UnsupportedEncodingException ex) {

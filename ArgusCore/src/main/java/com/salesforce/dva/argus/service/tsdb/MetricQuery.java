@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.tsdb;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.salesforce.dva.argus.service.NamespaceService;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -180,10 +179,10 @@ public class MetricQuery extends AnnotationQuery {
     public String getTSDBMetricName() {
         StringBuilder sb = new StringBuilder();
         
-        sb.append(getMetric()).append(NamespaceService.NAMEPSACE_PREFIX).append(getScope());
+        sb.append(getMetric()).append(DefaultTSDBService.DELIMITER).append(getScope());
 
         if (_namespace != null && !_namespace.isEmpty()) {
-            sb.append(getNamespace());
+            sb.append(DefaultTSDBService.DELIMITER).append(getNamespace());
         }
         return sb.toString();
     }

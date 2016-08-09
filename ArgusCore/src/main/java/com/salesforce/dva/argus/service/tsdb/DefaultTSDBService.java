@@ -78,7 +78,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     private static final int CHUNK_SIZE = 50;
     private static final int TSDB_DATAPOINTS_WRITE_MAX_SIZE = 100;
     private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count";    
+    private static final String QUERY_COUNT_COUNTER = "query.count";
+    static final String DELIMITER = "-__-";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -170,10 +171,10 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     public static String constructTSDBMetricName(Metric metric) {
         StringBuilder sb = new StringBuilder();
         
-        sb.append(metric.getMetric()).append(NamespaceService.NAMEPSACE_PREFIX).append(metric.getScope());
+        sb.append(metric.getMetric()).append(DELIMITER).append(metric.getScope());
 
         if (metric.getNamespace() != null && !metric.getNamespace().isEmpty()) {
-            sb.append(metric.getNamespace());
+            sb.append(DELIMITER).append(metric.getNamespace());
         }
         return sb.toString();
     }
@@ -189,7 +190,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
      * @return Argus metric name.
      */
     public static String getMetricFromTSDBMetric(String tsdbMetricName) {
-    	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
+    	return tsdbMetricName.split(DELIMITER)[0];
     }
     
     /**
@@ -203,7 +204,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
      * @return Argus scope.
      */
     public static String getScopeFromTSDBMetric(String tsdbMetricName) {
-    	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[1];
+    	return tsdbMetricName.split(DELIMITER)[1];
     }
     
     /**
@@ -217,8 +218,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
      * @return Argus namespace. 
      */
     public static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-    	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
-        return (splits.length == 3) ? NamespaceService.NAMEPSACE_PREFIX + splits[2] : null;
+    	String[] splits = tsdbMetricName.split(DELIMITER);
+        return (splits.length == 3) ? splits[2] : null;
     }
 
     //~ Methods **************************************************************************************************************************************
