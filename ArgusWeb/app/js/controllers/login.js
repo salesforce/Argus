@@ -17,15 +17,10 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-angular.module("argus.urlConfig", [])
-.constant('CONFIG', {
-    version: '@@version',
-    wsUrl: '@@wsUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    piwikUrl: @@piwikUrl,
-    piwikSiteId: '@@piwikSiteId'
-});
+'use strict';
+
+angular.module('argus.controllers.login', [])
+.controller('Login', ['$scope', function ($scope) {
+    $scope.username = null;
+    $scope.password = null;
+}]);
