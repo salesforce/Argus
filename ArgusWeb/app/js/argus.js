@@ -40,6 +40,8 @@ angular.module('argus', [
   'argus.controllers',
   'argus.directives',
   'argus.directives.breadcrumbs',
+  'argus.directives.confirm',
+  'argus.directives.dashboardResource',
   'filters',
   'constants'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
