@@ -256,7 +256,6 @@ public abstract class TSDBEntity implements Serializable {
     public static enum ReservedField {
 
         META("meta"),
-        METRIC("metric"),
         UNITS("units"),
         DISPLAY_NAME("displayName");
 
