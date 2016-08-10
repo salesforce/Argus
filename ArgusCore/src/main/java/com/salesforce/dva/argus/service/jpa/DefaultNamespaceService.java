@@ -121,18 +121,11 @@ public class DefaultNamespaceService extends DefaultJPAService implements Namesp
             throw new SystemException(new IllegalArgumentException(
                     "Illegal characters found while generating namespace. Cannot generate a namespace with this qualifier."));
         }
-
-//        String qualifierWithPrefix =
-//            (newNamespace.getQualifier().length() >= NAMEPSACE_PREFIX.length() &&
-//                newNamespace.getQualifier().substring(0, NAMEPSACE_PREFIX.length()).equals(NAMEPSACE_PREFIX))
-//            ? newNamespace.getQualifier() : NAMEPSACE_PREFIX + newNamespace.getQualifier();
-//        Namespace namespace = Namespace.findByQualifier(emf.get(), qualifierWithPrefix);
-
+        
         if (Namespace.findByQualifier(emf.get(), namespace.getQualifier()) != null) {
             throw new SystemException(new IllegalArgumentException("Namespace already exists. Please try a different namespace."));
         }
         
-        //newNamespace.setQualifier(qualifierWithPrefix);
         namespace = updateNamespace(namespace);
         _logger.debug("Generated namespace {}.", namespace);
         return namespace;
