@@ -258,8 +258,7 @@ public class MetricQuery extends AnnotationQuery {
         sb.append(getTSDBMetricName());
 
         Map<String, String> tags = new HashMap<>(getTags());
-
-        //tags.put(ReservedField.METRIC.getKey(), getMetric());
+        
         try {
             return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
         } catch (UnsupportedEncodingException ex) {

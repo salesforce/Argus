@@ -99,16 +99,6 @@ class MetricTransform {
             String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
             String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
             
-//            String scope = tsdbService.getScopeFromTSDBMetric(tsdbMetricName);
-//            String namespace = tsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
-//		
-//            // Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
-//            if (scope.isEmpty()) {
-//                return null;
-//            }
-//
-//            String metric = tags.get(ReservedField.METRIC.getKey());
-            
             Map<String, String> userTags = new HashMap<>();
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
