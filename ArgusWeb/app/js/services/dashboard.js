@@ -102,7 +102,7 @@ angular.module('argus.services.dashboard', [])
 	       	var chartType = attributes.type ? attributes.type : 'LINE';
             // smallChart currently viewed in the 'Services Dashboard'
             var smallChart = attributes.smallchart ? true : false;
-            var highChartOptions = getOptionsByChartType(config, chartType, smallChart);
+            var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
 
 	        setCustomOptions(highChartOptions,optionList);
 	         

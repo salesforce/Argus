@@ -36,14 +36,26 @@ angular.module('argus', [
   'ui.bootstrap.datetimepicker',
   'argus.urlConfig',
   'argus.config',
+  'argus.filters',
+  'argus.constants',
   'argus.services',
   'argus.controllers',
   'argus.directives',
   'argus.directives.breadcrumbs',
   'argus.directives.confirm',
   'argus.directives.dashboardResource',
-  'filters',
-  'constants'
+  'argus.directives.controls.dashboard',
+  'argus.directives.controls.date',
+  'argus.directives.controls.dropdown',
+  'argus.directives.controls.submit',
+  'argus.directives.controls.text',
+  'argus.directives.charts.chart',
+  'argus.directives.charts.flags',
+  'argus.directives.charts.heatmap',
+  'argus.directives.charts.metric',
+  'argus.directives.charts.option',
+  'argus.directives.charts.statusIndicator',
+  'argus.directives.charts.table'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
@@ -94,22 +106,6 @@ angular.module('argus.controllers', [
 
 // Directives
 angular.module('argus.directives', [
-  'argus.directives',
-  'argus.directives.confirm',
-  'argus.directives.breadcrumbs',
-  'argus.directives.dashboardResource',
-  'argus.directives.controls.dashboard',
-  'argus.directives.controls.date',
-  'argus.directives.controls.dropdown',
-  'argus.directives.controls.submit',
-  'argus.directives.controls.text',
-  'argus.directives.charts.chart',
-  'argus.directives.charts.flags',
-  'argus.directives.charts.heatmap',
-  'argus.directives.charts.metric',
-  'argus.directives.charts.option',
-  'argus.directives.charts.statusIndicator',
-  'argus.directives.charts.table',
 ]);
 
 // Filters
