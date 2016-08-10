@@ -19,13 +19,13 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-    version: '@@version',
-    wsUrl: '@@wsUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    piwikUrl: @@piwikUrl,
-    piwikSiteId: '@@piwikSiteId'
+    version: '4.0-SNAPSHOT',
+    wsUrl: 'http://localhost:8080/argusws/',
+    emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
+    feedUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-user',
+    wikiUrl: 'https://sites.google.com/a/mycompany.com/argus',
+    issueUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev',
+    templatePath: '/app/views/argus_custom_directives/templates/',
+    piwikUrl: (('https:' == document.location.protocol) ? 'https' : 'http') + '://localhost/piwik/',
+    piwikSiteId: '3'
 });

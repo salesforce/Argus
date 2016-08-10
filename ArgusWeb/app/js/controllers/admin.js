@@ -17,15 +17,34 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-angular.module("argus.urlConfig", [])
-.constant('CONFIG', {
-    version: '@@version',
-    wsUrl: '@@wsUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    piwikUrl: @@piwikUrl,
-    piwikSiteId: '@@piwikSiteId'
-});
+'use strict';
+
+angular.module('argus.controllers.admin', ['ngResource'])
+.controller('Admin', ['$scope', 'CONFIG', 'Auth', 'growl', 'ReinstateUser',
+		function ($scope, CONFIG, Auth, growl, ReinstateUser) {
+				$scope.config = CONFIG;
+
+				// check for admin, otherwise don't render view
+				$scope.isPrivileged = Auth.isPrivileged();
+
+        $scope.submitUser = function () {
+						if ($scope.username === '' || $scope.subsystem === '') return;
+
+						var userInfo = {
+								username: $scope.username,
+								subsystem: $scope.subsystem
+						};
+
+						// submit request to reinstate a specific user
+						ReinstateUser.update(userInfo, function (result) {
+								// reset $scope values after submission
+								// $scope.username = "";
+								// $scope.subsystem = "";
+
+								growl.success('User: "' + result + '" successfully reinstated!"');
+						}, function (error) {
+								growl.error('Failed to reinstate user: "' + $scope.username + ' - ' + error + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
+						});
+				};
+		}
+]);
