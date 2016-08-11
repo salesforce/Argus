@@ -53,6 +53,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             };
             options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
             $('#container').highcharts('StockChart', options);
+            $scope.series = series;
             $scope.addAlertFlags(data);
         };
 
