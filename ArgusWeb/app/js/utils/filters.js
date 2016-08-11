@@ -1,4 +1,4 @@
-angular.module('filters', [])
+angular.module('argus.filters', [])
 .filter('capitalize', function() {
 		return function(input, scope) {
 				if (input != null) {

@@ -34,9 +34,9 @@ package com.salesforce.dva.argus.service.tsdb;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
+
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -177,10 +177,12 @@ public class MetricQuery extends AnnotationQuery {
      */
     @JsonIgnore
     public String getTSDBMetricName() {
-        StringBuilder sb = new StringBuilder(getScope());
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append(getMetric()).append(DefaultTSDBService.DELIMITER).append(getScope());
 
         if (_namespace != null && !_namespace.isEmpty()) {
-            sb.append(getNamespace());
+            sb.append(DefaultTSDBService.DELIMITER).append(getNamespace());
         }
         return sb.toString();
     }
@@ -256,8 +258,7 @@ public class MetricQuery extends AnnotationQuery {
         sb.append(getTSDBMetricName());
 
         Map<String, String> tags = new HashMap<>(getTags());
-
-        tags.put(ReservedField.METRIC.getKey(), getMetric());
+        
         try {
             return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
         } catch (UnsupportedEncodingException ex) {

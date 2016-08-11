@@ -1,4 +1,4 @@
-angular.module('constants', [])
+angular.module('argus.constants', [])
 .constant('VIEWELEMENT', {
 		chart: 'chart',
 		heatmap: 'heatmap',
