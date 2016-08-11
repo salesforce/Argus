@@ -1,6 +1,6 @@
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService',
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
@@ -24,7 +24,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             	type: 'datetime',
             	ordinal: false
             };
-            
+
             //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
             options.lang = {noData: 'No Data to Display'};
             options.legend = {
@@ -46,7 +46,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             	series: {
             		animation: false,
             		connectNulls: true
-            	}, 
+            	},
             	line : {
             		gapSize:1.5
             	}
@@ -187,4 +187,11 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         };
 
         $scope.getMetricData(null);
+
+        $scope.searchMetrics = function(value) {
+            return SearchService
+                    .search(value)
+                    .then(SearchService.processResponses);
+        }
+
     }]);
