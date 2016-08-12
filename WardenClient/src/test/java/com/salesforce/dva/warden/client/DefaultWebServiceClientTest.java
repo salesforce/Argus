@@ -19,6 +19,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.params.HttpParams;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -274,14 +275,12 @@ public class DefaultWebServiceClientTest  {
 		mockedHttpClient.connRequestTimeout = 10;
 		mockedHttpClient.connTimeout = 10;
 		
-		List <Policy> actualPolicies = new ArrayList<Policy>();
-		
+		List <Policy> actualPolicies = new ArrayList<Policy>();		
 		Policy dummyPolicyA = new Policy();		
 		createDummyPolicy(dummyPolicyA);
 		
 		Policy dummyPolicyB = new Policy();		
 		createDummyPolicy(dummyPolicyB);
-
         
 		actualPolicies.add(dummyPolicyA);
 		actualPolicies.add(dummyPolicyB);
@@ -290,19 +289,20 @@ public class DefaultWebServiceClientTest  {
 		
 		DefaultWebServiceClient webServiceClient = new DefaultWebServiceClient(mockedHttpClient); 
 		
-		webServiceClient = Mockito.spy(webServiceClient);
+		//for the next two lines, used the mocked webServiceClient. This is to avoid using instance login/logout methods
+		webServiceClient = Mockito.spy(webServiceClient); 
 		Mockito.doReturn(true).when(webServiceClient).login("raj", "abc");		
 		Mockito.doReturn(true).when(webServiceClient).logout();
-		
+		//Mock the Http response
 		HttpResponse response = Mockito.mock(MockHttpResponse.class);
+		//Insert mocked entity to the mocked response. 
 		MockedHttpEntity mockedEntity = new MockedEntity();
 		mockedEntity = Mockito.spy(mockedEntity);
 		Mockito.when(mockedEntity.getPayload()).thenReturn(payload);
 		
-		Mockito.when(response.getEntity()).thenReturn(mockedEntity );
-		
+		Mockito.when(response.getEntity()).thenReturn(mockedEntity );		
 		Mockito.when(mockedHttpClient.executeHttpRequest(RequestType.GET, "argusuri/policy", null)).thenReturn(response);
-		
+		//test if both the lists of policies are the same 
 		assertEquals(webServiceClient.getPolicies(), actualPolicies);
 	}
 
@@ -325,6 +325,85 @@ public class DefaultWebServiceClientTest  {
         dummyPolicyName.setTimeUnit( "5min" );
         dummyPolicyName.setDefaultValue( 0.0 );
        dummyPolicyName.setCronEntry( "0 */4 * * *" );
+	}
+	
+	@Test
+	public void testCreatePolicies() throws Exception {
+		
+		HttpClient mockedHttpClient = Mockito.mock(HttpClient.class);
+		mockedHttpClient.endpoint = "argusuri";
+		mockedHttpClient.maxConn = 10;
+		mockedHttpClient.connRequestTimeout = 10;
+		mockedHttpClient.connTimeout = 10;
+		
+		List <Policy> actualPolicies = new ArrayList<Policy>();		
+		Policy dummyPolicyA = new Policy();		
+		createDummyPolicy(dummyPolicyA);
+		
+		Policy dummyPolicyB = new Policy();		
+		createDummyPolicy(dummyPolicyB);
+        
+		actualPolicies.add(dummyPolicyA);
+		actualPolicies.add(dummyPolicyB);
+		
+		String payloadString = new ObjectMapper().writeValueAsString(actualPolicies);
+		
+		StringEntity payload = new StringEntity(payloadString);
+		
+		DefaultWebServiceClient webServiceClient = new DefaultWebServiceClient(mockedHttpClient); 
+		
+		//for the next two lines, used the mocked webServiceClient. This is to avoid using instance login/logout methods
+		webServiceClient = Mockito.spy(webServiceClient); 
+		Mockito.doReturn(true).when(webServiceClient).login("raj", "abc");		
+		Mockito.doReturn(true).when(webServiceClient).logout();
+		
+		//Mock the Http response
+		HttpResponse response = Mockito.mock(MockHttpResponse.class, RETURNS_DEEP_STUBS);
+		
+		//Insert mocked entity to the mocked response.
+		MockedHttpEntity mockedEntity = new MockedEntity();
+		mockedEntity = Mockito.spy(mockedEntity);
+		Mockito.when(mockedEntity.getPayload()).thenReturn(payloadString);
+		
+		Mockito.when(response.getEntity()).thenReturn(mockedEntity );
+		Mockito.when(response.getStatusLine().getStatusCode()).thenReturn(200);
+		
+		Mockito.when(mockedHttpClient.executeHttpRequest(RequestType.POST, "argusuri/policy", payload)).thenReturn(response);
+		
+		assertEquals(webServiceClient.createPolicies(actualPolicies), payloadString);
+		
+	}
+	
+	@Test
+	public void testFromEntity() throws Exception {
+		
+		HttpClient mockedHttpClient = Mockito.mock(HttpClient.class);
+		mockedHttpClient.endpoint = "argusuri";
+		mockedHttpClient.maxConn = 10;
+		mockedHttpClient.connRequestTimeout = 10;
+		mockedHttpClient.connTimeout = 10;
+		
+		List <Policy> actualPolicies = new ArrayList<Policy>();		
+		Policy dummyPolicyA = new Policy();		
+		createDummyPolicy(dummyPolicyA);
+		
+		Policy dummyPolicyB = new Policy();		
+		createDummyPolicy(dummyPolicyB);
+        
+		actualPolicies.add(dummyPolicyA);
+		actualPolicies.add(dummyPolicyB);
+		
+		String payload = new ObjectMapper().writeValueAsString(actualPolicies);
+		
+		DefaultWebServiceClient webServiceClient = new DefaultWebServiceClient(mockedHttpClient); 
+		
+		//for the next two lines, used the mocked webServiceClient. This is to avoid using instance login/logout methods
+		webServiceClient = Mockito.spy(webServiceClient); 
+		Mockito.doReturn(true).when(webServiceClient).login("raj", "abc");		
+		Mockito.doReturn(true).when(webServiceClient).logout();
+		
+		assertEquals(webServiceClient.fromEntity(actualPolicies), payload );
+		
 	}
 																																																																																												
 }
