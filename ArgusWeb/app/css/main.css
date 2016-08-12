@@ -142,3 +142,46 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     max-height: 300px;
     overflow: scroll;
 }
+
+/* D3 styles */
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.x.axis path {
+  display: none;
+}
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+.focus circle {
+  opacity: 0.5;
+}
+g.legend-items text {
+  color: #444;
+  font-size: 12px;
+}
+g.legend-items circle {
+  opacity: 0.5;
+}
+g.legend-items text .timestamp {
+  font-variant: small-caps;
+}
+g.legend-items text .value {
+  font-weight: 600;
+  font-size: 14px;
+}
+.legend rect {
+  fill: #eee;
+  stroke: steelblue;
+  opacity: 0.9;
+}
+

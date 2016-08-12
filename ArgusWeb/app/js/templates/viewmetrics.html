@@ -21,7 +21,13 @@
             </span>
         </div><!-- /input-group -->
     </form>
+    <div class="checkbox" style="margin-left: 48px">
+      <label>
+        <input type="checkbox" ng-click="toggleGraphType()"> Use D3 to display data
+      </label>
+    </div>
     <br/>
     <div growl inline="true" reference="viewmetrics-error"></div>
-    <div id="container" style="min-width: 310px; height: 400px; margin: 0 auto;"></div>
+    <ag-d3-line-graph ng-show="useD3 == true" series="series"></ag-d3-line-graph>
+    <div id="container" ng-show="useD3 == false" style="min-width: 310px; height: 400px; margin: 0 auto;"></div>
 </section>

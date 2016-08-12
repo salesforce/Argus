@@ -50,6 +50,7 @@ angular.module('argus', [
   'argus.directives.controls.submit',
   'argus.directives.controls.text',
   'argus.directives.charts.chart',
+  'argus.directives.chart.d3LineChart',
   'argus.directives.charts.flags',
   'argus.directives.charts.heatmap',
   'argus.directives.charts.metric',
