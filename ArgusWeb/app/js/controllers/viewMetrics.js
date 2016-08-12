@@ -2,6 +2,11 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService',
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
+        $scope.useD3 = false;
+
+        $scope.toggleGraphType = function() {
+            $scope.useD3 = !$scope.useD3;
+        }
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
                 Metrics.query({expression: $scope.expression}, function (data) {
@@ -53,6 +58,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             };
             options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
             $('#container').highcharts('StockChart', options);
+            $scope.series = series;
             $scope.addAlertFlags(data);
         };
 
