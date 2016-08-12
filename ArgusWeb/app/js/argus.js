@@ -59,8 +59,13 @@ angular.module('argus', [
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
-  // $http.get('js/templates/directives/headerTabs.html', {cache: $templateCache});
-  // TODO: add rest of templates to cache
+  $http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
+  $http.get('js/templates/login.html', {cache: $templateCache});
+  $http.get('js/templates/alert-list.html', {cache: $templateCache});
+  $http.get('js/templates/alert-detail.html', {cache: $templateCache});
+  $http.get('js/templates/dashboard-list.html', {cache: $templateCache});
+  $http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
+  $http.get('js/templates/viewmetrics.html', {cache: $templateCache});
 }]);
 
 // Services
