@@ -177,11 +177,11 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         $scope.mapTriggers = function (notification) {
             for (var i = 0; i < $scope.unmodifiedTriggers.length; i++) {
                 var trigger = $scope.unmodifiedTriggers[i];
-                TriggerMap.unmap({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger.id});
+                TriggersMap.unmap({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger.id});
             }
             for (var i = 0; i < notification.triggersIds.length; i++) {
                 var trigger = notification.triggersIds[i];
-                TriggerMap.map({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger}, null);
+                TriggersMap.map({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger}, null);
             }
             $scope.fetchHistory();
             $scope.fetchJobExecutionDetails();
