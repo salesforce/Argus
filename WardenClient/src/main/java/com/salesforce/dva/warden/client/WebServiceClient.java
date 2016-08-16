@@ -15,6 +15,6 @@ public interface WebServiceClient {
 
 	boolean deletePolicies();
 
-	String createPolicies(List<Policy> policies);
+	List<Policy> createPolicies(List<Policy> policies);
 
 }

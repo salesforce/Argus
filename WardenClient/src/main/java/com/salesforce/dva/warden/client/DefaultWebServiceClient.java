@@ -145,7 +145,7 @@ class DefaultWebServiceClient
     }
 
     @Override
-    public String createPolicies(List<Policy> policies){
+    public List<Policy> createPolicies(List<Policy> policies){
     	login( "raj", "abc" );
         String endpoint = "argusuri";
         String requestUrl = endpoint + "/policy";
@@ -153,7 +153,9 @@ class DefaultWebServiceClient
         try {
 	        StringEntity entity = new StringEntity(fromEntity(policies));
 	        HttpResponse response = httpClient.executeHttpRequest( RequestType.POST, requestUrl, entity );
-	        return extractResponse(response);
+	        ObjectMapper mapper = new ObjectMapper(  );
+	        return mapper.readValue( extractStringResponse( response ),
+                            mapper.getTypeFactory(  ).constructCollectionType( List.class, Policy.class ) );
         } catch (IOException ex) {
             throw new SystemException("Error posting data", ex);
         }
