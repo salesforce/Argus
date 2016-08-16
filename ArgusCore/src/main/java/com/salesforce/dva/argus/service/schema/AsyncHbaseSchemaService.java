@@ -100,6 +100,16 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 
         config.overrideConfig("hbase.zookeeper.quorum",
             systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
+        config.overrideConfig("hbase.security.auth.enable",
+                systemConfig.getValue(Property.HBASE_SECURITY_AUTH_ENABLE.getName(), Property.HBASE_SECURITY_AUTH_ENABLE.getDefaultValue()));
+        config.overrideConfig("hbase.rpc.protection", 
+        		systemConfig.getValue(Property.HBASE_RPC_PROTECTION.getName(), Property.HBASE_RPC_PROTECTION.getDefaultValue()));
+        config.overrideConfig("hbase.sasl.clientconfig",
+        		systemConfig.getValue(Property.HBASE_SASL_CLIENTCONFIG.getName(), Property.HBASE_SASL_CLIENTCONFIG.getDefaultValue()));
+        config.overrideConfig("hbase.kerberos.regionserver.principal",
+        		systemConfig.getValue(Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getName(), Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getDefaultValue()));
+        config.overrideConfig("hbase.security.authentication", 
+        		systemConfig.getValue(Property.HBASE_SECURITY_AUTHENTICATION.getName(), Property.HBASE_SECURITY_AUTHENTICATION.getDefaultValue()));
         config.overrideConfig("hbase.rpcs.batch.size", "16192");
         config.overrideConfig("hbase.rpcs.buffered_flush_interval", "5000");
         config.overrideConfig("hbase.zookeeper.session.timeout", "6000");
@@ -671,7 +681,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      */
     public enum Property {
 
-        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "hbase.zookeeper.com:1234");
+        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "hbase.zookeeper.com:1234"),
+        HBASE_SECURITY_AUTHENTICATION("service.property.schema.hbase.security.authentication", ""),
+        HBASE_RPC_PROTECTION("service.property.schema.hbase.rpc.protection", ""),
+        HBASE_SASL_CLIENTCONFIG("service.property.schema.hbase.sasl.clientconfig", "Client"),
+        HBASE_SECURITY_AUTH_ENABLE("service.property.schema.hbase.security.auth.enable", "false"),
+        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.schema.hbase.kerberos.regionserver.principal", "");
 
         private final String _name;
         private final String _defaultValue;
