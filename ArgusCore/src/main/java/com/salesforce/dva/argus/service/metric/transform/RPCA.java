@@ -36,6 +36,11 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+/**
+ * RPCA code taken from Netflix Surus Project.
+ * Source: https://github.com/Netflix/Surus/blob/master/src/main/java/org/surus/math/RPCA.java
+ *
+ */
 public class RPCA {
 
 	private RealMatrix X;
