@@ -60,7 +60,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
         Map<Long, String> predictionDatapoints = new HashMap<>();
 
-        long detectionIntervalInSeconds = getDetectionIntervalInSeconds(constants.get(0));
+        long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
 
         //Create a sorted array of the metric's timestamps
         Map<Long, String> completeDatapoints = metrics.get(0).getDatapoints();
@@ -82,6 +82,21 @@ public abstract class AnomalyDetectionTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... metrics) {
         throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
+    }
+
+    public long getTimePeriodInSeconds(String timePeriod) {
+        try {
+            //Parse constant for time period
+            String timeValueString = timePeriod.substring(0, timePeriod.length() - 1);
+            String timeUnitString = timePeriod.substring(timePeriod.length() - 1);
+            Long timeValue = Long.parseLong(timeValueString);
+            MetricReader.TimeUnit timeUnit = MetricReader.TimeUnit.fromString(timeUnitString);
+            //Convert time period to seconds
+            long timePeriodInSeconds = timeValue * timeUnit.getValue() / 1000;
+            return timePeriodInSeconds;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid expression for time period constant.");
+        }
     }
 
     /**
@@ -156,21 +171,6 @@ public abstract class AnomalyDetectionTransform implements Transform {
         minMax.put("min", min);
         minMax.put("max", max);
         return minMax;
-    }
-
-    private long getDetectionIntervalInSeconds(String detectionInterval) {
-        try {
-            //Parse constant for anomaly detection interval
-            String detectionIntervalValue = detectionInterval.substring(0, detectionInterval.length() - 1);
-            String detectionIntervalUnit = detectionInterval.substring(detectionInterval.length() - 1);
-            Long timeValue = Long.parseLong(detectionIntervalValue);
-            MetricReader.TimeUnit timeUnit = MetricReader.TimeUnit.fromString(detectionIntervalUnit);
-            //Convert interval to seconds
-            long detectionIntervalInSeconds = timeValue * timeUnit.getValue() / 1000;
-            return detectionIntervalInSeconds;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid expression for anomaly detection interval constant.");
-        }
     }
 
     /**

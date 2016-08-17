@@ -45,6 +45,9 @@ import java.util.*;
  * (i) Article: http://techblog.netflix.com/2015/02/rad-outlier-detection-on-big-data.html
  * (ii) Source code: https://github.com/Netflix/Surus
  *
+ * Ex: ANOMALY_RPCA(-100d:-0d:foo:bar:sum, $7d), where $7d indicates that the length of
+ * a season of the metric is 7 days.
+ *
  * @author  Shouvik Mani & Vignesh Muruganantham
  */
 public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
@@ -64,17 +67,17 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         SystemAssert.requireState(constants.size() == 1, "Anomaly Detection RPCA Transform can only be used with " +
                 "one constant for the length of a season");
 
-        //TODO: Parse period constant for frequency
-        frequency = 7;
-
         //Create a sorted array of the metric's timestamps
         Map<Long, String> completeDatapoints = metrics.get(0).getDatapoints();
         timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
 
+        long seasonLengthInMilliseconds = getTimePeriodInSeconds(constants.get(0)) * 1000;
+        frequency = getFrequency(seasonLengthInMilliseconds);
+
         //Array of the metric's standardized values ordered by time
         metricValues = new double[completeDatapoints.size()];
-        for(int i = 0; i < metricValues.length; i++) {
+        for (int i = 0; i < metricValues.length; i++) {
             String value = completeDatapoints.get(timestamps[i]);
             metricValues[i] = Double.parseDouble(value);
         }
@@ -94,12 +97,29 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
     }
 
+    /*
+     * Calculates the frequency of the metric (the number of data
+     * points in one season of the metric)
+     */
+    private int getFrequency(long seasonLength) {
+        long startTime = timestamps[0];
+        int numDatapointsInSeason = 0;
+        for (long timestamp : timestamps) {
+            if ((timestamp - startTime) < seasonLength) {
+                numDatapointsInSeason++;
+            } else {
+                break;
+            }
+        }
+        return numDatapointsInSeason;
+    }
+
     private void trainModel() {
         double[][] metricDataMatrix = vectorToMatrix(metricValues, frequency, metricValues.length/frequency);
         rpca = new RPCA(metricDataMatrix, 1, 1.4/3);
     }
 
-    /**
+    /*
      * Assigns an anomaly score to each data point, indicating how likely it is
      * to be an anomaly relative to other points and seasonality factors.
      */
@@ -136,11 +156,9 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         return Math.abs(value);
     }
 
-    /**
-     * Standardizes the values to have zero mean and unit variance
-     *
+    /*
+     * Standardizes the values to have zero mean and unit variance.
      * Formula: standardizedValue = (rawValue - mean) / standardDeviation
-     *
      */
     private void standardize(double[] values) {
         double mean = calculateMean(values);
