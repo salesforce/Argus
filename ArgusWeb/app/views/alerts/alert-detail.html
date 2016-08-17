@@ -154,16 +154,7 @@
                     <td><input class="form-control" type="text" ng-list ng-model="notification.subscriptions" /></td>
                     <td><input class="form-control" type="text" ng-list ng-model="notification.metricsToAnnotate" /></td>
                     <td><input class="form-control" type="text" ng-model="notification.cooldownPeriod" /></td>
-                    <td>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                                <i class="glyphicon glyphicon-cog"></i>
-                            </button>
-                            <select stop-event class='dropdown-menu' ng-model="notification.triggersIds" multiple="multiple"
-                                    ng-options="id for id in getTriggerIds()">
-                            </select>
-                        </div>
-                    </td>
+                    <td><select class="form-control" multiple="multiple" ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()"></select></td>
                     <td>
                         <button class="btn btn-warning btn-sm" type="button"
                                 ng-confirm='Delete "{{notification.name}}"?' ng-confirm-action='removeNotification(notification)'>
