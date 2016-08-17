@@ -156,11 +156,7 @@
                     <td><input class="form-control" type="text" ng-list ng-model="notification.subscriptions" /></td>
                     <td><input class="form-control" type="text" ng-list ng-model="notification.metricsToAnnotate" /></td>
                     <td><input class="form-control" type="text" ng-model="notification.cooldownPeriod" /></td>
-                    <td>
-                        <select class="form-control" multiple="multiple" ng-model="notification.triggersIds">
-                            <option ng-repeat="triggerId in getTriggerIds()" value="{{triggerId}}" ng-selected="{{triggerId == notification.triggersIds}}">{{id}}</option>
-                        </select>
-                    </td>
+                    <td><select class="form-control" multiple="multiple" ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()"></select></td>
                     <td>
                         <button class="btn btn-warning btn-sm" type="button"
                                 ng-confirm='Delete "{{notification.name}}"?' ng-confirm-action='removeNotification(notification)'>
