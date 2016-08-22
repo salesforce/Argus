@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('argus.directives.chart.d3LineChart', [])
+angular.module('argus.directives.charts.d3LineChart', [])
   .directive('agD3LineGraph', function() {
     return {
       restrict: 'E',
@@ -15,25 +15,22 @@ angular.module('argus.directives.chart.d3LineChart', [])
 
         // Local helpers
         var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
-        var formatDate = d3.time.format('%A, %b %e, %H:%M');
+        var formatDate = d3.timeFormat('%A, %b %e, %H:%M');
         var formatValue = d3.format(',');
         var tooltipCreator = function() {};
 
         // Base graph setup
-        var x = d3.time.scale().range([0, width]);
-        var y = d3.scale.linear().range([height, 0]);
-        var z = d3.scale.ordinal().range(d3.scale.category10().range());
+        var x = d3.scaleTime().range([0, width]);
+        var y = d3.scaleLinear().range([height, 0]);
+        var z = d3.scaleOrdinal().range(d3.schemeCategory10);
 
-        var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient('bottom');
+        var xAxis = d3.axisBottom().scale(x);
 
-        var yAxis = d3.svg.axis()
+        var yAxis = d3.axisLeft()
           .scale(y)
-          .orient('left')
           .tickFormat(d3.format('s'));
 
-        var line = d3.svg.line()
+        var line = d3.line()
           .x(function(d) { return x(d[0]); })
           .y(function(d) { return y(d[1]); });
 

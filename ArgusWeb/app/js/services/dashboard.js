@@ -43,6 +43,7 @@ angular.module('argus.services.dashboard', [])
             }
         };
 
+        // TODO: refactor this duplicate code also in: viewMetrics.js $scope function
         this.getMetricData = function(metricExpression) {
             if (!metricExpression) return;
 

@@ -1,17 +1,19 @@
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService',
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
+        
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
         $scope.useD3 = false;
 
         $scope.toggleGraphType = function() {
             $scope.useD3 = !$scope.useD3;
-        }
+        };
+
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
                 Metrics.query({expression: $scope.expression}, function (data) {
                     $scope.updateChart({}, data);
-                },function (error) {
+                }, function (error) {
                     $scope.updateChart({}, null);
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                 });
@@ -111,6 +113,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             }
         };
 
+        // TODO: move logic to the getMetricData method, on: input enter/submit
         $scope.getBookmarkLink = function () {
             if ($scope.expression && $scope.expression.length) {
                 return "#" + $location.path() + "?expression=" + encodeURIComponent($scope.expression);
@@ -198,6 +201,5 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             return SearchService
                     .search(value)
                     .then(SearchService.processResponses);
-        }
-
+        };
     }]);

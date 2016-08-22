@@ -50,7 +50,7 @@ angular.module('argus', [
   'argus.directives.controls.submit',
   'argus.directives.controls.text',
   'argus.directives.charts.chart',
-  'argus.directives.chart.d3LineChart',
+  'argus.directives.charts.d3LineChart',
   'argus.directives.charts.flags',
   'argus.directives.charts.heatmap',
   'argus.directives.charts.metric',
@@ -60,8 +60,13 @@ angular.module('argus', [
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
-  // $http.get('js/templates/directives/headerTabs.html', {cache: $templateCache});
-  // TODO: add rest of templates to cache
+  $http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
+  $http.get('js/templates/login.html', {cache: $templateCache});
+  $http.get('js/templates/alert-list.html', {cache: $templateCache});
+  $http.get('js/templates/alert-detail.html', {cache: $templateCache});
+  $http.get('js/templates/dashboard-list.html', {cache: $templateCache});
+  $http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
+  $http.get('js/templates/viewmetrics.html', {cache: $templateCache});
 }]);
 
 // Services
