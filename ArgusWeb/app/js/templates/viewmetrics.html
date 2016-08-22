@@ -1,0 +1,33 @@
+<div class="h3">Metrics</div>
+<section>
+    <form novalidate class="form-horizontal">
+        <div class="input-group search-bar">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button" ng-click="getMetricData()">Go!</button>
+            </span>
+            <input type="text" class="form-control" placeholder="Enter metric expression..." autocomplete="off" ng-model='expression' typeahead-min-length="2" typeahead-wait-ms="1000" uib-typeahead="result.expression for result in searchMetrics($viewValue)" typeahead-template-url="customTemplate.html">
+            <script type="text/ng-template" id="customTemplate.html">
+              <a>
+                  <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+                  &nbsp;&nbsp;&nbsp;
+                  <span style="font-size: 11px; border: 1px solid #71ABCE; border-radius: 5px; padding: 4px;">{{ match.model.category | uppercase }}</span>
+                  <span style="float:right;">{{ match.model.expression }}</span>
+              </a>
+            </script>
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button">
+                    <a style="color:inherit" href="{{getBookmarkLink()}}" class="glyphicon glyphicon-bookmark"></a>
+                </button>
+            </span>
+        </div><!-- /input-group -->
+    </form>
+    <div class="checkbox" style="margin-left: 48px">
+      <label>
+        <input type="checkbox" ng-click="toggleGraphType()"> Use D3 to display data
+      </label>
+    </div>
+    <br/>
+    <div growl inline="true" reference="viewmetrics-error"></div>
+    <ag-d3-line-graph ng-show="useD3 == true" series="series"></ag-d3-line-graph>
+    <div id="container" ng-show="useD3 == false" style="min-width: 310px; height: 400px; margin: 0 auto;"></div>
+</section>
