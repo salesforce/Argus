@@ -87,8 +87,9 @@ public abstract class AnomalyDetectionTransform implements Transform {
     public long getTimePeriodInSeconds(String timePeriod) {
         try {
             //Parse constant for time period
-            String timeValueString = timePeriod.substring(0, timePeriod.length() - 1);
-            String timeUnitString = timePeriod.substring(timePeriod.length() - 1);
+            int timeUnitIndex = timePeriod.length() - 1;
+            String timeValueString = timePeriod.substring(0, timeUnitIndex);
+            String timeUnitString = timePeriod.substring(timeUnitIndex);
             Long timeValue = Long.parseLong(timeValueString);
             MetricReader.TimeUnit timeUnit = MetricReader.TimeUnit.fromString(timeUnitString);
             //Convert time period to seconds
