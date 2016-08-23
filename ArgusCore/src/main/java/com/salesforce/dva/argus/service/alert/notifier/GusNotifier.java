@@ -190,7 +190,7 @@ public class GusNotifier extends AuditNotifier {
         try {
             String gusPost = MessageFormat.format("{0}&subjectId={1}&text={2}",
             		_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
-                URLEncoder.encode(feed.toString(), "UTF-8"));
+            		URLEncoder.encode(feed.toString(), "UTF-8"));
 
             chatterIt = new HttpPost(gusPost);
             chatterIt.setHeader("Authorization", "Bearer " + generateAccessToken());
