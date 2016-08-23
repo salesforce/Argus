@@ -86,8 +86,6 @@ public class GusNotifier extends AuditNotifier {
      *
      * @author  Tom Valine (tvaline@salesforce.com)
      */
-    private static final SystemConfiguration _sysConfig = new SystemConfiguration(new Properties());
-
     //~ Instance fields ******************************************************************************************************************************
 
     @SLF4JTypeListener.InjectLogger
@@ -190,7 +188,8 @@ public class GusNotifier extends AuditNotifier {
         HttpPost chatterIt = new HttpPost();
 
         try {
-            String gusPost = MessageFormat.format("{0}&subjectId={1}&text={2}", Endpoint.POST_URL.getUrl(), groupId,
+            String gusPost = MessageFormat.format("{0}&subjectId={1}&text={2}",
+            		_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
                 URLEncoder.encode(feed.toString(), "UTF-8"));
 
             chatterIt = new HttpPost(gusPost);
@@ -201,7 +200,7 @@ public class GusNotifier extends AuditNotifier {
 
             httpclient.execute(chatterIt);
         } catch (Exception e) {
-            _logger.debug("Throws Exception when posting to gus group {} with subject {}", groupId, feed);
+            _logger.error("Throws Exception when posting to gus group {} with subject {}.", groupId, feed);
         } finally {
             chatterIt.releaseConnection();
         }
@@ -220,7 +219,7 @@ public class GusNotifier extends AuditNotifier {
 
         try {
             // Send a post request to the OAuth URL.
-            oauthPost = new HttpPost(Endpoint.CALLBACK_URL.getUrl());
+            oauthPost = new HttpPost(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()));
 
             // generate the request body
             List<String> paraList = Arrays.asList("grant_type", "username", "password", "client_id", "client_secret");
@@ -237,7 +236,7 @@ public class GusNotifier extends AuditNotifier {
 
             return accessToken;
         } catch (RuntimeException | IOException e) {
-            _logger.debug("Encoding Exception when generating access token", CredentialPair.ARGUS_GUS_USER.getValue());
+            _logger.error("Encoding Exception when generating access token {}", Property.ARGUS_GUS_USER.getDefaultValue());
         } finally {
             oauthPost.releaseConnection();
         }
@@ -270,19 +269,17 @@ public class GusNotifier extends AuditNotifier {
      * @throws  UnsupportedOperationException  If the specified parameter doesn't have a corresponding GUS property.
      */
     public BasicNameValuePair generateNameValuePair(String paraName) {
-        CredentialPair credentialPara = CredentialPair.fromString(paraName);
-
-        switch (credentialPara) {
-            case GRANT_TYPE_PWD:
-                return new BasicNameValuePair(CredentialPair.GRANT_TYPE_PWD.getName(), CredentialPair.GRANT_TYPE_PWD.getValue());
-            case ARGUS_GUS_USER:
-                return new BasicNameValuePair(CredentialPair.ARGUS_GUS_USER.getName(), CredentialPair.ARGUS_GUS_USER.getValue());
-            case ARGUS_GUS_PWD:
-                return new BasicNameValuePair(CredentialPair.ARGUS_GUS_PWD.getName(), CredentialPair.ARGUS_GUS_PWD.getValue());
-            case GUS_CLIENT_ID:
-                return new BasicNameValuePair(CredentialPair.GUS_CLIENT_ID.getName(), CredentialPair.GUS_CLIENT_ID.getValue());
-            case GUS_CLIENT_SECRET:
-                return new BasicNameValuePair(CredentialPair.GUS_CLIENT_SECRET.getName(), CredentialPair.GUS_CLIENT_SECRET.getValue());
+        switch (paraName) {
+            case "grant_type":
+                return new BasicNameValuePair(paraName, _config.getValue(Property.GRANT_TYPE_PWD.getName(), Property.GRANT_TYPE_PWD.getDefaultValue()));
+            case "username":
+                return new BasicNameValuePair(paraName, _config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()));
+            case "password":
+                return new BasicNameValuePair(paraName, _config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()));
+            case "client_id":
+                return new BasicNameValuePair(paraName, _config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()));
+            case "client_secret":
+                return new BasicNameValuePair(paraName, _config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()));
             default:
                 throw new UnsupportedOperationException(paraName);
         }
@@ -298,93 +295,6 @@ public class GusNotifier extends AuditNotifier {
     	return result;
     }
 
-    //~ Enums ****************************************************************************************************************************************
-
-    /**
-     * CredentialPair stores name/value pair in the request.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    public enum CredentialPair {
-
-        GRANT_TYPE_PWD("grant_type", _sysConfig.getValue(Property.GRANT_TYPE_PWD.getName(), Property.GRANT_TYPE_PWD.getDefaultValue())),
-        ARGUS_GUS_USER("username", _sysConfig.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue())),
-        ARGUS_GUS_PWD("password", _sysConfig.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue())),
-        GUS_CLIENT_ID("client_id", _sysConfig.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue())),
-        GUS_CLIENT_SECRET("client_secret", _sysConfig.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()));
-
-        private final String _name, _value;
-
-        private CredentialPair(String name, String value) {
-            _name = name;
-            _value = value;
-        }
-
-        /**
-         * Returns the credential parameter name corresponding to the input string.
-         *
-         * @param   paraName  name The name of the credential parameter.
-         *
-         * @return  The corresponding parameter name.
-         *
-         * @throws  IllegalArgumentException  If no element exists for the name.
-         */
-        public static CredentialPair fromString(String paraName) {
-            if (paraName != null) {
-                for (CredentialPair para : CredentialPair.values()) {
-                    if (paraName.equalsIgnoreCase(para.getName())) {
-                        return para;
-                    }
-                }
-            }
-            throw new IllegalArgumentException(paraName);
-        }
-
-        /**
-         * Returns the credential parameter name.
-         *
-         * @return  The credential parameter name.
-         */
-        public String getName() {
-            return _name;
-        }
-
-        /**
-         * Returns the credential parameter value.
-         *
-         * @return  The credential parameter value.
-         */
-        public String getValue() {
-            return _value;
-        }
-    }
-
-    /**
-     * Endpoint stors callback url and post url.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    public enum Endpoint {
-
-        CALLBACK_URL(_sysConfig.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue())),
-        POST_URL(_sysConfig.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
-
-        private final String _url;
-
-        private Endpoint(String url) {
-            _url = url;
-        }
-
-        /**
-         * Returns the url from config.
-         *
-         * @return  The url from config.
-         */
-        public String getUrl() {
-            return _url;
-        }
-    }
-    
     public enum Property {
     	/** The GUS grant type password. */
         GRANT_TYPE_PWD("notifier.property.alert.grant_type_pwd", "password"),
