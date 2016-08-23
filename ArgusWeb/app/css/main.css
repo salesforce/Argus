@@ -24,7 +24,30 @@ label {
     padding-top: 5px;
 }
 
-#navbar .activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+.floatR {float:right;}
+
+/* increase font size for icons */
+#navbar li a.glyphicon {font-size:20px;}
+
+#navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+
+#navbar li.topMenu {position:relative;}
+#navbar li.topMenu ul.subMenu {
+  display:none;
+  position:absolute;
+  top:40px;
+  right:4px;
+  padding:0;
+  box-shadow:2px 2px 3px 0px #EEE;
+  list-style:none;
+  border:solid 1px #CCC;
+  background:#FFF;
+  z-index:9;
+}
+#navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
+#navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
+#navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
+#navbar .topMenu:hover ul.subMenu {display:block;}
 
 .breadcrumb {
   position:absolute;
@@ -53,6 +76,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+
+/* Growl settings */
 .growl-container.growl-fixed.top-center {
     top : 2em!important;
     width: 25%!important;
