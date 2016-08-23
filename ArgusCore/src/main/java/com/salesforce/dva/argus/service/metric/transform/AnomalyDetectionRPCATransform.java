@@ -69,11 +69,13 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
 
         //Create a sorted array of the metric's timestamps
         Map<Long, String> completeDatapoints = metrics.get(0).getDatapoints();
+        SystemAssert.requireState(completeDatapoints.size() != 0, "Cannot transform metric with no data points.");
         timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
 
-        long seasonLengthInMilliseconds = getTimePeriodInSeconds(constants.get(0)) * 1000;
-        frequency = getFrequency(seasonLengthInMilliseconds);
+        String seasonLengthInput = constants.get(0);
+        long seasonLengthInMilliseconds = super.getTimePeriodInSeconds(seasonLengthInput) * 1000;
+        frequency = calculateFrequency(seasonLengthInMilliseconds);
 
         //Array of the metric's standardized values ordered by time
         metricValues = new double[completeDatapoints.size()];
@@ -101,8 +103,14 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
      * Calculates the frequency of the metric (the number of data
      * points in one season of the metric)
      */
-    private int getFrequency(long seasonLength) {
+    private int calculateFrequency(long seasonLength) {
         long startTime = timestamps[0];
+        //Prevents frequency from being 0
+        if (timestamps[1] - timestamps[0] > seasonLength) {
+            throw new RuntimeException("Provided length of season is too small. No data points exist " +
+                    "within the first season of the metric.");
+        }
+
         int numDatapointsInSeason = 0;
         for (long timestamp : timestamps) {
             if ((timestamp - startTime) < seasonLength) {
@@ -111,11 +119,14 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
                 break;
             }
         }
+
         return numDatapointsInSeason;
     }
 
     private void trainModel() {
-        double[][] metricDataMatrix = vectorToMatrix(metricValues, frequency, metricValues.length/frequency);
+        //Frequency cannot be zero here, checked in calculateFrequency()
+        int numSeasons =  metricValues.length/frequency;
+        double[][] metricDataMatrix = vectorToMatrix(metricValues, frequency, numSeasons);
         rpca = new RPCA(metricDataMatrix, 1, 1.4/3);
     }
 
@@ -164,7 +175,16 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         double mean = calculateMean(values);
         double stdDev = calculateStandardDeviation(values, mean);
 
-        if (stdDev == 0.0) return;
+        /*
+         * If standard deviation is 0, all values of the metric are
+         * identical. Return vector of 0s.
+         */
+        if (stdDev == 0.0) {
+            for (int i = 0; i < values.length; i++) {
+                values[i] = 0.0;
+            }
+            return;
+        };
 
         for (int i = 0; i < values.length; i++) {
             double standardizedValue = (values[i] - mean) / stdDev;
