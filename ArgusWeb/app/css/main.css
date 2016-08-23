@@ -24,12 +24,12 @@ label {
     padding-top: 5px;
 }
 
+.floatL {float:left;}
 .floatR {float:right;}
 
-/* increase font size for icons */
-#navbar li a.glyphicon {font-size:20px;}
-
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+#navbar li a.glyphicon {font-size:20px;}
+#navbar li.activeTab a.glyphicon {color:#333;}
 
 #navbar li.topMenu {position:relative;}
 #navbar li.topMenu ul.subMenu {
