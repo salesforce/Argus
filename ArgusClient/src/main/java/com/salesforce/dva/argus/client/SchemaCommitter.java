@@ -33,8 +33,10 @@ package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.CollectionService;
 import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.MonitorService.Counter;
 
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -73,6 +75,7 @@ class SchemaCommitter extends AbstractCommitter {
 
                 if (count > 0) {
                     LOGGER.info(MessageFormat.format("Committed {0} metrics for schema records creation.", count));
+                    monitorService.modifyCounter(Counter.SCHEMACOMMIT_CLIENT_METRIC_WRITES, count, new HashMap<String,String>());
                     jobCounter.incrementAndGet();
                 }
                 Thread.sleep(POLL_INTERVAL_MS);
@@ -84,8 +87,9 @@ class SchemaCommitter extends AbstractCommitter {
                 LOGGER.info("Error occured while committing metrics for schema records creation.", ex);
             }
         }
-        LOGGER.warn("Ending Schema Committer.");
+        LOGGER.warn(MessageFormat.format("Schema committer thread interrupted. {} metrics committed by this thread.", jobCounter.get()));
         collectionService.dispose();
+        monitorService.dispose();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
