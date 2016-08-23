@@ -94,7 +94,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     @SLF4JTypeListener.InjectLogger
     private Logger _logger;
     private final HBaseClient _client;
-    private final boolean syncPut; 
+    private final boolean _syncPut; 
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -102,7 +102,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private AsyncHbaseSchemaService(SystemConfiguration systemConfig) {
     	super(systemConfig);
         
-    	syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
+    	_syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
     	
     	Config config = new Config();
         
@@ -556,7 +556,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         final PutRequest put = new PutRequest(Bytes.toBytes(tableName), Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
         Deferred<Object> deferred = _client.put(put);
         
-        if(syncPut) {
+        if(_syncPut) {
         	deferred.addCallback(new Callback<Object, Object>() {
     			@Override
     			public Object call(Object arg) throws Exception {
