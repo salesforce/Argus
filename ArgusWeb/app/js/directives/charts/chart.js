@@ -2,6 +2,7 @@ angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
     var chartNameIndex = 1;
     return {
+        //test comment for PR--Pimeng
         restrict: 'E',
         transclude: true,
         scope: {},
