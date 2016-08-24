@@ -189,6 +189,7 @@ TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
 TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
 TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
+TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 
 
 TOKEN : { < COLON : ":" > }
@@ -448,6 +449,9 @@ private String functionName() :
 	{ return t.image; }
 	|
     t = <ANOMALY_KMEANS>
+    { return t.image; }
+    |
+    t = <ANOMALY_RPCA>
     { return t.image; }
 }
 
