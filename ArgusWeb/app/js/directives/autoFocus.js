@@ -8,7 +8,7 @@
  * 
  * License: MIT
  */
-angular.module('argus.directives', [])
+angular.module('argus.directives')
 .directive('autoFocus', ['$timeout', '$exceptionHandler', function($timeout, $exceptionHandler) {
   return {
     restrict: 'A',

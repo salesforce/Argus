@@ -29,35 +29,39 @@
 		        </span>
 		    </div>
 		</div>
-	
-	<table class="table table-striped table-bordered">
-	    <tr>
-	        <th>ID</th>
-	        <th>Name</th>
-	        <th>Description</th>
-	        <th>Created</th>
-	        <th>Last Modified</th>
-	        <th>Owner</th>
-	        <th class="col-centered">
-	            <button class="btn btn-success btn-sm" type="button" ng-click="addDashboard()" tooltip-placement="top" tooltip="Create a new Dashboard">
-	                <i class="glyphicon glyphicon-plus"></i>
-	            </button>
-	        </th>
-	    </tr>
-	    <tr dir-paginate="dashboard in dashboards | filter:searchText | orderBy:'name' | itemsPerPage:itemsPerPage">
-	        <td>{{dashboard.id}}</td>
-	        <td><a href="#/dashboards/{{dashboard.id}}">{{dashboard.name}}</a></td>
-	        <td>{{dashboard.description}}</td>
-	        <td>{{dashboard.createdDate| date:'medium'}}</td>
-	        <td>{{dashboard.modifiedDate| date:'medium'}}</td>
-	        <td>{{dashboard.ownerName}}</td>
-	        <td>
-	            <button class="btn btn-warning btn-sm" type="button" ng-disabled="isDisabled(dashboard)"
-	                    ng-confirm="Delete '{{dashboard.name}}'?" ng-confirm-action="deleteDashboard(dashboard)">
-	                <i class="glyphicon glyphicon-trash"></i>
-	            </button>
-	        </td>
-	    </tr>
-	</table>
+
+		<!--<div id="listView"  ng-loading="dashboards">-->
+		<table class="table table-striped table-bordered">
+			<div id="listView"  ng-loading="allDashboards">
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Description</th>
+				<th>Created</th>
+				<th>Last Modified</th>
+				<th>Owner</th>
+				<th class="col-centered">
+					<button class="btn btn-success btn-sm" type="button" ng-click="addDashboard()" tooltip-placement="top" tooltip="Create a new Dashboard">
+						<i class="glyphicon glyphicon-plus"></i>
+					</button>
+				</th>
+			</tr>
+			<tr dir-paginate="dashboard in dashboards | filter:searchText | orderBy:'name' | itemsPerPage:itemsPerPage">
+				<td>{{dashboard.id}}</td>
+				<td><a href="#/dashboards/{{dashboard.id}}">{{dashboard.name}}</a></td>
+				<td>{{dashboard.description}}</td>
+				<td>{{dashboard.createdDate| date:'medium'}}</td>
+				<td>{{dashboard.modifiedDate| date:'medium'}}</td>
+				<td>{{dashboard.ownerName}}</td>
+				<td>
+					<button class="btn btn-warning btn-sm" type="button" ng-disabled="isDisabled(dashboard)"
+							ng-confirm="Delete '{{dashboard.name}}'?" ng-confirm-action="deleteDashboard(dashboard)">
+						<i class="glyphicon glyphicon-trash"></i>
+					</button>
+				</td>
+			</tr>
+			</div>
+		</table>
+		<!--</div>-->
 	
 </section>
