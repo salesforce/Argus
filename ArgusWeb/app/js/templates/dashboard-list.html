@@ -30,9 +30,7 @@
 		    </div>
 		</div>
 
-		<!--<div id="listView"  ng-loading="dashboards">-->
 		<table class="table table-striped table-bordered">
-			<div id="listView"  ng-loading="allDashboards">
 			<tr>
 				<th>ID</th>
 				<th>Name</th>
@@ -46,6 +44,7 @@
 					</button>
 				</th>
 			</tr>
+
 			<tr dir-paginate="dashboard in dashboards | filter:searchText | orderBy:'name' | itemsPerPage:itemsPerPage">
 				<td>{{dashboard.id}}</td>
 				<td><a href="#/dashboards/{{dashboard.id}}">{{dashboard.name}}</a></td>
@@ -60,8 +59,8 @@
 					</button>
 				</td>
 			</tr>
-			</div>
 		</table>
-		<!--</div>-->
-	
+		<!--loading spinner-->
+		<div id="listView" ng-loading="allDashboards"></div>
+
 </section>

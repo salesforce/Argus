@@ -5,8 +5,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {
-    	$scope.allDashboards = dashboards;
-    	$scope.getDashboards(false);
+        $scope.allDashboards = dashboards;
+        $scope.getDashboards(false);
     });
     
     $scope.dashboards = [];
