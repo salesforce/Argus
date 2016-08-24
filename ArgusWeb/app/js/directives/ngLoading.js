@@ -22,18 +22,13 @@
 angular.module('argus.directives')
 .directive('ngLoading', function ($compile) {
     // get the spinning icon
-    var loadingSpinner = '<img src="./img/ajax-loader.gif" alt="Loading. . .">';
-
+    var loadingSpinner = '<img src="./img/ajax-loader.gif" alt="Loading. . ." style="width:40px; height:40px; margin:100px auto; position: relative;">';
     return {
         restrict: 'A',
         link: function (scope, element, attrs) {
             var originalContent = element.html();
             element.html(loadingSpinner);
-            
-            console.log(originalContent);
             scope.$watch(attrs.ngLoading, function (val) {
-                console.log(attrs.ngLoading);
-                console.log(val);
                 if(val) {
                     element.html(originalContent);
                     $compile(element.contents())(scope);
