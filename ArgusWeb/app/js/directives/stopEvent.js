@@ -1,4 +1,4 @@
-angular.module('argus.directives', [])
+angular.module('argus.directives')
 .directive('stopEvent', function () {
     return {
         restrict: 'A',
