@@ -46,7 +46,7 @@ controlsModule.directive('agDashboardResource', ['DashboardService','$sce','$com
     }
 }]);
 
-controlsModule.directive('agDashboard', ['$routeParams', function($routeParams) {
+controlsModule.directive('agDashboard', ['$routeParams', '$location', function($routeParams, $location) {
 
     return{
         restrict:'E',
@@ -57,15 +57,19 @@ controlsModule.directive('agDashboard', ['$routeParams', function($routeParams) 
         template:'<div ng-transclude=""></div>',
         controller: function($scope){
             $scope.controls = [];
-            this.updateControl = function(controlName, controlValue, controlType){
+
+            this.updateControl = function(controlName, controlValue, controlType, localSubmit){
             	var controlExists = false;
 
-                // check $routeParams to override controlValue
-                for (var prop in $routeParams) {
-                    if (prop == controlName) {
-                        controlValue = $routeParams[prop];
-                    }
-                };
+                // check $routeParams to override controlValue,
+                // unless the user changes local scope
+                if (!localSubmit) {
+                    for (var prop in $routeParams) {
+                        if (prop == controlName) {
+                            controlValue = $routeParams[prop];
+                        }
+                    };
+                }
 
             	for(var i in $scope.controls) {
             		if($scope.controls[i].name === controlName) {
@@ -83,11 +87,31 @@ controlsModule.directive('agDashboard', ['$routeParams', function($routeParams) 
                 	};
                 	$scope.controls.push(control);
             	}
+
+                // add controls to the url
+                this.addControlsToUrl();
+            };
+
+            this.addControlsToUrl = function() {
+                var controls = $scope.controls;
+                var urlStr = '';
+
+                // setup url str from all controls values
+                for (var i=0; i < controls.length; i++) {
+                    urlStr += controls[i].name + '=' + controls[i].value;
+                    if (i < controls.length - 1) {
+                        urlStr += '&';
+                    }
+                };
+
+                // update url with controls params
+                $location.search(urlStr);
             };
 
             this.getAllControls = function(){
             	return $scope.controls;
             };
+
             this.getSubmitBtnEventName = function(){
                 return 'submitButtonEvent';
             };
@@ -95,8 +119,7 @@ controlsModule.directive('agDashboard', ['$routeParams', function($routeParams) 
             this.broadcastEvent = function(eventName, data){
             	console.log(eventName + ' was broadcast');
             	$scope.$broadcast(eventName, data);
-            }
-
+            };
         },
         link:function(scope,element,attributes){
             if(!attributes.onload || attributes.onload == true) {
@@ -129,9 +152,9 @@ controlsModule.directive('agText', ['$routeParams', 'CONFIG', function($routePar
         require:'^agDashboard',
         template:'<B>{{labelName}} : </B> <input type="text" ng-model="ctrlVal">',
         link: function(scope, element, attributes, dashboardCtrl) {
-            dashboardCtrl.updateControl(scope.controlName, scope.controlValue, "agText");
-            scope.$watch('controlValue', function(newValue, oldValue){
-                dashboardCtrl.updateControl(scope.controlName, newValue, "agText");
+            dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agText");
+            scope.$watch('ctrlVal', function(newValue, oldValue){
+                dashboardCtrl.updateControl(scope.controlName, newValue, "agText", true);
             });
         }
     }
@@ -229,11 +252,20 @@ controlsModule.directive('agDate', ['$routeParams', 'CONFIG', function($routePar
         	};
         },
         require:'^agDashboard',
-        template:'<B>{{labelName}} : </B><div class="dropdown" style="display: inline;"><a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href=""><input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal"></a> <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel"> <datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker> </ul> </div>',
+        template:
+            '<strong>{{labelName}} : </strong>' +
+            '<div class="dropdown" style="display: inline;">' +
+                '<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
+                    '<input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal">' +
+                '</a>' +
+                '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' + 
+                    '<datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker>' +
+                '</ul>' +
+            '</div>',
         link: function(scope, element, attributes, dashboardCtrl){
-            dashboardCtrl.updateControl(scope.controlName, scope.controlValue, "agDate");
-            scope.$watch('controlValue', function(newValue, oldValue){
-                dashboardCtrl.updateControl(scope.controlName, newValue, "agDate");
+            dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agDate");
+            scope.$watch('ctrlVal', function(newValue, oldValue){
+                dashboardCtrl.updateControl(scope.controlName, newValue, "agDate", true);
             });
         }
     }
@@ -257,7 +289,6 @@ controlsModule.directive('agSubmit', ['$rootScope','$http',function($rootScope,$
             element.on('click', function(){
                 $http.pendingRequests=[]; //This line should be deleted.
                 dashboardCtrl.broadcastEvent(dashboardCtrl.getSubmitBtnEventName(), dashboardCtrl.getAllControls());
-                //console.log('Submit button event emitted.');
             });
         }
     }
