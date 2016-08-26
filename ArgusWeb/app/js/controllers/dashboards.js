@@ -128,8 +128,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     });
 
     $scope.sort = function (key) {
-        $scope.sortKey = key;   //set the sortKey to the param passed
-        $scope.reverse = !$scope.reverse; //if true make it false and vice versa
+        $scope.sortKey = key;
+        $scope.reverse = !$scope.reverse;
     };
 
 }]);
