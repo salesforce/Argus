@@ -127,4 +127,9 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     	Storage.set("dashboards-itemsPerPage", newValue);
     });
 
+    $scope.sort = function (key) {
+        $scope.sortKey = key;   //set the sortKey to the param passed
+        $scope.reverse = !$scope.reverse; //if true make it false and vice versa
+    };
+
 }]);
