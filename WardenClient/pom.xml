@@ -54,7 +54,7 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
-                            <includeArtifacIds>argus</includeArtifacIds>
+                            <includeArtifactIds>argus</includeArtifactIds>
                             <includeGroupIds>${project.groupId}</includeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
                             <type>zip</type>
@@ -69,7 +69,7 @@
                         <phase>generate-test-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
-                            <includeArtifacIds>argus</includeArtifacIds>
+                            <includeArtifactIds>argus</includeArtifactIds>
                             <includeGroupIds>${project.groupId}</includeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
                             <type>zip</type>
@@ -81,7 +81,7 @@
         </plugins>
         <resources>
             <resource>
-                <directory>${basedir}/src/main/resources</directory>
+                <directory>src/test/resources</directory>
             </resource>
             <resource>
                 <directory>${project.build.directory}/generated-resources</directory>
@@ -135,7 +135,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.9.5</version>
+            <version>1.10.19</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>

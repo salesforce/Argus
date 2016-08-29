@@ -9,7 +9,6 @@ public class DefaultWardenClient
     implements WardenClient
 {
     // This is how the client talks to the server.
-    private WebServiceClient wardenWebServiceClient;
 
     public DefaultWardenClient(  )
     {
