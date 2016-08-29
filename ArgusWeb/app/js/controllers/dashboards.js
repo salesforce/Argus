@@ -2,6 +2,9 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 .controller('Dashboards', ['Auth', 'Storage', '$scope', 'growl', 'Dashboards', function (Auth, Storage, $scope, growl, Dashboards) {
 		
 	$scope.searchText = Storage.get("dashboards-searchText") == null ? "" : Storage.get("dashboards-searchText");
+
+    $scope.sortKey = 'modifiedDate';
+    $scope.reverse = true;
     
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {
