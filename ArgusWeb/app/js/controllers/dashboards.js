@@ -5,8 +5,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {
-    	$scope.allDashboards = dashboards;
-    	$scope.getDashboards(false);
+        $scope.allDashboards = dashboards;
+        $scope.getDashboards(false);
     });
     
     $scope.dashboards = [];
@@ -28,16 +28,17 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     // TODO: refactor to DashboardService
     $scope.getDashboards = function(shared) {
     	$scope.dashboards = [];
+        var totNum = $scope.allDashboards.length;
     	if(shared) {
     		$scope.shared = true;
-    		for(var i in $scope.allDashboards) {
+    		for(var i = 0; i < totNum; i++) {
     			if($scope.allDashboards[i].shared) {
     				$scope.dashboards.push($scope.allDashboards[i]);
     			}
     		}
     	} else {
     		$scope.shared = false;
-    		for(var i in $scope.allDashboards) {
+    		for(var i = 0; i < totNum; i++) {
     			if(!$scope.allDashboards[i].shared) {
     				$scope.dashboards.push($scope.allDashboards[i]);
     			}
@@ -126,5 +127,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
     	Storage.set("dashboards-itemsPerPage", newValue);
     });
+
+    $scope.sort = function (key) {
+        $scope.sortKey = key;
+        $scope.reverse = !$scope.reverse;
+    };
 
 }]);

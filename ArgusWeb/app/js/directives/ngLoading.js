@@ -1,8 +1,8 @@
 /*! Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
- *  
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
+ *
  *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *
  *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
@@ -20,17 +20,22 @@
 'use strict';
 
 angular.module('argus.directives')
-.directive('spinningWheel', ['$http', function ($http) {
+.directive('ngLoading', function ($compile) {
+    // get the spinning icon
+    var loadingSpinner = '<div class="loadingSpinner"></div>';
     return {
         restrict: 'A',
         link: function (scope, element, attrs) {
-            scope.showloading = function () {
-                return $http.pendingRequests.length > 0;
-            };
-
-            scope.$watch(scope.showloading, function (v) {
-                scope.showloading = v;
+            var originalContent = element.html();
+            element.html(loadingSpinner);
+            scope.$watch(attrs.ngLoading, function (val) {
+                if(val) {
+                    element.html(originalContent);
+                    $compile(element.contents())(scope);
+                } else {
+                    element.html(loadingSpinner);
+                }
             });
         }
     };
-}]);
+});
