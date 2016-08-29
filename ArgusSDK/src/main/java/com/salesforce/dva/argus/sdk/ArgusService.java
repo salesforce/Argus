@@ -31,10 +31,14 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Provides read and write access to Argus.
@@ -122,7 +126,110 @@ public class ArgusService implements AutoCloseable {
         return new AlertService(_client);
     }
 
+    /**
+     * Returns an instance of the annotations service.
+     *
+     * @return  The annotations service
+     */
+    public AnnotationService getAnnotationService() {
+        return new AnnotationService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
+
+    /**
+     * Represents the result of a write operation for annotations and metrics.
+     *
+     * @author  Tom Valine (tvaline@salesforce.com)
+     */
+    public static class PutResult {
+
+        @JsonProperty(value = "Success")
+        private final String _successCount;
+        @JsonProperty(value = "Error")
+        private final String _failCount;
+        @JsonProperty(value = "Error Messages")
+        private final List<String> _errorMessages;
+
+        /**
+         * Creates a new PutResult object.
+         *
+         * @param  successCount   The number of successful writes.
+         * @param  failCount      The number of failed writes.
+         * @param  errorMessages  The associated descriptive error messages for the failed writes.
+         */
+        public PutResult(String successCount, String failCount, List<String> errorMessages) {
+            _successCount = successCount;
+            _failCount = failCount;
+            _errorMessages = new ArrayList<>();
+            if (errorMessages != null) {
+                _errorMessages.addAll(errorMessages);
+            }
+        }
+
+        /**
+         * Returns the error messages associated with the failed writes.
+         *
+         * @return  The error messages.  Will never be null, but may be empty.
+         */
+        public List<String> getErrorMessages() {
+            return _errorMessages;
+        }
+
+        /**
+         * Returns the number of failed writes.
+         *
+         * @return  The number of failed writes.
+         */
+        public String getFailCount() {
+            return _failCount;
+        }
+
+        /**
+         * Returns the number of successful writes.
+         *
+         * @return  The number of successful writes.
+         */
+        public String getSuccessCount() {
+            return _successCount;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+
+            hash = 59 * hash + Objects.hashCode(this._successCount);
+            hash = 59 * hash + Objects.hashCode(this._failCount);
+            hash = 59 * hash + Objects.hashCode(this._errorMessages);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+
+            final PutResult other = (PutResult) obj;
+
+            if (!Objects.equals(this._successCount, other._successCount)) {
+                return false;
+            }
+            if (!Objects.equals(this._failCount, other._failCount)) {
+                return false;
+            }
+            if (!Objects.equals(this._errorMessages, other._errorMessages)) {
+                return false;
+            }
+            return true;
+        }
+    }
 
     /**
      * Base class used for endpoint services.
@@ -184,8 +291,27 @@ public class ArgusService implements AutoCloseable {
             return (T) MAPPER.readValue(json, typeRef);
         }
 
-        ArgusHttpClient getClient() {
+        /**
+         * Returns the HTTP client for use by the endpoint service.
+         *
+         * @return  The HTTP client.
+         */
+        protected ArgusHttpClient getClient() {
             return _client;
+        }
+
+        /**
+         * Throws an exception if a request results in an error.
+         *
+         * @param   response    The response to evaluate.
+         * @param   requestUrl  The URL to which the request was dispatched.
+         *
+         * @throws  ArgusServiceException  If the request resulted in an error.
+         */
+        protected void assertValidResponse(ArgusHttpClient.ArgusResponse response, String requestUrl) throws ArgusServiceException {
+            if (response.getErrorMessage() != null) {
+                throw new ArgusServiceException(response.getStatus(), response.getErrorMessage(), requestUrl, response.getResult());
+            }
         }
     }
 }

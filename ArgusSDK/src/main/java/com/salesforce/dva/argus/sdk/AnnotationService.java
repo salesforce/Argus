@@ -30,21 +30,26 @@
  */
 package com.salesforce.dva.argus.sdk;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
-import com.salesforce.dva.argus.sdk.entity.Credentials;
+import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
+import com.salesforce.dva.argus.sdk.entity.Annotation;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Provides methods to authenticate to Argus.
+ * Provides methods to manipulate annotation events.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class AuthService extends EndpointService {
+public class AnnotationService extends EndpointService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/auth";
+    private static final String RESOURCE = "/annotations";
+    private static final String COLLECTION_RESOURCE = "/collection";
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -53,42 +58,49 @@ public class AuthService extends EndpointService {
      *
      * @param  client  The HTTP client for use by the service.
      */
-    AuthService(ArgusHttpClient client) {
+    AnnotationService(ArgusHttpClient client) {
         super(client);
     }
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Logs into Argus.
+     * Returns the annotations for the given set of expressions.
      *
-     * @param   username  The username.
-     * @param   password  The password.
+     * @param   expressions  The annotation expressions to evaluate.
      *
-     * @throws  IOException  If the server is unavailable.
+     * @return  The annotations that match the given expressions.
+     *
+     * @throws  IOException  If the server cannot be reached.
      */
-    public void login(String username, String password) throws IOException {
-        String requestUrl = RESOURCE + "/login";
-        Credentials creds = new Credentials();
-
-        creds.setPassword(password);
-        creds.setUsername(username);
-
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, creds);
+    public List<Annotation> getAnnotations(List<String> expressions) throws IOException {
+        String requestUrl = RESOURCE;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, expressions);
 
         assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), new TypeReference<List<Annotation>>() { });
     }
 
     /**
-     * Logs out from Argus.
+     * Submits annotations.
      *
-     * @throws  IOException  If the server is unavailable.
+     * @param   annotations  The annotations to submit.  Cannot be null or empty.
+     *
+     * @return  A description of the operation result.
+     *
+     * @throws  IOException  If the server cannot be reached.
      */
-    public void logout() throws IOException {
-        String requestUrl = RESOURCE + "/logout";
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+    public PutResult putAnnotations(List<Annotation> annotations) throws IOException {
+        String requestUrl = COLLECTION_RESOURCE + RESOURCE;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, annotations);
 
         assertValidResponse(response, requestUrl);
+
+        Map<String, Object> map = fromJson(response.getResult(), new TypeReference<Map<String, Object>>() { });
+
+        List<String> errorMessages = (List<String>) map.get("Error Messages");
+
+        return new PutResult(String.valueOf(map.get("Success")), String.valueOf(map.get("Errors")), errorMessages);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

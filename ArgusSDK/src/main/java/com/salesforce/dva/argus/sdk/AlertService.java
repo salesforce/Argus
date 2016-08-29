@@ -75,7 +75,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Alert>>() { });
     }
 
@@ -92,7 +92,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Alert.class);
     }
 
@@ -109,7 +109,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Notification>>() { });
     }
 
@@ -126,7 +126,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Trigger>>() { });
     }
 
@@ -144,7 +144,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Notification.class);
     }
 
@@ -162,7 +162,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString() + "/triggers";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Trigger>>() { });
     }
 
@@ -180,7 +180,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Trigger.class);
     }
 
@@ -199,7 +199,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Trigger.class);
     }
 
@@ -216,7 +216,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, alert);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Alert.class);
     }
 
@@ -234,7 +234,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, alert);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Alert.class);
     }
 
@@ -253,7 +253,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, notification);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Notification.class);
     }
 
@@ -272,7 +272,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, trigger);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Trigger.class);
     }
 
@@ -290,7 +290,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, notification);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Notification>>() { });
     }
 
@@ -308,7 +308,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, trigger);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Trigger>>() { });
     }
 
@@ -327,7 +327,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), Trigger.class);
     }
 
@@ -342,7 +342,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -356,7 +356,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -371,7 +371,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -385,7 +385,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -400,7 +400,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -415,7 +415,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString() + "/triggers";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
+        assertValidResponse(response, requestUrl);
     }
 
     /**
@@ -431,13 +431,7 @@ public class AlertService extends EndpointService {
         String requestUrl = RESOURCE + "/" + alertId.toString() + "/notifications/" + notificationId.toString() + "/triggers/" + triggerId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
-        _assertValidReesponse(response, requestUrl);
-    }
-
-    private void _assertValidReesponse(ArgusResponse response, String requestUrl) throws ArgusServiceException {
-        if (response.getErrorMessage() != null) {
-            throw new ArgusServiceException(response.getStatus(), response.getErrorMessage(), requestUrl, response.getResult());
-        }
+        assertValidResponse(response, requestUrl);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

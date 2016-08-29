@@ -31,6 +31,7 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Annotation object.
@@ -137,6 +138,54 @@ public class Annotation extends TSDBEntity {
      */
     public void setFields(Map<String, String> fields) {
         this.fields = fields;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+
+        hash = 79 * hash + super.hashCode();
+        hash = 79 * hash + Objects.hashCode(this.source);
+        hash = 79 * hash + Objects.hashCode(this.id);
+        hash = 79 * hash + Objects.hashCode(this.timestamp);
+        hash = 79 * hash + Objects.hashCode(this.type);
+        hash = 79 * hash + Objects.hashCode(this.fields);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Annotation other = (Annotation) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.source, other.source)) {
+            return false;
+        }
+        if (!Objects.equals(this.id, other.id)) {
+            return false;
+        }
+        if (!Objects.equals(this.type, other.type)) {
+            return false;
+        }
+        if (!Objects.equals(this.timestamp, other.timestamp)) {
+            return false;
+        }
+        if (!Objects.equals(this.fields, other.fields)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

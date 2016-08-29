@@ -31,6 +31,7 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The base TSDB entity DTO.
@@ -99,6 +100,42 @@ public abstract class TSDBEntity {
      */
     public void setTags(Map<String, String> tags) {
         this.tags = tags;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+
+        hash = 11 * hash + Objects.hashCode(this.scope);
+        hash = 11 * hash + Objects.hashCode(this.metric);
+        hash = 11 * hash + Objects.hashCode(this.tags);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final TSDBEntity other = (TSDBEntity) obj;
+
+        if (!Objects.equals(this.scope, other.scope)) {
+            return false;
+        }
+        if (!Objects.equals(this.metric, other.metric)) {
+            return false;
+        }
+        if (!Objects.equals(this.tags, other.tags)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
