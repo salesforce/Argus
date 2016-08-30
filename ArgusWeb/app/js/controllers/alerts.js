@@ -74,4 +74,11 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
     	Storage.set("alerts-itemsPerPage", newValue);
     });
+
+    $scope.sortKey = 'modifiedDate';
+    $scope.reverse = true;
+    $scope.sort = function (key) {
+        $scope.sortKey = key;
+        $scope.reverse = !$scope.reverse;
+    };
 }]);
