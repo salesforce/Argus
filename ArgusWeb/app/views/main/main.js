@@ -293,7 +293,7 @@ argusMain.factory('Storage', ['$rootScope', '$localStorage', function ($rootScop
 argusMain.factory("UnauthorizedInterceptor", ['$q', '$location', 'Storage', function ($q, $location, Storage) {
         return {
             responseError: function (rejection) {
-                if(rejection.status === 401 || rejection.status === 0) {
+                if(rejection.status === 401 || rejection.status <= 0) {
                     var url = rejection.config.url;
                     var suffix = '/login';
                     if (url.indexOf(suffix, url.length - suffix.length) === -1) {
