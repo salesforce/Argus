@@ -89,7 +89,8 @@ argusMain.config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginatio
                     templateUrl: 'views/dashboards/dashboard-detail.html',
                     controller: 'DashboardDetailCtrl',
                     label: '{{dashboards.dashboardId}}',
-                    activeTab: 'dashboards'
+                    activeTab: 'dashboards',
+                    reloadOnSearch: false
                 }).
                 when('/alerts', {
                     templateUrl: 'views/alerts/alert-list.html',
