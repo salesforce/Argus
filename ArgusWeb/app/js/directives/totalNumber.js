@@ -8,17 +8,30 @@ angular.module('argus.directives')
        replace: true,
        transclude: true,
        scope: {
-           numberOf: '=numberOf'
+           numberOf: '=',
+           currentPage: '=',
+           itemsPerPage: '=',
+           type : '@'
        },
        controller: ['$scope', function ($scope) {
-          $scope.getTotalNumber = function(){
-              if($scope.numberOf){
-                  return $scope.numberOf.length;
-              }else{
-                  return 0;
-              }
-          }
+           //update the start, end and total of the pagination info
+           $scope.update = function(){
+               $scope.total = $scope.numberOf.length;
+               $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage;
+               var end = $scope.start + $scope.itemsPerPage;
+               $scope.end = end < $scope.total ? end : $scope.total;
+           };
+           //watch the related variables
+           $scope.$watch('numberOf', function () {
+               $scope.update();
+           });
+           $scope.$watch('currentPage', function () {
+               $scope.update();
+           });
+           $scope.$watch('itemsPerPage', function () {
+               $scope.update();
+           });
        }],
-       template: '<span ng-transclude>Total: {{getTotalNumber()}}</span>',
+       template: '<span ng-transclude>Showing {{start}}-{{end}} of all {{total}} {{type}}</span>',
    }
 });

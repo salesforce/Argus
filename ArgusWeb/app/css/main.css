@@ -160,6 +160,10 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .table > tbody > tr > td,
 .table > tfoot > tr > td {vertical-align: middle;}
 
+.table th:hover{
+    cursor: pointer;
+}
+
 .search-bar .dropdown-menu {
     margin: 0 0 0 0;
     border-radius: 0px 0px 4px 4px;
@@ -217,3 +221,4 @@ div.loadingSpinner {
   position: relative;
   content:url(../img/ajax-loader.gif);
 }
+
