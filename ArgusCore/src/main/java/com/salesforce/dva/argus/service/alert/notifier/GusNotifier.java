@@ -28,10 +28,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.alert.notifier;
 
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.sql.Date;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.persistence.EntityManager;
+
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
+import org.apache.http.message.BasicNameValuePair;
+import org.slf4j.Logger;
+
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Notification;
@@ -43,299 +66,270 @@ import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import joptsimple.internal.Strings;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.params.CookiePolicy;
-import org.apache.http.client.params.HttpClientParams;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.sql.Date;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import javax.persistence.EntityManager;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import joptsimple.internal.Strings;
 
 /**
  * Chatter Notifier: api user can only post alert to PUBLIC group
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
-@SuppressWarnings("deprecation")
 public class GusNotifier extends AuditNotifier {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+	//~ Static fields/initializers *******************************************************************************************************************
+	private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
+	private static final int READ_TIMEOUT_MILLIS = 10000;
+	private static final String UTF_8 = "UTF-8";
 
-    /**
-     * CredentialPair stores name/value pair in the request.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
+	@SLF4JTypeListener.InjectLogger
+	private Logger _logger;
+	private final MultiThreadedHttpConnectionManager theConnectionManager;
+	{
+		theConnectionManager = new MultiThreadedHttpConnectionManager();
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+		HttpConnectionManagerParams params = theConnectionManager.getParams();
 
-    //~ Constructors *********************************************************************************************************************************
+		params.setConnectionTimeout(CONNECTION_TIMEOUT_MILLIS);
+		params.setSoTimeout(READ_TIMEOUT_MILLIS);
+	}    
 
-    /**
-     * Creates a new GusNotifier object.
-     *
-     * @param  metricService      The metric service to use.  Cannot be null.
-     * @param  annotationService  The annotation service to use.  Cannot be null.
-     * @param  auditService       The audit service to use.  Cannot be null.
-     * @param  mailService        The mail service to use.  Cannot be null.
-     * @param  config             The system configuration.  Cannot be null.
-     * @param  emf                The entity manager factory to use.  Cannot be null.
-     */
-    @Inject
-    public GusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, MailService mailService,
-        SystemConfiguration config, Provider<EntityManager> emf) {
-        super(metricService, annotationService, auditService, config, emf);
-        requireArgument(mailService != null, "Mail service cannot be null.");
-        requireArgument(config != null, "The configuration cannot be null.");
-    }
+	//~ Constructors *********************************************************************************************************************************
 
-    //~ Methods **************************************************************************************************************************************
+	/**
+	 * Creates a new GusNotifier object.
+	 *
+	 * @param  metricService      The metric service to use.  Cannot be null.
+	 * @param  annotationService  The annotation service to use.  Cannot be null.
+	 * @param  auditService       The audit service to use.  Cannot be null.
+	 * @param  mailService        The mail service to use.  Cannot be null.
+	 * @param  config             The system configuration.  Cannot be null.
+	 * @param  emf                The entity manager factory to use.  Cannot be null.
+	 */
+	@Inject
+	public GusNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService, MailService mailService,
+			SystemConfiguration config, Provider<EntityManager> emf) {
+		super(metricService, annotationService, auditService, config, emf);
+		requireArgument(mailService != null, "Mail service cannot be null.");
+		requireArgument(config != null, "The configuration cannot be null.");
+	}
 
-    @Override
-    public String getName() {
-        return GusNotifier.class.getName();
-    }
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    protected void sendAdditionalNotification(NotificationContext context) {
-        requireArgument(context != null, "Notification context cannot be null.");
-        super.sendAdditionalNotification(context);
+	@Override
+	public String getName() {
+		return GusNotifier.class.getName();
+	}
 
-        Notification notification = null;
-        Trigger trigger = null;
+	@Override
+	protected void sendAdditionalNotification(NotificationContext context) {
+		requireArgument(context != null, "Notification context cannot be null.");
+		super.sendAdditionalNotification(context);
 
-        for (Notification tempNotification : context.getAlert().getNotifications()) {
-            if (tempNotification.getName().equalsIgnoreCase(context.getNotification().getName())) {
-                notification = tempNotification;
-                break;
-            }
-        }
-        requireArgument(notification != null, "Notification in notification context cannot be null.");
-        for (Trigger tempTrigger : context.getAlert().getTriggers()) {
-            if (tempTrigger.getName().equalsIgnoreCase(context.getTrigger().getName())) {
-                trigger = tempTrigger;
-                break;
-            }
-        }
-        requireArgument(trigger != null, "Trigger in notification context cannot be null.");
+		Notification notification = null;
+		Trigger trigger = null;
 
-        Set<String> to = new HashSet<>(notification.getSubscriptions());
-        String feed = generateGusFeed(notification, trigger, context);
+		for (Notification tempNotification : context.getAlert().getNotifications()) {
+			if (tempNotification.getName().equalsIgnoreCase(context.getNotification().getName())) {
+				notification = tempNotification;
+				break;
+			}
+		}
+		requireArgument(notification != null, "Notification in notification context cannot be null.");
+		for (Trigger tempTrigger : context.getAlert().getTriggers()) {
+			if (tempTrigger.getName().equalsIgnoreCase(context.getTrigger().getName())) {
+				trigger = tempTrigger;
+				break;
+			}
+		}
+		requireArgument(trigger != null, "Trigger in notification context cannot be null.");
 
-        postToGus(to, feed);
-    }
+		Set<String> to = new HashSet<>(notification.getSubscriptions());
+		String feed = generateGusFeed(notification, trigger, context);
 
-    private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context) {
-        StringBuilder sb = new StringBuilder();
-        String notificationName = context.getNotification().getName();
-        String alertName = context.getAlert().getName();
-        String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
-        String triggerName = trigger.getName();
-        String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
-        String metricExpression = context.getAlert().getExpression();
-        String triggerDetails = getTriggerDetails(trigger);
-        String triggerEventValue = context.getTriggerEventValue();
-        Object[] arguments = new Object[] {
-                notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-                triggerEventValue
-            };
+		postToGus(to, feed);
+	}
 
-        /** gus feed template for notification information. */
-        String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
-            "Notification:   {0}\n" +
-            "Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
-            "Evaluated metric expression:   {5}\n" + "Trigger details:  {6}\n" +
-            "Triggering event value:   {7}\n\n";
+	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context) {
+		StringBuilder sb = new StringBuilder();
+		String notificationName = context.getNotification().getName();
+		String alertName = context.getAlert().getName();
+		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
+		String triggerName = trigger.getName();
+		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
+		String metricExpression = context.getAlert().getExpression();
+		String triggerDetails = getTriggerDetails(trigger);
+		String triggerEventValue = context.getTriggerEventValue();
+		Object[] arguments = new Object[] {
+				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
+				triggerEventValue
+		};
 
-        sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
+		/** gus feed template for notification information. */
+		String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
+				"Notification:   {0}\n" +
+				"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
+				"Evaluated metric expression:   {5}\n" + "Trigger details:  {6}\n" +
+				"Triggering event value:   {7}\n\n";
 
-        /** gus feed template for links. */
-        String gusFeedLinkTemplate = "Click here to view {0}\n{1}\n";
+		sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
 
-        for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
-            sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
-                    super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
-        }
-        sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
-        return sb.toString();
-    }
+		/** gus feed template for links. */
+		String gusFeedLinkTemplate = "Click here to view {0}\n{1}\n";
 
-    private void postToGus(Set<String> to, String feed) {
-        // So far works for only one group, will accept a set of string in future.
-        String groupId = to.toArray(new String[to.size()])[0];
-        HttpPost chatterIt = new HttpPost();
+		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
+			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
+					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
+		}
+		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
+		return sb.toString();
+	}
 
-        try {
-            String gusPost = MessageFormat.format("{0}&subjectId={1}&text={2}",
-            		_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
-            		URLEncoder.encode(feed.toString(), "UTF-8"));
+	private void postToGus(Set<String> to, String feed) {
+		// So far works for only one group, will accept a set of string in future.
+		String groupId = to.toArray(new String[to.size()])[0];
+		PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
 
-            chatterIt = new HttpPost(gusPost);
-            chatterIt.setHeader("Authorization", "Bearer " + generateAccessToken());
+		try {
+			gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken());
+			String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
+					_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
+					URLEncoder.encode(feed.toString(), "UTF-8"));
 
-            @SuppressWarnings("resource")
-            DefaultHttpClient httpclient = new DefaultHttpClient();
+			gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
+			HttpClient httpclient = getHttpClient(_config);
+			int respCode = httpclient.executeMethod(gusPost);
+			_logger.info("Gus message response code '{}'", respCode);
+			if (respCode == 201 || respCode == 204) {
+				_logger.info("Success - send to GUS group {}", groupId);
+			} else {
+				_logger.error("Failure - send to GUS group {}. Cause {}", groupId, gusPost.getResponseBodyAsString());
+			}
+		} catch (Exception e) {
+			_logger.error("Throws Exception {} when posting to gus group {}", e, groupId);
+		} finally {
+			gusPost.releaseConnection();
+		}
+	}
 
-            httpclient.execute(chatterIt);
-        } catch (Exception e) {
-            _logger.error("Throws Exception when posting to gus group {} with subject {}.", groupId, feed);
-        } finally {
-            chatterIt.releaseConnection();
-        }
-    }
+	private String generateAccessToken() {
+		// Set up an HTTP client that makes a connection to REST API.
+		HttpClient httpclient = getHttpClient(_config);
 
-    private String generateAccessToken() {
-        // Set up an HTTP client that makes a connection to REST API.
-        @SuppressWarnings("resource")
-        DefaultHttpClient client = new DefaultHttpClient();
-        HttpParams params = client.getParams();
+		// Send a post request to the OAuth URL.
+		PostMethod oauthPost = new PostMethod(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()));
 
-        HttpClientParams.setCookiePolicy(params, CookiePolicy.RFC_2109);
-        params.setParameter(HttpConnectionParams.CONNECTION_TIMEOUT, 30000);
+		try {
+			oauthPost.addParameter("grant_type", "password");
+			oauthPost.addParameter("client_id",
+					URLEncoder.encode(_config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()), UTF_8));
+			oauthPost.addParameter("client_secret",
+					URLEncoder.encode(_config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()), UTF_8));
+			oauthPost.addParameter("username", _config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()));
+			oauthPost.addParameter("password", _config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()));
 
-        HttpPost oauthPost = new HttpPost();
+			int respCode = httpclient.executeMethod(oauthPost);
 
-        try {
-            // Send a post request to the OAuth URL.
-            oauthPost = new HttpPost(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()));
+			_logger.info("Response code '{}'", respCode);
 
-            // generate the request body
-            List<String> paraList = Arrays.asList("grant_type", "username", "password", "client_id", "client_secret");
+			// Check for success
+			if (respCode == 200) {
+				JsonObject authResponse = new Gson().fromJson(oauthPost.getResponseBodyAsString(), JsonObject.class);
+				String endpoint = authResponse.get("instance_url").getAsString();
+				String token = authResponse.get("access_token").getAsString();
 
-            oauthPost.setEntity(new UrlEncodedFormEntity(generateParameterBody(paraList), HTTP.UTF_8));
+				_logger.info("Success - getting access_token for endpoint '{}'", endpoint);
+				_logger.info("access_token '{}'", token);
+				return token;
+			}
+			else {
+				_logger.error("Failure - getting oauth2 token, check username/password: '{}'", oauthPost.getResponseBodyAsString());
+			} 
+		} catch (RuntimeException | IOException e) {
+			_logger.error("Failure - exception getting gus access_token {}", e);
+		} finally {
+			oauthPost.releaseConnection();
+		}
+		return Strings.EMPTY;
+	}
 
-            // Execute the request.
-            HttpResponse response = client.execute(oauthPost);
+	/**
+	 * Get HttpClient with proper proxy and timeout settings.
+	 *
+	 * @param   config  The system configuration.  Cannot be null.
+	 *
+	 * @return  HttpClient
+	 */
+	public  HttpClient getHttpClient(SystemConfiguration config) {
+		HttpClient httpclient = new HttpClient(theConnectionManager);
 
-            // Get access token
-            @SuppressWarnings("unchecked")
-            Map<String, String> oauthLoginResponse = new Gson().fromJson(EntityUtils.toString(response.getEntity()), Map.class);
-            String accessToken = oauthLoginResponse.get("access_token");
+		// Wait for 2 seconds to get a connection from pool
+		httpclient.getParams().setParameter("http.connection-manager.timeout", 2000L); 
 
-            return accessToken;
-        } catch (RuntimeException | IOException e) {
-            _logger.error("Encoding Exception when generating access token {}", Property.ARGUS_GUS_USER.getDefaultValue());
-        } finally {
-            oauthPost.releaseConnection();
-        }
-        return Strings.EMPTY;
-    }
+		String host = config.getValue(Property.GUS_PROXY_HOST.getName(), Property.GUS_PROXY_HOST.getDefaultValue());
 
-    /**
-     * Enumerates the name value pairs to insert into the notification body.
-     *
-     * @param   paraList  The parameter list.  Cannot be null, but may be empty.
-     *
-     * @return  The list of corresponding name value pairs.  Will never return null, but may be empty.
-     */
-    public List<BasicNameValuePair> generateParameterBody(List<String> paraList) {
-        List<BasicNameValuePair> parametersBody = new ArrayList<>();
+		if (host != null && host.length() > 0) {
+			httpclient.getHostConfiguration().setProxy(host,
+					Integer.parseInt(config.getValue(Property.GUS_PROXY_PORT.getName(), Property.GUS_PROXY_PORT.getDefaultValue())));
+		}
+		return httpclient;
+	}    
 
-        for (String str : paraList) {
-            parametersBody.add(generateNameValuePair(str));
-        }
-        return parametersBody;
-    }
+	@Override
+	public Properties getNotifierProperties() {
+		Properties result = super.getNotifierProperties();
 
-    /**
-     * Generates a basic name value pair based on the given parameter name.
-     *
-     * @param   paraName  The parameter name.  Cannot be null or empty.
-     *
-     * @return  The corresponding name value pair.
-     *
-     * @throws  UnsupportedOperationException  If the specified parameter doesn't have a corresponding GUS property.
-     */
-    public BasicNameValuePair generateNameValuePair(String paraName) {
-        switch (paraName) {
-            case "grant_type":
-                return new BasicNameValuePair(paraName, _config.getValue(Property.GRANT_TYPE_PWD.getName(), Property.GRANT_TYPE_PWD.getDefaultValue()));
-            case "username":
-                return new BasicNameValuePair(paraName, _config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()));
-            case "password":
-                return new BasicNameValuePair(paraName, _config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()));
-            case "client_id":
-                return new BasicNameValuePair(paraName, _config.getValue(Property.GUS_CLIENT_ID.getName(), Property.GUS_CLIENT_ID.getDefaultValue()));
-            case "client_secret":
-                return new BasicNameValuePair(paraName, _config.getValue(Property.GUS_CLIENT_SECRET.getName(), Property.GUS_CLIENT_SECRET.getDefaultValue()));
-            default:
-                throw new UnsupportedOperationException(paraName);
-        }
-    }
-    
-    @Override
-    public Properties getNotifierProperties() {
-    	Properties result = super.getNotifierProperties();
+		for( Property property : Property.values()) {
+			result.put(property.getName(), property.getDefaultValue());
+		}
+		return result;
+	}
 
-    	for( Property property : Property.values()) {
-    		result.put(property.getName(), property.getDefaultValue());
-    	}
-    	return result;
-    }
+	public enum Property {
+		/** The GUS grant type password. */
+		GRANT_TYPE_PWD("notifier.property.alert.grant_type_pwd", "password"),
+		/** The GUS user name. */
+		ARGUS_GUS_USER("notifier.property.alert.gus_user", "test@test.com"),
+		/** The GUS password. */
+		ARGUS_GUS_PWD("notifier.property.alert.gus_pwd", "password"),
+		/** The GUS endpoint. */
+		GUS_ENDPOINT("notifier.property.alert.gus_endpoint", "https://gus.test.com"),
+		/** The GUS client ID. */
+		GUS_CLIENT_ID("notifier.property.alert.gus_client_id", "test123"),
+		/** The GUS client secret. */
+		GUS_CLIENT_SECRET("notifier.property.alert.gus_client_secret", "password"),
+		/** The GUS post endpoint. */
+		POST_ENDPOINT("notifier.property.alert.gus_post_endpoint", "https://gus.test.com"),
+		/** The GUS proxy host. */
+		GUS_PROXY_HOST("notifier.property.proxy.host", ""),
+		/** The GUS port. */
+		GUS_PROXY_PORT("notifier.property.proxy.port", "");
 
-    public enum Property {
-    	/** The GUS grant type password. */
-        GRANT_TYPE_PWD("notifier.property.alert.grant_type_pwd", "password"),
-        /** The GUS user name. */
-        ARGUS_GUS_USER("notifier.property.alert.gus_user", "test@test.com"),
-        /** The GUS password. */
-        ARGUS_GUS_PWD("notifier.property.alert.gus_pwd", "password"),
-        /** The GUS endpoint. */
-        GUS_ENDPOINT("notifier.property.alert.gus_endpoint", "https://gus.test.com"),
-        /** The GUS client ID. */
-        GUS_CLIENT_ID("notifier.property.alert.gus_client_id", "test123"),
-        /** The GUS client secret. */
-        GUS_CLIENT_SECRET("notifier.property.alert.gus_client_secret", "password"),
-        /** The GUS post endpoint. */
-        POST_ENDPOINT("notifier.property.alert.gus_post_endpoint", "https://gus.test.com");
-    	
-    	 private final String _name;
-         private final String _defaultValue;
+		private final String _name;
+		private final String _defaultValue;
 
-         private Property(String name, String defaultValue) {
-             _name = name;
-             _defaultValue = defaultValue;
-         }
+		private Property(String name, String defaultValue) {
+			_name = name;
+			_defaultValue = defaultValue;
+		}
 
-         /**
-          * Returns the property name.
-          *
-          * @return  The property name.
-          */
-         public String getName() {
-             return _name;
-         }
+		/**
+		 * Returns the property name.
+		 *
+		 * @return  The property name.
+		 */
+		public String getName() {
+			return _name;
+		}
 
-         /**
-          * Returns the default value.
-          *
-          * @return  The default value.
-          */
-         public String getDefaultValue() {
-             return _defaultValue;
-         }
-    }
+		/**
+		 * Returns the default value.
+		 *
+		 * @return  The default value.
+		 */
+		public String getDefaultValue() {
+			return _defaultValue;
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
