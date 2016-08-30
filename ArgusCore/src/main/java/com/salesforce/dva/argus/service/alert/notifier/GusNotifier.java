@@ -286,8 +286,6 @@ public class GusNotifier extends AuditNotifier {
 	}
 
 	public enum Property {
-		/** The GUS grant type password. */
-		GRANT_TYPE_PWD("notifier.property.alert.grant_type_pwd", "password"),
 		/** The GUS user name. */
 		ARGUS_GUS_USER("notifier.property.alert.gus_user", "test@test.com"),
 		/** The GUS password. */
