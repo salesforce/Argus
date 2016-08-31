@@ -16,7 +16,8 @@ angular.module('argus.directives')
        controller: ['$scope', function ($scope) {
            //update the start, end and total of the pagination info
            $scope.update = function(){
-               $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
+               var start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
+               $scope.start = start < $scope.total ? start : $scope.total;
                var end = $scope.start + $scope.itemsPerPage - 1;
                $scope.end = end < $scope.total ? end : $scope.total;
            };
