@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Provides methods to authenticate remote users.
@@ -51,5 +54,27 @@ public interface AuthService extends Service {
      * @return  The principal user if authentication succeeds, or null if it fails.
      */
     PrincipalUser getUser(String username, String password);
+    
+    /** A cache for storing the number of unique users logged in per unit time. */
+    public static class UserCountCache extends LinkedHashMap<String,Long> {
+
+        private final Long _duration;
+        
+        /**
+         * Creates a new UserCountCache.
+         * 
+         * @param duration The duration for which entries are retained.
+         */
+        public UserCountCache(Long duration) {
+            requireArgument(duration > 0, "Entry duration must be a positive value of milliseconds.");
+            _duration = duration;
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Long> eldest) {
+            return eldest.getValue() < (System.currentTimeMillis() - _duration);
+        }
+
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
