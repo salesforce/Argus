@@ -135,6 +135,15 @@ public class ArgusService implements AutoCloseable {
         return new AnnotationService(_client);
     }
 
+    /**
+     * Returns an instance of the audit service.
+     *
+     * @return  The audit service.
+     */
+    public AuditService getAuditService() {
+        return new AuditService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
@@ -170,7 +179,7 @@ public class ArgusService implements AutoCloseable {
         /**
          * Returns the error messages associated with the failed writes.
          *
-         * @return  The error messages.  Will never be null, but may be empty.
+         * @return  The error messages. Will never be null, but may be empty.
          */
         public List<String> getErrorMessages() {
             return _errorMessages;

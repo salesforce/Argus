@@ -33,23 +33,21 @@ package com.salesforce.dva.argus.sdk;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
-import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
-import com.salesforce.dva.argus.sdk.entity.Annotation;
+import com.salesforce.dva.argus.sdk.entity.Audit;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Provides methods to manipulate annotation events.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class AnnotationService extends EndpointService {
+public class AuditService extends EndpointService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/annotations";
-    private static final String COLLECTION_RESOURCE = "/collection";
+    private static final String RESOURCE = "/audit";
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -58,49 +56,44 @@ public class AnnotationService extends EndpointService {
      *
      * @param  client  The HTTP client for use by the service.
      */
-    AnnotationService(ArgusHttpClient client) {
+    AuditService(ArgusHttpClient client) {
         super(client);
     }
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Returns the annotations for the given set of expressions.
+     * Returns the audit history for the given entity.
      *
-     * @param   expressions  The annotation expressions to evaluate.
+     * @param   entityId  The ID of the entity for which to retrieve the audit history.
      *
-     * @return  The annotations that match the given expressions.
+     * @return  The audit history for the entity.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public List<Annotation> getAnnotations(List<String> expressions) throws IOException {
-        String requestUrl = RESOURCE;
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, expressions);
+    public List<Audit> getAuditsForEntity(BigInteger entityId) throws IOException {
+        String requestUrl = RESOURCE + "/entity/" + entityId.toString();
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);
-        return fromJson(response.getResult(), new TypeReference<List<Annotation>>() { });
+        return fromJson(response.getResult(), new TypeReference<List<Audit>>() { });
     }
 
     /**
-     * Submits annotations.
+     * Returns the audit item for the given audit ID.
      *
-     * @param   annotations  The annotations to submit. Cannot be null or empty.
+     * @param   id  The ID of the audit to retrieve.
      *
-     * @return  A description of the operation result.
+     * @return  The corresponding audit.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public PutResult putAnnotations(List<Annotation> annotations) throws IOException {
-        String requestUrl = COLLECTION_RESOURCE + RESOURCE;
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, annotations);
+    public Audit getAudit(BigInteger id) throws IOException {
+        String requestUrl = RESOURCE + "/" + id.toString();
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);
-
-        Map<String, Object> map = fromJson(response.getResult(), new TypeReference<Map<String, Object>>() { });
-
-        List<String> errorMessages = (List<String>) map.get("Error Messages");
-
-        return new PutResult(String.valueOf(map.get("Success")), String.valueOf(map.get("Errors")), errorMessages);
+        return fromJson(response.getResult(), Audit.class);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

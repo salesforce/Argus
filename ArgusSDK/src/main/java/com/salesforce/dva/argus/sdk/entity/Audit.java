@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * Audit object.
@@ -46,11 +47,11 @@ public class Audit implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private BigInteger id;
-    private Date createdDate;
-    private String message;
-    private String hostName;
-    private BigInteger entityId;
+    private BigInteger _id;
+    private Date _createdDate;
+    private String _message;
+    private String _hostName;
+    private BigInteger _entityId;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -60,7 +61,7 @@ public class Audit implements Serializable {
      * @return  The audit ID.
      */
     public BigInteger getId() {
-        return id;
+        return _id;
     }
 
     /**
@@ -69,7 +70,7 @@ public class Audit implements Serializable {
      * @param  id  The audit ID.
      */
     public void setId(BigInteger id) {
-        this.id = id;
+        this._id = id;
     }
 
     /**
@@ -78,7 +79,7 @@ public class Audit implements Serializable {
      * @return  The created date.
      */
     public Date getCreatedDate() {
-        return createdDate;
+        return _createdDate;
     }
 
     /**
@@ -87,7 +88,7 @@ public class Audit implements Serializable {
      * @param  createdDate  The created date.
      */
     public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate;
+        this._createdDate = createdDate;
     }
 
     /**
@@ -96,7 +97,7 @@ public class Audit implements Serializable {
      * @return  The message.
      */
     public String getMessage() {
-        return message;
+        return _message;
     }
 
     /**
@@ -105,7 +106,7 @@ public class Audit implements Serializable {
      * @param  message  The message.
      */
     public void setMessage(String message) {
-        this.message = message;
+        this._message = message;
     }
 
     /**
@@ -114,7 +115,7 @@ public class Audit implements Serializable {
      * @return  The host name.
      */
     public String getHostName() {
-        return hostName;
+        return _hostName;
     }
 
     /**
@@ -123,7 +124,7 @@ public class Audit implements Serializable {
      * @param  hostName  The host name.
      */
     public void setHostName(String hostName) {
-        this.hostName = hostName;
+        this._hostName = hostName;
     }
 
     /**
@@ -132,7 +133,60 @@ public class Audit implements Serializable {
      * @return  The entity ID.
      */
     public BigInteger getEntityId() {
-        return entityId;
+        return _entityId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 37 * hash + Objects.hashCode(this._id);
+        hash = 37 * hash + Objects.hashCode(this._createdDate);
+        hash = 37 * hash + Objects.hashCode(this._message);
+        hash = 37 * hash + Objects.hashCode(this._hostName);
+        hash = 37 * hash + Objects.hashCode(this._entityId);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Audit other = (Audit) obj;
+
+        if (!Objects.equals(this._message, other._message)) {
+            return false;
+        }
+        if (!Objects.equals(this._hostName, other._hostName)) {
+            return false;
+        }
+        if (!Objects.equals(this._id, other._id)) {
+            return false;
+        }
+        if (!Objects.equals(this._createdDate, other._createdDate)) {
+            return false;
+        }
+        if (!Objects.equals(this._entityId, other._entityId)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Sets the entity ID for this audit item.
+     *
+     * @param  entityId  The entity ID.
+     */
+    public void setEntityId(BigInteger entityId) {
+        _entityId = entityId;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -1,0 +1,15 @@
+[{
+    "type": "GET",
+    "endpoint": "/audit/entity/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"message\":\"TestMessage\",\"id\":1,\"hostName\":\"localhost\",\"createdDate\":1472282830936,\"entityId\":1}]"
+},{
+    "type": "GET",
+    "endpoint": "/audit/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"message\":\"TestMessage\",\"id\":1,\"hostName\":\"localhost\",\"createdDate\":1472282830936,\"entityId\":1}"
+}]
