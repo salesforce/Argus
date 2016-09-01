@@ -25,15 +25,16 @@ angular.module('argus.directives')
             restrict: "E",
             templateUrl: 'js/templates/tableList.html',
             scope: {
-                dataSet: '=data',
                 properties: '=',
                 colName: '=',
+                dataSet: '=data',
                 addItem: '&',
                 delete: '&',
                 disabled: '&',
                 enable: '&'
             },
             controller: ['$scope', 'Storage', function($scope, Storage) {
+                // TODO: move this to a service
                 // itemsPerPage setting
                 $scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
                 var itemsPerPageFromStorage = $scope.properties.type + '-itemsPerPage';
@@ -41,6 +42,7 @@ angular.module('argus.directives')
                 $scope.$watch('itemsPerPage', function(newValue, oldValue) {
                     newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
                     Storage.set(itemsPerPageFromStorage, newValue);
+                    $scope.update();
                 });
 
                 // searchText setting
@@ -51,7 +53,16 @@ angular.module('argus.directives')
                     Storage.set(searchTextFromStorage, newValue);
                 });
 
-                //sort setting
+                // pagination page setting
+                var currentPageFromStorage = $scope.properties.type + '-currentPage';
+                $scope.currentPage = Storage.get(currentPageFromStorage) == null ? 1 : Storage.get(currentPageFromStorage);
+                $scope.$watch('currentPage', function (newValue, oldValue) {
+                    newValue = newValue == null ? 1 : newValue;
+                    Storage.set(currentPageFromStorage, newValue);
+                    $scope.update();
+                });
+
+                // sort setting
                 $scope.sortKey = 'modifiedDate';
                 $scope.reverse = true;
                 $scope.sort = function (key) {
@@ -68,6 +79,17 @@ angular.module('argus.directives')
                 };
                 $scope.enableItem = function(item, enabled) {
                     $scope.enable()(item, enabled);
+                };
+
+                // total number setting
+                $scope.$watch('dataSet.length', function () {
+                    console.log($scope.dataSet.length);
+                    $scope.update();
+                });
+                $scope.update = function(){
+                    $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
+                    var end = $scope.start + $scope.itemsPerPage - 1;
+                    $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
                 };
             }]
         };
