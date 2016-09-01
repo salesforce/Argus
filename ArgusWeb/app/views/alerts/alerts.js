@@ -206,7 +206,7 @@ argusAlerts.controller('AlertDetailCtrl', ['$scope', '$routeParams', '$location'
                 notifierName: "com.salesforce.dva.argus.service.alert.notifier.EmailNotifier",
                 subscriptions: [],
                 metricsToAnnotate: [],
-                cooldownPeriod: 3600000,
+                cooldownPeriod: 0,
                 alertId: $scope.alert.id
             };
             Notifications.save({alertId: $scope.alert.id}, notification, function (result) {
