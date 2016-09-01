@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
+import com.stumbleupon.async.TimeoutException;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
@@ -63,19 +64,18 @@ import org.slf4j.Logger;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * HBASE implementation of the schema service.
+ * Implementation of the schema service using Asynchbase.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @Singleton
 public class AsyncHbaseSchemaService extends DefaultService implements SchemaService {
@@ -89,6 +89,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private static final byte[] CELL_VALUE = "1".getBytes(Charset.forName("UTF-8"));
     private static final char ROWKEY_SEPARATOR = ':';
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
+    
+    private static final long TIMEOUT = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -315,7 +317,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         /**
          * Scans HBASE rows.
          *
-         * @author  Tom Valine (tvaline@salesforce.com)
+         * @author  Bhinav Sura (bhinav.sura@salesforce.com)
          */
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
@@ -365,12 +367,20 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return results.joinUninterruptibly();
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return results.join(TIMEOUT);
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+
     }
 
     @Override
@@ -462,12 +472,20 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return new ArrayList<String>(results.joinUninterruptibly());
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return new ArrayList<>(results.join(TIMEOUT));
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+        
     }
 
     @Override
@@ -479,24 +497,23 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             Deferred<Object> deferred = _client.shutdown();
 
             deferred.addCallback(new Callback<Void, Object>() {
-
-                    @Override
-                    public Void call(Object arg) throws Exception {
-                        _logger.info("Shutdown of asynchbase client complete.");
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Object arg) throws Exception {
+                    _logger.info("Shutdown of asynchbase client complete.");
+                    return null;
+                }
+            });
+            
             deferred.addErrback(new Callback<Void, Exception>() {
-
-                    @Override
-                    public Void call(Exception arg) throws Exception {
-                        _logger.warn("Error occured while shutting down asynchbase client. Trying again...");
-                        _client.shutdown();
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Exception arg) throws Exception {
+                    _logger.warn("Error occured while shutting down asynchbase client.");
+                    return null;
+                }
+            });
+            
             try {
-                deferred.joinUninterruptibly();
+                deferred.join();
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
@@ -505,39 +522,34 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     
     
     private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
-		final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean fail = new AtomicBoolean(true);
-		_client.ensureTableFamilyExists(table, family).addCallbacks(
-        		new Callback<Object, Object>() {
-
-					@Override
-					public Object call(Object arg) throws Exception {
-						fail.set(false);
-						latch.countDown();
-						return null;
-					}
-        			
-        		},
-        		new Callback<Object, Object>() {
-
-					@Override
-					public Object call(Object arg) throws Exception {
-						latch.countDown();
-						return null;
-					}
-        		}
-        );
+        
+        Deferred<Object> deferred = _client.ensureTableFamilyExists(table, family);
+        
+        deferred.addCallback(new Callback<Void, Object>() {
+			@Override
+			public Void call(Object arg) throws Exception {
+				fail.set(false);
+				return null;
+			}
+		});
+        
+        deferred.addErrback(new Callback<Void, Exception>() {
+			@Override
+			public Void call(Exception arg) throws Exception {
+				_logger.error("Table {} or family {} does not exist. Please create the appropriate table.", Bytes.toString(table), Bytes.toString(family));
+				return null;
+			}
+		});
         
         try {
-        	latch.await(1, TimeUnit.MINUTES);
+        	deferred.join(TIMEOUT);
         } catch (InterruptedException e) {
         	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
-        }
+        } catch (Exception e) {
+			_logger.error("Exception occured while waiting to ensure table {} with family {} exists", Bytes.toString(table), Bytes.toString(family));
+		}
         
-        if(fail.get()) {
-        	_logger.error("Table {} or family {} does not exist.", Bytes.toString(table), Bytes.toString(family));
-        	_logger.error("SchemaService will not work.");
-        }
 	}
 
     private void _putWithoutTag(Metric metric, String tableName) {
