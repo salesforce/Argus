@@ -4,79 +4,10 @@
         <li ng-class="{active:isTabSelected(1)}"><a href ng-click="getDashboards(false);selectTab(1)">{{getRemoteUser()}}'s Dashboards</a></li>
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click="getDashboards(true);selectTab(2)">Shared</a></li>
     </ul>
-
-	<div class="row">
-		<div class="col-md-3 h3">Dashboard list</div>
-
-		<div class="col-md-5 text-right">
-			<dir-pagination-controls></dir-pagination-controls>
-		</div>
-
-		<div class="col-md-1">
-				<select class="form-control" ng-model="itemsPerPage" ng-options="val for val in itemsPerPageOptions"></select>
-		</div>
-
-		<div class="col-md-3">
-			<span class="pull-right input-group">
-				<input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
-				<span class="input-group-btn">
-					<button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
-						<span class="glyphicon glyphicon-remove-circle"></span>
-					</button>
-					<button class="btn btn-default active" ng-show="!searchText">
-						<span class="glyphicon glyphicon-filter"></span>
-					</button>
-				</span>
-			</span>
-		</div>
-	</div>
-
-	<table class="table table-striped table-bordered">
-		<tr>
-			<th ng-click="sort('id')">ID
-				<span class="glyphicon sort-icon" ng-show="sortKey=='id'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th ng-click="sort('name')">Name
-				<span class="glyphicon sort-icon" ng-show="sortKey=='name'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th ng-click="sort('description')">Description
-				<span class="glyphicon sort-icon" ng-show="sortKey=='description'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th ng-click="sort('createdDate')">Created
-				<span class="glyphicon sort-icon" ng-show="sortKey=='createdDate'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th ng-click="sort('modifiedDate')">Last Modified
-				<span class="glyphicon sort-icon" ng-show="sortKey=='modifiedDate'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th ng-click="sort('ownerName')">Owner
-				<span class="glyphicon sort-icon" ng-show="sortKey=='ownerName'" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
-			</th>
-			<th class="col-centered">
-				<button class="btn btn-success btn-sm" type="button" ng-click="addDashboard()" tooltip-placement="top" tooltip="Create a new Dashboard">
-					<i class="glyphicon glyphicon-plus"></i>
-				</button>
-			</th>
-		</tr>
-
-		<tr dir-paginate="dashboard in dashboards | filter:searchText | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage">
-			<td>{{dashboard.id}}</td>
-			<td><a href="#/dashboards/{{dashboard.id}}">{{dashboard.name}}</a></td>
-			<td>{{dashboard.description}}</td>
-			<td>{{dashboard.createdDate| date:'medium'}}</td>
-			<td>{{dashboard.modifiedDate| date:'medium'}}</td>
-			<td>{{dashboard.ownerName}}</td>
-			<td>
-				<button class="btn btn-warning btn-sm" type="button" ng-disabled="isDisabled(dashboard)"
-						ng-confirm="Delete '{{dashboard.name}}'?" ng-confirm-action="deleteDashboard(dashboard)">
-					<i class="glyphicon glyphicon-trash"></i>
-				</button>
-			</td>
-		</tr>
-	</table>
+	<!-- dashboard list -->
+	<table-list properties = "properties" col-name="colName" data="dashboards" add-item="addDashboard()" delete="deleteDashboard" disabled="isDisabled"></table-list>
 	<!--loading spinner-->
 	<div ng-loading="allDashboards"></div>
 	<!-- total number -->
 	<total-number total="dashboards.length" type="dashboards" current-page="__default__currentPage" items-per-page="itemsPerPage"></total-number>
-
-
 </section>
