@@ -16,6 +16,7 @@ import com.salesforce.dva.warden.client.WardenHttpClient.WardenResponse;
 public class PolicyService extends AbstractService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WardenHttpClient.class);
+    private static final String REQUESTURL = "/policy";
 
     /**
      *
@@ -25,10 +26,9 @@ public class PolicyService extends AbstractService {
         super(client);
     }
 
-    public List<Policy> getPolicies(  )
+    public List<Policy> getPolicies(  ) throws IOException
     {
-        String requestUrl = "";
-        try {
+        String requestUrl = REQUESTURL;
             WardenResponse response = client.executeHttpRequest( WardenHttpClient.RequestType.GET, requestUrl, null );
             //EntityUtils.consume( response.getEntity(  ) );
             ObjectMapper mapper = new ObjectMapper(  );
@@ -37,9 +37,6 @@ public class PolicyService extends AbstractService {
                             mapper.getTypeFactory(  ).constructCollectionType( List.class, Policy.class ) );
 
             return policies;
-        } catch (IOException ex){
-            throw new SystemException("Error posting data", ex);
-        }
 
     }
 /*

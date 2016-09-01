@@ -21,13 +21,10 @@ public class PolicyServiceTest extends AbstractTest {
     @Test
     public void testGetPolicies() throws IOException {
         try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))){
-            AuthService authService = wardenService.getAuthService();
-            authService.login("aUsername","aPassword");
             PolicyService policyService = wardenService.getPolicyService();
             List<Policy> resultPolicies = policyService.getPolicies();
             List<Policy> expectedPolicies = Arrays.asList(new Policy [] {_constructPolicy()});
             assertEquals(expectedPolicies, resultPolicies);
-            authService.logout();
         }
     }
 
