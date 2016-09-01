@@ -31,6 +31,7 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The metric DTO.
@@ -118,6 +119,50 @@ public class Metric extends TSDBEntity {
      */
     public void setDatapoints(Map<Long, String> datapoints) {
         this.datapoints = datapoints;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+
+        hash = 97 * hash + super.hashCode();
+        hash = 97 * hash + Objects.hashCode(this.namespace);
+        hash = 97 * hash + Objects.hashCode(this.displayName);
+        hash = 97 * hash + Objects.hashCode(this.units);
+        hash = 97 * hash + Objects.hashCode(this.datapoints);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Metric other = (Metric) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.namespace, other.namespace)) {
+            return false;
+        }
+        if (!Objects.equals(this.displayName, other.displayName)) {
+            return false;
+        }
+        if (!Objects.equals(this.units, other.units)) {
+            return false;
+        }
+        if (!Objects.equals(this.datapoints, other.datapoints)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

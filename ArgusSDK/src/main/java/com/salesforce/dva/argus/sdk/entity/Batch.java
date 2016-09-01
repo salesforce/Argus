@@ -31,6 +31,7 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Batch query object.
@@ -48,6 +49,51 @@ public class Batch {
     private List<Query> queries;
 
     //~ Methods **************************************************************************************************************************************
+
+    /**
+     * Sets the batch status.
+     *
+     * @param  status  The batch status.
+     */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    /**
+     * Sets the time to live for the batch.
+     *
+     * @param  ttl  The time to live in seconds.
+     */
+    public void setTtl(int ttl) {
+        this.ttl = ttl;
+    }
+
+    /**
+     * Sets the created date for the batch.
+     *
+     * @param  createdDate  The created date.
+     */
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    /**
+     * Sets the name of the batch owner.
+     *
+     * @param  ownerName  The name of the batch owner.
+     */
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
+
+    /**
+     * Sets the queries associated with the batch.
+     *
+     * @param  queries  The queries associated with the batch.
+     */
+    public void setQueries(List<Query> queries) {
+        this.queries = queries;
+    }
 
     /**
      * Returns the batch status.
@@ -94,6 +140,50 @@ public class Batch {
         return queries;
     }
 
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 59 * hash + Objects.hashCode(this.status);
+        hash = 59 * hash + this.ttl;
+        hash = 59 * hash + (int) (this.createdDate ^ (this.createdDate >>> 32));
+        hash = 59 * hash + Objects.hashCode(this.ownerName);
+        hash = 59 * hash + Objects.hashCode(this.queries);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Batch other = (Batch) obj;
+
+        if (this.ttl != other.ttl) {
+            return false;
+        }
+        if (this.createdDate != other.createdDate) {
+            return false;
+        }
+        if (!Objects.equals(this.status, other.status)) {
+            return false;
+        }
+        if (!Objects.equals(this.ownerName, other.ownerName)) {
+            return false;
+        }
+        if (!Objects.equals(this.queries, other.queries)) {
+            return false;
+        }
+        return true;
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
@@ -114,11 +204,13 @@ public class Batch {
          * @param  result      The query result.
          * @param  message     The status message.
          */
-        Query(String expression, Metric result, String message) {
+        public Query(String expression, Metric result, String message) {
             this.expression = expression;
             this.result = result;
             this.message = message;
         }
+
+        private Query() { }
 
         /**
          * Returns the expression.
@@ -172,6 +264,42 @@ public class Batch {
          */
         public void setMessage(String message) {
             this.message = message;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+
+            hash = 79 * hash + Objects.hashCode(this.expression);
+            hash = 79 * hash + Objects.hashCode(this.result);
+            hash = 79 * hash + Objects.hashCode(this.message);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+
+            final Query other = (Query) obj;
+
+            if (!Objects.equals(this.expression, other.expression)) {
+                return false;
+            }
+            if (!Objects.equals(this.message, other.message)) {
+                return false;
+            }
+            if (!Objects.equals(this.result, other.result)) {
+                return false;
+            }
+            return true;
         }
     }
 }
