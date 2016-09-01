@@ -69,6 +69,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -505,12 +506,13 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     
     private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
 		final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicBoolean fail = new AtomicBoolean(false);
+        final AtomicBoolean fail = new AtomicBoolean(true);
 		_client.ensureTableFamilyExists(table, family).addCallbacks(
         		new Callback<Object, Object>() {
 
 					@Override
 					public Object call(Object arg) throws Exception {
+						fail.set(false);
 						latch.countDown();
 						return null;
 					}
@@ -520,7 +522,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 
 					@Override
 					public Object call(Object arg) throws Exception {
-						fail.set(true);
 						latch.countDown();
 						return null;
 					}
@@ -528,13 +529,14 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         );
         
         try {
-        	latch.await();
+        	latch.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
-        	throw new SystemException("Interrupted", e);
+        	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
         }
         
         if(fail.get()) {
-        	throw new SystemException("Table or Column Family doesn't exist.");
+        	_logger.error("Table {} or family {} does not exist.", Bytes.toString(table), Bytes.toString(family));
+        	_logger.error("SchemaService will not work.");
         }
 	}
 
