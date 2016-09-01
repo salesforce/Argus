@@ -83,7 +83,6 @@ angular.module('argus.directives')
 
                 // total number setting
                 $scope.$watch('dataSet.length', function () {
-                    console.log($scope.dataSet.length);
                     $scope.update();
                 });
                 $scope.update = function(){
