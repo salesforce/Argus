@@ -22,11 +22,8 @@
 angular.module('argus.controllers.alerts', ['ngResource'])
 .controller('Alerts', ['Storage', '$scope', 'growl', 'Alerts', function (Storage, $scope, growl, Alerts) {
 		
-    $scope.searchText = Storage.get("alerts-searchText") == null ? "" : Storage.get("alerts-searchText");
     $scope.alerts = Alerts.query();
-    $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
-    $scope.itemsPerPage = Storage.get("alerts-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("alerts-itemsPerPage");
-    
+
     $scope.addAlert = function () {
         var alert = {
             name: 'new-alert-' + Date.now(),
@@ -64,21 +61,24 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             growl.error('Failed to delete "' + alert.name + '"');
         });
     };
-    
-    $scope.$watch('searchText', function(newValue, oldValue) {
-    	newValue = newValue == null ? "" : newValue;
-    	Storage.set("alerts-searchText", newValue);
-    });
-    
-    $scope.$watch('itemsPerPage', function(newValue, oldValue) {
-    	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
-    	Storage.set("alerts-itemsPerPage", newValue);
-    });
 
-    $scope.sortKey = 'modifiedDate';
-    $scope.reverse = true;
-    $scope.sort = function (key) {
-        $scope.sortKey = key;
-        $scope.reverse = !$scope.reverse;
+    //TODO: this is a dummy function - need to be fixed
+    $scope.isDisabled = function (alert) {
+        return false;
+    }
+
+    $scope.colName = {
+        id:'ID',
+        name:'Name',
+        cronEntry:'CRON Entry',
+        createdDate:'Created',
+        modifiedDate:'Last Modified',
+        ownerName:'Owner',
+        state: "State"
+    };
+
+    $scope.properties = {
+        title: "Alert",
+        type: "alerts"
     };
 }]);
