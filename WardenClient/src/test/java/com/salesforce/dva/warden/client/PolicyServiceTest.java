@@ -36,8 +36,8 @@ public class PolicyServiceTest extends AbstractTest {
         try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))){
             PolicyService policyService = wardenService.getPolicyService();
             List<Policy> policies = Arrays.asList(new Policy [] {_constructPolicy()});
-            List<Policy> resultPolicies = policyService.createPolicies(policies);
-            assertEquals(_constructSuccessfulResult(policies, 0), resultPolicies);
+            PutResult result = policyService.createPolicies(policies);
+            assertEquals(_constructSuccessfulResult(policies, 0), result);
 
         }
     }

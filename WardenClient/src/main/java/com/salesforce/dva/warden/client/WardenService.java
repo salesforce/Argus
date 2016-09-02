@@ -1,6 +1,8 @@
 package com.salesforce.dva.warden.client;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,8 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-class WardenService
-    implements AutoCloseable
+public class WardenService implements AutoCloseable
 {
 
 	private WardenHttpClient httpClient;
@@ -107,6 +108,91 @@ class WardenService
             }
         }
     }
+
+    /**
+     * Base class used for endpoint services.
+     *
+     * @author  Tom Valine (tvaline@salesforce.com)
+     */
+    static class EndpointService {
+
+        private static final ObjectMapper MAPPER = new ObjectMapper();
+
+        static {
+            MAPPER.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.ANY);
+            MAPPER.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.ANY);
+        }
+
+        private WardenHttpClient _client;
+
+        /**
+         * Creates a new EndpointService object.
+         *
+         * @param   client  The HTTP client for use by the endpoint service.
+         *
+         * @throws  IllegalArgumentException  If the specified client is null.
+         */
+        EndpointService(WardenHttpClient client) {
+            if (client == null) {
+                throw new IllegalArgumentException("The HTTP client cannot be null.");
+            }
+            _client = client;
+        }
+
+        /**
+         * De-serializes JSON into the corresponding Java object.
+         *
+         * @param   <T>   The type of the Java object.
+         * @param   json  The JSON to de-serialize.
+         * @param   type  The type of the Java object.
+         *
+         * @return  The resulting Java object.
+         *
+         * @throws  IOException  If the Java object cannot be constructed from the provided JSON.
+         */
+        protected <T> T fromJson(String json, Class<T> type) throws IOException {
+            return MAPPER.readValue(json, type);
+        }
+
+        /**
+         * De-serializes JSON into the corresponding Java object.
+         *
+         * @param   <T>      The type of the Java object.
+         * @param   json     The JSON to de-serialize.
+         * @param   typeRef  The type of the Java object.
+         *
+         * @return  The resulting Java object.
+         *
+         * @throws  IOException  If the Java object cannot be constructed from the provided JSON.
+         */
+        protected <T> T fromJson(String json, TypeReference typeRef) throws IOException {
+            return (T) MAPPER.readValue(json, typeRef);
+        }
+
+        /**
+         * Returns the HTTP client for use by the endpoint service.
+         *
+         * @return  The HTTP client.
+         */
+        protected WardenHttpClient getClient() {
+            return _client;
+        }
+
+        /**
+         * Throws an exception if a request results in an error.
+         *
+         * @param   response    The response to evaluate.
+         * @param   requestUrl  The URL to which the request was dispatched.
+         *
+         * @throws  WardenException  If the request resulted in an error.
+         */
+        protected void assertValidResponse(WardenHttpClient.WardenResponse response, String requestUrl) throws WardenException {
+            if (response.getErrorMessage() != null) {
+                throw new WardenException(response.getStatus(), response.getErrorMessage(), requestUrl, response.getResult());
+            }
+        }
+    }
+
 
     public void close() throws IOException {
         httpClient.dispose();

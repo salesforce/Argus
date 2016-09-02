@@ -1,17 +1,20 @@
 package com.salesforce.dva.warden.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.salesforce.dva.argus.system.SystemException;
-import com.salesforce.dva.warden.dto.Credentials;
 import com.salesforce.dva.warden.dto.Policy;
-import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import com.salesforce.dva.warden.client.WardenHttpClient.WardenResponse;
+import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
+import com.salesforce.dva.warden.client.WardenService.PutResult;
+import com.salesforce.dva.warden.client.WardenService.EndpointService;
+
 
 public class PolicyService extends AbstractService {
 
@@ -29,8 +32,7 @@ public class PolicyService extends AbstractService {
     public List<Policy> getPolicies(  ) throws IOException
     {
         String requestUrl = REQUESTURL;
-            WardenResponse response = client.executeHttpRequest( WardenHttpClient.RequestType.GET, requestUrl, null );
-            //EntityUtils.consume( response.getEntity(  ) );
+            WardenResponse response = client.executeHttpRequest( RequestType.GET, requestUrl, null );
             ObjectMapper mapper = new ObjectMapper(  );
             List<Policy> policies =
                     mapper.readValue( response.getResult(),
@@ -40,12 +42,17 @@ public class PolicyService extends AbstractService {
 
     }
 
-    public List<Policy> createPolicies(List<Policy> policies) throws IOException{
+    public WardenService.PutResult createPolicies(List<Policy> policies) throws IOException{
         String requestUrl = REQUESTURL;
-            WardenHttpClient.WardenResponse response = client.executeHttpRequest( WardenHttpClient.RequestType.POST, requestUrl, policies );
-            ObjectMapper mapper = new ObjectMapper(  );
-            return mapper.readValue( response.getResult(),
-                    mapper.getTypeFactory(  ).constructCollectionType( List.class, Policy.class ) );
+        WardenResponse response = client.executeHttpRequest( RequestType.POST, requestUrl, policies );
+
+        assertValidResponse(response, requestUrl);
+
+        Map<String, Object> map = fromJson(response.getResult(), new TypeReference<Map<String, Object>>() { });
+
+        List<String> errorMessages = (List<String>) map.get("Error Messages");
+
+        return new PutResult(String.valueOf(map.get("Success")), String.valueOf(map.get("Errors")), errorMessages);
     }
 
     public boolean deletePolicies(){
