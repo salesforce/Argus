@@ -12,11 +12,11 @@ import java.util.Map;
 
 import com.salesforce.dva.warden.client.WardenHttpClient.WardenResponse;
 import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
-import com.salesforce.dva.warden.client.WardenService.PutResult;
 import com.salesforce.dva.warden.client.WardenService.EndpointService;
+import com.salesforce.dva.warden.client.WardenService.PutResult;
 
 
-public class PolicyService extends AbstractService {
+public class PolicyService extends EndpointService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WardenHttpClient.class);
     private static final String REQUESTURL = "/policy";
@@ -32,7 +32,7 @@ public class PolicyService extends AbstractService {
     public List<Policy> getPolicies(  ) throws IOException
     {
         String requestUrl = REQUESTURL;
-            WardenResponse response = client.executeHttpRequest( RequestType.GET, requestUrl, null );
+            WardenResponse response = getClient().executeHttpRequest( RequestType.GET, requestUrl, null );
             ObjectMapper mapper = new ObjectMapper(  );
             List<Policy> policies =
                     mapper.readValue( response.getResult(),
@@ -44,7 +44,7 @@ public class PolicyService extends AbstractService {
 
     public WardenService.PutResult createPolicies(List<Policy> policies) throws IOException{
         String requestUrl = REQUESTURL;
-        WardenResponse response = client.executeHttpRequest( RequestType.POST, requestUrl, policies );
+        WardenResponse response = getClient().executeHttpRequest( RequestType.POST, requestUrl, policies );
 
         assertValidResponse(response, requestUrl);
 

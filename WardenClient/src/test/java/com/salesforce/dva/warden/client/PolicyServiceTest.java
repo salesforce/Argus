@@ -13,7 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import com.salesforce.dva.warden.client.WardenService.PutResult;
 
@@ -38,7 +37,6 @@ public class PolicyServiceTest extends AbstractTest {
             List<Policy> policies = Arrays.asList(new Policy [] {_constructPolicy()});
             PutResult result = policyService.createPolicies(policies);
             assertEquals(_constructSuccessfulResult(policies, 0), result);
-
         }
     }
 
@@ -46,9 +44,9 @@ public class PolicyServiceTest extends AbstractTest {
         Policy result = new Policy();
         result.setId(BigInteger.ONE);
         result.setCreatedById(BigInteger.ONE);
-        result.setCreatedDate( new Date());
+        result.setCreatedDate( new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
-        result.setModifiedDate( new Date());
+        result.setModifiedDate( new Date(1472847819167L ));
         result.setService("TestService");
         result.setName("TestName");
         result.setOwners(Arrays.asList("TestOwner"));

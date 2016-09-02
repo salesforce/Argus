@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class WardenService implements AutoCloseable
 {
@@ -107,6 +108,53 @@ public class WardenService implements AutoCloseable
                 _errorMessages.addAll(errorMessages);
             }
         }
+
+        public String getSuccessCount() {
+            return _successCount;
+        }
+
+        public String getFailCount() {
+            return _failCount;
+        }
+
+        public List<String> getErrorMessages() {
+            return _errorMessages;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 23 * hash + Objects.hashCode(this._successCount);
+            hash = 23 * hash + Objects.hashCode(this._failCount);
+            hash = 23 * hash + Objects.hashCode(this._errorMessages);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final PutResult other = (PutResult) obj;
+            if (!Objects.equals(this._successCount, other._successCount)) {
+                return false;
+            }
+            if (!Objects.equals(this._failCount, other._failCount)) {
+                return false;
+            }
+            if (!Objects.equals(this._errorMessages, other._errorMessages)) {
+                return false;
+            }
+            return true;
+        }
+        
+        
     }
 
     /**
