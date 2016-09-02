@@ -1,5 +1,6 @@
 package com.salesforce.dva.warden.client;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +77,36 @@ class WardenService
         return new PolicyService (httpClient);
     }
 
+    /**
+     * Represents the result of a write operation for annotations and metrics.
+     *
+     * @author  Tom Valine (tvaline@salesforce.com)
+     */
+    public static class PutResult {
+
+        @JsonProperty(value = "Success")
+        private final String _successCount;
+        @JsonProperty(value = "Error")
+        private final String _failCount;
+        @JsonProperty(value = "Error Messages")
+        private final List<String> _errorMessages;
+
+        /**
+         * Creates a new PutResult object.
+         *
+         * @param successCount  The number of successful writes.
+         * @param failCount     The number of failed writes.
+         * @param errorMessages The associated descriptive error messages for the failed writes.
+         */
+        public PutResult(String successCount, String failCount, List<String> errorMessages) {
+            _successCount = successCount;
+            _failCount = failCount;
+            _errorMessages = new ArrayList<>();
+            if (errorMessages != null) {
+                _errorMessages.addAll(errorMessages);
+            }
+        }
+    }
 
     public void close() throws IOException {
         httpClient.dispose();

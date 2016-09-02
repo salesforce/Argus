@@ -5,4 +5,11 @@
   "status": 200,
   "message": "PolicyServiceTest.testGetPolicies.json",
   "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472513570786,\"modifiedById\":10,\"modifiedDate\":1472513570786,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]}]"
-  }]
+  },{
+  "type": "POST",
+  "endpoint": "/policy",
+  "jsonInput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472513570786,\"modifiedById\":10,\"modifiedDate\":1472513570786,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]}]",
+  "status": 200,
+  "message": "PolicyServiceTest.testGetPolicies.json",
+  "jsonOutput" : "{\"Error Messages\":[],\"Errors\":\"0\",\"Success\":\"1\"}"
+}]

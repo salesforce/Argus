@@ -9,10 +9,13 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
+import com.salesforce.dva.warden.client.WardenService.PutResult;
 
 public class PolicyServiceTest extends AbstractTest {
     
@@ -25,6 +28,17 @@ public class PolicyServiceTest extends AbstractTest {
             List<Policy> resultPolicies = policyService.getPolicies();
             List<Policy> expectedPolicies = Arrays.asList(new Policy [] {_constructPolicy()});
             assertEquals(expectedPolicies, resultPolicies);
+        }
+    }
+
+    @Test
+    public void testCreatePolicies () throws IOException{
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))){
+            PolicyService policyService = wardenService.getPolicyService();
+            List<Policy> policies = Arrays.asList(new Policy [] {_constructPolicy()});
+            List<Policy> resultPolicies = policyService.createPolicies(policies);
+            assertEquals(_constructSuccessfulResult(policies, 0), resultPolicies);
+
         }
     }
 
@@ -52,6 +66,17 @@ public class PolicyServiceTest extends AbstractTest {
         System.out.println(mapper.writeValueAsString(result));
 
         return result;
+    }
+
+    private PutResult _constructSuccessfulResult(List<Policy> annotations, int errorCount) {
+        String failCount = Integer.toString(errorCount);
+        String successCount = Integer.toString(annotations.size() - errorCount);
+        List<String> errorMessages = new LinkedList<>();
+
+        if (errorCount > 0) {
+            errorMessages.add(failCount);
+        }
+        return new PutResult(successCount, failCount, errorMessages);
     }
 
 }

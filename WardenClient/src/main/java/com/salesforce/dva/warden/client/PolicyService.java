@@ -39,23 +39,14 @@ public class PolicyService extends AbstractService {
             return policies;
 
     }
-/*
-    public List<Policy> createPolicies(List<Policy> policies){
-        String endpoint = "argusuri";
-        String requestUrl = endpoint + "/policy";
 
-        try {
-            StringEntity entity = new StringEntity(fromEntity(policies));
-            WardenHttpClient.WardenResponse response = httpClient.executeHttpRequest( WardenHttpClient.RequestType.POST, requestUrl, entity );
+    public List<Policy> createPolicies(List<Policy> policies) throws IOException{
+        String requestUrl = REQUESTURL;
+            WardenHttpClient.WardenResponse response = client.executeHttpRequest( WardenHttpClient.RequestType.POST, requestUrl, policies );
             ObjectMapper mapper = new ObjectMapper(  );
             return mapper.readValue( response.getResult(),
                     mapper.getTypeFactory(  ).constructCollectionType( List.class, Policy.class ) );
-
-        } catch (IOException ex) {
-            throw new SystemException("Error posting data", ex);
-        }
-
-    }*/
+    }
 
     public boolean deletePolicies(){
         return false;
