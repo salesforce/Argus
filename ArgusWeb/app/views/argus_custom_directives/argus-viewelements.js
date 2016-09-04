@@ -219,7 +219,7 @@ function buildViewElement(scope, element, attributes, dashboardCtrl, elementType
 
         for (var key in scope.annotations) {
             if (scope.annotations.hasOwnProperty(key)) {
-                var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
+                var processedExpression = DashboardService.augmentExpressionWithControlsData(event, scope.annotations[key],controls);
                 if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
                     updatedAnnotationList.push(processedExpression);
                 }

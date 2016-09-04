@@ -296,9 +296,9 @@ public class GOCNotifier extends AuditNotifier {
         /** The GOC password with which to authenticate. */
         GOC_PWD("notifier.property.goc.password", "test_password"),
         /** The GOC proxy host. */
-        GOC_PROXY_HOST("notifier.property.goc.proxy.host", ""),
+        GOC_PROXY_HOST("notifier.property.proxy.host", ""),
         /** The GOC port. */
-        GOC_PROXY_PORT("notifier.property.goc.proxy.port", ""),
+        GOC_PROXY_PORT("notifier.property.proxy.port", ""),
         /** The GOC client ID. */
         GOC_CLIENT_ID("notifier.property.goc.client.id", "default_client_id"),
         /** The GOC client secret. */
