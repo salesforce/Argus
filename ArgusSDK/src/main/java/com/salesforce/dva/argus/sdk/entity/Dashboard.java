@@ -31,6 +31,7 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
 
 /**
  * Alert Dto.
@@ -139,6 +140,54 @@ public class Dashboard extends Entity {
      */
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 43 * hash + super.hashCode();
+        hash = 43 * hash + Objects.hashCode(this.name);
+        hash = 43 * hash + Objects.hashCode(this.content);
+        hash = 43 * hash + Objects.hashCode(this.ownerName);
+        hash = 43 * hash + (this.shared ? 1 : 0);
+        hash = 43 * hash + Objects.hashCode(this.description);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Dashboard other = (Dashboard) obj;
+
+        if (this.shared != other.shared) {
+            return false;
+        }
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.content, other.content)) {
+            return false;
+        }
+        if (!Objects.equals(this.ownerName, other.ownerName)) {
+            return false;
+        }
+        if (!Objects.equals(this.description, other.description)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

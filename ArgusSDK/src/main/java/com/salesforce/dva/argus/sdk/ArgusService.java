@@ -153,6 +153,15 @@ public class ArgusService implements AutoCloseable {
         return new BatchService(_client);
     }
 
+    /**
+     * Returns an instance of the batch service.
+     *
+     * @return  The batch service.
+     */
+    public DashboardService getDashboardService() {
+        return new DashboardService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
