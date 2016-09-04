@@ -162,6 +162,15 @@ public class ArgusService implements AutoCloseable {
         return new DashboardService(_client);
     }
 
+    /**
+     * Returns an instance of the discovery service.
+     *
+     * @return  The discovery service.
+     */
+    public DiscoveryService getDiscoveryService() {
+        return new DiscoveryService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
