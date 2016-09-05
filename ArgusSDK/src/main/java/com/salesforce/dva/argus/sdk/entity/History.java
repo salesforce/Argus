@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * The history DTO.
@@ -199,6 +200,62 @@ public class History implements Serializable {
      */
     public void setExecutionTime(long executionTime) {
         this.executionTime = executionTime;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 97 * hash + Objects.hashCode(this.id);
+        hash = 97 * hash + Objects.hashCode(this.createdDate);
+        hash = 97 * hash + Objects.hashCode(this.message);
+        hash = 97 * hash + Objects.hashCode(this.hostName);
+        hash = 97 * hash + Objects.hashCode(this.entityId);
+        hash = 97 * hash + Objects.hashCode(this.jobStatus);
+        hash = 97 * hash + (int) (this.waitTime ^ (this.waitTime >>> 32));
+        hash = 97 * hash + (int) (this.executionTime ^ (this.executionTime >>> 32));
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final History other = (History) obj;
+
+        if (this.waitTime != other.waitTime) {
+            return false;
+        }
+        if (this.executionTime != other.executionTime) {
+            return false;
+        }
+        if (!Objects.equals(this.message, other.message)) {
+            return false;
+        }
+        if (!Objects.equals(this.hostName, other.hostName)) {
+            return false;
+        }
+        if (!Objects.equals(this.jobStatus, other.jobStatus)) {
+            return false;
+        }
+        if (!Objects.equals(this.id, other.id)) {
+            return false;
+        }
+        if (!Objects.equals(this.createdDate, other.createdDate)) {
+            return false;
+        }
+        if (!Objects.equals(this.entityId, other.entityId)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

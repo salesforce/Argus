@@ -171,6 +171,15 @@ public class ArgusService implements AutoCloseable {
         return new DiscoveryService(_client);
     }
 
+    /**
+     * Returns an instance of the history service.
+     *
+     * @return  The history service.
+     */
+    public HistoryService getHistoryService() {
+        return new HistoryService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**

@@ -30,7 +30,6 @@
  */
 package com.salesforce.dva.argus.sdk;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.argus.sdk.entity.Alert;
 import com.salesforce.dva.argus.sdk.entity.Notification;
 import com.salesforce.dva.argus.sdk.entity.Trigger;
@@ -179,9 +178,6 @@ public class AlertServiceTest extends AbstractTest {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Notification notification = _constructUnpersistedNotification();
-
-            System.out.println(new ObjectMapper().writeValueAsString(notification));
-
             List<Notification> result = alertService.createNotification(BigInteger.ONE, notification);
             List<Notification> expected = Arrays.asList(new Notification[] { _constructPersistedNotification() });
 
@@ -209,9 +205,6 @@ public class AlertServiceTest extends AbstractTest {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger trigger = _constructUnpersistedTrigger();
-
-            System.out.println(new ObjectMapper().writeValueAsString(trigger));
-
             List<Trigger> result = alertService.createTrigger(BigInteger.ONE, trigger);
             List<Trigger> expected = Arrays.asList(new Trigger[] { _constructPersistedTrigger() });
 

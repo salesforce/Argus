@@ -30,7 +30,6 @@
  */
 package com.salesforce.dva.argus.sdk;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.argus.sdk.entity.Dashboard;
 import org.junit.Test;
 import java.io.IOException;
@@ -105,7 +104,6 @@ public class DashboardServiceTest extends AbstractTest {
         result.setCreatedDate(new Date(1472282830936L));
         result.setModifiedById(BigInteger.ONE);
         result.setModifiedDate(new Date(1472282830936L));
-        System.out.println(new ObjectMapper().writeValueAsString(result));
         return result;
     }
 
@@ -117,7 +115,6 @@ public class DashboardServiceTest extends AbstractTest {
         result.setName("TestName");
         result.setOwnerName("TestOwnerName");
         result.setShared(true);
-        System.out.println(new ObjectMapper().writeValueAsString(result));
         return result;
     }
 
@@ -125,7 +122,6 @@ public class DashboardServiceTest extends AbstractTest {
         Dashboard result = _constructPersistedDashboard();
 
         result.setContent("UpdatedContent");
-        System.out.println(new ObjectMapper().writeValueAsString(result));
         return result;
     }
 }
