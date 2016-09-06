@@ -33,7 +33,7 @@
             </button>
         </th>
     </tr>
-    <tr dir-paginate="item in dataSet | filter:searchText | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage" current-page="currentPage">
+    <tr dir-paginate="item in results = (dataSet | filter:searchText) | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage" current-page="currentPage">
     <td ng-if="colName.id">{{item.id}}</td>
     <td ng-if="colName.name"><a ng-href="#/{{properties.type}}/{{item.id}}">{{item.name}}</a></td>
     <td ng-if="colName.description">{{item.description}}</td>
@@ -62,5 +62,11 @@
     </tr>
 </table>
 
-<div class="row text-center" ng-show="dataSet.length == 0" class="ng-hide">There is no {{properties.type}} to show.</div>
-<div class="row text-center" ng-show="dataSet.length">Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.</div>
+<div class="row text-center" ng-hide="dataSet.length != 0">No {{properties.type}} to show.</div>
+<div class="row text-center" ng-show="dataSet.length && searchText.length == 0">Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.</div>
+<!--after user type in searchText-->
+<div class="row text-center" ng-if="searchText.length" ng-switch="results.length">
+    <div ng-switch-when="0">No results found...</div>
+    <div ng-switch-when="1">1 result found.</div>
+    <div ng-switch-default="">{{results.length}} results found.</div>
+</div>
