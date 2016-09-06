@@ -48,7 +48,8 @@ angular.module('argus.config', [])
                 templateUrl: 'js/templates/dashboard-detail.html',
                 controller: 'DashboardsDetail',
                 label: '{{dashboards.dashboardId}}',
-                activeTab: 'dashboards'
+                activeTab: 'dashboards',
+                reloadOnSearch: false
             }).
             when('/alerts', {
                 templateUrl: 'js/templates/alert-list.html',
