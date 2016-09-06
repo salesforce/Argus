@@ -36,32 +36,29 @@ angular.module('argus.directives')
                 disabled: '&',
                 enable: '&'
             },
-            controller: ['$scope', 'Storage', function($scope, Storage) {
+            controller: ['$scope', 'InputTracker', function($scope, InputTracker) {
                 // TODO: move this to a service
                 // itemsPerPage setting
                 $scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
                 var itemsPerPageFromStorage = $scope.properties.type + '-itemsPerPage';
-                $scope.itemsPerPage = Storage.get(itemsPerPageFromStorage) == null ? $scope.itemsPerPageOptions[1] : Storage.get(itemsPerPageFromStorage);
-                $scope.$watch('itemsPerPage', function(newValue, oldValue) {
-                    newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
-                    Storage.set(itemsPerPageFromStorage, newValue);
+                $scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1]);
+                $scope.$watch('itemsPerPage', function(newValue) {
+                    InputTracker.updateDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1], newValue)
                     $scope.update();
                 });
 
                 // searchText setting
                 var searchTextFromStorage = $scope.properties.type + '-searchText';
-                $scope.searchText = Storage.get(searchTextFromStorage) == null ? "" : Storage.get(searchTextFromStorage);
-                $scope.$watch('searchText', function(newValue, oldValue) {
-                    newValue = newValue == null ? "" : newValue;
-                    Storage.set(searchTextFromStorage, newValue);
+                $scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, "");
+                $scope.$watch('searchText', function(newValue) {
+                    InputTracker.updateDefaultValue(searchTextFromStorage, "", newValue);
                 });
 
                 // pagination page setting
                 var currentPageFromStorage = $scope.properties.type + '-currentPage';
-                $scope.currentPage = Storage.get(currentPageFromStorage) == null ? 1 : Storage.get(currentPageFromStorage);
-                $scope.$watch('currentPage', function (newValue, oldValue) {
-                    newValue = newValue == null ? 1 : newValue;
-                    Storage.set(currentPageFromStorage, newValue);
+                $scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
+                $scope.$watch('currentPage', function (newValue) {
+                    InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
                     $scope.update();
                 });
 

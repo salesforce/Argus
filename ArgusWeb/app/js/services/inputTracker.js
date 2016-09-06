@@ -23,5 +23,13 @@
 'use strict';
 
 angular.module('argus.services.inputTracker', [])
-    .service('InputTracker', ['Storage', '$scope', function (Storage, $scope) {
-    }]);
+.service('InputTracker', ['Storage', function (Storage) {
+    this.getDefaultValue = function(fieldName, defaultVal) {
+        return Storage.get(fieldName) == null ? defaultVal : Storage.get(fieldName);
+    };
+
+    this.updateDefaultValue = function(fieldName, defaultVal, val) {
+        var result = val == null ? defaultVal : val;
+        Storage.set(fieldName, result);
+    };
+}]);
