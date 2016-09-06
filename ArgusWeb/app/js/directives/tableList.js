@@ -63,11 +63,18 @@ angular.module('argus.directives')
                 });
 
                 // sort setting
-                $scope.sortKey = 'modifiedDate';
-                $scope.reverse = true;
+                var sortKeyFromStorage = $scope.properties.type + '-sortKey';
+                $scope.sortKey = InputTracker.getDefaultValue(sortKeyFromStorage, 'modifiedDate');
+                var sortReverseFromStorage = $scope.properties.type + '-sortReverse';
+                $scope.reverse = InputTracker.getDefaultValue(sortReverseFromStorage, true);
                 $scope.sort = function (key) {
-                    $scope.sortKey = key;
-                    $scope.reverse = !$scope.reverse;
+                    if ($scope.sortKey === key) {
+                        $scope.reverse = !$scope.reverse;
+                        InputTracker.updateDefaultValue(sortReverseFromStorage, true, $scope.reverse);
+                    } else {
+                        $scope.sortKey = key;
+                        InputTracker.updateDefaultValue(sortKeyFromStorage, 'modifiedDate', $scope.sortKey);
+                    }
                 };
 
                 //enableAlert, isDisabled & delete setting
