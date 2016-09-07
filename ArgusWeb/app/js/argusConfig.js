@@ -31,7 +31,8 @@ angular.module('argus.config', [])
                 templateUrl: 'js/templates/viewmetrics.html',
                 controller: 'ViewMetrics',
                 label: 'Metrics',
-                activeTab: 'metrics'
+                activeTab: 'metrics',
+                reloadOnSearch: false
             }).
             when('/batches', {
                 templateUrl: 'js/templates/batches.html',

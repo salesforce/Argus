@@ -10,7 +10,6 @@ angular.module('argus.directives.controls.dashboard', [])
         controller: function($scope) {
             $scope.controls = [];
             this.updateControl = function(controlName, controlValue, controlType, localSubmit) {
-                localSubmit = true;
             	var controlExists = false;
 
                 if(!localSubmit){

@@ -1,9 +1,16 @@
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls',
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
         
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
         $scope.useD3 = false;
+        //sync the expression to URL param
+        $scope.$watch('expression', function(val){
+            if(val){
+                var urlStr = Controls.getUrl([{name: 'expression', value: val}]);
+                $location.search(urlStr);
+            }
+        });
 
         $scope.toggleGraphType = function() {
             $scope.useD3 = !$scope.useD3;
