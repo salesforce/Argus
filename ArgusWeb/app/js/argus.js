@@ -91,7 +91,8 @@ angular.module('argus.services', [
   'argus.services.storage',
   'argus.services.tags',
   'argus.services.triggers',
-  'argus.services.triggersmap'
+  'argus.services.triggersmap',
+  'argus.services.inputTracker'
 ]);
 
 // Controllers

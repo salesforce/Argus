@@ -20,7 +20,7 @@
 'use strict';
 
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
-.controller('Dashboards', ['Auth', 'Storage', '$scope', 'growl', 'Dashboards', function (Auth, Storage, $scope, growl, Dashboards) {
+.controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', function (Auth, $scope, growl, Dashboards) {
 
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {

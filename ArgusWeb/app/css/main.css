@@ -76,6 +76,21 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+/* metrics & discovery lookup */
+.metricFields, .metricFields .form-control {display:inline-block; margin-bottom:.5em;}
+
+/* main graph/chart - i.e. metrics */
+#graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
+
+/* autocomplete */
+.autoComplete .category {padding:4px; border:1px solid #71ABCE; border-radius:5px; font-size:11px;}
+
+/* btn last */
+.btn-last {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
 
 /* Growl settings */
 .growl-container.growl-fixed.top-center {
