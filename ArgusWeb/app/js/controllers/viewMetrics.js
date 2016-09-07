@@ -21,7 +21,29 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         };
 
         $scope.searchMetrics = function(value, category) {
-            return SearchService.search(value, category)
+
+            var defaultParams = {
+                namespace: '*',
+                scope: '*',
+                metric: '*',
+                tagk: '*',
+                tagv: '*',
+                limit: 100,
+                page: 1
+            };
+
+            var newParams = JSON.parse(JSON.stringify(defaultParams));
+            
+            // update params with values in $scope if they exist
+            newParams['scope'] = ($scope.scope) ? $scope.scope : '*';
+            newParams['metric'] = ($scope.metric) ? $scope.metric : '*';
+            newParams['namespace'] = ($scope.namespace) ? $scope.namespace : '*';
+            newParams['tagk'] = ($scope.tagk) ? $scope.tagk : '*';
+            newParams['tagv'] = ($scope.tagv) ? $scope.tagv : '*';
+
+            console.log( newParams );
+
+            return SearchService.search(newParams)
                 .then(SearchService.processResponses);
         };
 

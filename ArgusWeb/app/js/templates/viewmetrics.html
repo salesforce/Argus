@@ -21,7 +21,7 @@
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
         typeahead-min-length="2"
         typeahead-wait-ms="1500"
-        uib-typeahead="result.expression for result in searchMetrics($viewValue, 'scope')"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="scopeTemplate.html" />
         <script type="text/ng-template" id="scopeTemplate.html">
           <a class="autoComplete">
@@ -38,10 +38,10 @@
         <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
         typeahead-min-length="2"
         typeahead-wait-ms="1500"
-        uib-typeahead="result.expression for result in searchMetrics($viewValue, 'metric')"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="metricTemplate.html"
         />
-        <script type="text/ng-template" id="scopeTemplate.html">
+        <script type="text/ng-template" id="metricTemplate.html">
           <a class="autoComplete">
               <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
               &nbsp;&nbsp;&nbsp;
@@ -58,10 +58,10 @@
         <input type="text" class="form-control" placeholder="Tag key" autocomplete="off" ng-model="tagk" 
         typeahead-min-length="2"
         typeahead-wait-ms="1500"
-        uib-typeahead="result.expression for result in searchMetrics($viewValue, 'tagk')"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="tagkTemplate.html"
         />
-        <script type="text/ng-template" id="scopeTemplate.html">
+        <script type="text/ng-template" id="tagkTemplate.html">
           <a class="autoComplete">
               <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
               &nbsp;&nbsp;&nbsp;
@@ -76,10 +76,10 @@
         <input type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="tagv" 
         typeahead-min-length="2"
         typeahead-wait-ms="1500"
-        uib-typeahead="result.expression for result in searchMetrics($viewValue, 'tagv')"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="tagvTemplate.html"
         />
-        <script type="text/ng-template" id="scopeTemplate.html">
+        <script type="text/ng-template" id="tagvTemplate.html">
           <a class="autoComplete">
               <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
               &nbsp;&nbsp;&nbsp;
@@ -96,9 +96,17 @@
         <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
         typeahead-min-length="2"
         typeahead-wait-ms="1500"
-        uib-typeahead="result.expression for result in searchMetrics($viewValue, 'namespace')"
-        typeahead-template-url="tagvTemplate.html"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="namespaceTemplate.html"
         />
+        <script type="text/ng-template" id="namespaceTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
     </div>
 
     <input type="Submit" class="btn btn-default" value="Build" style="vertical-align: top; margin-top: 2.15em; margin-left: 2em;" ng-show="false" />
