@@ -20,7 +20,7 @@
 'use strict';
 
 angular.module('argus.controllers.alerts', ['ngResource'])
-.controller('Alerts', ['Storage', '$scope', 'growl', 'Alerts', function (Storage, $scope, growl, Alerts) {
+.controller('Alerts', ['$scope', 'growl', 'Alerts', function ($scope, growl, Alerts) {
 		
     $scope.alerts = Alerts.query();
 
@@ -61,11 +61,6 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             growl.error('Failed to delete "' + alert.name + '"');
         });
     };
-
-    //TODO: this is a dummy function - need to be fixed
-    $scope.isDisabled = function (alert) {
-        return false;
-    }
 
     $scope.colName = {
         id:'ID',
