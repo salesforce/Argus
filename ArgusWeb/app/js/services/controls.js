@@ -11,7 +11,7 @@ angular.module('argus.services')
                     return $routeParams[prop];
                 }
             }
-            return controlValue;
+            return null;
         };
 
         this.getUrl = function(controls){
