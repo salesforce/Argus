@@ -3,24 +3,51 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
         
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
-        $scope.useD3 = false;
-
-        $scope.toggleGraphType = function() {
-            $scope.useD3 = !$scope.useD3;
-        };
+        $scope.showChart = false;
 
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
                 Metrics.query({expression: $scope.expression}, function (data) {
                     $scope.updateChart({}, data);
+                    $scope.showChart = true;
                 }, function (error) {
                     $scope.updateChart({}, null);
+                    $scope.showChart = false;
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                 });
             } else {
                 $scope.updateChart({}, $scope.expression);
             }
         };
+
+        $scope.searchMetrics = function(value, category) {
+
+            var defaultParams = {
+                namespace: '*',
+                scope: '*',
+                metric: '*',
+                tagk: '*',
+                tagv: '*',
+                limit: 100,
+                page: 1
+            };
+
+            var newParams = JSON.parse(JSON.stringify(defaultParams));
+            
+            // update params with values in $scope if they exist
+            newParams['scope'] = ($scope.scope) ? $scope.scope : '*';
+            newParams['metric'] = ($scope.metric) ? $scope.metric : '*';
+            newParams['namespace'] = ($scope.namespace) ? $scope.namespace : '*';
+            newParams['tagk'] = ($scope.tagk) ? $scope.tagk : '*';
+            newParams['tagv'] = ($scope.tagv) ? $scope.tagv : '*';
+
+            console.log( newParams );
+
+            return SearchService.search(newParams)
+                .then(SearchService.processResponses);
+        };
+
+        // -------------
 
         $scope.updateChart = function (config, data) {
             var options = config ? angular.copy(config) : {};
@@ -58,11 +85,16 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             		gapSize:1.5
             	}
             };
+            
             options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
+            
             $('#container').highcharts('StockChart', options);
+            
             $scope.series = series;
             $scope.addAlertFlags(data);
         };
+
+        // TODO: move all below scope functions to a puclic Scope service
 
         $scope.addAlertFlags = function (metrics) {
             if (metrics && metrics.length) {
@@ -78,7 +110,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 var series = $scope.copyFlagSeries(data);
                 var chart = $('#container').highcharts();
                 series.linkedTo = forName;
-                series.color=chart.get(forName).color;
+                series.color = chart.get(forName).color;
                 chart.addSeries(series);
             });
         };
@@ -110,15 +142,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 return result;
             } else {
                 return null;
-            }
-        };
-
-        // TODO: move logic to the getMetricData method, on: input enter/submit
-        $scope.getBookmarkLink = function () {
-            if ($scope.expression && $scope.expression.length) {
-                return "#" + $location.path() + "?expression=" + encodeURIComponent($scope.expression);
-            } else {
-                return "#" + $location.url();
             }
         };
 
@@ -196,10 +219,4 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         };
 
         $scope.getMetricData(null);
-
-        $scope.searchMetrics = function(value) {
-            return SearchService
-                    .search(value)
-                    .then(SearchService.processResponses);
-        };
     }]);

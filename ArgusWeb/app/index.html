@@ -45,37 +45,7 @@
 
 <div growl limit-messages="3"></div>
 
-<nav class="navbar navbar-default navbar-fixed-top">
-    <div style="width: 93%;" class="container">
-        <div class="navbar-header">
-            <a href="#dashboards"><img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left"></a>
-            <p class="navbar-text" ng-show="isLoggedIn()" ng-cloak>Welcome {{getRemoteUser()}}</p>
-        </div>
-
-        <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right" ng-show="isLoggedIn()">
-                <li ng-class="{'activeTab': activeTab == 'dashboards'}">
-                    <a class="glyphicon glyphicon-dashboard" href="#dashboards" title="Dashboards"></a>
-                </li>
-                <li ng-class="{'activeTab': activeTab == 'alerts'}">
-                    <a class="glyphicon glyphicon-bell" href="#alerts" title="Alerts"></a>
-                </li>
-                <li ng-class="{'activeTab': activeTab == 'metrics'}">
-                    <a class="glyphicon glyphicon-stats" href="#viewmetrics" title="Metrics"></a>
-                </li>
-                
-                <li class="topMenu">
-                    <a class="glyphicon glyphicon-menu-hamburger"></a>
-                    <ul class="subMenu">
-                        <li><a href="#namespace">Namespace</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#/login" ng-click="logout()" ng-show="isLoggedIn()">Logout</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<header-menu></header-menu>
 
 <div class="container" style="width: 93%;">
     <!-- breadcrumb navigation -->
@@ -168,6 +138,7 @@
 <script src="js/services/factories/triggersMap.js"></script>
 
 <!-- directives -->
+<script src="js/directives/headerMenu.js"></script>
 <script src="js/directives/tableList.js"></script>
 <script src="js/directives/breadcrumbs.js"></script>
 <script src="js/directives/dashboardResource.js"></script>
