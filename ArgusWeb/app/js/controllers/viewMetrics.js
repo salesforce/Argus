@@ -1,9 +1,17 @@
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls'
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
         
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
         $scope.showChart = false;
+
+        //sync the expression to URL param
+        $scope.$watch('expression', function(val){
+            if(val){
+                var urlStr = Controls.getUrl([{name: 'expression', value: val}]);
+                $location.search(urlStr);
+            }
+        });
 
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
