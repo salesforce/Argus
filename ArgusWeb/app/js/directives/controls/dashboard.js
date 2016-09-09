@@ -13,7 +13,7 @@ angular.module('argus.directives.controls.dashboard', [])
             	var controlExists = false;
 
                 if(!localSubmit){
-                    controlValue = Controls.updateControlValue(controlName)
+                    controlValue = Controls.updateControlValue(controlName);
                 }
 
                 for (var i in $scope.controls) {
@@ -42,7 +42,6 @@ angular.module('argus.directives.controls.dashboard', [])
                 // update url with controls params
                 var urlStr = Controls.getUrl(controls);
                 $location.search(urlStr);
-                //$location.search("start=-2d&end=-0d&scope=argus.jvm&metric=mem.heap.used&tags=host=*&aggregator=avgf");
             };
 
             this.getAllControls = function(){
