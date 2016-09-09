@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.dashboard', [])
-.directive('agDashboard', ['$location', '$rootScope', 'Controls', function($location, $rootScope, Controls) {
+.directive('agDashboard', ['$location', '$rootScope', '$routeParams', 'Controls', function($location, $rootScope, $routeParams, Controls) {
     return {
         restrict: 'E',
         scope: {
@@ -12,8 +12,13 @@ angular.module('argus.directives.controls.dashboard', [])
             this.updateControl = function(controlName, controlValue, controlType, localSubmit) {
             	var controlExists = false;
 
-                if(!localSubmit){
-                    controlValue = Controls.updateControlValue(controlName)
+                if (!localSubmit) {
+                    // controlValue = Controls.updateControlValue(controlName);
+                    for (var prop in $routeParams) {
+                        if (prop == controlName) {
+                            controlValue = $routeParams[prop];
+                        }
+                    };
                 }
 
                 for (var i in $scope.controls) {
@@ -32,9 +37,9 @@ angular.module('argus.directives.controls.dashboard', [])
                 	};
                 	$scope.controls.push(control);
             	}
+                
                 //add controls to url
-            	this.addControlsToUrl()
-
+            	this.addControlsToUrl();
             };
 
             this.addControlsToUrl = function () {
@@ -42,7 +47,6 @@ angular.module('argus.directives.controls.dashboard', [])
                 // update url with controls params
                 var urlStr = Controls.getUrl(controls);
                 $location.search(urlStr);
-                //$location.search("start=-2d&end=-0d&scope=argus.jvm&metric=mem.heap.used&tags=host=*&aggregator=avgf");
             };
 
             this.getAllControls = function(){
