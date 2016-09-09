@@ -9,9 +9,11 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             if ($scope.expression) {
                 $scope.showMetricDiscovery = false;
                 $scope.showChart = true;
+                $scope.showLoading = false;
             } else {
                 $scope.showMetricDiscovery = true;
                 $scope.showChart = false;
+                $scope.showLoading = true;
             }
         };
         $scope.checkMetricExpression();
@@ -25,15 +27,16 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
+                $scope.checkMetricExpression();
                 Metrics.query({expression: $scope.expression}, function (data) {
+                    $scope.showLoading = true;
                     $scope.updateChart({}, data);
-                    $scope.checkMetricExpression();
                 }, function (error) {
                     $scope.updateChart({}, null);
-                    $scope.checkMetricExpression();
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                 });
             } else {
+                $scope.checkMetricExpression();
                 $scope.updateChart({}, $scope.expression);
             }
         };

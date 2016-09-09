@@ -3,7 +3,7 @@
 <form novalidate class="form-horizontal" ng-enter="getMetricData()">
     <div class="input-group search-bar">
         <span class="input-group-btn" style="font-size:inherit;">
-          <a ng-click="showMetricDiscovery = true" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
+          <a ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
         </span>
         <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
         <span class="input-group-btn">
@@ -130,4 +130,7 @@
     <div growl inline="true" reference="viewmetrics-error"></div>
 
     <div id="container" class="graphContainer" ng-show="showChart" width="100%"></div>
+
+    <!--loading spinner-->
+    <div ng-loading="showLoading"></div>
 </section>
