@@ -29,11 +29,9 @@ a:hover {text-decoration:none; color:inherit;}
 .floatL {float:left;}
 .floatR {float:right;}
 
-.glyphicon, .glyphicon:hover {font-size:20px; color:#777;}
-.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px;}
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#777;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
-
 #navbar li.topMenu {position:relative;}
 #navbar li.topMenu ul.subMenu {
   display:none;
@@ -47,6 +45,7 @@ a:hover {text-decoration:none; color:inherit;}
   background:#FFF;
   z-index:9;
 }
+#navbar li a.glyphicon {font-size:20px; color:#777;}
 #navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
 #navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
 #navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
