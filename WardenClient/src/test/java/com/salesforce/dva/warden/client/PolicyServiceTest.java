@@ -1,52 +1,106 @@
+/*
+ * Copyright (c) 2016, Salesforce.com, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Salesforce.com nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.dva.warden.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.warden.dto.Policy;
+import com.salesforce.dva.warden.dto.WardenResource;
+import com.salesforce.dva.warden.dto.WardenResource.MetaKey;
 import org.junit.Test;
-
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.EnumMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-import com.salesforce.dva.warden.client.WardenService.PutResult;
-
 public class PolicyServiceTest extends AbstractTest {
-    
-
 
     @Test
     public void testGetPolicies() throws IOException {
-        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))){
+        try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
-            List<Policy> resultPolicies = policyService.getPolicies();
-            List<Policy> expectedPolicies = Arrays.asList(new Policy [] {_constructPolicy()});
-            assertEquals(expectedPolicies, resultPolicies);
+            WardenResponse<Policy> expectedResponse = _constructPersistedResponse("GET");
+            WardenResponse<Policy> actualResponse = policyService.getPolicies();
+
+            assertEquals(expectedResponse, actualResponse);
         }
     }
 
     @Test
-    public void testCreatePolicies () throws IOException{
-        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))){
+    public void testCreatePolicies() throws IOException {
+        try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
-            List<Policy> policies = Arrays.asList(new Policy [] {_constructPolicy()});
-            PutResult result = policyService.createPolicies(policies);
-            assertEquals(_constructSuccessfulResult(policies, 0), result);
+            List<Policy> policies = Arrays.asList(new Policy[] { _constructUnpersistedPolicy() });
+            WardenResponse<Policy> actualResponse = policyService.createPolicies(policies);
+            WardenResponse<Policy> expectedResponse = _constructPersistedResponse("POST");
+
+            assertEquals(expectedResponse, actualResponse);
         }
     }
 
-    private Policy _constructPolicy() throws JsonProcessingException {
+    private WardenResponse<Policy> _constructPersistedResponse(String httpVerb) throws JsonProcessingException {
+        Policy persistedPolicy = _constructUnpersistedPolicy();
+        WardenResponse<Policy> result = new WardenResponse<>();
+        WardenResource<Policy> resource = new WardenResource<>();
+        List<WardenResource<Policy>> resources = new ArrayList<>(1);
+        EnumMap<MetaKey, String> meta = new EnumMap<>(MetaKey.class);
+
+        meta.put(MetaKey.HREF, "TestHref");
+        meta.put(MetaKey.DEV_MESSAGE, "TestDevMessage");
+        meta.put(MetaKey.MESSAGE, "TestMessage");
+        meta.put(MetaKey.STATUS, "200");
+        meta.put(MetaKey.UI_MESSAGE, "TestUIMessage");
+        meta.put(MetaKey.VERB, httpVerb);
+        persistedPolicy.setId(BigInteger.ONE);
+        resource.setEntity(persistedPolicy);
+        resource.setMeta(meta);
+        resources.add(resource);
+        result.setMessage("success");
+        result.setStatus(200);
+        result.setResources(resources);
+        System.out.println(MAPPER.writeValueAsString(result));
+        return result;
+    }
+
+    private Policy _constructUnpersistedPolicy() {
         Policy result = new Policy();
-        result.setId(BigInteger.ONE);
+
         result.setCreatedById(BigInteger.ONE);
-        result.setCreatedDate( new Date(1472847819167L));
+        result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
-        result.setModifiedDate( new Date(1472847819167L ));
+        result.setModifiedDate(new Date(1472847819167L));
         result.setService("TestService");
         result.setName("TestName");
         result.setOwners(Arrays.asList("TestOwner"));
@@ -59,22 +113,7 @@ public class PolicyServiceTest extends AbstractTest {
         result.setTimeUnit("5min");
         result.setDefaultValue(0.0);
         result.setCronEntry("0 */4 * * *");
-
-        ObjectMapper mapper = new ObjectMapper();
-        System.out.println(mapper.writeValueAsString(result));
-
         return result;
     }
-
-    private PutResult _constructSuccessfulResult(List<Policy> annotations, int errorCount) {
-        String failCount = Integer.toString(errorCount);
-        String successCount = Integer.toString(annotations.size() - errorCount);
-        List<String> errorMessages = new LinkedList<>();
-
-        if (errorCount > 0) {
-            errorMessages.add(failCount);
-        }
-        return new PutResult(successCount, failCount, errorMessages);
-    }
-
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

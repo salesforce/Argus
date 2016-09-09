@@ -33,23 +33,36 @@ package com.salesforce.dva.warden.client;
 /**
  * Exception class for the Argus SDK.
  *
- * @author Tom Valine (tvaline@salesforce.com)
+ * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
 public class WardenException extends RuntimeException {
+
+    //~ Instance fields ******************************************************************************************************************************
+
     private int _status;
     private String _message;
     private String _url;
     private String _json;
 
+    //~ Constructors *********************************************************************************************************************************
+
     /**
      * Constructs an instance of <code>ArgusServiceException</code> with the specified detail message.
      *
-     * @param msg the detail message.
+     * @param  msg  the detail message.
      */
     public WardenException(String msg) {
         super(msg);
     }
 
+    /**
+     * Creates a new WardenException object.
+     *
+     * @param  status   DOCUMENT ME!
+     * @param  message  DOCUMENT ME!
+     * @param  url      DOCUMENT ME!
+     * @param  json     DOCUMENT ME!
+     */
     public WardenException(int status, String message, String url, String json) {
         _status = status;
         _message = message;
@@ -57,21 +70,42 @@ public class WardenException extends RuntimeException {
         _json = json;
     }
 
+    //~ Methods **************************************************************************************************************************************
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
     public int getStatus() {
         return _status;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
     public String getMessage() {
         return _message;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
     public String getUrl() {
         return _url;
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
     public String getJson() {
         return _json;
     }
-    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

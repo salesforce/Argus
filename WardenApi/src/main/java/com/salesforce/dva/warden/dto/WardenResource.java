@@ -30,45 +30,57 @@
  */
 package com.salesforce.dva.warden.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.io.Serializable;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.EnumMap;
+import java.util.Objects;
 
 /**
  * DOCUMENT ME!
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-@SuppressWarnings("serial")
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class Credentials implements Serializable {
+public class WardenResource<T> {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    // ~ Instance fields
-    // ******************************************************************************************************************************
-    private String username;
-    private String password;
+    private T entity;
+    private EnumMap<MetaKey, String> meta;
+
+    //~ Constructors *********************************************************************************************************************************
+
+    /** Creates a new WardenResource object. */
+    public WardenResource() { }
 
     //~ Methods **************************************************************************************************************************************
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  entity  DOCUMENT ME!
+     */
+    public void setEntity(T entity) {
+        this.entity = entity;
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  meta  DOCUMENT ME!
+     */
+    public void setMeta(EnumMap<MetaKey, String> meta) {
+        this.meta = meta;
+    }
+
     /**
      * DOCUMENT ME!
      *
      * @return  DOCUMENT ME!
      */
-    public String getUsername() {
-        return username;
-    }
-
-    /**
-     * DOCUMENT ME!
-     *
-     * @param  username  DOCUMENT ME!
-     */
-    public void setUsername(String username) {
-        this.username = username;
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+    @JsonSubTypes({ @JsonSubTypes.Type(Policy.class), @JsonSubTypes.Type(Infraction.class), @JsonSubTypes.Type(SuspensionLevel.class) })
+    public T getEntity() {
+        return entity;
     }
 
     /**
@@ -76,17 +88,57 @@ public class Credentials implements Serializable {
      *
      * @return  DOCUMENT ME!
      */
-    public String getPassword() {
-        return password;
+    public EnumMap<MetaKey, String> getMeta() {
+        return meta;
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+
+        hash = 89 * hash + Objects.hashCode(this.entity);
+        hash = 89 * hash + Objects.hashCode(this.meta);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final WardenResource<?> other = (WardenResource<?>) obj;
+
+        if (!Objects.equals(this.entity, other.entity)) {
+            return false;
+        }
+        if (!Objects.equals(this.meta, other.meta)) {
+            return false;
+        }
+        return true;
+    }
+
+    //~ Enums ****************************************************************************************************************************************
 
     /**
      * DOCUMENT ME!
      *
-     * @param  password  DOCUMENT ME!
+     * @author  Tom Valine (tvaline@salesforce.com)
      */
-    public void setPassword(String password) {
-        this.password = password;
+    public enum MetaKey {
+
+        HREF,
+        STATUS,
+        VERB,
+        MESSAGE,
+        UI_MESSAGE,
+        DEV_MESSAGE
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

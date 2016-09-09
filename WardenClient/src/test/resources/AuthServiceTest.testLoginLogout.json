@@ -4,19 +4,19 @@
   "jsonInput" :"{\"username\":\"aUsername\",\"password\":\"aPassword\"}",
   "status": 200,
   "message": "success",
-  "jsonOutput" : ""
+  "jsonOutput" : "[]"
 },{
   "type": "POST",
   "endpoint": "/auth/login",
   "jsonInput" :"{\"username\":\"aBadUsername\",\"password\":\"aBadPassword\"}",
   "status": 403,
   "message": "unauthorized",
-  "jsonOutput" : ""
+  "jsonOutput" : "[]"
 },{
   "type": "GET",
   "endpoint": "/auth/logout",
   "jsonInput" :null,
   "status": 200,
   "message": "success",
-  "jsonOutput" : ""
+  "jsonOutput" : "[]"
 }]
