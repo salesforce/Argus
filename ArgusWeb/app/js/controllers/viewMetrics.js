@@ -7,10 +7,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         //sync the expression to URL param
         $scope.$watch('expression', function(val){
-            if(val){
-                var urlStr = Controls.getUrl([{name: 'expression', value: val}]);
-                $location.search(urlStr);
-            }
+            // if val is empty, clear url string
+            var urlStr = (val) ? Controls.getUrl([{name: 'expression', value: val}]) : '';
+            $location.search(urlStr);
         });
 
         $scope.getMetricData = function () {
@@ -49,10 +48,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             newParams['tagk'] = ($scope.tagk) ? $scope.tagk : '*';
             newParams['tagv'] = ($scope.tagv) ? $scope.tagv : '*';
 
-            console.log( newParams );
-
             return SearchService.search(newParams)
                 .then(SearchService.processResponses);
+        };
+
+        $scope.isSearchMetricDisabled = function () {
+            var s = $scope.scope, m = $scope.metric;
+            return (s === undefined || s.length < 1) && (m === undefined || m.length < 1);
         };
 
         // -------------

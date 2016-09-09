@@ -1,14 +1,14 @@
 <div class="h3">Metrics</div>
 <section>
+<form novalidate class="form-horizontal" ng-enter="getMetricData()">
     <div class="input-group search-bar">
         <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
         <span class="input-group-btn">
             <button class="btn btn-default" type="button" ng-click="getMetricData()">Go!</button>
         </span>
     </div>
-    <br />
 
-    <form novalidate class="form-horizontal">
+    <hr width="100%" />
 
     <h4>Discovery Lookup</h4>
 
@@ -16,6 +16,7 @@
 
     <p>Choose your search criteria from the categories below:</p>
     
+    <div class="fullBox">
     <div class="metricFields">
         <label>Scope</label>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
@@ -60,6 +61,7 @@
         typeahead-wait-ms="1500"
         uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="tagkTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="tagkTemplate.html">
           <a class="autoComplete">
@@ -78,6 +80,7 @@
         typeahead-wait-ms="1500"
         uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="tagvTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="tagvTemplate.html">
           <a class="autoComplete">
@@ -98,6 +101,7 @@
         typeahead-wait-ms="1500"
         uib-typeahead="result.expression for result in searchMetrics($viewValue)"
         typeahead-template-url="namespaceTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="namespaceTemplate.html">
           <a class="autoComplete">
@@ -109,9 +113,13 @@
         </script>
     </div>
 
+    </div><!-- fullBox -->
+
     <input type="Submit" class="btn btn-default" value="Build" style="vertical-align: top; margin-top: 2.15em; margin-left: 2em;" ng-show="false" />
-    
-    </form>
+
+</form>
+
+    <hr width="100%" />
 
     <div growl inline="true" reference="viewmetrics-error"></div>
 
