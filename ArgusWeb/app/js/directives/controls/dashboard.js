@@ -13,12 +13,7 @@ angular.module('argus.directives.controls.dashboard', [])
             	var controlExists = false;
 
                 if (!localSubmit) {
-                    // controlValue = Controls.updateControlValue(controlName);
-                    for (var prop in $routeParams) {
-                        if (prop == controlName) {
-                            controlValue = $routeParams[prop];
-                        }
-                    };
+                    controlValue = Controls.updateControlValue(controlName, controlValue);
                 }
 
                 for (var i in $scope.controls) {
