@@ -2,15 +2,20 @@
 <section>
 <form novalidate class="form-horizontal" ng-enter="getMetricData()">
     <div class="input-group search-bar">
+        <span class="input-group-btn" style="font-size:inherit;">
+          <a ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
+        </span>
         <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
         <span class="input-group-btn">
             <button class="btn btn-default" type="button" ng-click="getMetricData()">Go!</button>
         </span>
     </div>
 
+    <div id="discoveryLookup" ng-show="showMetricDiscovery">
+
     <hr width="100%" />
 
-    <h4>Discovery Lookup</h4>
+    <h4>Discovery lookup</h4>
 
     <div ng-show="false">Constructed metric expression:</div>
 
@@ -112,10 +117,11 @@
           </a>
         </script>
     </div>
-
     </div><!-- fullBox -->
 
     <input type="Submit" class="btn btn-default" value="Build" style="vertical-align: top; margin-top: 2.15em; margin-left: 2em;" ng-show="false" />
+
+    </div><!-- discoveryLookup -->
 
 </form>
 
@@ -123,5 +129,8 @@
 
     <div growl inline="true" reference="viewmetrics-error"></div>
 
-    <div id="container" class="graphContainer" ng-show="showChart"></div>
+    <div id="container" class="graphContainer" ng-show="showChart" width="100%"></div>
+
+    <!--loading spinner-->
+    <div ng-loading="showLoading"></div>
 </section>

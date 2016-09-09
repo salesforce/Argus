@@ -3,7 +3,20 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
         
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
-        $scope.showChart = false;
+        
+        // sub-views: (1) single chart, (2) metric discovery 
+        $scope.checkMetricExpression = function() {
+            if ($scope.expression) {
+                $scope.showMetricDiscovery = false;
+                $scope.showChart = true;
+                $scope.showLoading = false;
+            } else {
+                $scope.showMetricDiscovery = true;
+                $scope.showChart = false;
+                $scope.showLoading = true;
+            }
+        };
+        $scope.checkMetricExpression();
 
         //sync the expression to URL param
         $scope.$watch('expression', function(val){
@@ -14,15 +27,16 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         $scope.getMetricData = function () {
             if ($scope.expression !== null && $scope.expression.length) {
+                $scope.checkMetricExpression();
                 Metrics.query({expression: $scope.expression}, function (data) {
+                    $scope.showLoading = true;
                     $scope.updateChart({}, data);
-                    $scope.showChart = true;
                 }, function (error) {
                     $scope.updateChart({}, null);
-                    $scope.showChart = false;
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                 });
             } else {
+                $scope.checkMetricExpression();
                 $scope.updateChart({}, $scope.expression);
             }
         };

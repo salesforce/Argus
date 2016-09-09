@@ -24,12 +24,15 @@ label {
     padding-top: 5px;
 }
 
+a:hover {text-decoration:none; color:inherit;}
+
 .floatL {float:left;}
 .floatR {float:right;}
 
+.glyphicon, .glyphicon:hover {font-size:20px; color:#777;}
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px;}
+
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
-#navbar li a.glyphicon {font-size:20px;}
-#navbar li.activeTab a.glyphicon {color:#333;}
 
 #navbar li.topMenu {position:relative;}
 #navbar li.topMenu ul.subMenu {
@@ -77,7 +80,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .smallChart {padding-left:8em; width:100%;}
 
 /* metrics & discovery lookup */
-.metricFields, .metricFields .form-control {display:inline-block; margin-bottom:.5em;}
+.metricFields, .metricFields .form-control {display:inline-block; margin:0 2em .5em 0;}
 
 /* main graph/chart - i.e. metrics */
 #graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
