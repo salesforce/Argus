@@ -1,33 +1,136 @@
 <div class="h3">Metrics</div>
 <section>
-    <form novalidate class="form-horizontal" ng-enter="getMetricData()">
-        <div class="input-group search-bar">
-            <span class="input-group-btn">
-                <button class="btn btn-default" type="button" ng-click="getMetricData()">Go!</button>
-            </span>
-            <input type="text" class="form-control" placeholder="Enter metric expression..." autocomplete="off" ng-model='expression' typeahead-min-length="2" typeahead-wait-ms="1000" uib-typeahead="result.expression for result in searchMetrics($viewValue)" typeahead-template-url="customTemplate.html">
-            <script type="text/ng-template" id="customTemplate.html">
-              <a>
-                  <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
-                  &nbsp;&nbsp;&nbsp;
-                  <span style="font-size: 11px; border: 1px solid #71ABCE; border-radius: 5px; padding: 4px;">{{ match.model.category | uppercase }}</span>
-                  <span style="float:right;">{{ match.model.expression }}</span>
-              </a>
-            </script>
-            <span class="input-group-btn">
-                <button class="btn btn-default" type="button">
-                    <a style="color:inherit" href="{{getBookmarkLink()}}" class="glyphicon glyphicon-bookmark"></a>
-                </button>
-            </span>
-        </div><!-- /input-group -->
-    </form>
-    <div class="checkbox" style="margin-left: 48px">
-      <label>
-        <input type="checkbox" ng-click="toggleGraphType()"> Use D3 to display data
-      </label>
+<form novalidate class="form-horizontal" ng-enter="getMetricData()">
+    <div class="input-group search-bar">
+        <span class="input-group-btn" style="font-size:inherit;">
+          <a ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
+        </span>
+        <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
+        <span class="input-group-btn">
+            <button class="btn btn-default" type="button" ng-click="getMetricData()">Go!</button>
+        </span>
     </div>
-    <br/>
+
+    <div id="discoveryLookup" ng-show="showMetricDiscovery">
+
+    <hr width="100%" />
+
+    <h4>Discovery lookup</h4>
+
+    <div ng-show="false">Constructed metric expression:</div>
+
+    <p>Choose your search criteria from the categories below:</p>
+    
+    <div class="fullBox">
+    <div class="metricFields">
+        <label>Scope</label>
+        <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
+        typeahead-min-length="2"
+        typeahead-wait-ms="1500"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="scopeTemplate.html" />
+        <script type="text/ng-template" id="scopeTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
+    </div>
+
+    <div class="metricFields">
+        <label>Metric</label>
+        <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
+        typeahead-min-length="2"
+        typeahead-wait-ms="1500"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="metricTemplate.html"
+        />
+        <script type="text/ng-template" id="metricTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
+    </div>
+
+    <div></div>
+    
+    <div class="metricFields">
+        <label>Tag key</label>
+        <input type="text" class="form-control" placeholder="Tag key" autocomplete="off" ng-model="tagk" 
+        typeahead-min-length="2"
+        typeahead-wait-ms="1500"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="tagkTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="tagkTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
+    </div>
+    
+    <div class="metricFields">
+        <label>Tag value</label>
+        <input type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="tagv" 
+        typeahead-min-length="2"
+        typeahead-wait-ms="1500"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="tagvTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="tagvTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
+    </div>
+
+    <div></div>
+        
+    <div class="metricFields">
+        <label>Namespace</label>
+        <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
+        typeahead-min-length="2"
+        typeahead-wait-ms="1500"
+        uib-typeahead="result.expression for result in searchMetrics($viewValue)"
+        typeahead-template-url="namespaceTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="namespaceTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model[match.model.category] | uibTypeaheadHighlight:query"></span>
+              &nbsp;&nbsp;&nbsp;
+              <span class="category">{{ match.model.category | uppercase }}</span>
+              <span class="floatR">{{ match.model.expression }}</span>
+          </a>
+        </script>
+    </div>
+    </div><!-- fullBox -->
+
+    <input type="Submit" class="btn btn-default" value="Build" style="vertical-align: top; margin-top: 2.15em; margin-left: 2em;" ng-show="false" />
+
+    </div><!-- discoveryLookup -->
+
+</form>
+
+    <hr width="100%" />
+
     <div growl inline="true" reference="viewmetrics-error"></div>
-    <ag-d3-line-graph ng-show="useD3 == true" series="series"></ag-d3-line-graph>
-    <div id="container" ng-show="useD3 == false" style="min-width: 310px; height: 400px; margin: 0 auto;"></div>
+
+    <div id="container" class="graphContainer" ng-show="showChart" width="100%"></div>
+
+    <!--loading spinner-->
+    <div ng-loading="showLoading"></div>
 </section>

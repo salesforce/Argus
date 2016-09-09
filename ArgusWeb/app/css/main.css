@@ -24,10 +24,13 @@ label {
     padding-top: 5px;
 }
 
+a:hover {text-decoration:none; color:inherit;}
+
+.floatL {float:left;}
 .floatR {float:right;}
 
-/* increase font size for icons */
-#navbar li a.glyphicon {font-size:20px;}
+.glyphicon, .glyphicon:hover {font-size:20px; color:#777;}
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
 
@@ -76,6 +79,21 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+/* metrics & discovery lookup */
+.metricFields, .metricFields .form-control {display:inline-block; margin:0 2em .5em 0;}
+
+/* main graph/chart - i.e. metrics */
+#graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
+
+/* autocomplete */
+.autoComplete .category {padding:4px; border:1px solid #71ABCE; border-radius:5px; font-size:11px;}
+
+/* btn last */
+.btn-last {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
 
 /* Growl settings */
 .growl-container.growl-fixed.top-center {

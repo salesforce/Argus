@@ -130,17 +130,22 @@ angular.module('argus.directives.charts.d3LineChart', [])
 
         // Update graph on new metric results
         scope.$watch(attrs.series, function(series) {
+          if (!series) return;
+          
           var allDatapoints = [];
           var names = series.map(function(metric) { return metric.id; });
-          currSeries = series;
           var svg = d3.select('svg').select('g');
           var svgTransition = d3.select(element[0]).transition();
+
+          currSeries = series;
+          
           series.forEach(function(metric) {
             metric.data.sort(function(a, b) {
               return a[0] - b[0];
             });
             allDatapoints = allDatapoints.concat(metric.data);
           });
+          
           tooltipCreator = newTooltipCreator(names);
           x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
           y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));

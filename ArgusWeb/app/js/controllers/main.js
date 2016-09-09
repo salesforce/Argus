@@ -1,9 +1,5 @@
 angular.module('argus.controllers.main', [])
-.controller('Main', ['$rootScope', '$scope', '$location', 'Auth', function ($rootScope, $scope, $location, Auth) {
-
-    $rootScope.$on('$routeChangeSuccess', function (event, current, previous) {
-        $scope.activeTab = (current.$$route) ? current.$$route.activeTab : '';
-    });
+.controller('Main', ['$scope', '$location', 'Auth', function ($scope, $location, Auth) {
 
     $scope.login = function (username, password) {
     	if(username.indexOf("@") != -1) {
@@ -12,17 +8,8 @@ angular.module('argus.controllers.main', [])
         Auth.login(username, password);
     };
 
-    $scope.logout = function () {
-        Auth.logout();
-    };
-
-    $scope.getRemoteUser = function () {
-        var user = Auth.remoteUser();
-        if (user) {
-            return user.userName;
-        } else {
-            return null;
-        }
+    $scope.currentUser = function () {
+        return Auth.getUsername();
     };
 
     $scope.isLoggedIn = function () {
