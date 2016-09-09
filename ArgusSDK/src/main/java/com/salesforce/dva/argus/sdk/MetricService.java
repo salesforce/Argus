@@ -35,69 +35,69 @@ import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
 import com.salesforce.dva.argus.sdk.entity.Annotation;
+import com.salesforce.dva.argus.sdk.entity.Metric;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Provides methods to manipulate annotation events.
+ * Provides methods to manipulate metrics.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class AnnotationService extends EndpointService {
+public class MetricService extends EndpointService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/annotations";
+    private static final String RESOURCE = "/metrics";
     private static final String COLLECTION_RESOURCE = "/collection";
 
     //~ Constructors *********************************************************************************************************************************
 
     /**
-     * Creates a new AuthService object.
+     * Creates a new MetricService object.
      *
      * @param  client  The HTTP client for use by the service.
      */
-    AnnotationService(ArgusHttpClient client) {
+    MetricService(ArgusHttpClient client) {
         super(client);
     }
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Returns the annotations for the given set of expressions.
+     * Returns the metrics for the given set of expressions.
      *
-     * @param   expressions  The annotation expressions to evaluate.
+     * @param   expressions  The metric expressions to evaluate.
      *
-     * @return  The annotations that match the given expressions.
+     * @return  The metrics that match the given expressions.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public List<Annotation> getAnnotations(List<String> expressions) throws IOException {
+    public List<Metric> getMetrics(List<String> expressions) throws IOException {
         String requestUrl = RESOURCE;
         for (int i = 0; i < expressions.size(); i++) {
             requestUrl += (i==0 ? "?" : "&");
             requestUrl += ("expression=" + expressions.get(i));
         }
-        
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl,null);
 
         assertValidResponse(response, requestUrl);
-        return fromJson(response.getResult(), new TypeReference<List<Annotation>>() { });
+        return fromJson(response.getResult(), new TypeReference<List<Metric>>() { });
     }
 
     /**
-     * Submits annotations.
+     * Submits metrics.
      *
-     * @param   annotations  The annotations to submit. Cannot be null or empty.
+     * @param   metrics  The metrics to submit. Cannot be null or empty.
      *
      * @return  A description of the operation result.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public PutResult putAnnotations(List<Annotation> annotations) throws IOException {
+    public PutResult putMetrics(List<Metric> metrics) throws IOException {
         String requestUrl = COLLECTION_RESOURCE + RESOURCE;
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, annotations);
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, metrics);
 
         assertValidResponse(response, requestUrl);
 

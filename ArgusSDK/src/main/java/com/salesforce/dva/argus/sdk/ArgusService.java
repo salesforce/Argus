@@ -180,6 +180,10 @@ public class ArgusService implements AutoCloseable {
         return new HistoryService(_client);
     }
 
+    MetricService getMetricService() {
+        return new MetricService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**
