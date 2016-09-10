@@ -3,18 +3,20 @@
  */
 angular.module('argus.services')
     .service('Controls', ['$routeParams', '$location', function ($routeParams, $location) {
-        this.updateControlValue = function(controlName){
+        this.updateControlValue = function(controlName, controlValue) {
             // check $routeParams to override controlValue,
-            // unless the user changes local scope
             for (var prop in $routeParams) {
                 if (prop == controlName) {
                     return $routeParams[prop];
+                } else {
+                    // return original value if no match is found.
+                    // prevents null values in url
+                    return controlValue;
                 }
             }
-            return null;
         };
 
-        this.getUrl = function(controls){
+        this.getUrl = function(controls) {
             var urlStr = '';
             // setup url str from all controls values
             for (var i = 0; i < controls.length; i++) {
@@ -25,5 +27,4 @@ angular.module('argus.services')
             }
             return urlStr;
         };
-        }]
-    );
+    }]);
