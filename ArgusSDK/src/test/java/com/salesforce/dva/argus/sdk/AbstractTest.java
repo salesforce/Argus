@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.entity.StringEntity;
+import java.io.IOException;
 
 import static org.mockito.Mockito.*;
 
@@ -48,26 +49,22 @@ public abstract class AbstractTest {
         MAPPER.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.ANY);
     }
 
-    ArgusHttpClient getMockedClient(String jsonFile) {
-        try {
-            String endpoint = "https://localhost:8080/argusws";
-            ArgusHttpClient client = spy(new ArgusHttpClient(endpoint, 10, 10, 10));
-            HttpRequestResponse[] steps = MAPPER.readValue(getClass().getResource(jsonFile), HttpRequestResponse[].class);
+    ArgusHttpClient getMockedClient(String jsonFile) throws IOException {
+        String endpoint = "https://localhost:8080/argusws";
+        ArgusHttpClient client = spy(new ArgusHttpClient(endpoint, 10, 10, 10));
+        HttpRequestResponse[] steps = MAPPER.readValue(AbstractTest.class.getResource(jsonFile), HttpRequestResponse[].class);
 
-            for (HttpRequestResponse step : steps) {
-                HttpResponse mockedResponse = mock(HttpResponse.class);
-                StatusLine mockedStatusLine = mock(StatusLine.class);
+        for (HttpRequestResponse step : steps) {
+            HttpResponse mockedResponse = mock(HttpResponse.class);
+            StatusLine mockedStatusLine = mock(StatusLine.class);
 
-                when(mockedStatusLine.getStatusCode()).thenReturn(step.status);
-                when(mockedStatusLine.getReasonPhrase()).thenReturn(step.message);
-                when(mockedResponse.getEntity()).thenReturn(new StringEntity(step.jsonOutput));
-                when(mockedResponse.getStatusLine()).thenReturn(mockedStatusLine);
-                doReturn(mockedResponse).when(client)._doHttpRequest(step.type, endpoint + step.endpoint, step.jsonInput);
-            }
-            return client;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            when(mockedStatusLine.getStatusCode()).thenReturn(step.status);
+            when(mockedStatusLine.getReasonPhrase()).thenReturn(step.message);
+            when(mockedResponse.getEntity()).thenReturn(new StringEntity(step.jsonOutput));
+            when(mockedResponse.getStatusLine()).thenReturn(mockedStatusLine);
+            doReturn(mockedResponse).when(client)._doHttpRequest(step.type, endpoint + step.endpoint, step.jsonInput);
         }
+        return client;
     }
 
     private static class HttpRequestResponse {

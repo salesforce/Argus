@@ -32,7 +32,6 @@ package com.salesforce.dva.argus.sdk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
-import com.salesforce.dva.argus.sdk.entity.Annotation;
 import com.salesforce.dva.argus.sdk.entity.Metric;
 import org.junit.Test;
 import java.io.IOException;
@@ -73,7 +72,8 @@ public class MetricServiceTest extends AbstractTest {
         Metric result = new Metric();
         Map<String, String> fields = new TreeMap<>();
         Map<String, String> tags = new TreeMap<>();
-        Map<Long,Double> datapoints = new TreeMap<>();
+        Map<Long, Double> datapoints = new TreeMap<>();
+
         datapoints.put(0L, 0.0);
         fields.put("TestField", "FieldValue");
         tags.put("TestTag", "TagValue");

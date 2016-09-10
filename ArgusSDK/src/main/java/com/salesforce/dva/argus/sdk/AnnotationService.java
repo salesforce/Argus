@@ -74,15 +74,16 @@ public class AnnotationService extends EndpointService {
      * @throws  IOException  If the server cannot be reached.
      */
     public List<Annotation> getAnnotations(List<String> expressions) throws IOException {
-        String requestUrl = RESOURCE;
-        for (int i = 0; i < expressions.size(); i++) {
-            requestUrl += (i==0 ? "?" : "&");
-            requestUrl += ("expression=" + expressions.get(i));
-        }
-        
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+        StringBuilder requestUrl = new StringBuilder(RESOURCE);
 
-        assertValidResponse(response, requestUrl);
+        for (int i = 0; i < expressions.size(); i++) {
+            requestUrl.append(i == 0 ? "?" : "&");
+            requestUrl.append("expression=").append(expressions.get(i));
+        }
+
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl.toString(), null);
+
+        assertValidResponse(response, requestUrl.toString());
         return fromJson(response.getResult(), new TypeReference<List<Annotation>>() { });
     }
 

@@ -33,80 +33,102 @@ package com.salesforce.dva.argus.sdk;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
-import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
-import com.salesforce.dva.argus.sdk.entity.Metric;
+import com.salesforce.dva.argus.sdk.entity.Namespace;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * Provides methods to manipulate metrics.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class MetricService extends EndpointService {
+public class NamespaceService extends EndpointService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/metrics";
-    private static final String COLLECTION_RESOURCE = "/collection";
+    private static final String RESOURCE = "/namespace";
 
     //~ Constructors *********************************************************************************************************************************
 
     /**
-     * Creates a new MetricService object.
+     * Creates a new NamespaceService object.
      *
      * @param  client  The HTTP client for use by the service.
      */
-    MetricService(ArgusHttpClient client) {
+    NamespaceService(ArgusHttpClient client) {
         super(client);
     }
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Returns the metrics for the given set of expressions.
+     * Returns the namespaces owned by the user.
      *
-     * @param   expressions  The metric expressions to evaluate.
-     *
-     * @return  The metrics that match the given expressions.
+     * @return  The namespaces owned by the user.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public List<Metric> getMetrics(List<String> expressions) throws IOException {
-        StringBuilder requestUrl = new StringBuilder(RESOURCE);
+    public List<Namespace> getNamespaces() throws IOException {
+        String requestUrl = RESOURCE;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
-        for (int i = 0; i < expressions.size(); i++) {
-            requestUrl.append(i == 0 ? "?" : "&");
-            requestUrl.append("expression=").append(expressions.get(i));
-        }
-
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl.toString(), null);
-
-        assertValidResponse(response, requestUrl.toString());
-        return fromJson(response.getResult(), new TypeReference<List<Metric>>() { });
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), new TypeReference<List<Namespace>>() { });
     }
 
     /**
-     * Submits metrics.
+     * Creates a new namespace.
      *
-     * @param   metrics  The metrics to submit. Cannot be null or empty.
+     * @param   namespace  The namespace to create.
      *
-     * @return  A description of the operation result.
+     * @return  The persisted namespace.
      *
      * @throws  IOException  If the server cannot be reached.
      */
-    public PutResult putMetrics(List<Metric> metrics) throws IOException {
-        String requestUrl = COLLECTION_RESOURCE + RESOURCE;
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, metrics);
+    public Namespace createNamespace(Namespace namespace) throws IOException {
+        String requestUrl = RESOURCE;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, namespace);
 
         assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), Namespace.class);
+    }
 
-        Map<String, Object> map = fromJson(response.getResult(), new TypeReference<Map<String, Object>>() { });
+    /**
+     * Updates a new namespace.
+     *
+     * @param   id         The ID of the namespace to update.
+     * @param   namespace  The namespace to update.
+     *
+     * @return  The updated namespace.
+     *
+     * @throws  IOException  If the server cannot be reached.
+     */
+    public Namespace updateNamespace(BigInteger id, Namespace namespace) throws IOException {
+        String requestUrl = RESOURCE + "/" + id.toString();
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, namespace);
 
-        List<String> errorMessages = (List<String>) map.get("Error Messages");
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), Namespace.class);
+    }
 
-        return new PutResult(String.valueOf(map.get("Success")), String.valueOf(map.get("Errors")), errorMessages);
+    /**
+     * Updates a the members of a namespace.
+     *
+     * @param   id     The ID of the namespace to update.
+     * @param   users  The updated members of the namespace.
+     *
+     * @return  The updated namespace.
+     *
+     * @throws  IOException  If the server cannot be reached.
+     */
+    public Namespace updateNamespaceMembers(BigInteger id, Set<String> users) throws IOException {
+        String requestUrl = RESOURCE + "/" + id.toString() + "/users";
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, users);
+
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), Namespace.class);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

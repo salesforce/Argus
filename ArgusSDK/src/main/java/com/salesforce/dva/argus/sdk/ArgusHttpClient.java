@@ -50,8 +50,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -66,7 +64,6 @@ class ArgusHttpClient {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Logger LOGGER = LoggerFactory.getLogger(ArgusHttpClient.class);
 
     static {
         MAPPER.setVisibility(PropertyAccessor.GETTER, Visibility.ANY);
@@ -108,7 +105,6 @@ class ArgusHttpClient {
         _httpContext = new BasicHttpContext();
         _httpContext.setAttribute(HttpClientContext.COOKIE_STORE, new BasicCookieStore());
         _endpoint = endpoint;
-        LOGGER.info("Argus HTTP Client initialized using " + endpoint);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -236,7 +232,7 @@ class ArgusHttpClient {
             if (entity != null) {
                 try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                     entity.writeTo(baos);
-                    result = baos.toString();
+                    result = baos.toString("UTF-8");
                 }
             }
             return new ArgusResponse(status, message, errorMessage, result);

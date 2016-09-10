@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Provides methods to discover metric schema.
@@ -104,7 +105,7 @@ public class DiscoveryService extends EndpointService {
         String tagValueRegex, FieldSelector type, int limit) throws IOException {
         StringBuilder urlBuilder = _buildBaseUrl(namespaceRegex, scopeRegex, metricRegex, tagKeyRegex, tagValueRegex, limit);
 
-        urlBuilder.append("&type=").append(type.name().toLowerCase());
+        urlBuilder.append("&type=").append(type.name().toLowerCase(Locale.ENGLISH));
 
         String requestUrl = urlBuilder.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);

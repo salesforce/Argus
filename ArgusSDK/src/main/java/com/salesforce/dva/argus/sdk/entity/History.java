@@ -82,7 +82,7 @@ public class History implements Serializable {
      * @return  The created date.
      */
     public Date getCreatedDate() {
-        return createdDate;
+        return createdDate == null ? null : new Date(createdDate.getTime());
     }
 
     /**
@@ -91,7 +91,7 @@ public class History implements Serializable {
      * @param  createdDate  The created date.
      */
     public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate;
+        this.createdDate = createdDate == null ? null : new Date(createdDate.getTime());
     }
 
     /**

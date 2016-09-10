@@ -184,6 +184,10 @@ public class ArgusService implements AutoCloseable {
         return new MetricService(_client);
     }
 
+    NamespaceService getNamespaceService() {
+        return new NamespaceService(_client);
+    }
+
     //~ Inner Classes ********************************************************************************************************************************
 
     /**

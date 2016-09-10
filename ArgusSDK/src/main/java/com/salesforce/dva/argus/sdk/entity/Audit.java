@@ -79,7 +79,7 @@ public class Audit implements Serializable {
      * @return  The created date.
      */
     public Date getCreatedDate() {
-        return _createdDate;
+        return _createdDate == null ? null : new Date(_createdDate.getTime());
     }
 
     /**
@@ -88,7 +88,7 @@ public class Audit implements Serializable {
      * @param  createdDate  The created date.
      */
     public void setCreatedDate(Date createdDate) {
-        this._createdDate = createdDate;
+        _createdDate = createdDate == null ? null : new Date(createdDate.getTime());
     }
 
     /**
