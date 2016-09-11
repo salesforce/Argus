@@ -34,9 +34,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Notification Dto.
+ * Notification object.
  *
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
  */
@@ -199,6 +200,66 @@ public class Notification extends Entity {
      */
     public void setAlertId(BigInteger alertId) {
         this.alertId = alertId;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 59 * hash + super.hashCode();
+        hash = 59 * hash + Objects.hashCode(this.name);
+        hash = 59 * hash + Objects.hashCode(this.notifierName);
+        hash = 59 * hash + Objects.hashCode(this.subscriptions);
+        hash = 59 * hash + Objects.hashCode(this.metricsToAnnotate);
+        hash = 59 * hash + (int) (this.cooldownPeriod ^ (this.cooldownPeriod >>> 32));
+        hash = 59 * hash + (int) (this.cooldownExpiration ^ (this.cooldownExpiration >>> 32));
+        hash = 59 * hash + Objects.hashCode(this.triggersIds);
+        hash = 59 * hash + Objects.hashCode(this.alertId);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Notification other = (Notification) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (this.cooldownPeriod != other.cooldownPeriod) {
+            return false;
+        }
+        if (this.cooldownExpiration != other.cooldownExpiration) {
+            return false;
+        }
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.notifierName, other.notifierName)) {
+            return false;
+        }
+        if (!Objects.equals(this.subscriptions, other.subscriptions)) {
+            return false;
+        }
+        if (!Objects.equals(this.metricsToAnnotate, other.metricsToAnnotate)) {
+            return false;
+        }
+        if (!Objects.equals(this.triggersIds, other.triggersIds)) {
+            return false;
+        }
+        if (!Objects.equals(this.alertId, other.alertId)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

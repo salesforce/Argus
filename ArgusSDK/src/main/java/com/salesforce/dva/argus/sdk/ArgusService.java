@@ -180,12 +180,31 @@ public class ArgusService implements AutoCloseable {
         return new HistoryService(_client);
     }
 
-    MetricService getMetricService() {
+    /**
+     * Returns an instance of the metric service.
+     *
+     * @return  The metric service.
+     */
+    public MetricService getMetricService() {
         return new MetricService(_client);
     }
 
-    NamespaceService getNamespaceService() {
+    /**
+     * Returns an instance of the namespace service.
+     *
+     * @return  The namespace service.
+     */
+    public NamespaceService getNamespaceService() {
         return new NamespaceService(_client);
+    }
+
+    /**
+     * Returns an instance of the user service.
+     *
+     * @return  The user service.
+     */
+    public UserService getUserService() {
+        return new UserService(_client);
     }
 
     //~ Inner Classes ********************************************************************************************************************************

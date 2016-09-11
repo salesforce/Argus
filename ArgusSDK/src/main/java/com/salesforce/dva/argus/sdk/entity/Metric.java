@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The metric DTO.
+ * The metric object.
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */

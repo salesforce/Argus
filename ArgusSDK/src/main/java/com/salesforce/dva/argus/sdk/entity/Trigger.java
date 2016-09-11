@@ -34,9 +34,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Trigger Dto.
+ * Trigger object.
  *
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
  */
@@ -180,6 +181,62 @@ public class Trigger extends Entity {
      */
     public void addNotificationIds(Notification notification) {
         this.getNotificationIds().add(notification.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 67 * hash + super.hashCode();
+        hash = 67 * hash + Objects.hashCode(this.type);
+        hash = 67 * hash + Objects.hashCode(this.name);
+        hash = 67 * hash + Objects.hashCode(this.threshold);
+        hash = 67 * hash + Objects.hashCode(this.secondaryThreshold);
+        hash = 67 * hash + Objects.hashCode(this.inertia);
+        hash = 67 * hash + Objects.hashCode(this.alertId);
+        hash = 67 * hash + Objects.hashCode(this.notificationIds);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Trigger other = (Trigger) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.type, other.type)) {
+            return false;
+        }
+        if (!Objects.equals(this.name, other.name)) {
+            return false;
+        }
+        if (!Objects.equals(this.threshold, other.threshold)) {
+            return false;
+        }
+        if (!Objects.equals(this.secondaryThreshold, other.secondaryThreshold)) {
+            return false;
+        }
+        if (!Objects.equals(this.inertia, other.inertia)) {
+            return false;
+        }
+        if (!Objects.equals(this.alertId, other.alertId)) {
+            return false;
+        }
+        if (!Objects.equals(this.notificationIds, other.notificationIds)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

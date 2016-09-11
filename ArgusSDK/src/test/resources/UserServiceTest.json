@@ -1,0 +1,15 @@
+[{
+    "type": "GET",
+    "endpoint": "/users/id/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"userName\":\"admin\",\"email\":\"admin@mycompany.com\",\"ownedDashboardIds\":[],\"privileged\":true}"
+},{
+    "type": "GET",
+    "endpoint": "/users/username/admin",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"userName\":\"admin\",\"email\":\"admin@mycompany.com\",\"ownedDashboardIds\":[],\"privileged\":true}"
+}]

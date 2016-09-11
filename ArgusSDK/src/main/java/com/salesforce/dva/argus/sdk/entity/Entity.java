@@ -36,7 +36,7 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * The base entity DTO.
+ * The base entity object.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */

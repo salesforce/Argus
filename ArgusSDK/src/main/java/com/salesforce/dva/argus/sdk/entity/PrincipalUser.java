@@ -34,9 +34,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * The principal user DTO.
+ * The principal user object.
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
@@ -123,6 +124,50 @@ public class PrincipalUser extends Entity {
      */
     public void setPrivileged(boolean privileged) {
         this.privileged = privileged;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+
+        hash = 73 * hash + super.hashCode();
+        hash = 73 * hash + Objects.hashCode(this.userName);
+        hash = 73 * hash + Objects.hashCode(this.email);
+        hash = 73 * hash + Objects.hashCode(this.ownedDashboardIds);
+        hash = 73 * hash + (this.privileged ? 1 : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final PrincipalUser other = (PrincipalUser) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (this.privileged != other.privileged) {
+            return false;
+        }
+        if (!Objects.equals(this.userName, other.userName)) {
+            return false;
+        }
+        if (!Objects.equals(this.email, other.email)) {
+            return false;
+        }
+        if (!Objects.equals(this.ownedDashboardIds, other.ownedDashboardIds)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

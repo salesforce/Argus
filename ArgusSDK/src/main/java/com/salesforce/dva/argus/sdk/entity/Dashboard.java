@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Objects;
 
 /**
- * Alert Dto.
+ * Dashboard object.
  *
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
  */

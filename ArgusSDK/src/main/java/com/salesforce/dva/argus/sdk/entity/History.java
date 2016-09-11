@@ -37,7 +37,7 @@ import java.util.Date;
 import java.util.Objects;
 
 /**
- * The history DTO.
+ * The history object.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */

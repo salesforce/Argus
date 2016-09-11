@@ -32,10 +32,11 @@ package com.salesforce.dva.argus.sdk.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
- * The namespace DTO.
+ * The namespace object.
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
@@ -93,6 +94,42 @@ public class Namespace extends Entity {
      */
     public void addUsername(String username) {
         this.usernames.add(username);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+
+        hash = 67 * hash + super.hashCode();
+        hash = 67 * hash + Objects.hashCode(this.qualifier);
+        hash = 67 * hash + Objects.hashCode(this.usernames);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        final Namespace other = (Namespace) obj;
+
+        if (!super.equals(other)) {
+            return false;
+        }
+        if (!Objects.equals(this.qualifier, other.qualifier)) {
+            return false;
+        }
+        if (!Objects.equals(this.usernames, other.usernames)) {
+            return false;
+        }
+        return true;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

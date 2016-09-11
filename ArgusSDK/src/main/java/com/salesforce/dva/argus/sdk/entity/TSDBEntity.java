@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The base TSDB entity DTO.
+ * The base TSDB entity object.
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
