@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.text', [])
-.directive('agText', ['$routeParams', 'CONFIG', function($routeParams, CONFIG) {
+.directive('agText', ['CONFIG', 'Controls', function(CONFIG, Controls) {
     return {
         restrict: 'EA',
         scope: {
@@ -7,25 +7,11 @@ angular.module('argus.directives.controls.text', [])
             labelName: '@label',
             controlValue: '@default'
         },
-        // require: '^agDashboard',
-        // //templateUrl:  CONFIG.templatePath + 'argus-text-control.html',
-        // template: '<B>{{labelName}} : </B> <input type="text" ng-model="controlValue">',
-        // link: function(scope, element, attributes, dashboardCtrl) {
-        //     dashboardCtrl.updateControl(scope.controlName, scope.controlValue, "agText");
-        //     scope.$watch('controlValue', function(newValue, oldValue) {
-        //         dashboardCtrl.updateControl(scope.controlName, newValue, "agText");
-        //     });
-        // }
-
         controller: function($scope) {
             $scope.ctrlVal = $scope.controlValue;
 
-            // check $routeParams to override controlValue
-            for (var prop in $routeParams) {
-                if (prop == $scope.controlName) {
-                    $scope.ctrlVal = $routeParams[prop];
-                }
-            };
+            // check if Controls ($routeParams) should override controlValue
+            $scope.ctrlVal = Controls.updateControlValue($scope.controlName, $scope.controlValue);
         },
         require:'^agDashboard',
         template:'<B>{{labelName}} : </B> <input type="text" ng-model="ctrlVal">',
