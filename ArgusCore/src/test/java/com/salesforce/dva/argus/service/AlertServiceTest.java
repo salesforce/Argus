@@ -271,24 +271,6 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testAlertEnqueue() {
-        UserService userService = system.getServiceFactory().getUserService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        MQService mqService = system.getServiceFactory().getMQService();
-        PrincipalUser user = userService.findAdminUser();
-        List<Alert> actualAlertList = new ArrayList<>();
-
-        for (int i = 0; i < 5; i++) {
-            actualAlertList.add(alertService.updateAlert(new Alert(user, user, createRandomName(), expression, "* * * * *")));
-        }
-        alertService.enqueueAlerts(actualAlertList);
-
-        List<AlertIdWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000, 10);
-
-        assertEquals(actualAlertList.size(), expectedList.size());
-    }
-
-    @Test
     public void testDeletedTriggersInNotifications1() {
         UserService userService = system.getServiceFactory().getUserService();
         AlertService alertService = system.getServiceFactory().getAlertService();
