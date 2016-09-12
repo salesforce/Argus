@@ -45,6 +45,7 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.MessageFormat;
@@ -95,13 +96,13 @@ public class GOCNotifier extends AuditNotifier {
 
     //~ Methods **************************************************************************************************************************************
     
-    private PostMethod getRequestMethod(boolean refresh, String id) {
+    private PostMethod getRequestMethod(boolean refresh, String id) throws UnsupportedEncodingException {
     	GOCTransport gocTransport = new GOCTransport();
         EndpointInfo endpointInfo = gocTransport.getEndpointInfo(_config, _logger, refresh);
 
         // Create upsert URI with PATCH method
         PostMethod post = new PostMethod(String.format("%s/services/data/v25.0/sobjects/SM_Alert__c/%s/%s", endpointInfo.getEndPoint(),
-                GOCData.SM_ALERT_ID__C_FIELD, id)) {
+                urlEncode(GOCData.SM_ALERT_ID__C_FIELD), urlEncode(id))) {
 
                 @Override
                 public String getName() {
@@ -144,9 +145,10 @@ public class GOCNotifier extends AuditNotifier {
 
                 for (int i = 0; i < 2; i++) {
                 	
-                    PostMethod post = getRequestMethod(refresh, gocData.getsm_Alert_Id__c());
+                    PostMethod post = null;
 
                     try {
+                    	post=getRequestMethod(refresh, gocData.getsm_Alert_Id__c());
                         post.setRequestEntity(new StringRequestEntity(gocData.toJSON(), "application/json", null));
 
                         int respCode = httpclient.executeMethod(post);
@@ -166,7 +168,9 @@ public class GOCNotifier extends AuditNotifier {
                         _logger.error("Failure - send GOC++ having element '{}' event '{}' severity {}. Exception '{}'", elementName, eventName,
                             severity.name(), e);
                     } finally {
-                        post.releaseConnection();
+                        if(post != null){
+                        	post.releaseConnection();
+                        }
                     }
                 }
             } catch (RuntimeException ex) {
@@ -266,6 +270,10 @@ public class GOCNotifier extends AuditNotifier {
                     notifierProps.put(property.getName(), property.getDefaultValue());
             }
             return notifierProps;
+    }
+    
+    private String urlEncode(String s) throws UnsupportedEncodingException{
+    	return URLEncoder.encode(s,org.apache.commons.lang3.CharEncoding.UTF_8).replace("+", "%20");
     }
     
     //~ Enums ****************************************************************************************************************************************
