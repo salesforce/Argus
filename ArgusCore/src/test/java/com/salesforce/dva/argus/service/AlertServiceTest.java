@@ -319,7 +319,7 @@ public class AlertServiceTest extends AbstractTest {
         ServiceFactory factory = system.getServiceFactory();
         NotifierFactory notifierFactory = system.getNotifierFactory();
         DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-            factory.getAuditService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
+            factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
         Metric metric = new Metric("scope", "metric");
@@ -365,7 +365,7 @@ public class AlertServiceTest extends AbstractTest {
         ServiceFactory factory = system.getServiceFactory();
         NotifierFactory notifierFactory = system.getNotifierFactory();
         DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-            factory.getAuditService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
+            factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
         Metric metric = new Metric("scope", "metric");
@@ -390,7 +390,7 @@ public class AlertServiceTest extends AbstractTest {
         ServiceFactory factory = system.getServiceFactory();
         NotifierFactory notifierFactory = system.getNotifierFactory();
         DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-            factory.getAuditService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
+            factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
         Metric metric = new Metric("scope", "metric");
@@ -413,7 +413,7 @@ public class AlertServiceTest extends AbstractTest {
         ServiceFactory factory = system.getServiceFactory();
         NotifierFactory notifierFactory = system.getNotifierFactory();
         DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-            factory.getAuditService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
+            factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
         Metric metric = new Metric("scope", "metric");
