@@ -54,7 +54,7 @@ public class AuthServiceTest extends AbstractTest {
 
             authService.login("aBadUsername", "aBadPassword");
         } catch (ArgusServiceException ex) {
-            assertEquals(403, ex.getStatus());
+            assertEquals(401, ex.getStatus());
             return;
         }
         fail("Expected an ArgusServiceException for bad login.");

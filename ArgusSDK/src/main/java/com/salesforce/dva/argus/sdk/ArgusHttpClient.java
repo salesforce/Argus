@@ -34,7 +34,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
@@ -42,7 +41,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -52,6 +50,7 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 
 /**
@@ -90,17 +89,13 @@ class ArgusHttpClient {
      */
     ArgusHttpClient(String endpoint, int maxConn, int timeout, int reqTimeout) throws IOException {
         URL url = new URL(endpoint);
-        int port = url.getPort();
         PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
 
         connMgr.setMaxTotal(maxConn);
         connMgr.setDefaultMaxPerRoute(maxConn);
 
-        String routePath = endpoint.substring(0, endpoint.lastIndexOf(':'));
-        HttpHost host = new HttpHost(routePath, port);
         RequestConfig defaultRequestConfig = RequestConfig.custom().setConnectionRequestTimeout(reqTimeout).setConnectTimeout(timeout).build();
 
-        connMgr.setMaxPerRoute(new HttpRoute(host), maxConn / 2);
         _httpClient = HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(defaultRequestConfig).build();
         _httpContext = new BasicHttpContext();
         _httpContext.setAttribute(HttpClientContext.COOKIE_STORE, new BasicCookieStore());
@@ -215,8 +210,6 @@ class ArgusHttpClient {
         }
 
         static ArgusResponse generateResponse(HttpResponse response) throws IOException {
-            EntityUtils.consume(response.getEntity());
-
             int status = response.getStatusLine().getStatusCode();
             String message = null, errorMessage = null;
 
@@ -230,10 +223,7 @@ class ArgusHttpClient {
             String result = null;
 
             if (entity != null) {
-                try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                    entity.writeTo(baos);
-                    result = baos.toString("UTF-8");
-                }
+                result = EntityUtils.toString(entity);
             }
             return new ArgusResponse(status, message, errorMessage, result);
         }

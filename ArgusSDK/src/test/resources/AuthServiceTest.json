@@ -9,7 +9,7 @@
     "type": "POST",
     "endpoint": "/auth/login",
     "jsonInput" :"{\"username\":\"aBadUsername\",\"password\":\"aBadPassword\"}",
-    "status": 403,
+    "status": 401,
     "message": "unauthorized",
     "jsonOutput" : ""
 },{

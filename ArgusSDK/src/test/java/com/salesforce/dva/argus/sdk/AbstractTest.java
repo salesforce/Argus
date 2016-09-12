@@ -37,6 +37,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.entity.StringEntity;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 import static org.mockito.Mockito.*;
 
@@ -48,7 +50,34 @@ public abstract class AbstractTest {
         MAPPER.setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.ANY);
         MAPPER.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.ANY);
     }
+    
+    protected enum ITParam {
+        ENDPOINT("argus.endpoint"),
+        USERNAME("argus.username"),
+        PASSWORD("argus.password");
+        private final String _value;
+        
+        private ITParam(String key) {
+            _value = getTestParameters().getProperty(key);
+        }
+        
+        public String getValue() {
+            return _value;
+        }
+        
+        
+        private Properties getTestParameters() {
+            Properties result = new Properties();
+            try (InputStream is = getClass().getResourceAsStream("/integration-test.properties")) {
+                result.load(is);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+            return result;
+        }
 
+    }
+    
     ArgusHttpClient getMockedClient(String jsonFile) throws IOException {
         String endpoint = "https://localhost:8080/argusws";
         ArgusHttpClient client = spy(new ArgusHttpClient(endpoint, 10, 10, 10));

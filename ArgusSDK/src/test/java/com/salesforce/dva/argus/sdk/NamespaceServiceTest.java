@@ -95,7 +95,6 @@ public class NamespaceServiceTest extends AbstractTest {
         Set<String> members = result.getUsernames();
 
         members.add("UpdatedUser");
-        System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
 

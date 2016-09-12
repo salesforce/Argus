@@ -30,50 +30,33 @@
  */
 package com.salesforce.dva.argus.sdk;
 
-import com.salesforce.dva.argus.sdk.entity.PrincipalUser;
 import org.junit.Test;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Date;
 
 import static org.junit.Assert.*;
 
-public class UserServiceTest extends AbstractTest {
+public class AuthServiceIT extends AbstractTest {
 
     @Test
-    public void testGetUserById() throws IOException {
-        try(ArgusService argusService = new ArgusService(getMockedClient("/UserServiceTest.json"))) {
-            UserService userService = argusService.getUserService();
-            PrincipalUser result = userService.getUser(BigInteger.ONE);
-            PrincipalUser expected = _constructAdminUser();
-
-            assertEquals(expected, result);
+    public void testLoginLogout() throws IOException {
+        try(ArgusService argusService = ArgusService.getInstance(ITParam.ENDPOINT.getValue(),10)) {
+            AuthService authService = argusService.getAuthService();
+            authService.login(ITParam.USERNAME.getValue(),ITParam.PASSWORD.getValue());
+            authService.logout();
         }
     }
 
     @Test
-    public void testGetUserByUsername() throws IOException {
-        try(ArgusService argusService = new ArgusService(getMockedClient("/UserServiceTest.json"))) {
-            UserService userService = argusService.getUserService();
-            PrincipalUser result = userService.getUser("admin");
-            PrincipalUser expected = _constructAdminUser();
+    public void testBadLogin() throws IOException {
+        try(ArgusService argusService = ArgusService.getInstance(ITParam.ENDPOINT.getValue(),10)) {
+            AuthService authService = argusService.getAuthService();
 
-            assertEquals(expected, result);
+            authService.login("aBadUsername", "aBadPassword");
+        } catch (ArgusServiceException ex) {
+            assertEquals(401, ex.getStatus());
+            return;
         }
-    }
-
-    PrincipalUser _constructAdminUser() throws IOException {
-        PrincipalUser result = new PrincipalUser();
-
-        result.setCreatedById(BigInteger.ONE);
-        result.setCreatedDate(new Date(1472282830936L));
-        result.setEmail("admin@mycompany.com");
-        result.setId(BigInteger.ONE);
-        result.setModifiedById(BigInteger.ONE);
-        result.setModifiedDate(new Date(1472282830936L));
-        result.setPrivileged(true);
-        result.setUserName("admin");
-        return result;
+        fail("Expected an ArgusServiceException for bad login.");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
