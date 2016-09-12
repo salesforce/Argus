@@ -38,7 +38,6 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTim
 
 import org.junit.Test;
 import java.util.List;
-import java.util.Properties;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.*;
@@ -76,42 +75,5 @@ public class SchedulingServiceTest extends AbstractTest {
 
         assertEquals(schedulingIterations * noOfAlerts, list.size());
     }
-    
-    @Test
-    public void testAlertSchedulingWithDistributedDatabase() throws InterruptedException {
-    	
-    	Properties props = new Properties();
-    	props.put("service.binding.scheduling", "com.salesforce.dva.argus.service.schedule.DistributedDatabaseSchedulingService");
-    	system = getInstance(props);
-        SchedulingService schedulingService = system.getServiceFactory().getSchedulingService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        MQService mqService = system.getServiceFactory().getMQService();
-        UserService userService = system.getServiceFactory().getUserService();
-
-        schedulingService.enableScheduling();
-
-        long schedulingIterations = 1;
-        int noOfAlerts = random.nextInt(10) + 1;
-        PrincipalUser user = userService.findAdminUser();
-        Alert alert;
-
-        for (int i = 0; i < noOfAlerts; i++) {
-            String expression = "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, " +
-                "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
-
-            alert = new Alert(user, user, createRandomName(), expression, "* * * * *");
-            alert.setEnabled(true);
-            alertService.updateAlert(alert);
-        }
-        schedulingService.startAlertScheduling();
-        Thread.sleep((1000L * 60L * schedulingIterations));
-        schedulingService.stopAlertScheduling();
-
-        List<AlertIdWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000,
-            (int) (noOfAlerts * schedulingIterations));
-
-        assertEquals(schedulingIterations * noOfAlerts, list.size());
-    }
-    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
