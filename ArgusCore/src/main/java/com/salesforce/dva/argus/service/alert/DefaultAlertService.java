@@ -52,6 +52,7 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.NotifierFactory;
+import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -66,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +87,7 @@ import static java.math.BigInteger.ZERO;
  * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com)
  */
 public class DefaultAlertService extends DefaultJPAService implements AlertService {    
-    
+
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
@@ -106,6 +108,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Inject
 	private Provider<EntityManager> emf;
 	private final MQService _mqService;
+	private final TSDBService _tsdbService;
 	private final MetricService _metricService;
 	private final AnnotationService _annotationService;
 	private final MailService _mailService;
@@ -130,11 +133,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 */
 	@Inject
 	public DefaultAlertService(MQService mqService, MetricService metricService, AnnotationService annotationService, AuditService auditService,
-			MailService mailService, SystemConfiguration configuration, HistoryService historyService, MonitorService monitorService, NotifierFactory notifierFactory) {
+			TSDBService tsdbService, MailService mailService, SystemConfiguration configuration, HistoryService historyService, MonitorService monitorService, NotifierFactory notifierFactory) {
 		super(auditService, configuration);
 		requireArgument(mqService != null, "MQ service cannot be null.");
 		requireArgument(metricService != null, "Metric service cannot be null.");
 		requireArgument(annotationService != null, "Annotation service cannot be null.");
+		requireArgument(tsdbService != null, "TSDB service cannot be null.");
+		_tsdbService = tsdbService;
 		_mqService = mqService;
 		_metricService = metricService;
 		_annotationService = annotationService;
@@ -250,22 +255,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.debug("Query for alert having id {} resulted in : {}", id, result);
 		return result;
 	}
-	
+
 	@Override
-    @Transactional
-    public List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids) {
-        requireNotDisposed();
-        requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
+	@Transactional
+	public List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids) {
+		requireNotDisposed();
+		requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
 
-        EntityManager em = emf.get();
+		EntityManager em = emf.get();
 
-        em.getEntityManagerFactory().getCache().evictAll();
+		em.getEntityManagerFactory().getCache().evictAll();
 
-        List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
+		List<Alert> result = Alert.findByPrimaryKeys(em, ids, Alert.class);
 
-        _logger.debug("Query for alerts having ids {} resulted in : {}", ids, result);
-        return result;
-    }
+		_logger.debug("Query for alerts having ids {} resulted in : {}", ids, result);
+		return result;
+	}
 
 	@Override
 	@Transactional
@@ -573,14 +578,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alerts.size(), null);
 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
+
+		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
+		
+		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
-			if (findAlertByPrimaryKey(alert.getId()) == null) {
-				_logger.warn("Could not find alert ID {}", alert.getId());
-				continue;
-			}
-			_historyService.createHistory(addDateToMessage("Alert queued for evaluation"), alert, JobStatus.QUEUED, 0, 0);
+			Map<Long, String> datapoints = new HashMap<>();
+			// convert timestamp to nearest minute since cron is Least scale resolution of minute
+			datapoints.put(1000*60 * (System.currentTimeMillis()/(1000 *60)), "1");
+			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
+			metric.setTag("host",SystemConfiguration.getHostname());
+			metric.addDatapoints(datapoints);
+			metricsAlertScheduled.add(metric);
 		}
+		_tsdbService.putMetrics(metricsAlertScheduled);
 	}
+
 
 	@Override
 	@Transactional
@@ -595,7 +608,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return Alert.findByStatus(emf.get(), enabled);
 	}
-	
+
 	@Override
 	@Transactional
 	public List<BigInteger> findAlertIdsByStatus(boolean enabled) {
