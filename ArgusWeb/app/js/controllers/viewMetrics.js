@@ -3,7 +3,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
         
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
-        
+
         // sub-views: (1) single chart, (2) metric discovery 
         $scope.checkMetricExpression = function() {
             if ($scope.expression) {
