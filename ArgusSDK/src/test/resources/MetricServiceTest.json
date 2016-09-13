@@ -1,0 +1,15 @@
+[{
+    "type": "POST",
+    "endpoint": "/collection/metrics",
+    "jsonInput" :"[{\"scope\":\"TestScope\",\"metric\":\"TestMetric\",\"tags\":{\"TestTag\":\"TagValue\"},\"namespace\":\"TestNamespace\",\"displayName\":null,\"units\":null,\"datapoints\":null}]",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"Error Messages\":[],\"Errors\":\"0\",\"Success\":\"1\"}"
+},{
+    "type": "GET",
+    "endpoint": "/metrics?expression=-1d:TestScope:TestMetric:TestNamespace{TestTag=TagValue}:sum",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"scope\":\"TestScope\",\"metric\":\"TestMetric\",\"tags\":{\"TestTag\":\"TagValue\"},\"namespace\":\"TestNamespace\",\"displayName\":null,\"units\":null,\"datapoints\":null}]"
+}]

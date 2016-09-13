@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+    <contextName>ARGUS-SDK</contextName>
+
+    <appender name="ARGUS-SDK" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[ %boldMagenta(%cn) | %d{yyyy-MM-dd HH:mm:ss.SSS} | %-20thread | %highlight(%-5.5level) ] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.salesforce.dva.argus.sdk" additivity="false" level="INFO">
+        <appender-ref ref="ARGUS-SDK"/>
+    </logger>
+
+</configuration>
