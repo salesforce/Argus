@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.dashboard', [])
-.directive('agDashboard', ['$location', '$rootScope', '$routeParams', 'Controls', function($location, $rootScope, $routeParams, Controls) {
+.directive('agDashboard', ['$location', '$rootScope', 'Controls', function($location, $rootScope, Controls) {
     return {
         restrict: 'E',
         scope: {
@@ -54,7 +54,7 @@ angular.module('argus.directives.controls.dashboard', [])
             this.broadcastEvent = function(eventName, data){
             	console.log(eventName + ' was broadcast');
             	$scope.$broadcast(eventName, data);
-            }
+            };
         },
         link:function(scope,element,attributes){
             if (!attributes.onload || attributes.onload == true) {
