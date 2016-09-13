@@ -1,19 +1,25 @@
 angular.module('argus.services.search', [])
-.service('SearchService', ['$q', '$http', function($q, $http) {
+.service('SearchService', ['$q', '$http', 'CONFIG', function($q, $http, CONFIG) {
     this.search = function(searchParams) {
         if (!searchParams) return;
         
         // TODO: refactor api call to a separate factory for metric queries
         var request = $http({
             method: 'GET',
-            url: '/argusws/discover/metrics/schemarecords',
+            url: CONFIG.wsUrl + 'discover/metrics/schemarecords',
             params: searchParams,
-            timeout: 10000
+            timeout: 30000
         });
 
-        return Q.allSettled(request);
+        return request;
+        //return Q.allSettled(request);
     };
 
+    this.processResponse = function(response) {
+        return response.data;
+    };
+
+    /*
     this.processResponses = function(responses) {
         return responses
             .filter(function(res){  //filters successful requests
@@ -68,4 +74,5 @@ angular.module('argus.services.search', [])
             return expressionString;
         }
     };
+    */
 }]);

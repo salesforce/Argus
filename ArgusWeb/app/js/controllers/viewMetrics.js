@@ -49,8 +49,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 metric: '*',
                 tagk: '*',
                 tagv: '*',
-                limit: 100,
-                page: 1
+                limit: 25,
+                page: 1,
+                type: 'scope'
             };
 
             var newParams = JSON.parse(JSON.stringify(defaultParams));
@@ -61,9 +62,32 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             newParams['namespace'] = ($scope.namespace) ? $scope.namespace : '*';
             newParams['tagk'] = ($scope.tagk) ? $scope.tagk : '*';
             newParams['tagv'] = ($scope.tagv) ? $scope.tagv : '*';
+            newParams['type'] = category ? category : 'scope';
 
-            return SearchService.search(newParams)
-                .then(SearchService.processResponses);
+            if(category) {
+                if(category === 'scope') {
+                    if(newParams['metric'] === '*') {
+                        newParams['limit'] = 10;
+                    }
+                    newParams['scope'] = newParams['scope'] + '*';
+                } else if(category === 'metric') {
+                    if(newParams['scope'] === '*') {
+                        newParams['limit'] = 10;
+                    }
+                    newParams['metric'] = newParams['metric'] + '*';
+                } else if(category === 'tagk') {
+                    newParams['limit'] = 10;
+                    newParams['tagk'] = newParams['tagk'] + '*';
+                } else if(category === 'tagv') {
+                    newParams['tagv'] = newParams['tagv'] + '*';
+                } else if(category === 'namespace') {
+                    newParams['namespace'] = newParams['namespace'] + '*';
+                }
+            } else {
+                newParams['scope'] = newParams['scope'] + '*';
+            }
+
+            return SearchService.search(newParams).then(SearchService.processResponse);
         };
 
         $scope.isSearchMetricDisabled = function () {
