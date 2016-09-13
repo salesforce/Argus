@@ -20,12 +20,11 @@
         </span>
     </div>
 </div>
-
 <table class="table table-striped table-bordered">
     <tr>
-        <th ng-repeat="(key, value) in colName" ng-click="sort(key)">
+        <th ng-repeat="(key, value) in colName" ng-click="(key=='state')||sort(key)">
             {{value}}
-            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
+            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
         </th>
         <th class="col-centered">
             <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
