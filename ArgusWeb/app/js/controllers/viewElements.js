@@ -4,8 +4,10 @@ angular.module('argus.controllers.viewelements', [])
     $scope.annotations = {};
     $scope.options = {};
 
-    this.updateMetric = function(name, expression, metricSpecificOptions) {
+    this.updateMetric = function(name, expression, metricSpecificOptions, seriesData) {
         var metric = {
+            'name': seriesData.name,
+            'color': seriesData.color,
             'expression': expression,
             'metricSpecificOptions': metricSpecificOptions
         };
