@@ -70,6 +70,31 @@ public class PolicyServiceTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testDeletePolicies() throws IOException {
+
+        try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            BigInteger[] policyIds = { BigInteger.ONE };
+            WardenResponse<Policy> actualResponse = policyService.deletePolicies(policyIds);
+            WardenResponse<Policy> expectedResponse = _constructPersistedResponse("DELETE");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
+    @Test
+    public void testUpdatePolicies() throws IOException {
+        try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            List<Policy> policies = Arrays.asList(new Policy[] { _constructUnpersistedPolicy() });
+            WardenResponse<Policy> actualResponse = policyService.updatePolicies(policies);
+            WardenResponse<Policy> expectedResponse = _constructPersistedResponse("PUT");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
     private WardenResponse<Policy> _constructPersistedResponse(String httpVerb) throws JsonProcessingException {
         Policy persistedPolicy = _constructUnpersistedPolicy();
         WardenResponse<Policy> result = new WardenResponse<>();

@@ -34,6 +34,7 @@ import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
 import com.salesforce.dva.warden.client.WardenService.EndpointService;
 import com.salesforce.dva.warden.dto.Policy;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
 /**
@@ -93,19 +94,23 @@ public class PolicyService extends EndpointService {
      *
      * @return  DOCUMENT ME!
      */
-    public boolean deletePolicies() {
-        return false;
+    public WardenResponse<Policy> deletePolicies(BigInteger[] policyIds) throws IOException {
+        String requestUrl = REQUESTURL;
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, policyIds);
     }
 
     /**
      * DOCUMENT ME!
      *
-     * @param   policiesJson  DOCUMENT ME!
+     * @param   policies  DOCUMENT ME!
      *
      * @return  DOCUMENT ME!
      */
-    public boolean updatePolicies(String policiesJson) {
-        return false;
+    public WardenResponse<Policy> updatePolicies(List<Policy> policies) throws IOException {
+        String requestUrl = REQUESTURL;
+
+        return getClient().executeHttpRequest(RequestType.PUT, requestUrl, policies);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
