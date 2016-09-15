@@ -27,6 +27,7 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
+import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -138,11 +139,11 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		
 		//Set metric and scope using reflection.
 		try {
-			Method setMetricMethod = MetricQuery.class.getDeclaredMethod("setMetric", String.class);
+			Method setMetricMethod = AnnotationQuery.class.getDeclaredMethod("setMetric", String.class);
 			setMetricMethod.setAccessible(true);
 			setMetricMethod.invoke(result, cachedQuery.getMetric());
 			
-			Method setScopeMethod = MetricQuery.class.getDeclaredMethod("setScope", String.class);
+			Method setScopeMethod = AnnotationQuery.class.getDeclaredMethod("setScope", String.class);
 			setScopeMethod.setAccessible(true);
 			setScopeMethod.invoke(result, cachedQuery.getScope());
 		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
