@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.system.SystemException;
 public class CachedDiscoveryService extends DefaultService implements DiscoveryService {
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
+	private static final int EXPIRY_TIME_SECS = 3600;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -173,7 +174,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 				if(key != null) {
 					_logger.debug("CacheInsertThread: Inserting key = {}, value = {}", _wildcardQuery, _matchedQueries);
 					String value = MAPPER.writeValueAsString(_matchedQueries);
-					_cacheService.put(key, value, 3600);
+					_cacheService.put(key, value, EXPIRY_TIME_SECS);
 				}
 			} catch (JsonProcessingException e) {
 				_logger.warn("CacheInsertThread: Failed to serialize list of metric queries.", e);
