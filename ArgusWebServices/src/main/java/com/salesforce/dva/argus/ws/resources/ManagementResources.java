@@ -431,5 +431,25 @@ public class ManagementResources extends AbstractResource {
         managementService.cleanupRecords();
         return Response.status(Status.OK).build();
     }
+    
+    @PUT
+    @Path("/fixDashboards")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Description("Migrate metric expressions in dashboards to use the new syntax for constants.")
+    public Response fixDashboards(@Context HttpServletRequest req) {
+        validatePrivilegedUser(req);
+        managementService.fixMetricExpressionsInDashboards();
+        return Response.status(Status.OK).build();
+    }
+    
+    @PUT
+    @Path("/fixAlerts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Description("Migrate metric expressions in alerts to use the new syntax for constants.")
+    public Response fixAlerts(@Context HttpServletRequest req) {
+        validatePrivilegedUser(req);
+        managementService.fixMetricExpressionsInAlerts();
+        return Response.status(Status.OK).build();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
