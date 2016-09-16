@@ -1,6 +1,5 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
@@ -119,8 +118,8 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 						_replaceWildcardFieldsFromCachedQuery(matchedQueries.get(i), q);
 						queries.add(q);
 					}
-				} catch (IOException e) {
-					_logger.warn("IOException while parsing string value from cache to list of metric queries. Will read from persistent storage.", e);
+				} catch (Exception e) {
+					_logger.warn("Failed to deserialize cached data into metric queries. Will read from persistent storage.", e);
 					queries = _discoveryService.getMatchingQueries(query);
 					_executorService.submit(new CacheInsertWorker(query, queries));
 				}
