@@ -134,8 +134,10 @@ TOKEN : { < #SQUARE_OPEN : "[" > }
 TOKEN : { < #SQUARE_CLOSE : "]" > }
 TOKEN : { < #OR : "|" > }
 TOKEN : { < #DOLLAR : "$" > }
+TOKEN : { < #POUND : "#" > }
 TOKEN : { < #NOT : "!" > }
 TOKEN : { < #TIME_UNIT : "s" | "m" | "h" | "d" > }
+TOKEN : { < #ANYTHING : ~["#"] > }
 
 TOKEN : { < IDENTITY : "IDENTITY" > }
 TOKEN : { < SUM : "SUM" > }
@@ -207,7 +209,8 @@ TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
-TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
+//TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
+TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :
 {}

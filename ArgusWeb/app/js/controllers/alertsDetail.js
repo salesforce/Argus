@@ -131,7 +131,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 notifierName: "com.salesforce.dva.argus.service.alert.notifier.EmailNotifier",
                 subscriptions: [],
                 metricsToAnnotate: [],
-                cooldownPeriod: 3600000,
+                cooldownPeriod: 0,
                 alertId: $scope.alert.id
             };
             

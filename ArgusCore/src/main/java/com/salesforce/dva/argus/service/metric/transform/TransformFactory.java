@@ -173,7 +173,7 @@ public class TransformFactory {
             case NORMALIZE_V:
                 return new MetricZipperTransform(new DivideValueZipper());
             case GROUPBY:
-            	throw new UnsupportedOperationException(functionName);
+            	return new GroupByTransform(this);
             case ANOMALY_DENSITY:
                 return new AnomalyDetectionGaussianDensityTransform();
             case ANOMALY_ZSCORE:
