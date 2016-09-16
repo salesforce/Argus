@@ -20,12 +20,11 @@
         </span>
     </div>
 </div>
-
 <table class="table table-striped table-bordered">
     <tr>
-        <th ng-repeat="(key, value) in colName" ng-click="sort(key)">
+        <th ng-repeat="(key, value) in colName" ng-click="(key=='state')||sort(key)">
             {{value}}
-            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"></span>
+            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
         </th>
         <th class="col-centered">
             <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
@@ -62,11 +61,19 @@
     </tr>
 </table>
 
-<div class="row text-center" ng-hide="dataSet.length != 0">No {{properties.type}} to show.</div>
-<div class="row text-center" ng-show="dataSet.length && searchText.length == 0">Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.</div>
+
+<div class="row text-center" ng-show="searchText.length == 0">
+    <ng-pluralize count="dataSet.length"
+                  when="{'0': 'No {{properties.type}} to show.',
+                        'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
+                        'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
+    </ng-pluralize>
+</div>
 <!--after user type in searchText-->
-<div class="row text-center" ng-if="searchText.length" ng-switch="results.length">
-    <div ng-switch-when="0">No results found...</div>
-    <div ng-switch-when="1">1 result found.</div>
-    <div ng-switch-default="">{{results.length}} results found.</div>
+<div class="row text-center" ng-show="searchText.length">
+    <ng-pluralize count="results.length"
+                  when="{'0': 'No results found...',
+                        'one': '1 result found.',
+                        'other': '{{results.length}} results found.'}">
+    </ng-pluralize>
 </div>
