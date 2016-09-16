@@ -61,19 +61,20 @@
     </tr>
 </table>
 
-
-<div class="row text-center" ng-show="searchText.length == 0">
-    <ng-pluralize count="dataSet.length"
-                  when="{'0': 'No {{properties.type}} to show.',
-                        'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
-                        'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
-    </ng-pluralize>
-</div>
-<!--after user type in searchText-->
-<div class="row text-center" ng-show="searchText.length">
-    <ng-pluralize count="results.length"
-                  when="{'0': 'No results found...',
-                        'one': '1 result found.',
-                        'other': '{{results.length}} results found.'}">
-    </ng-pluralize>
+<div ng-if="allData">
+  <div class="row text-center" ng-show="searchText.length == 0">
+      <ng-pluralize count="dataSet.length"
+                    when="{'0': 'No {{properties.type}} to show.',
+                          'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
+                          'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
+      </ng-pluralize>
+  </div>
+  <!--after user type in searchText-->
+  <div class="row text-center" ng-show="searchText.length">
+      <ng-pluralize count="results.length"
+                    when="{'0': 'No results found...',
+                          'one': '1 result found.',
+                          'other': '{{results.length}} results found.'}">
+      </ng-pluralize>
+  </div>
 </div>
