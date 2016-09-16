@@ -12,7 +12,6 @@ angular.module('argus.services.search', [])
         });
 
         return request;
-        //return Q.allSettled(request);
     };
 
     this.processResponse = function(response) {
