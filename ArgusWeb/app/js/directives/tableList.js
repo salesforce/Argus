@@ -31,6 +31,7 @@ angular.module('argus.directives')
                 properties: '=',
                 colName: '=',
                 dataSet: '=data',
+                allData: '=tot',
                 addItem: '&',
                 delete: '&',
                 disabled: '&',
