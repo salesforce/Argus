@@ -9,11 +9,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             if ($scope.expression) {
                 $scope.showMetricDiscovery = false;
                 $scope.showChart = true;
-                $scope.showLoading = false;
             } else {
                 $scope.showMetricDiscovery = true;
                 $scope.showChart = false;
-                $scope.showLoading = true;
             }
         };
         $scope.checkMetricExpression();
@@ -42,7 +40,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         };
 
         $scope.searchMetrics = function(value, category) {
-
+            // TODO: move param processing to search service
             var defaultParams = {
                 namespace: '*',
                 scope: '*',
@@ -86,14 +84,88 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             } else {
                 newParams['scope'] = newParams['scope'] + '*';
             }
+            // end TODO
 
-            return SearchService.search(newParams).then(SearchService.processResponse);
+            return SearchService.search(newParams)
+                .then(function(response) {
+                    return response.data;
+                });
         };
 
         $scope.isSearchMetricDisabled = function () {
             var s = $scope.scope, m = $scope.metric;
             return (s === undefined || s.length < 1) && (m === undefined || m.length < 1);
         };
+
+        // add search metrics to $scope expression
+        $scope.addSearchExpression = function () {
+            // set 'addDefaultValues' to false
+            $scope.expression = constructSearchStr(false);
+        };
+
+        // construct & build a graph, with search values
+        $scope.graphSearchExpression = function () {
+            // set 'addDefaultValues' to true
+            $scope.expression = constructSearchStr(true);
+
+            // graph new epxression with default values
+            $scope.getMetricData();
+        };
+
+        // TODO: create service for this form reset/clear
+        $scope.setPristine = function () {
+            $scope.scope = '';
+            $scope.metric = '';
+            $scope.metric = '';
+            $scope.tagk = '';
+            $scope.tagv = '';
+            $scope.namespace = '';
+            $scope.search_metrics.$setPristine();
+        }
+
+        // construct full search string from search fields
+        function constructSearchStr(addDefaultValues) {
+            var s = $scope.scope, m = $scope.metric, tagk = $scope.tagk, tagv = $scope.tagv, n = $scope.namespace;
+
+            /* expression str format & rules:
+                search fields:      scope:metric{tags}:aggregator
+                expression field:   start*:end:scope*:metric*{tags}:aggregator*:downsampler:namespace
+            **/
+            var start_Str = '';
+            var scope_Str = (s && s.length > 1) ? s + ':' : '';
+            var metric_Str = (m && m.length > 1) ? m : '';
+            
+            var tag_Str = '';
+            if (tagk && tagv) {
+                tag_Str = '{' + tagk + '=' + tagv + "}";
+                $scope.enterTagsErr = false;
+            } else if ( (tagk && !tagv) || (!tagk && tagv) ) {
+                // both tag key AND tag value input must be entered
+                $scope.enterTagsErr = true;
+                return null;
+            }
+            
+            var agg_Str = '';
+            var namespace_Str = (n && n.length > 1) ? ':' + n : '';
+
+            /* Add default settings for: start, aggregator
+                full:  -1h:scope:metric{tags}:avg:namespace
+                start: -1h
+                aggregator: avg
+            **/
+            if (addDefaultValues) {
+                start_Str = "-1h:";
+                agg_Str = ":avg";
+            }
+
+            return start_Str + scope_Str + metric_Str + tag_Str + agg_Str + namespace_Str;
+        }
+
+        // show newExpression in page view
+        function showSearchExpression() {
+            var searchStr = constructSearchStr();
+            $("#searchExpression").html(searchStr);
+        }
 
         // -------------
 
@@ -142,7 +214,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             $scope.addAlertFlags(data);
         };
 
-        // TODO: move all below scope functions to a puclic Scope service
+        // TODO: move all below scope functions to a public Scope service
 
         $scope.addAlertFlags = function (metrics) {
             if (metrics && metrics.length) {
