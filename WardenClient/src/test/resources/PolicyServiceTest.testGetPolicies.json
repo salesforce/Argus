@@ -5,7 +5,7 @@
   "status": 200,
   "message": "success",
   "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
-  },{
+},{
   "type": "POST",
   "endpoint": "/policy",
   "jsonInput" : "[{\"id\":null,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]}]",
@@ -26,5 +26,26 @@
   "status": 200,
   "message": "success",
   "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"PUT\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+},{
+    "type": "GET",
+    "endpoint": "/policy/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+},{
+  "type": "DELETE",
+  "endpoint": "/policy/1",
+  "jsonInput":null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"DELETE\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+},{
+  "type": "PUT",
+  "endpoint": "/policy/1",
+  "jsonInput": "{\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"UpdatedMetric\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]}",
+  "status": 200,
+  "message": "success",
+  "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"UpdatedMetric\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"PUT\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
 }
 ]

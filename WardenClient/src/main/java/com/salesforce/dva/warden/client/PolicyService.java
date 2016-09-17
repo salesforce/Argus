@@ -30,9 +30,14 @@
  */
 package com.salesforce.dva.warden.client;
 
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
 import com.salesforce.dva.warden.client.WardenService.EndpointService;
+import com.salesforce.dva.warden.dto.Infraction;
 import com.salesforce.dva.warden.dto.Policy;
+import com.salesforce.dva.warden.dto.SuspensionLevel;
+import scala.util.parsing.combinator.testing.Str;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
@@ -94,6 +99,7 @@ public class PolicyService extends EndpointService {
      *
      * @return  DOCUMENT ME!
      */
+    /* use a Set<BigInteger> for input */
     public WardenResponse<Policy> deletePolicies(BigInteger[] policyIds) throws IOException {
         String requestUrl = REQUESTURL;
 
@@ -112,5 +118,152 @@ public class PolicyService extends EndpointService {
 
         return getClient().executeHttpRequest(RequestType.PUT, requestUrl, policies);
     }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Policy> getPolicy(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString();
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
+    public WardenResponse<Policy> deletePolicy(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString();
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param   policyId  DOCUMENT ME!
+     *
+     * @return  WardenResponse<Policy>
+     *
+     * @throws IOException
+     */
+    public WardenResponse<Policy> updatePolicy(BigInteger policyId, Policy policy) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString();
+        /*if (policyId != policy.getId()){
+            throw new IOException("The input argument policyId, does not match with the policyId of the input argument policy");
+        }*/
+
+        return getClient().executeHttpRequest(RequestType.PUT, requestUrl, policy);
+    }
+
+    //======================= SuspensionLevels CRUD=========================
+    public WardenResponse<SuspensionLevel> getSuspensionLevels(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<SuspensionLevel> createSuspensionLevels(BigInteger policyId, List<SuspensionLevel> suspensionLevels) throws IOException{
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level";
+
+        return getClient().executeHttpRequest(RequestType.POST, requestUrl, suspensionLevels);
+    }
+
+    public WardenResponse<SuspensionLevel> deleteSuspensionLevels(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/level";
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
+    }
+
+    public WardenResponse<SuspensionLevel> updateSuspensionLevels(BigInteger policyId, List<SuspensionLevel> suspensionLevels) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/level";
+
+        return getClient().executeHttpRequest(RequestType.PUT, requestUrl, suspensionLevels);
+    }
+
+    //========================One SuspensionLevel CRUD==========================
+    public WardenResponse<SuspensionLevel> getSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<SuspensionLevel> deleteSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
+    }
+
+    public WardenResponse<SuspensionLevel> updateSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId, SuspensionLevel suspensionLevel) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+
+        if ( suspensionLevelId != suspensionLevel.getId()) {
+            throw new IOException("The input argument suspensionLevelId, does not match with the suspensionLevelId of the input argument suspensionLevel");
+        }
+        return getClient().executeHttpRequest(RequestType.PUT, requestUrl, suspensionLevel);
+    }
+
+    //======================= Infractions CRUD ====================================
+    public WardenResponse<Infraction> getInfractions(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/infraction";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<Infraction> getInfraction(BigInteger policyId, BigInteger infractionId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/" + infractionId;
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    //========================= Suspensions given a PolicyId CRUD ====================================
+    public WardenResponse<Infraction> getSuspensions(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/suspension";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<Infraction> deleteSuspensions(BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/suspension";
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
+    }
+
+    //=========================== Suspensions given a PolicyId and a UserId CRUD ===========================
+    public WardenResponse<Infraction> getSuspensionsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/suspension";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<Infraction> deleteSuspensionsForUserandPolicy(BigInteger policyId, BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/suspension";
+
+        return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
+
+    }
+
+    //============================ Metrics given a PolicyId and a UserId CRUD=================================
+
+    public WardenResponse<Metric> getMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/metric";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    public WardenResponse<Metric> createMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId, List<Metric> metrics) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/metric";
+
+        return getClient().executeHttpRequest(RequestType.POST, requestUrl, metrics);
+
+    }
+
+
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
