@@ -265,7 +265,7 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 		t = <CONSTANT>
 			{
 				constant = t.image;
-				constant = constant.substring(1);
+				constant = constant.substring(1, constant.length() - 1);
 				constants.add(constant);
 			}
 		)
@@ -281,7 +281,7 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 			t = <CONSTANT>
 			{
 				constant = t.image;
-				constant = constant.substring(1);
+				constant = constant.substring(1, constant.length() - 1);
 				constants.add(constant);
 			}  
           )
