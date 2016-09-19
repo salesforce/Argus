@@ -52,9 +52,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     			}
     		}
     	} else {
-    		$scope.shared = false;
-    		for(var i = 0; i < totNum; i++) {
-    			if(!$scope.allDashboards[i].shared) {
+            $scope.shared = false;
+            var remoteUser = Auth.remoteUser();
+            for(var i = 0; i < totNum; i++) {
+                if ($scope.allDashboards[i].ownerName === remoteUser.userName || !$scope.allDashboards[i].shared) {
     				$scope.dashboards.push($scope.allDashboards[i]);
     			}
     		}
