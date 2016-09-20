@@ -162,8 +162,8 @@ angular.module('argus.services.dashboard', [])
                         if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             var processedMetric = {};
                             processedMetric['expression'] = processedExpression;
-                            processedMetric['name'] = metrics.name;
-                            processedMetric['color'] = metrics.color;
+                            processedMetric['name'] = metrics.seriesName;
+                            processedMetric['color'] = metrics.seriesColor;
                             processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
                             
                             // update metric list with new processed metric object
