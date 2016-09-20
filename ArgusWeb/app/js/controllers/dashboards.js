@@ -22,15 +22,20 @@
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 .controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', function (Auth, $scope, growl, Dashboards) {
 
+    $scope.shared = false;
+    $scope.selectedTab = 1;
+    $scope.dashboards = [];
+    var sharedDashboards = [];
+    var usersDashboards = [];
+
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {
         $scope.allDashboards = dashboards;
-        $scope.getDashboards(false);
+        sharedDashboards = getDashboardsUnderTab(dashboards, true);
+        usersDashboards = getDashboardsUnderTab(dashboards, false);
+        $scope.getDashboards($scope.shared, true);
     });
-    
-    $scope.dashboards = [];
-    $scope.shared = false;
-    $scope.selectedTab = 1;
+
     
     $scope.isTabSelected = function (tab) {
         return $scope.selectedTab === tab;
@@ -40,26 +45,38 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         $scope.selectedTab = tab;
     };
 
+    $scope.getDashboards = function(shared, firstLoad) {
+        // during initial loading, $scope.dashboards is empty so do not overwrite
+        if (firstLoad === undefined) {
+            if ($scope.shared) {
+                sharedDashboards = $scope.dashboards;
+            } else {
+                usersDashboards = $scope.dashboards;
+            }
+        }
+        $scope.dashboards = shared? sharedDashboards: usersDashboards;
+        $scope.shared = shared;
+    };
+
     // TODO: refactor to DashboardService
-    $scope.getDashboards = function(shared) {
-    	$scope.dashboards = [];
-        var totNum = $scope.allDashboards.length;
-    	if(shared) {
-    		$scope.shared = true;
-    		for(var i = 0; i < totNum; i++) {
-    			if($scope.allDashboards[i].shared) {
-    				$scope.dashboards.push($scope.allDashboards[i]);
-    			}
-    		}
-    	} else {
-            $scope.shared = false;
+    function getDashboardsUnderTab (allDashboards, shared) {
+        var result = [];
+        var totNum = allDashboards.length;
+        if(shared) {
+            for(var i = 0; i < totNum; i++) {
+                if(allDashboards[i].shared) {
+                    result.push(allDashboards[i]);
+                }
+            }
+        } else {
             var remoteUser = Auth.remoteUser();
             for(var i = 0; i < totNum; i++) {
-                if ($scope.allDashboards[i].ownerName === remoteUser.userName || !$scope.allDashboards[i].shared) {
-    				$scope.dashboards.push($scope.allDashboards[i]);
-    			}
-    		}
-    	}
+                if (allDashboards[i].ownerName === remoteUser.userName) {
+                    result.push(allDashboards[i]);
+                }
+            }
+        }
+        return result;
     };
     
     // TODO: refactor to DashboardService
