@@ -222,6 +222,7 @@ public class Policy extends Entity {
 	         *
 	         * @return  The corresponding aggregator element.
 	         */
+	        @JsonCreator
 	        public static Aggregator fromString(String name) {
 	            if (name != null && !name.isEmpty()) {
 	                for (Aggregator aggregator : Aggregator.values()) {
@@ -238,8 +239,20 @@ public class Policy extends Entity {
 	         *
 	         * @return  The method description.
 	         */
+	       
 	        public String getDescription() {
 	            return _description;
+	        }
+	        
+	        /**
+	         * Returns the short hand description of the method.
+	         * This method is used to insert enum type for jpa entity
+	         *
+	         * @return  The method description.
+	         */
+	        @JsonValue
+	        public String value() {
+	            return this.toString();
 	        }
 	    }
 		

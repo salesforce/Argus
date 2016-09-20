@@ -109,6 +109,7 @@ public class Policy extends JPAEntity {
     private TriggerType triggerType;
 	
 	@Basic(optional = false)
+	@Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Aggregator aggregator;
     

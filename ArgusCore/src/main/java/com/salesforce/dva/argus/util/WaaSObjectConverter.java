@@ -1,18 +1,23 @@
 package com.salesforce.dva.argus.util;
 
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.beanutils.BeanUtils;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.warden.dto.Entity;
+import com.salesforce.dva.warden.dto.WardenResource;
+import com.salesforce.dva.warden.dto.WardenResource.MetaKey;
 
 import java.util.List;
 
@@ -45,7 +50,13 @@ public class WaaSObjectConverter implements Serializable {
 
         try {
             result = clazz.newInstance();
-            BeanUtils.copyProperties(result, entity);
+           
+            try{
+            	BeanUtils.copyProperties(result, entity);
+            }catch (IllegalArgumentException e){
+            	throw new WebApplicationException("2 exception.", Status.INTERNAL_SERVER_ERROR);
+            }
+            
 
             // Now set IDs of JPA entity
             result.setCreatedById(entity.getCreatedBy() != null ? entity.getCreatedBy().getId() : null);
@@ -66,9 +77,28 @@ public class WaaSObjectConverter implements Serializable {
     	if (policy == null) {
             throw new WebApplicationException("Null policy object cannot be converted to Policy Dto object.", Status.INTERNAL_SERVER_ERROR);
         }
-    	com.salesforce.dva.warden.dto.Policy result = createDtoObject(com.salesforce.dva.warden.dto.Policy.class, policy);
+    	//com.salesforce.dva.warden.dto.Policy result = createDtoObject(com.salesforce.dva.warden.dto.Policy.class, policy);
+    	com.salesforce.dva.warden.dto.Policy result = new com.salesforce.dva.warden.dto.Policy();
+    	result.setAggregator(policy.getAggregator().name());
+    	result.setCreatedById(policy.getCreatedBy() != null ? policy.getCreatedBy().getId() : null);
+    	result.setCreatedDate(policy.getCreatedDate());
+    	result.setCronEntry(policy.getCronEntry());
+    	result.setDefaultValue(policy.getDefaultValue());
+    	result.setId(policy.getId());
     	result.setMetricName(policy.getMetricName());
+        result.setModifiedById(policy.getModifiedBy() != null ? policy.getModifiedBy().getId() : null);
+    	result.setModifiedDate(policy.getModifiedDate());
+    	result.setName(policy.getName());
+    	result.setOwners(policy.getOwners());
+    	result.setService(policy.getService());
+    	result.setSubSystem(policy.getSubSystem());
+    	
+    	
     	result.setSuspensionLevels(policy.getSuspensionLevels().stream().map(s -> s.getId()).collect(Collectors.toList()));
+    	result.setThreshold(policy.getThreshold());
+    	result.setTimeUnit(policy.getTimeUnit());
+    	result.setTriggerType(policy.getTriggerType().name());
+    	result.setUsers(policy.getUsers());
     	return result;
     }
     /**
@@ -96,9 +126,20 @@ public class WaaSObjectConverter implements Serializable {
     	if (suspensionLevel == null) {
             throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
         }
-    	com.salesforce.dva.warden.dto.SuspensionLevel result = WaaSObjectConverter.createDtoObject(com.salesforce.dva.warden.dto.SuspensionLevel.class, suspensionLevel);
+    	//com.salesforce.dva.warden.dto.SuspensionLevel result = WaaSObjectConverter.createDtoObject(com.salesforce.dva.warden.dto.SuspensionLevel.class, suspensionLevel);
+    	com.salesforce.dva.warden.dto.SuspensionLevel result = new com.salesforce.dva.warden.dto.SuspensionLevel();
+    	
     	result.setPolicyId(suspensionLevel.getPolicy().getId());
+        result.setLevelNumber(suspensionLevel.getLevelNumber());
+        result.setInfractionCount(suspensionLevel.getInfractionCount());
+        result.setSuspensionTime(suspensionLevel.getSuspensionTime());
         
+        result.setCreatedById(suspensionLevel.getCreatedBy() != null ? suspensionLevel.getCreatedBy().getId() : null);
+    	result.setCreatedDate(suspensionLevel.getCreatedDate());
+    	result.setId(suspensionLevel.getId());
+        result.setModifiedById(suspensionLevel.getModifiedBy() != null ? suspensionLevel.getModifiedBy().getId() : null);
+    	result.setModifiedDate(suspensionLevel.getModifiedDate());
+    	
         return result;
     }
     public static List<com.salesforce.dva.warden.dto.SuspensionLevel> convertToLevelDtos(
@@ -119,9 +160,18 @@ public class WaaSObjectConverter implements Serializable {
     	if (infraction == null) {
             throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
         }
-    	com.salesforce.dva.warden.dto.Infraction result = WaaSObjectConverter.createDtoObject(com.salesforce.dva.warden.dto.Infraction.class, infraction);
+    	com.salesforce.dva.warden.dto.Infraction result = new com.salesforce.dva.warden.dto.Infraction();
+    	
     	result.setPolicyId(infraction.getPolicy().getId());
     	result.setUserId(infraction.getUser().getId());
+    	result.setInfractionTimestamp(infraction.getInfractionTimestamp());
+    	result.setExpirationTimestamp(infraction.getExpirationTimestamp());
+    	
+    	result.setCreatedById(infraction.getCreatedBy() != null ? infraction.getCreatedBy().getId() : null);
+    	result.setCreatedDate(infraction.getCreatedDate());
+    	result.setId(infraction.getId());
+        result.setModifiedById(infraction.getModifiedBy() != null ? infraction.getModifiedBy().getId() : null);
+    	result.setModifiedDate(infraction.getModifiedDate());
         
         return result;
     }
@@ -144,7 +194,16 @@ public class WaaSObjectConverter implements Serializable {
     	if (principalUser == null) {
             throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
         }
-    	com.salesforce.dva.warden.dto.WardenUser result = WaaSObjectConverter.createDtoObject(com.salesforce.dva.warden.dto.WardenUser.class, principalUser);
+    	com.salesforce.dva.warden.dto.WardenUser result = new com.salesforce.dva.warden.dto.WardenUser();
+    	result.setUserName(principalUser.getUserName());
+    	result.setEmail(principalUser.getEmail());
+    	
+    	result.setCreatedById(principalUser.getCreatedBy() != null ? principalUser.getCreatedBy().getId() : null);
+    	result.setCreatedDate(principalUser.getCreatedDate());
+    	result.setId(principalUser.getId());
+        result.setModifiedById(principalUser.getModifiedBy() != null ? principalUser.getModifiedBy().getId() : null);
+    	result.setModifiedDate(principalUser.getModifiedDate());
+    	
     	return result;
     }
     public static List<com.salesforce.dva.warden.dto.WardenUser> convertToWardenUserDtos(
@@ -294,5 +353,13 @@ public class WaaSObjectConverter implements Serializable {
     public void setModifiedDate(Date modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
+	public static <T> WardenResource<T> convertToResource(T entity, EnumMap<MetaKey, String> meta) {
+		
+		WardenResource<T> resource = new WardenResource<T>();
+		resource.setEntity(entity);
+		resource.setMeta(meta);
+		
+		return resource;
+	}
 	
 }
