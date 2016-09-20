@@ -39,6 +39,7 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
+import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.service.ManagementService;
@@ -50,9 +51,20 @@ import com.salesforce.dva.argus.service.WardenService.PolicyCounter;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.slf4j.Logger;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
+import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -74,6 +86,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
     private final AuditService _auditService;
     private final HistoryService _historyService;
     private final AlertService _alertService;
+    private final DashboardService _dashboardService;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -90,7 +103,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
      */
     @Inject
     DefaultManagementService(WardenService wardenService, MonitorService monitorService, SchedulingService schedulingService, UserService userService,
-        AuditService auditService, HistoryService historyService, AlertService alertService, SystemConfiguration config) {
+        AuditService auditService, HistoryService historyService, AlertService alertService, DashboardService dashboardService, SystemConfiguration config) {
     	super(config);
         requireArgument(wardenService != null, "Warden service cannot be null.");
         requireArgument(monitorService != null, "Monitor service cannot be null.");
@@ -99,6 +112,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
         requireArgument(auditService != null, "Audit service cannot be null.");
         requireArgument(historyService != null, "History service cannot be null.");
         requireArgument(alertService != null, "Alert service cannot be null.");
+        requireArgument(dashboardService != null, "Dashboard service cannot be null.");
         _userService = userService;
         _wardenService = wardenService;
         _monitorService = monitorService;
@@ -106,6 +120,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
         _auditService = auditService;
         _historyService = historyService;
         _alertService = alertService;
+        _dashboardService = dashboardService;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -272,10 +287,119 @@ public class DefaultManagementService extends DefaultService implements Manageme
         _logger.info("Performing database clean up.");
         _historyService.deleteExpiredHistory();
         _auditService.deleteExpiredAudits();
-        for (Alert alert : _alertService.findAlertsMarkedForDeletion()) {
+        List<Alert> alertsMarkedForDeletion = _alertService.findAlertsMarkedForDeletion();
+        _logger.info("Deleting {} alerts which were marked for deletion", alertsMarkedForDeletion.size());
+        for (Alert alert : alertsMarkedForDeletion) {
             _alertService.deleteAlert(alert);
         }
+        _logger.info("Deleted {} alerts which were marked for deletion", alertsMarkedForDeletion.size());
     }
+
+    @Override
+    @Transactional
+	public void fixMetricExpressionsInAlerts() {
+    	requireNotDisposed();
+    	
+		List<Alert> alerts = _alertService.findAllAlerts();
+		for(Alert alert : alerts) {
+			String newExpression = _fixExpression(alert.getExpression());
+			
+			_writeToFile("./backup", alert.getId() + "===" + alert.getExpression());
+			
+			try {
+				alert.setExpression(newExpression);
+			} catch(Exception e) {
+				_logger.error("Invalid Expression. Will skip this alert.");
+				continue;
+			}
+			alert = _alertService.updateAlert(alert);
+			_logger.info("Updated alert: {}", alert.getId());
+		}
+	}
+	
+	private void _writeToFile(String filename, String content) {
+		File file = new File(filename);
+		
+		try {
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+
+			FileWriter fw = new FileWriter(file, true);
+			BufferedWriter bw = new BufferedWriter(fw);
+			PrintWriter pw = new PrintWriter(bw);
+			pw.println(content);
+			pw.flush();
+			pw.close();
+		} catch(IOException ioe) {
+			throw new SystemException("Exception occured", ioe);
+		}
+		
+	}
+
+	@Override
+    @Transactional
+	public void fixMetricExpressionsInDashboards() {
+		requireNotDisposed();
+		
+		Pattern pattern = Pattern.compile("<ag-metric(.*?)</ag-metric>", Pattern.DOTALL);
+		
+		List<Dashboard> dashboards = _dashboardService.findDashboards(10000);
+    	for(Dashboard dashboard : dashboards) {
+    		String content = dashboard.getContent();
+    		StringBuilder newContent = new StringBuilder();
+    		
+    		if(content != null) {
+    			Matcher matcher = pattern.matcher(content);
+        		while(matcher.find()) {
+        			String str = matcher.group(1);
+        			String expression = str.substring(str.indexOf('>') + 1);
+        			String newExpression = _fixExpression(expression);
+        			
+        			String temp = content.substring(0, content.indexOf(expression));
+        			newContent.append(temp).append(newExpression);
+        			content = content.substring(content.indexOf(expression) + expression.length());
+        		}
+        		newContent.append(content);
+        		
+        		Dashboard backup = new Dashboard(dashboard.getCreatedBy(), dashboard.getName() + "___orig", dashboard.getOwner());
+        		backup.setContent(dashboard.getContent());
+        		backup.setDescription(dashboard.getDescription());
+        		backup.setShared(dashboard.isShared());
+        		backup = _dashboardService.updateDashboard(backup);
+        		
+        		dashboard.setContent(newContent.toString());
+        		dashboard = _dashboardService.updateDashboard(dashboard);
+    			_logger.info("Updated dashboard: {}. Created a backup with id: {}", dashboard.getId(), backup.getId());
+    		}
+    		
+    	}
+	}
+
+	private static String _fixExpression(String expression) {
+		StringBuilder newExpression = new StringBuilder();
+		
+		Stack<Character> stack = new Stack<>();
+		for(char ch : expression.toCharArray()) {
+			if(ch == '$') {
+				if(stack.empty()) {
+					stack.push('$');
+				} else if(stack.peek() == '$') {
+					stack.pop();
+				}
+			} else if(ch == ',' || ch == ')') {
+				//TODO: This is a constant that needs to be replaced.
+				if(!stack.empty() && stack.peek() == '$') {
+					stack.pop();
+					int index = newExpression.lastIndexOf("$");
+					newExpression.deleteCharAt(index).insert(index, "#").append("#");
+				}
+			}
+			
+			newExpression.append(ch);
+		}
+		return newExpression.toString();
+	}
 
     @Override
     public void dispose() {

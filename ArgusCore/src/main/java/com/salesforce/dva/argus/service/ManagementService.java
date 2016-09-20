@@ -118,5 +118,8 @@ public interface ManagementService extends Service {
 
     /** Perform clean up of the database. Delete alerts that have been marked for deletion, expired Audit and History records etc. */
     void cleanupRecords();
+    
+    void fixMetricExpressionsInDashboards();
+    void fixMetricExpressionsInAlerts();
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
