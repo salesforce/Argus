@@ -28,8 +28,13 @@ a:hover {text-decoration:none; color:inherit;}
 
 .floatL {float:left;}
 .floatR {float:right;}
+.error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
 
-.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#777;}
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
+.glyphicon.glyphicon-search:hover {color:#2C4386;}
+
+/* loading spinner small, eg input field */
+.loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
 #navbar li.topMenu {position:relative;}
@@ -79,7 +84,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .smallChart {padding-left:8em; width:100%;}
 
 /* metrics & discovery lookup */
-.metricFields, .metricFields .form-control {display:inline-block; margin:0 2em .5em 0;}
+.metricFields {width:35%; margin-top:.5em;}
+.metricFields, .metricFields .form-control {margin:0 2em .5em 0;}
 
 /* main graph/chart - i.e. metrics */
 #graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
