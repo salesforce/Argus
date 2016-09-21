@@ -30,7 +30,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     var remoteUser = Auth.remoteUser();
 
     // TODO: refactor to DashboardService
-    Dashboards.query().$promise.then(function(dashboards) {
+    Dashboards.getMeta().$promise.then(function(dashboards) {
         $scope.allDashboards = dashboards;
         sharedDashboards = getDashboardsUnderTab(dashboards, true);
         usersDashboards = getDashboardsUnderTab(dashboards, false);
