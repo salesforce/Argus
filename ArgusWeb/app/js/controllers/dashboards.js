@@ -27,38 +27,16 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.dashboards = [];
     var sharedDashboards = [];
     var usersDashboards = [];
+    var remoteUser = Auth.remoteUser();
 
     // TODO: refactor to DashboardService
     Dashboards.query().$promise.then(function(dashboards) {
         $scope.allDashboards = dashboards;
         sharedDashboards = getDashboardsUnderTab(dashboards, true);
         usersDashboards = getDashboardsUnderTab(dashboards, false);
-        $scope.getDashboards($scope.shared, true);
+        $scope.getDashboards($scope.shared);
     });
 
-    
-    $scope.isTabSelected = function (tab) {
-        return $scope.selectedTab === tab;
-    };
-
-    $scope.selectTab = function (tab) {
-        $scope.selectedTab = tab;
-    };
-
-    $scope.getDashboards = function(shared, firstLoad) {
-        // during initial loading, $scope.dashboards is empty so do not overwrite
-        if (firstLoad === undefined) {
-            if ($scope.shared) {
-                sharedDashboards = $scope.dashboards;
-            } else {
-                usersDashboards = $scope.dashboards;
-            }
-        }
-        $scope.dashboards = shared? sharedDashboards: usersDashboards;
-        $scope.shared = shared;
-    };
-
-    // TODO: refactor to DashboardService
     function getDashboardsUnderTab (allDashboards, shared) {
         var result = [];
         var totNum = allDashboards.length;
@@ -69,7 +47,6 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
                 }
             }
         } else {
-            var remoteUser = Auth.remoteUser();
             for(var i = 0; i < totNum; i++) {
                 if (allDashboards[i].ownerName === remoteUser.userName) {
                     result.push(allDashboards[i]);
@@ -79,6 +56,20 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         return result;
     };
     
+    $scope.isTabSelected = function (tab) {
+        return $scope.selectedTab === tab;
+    };
+
+    $scope.selectTab = function (tab) {
+        $scope.selectedTab = tab;
+    };
+
+    // TODO: refactor to DashboardService
+    $scope.getDashboards = function(shared) {
+        $scope.dashboards = shared? sharedDashboards: usersDashboards;
+        $scope.shared = shared;
+    };
+
     // TODO: refactor to DashboardService
     $scope.addDashboard = function () {
         var dashboard = {
@@ -88,8 +79,17 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             content: $scope.getContentTemplate()
         };
         Dashboards.save(dashboard, function (result) {
-            $scope.dashboards.push(result);
+            // update all dashboards
             $scope.allDashboards.push(result);
+            // update individual tab's dashboards if needed
+            if(result.shared) {
+                sharedDashboards.push(result);
+            }
+            if (result.ownerName === remoteUser.userName) {
+                usersDashboards.push(result);
+            }
+            // update dashboards to be seen
+            $scope.getDashboards($scope.shared);
             growl.success('Created "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to create "' + dashboard.name + '"');
@@ -99,17 +99,28 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     // TODO: refactor to DashboardService
     $scope.deleteDashboard = function (dashboard) {
         Dashboards.delete({dashboardId: dashboard.id}, function (result) {
-            $scope.dashboards = $scope.dashboards.filter(function (element) {
-                return element.id !== dashboard.id;
-            });
-            $scope.allDashboards = $scope.allDashboards.filter(function (element) {
-                return element.id !== dashboard.id;
-            });
+            // update all dashboards
+            $scope.allDashboards = deleteDashboardFromList($scope.allDashboards, dashboard);
+            // update individual tab's dashboards if needed
+            if(dashboard.shared) {
+                sharedDashboards = deleteDashboardFromList(sharedDashboards, dashboard);
+            }
+            if (dashboard.ownerName === remoteUser.userName) {
+               usersDashboards = deleteDashboardFromList(usersDashboards, dashboard);
+            }
+            // update dashboards to be seen
+            $scope.getDashboards($scope.shared);
             growl.success('Deleted "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + dashboard.name + '"');
         });
     };
+
+    function deleteDashboardFromList(dashboardList, dashboardToDelete) {
+        return dashboardList.filter(function (element) {
+            return element.id != dashboardToDelete.id;
+        });
+    }
 
     // factor html template to /templates
     $scope.getContentTemplate = function () {
@@ -144,11 +155,11 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     };
     
     $scope.isDisabled = function(dashboard) {
-      var remoteUser = Auth.remoteUser();
-    	if (remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
-            return false;
-    	}
-    	return true;
+    	// if (remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
+         //    return false;
+    	// }
+    	// return true;
+        return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
     };
 
     $scope.colName = {

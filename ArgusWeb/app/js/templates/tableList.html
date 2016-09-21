@@ -65,7 +65,7 @@
   <div class="row text-center" ng-show="searchText.length == 0">
       <ng-pluralize count="dataSet.length"
                     when="{'0': 'No {{properties.type}} to show.',
-                          'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
+                          'one': 'Showing 1 of 1 {{properties.type.slice(0,-1)}}.',
                           'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
       </ng-pluralize>
   </div>
