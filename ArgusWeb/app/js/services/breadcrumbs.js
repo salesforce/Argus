@@ -28,9 +28,10 @@ angular.module('argus.services.breadcrumbs', [])
   // as $location.path() will get updated imediatelly (even if route change fails!)
   $rootScope.$on('$routeChangeSuccess', function(event, current) {
 
+    var _contextRootPath = $location.absUrl().substr(0, $location.absUrl().lastIndexOf("#"));
     var pathElements = $location.path().split('/'), result = [], i;
     var breadcrumbPath = function (index) {
-      return '/app/#/' + (pathElements.slice(0, index + 1)).join('/');
+      return _contextRootPath + '#/' + (pathElements.slice(0, index + 1)).join('/');
     };
 
     pathElements.shift();
