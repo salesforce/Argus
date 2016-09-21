@@ -44,7 +44,6 @@ angular.module('argus.services.dashboard', [])
         };
 
         // TODO: refactor this duplicate code also in: viewMetrics.js $scope function
-        // 'populateSeries' below makes same API call, refactor both to separate factories
         this.getMetricData = function(metricExpression) {
             if (!metricExpression) return;
 
@@ -94,18 +93,19 @@ angular.module('argus.services.dashboard', [])
         
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 	         
-        	var objMetricCount = {};
-        	objMetricCount.totalCount = metricList.length;
+        	var objMetricCount={};
+        	objMetricCount.totalCount=metricList.length;
         	
         	$('#' + divId).empty();
 	        $('#' + divId).show();
-            
-            // 'smallChart' currently viewed in the 'Services Dashboard'
+
+	        var series=[];
+	       	var chartType = attributes.type ? attributes.type : 'LINE';
+            // smallChart currently viewed in the 'Services Dashboard'
             var smallChart = attributes.smallchart ? true : false;
-            var chartType = attributes.type ? attributes.type : 'LINE';
             var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
 
-	        setCustomOptions(highChartOptions, optionList);
+	        setCustomOptions(highChartOptions,optionList);
 	         
 	        $('#' + divId).highcharts('StockChart', highChartOptions);
 	         
@@ -115,12 +115,11 @@ angular.module('argus.services.dashboard', [])
             chart.showLoading();
             chart.hideNoData();
 	       	 
-	       	for (var i = 0; i < metricList.length; i++) {
+	       	for(var i=0;i<metricList.length;i++){
                 var metricExpression = metricList[i].expression;
-                var metricOptions = metricList[i].metricSpecificOptions;
-
-                populateSeries(metricList[i], highChartOptions, divId, attributes, annotationExpressionList, objMetricCount);
-            }
+                var metricOptions=metricList[i].metricSpecificOptions;
+                populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount);
+	       	}
 	       	//populateAnnotations(annotationExpressionList, chart);
         };
 
@@ -152,8 +151,7 @@ angular.module('argus.services.dashboard', [])
                 // TODO: move these 3 items to 'utils' folder
                 for (var key in scope.metrics) {
                     if (scope.metrics.hasOwnProperty(key)) {
-                        
-                        // get metricExpression, and name & color attributes from scope
+                        // get metricExpression from scope
                         var metrics = scope.metrics[key];
                         var metricExpression = metrics.expression;
                         var metricSpecificOptions = metrics.metricSpecificOptions;
@@ -162,11 +160,7 @@ angular.module('argus.services.dashboard', [])
                         if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             var processedMetric = {};
                             processedMetric['expression'] = processedExpression;
-                            processedMetric['name'] = metrics.seriesName;
-                            processedMetric['color'] = metrics.seriesColor;
                             processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
-                            
-                            // update metric list with new processed metric object
                             updatedMetricList.push(processedMetric);
                         }
                     }
@@ -175,7 +169,7 @@ angular.module('argus.services.dashboard', [])
                 for (var key in scope.annotations) {
                     if (scope.annotations.hasOwnProperty(key)) {
                         var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
-                        if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
+                        if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
                             updatedAnnotationList.push(processedExpression);
                         }
                     }
@@ -196,7 +190,7 @@ angular.module('argus.services.dashboard', [])
             }
             
             function getMetricSpecificOptionsInArray(metricSpecificOptions){
-                var options = [];
+                var options=[];
                 for (var key in metricSpecificOptions) {
                     if (metricSpecificOptions.hasOwnProperty(key)) {
                         options.push({'name': key, 'value': metricSpecificOptions[key]});
@@ -206,15 +200,14 @@ angular.module('argus.services.dashboard', [])
             }
         };
         
-        function populateSeries(metricItem, highChartOptions, divId, attributes, annotationExpressionList, objMetricCount) {
-            var series = [];
-            
+        function populateSeries(metricExpression, metricOptions, highChartOptions, series, divId, attributes, annotationExpressionList ,objMetricCount){
             $http({
                 method: 'GET',
                 url: CONFIG.wsUrl + 'metrics',
-                params: {'expression': metricItem.expression}
-            }).success(function(data, status, headers, config){
-                if (data && data.length > 0) {
+                params: {'expression': metricExpression}
+            }).
+                success(function(data, status, headers, config){
+                if(data && data.length>0) {
                     
                     // check to update services dashboard
                     if (attributes.smallchart) {
@@ -225,42 +218,31 @@ angular.module('argus.services.dashboard', [])
                         updateIndicatorStatus(attributes, lastStatusVal);
                     }
                     
-                    var seriesWithOptions = copySeriesDataNSetOptions(data, metricItem.metricSpecificOptions);
-
-                    Array.prototype.push.apply(series, seriesWithOptions);
-
-                    // bind additional metric attribute(s) to series data for chart rendering
-                    for (var i = 0; i < series.length > 0; i++) {
-                        series[i].name = (metricItem && metricItem.name) ? metricItem.name : series.name;
-                        series[i].color = (metricItem && metricItem.color) ? metricItem.color : '';
-                    }
+                    var seriesWithOptions = copySeriesDataNSetOptions(data,metricOptions);
+                    Array.prototype.push.apply(series,seriesWithOptions)
                 } else{
-                	growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
+                	growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
                 }
-
-                objMetricCount.totalCount = objMetricCount.totalCount - 1;
+                objMetricCount.totalCount=objMetricCount.totalCount-1;
                  
-                if (objMetricCount.totalCount == 0) {
-            		bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
+                if(objMetricCount.totalCount==0){
+            		bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
             	}
-            }).error(function(data, status, headers, config) {
-            	growl.error(data.message);
-            	objMetricCount.totalCount = objMetricCount.totalCount - 1;
-            	
-                if (objMetricCount.totalCount == 0) {
-            	   bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
-            	}
-            });
+            }).
+                error(function(data, status, headers, config) {
+                	growl.error(data.message);
+                	objMetricCount.totalCount=objMetricCount.totalCount-1;
+                	if(objMetricCount.totalCount==0){
+                	   bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
+                	}
+                });
         };
         
-        function bindDataToChart(divId, highChartOptions, series, annotationExpressionList) {
-            // bind series data to highchart options
-            highChartOptions.series = series;
-            
-            // display chart in DOM
-            $('#' + divId).highcharts('StockChart', highChartOptions);
-            
-            var chart = $('#' + divId).highcharts('StockChart');
+        function bindDataToChart(divId, highChartOptions, series, annotationExpressionList){
+            // $("#" + divId).empty();
+		    		highChartOptions.series=series;
+		    		$('#' + divId).highcharts('StockChart', highChartOptions);
+		    		var chart = $('#' + divId).highcharts('StockChart');
             
             // hide the loading spinner after data loads.
             if (chart) {
@@ -375,13 +357,14 @@ angular.module('argus.services.dashboard', [])
         		
         		$("#" + divId).empty();
         		$compile($("#" + divId).prepend(html))(scope);
+        		
         	}
         };
 
         function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
+
             var chartType = attributes.type ? attributes.type : 'LINE';
-            
-            if (data && data.length > 0) {
+            if(data && data.length>0) {
                 var options = getOptionsByChartType(config,chartType);
                 options.series = copySeries(data);
                 //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
@@ -390,7 +373,6 @@ angular.module('argus.services.dashboard', [])
             } else {
                 $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, chartType));
             }
-            
             var chart = $('#' + divId).highcharts('StockChart');
             //chart.chart={renderTo: 'container',defaultSeriesType: 'line'};
             //chart.renderTo='container';
