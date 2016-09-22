@@ -2,6 +2,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls',
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
         
+        $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
 
         // sub-views: (1) single chart, (2) metric discovery 
