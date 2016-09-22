@@ -31,18 +31,16 @@
 package com.salesforce.dva.warden.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.salesforce.dva.warden.dto.Infraction;
 import com.salesforce.dva.warden.dto.Policy;
 import com.salesforce.dva.warden.dto.SuspensionLevel;
 import com.salesforce.dva.warden.dto.WardenResource;
 import com.salesforce.dva.warden.dto.WardenResource.MetaKey;
 import org.junit.Test;
+
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.EnumMap;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -140,42 +138,247 @@ public class PolicyServiceTest extends AbstractTest {
         }
     }
 
-   /* @Test
-    public void testGetLevels() throws IOException {
+    @Test
+    public void testGetSuspensionLevels() throws IOException {
+        _constructPersistedResponseSuspensionLevel("GET");
         try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
             WardenResponse<SuspensionLevel> actual = policyService.getSuspensionLevels(BigInteger.ONE);
 
-            WardenResponse<SuspensionLevel> expected = _constructPersistedResponse("GET");
+            WardenResponse<SuspensionLevel> expected = _constructPersistedResponseSuspensionLevel("GET");
             assertEquals(expected, actual);
         }
 
     }
+    //"{[{\"entity\":{\"type\":\"suspensionlevel\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+
+    @Test
+    public void testCreateSuspensionLevels() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            List<SuspensionLevel> suspensionLevels = Arrays.asList(new SuspensionLevel[]{_constructPersistedSuspensionLevel()});
+            WardenResponse<SuspensionLevel> actualResponse = policyService.createSuspensionLevels(BigInteger.ONE, suspensionLevels);
+            WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("POST");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
+    @Test
+    public void testDeleteSuspensionLevels() throws IOException {
+
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<SuspensionLevel> actualResponse = policyService.deleteSuspensionLevels(BigInteger.ONE);
+            WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("DELETE");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
+    @Test
+    public void testUpdateSuspensionLevels() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            List<SuspensionLevel> suspensionLevels = Arrays.asList(new SuspensionLevel[]{_constructPersistedSuspensionLevel()});
+            suspensionLevels.get(0).setInfractionCount(2);
+            WardenResponse<SuspensionLevel> actualResponse = policyService.updateSuspensionLevels(BigInteger.ONE, suspensionLevels);
+            WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("PUT");
+            expectedResponse.getResources().get(0).getEntity().setInfractionCount(2);
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
+    @Test
+    public void testGetSuspensionLevel() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<SuspensionLevel> actual = policyService.getSuspensionLevel(BigInteger.ONE, BigInteger.ONE);
+
+            WardenResponse<SuspensionLevel> expected = _constructPersistedResponseSuspensionLevel("GET");
+            assertEquals(expected, actual);
+        }
+
+    }
+    //"{[{\"entity\":{\"type\":\"suspensionlevel\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+
+    @Test
+    public void testDeleteSuspensionLevel() throws IOException {
+
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<SuspensionLevel> actualResponse = policyService.deleteSuspensionLevel(BigInteger.ONE, BigInteger.ONE);
+            WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("DELETE");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
+
+    @Test
+    public void testUpdateSuspensionLevel() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            SuspensionLevel suspensionLevel = _constructPersistedSuspensionLevel();
+            System.out.println(MAPPER.writeValueAsString(suspensionLevel));
+            WardenResponse<SuspensionLevel> actualResponse = policyService.updateSuspensionLevel(BigInteger.ONE, BigInteger.ONE, suspensionLevel);
+            WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("PUT");
+
+            assertEquals(expectedResponse, actualResponse);
+        }
+    }
 
     private WardenResponse<SuspensionLevel> _constructPersistedResponseSuspensionLevel(String httpVerb) throws JsonProcessingException {
-        SuspensionLevel suspensionLevel = _constructPersistedLevel();
-        WardenResponse<Policy> result = new WardenResponse<>();
-        WardenResource<Policy> resource = new WardenResource<>();
-        List<WardenResource<Policy>> resources = new ArrayList<>(1);
+        WardenResponse<SuspensionLevel> result = new WardenResponse<>();
         EnumMap<MetaKey, String> meta = new EnumMap<>(MetaKey.class);
-
         meta.put(MetaKey.HREF, "TestHref");
         meta.put(MetaKey.DEV_MESSAGE, "TestDevMessage");
         meta.put(MetaKey.MESSAGE, "TestMessage");
         meta.put(MetaKey.STATUS, "200");
         meta.put(MetaKey.UI_MESSAGE, "TestUIMessage");
         meta.put(MetaKey.VERB, httpVerb);
-        suspensionLevel.setId(BigInteger.ONE);
-        resource.setEntity(suspensionLevel);
+
+        WardenResource<SuspensionLevel> resource = new WardenResource<>();
+        SuspensionLevel level = _constructPersistedSuspensionLevel();
+        resource.setEntity(level);
         resource.setMeta(meta);
+
+        List<WardenResource<SuspensionLevel>> resources = new ArrayList<>(1);
+        level.setId(BigInteger.ONE);
         resources.add(resource);
         result.setMessage("success");
         result.setStatus(200);
         result.setResources(resources);
         System.out.println(MAPPER.writeValueAsString(result));
         return result;
-    }*/
+    }
 
+    @Test
+    public void testGetInfractions() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.getInfractions(BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("GET");
+            assertEquals(expected, actual);
+        }
+
+    }
+
+    @Test
+    public void testGetInfraction() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.getInfraction(BigInteger.ONE, BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("GET");
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testGetSuspensions() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.getSuspensions(BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("GET");
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testDeleteSuspensions() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.deleteSuspensions(BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("DELETE");
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testGetSuspensionsForUserAndPolicy() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.getSuspensionsForUserAndPolicy(BigInteger.ONE, BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("GET");
+            assertEquals(expected, actual);
+        }
+    }
+
+    @Test
+    public void testDeleteSuspensionsForUserAndPolicy() throws IOException {
+        try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
+            PolicyService policyService = wardenService.getPolicyService();
+            WardenResponse<Infraction> actual = policyService.deleteSuspensionsForUserAndPolicy(BigInteger.ONE, BigInteger.ONE);
+
+            WardenResponse<Infraction> expected = _constructPersistedResponseInfraction("DELETE");
+            assertEquals(expected, actual);
+        }
+    }
+
+
+    private WardenResponse<Infraction> _constructPersistedResponseInfraction(String httpVerb) throws JsonProcessingException {
+        WardenResponse<Infraction> result = new WardenResponse<>();
+        EnumMap<MetaKey, String> meta = new EnumMap<>(MetaKey.class);
+        meta.put(MetaKey.HREF, "TestHref");
+        meta.put(MetaKey.DEV_MESSAGE, "TestDevMessage");
+        meta.put(MetaKey.MESSAGE, "TestMessage");
+        meta.put(MetaKey.STATUS, "200");
+        meta.put(MetaKey.UI_MESSAGE, "TestUIMessage");
+        meta.put(MetaKey.VERB, httpVerb);
+
+        WardenResource<Infraction> resource = new WardenResource<>();
+        Infraction infraction = _constructPersistedInfraction();
+        resource.setEntity(infraction);
+        resource.setMeta(meta);
+
+        List<WardenResource<Infraction>> resources = new ArrayList<>(1);
+        infraction.setId(BigInteger.ONE);
+        resources.add(resource);
+        result.setMessage("success");
+        result.setStatus(200);
+        result.setResources(resources);
+        System.out.println(MAPPER.writeValueAsString(result));
+        //"{\"resources\":[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}],\"message\":\"success\",\"status\":200}"
+        return result;
+    }
+
+
+    private Infraction _constructPersistedInfraction() throws JsonProcessingException {
+        Infraction result = new Infraction();
+
+        result.setPolicyId(BigInteger.ONE);
+        result.setUserId(BigInteger.ONE);
+        result.setInfractionTimestamp(100000L);
+        result.setExpirationTimestamp(-1L);
+        result.setCreatedById(BigInteger.ONE);
+        result.setCreatedDate(new Date(1472847819167L));
+        result.setModifiedById(BigInteger.TEN);
+        result.setModifiedDate(new Date(1472847819167L));
+        System.out.println(MAPPER.writeValueAsString(result));
+        //"{\"id\":null,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1}"
+        return result;
+    }
+
+    private SuspensionLevel _constructPersistedSuspensionLevel() throws JsonProcessingException {
+        SuspensionLevel result = new SuspensionLevel();
+
+        result.setPolicyId(BigInteger.ONE);
+        result.setLevelNumber(1);
+        result.setInfractionCount(1);
+        result.setSuspensionTime(BigInteger.valueOf(3600000));
+        result.setCreatedById(BigInteger.ONE);
+        result.setCreatedDate(new Date(1472847819167L));
+        result.setModifiedById(BigInteger.TEN);
+        result.setModifiedDate(new Date(1472847819167L));
+        System.out.println(MAPPER.writeValueAsString(result));
+//        "{\"id\":null,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000}"
+        return result;
+    }
 
     private WardenResponse<Policy> _constructPersistedResponse(String httpVerb) throws JsonProcessingException {
         Policy persistedPolicy = _constructPersistedPolicy();
@@ -200,19 +403,6 @@ public class PolicyServiceTest extends AbstractTest {
         System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
-
-
-    private SuspensionLevel _constructPersistedLevel() throws JsonProcessingException {
-        SuspensionLevel result = new SuspensionLevel();
-
-        result.setPolicyId(BigInteger.ONE);
-        result.setLevelNumber(1);
-        result.setInfractionCount(1);
-        result.setSuspensionTime(BigInteger.valueOf(3600000));
-
-        return result;
-    }
-
 
     private Policy _constructPersistedPolicy() throws JsonProcessingException {
         Policy result = new Policy();

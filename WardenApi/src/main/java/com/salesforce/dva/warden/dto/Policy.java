@@ -417,10 +417,10 @@ public class Policy extends Entity {
     /**
      * DOCUMENT ME!
      *
-     * @param  suspensionLevels  DOCUMENT ME!
+     * @param  suspensionLevelIds  DOCUMENT ME!
      */
-    public void setSuspensionLevels(List<BigInteger> suspensionLevels) {
-        this.suspensionLevelIds = suspensionLevels;
+    public void setSuspensionLevels(List<BigInteger> suspensionLevelIds) {
+        this.suspensionLevelIds = suspensionLevelIds;
     }
 
     @Override

@@ -175,74 +175,74 @@ public class PolicyService extends EndpointService {
     }
 
     public WardenResponse<SuspensionLevel> deleteSuspensionLevels(BigInteger policyId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/level";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level";
 
         return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
     }
 
     public WardenResponse<SuspensionLevel> updateSuspensionLevels(BigInteger policyId, List<SuspensionLevel> suspensionLevels) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/level";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level";
 
         return getClient().executeHttpRequest(RequestType.PUT, requestUrl, suspensionLevels);
     }
 
     //========================One SuspensionLevel CRUD==========================
     public WardenResponse<SuspensionLevel> getSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level/" + suspensionLevelId.toString();
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
     public WardenResponse<SuspensionLevel> deleteSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level/" + suspensionLevelId.toString();
 
         return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
     }
 
     public WardenResponse<SuspensionLevel> updateSuspensionLevel(BigInteger policyId, BigInteger suspensionLevelId, SuspensionLevel suspensionLevel) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/" + suspensionLevelId;
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/level/" + suspensionLevelId.toString();
 
-        if ( suspensionLevelId != suspensionLevel.getId()) {
+        /*if ( suspensionLevelId != suspensionLevel.getId()) {
             throw new IOException("The input argument suspensionLevelId, does not match with the suspensionLevelId of the input argument suspensionLevel");
-        }
+        }*/
         return getClient().executeHttpRequest(RequestType.PUT, requestUrl, suspensionLevel);
     }
 
     //======================= Infractions CRUD ====================================
     public WardenResponse<Infraction> getInfractions(BigInteger policyId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/infraction";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/infraction";
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
     public WardenResponse<Infraction> getInfraction(BigInteger policyId, BigInteger infractionId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/" + infractionId;
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/infraction/" + infractionId.toString();
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
     //========================= Suspensions given a PolicyId CRUD ====================================
     public WardenResponse<Infraction> getSuspensions(BigInteger policyId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/suspension";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/suspension";
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
     public WardenResponse<Infraction> deleteSuspensions(BigInteger policyId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/suspension";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/suspension";
 
         return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
     }
 
     //=========================== Suspensions given a PolicyId and a UserId CRUD ===========================
     public WardenResponse<Infraction> getSuspensionsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/suspension";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/suspension";
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
-    public WardenResponse<Infraction> deleteSuspensionsForUserandPolicy(BigInteger policyId, BigInteger userId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/suspension";
+    public WardenResponse<Infraction> deleteSuspensionsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/suspension";
 
         return getClient().executeHttpRequest(RequestType.DELETE, requestUrl, null);
 
@@ -251,13 +251,13 @@ public class PolicyService extends EndpointService {
     //============================ Metrics given a PolicyId and a UserId CRUD=================================
 
     public WardenResponse<Metric> getMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/metric";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/metric";
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
     public WardenResponse<Metric> createMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId, List<Metric> metrics) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId + "/user/" + userId + "/metric";
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/metric";
 
         return getClient().executeHttpRequest(RequestType.POST, requestUrl, metrics);
 
