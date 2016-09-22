@@ -27,7 +27,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         $scope.allDashboards = dashboards;
         $scope.getDashboards(false);
     });
-    
+
     $scope.dashboards = [];
     $scope.shared = false;
     $scope.selectedTab = 1;
@@ -60,7 +60,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     		}
     	}
     };
-    
+
     // TODO: refactor to DashboardService
     $scope.addDashboard = function () {
         var dashboard = {
@@ -95,11 +95,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 
     // factor html template to /templates
     $scope.getContentTemplate = function () {
-    	
-    	var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
-        
-    	template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
-    	template += "<ag-date type='datetime' name='start' label='Start Date' default='-2d'></ag-date>\n";
+        var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
+
+        template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
+        template += "<ag-date type='datetime' name='start' label='Start Date' default='-2d'></ag-date>\n";
         template += "<ag-date type='datetime' name='end' label='End Date' default='-0d'></ag-date>\n";
         template += "<ag-text type='text' name='scope' label='Scope' default='argus.jvm'></ag-text>\n";
         template += "<ag-text type='text' name='metric' label='Metric' default='mem.heap.used'></ag-text>\n";
@@ -110,7 +109,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 
         template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
         template += "<h4>Argus mem heap used - Chart</h4>\n\n";
-        
+
         template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
         template += "<ag-chart name='Chart'>\n\n";
         
@@ -118,13 +117,13 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         template += "<ag-option name='title.text' value='This title was set with a chart option'></ag-option>\n";
         template += "<!-- This defines each timeseries to be displayed on a chart/table. The timeseries to be displayed is specified as the innerHtml using the Argus Query Language. The individual component/s can be parameterized by placing them between $ signs and using the value of ag-text tag's name attribute. In the example below, all components have are parameterized. -->\n";
         template += "<ag-metric name='Metric1'>$start$:$end$:$scope$:$metric${$tags$}:$aggregator$</ag-metric>\n";
-        
+
         template += "</ag-chart>\n\n";
         template += "</ag-dashboard>";
-        
+
         return template;
     };
-    
+
     $scope.isDisabled = function(dashboard) {
       var remoteUser = Auth.remoteUser();
     	if (remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
