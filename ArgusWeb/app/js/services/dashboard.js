@@ -11,10 +11,10 @@ angular.module('argus.services.dashboard', [])
             if(metricList && metricList.length>0 && divId) {
 
                 if (metricList && metricList.length > 0) {
-                	if(elementType === VIEWELEMENT.chart){
-                		populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
-                	}else{
-                		var metricExpressionList = getMetricExpressionList(metricList);
+                    if(elementType === VIEWELEMENT.chart){
+                        populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
+                    }else{
+                        var metricExpressionList = getMetricExpressionList(metricList);
                         $http({
                             method: 'GET',
                             url: CONFIG.wsUrl + 'metrics',
@@ -25,7 +25,7 @@ angular.module('argus.services.dashboard', [])
                                 if(elementType === VIEWELEMENT.heatmap)
                                     updateHeatmap({}, data, divId, optionList, attributes);
                                 else if(elementType === VIEWELEMENT.table)
-                                	updateTable(data, scope, divId, optionList);
+                                    updateTable(data, scope, divId, optionList);
                             } else {
                                 updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
                                 growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
@@ -94,22 +94,22 @@ angular.module('argus.services.dashboard', [])
 
         function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 
-        	var objMetricCount = {};
-        	objMetricCount.totalCount = metricList.length;
+            var objMetricCount = {};
+            objMetricCount.totalCount = metricList.length;
 
-        	$('#' + divId).empty();
-	        $('#' + divId).show();
+            $('#' + divId).empty();
+            $('#' + divId).show();
 
             // 'smallChart' currently viewed in the 'Services Dashboard'
             var smallChart = attributes.smallchart ? true : false;
             var chartType = attributes.type ? attributes.type : 'LINE';
             var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
 
-	        setCustomOptions(highChartOptions, optionList);
+            setCustomOptions(highChartOptions, optionList);
 
-	        $('#' + divId).highcharts('StockChart', highChartOptions);
+            $('#' + divId).highcharts('StockChart', highChartOptions);
 
-	        var chart = $('#' + divId).highcharts('StockChart');
+            var chart = $('#' + divId).highcharts('StockChart');
 
             // show loading spinner & hide 'no data message' during api request
             chart.showLoading();
@@ -118,14 +118,14 @@ angular.module('argus.services.dashboard', [])
             // define series first; then build list for each metric expression
             var series = [];
 
-	       	for (var i = 0; i < metricList.length; i++) {
+            for (var i = 0; i < metricList.length; i++) {
                 var metricExpression = metricList[i].expression;
                 var metricOptions = metricList[i].metricSpecificOptions;
 
                 // make api call to get data for each metric item
                 populateSeries(metricList[i], highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount);
             }
-	       	//populateAnnotations(annotationExpressionList, chart);
+            //populateAnnotations(annotationExpressionList, chart);
         };
 
         function updateIndicatorStatus(attributes, lastStatusVal) {
@@ -234,21 +234,21 @@ angular.module('argus.services.dashboard', [])
                     Array.prototype.push.apply(series, seriesWithOptions);
 
                 } else{
-                	growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
+                    growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 }
 
                 objMetricCount.totalCount = objMetricCount.totalCount - 1;
 
                 if (objMetricCount.totalCount == 0) {
-            		bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
-            	}
+                    bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
+                }
             }).error(function(data, status, headers, config) {
-            	growl.error(data.message);
-            	objMetricCount.totalCount = objMetricCount.totalCount - 1;
+                growl.error(data.message);
+                objMetricCount.totalCount = objMetricCount.totalCount - 1;
 
                 if (objMetricCount.totalCount == 0) {
-            	   bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
-            	}
+                   bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
+                }
             });
         };
 
@@ -275,106 +275,106 @@ angular.module('argus.services.dashboard', [])
         };
 
         function getMetricExpressionList(metrics){
-	       	var result = [];
-	       	for(var i=0;i<metrics.length; i++){
-	       		result.push(metrics[i].expression);
-	       	}
-	       	return result;
+            var result = [];
+            for(var i=0;i<metrics.length; i++){
+                result.push(metrics[i].expression);
+            }
+            return result;
         };
 
         function updateTable(data, scope, divId, options) {
-        	if(data && data.length > 0) {
+            if(data && data.length > 0) {
 
-        		var allTimestamps = {};
-        		for(var i in data) {
-        			var dps = data[i].datapoints;
-        			for(var timestamp in dps) {
-        				if(!allTimestamps[timestamp]) {
-        					allTimestamps[timestamp] = [];
-        				}
-        			}
-        		}
+                var allTimestamps = {};
+                for(var i in data) {
+                    var dps = data[i].datapoints;
+                    for(var timestamp in dps) {
+                        if(!allTimestamps[timestamp]) {
+                            allTimestamps[timestamp] = [];
+                        }
+                    }
+                }
 
-        		var columns = [{title: "timestamp", value: "Timestamp"}];
-        		for(var i in data) {
-        			var dps = data[i].datapoints;
-        			if(dps) {
-        				columns.push({
-        					title: "value" + i,
-        					value: createSeriesName(data[i])
-        				});
+                var columns = [{title: "timestamp", value: "Timestamp"}];
+                for(var i in data) {
+                    var dps = data[i].datapoints;
+                    if(dps) {
+                        columns.push({
+                            title: "value" + i,
+                            value: createSeriesName(data[i])
+                        });
 
-        				for(var timestamp in allTimestamps) {
-            				var values = allTimestamps[timestamp];
-            				if(dps[timestamp]) {
-            					values.push(parseFloat(dps[timestamp]));
-            				} else {
-            					values.push(undefined);
-            				}
-            				allTimestamps[timestamp] = values;
-            			}
-        			}
-        		}
+                        for(var timestamp in allTimestamps) {
+                            var values = allTimestamps[timestamp];
+                            if(dps[timestamp]) {
+                                values.push(parseFloat(dps[timestamp]));
+                            } else {
+                                values.push(undefined);
+                            }
+                            allTimestamps[timestamp] = values;
+                        }
+                    }
+                }
 
-        		var tData = [];
-        		for(var timestamp in allTimestamps) {
-        			var obj = {
-        					timestamp: parseInt(timestamp),
-        					date: $filter('date')(timestamp, "medium")
-        			};
+                var tData = [];
+                for(var timestamp in allTimestamps) {
+                    var obj = {
+                            timestamp: parseInt(timestamp),
+                            date: $filter('date')(timestamp, "medium")
+                    };
 
-        			for(var i in columns) {
-        				if(columns[i].title !== "timestamp")
-        					obj[columns[i].title] = allTimestamps[timestamp][i-1];
-        			}
-        			tData.push(obj);
-        		}
+                    for(var i in columns) {
+                        if(columns[i].title !== "timestamp")
+                            obj[columns[i].title] = allTimestamps[timestamp][i-1];
+                    }
+                    tData.push(obj);
+                }
 
-        		var tableConfig = {
-        				itemsPerPage: 10,
-        			    fillLastPage: true
-        		};
+                var tableConfig = {
+                        itemsPerPage: 10,
+                        fillLastPage: true
+                };
 
-        		for(var i in options) {
-        			var option = options[i];
-        			if(option.name && option.value)
-        				tableConfig[option.name] = option.value;
-        		}
+                for(var i in options) {
+                    var option = options[i];
+                    if(option.name && option.value)
+                        tableConfig[option.name] = option.value;
+                }
 
 
-        		scope.tData = tData;
-        		scope.config = tableConfig;
+                scope.tData = tData;
+                scope.config = tableConfig;
 
-        		var html = '<div style="overflow-x: scroll"><table class="table table-striped table-header-rotated" at-table at-paginated at-list="tData" at-config="config">';
+                var html = '<div style="overflow-x: scroll"><table class="table table-striped table-header-rotated" at-table at-paginated at-list="tData" at-config="config">';
 
-        		html += '<thead>';
-        		html += '<tr>';
-        		for(var i in columns) {
-        			html += '<th class="rotate-45" at-attribute="' + columns[i].title + '"><div><span>' + columns[i].value + '</span></div></th>';
-        		}
-        		html += '</tr>';
-        		html += '</thead>';
+                html += '<thead>';
+                html += '<tr>';
+                for(var i in columns) {
+                    html += '<th class="rotate-45" at-attribute="' + columns[i].title + '"><div><span>' + columns[i].value + '</span></div></th>';
+                }
+                html += '</tr>';
+                html += '</thead>';
 
-        		html += '<tbody>';
-        		html += '<tr>';
+                html += '<tbody>';
+                html += '<tr>';
 
-        		for(var i in columns) {
-        			if(columns[i].title === 'timestamp')
-        				html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.date }}</td>';
-        			else
-        				html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.' + columns[i].title + '}}</td>';
-        		}
+                for(var i in columns) {
+                    if(columns[i].title === 'timestamp')
+                        html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.date }}</td>';
+                    else
+                        html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.' + columns[i].title + '}}</td>';
+                }
 
-        		html += '</tr>';
-        		html += '</tbody>';
+                html += '</tr>';
+                html += '</tbody>';
 
-        		html += '</table></div>';
+                html += '</table></div>';
 
-        		html += '<at-pagination at-list="tData" at-config="config"></at-pagination>';
+                html += '<at-pagination at-list="tData" at-config="config"></at-pagination>';
 
-        		$("#" + divId).empty();
-        		$compile($("#" + divId).prepend(html))(scope);
-        	}
+                $("#" + divId).empty();
+                $compile($("#" + divId).prepend(html))(scope);
+            }
         };
 
         function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
@@ -421,8 +421,8 @@ angular.module('argus.services.dashboard', [])
             options.credits = {enabled: false};
             options.rangeSelector = {selected: 1, inputEnabled: false};
             options.xAxis = {
-            	type: 'datetime',
-            	ordinal: false
+                type: 'datetime',
+                ordinal: false
             };
 
             options.lang = {
@@ -645,14 +645,14 @@ angular.module('argus.services.dashboard', [])
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
-                	var series = [];
-                	for(var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !=null){
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
+                    var series = [];
+                    for(var key in data[i].datapoints) {
+                        var timestamp = parseInt(key);
+                        if(data[i].datapoints[key] !=null){
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
                     result.push({name: createSeriesName(data[i]), data: series});
                 }
             } else {
@@ -665,15 +665,15 @@ angular.module('argus.services.dashboard', [])
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
-                	var series = [];
+                    var series = [];
 
                     for (var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if (data[i].datapoints[key] != null) {
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
+                        var timestamp = parseInt(key);
+                        if (data[i].datapoints[key] != null) {
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
 
                     var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
                     var metricColor = (metricItem.color) ? metricItem.color : null;
@@ -809,17 +809,17 @@ angular.module('argus.services.dashboard', [])
 
         function getParsedValue(value){
 
-        	if(value instanceof Object || value.length==0){
-        		return value;
-        	}
+            if(value instanceof Object || value.length==0){
+                return value;
+            }
 
-        	if(value=='true'){
-        		return true;
-       		}else if(value=='false'){
-       			return false;
-       		}else if(!isNaN(value)){
-       			return parseInt(value);
-       		}
-        	return value;
+            if(value=='true'){
+                return true;
+            }else if(value=='false'){
+                return false;
+            }else if(!isNaN(value)){
+                return parseInt(value);
+            }
+            return value;
         };
     }]);

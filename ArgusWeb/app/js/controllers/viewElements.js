@@ -6,8 +6,8 @@ angular.module('argus.controllers.viewelements', [])
 
     this.updateMetric = function(name, expression, metricSpecificOptions, seriesData) {
         var metric = {
-            'seriesName': seriesData.seriesName,
-            'seriesColor': seriesData.seriesColor,
+            'name': seriesData.name,
+            'color': seriesData.color,
             'expression': expression,
             'metricSpecificOptions': metricSpecificOptions
         };
