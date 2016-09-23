@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.date', [])
-.directive('agDate', ['CONFIG', 'Controls', function(CONFIG, Controls) {
+.directive('agDate', ['CONFIG', '$routeParams', function(CONFIG, $routeParams) {
     return {
         restrict: 'E',
         scope: {
@@ -10,8 +10,11 @@ angular.module('argus.directives.controls.date', [])
         controller: function($scope, $filter) {
             $scope.ctrlVal = $scope.controlValue;
 
-            // check if Controls ($routeParams) should override controlValue
-            $scope.ctrlVal = Controls.updateControlValue($scope.controlName, $scope.controlValue);
+            for (var prop in $routeParams) {
+                if (prop == $scope.controlName) {
+                    $scope.ctrlVal = $routeParams[prop];
+                }
+            }
 
         	$scope.datetimepickerConfig = {
     			dropdownSelector: '.my-toggle-select',
