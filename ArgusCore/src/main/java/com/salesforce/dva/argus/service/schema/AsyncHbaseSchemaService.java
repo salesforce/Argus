@@ -382,6 +382,104 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		}
 
     }
+    
+    private List<String> _getUniqueFastScan(MetricSchemaRecordQuery query, final int limit, final RecordType type) {
+    	requireNotDisposed();
+    	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
+    			"This method is only for use with metric or scope.");
+    	
+    	final List<String> result = new ArrayList<>();
+    	
+    	final ScanMetadata metadata = _constructScanMetadata(query);
+        String namespace = _convertToRegex(query.getNamespace());
+        String scope = _convertToRegex(query.getScope());
+        String metric = _convertToRegex(query.getMetric());
+        String tagKey = _convertToRegex(query.getTagKey());
+        String tagValue = _convertToRegex(query.getTagValue());
+        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+    	
+    	List<ScanFilter> filters = new ArrayList<ScanFilter>();
+    	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
+        filters.add(new KeyOnlyFilter());
+        filters.add(new FirstKeyOnlyFilter());
+        FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
+    	
+        
+        String start = Bytes.toString(metadata.startRow);
+        String end = Bytes.toString(metadata.stopRow);
+        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, fl, metadata.type.getTableName());
+        while(rows != null && !rows.isEmpty()) {
+        	for(ArrayList<KeyValue> row : rows) {
+        		String rowKey = Bytes.toString(row.get(0).key());
+        		result.add(rowKey.split(":")[0]);
+        	}
+        	if(result.size() == limit) {
+    			break;
+    		}
+        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, fl, metadata.type.getTableName());
+        }
+        
+    	return result;
+    }
+
+	private ArrayList<ArrayList<KeyValue>> _getSingleRow(String start, String end, FilterList fl, String tableName) {
+		final Scanner scanner = _client.newScanner(tableName);
+    	scanner.setStartKey(start);
+    	scanner.setStopKey(end);
+    	scanner.setMaxNumRows(1);
+    	scanner.setFilter(fl);
+    	
+    	_logger.debug("Using table: " + tableName);
+        _logger.debug("Scan startRow: " + start);
+        _logger.debug("Scan stopRow: " + end);
+        
+        Deferred<ArrayList<ArrayList<KeyValue>>> deferred = scanner.nextRows();
+        
+        deferred.addCallback(new Callback<ArrayList<ArrayList<KeyValue>>, ArrayList<ArrayList<KeyValue>>>() {
+
+			@Override
+			public ArrayList<ArrayList<KeyValue>> call(ArrayList<ArrayList<KeyValue>> rows) throws Exception {
+				scanner.close();
+				return rows;
+			}
+		});
+        
+        try {
+			ArrayList<ArrayList<KeyValue>> result = deferred.join(TIMEOUT);
+			return result;
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query", e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results.");
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query", e);
+		}
+		return null;
+	}
+
+	private String _plusOne(String prefix) {
+		char newChar = (char) (prefix.charAt(prefix.length() - 1) + 1);
+    	String end = prefix.substring(0, prefix.length() - 1) + newChar;
+		return end;
+	}
+	
+	private boolean _canFastScan(MetricSchemaRecordQuery query, RecordType type) {
+		
+		//Can only fast scan for metric and scope types
+		if(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type)) {
+			if(RecordType.METRIC.equals(type)) {
+				if("*".equals(query.getScope()) && "*".equals(query.getTagKey()) && "*".equals(query.getTagValue()) && "*".equals(query.getNamespace())) {
+					return true;
+				}
+			} else {
+				if("*".equals(query.getMetric()) && "*".equals(query.getTagKey()) && "*".equals(query.getTagValue()) && "*".equals(query.getNamespace())) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
 
     @Override
     public List<String> getUnique(MetricSchemaRecordQuery query, final int limit, final int page, final RecordType type) {
@@ -389,6 +487,16 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         SystemAssert.requireArgument(query != null, "Metric Schema Record query cannot be null.");
         SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
         SystemAssert.requireArgument(page > 0, "Page must be a positive integer.");
+        SystemAssert.requireArgument(type != null, "Must specify a valid record type.");
+        
+        if(_canFastScan(query, type)) {
+        	List<String> results = _getUniqueFastScan(query, limit * page, type);
+        	if(results.size() <= limit * (page-1))  {
+        		return Collections.emptyList();
+        	} else {
+        		return results.subList(limit * (page-1), results.size());
+        	}
+        }
 
         final Set<String> records = new TreeSet<String>();
         final Set<String> skip = new HashSet<String>();
@@ -488,7 +596,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         
     }
 
-    @Override
+	@Override
     public void dispose() {
         super.dispose();
         if (_client != null) {
