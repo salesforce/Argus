@@ -17,9 +17,9 @@ angular.module('argus.directives.controls.date', [])
     			dropdownSelector: '.my-toggle-select',
     			minuteStep: 1
         	};
-        	
+
         	$scope.onSetTime = function(newDate, oldDate) {
-        		$scope.controlValue = $filter('date')(newDate, "short");
+        		$scope.ctrlVal = $filter('date')(newDate, "short");
         	};
         },
         require: '^agDashboard',
