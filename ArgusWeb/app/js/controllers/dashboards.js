@@ -117,7 +117,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         template += "<!-- This defines options for a chart or a table. The value of 'name' attribute is directly used as the key for the config object(options object for highcharts/highstocks, config object for at-table. Hence use valid values for name attribute.). The values for the corresponding keys can either be provided using the value attribute on the tag or using innerHtml for the tag. -->\n";
         template += "<ag-option name='title.text' value='This title was set with a chart option'></ag-option>\n";
         template += "<!-- This defines each timeseries to be displayed on a chart/table. The timeseries to be displayed is specified as the innerHtml using the Argus Query Language. The individual component/s can be parameterized by placing them between $ signs and using the value of ag-text tag's name attribute. In the example below, all components have are parameterized. -->\n";
-        template += "<ag-metric name='Metric1'>$start$:$end$:$scope$:$metric${$tags$}:$aggregator$</ag-metric>\n";
+        template += "<ag-metric>$start$:$end$:$scope$:$metric${$tags$}:$aggregator$</ag-metric>\n";
         
         template += "</ag-chart>\n\n";
         template += "</ag-dashboard>";
