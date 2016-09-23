@@ -110,7 +110,8 @@ angular.module('argus.controllers', [
   'argus.controllers.metricelements',
   'argus.controllers.namespace',
   'argus.controllers.viewelements',
-  'argus.controllers.viewMetrics'
+  'argus.controllers.viewMetrics',
+  'argus.controllers.d3test'
 ]);
 
 // Directives
