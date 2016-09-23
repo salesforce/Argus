@@ -1,8 +1,8 @@
 /*! Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
- *  
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
+ *
  *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *
  *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
@@ -24,11 +24,41 @@ label {
     padding-top: 5px;
 }
 
-#navbar .activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+a:hover {text-decoration:none; color:inherit;}
+
+.floatL {float:left;}
+.floatR {float:right;}
+.error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
+
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
+.glyphicon.glyphicon-search:hover {color:#2C4386;}
+
+/* loading spinner small, eg input field */
+.loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
+
+#navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
+#navbar li.topMenu {position:relative;}
+#navbar li.topMenu ul.subMenu {
+  display:none;
+  position:absolute;
+  top:40px;
+  right:4px;
+  padding:0;
+  box-shadow:2px 2px 3px 0px #EEE;
+  list-style:none;
+  border:solid 1px #CCC;
+  background:#FFF;
+  z-index:9;
+}
+#navbar li a.glyphicon {font-size:20px; color:#777;}
+#navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
+#navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
+#navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
+#navbar .topMenu:hover ul.subMenu {display:block;}
 
 .breadcrumb {
   position:absolute;
-  display:inline-block; 
+  display:inline-block;
   margin:10px 0 0 0;
   padding:0 0 5px 0;
   background-color:#FFF;
@@ -53,6 +83,24 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+/* metrics & discovery lookup */
+.metricFields {width:35%; margin-top:.5em;}
+.metricFields, .metricFields .form-control {margin:0 2em .5em 0;}
+
+/* main graph/chart - i.e. metrics */
+#graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
+
+/* autocomplete */
+.autoComplete .category {padding:4px; border:1px solid #71ABCE; border-radius:5px; font-size:11px;}
+
+/* btn last */
+.btn-last {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Growl settings */
 .growl-container.growl-fixed.top-center {
     top : 2em!important;
     width: 25%!important;
@@ -134,3 +182,66 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .table > thead > tr > td,
 .table > tbody > tr > td,
 .table > tfoot > tr > td {vertical-align: middle;}
+
+.table th:hover{
+    cursor: pointer;
+}
+
+.search-bar .dropdown-menu {
+    margin: 0 0 0 0;
+    border-radius: 0px 0px 4px 4px;
+    width: calc(100% - 47px - 40px);
+    max-height: 300px;
+    overflow: scroll;
+}
+
+/* D3 styles */
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.x.axis path {
+  display: none;
+}
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+.focus circle {
+  opacity: 0.5;
+}
+g.legend-items text {
+  color: #444;
+  font-size: 12px;
+}
+g.legend-items circle {
+  opacity: 0.5;
+}
+g.legend-items text .timestamp {
+  font-variant: small-caps;
+}
+g.legend-items text .value {
+  font-weight: 600;
+  font-size: 14px;
+}
+.legend rect {
+  fill: #eee;
+  stroke: steelblue;
+  opacity: 0.9;
+}
+
+div.loadingSpinner {
+  width: 80px;
+  height: 80px;
+  margin: 100px auto;
+  position: relative;
+  content:url(../img/ajax-loader.gif);
+}
+

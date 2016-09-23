@@ -1,0 +1,86 @@
+<section>
+    <h3 class="bcTitle">{{dashboard.name}}</h3>
+    <h5 class="bcDesc">{{dashboard.description}}</h5>
+
+    <ul class="nav nav-tabs">
+        <li ng-class="{active:isTabSelected(1)}"><a href ng-click="selectTab(1)">View</a></li>
+        <li ng-class="{active:isTabSelected(2)}"><a href ng-click="selectTab(2)">Edit</a></li>
+        <li ng-class="{active:isTabSelected(3)}"><a href ng-click="selectTab(3)">History</a></li>
+    </ul>
+    
+    <div ng-show="isTabSelected(1)">
+        <ag-dashboard-resource></ag-dashboard-resource>
+    </div>
+
+    <div ng-show="isTabSelected(2)">
+        <div class="container">
+            <div class="row">
+                <form novalidate class="form-horizontal">
+                    <div class="col-md-4">
+                        <label for="dashboardId">ID</label>
+                        <input id="dashboardId" disabled="true" class="form-control" type="text" ng-model="dashboard.id" />
+                        <label for="dashboardName">Name</label>
+                        <input id="dashboardName" class="form-control" type="text" ng-model="dashboard.name" />
+                        <label for="dashboardDescription">Description</label>
+                        <input id="dashboardDescription" class="form-control" type="text" ng-model="dashboard.description" />
+                        <label for="ownerName">Owner</label>
+                        <input id="ownerName" disabled="true" class="form-control" type="text" ng-model="dashboard.ownerName" />
+                        <div class="form-inline" style="padding-top:5px;">
+                            <label for="shared">Shared?</label>
+                            <button id="shared" class="btn btn-default" ng-click="dashboard.shared = !dashboard.shared">
+                                <span ng-show="dashboard.shared">Yes</span>
+                                <span ng-show="!dashboard.shared">No</span>
+                            </button>
+                        </div>
+                        <br/>
+                        <input class="btn btn-default" ng-show="isDashboardDirty()" type="button" ng-click="resetDashboard()" value="Revert"/>
+                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || !dashboardEditable" type="submit" ng-click="updateDashboard()" value="Save" />
+                    </div>
+                    <div class="col-md-8">
+                        <label>Markup</label>
+                        <div class="well well-sm">
+                            <div ui-codemirror="{onLoad:editorLoaded}" ui-refresh="selectedTab"
+                                 ui-codemirror-opts="editorOptions" ng-model="dashboard.content">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <br/>
+    </div>
+
+    <div ng-show="isTabSelected(3)">
+        <div ng-if="jobHistoryError != ''">{{jobHistoryError}}</div>
+
+        <div ng-if="jobHistoryError == ''">
+            <table class="table table-striped table-bordered">
+                <tr>
+                    <th>Date</th>
+                    <th>Host</th>
+                    <th>Detail</th>
+                </tr>
+                <tr ng-repeat="entry in history | orderBy:'-createdDate'">
+                    <td>{{entry.createdDate | date:'short'}}</td>
+                    <td>{{entry.hostName}}</td>
+                    <td>{{entry.message}}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+<db-dashboard name="EPT dashboard">
+    <db-controls>
+        <db-control name="scope" labelname="Scope: "></db-control>
+        <db-control name="metric" labelname="Metric: "></db-control>
+        <db-control name="startdate" labelname="Start Date: "></db-control>
+        <db-control name="enddate" labelname="End Date: "></db-control>
+        <db-submit-button></db-submit-button>
+    </db-controls>
+
+    <db-views>
+        <db-view name="CPU"></db-view>
+        <db-view name="Free Memory"></db-view>
+        <db-view name="Used Memory"></db-view>
+    </db-views>
+</db-dashboard>

@@ -1,0 +1,80 @@
+<div class="row">
+    <div class="col-md-3 h3">{{properties.title}} list</div>
+    <div class="col-md-5 text-right">
+        <dir-pagination-controls></dir-pagination-controls>
+    </div>
+    <div class="col-md-1">
+        <select class="form-control" ng-model="itemsPerPage" ng-options="val for val in itemsPerPageOptions"></select>
+    </div>
+    <div class="col-md-3">
+        <span class="pull-right input-group">
+            <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
+            <span class="input-group-btn">
+                <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
+                    <span class="glyphicon glyphicon-remove-circle"></span>
+                </button>
+                <button class="btn btn-default active" ng-show="!searchText">
+                    <span class="glyphicon glyphicon-filter"></span>
+                </button>
+            </span>
+        </span>
+    </div>
+</div>
+<table class="table table-striped table-bordered">
+    <tr>
+        <th ng-repeat="(key, value) in colName" ng-click="(key=='state')||sort(key)">
+            {{value}}
+            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
+        </th>
+        <th class="col-centered">
+            <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
+                <i class="glyphicon glyphicon-plus"></i>
+            </button>
+        </th>
+    </tr>
+    <tr dir-paginate="item in results = (dataSet | filter:searchText) | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage" current-page="currentPage">
+    <td ng-if="colName.id">{{item.id}}</td>
+    <td ng-if="colName.name"><a ng-href="#/{{properties.type}}/{{item.id}}">{{item.name}}</a></td>
+    <td ng-if="colName.description">{{item.description}}</td>
+    <td ng-if="colName.cronEntry">{{item.cronEntry}}</td>
+    <td ng-if="colName.createdDate">{{item.createdDate| date:'medium'}}</td>
+    <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
+    <td ng-if="colName.ownerName">{{item.ownerName}}</td>
+    <td ng-if="colName.state">
+        <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled'
+                ng-click='enableItem(item, true)'>
+            <i class="glyphicon glyphicon-play"></i>
+        </button>
+        <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' ng-show='item.enabled'
+                ng-click='enableItem(item, false)'>
+            <i class="glyphicon glyphicon-pause"></i>
+        </button>
+    </td>
+    <td>
+        <button class="btn btn-warning btn-sm" type="button"
+                ng-disabled="isDisabled(item)"
+                ng-confirm="Delete '{{item.name}}'?"
+                ng-confirm-action="deleteItem(item)">
+            <i class="glyphicon glyphicon-trash"></i>
+        </button>
+    </td>
+    </tr>
+</table>
+
+<div ng-if="allData">
+  <div class="row text-center" ng-show="searchText.length == 0">
+      <ng-pluralize count="dataSet.length"
+                    when="{'0': 'No {{properties.type}} to show.',
+                          'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
+                          'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
+      </ng-pluralize>
+  </div>
+  <!--after user type in searchText-->
+  <div class="row text-center" ng-show="searchText.length">
+      <ng-pluralize count="results.length"
+                    when="{'0': 'No results found...',
+                          'one': '1 result found.',
+                          'other': '{{results.length}} results found.'}">
+      </ng-pluralize>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+[{
+    "type": "POST",
+    "endpoint": "/dashboards",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"name\":\"TestName\",\"content\":\"TestContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"TestContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}"
+},{
+    "type": "DELETE",
+    "endpoint": "/dashboards/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : ""
+},{
+    "type": "GET",
+    "endpoint": "/dashboards/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"TestContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}"
+},{
+    "type": "GET",
+    "endpoint": "/dashboards",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"TestContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}]"
+},{
+    "type": "PUT",
+    "endpoint": "/dashboards/1",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"UpdatedContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"UpdatedContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}"
+}]

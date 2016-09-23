@@ -1,0 +1,148 @@
+<div class="h3">Metrics</div>
+<section>
+<form novalidate class="form-horizontal" ng-enter="getMetricData()" name="search_metrics">
+    <div class="input-group search-bar">
+        <span class="input-group-btn" style="font-size:inherit;">
+          <a data-toggle="tooltip" data-placement="right" ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
+        </span>
+        
+        <div class="input-group" style="width:100%;">
+            <span class="input-group-addon" ng-click="getMetricData()" style="cursor:pointer;">Go!</span>
+            <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
+        </div>
+    </div>
+
+    <div id="discoveryLookup" ng-show="showMetricDiscovery">
+
+    <hr width="100%" />
+
+    <h4>Discovery lookup</h4>
+
+    <p>Choose your search criteria from the categories below:<br />
+        <span style="font-size:12px; color:#AAA;">* Results make take several seconds to appear</span>
+    </p>
+    
+    <div class="fullBox">
+    
+    <div class="metricFields">
+        <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
+        <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
+        ng-class="{'loading': (loadingScope) ? true : false, 'cancel': (noScopeResults) ? true : false}"
+        typeahead-min-length="3"
+        typeahead-wait-ms="500"
+        typeahead-no-results="noScopeResults"
+        typeahead-loading="loadingScope"
+        uib-typeahead="result for result in searchMetrics($viewValue, 'scope')"
+        typeahead-template-url="scopeTemplate.html"
+        />
+        <script type="text/ng-template" id="scopeTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+          </a>
+        </script>
+    </div>
+
+    <div class="metricFields">
+        <label>Metric</label><span ng-if="noMetricResults" class="error"> &nbsp; No results</span>
+        <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
+        ng-class="{'loading': (loadingMetric) ? true : false, 'cancel': (noMetricResults) ? true : false}"
+        typeahead-min-length="3"
+        typeahead-wait-ms="500"
+        typeahead-no-results="noMetricResults"
+        typeahead-loading="loadingMetric"
+        uib-typeahead="result for result in searchMetrics($viewValue, 'metric')"
+        typeahead-template-url="metricTemplate.html"
+        />
+        <script type="text/ng-template" id="metricTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+          </a>
+        </script>
+    </div>
+
+    <div></div>
+
+    <div ng-show="enterTagsErr" style="color:red;">You must enter both a <strong>Tag key AND Tag value</strong>!</div>
+    
+    <div class="metricFields">
+        <label>Tag key</label><span ng-if="noTagkResults" class="error"> &nbsp; No results</span>
+        <input type="text" class="form-control" placeholder="Tag key" autocomplete="off" ng-model="tagk" 
+        ng-class="{'loading': (loadingTagk) ? true : false, 'cancel': (noTagkResults) ? true : false}"
+        typeahead-min-length="0"
+        typeahead-wait-ms="250"
+        typeahead-no-results="noTagkResults"
+        typeahead-loading="loadingTagk"
+        uib-typeahead="result for result in searchMetrics($viewValue, 'tagk')"
+        typeahead-template-url="tagkTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="tagkTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+          </a>
+        </script>
+    </div>
+    
+    <div class="metricFields">
+        <label>Tag value</label><span ng-if="noTagvResults" class="error"> &nbsp; No results</span>
+        <input type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="tagv" 
+        ng-class="{'loading': (loadingTagv) ? true : false, 'cancel': (noTagvResults) ? true : false}"
+        typeahead-min-length="0"
+        typeahead-wait-ms="250"
+        typeahead-no-results="noTagvResults"
+        typeahead-loading="loadingTagv"
+        uib-typeahead="result for result in searchMetrics($viewValue, 'tagv')"
+        typeahead-template-url="tagvTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="tagvTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+          </a>
+        </script>
+    </div>
+
+    <div></div>
+        
+    <div class="metricFields">
+        <label>Namespace</label><span ng-if="noNamespaceResults" class="error"> &nbsp; No results</span>
+        <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
+        ng-class="{'loading': (loadingNamespace) ? true : false, 'cancel': (noNamespaceResults) ? true : false}"
+        typeahead-min-length="3"
+        typeahead-wait-ms="500"
+        typeahead-no-results="noNamespaceResults"
+        typeahead-loading="loadingNamespace"
+        uib-typeahead="result for result in searchMetrics($viewValue, 'namespace')"
+        typeahead-template-url="namespaceTemplate.html"
+        ng-disabled="isSearchMetricDisabled()"
+        />
+        <script type="text/ng-template" id="namespaceTemplate.html">
+          <a class="autoComplete">
+              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+          </a>
+        </script>
+    </div>
+
+    <div></div>
+
+    <div class="metricFields" style="margin-top:2em;">
+        <span ng-show="false"><strong>Metric Expression:</strong> &nbsp;</span><span id="searchExpression"></span>
+        <div>
+            <input type="reset" class="btn btn-default" value="Clear" ng-click="setPristine()" style="margin-right:5em;" />
+            <input type="button" class="floatR btn btn-primary" value="Graph" ng-disabled="isSearchMetricDisabled()" ng-click="graphSearchExpression()" />
+            <input type="button" class="floatR btn btn-success glyhpicon glyhpicon-search" value="Add" ng-disabled="isSearchMetricDisabled()" ng-click="addSearchExpression()" style="margin-right:1em;" />
+        </div>
+    </div>
+
+    </div><!-- fullBox -->
+
+    </div><!-- discoveryLookup -->
+
+</form>
+
+    <hr width="100%" />
+
+    <div growl inline="true" reference="viewmetrics-error"></div>
+
+    <div id="container" class="graphContainer" ng-show="showChart" width="100%"></div>
+</section>
