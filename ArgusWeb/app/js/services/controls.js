@@ -8,8 +8,13 @@ angular.module('argus.services')
             for (var prop in $routeParams) {
                 if (prop == controlName) {
                     return $routeParams[prop];
+                }else{
+                    continue;
                 }
             }
+            // return original value if no match is found.
+            // prevents null values in url
+            return controlValue;
         };
 
         this.getUrl = function(controls) {
