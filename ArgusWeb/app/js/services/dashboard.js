@@ -5,16 +5,16 @@ angular.module('argus.services.dashboard', [])
         this.getDashboardById = function(dashboardId){
             return $http.get(CONFIG.wsUrl + 'dashboards/' + dashboardId);
         };
-        
+
         this.populateView = function(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
 
             if(metricList && metricList.length>0 && divId) {
 
                 if (metricList && metricList.length > 0) {
-                	if(elementType === VIEWELEMENT.chart){
-                		populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
-                	}else{
-                		var metricExpressionList = getMetricExpressionList(metricList);
+                    if(elementType === VIEWELEMENT.chart){
+                        populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
+                    }else{
+                        var metricExpressionList = getMetricExpressionList(metricList);
                         $http({
                             method: 'GET',
                             url: CONFIG.wsUrl + 'metrics',
@@ -25,7 +25,7 @@ angular.module('argus.services.dashboard', [])
                                 if(elementType === VIEWELEMENT.heatmap)
                                     updateHeatmap({}, data, divId, optionList, attributes);
                                 else if(elementType === VIEWELEMENT.table)
-                                	updateTable(data, scope, divId, optionList);
+                                    updateTable(data, scope, divId, optionList);
                             } else {
                                 updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
                                 growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
@@ -44,10 +44,11 @@ angular.module('argus.services.dashboard', [])
         };
 
         // TODO: refactor this duplicate code also in: viewMetrics.js $scope function
+        // 'populateSeries' below makes same API call, refactor both to separate factories
         this.getMetricData = function(metricExpression) {
             if (!metricExpression) return;
 
-            var metricData = 
+            var metricData =
                 $http({
                     method: 'GET',
                     url: CONFIG.wsUrl + 'metrics',
@@ -71,7 +72,7 @@ angular.module('argus.services.dashboard', [])
 
         this.augmentExpressionWithControlsData = function(event, expression, controls) {
             var result = expression;
-                
+
             for (var controlIndex in controls) {
                 var controlName = '\\$' + controls[controlIndex].name + '\\$';
                 var controlValue = controls[controlIndex].value;
@@ -82,7 +83,7 @@ angular.module('argus.services.dashboard', [])
                 controlValue = controlValue == undefined ? "" : controlValue;
                 result = result.replace(new RegExp(controlName, "g"), controlValue);
             }
-    
+
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
         };
@@ -90,37 +91,41 @@ angular.module('argus.services.dashboard', [])
         this.updateIndicatorStatus = updateIndicatorStatus;
 
         this.buildViewElement = buildViewElement;
-        
-        function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
-	         
-        	var objMetricCount={};
-        	objMetricCount.totalCount=metricList.length;
-        	
-        	$('#' + divId).empty();
-	        $('#' + divId).show();
 
-	        var series=[];
-	       	var chartType = attributes.type ? attributes.type : 'LINE';
-            // smallChart currently viewed in the 'Services Dashboard'
+        function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
+
+            var objMetricCount = {};
+            objMetricCount.totalCount = metricList.length;
+
+            $('#' + divId).empty();
+            $('#' + divId).show();
+
+            // 'smallChart' currently viewed in the 'Services Dashboard'
             var smallChart = attributes.smallchart ? true : false;
+            var chartType = attributes.type ? attributes.type : 'LINE';
             var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
 
-	        setCustomOptions(highChartOptions,optionList);
-	         
-	        $('#' + divId).highcharts('StockChart', highChartOptions);
-	         
-	        var chart = $('#' + divId).highcharts('StockChart');
-            
+            setCustomOptions(highChartOptions, optionList);
+
+            $('#' + divId).highcharts('StockChart', highChartOptions);
+
+            var chart = $('#' + divId).highcharts('StockChart');
+
             // show loading spinner & hide 'no data message' during api request
             chart.showLoading();
             chart.hideNoData();
-	       	 
-	       	for(var i=0;i<metricList.length;i++){
+
+            // define series first; then build list for each metric expression
+            var series = [];
+
+            for (var i = 0; i < metricList.length; i++) {
                 var metricExpression = metricList[i].expression;
-                var metricOptions=metricList[i].metricSpecificOptions;
-                populateSeries(metricExpression,metricOptions,highChartOptions,series,divId,attributes,annotationExpressionList,objMetricCount);
-	       	}
-	       	//populateAnnotations(annotationExpressionList, chart);
+                var metricOptions = metricList[i].metricSpecificOptions;
+
+                // make api call to get data for each metric item
+                populateSeries(metricList[i], highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount);
+            }
+            //populateAnnotations(annotationExpressionList, chart);
         };
 
         function updateIndicatorStatus(attributes, lastStatusVal) {
@@ -137,7 +142,7 @@ angular.module('argus.services.dashboard', [])
             var elementId = 'element_' + elementType + index;
             var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
             element.prepend('<div id=' + elementId + ' ' + smallChartCss +'></div>');
-            
+
             scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls){
                 console.log(dashboardCtrl.getSubmitBtnEventName() + ' event received.');
                 populateView(event, controls);
@@ -151,7 +156,8 @@ angular.module('argus.services.dashboard', [])
                 // TODO: move these 3 items to 'utils' folder
                 for (var key in scope.metrics) {
                     if (scope.metrics.hasOwnProperty(key)) {
-                        // get metricExpression from scope
+
+                        // get metricExpression, and name & color attributes from scope
                         var metrics = scope.metrics[key];
                         var metricExpression = metrics.expression;
                         var metricSpecificOptions = metrics.metricSpecificOptions;
@@ -160,7 +166,11 @@ angular.module('argus.services.dashboard', [])
                         if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             var processedMetric = {};
                             processedMetric['expression'] = processedExpression;
+                            processedMetric['name'] = metrics.seriesName;
+                            processedMetric['color'] = metrics.seriesColor;
                             processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
+
+                            // update metric list with new processed metric object
                             updatedMetricList.push(processedMetric);
                         }
                     }
@@ -169,7 +179,7 @@ angular.module('argus.services.dashboard', [])
                 for (var key in scope.annotations) {
                     if (scope.annotations.hasOwnProperty(key)) {
                         var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
-                        if(processedExpression.length>0 /* && (/\$/.test(processedExpression)==false) */) {
+                        if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             updatedAnnotationList.push(processedExpression);
                         }
                     }
@@ -188,9 +198,9 @@ angular.module('argus.services.dashboard', [])
                     $('#' + elementId).hide();
                 }
             }
-            
+
             function getMetricSpecificOptionsInArray(metricSpecificOptions){
-                var options=[];
+                var options = [];
                 for (var key in metricSpecificOptions) {
                     if (metricSpecificOptions.hasOwnProperty(key)) {
                         options.push({'name': key, 'value': metricSpecificOptions[key]});
@@ -199,16 +209,15 @@ angular.module('argus.services.dashboard', [])
                 return options;
             }
         };
-        
-        function populateSeries(metricExpression, metricOptions, highChartOptions, series, divId, attributes, annotationExpressionList ,objMetricCount){
+
+        function populateSeries(metricItem, highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount) {
             $http({
                 method: 'GET',
                 url: CONFIG.wsUrl + 'metrics',
-                params: {'expression': metricExpression}
-            }).
-                success(function(data, status, headers, config){
-                if(data && data.length>0) {
-                    
+                params: {'expression': metricItem.expression}
+            }).success(function(data, status, headers, config){
+                if (data && data.length > 0) {
+
                     // check to update services dashboard
                     if (attributes.smallchart) {
                         // get last status values & broadcast to 'agStatusIndicator' directive
@@ -217,154 +226,161 @@ angular.module('argus.services.dashboard', [])
                         // updateServiceStatus(attributes, lastStatusVal);
                         updateIndicatorStatus(attributes, lastStatusVal);
                     }
-                    
-                    var seriesWithOptions = copySeriesDataNSetOptions(data,metricOptions);
-                    Array.prototype.push.apply(series,seriesWithOptions)
+
+                    // metric item attributes are assigned to the data (i.e. name, color, etc.)
+                    var seriesWithOptions = copySeriesDataNSetOptions(data, metricItem);
+
+                    // add each metric item & data to series list
+                    Array.prototype.push.apply(series, seriesWithOptions);
+
                 } else{
-                	growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
+                    growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 }
-                objMetricCount.totalCount=objMetricCount.totalCount-1;
-                 
-                if(objMetricCount.totalCount==0){
-            		bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
-            	}
-            }).
-                error(function(data, status, headers, config) {
-                	growl.error(data.message);
-                	objMetricCount.totalCount=objMetricCount.totalCount-1;
-                	if(objMetricCount.totalCount==0){
-                	   bindDataToChart(divId,highChartOptions,series,annotationExpressionList);
-                	}
-                });
+
+                objMetricCount.totalCount = objMetricCount.totalCount - 1;
+
+                if (objMetricCount.totalCount == 0) {
+                    bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
+                }
+            }).error(function(data, status, headers, config) {
+                growl.error(data.message);
+                objMetricCount.totalCount = objMetricCount.totalCount - 1;
+
+                if (objMetricCount.totalCount == 0) {
+                   bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
+                }
+            });
         };
-        
-        function bindDataToChart(divId, highChartOptions, series, annotationExpressionList){
-            // $("#" + divId).empty();
-		    		highChartOptions.series=series;
-		    		$('#' + divId).highcharts('StockChart', highChartOptions);
-		    		var chart = $('#' + divId).highcharts('StockChart');
-            
+
+        function bindDataToChart(divId, highChartOptions, series, annotationExpressionList) {
+            // bind series data to highchart options
+            highChartOptions.series = series;
+
+            // display chart in DOM
+            $('#' + divId).highcharts('StockChart', highChartOptions);
+
+            var chart = $('#' + divId).highcharts('StockChart');
+
             // hide the loading spinner after data loads.
             if (chart) {
                 chart.hideLoading();
             }
-            
+
             // check if data exists, otherwise, show the 'no data' message.
             if ( chart && !chart.hasData() ) {
                 chart.showNoData();
             }
-    		
+
             populateAnnotations(annotationExpressionList, chart);
         };
-       
+
         function getMetricExpressionList(metrics){
-	       	var result = [];
-	       	for(var i=0;i<metrics.length; i++){
-	       		result.push(metrics[i].expression);
-	       	}
-	       	return result;
+            var result = [];
+            for(var i=0;i<metrics.length; i++){
+                result.push(metrics[i].expression);
+            }
+            return result;
         };
-        
+
         function updateTable(data, scope, divId, options) {
-        	if(data && data.length > 0) {
-        		
-        		var allTimestamps = {};
-        		for(var i in data) {
-        			var dps = data[i].datapoints;
-        			for(var timestamp in dps) {
-        				if(!allTimestamps[timestamp]) {
-        					allTimestamps[timestamp] = [];
-        				}
-        			}
-        		}
-        		
-        		var columns = [{title: "timestamp", value: "Timestamp"}];
-        		for(var i in data) {
-        			var dps = data[i].datapoints;
-        			if(dps) {
-        				columns.push({
-        					title: "value" + i,
-        					value: createSeriesName(data[i])
-        				});
-        				
-        				for(var timestamp in allTimestamps) {
-            				var values = allTimestamps[timestamp];
-            				if(dps[timestamp]) {
-            					values.push(parseFloat(dps[timestamp]));
-            				} else {
-            					values.push(undefined);
-            				}
-            				allTimestamps[timestamp] = values;
-            			}
-        			}
-        		}
-        		
-        		var tData = [];
-        		for(var timestamp in allTimestamps) {
-        			var obj = {
-        					timestamp: parseInt(timestamp),
-        					date: $filter('date')(timestamp, "medium")
-        			};
-        			
-        			for(var i in columns) {
-        				if(columns[i].title !== "timestamp")
-        					obj[columns[i].title] = allTimestamps[timestamp][i-1];
-        			}
-        			tData.push(obj);
-        		}
-        		
-        		var tableConfig = {
-        				itemsPerPage: 10,
-        			    fillLastPage: true
-        		};
-        		
-        		for(var i in options) {
-        			var option = options[i];
-        			if(option.name && option.value)
-        				tableConfig[option.name] = option.value;
-        		}
-        		
-        		
-        		scope.tData = tData;
-        		scope.config = tableConfig;
-        		
-        		var html = '<div style="overflow-x: scroll"><table class="table table-striped table-header-rotated" at-table at-paginated at-list="tData" at-config="config">';
-        		
-        		html += '<thead>';
-        		html += '<tr>';
-        		for(var i in columns) {
-        			html += '<th class="rotate-45" at-attribute="' + columns[i].title + '"><div><span>' + columns[i].value + '</span></div></th>';
-        		}
-        		html += '</tr>';
-        		html += '</thead>';
-        		
-        		html += '<tbody>';
-        		html += '<tr>';
-        		
-        		for(var i in columns) {
-        			if(columns[i].title === 'timestamp')
-        				html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.date }}</td>';
-        			else
-        				html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.' + columns[i].title + '}}</td>';
-        		}
-        		
-        		html += '</tr>';
-        		html += '</tbody>';
-        		
-        		html += '</table></div>';
-        		
-        		html += '<at-pagination at-list="tData" at-config="config"></at-pagination>';
-        		
-        		$("#" + divId).empty();
-        		$compile($("#" + divId).prepend(html))(scope);
-        		
-        	}
+            if(data && data.length > 0) {
+
+                var allTimestamps = {};
+                for(var i in data) {
+                    var dps = data[i].datapoints;
+                    for(var timestamp in dps) {
+                        if(!allTimestamps[timestamp]) {
+                            allTimestamps[timestamp] = [];
+                        }
+                    }
+                }
+
+                var columns = [{title: "timestamp", value: "Timestamp"}];
+                for(var i in data) {
+                    var dps = data[i].datapoints;
+                    if(dps) {
+                        columns.push({
+                            title: "value" + i,
+                            value: createSeriesName(data[i])
+                        });
+
+                        for(var timestamp in allTimestamps) {
+                            var values = allTimestamps[timestamp];
+                            if(dps[timestamp]) {
+                                values.push(parseFloat(dps[timestamp]));
+                            } else {
+                                values.push(undefined);
+                            }
+                            allTimestamps[timestamp] = values;
+                        }
+                    }
+                }
+
+                var tData = [];
+                for(var timestamp in allTimestamps) {
+                    var obj = {
+                            timestamp: parseInt(timestamp),
+                            date: $filter('date')(timestamp, "medium")
+                    };
+
+                    for(var i in columns) {
+                        if(columns[i].title !== "timestamp")
+                            obj[columns[i].title] = allTimestamps[timestamp][i-1];
+                    }
+                    tData.push(obj);
+                }
+
+                var tableConfig = {
+                        itemsPerPage: 10,
+                        fillLastPage: true
+                };
+
+                for(var i in options) {
+                    var option = options[i];
+                    if(option.name && option.value)
+                        tableConfig[option.name] = option.value;
+                }
+
+
+                scope.tData = tData;
+                scope.config = tableConfig;
+
+                var html = '<div style="overflow-x: scroll"><table class="table table-striped table-header-rotated" at-table at-paginated at-list="tData" at-config="config">';
+
+                html += '<thead>';
+                html += '<tr>';
+                for(var i in columns) {
+                    html += '<th class="rotate-45" at-attribute="' + columns[i].title + '"><div><span>' + columns[i].value + '</span></div></th>';
+                }
+                html += '</tr>';
+                html += '</thead>';
+
+                html += '<tbody>';
+                html += '<tr>';
+
+                for(var i in columns) {
+                    if(columns[i].title === 'timestamp')
+                        html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.date }}</td>';
+                    else
+                        html += '<td at-sortable at-attribute="' + columns[i].title + '">{{ item.' + columns[i].title + '}}</td>';
+                }
+
+                html += '</tr>';
+                html += '</tbody>';
+
+                html += '</table></div>';
+
+                html += '<at-pagination at-list="tData" at-config="config"></at-pagination>';
+
+                $("#" + divId).empty();
+                $compile($("#" + divId).prepend(html))(scope);
+            }
         };
 
         function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
-
             var chartType = attributes.type ? attributes.type : 'LINE';
-            if(data && data.length>0) {
+
+            if (data && data.length > 0) {
                 var options = getOptionsByChartType(config,chartType);
                 options.series = copySeries(data);
                 //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
@@ -373,11 +389,12 @@ angular.module('argus.services.dashboard', [])
             } else {
                 $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, chartType));
             }
+
             var chart = $('#' + divId).highcharts('StockChart');
             //chart.chart={renderTo: 'container',defaultSeriesType: 'line'};
             //chart.renderTo='container';
             //chart.defaultSeriesType='line';
-            
+
             populateAnnotations(annotationExpressionList, chart);
         };
 
@@ -404,10 +421,10 @@ angular.module('argus.services.dashboard', [])
             options.credits = {enabled: false};
             options.rangeSelector = {selected: 1, inputEnabled: false};
             options.xAxis = {
-            	type: 'datetime',
-            	ordinal: false
+                type: 'datetime',
+                ordinal: false
             };
-            
+
             options.lang = {
                 loading: '',    // override default 'Loading...' msg from displaying under spinner img.
                 noData: 'No Data to Display'
@@ -452,7 +469,7 @@ angular.module('argus.services.dashboard', [])
                 options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
             }
 
-            // override options for a 'small' chart, e.g. 'Services Status' dashboard 
+            // override options for a 'small' chart, e.g. 'Services Status' dashboard
             if ( smallChart ) {
                 options.legend.enabled = false;
                 options.rangeSelector.enabled = false;
@@ -481,8 +498,8 @@ angular.module('argus.services.dashboard', [])
                 data = data.slice(0, Math.min(top, data.length));
                 var orgAxis = data.map(createSeriesName);
                 var timeSpan = getTimeSpan(data);
-                var timeAxis = getTimeAxis(timeSpan); 
-                var dataSeries = copyHeatmapSeries(data, timeSpan); 
+                var timeAxis = getTimeAxis(timeSpan);
+                var dataSeries = copyHeatmapSeries(data, timeSpan);
                 options.series[0].data = dataSeries;
                 options.xAxis.categories = timeAxis;
                 options.yAxis.categories = orgAxis.reverse();
@@ -492,7 +509,7 @@ angular.module('argus.services.dashboard', [])
                 $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, 'LINE'));
             }
         };
-        
+
         function getOptionsByHeatmapType(config, top){
             var options = config ? angular.copy(config) : {};
             options.credits = {enabled: false};
@@ -543,13 +560,13 @@ angular.module('argus.services.dashboard', [])
             }];
             return options;
         };
-        
+
         function compareAverage(a,b) {
             if (getAverage(a) < getAverage(b)) return 1;
             if (getAverage(a) > getAverage(b)) return -1;
             return 0;
         };
-        
+
         function getTimeSpan(data) {
             var begin = 9999999999999;
             var end = 0;
@@ -562,12 +579,12 @@ angular.module('argus.services.dashboard', [])
             var span = Math.floor(end/1000/60/60) - Math.floor(begin/1000/60/60) + 1;
             return {begin: begin, end: end, span: span};
         };
-        
+
         function getTimeAxis(timeSpan) {
             var hours = [
-                '12AM', '1AM', '2AM', '3AM', '4AM', '5AM', 
+                '12AM', '1AM', '2AM', '3AM', '4AM', '5AM',
                 '6AM', '7AM', '8AM', '9AM', '10AM', '11AM',
-                '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', 
+                '12PM', '1PM', '2PM', '3PM', '4PM', '5PM',
                 '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'
             ];
             var axis = [];
@@ -578,7 +595,7 @@ angular.module('argus.services.dashboard', [])
             axis.push('<b><i>Average</i></b>');
             return axis;
         };
-        
+
         function getAverage(data) {
             var total = 0;
             var count = 0;
@@ -591,12 +608,12 @@ angular.module('argus.services.dashboard', [])
             else
                 return 0;
         };
-        
+
         function getHourlyAverage(timeSpan, data) {
             var sums = Array.apply(null, Array(timeSpan.span)).map(Number.prototype.valueOf,0);
             var counts = Array.apply(null, Array(timeSpan.span)).map(Number.prototype.valueOf,0);
             var pivotHour = Math.floor(timeSpan.begin / 1000 / 60 / 60);
-            for (var time in data.datapoints) {        
+            for (var time in data.datapoints) {
                 var hour = Math.floor(parseInt(time) / 1000 / 60 / 60);
                 sums[hour - pivotHour] += parseInt(data.datapoints[time]);
                 counts[hour - pivotHour] += 1;
@@ -608,7 +625,7 @@ angular.module('argus.services.dashboard', [])
             }
             return avgs;
         };
-        
+
         function copyHeatmapSeries(data, timeSpan) {
             var table = data.map(getHourlyAverage.bind(null, timeSpan));
             for (var i = 0; i < data.length; i++) {
@@ -628,14 +645,14 @@ angular.module('argus.services.dashboard', [])
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
-                	var series = [];
-                	for(var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !=null){
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
+                    var series = [];
+                    for(var key in data[i].datapoints) {
+                        var timestamp = parseInt(key);
+                        if(data[i].datapoints[key] !=null){
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
                     result.push({name: createSeriesName(data[i]), data: series});
                 }
             } else {
@@ -643,21 +660,30 @@ angular.module('argus.services.dashboard', [])
             }
             return result;
         };
-        
-        function copySeriesDataNSetOptions(data, metricOptions) {
+
+        function copySeriesDataNSetOptions(data, metricItem) {
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
-                	var series = [];
-                	for(var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !=null){
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
-                	var objSeries = {name: createSeriesName(data[i]), data: series};
-                	var objSeriesWithOptions=setCustomOptions(objSeries, metricOptions);
+                    var series = [];
+
+                    for (var key in data[i].datapoints) {
+                        var timestamp = parseInt(key);
+                        if (data[i].datapoints[key] != null) {
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
+
+                    var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
+                    var metricColor = (metricItem.color) ? metricItem.color : null;
+                    var objSeries = {
+                        name: metricName,
+                        color: metricColor,
+                        data: series
+                    };
+                    var objSeriesWithOptions = setCustomOptions(objSeries, metricItem.metricSpecificOptions);
+
                     result.push(objSeriesWithOptions);
                 }
             } else {
@@ -665,7 +691,7 @@ angular.module('argus.services.dashboard', [])
             }
             return result;
         };
-        
+
         function createSeriesName(metric) {
             var scope = metric.scope;
             var name = metric.metric;
@@ -780,20 +806,20 @@ angular.module('argus.services.dashboard', [])
                 return result;
             }
         };
-        
-        function getParsedValue(value){
-        	
-        	if(value instanceof Object || value.length==0){
-        		return value;
-        	}
 
-        	if(value=='true'){
-        		return true;
-       		}else if(value=='false'){
-       			return false;
-       		}else if(!isNaN(value)){
-       			return parseInt(value);
-       		}
-        	return value;
+        function getParsedValue(value){
+
+            if(value instanceof Object || value.length==0){
+                return value;
+            }
+
+            if(value=='true'){
+                return true;
+            }else if(value=='false'){
+                return false;
+            }else if(!isNaN(value)){
+                return parseInt(value);
+            }
+            return value;
         };
     }]);
