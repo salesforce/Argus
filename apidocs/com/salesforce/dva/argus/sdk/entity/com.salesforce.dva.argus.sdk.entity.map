@@ -1,0 +1,34 @@
+<map id="G" name="G">
+<area shape="rect" id="node1_0" href="./TSDBEntity.html" title="com.salesforce.dva.argus.sdk.entity.TSDBEntity" alt="" coords="211,91,449,291"/>
+<area shape="rect" id="node1" href="./TSDBEntity.html" title="&lt;TABLE&gt;" alt="" coords="200,85,460,296"/>
+<area shape="rect" id="node7_1" href="./Metric.html" title="com.salesforce.dva.argus.sdk.entity.Metric" alt="" coords="16,493,321,725"/>
+<area shape="rect" id="node7" href="./Metric.html" title="&lt;TABLE&gt;" alt="" coords="5,488,332,731"/>
+<area shape="rect" id="node14_2" href="./Annotation.html" title="com.salesforce.dva.argus.sdk.entity.Annotation" alt="" coords="367,477,619,741"/>
+<area shape="rect" id="node14" href="./Annotation.html" title="&lt;TABLE&gt;" alt="" coords="356,472,629,747"/>
+<area shape="rect" id="node2_3" href="./Trigger.html" title="com.salesforce.dva.argus.sdk.entity.Trigger" alt="" coords="664,445,1017,773"/>
+<area shape="rect" id="node2" href="./Trigger.html" title="&lt;TABLE&gt;" alt="" coords="653,440,1028,779"/>
+<area shape="rect" id="node3_4" href="./PrincipalUser.html" title="com.salesforce.dva.argus.sdk.entity.PrincipalUser" alt="" coords="1063,493,1352,725"/>
+<area shape="rect" id="node3" href="./PrincipalUser.html" title="&lt;TABLE&gt;" alt="" coords="1052,488,1363,731"/>
+<area shape="rect" id="node4_5" href="./Notification.html" title="com.salesforce.dva.argus.sdk.entity.Notification" alt="" coords="1397,429,1756,789"/>
+<area shape="rect" id="node4" href="./Notification.html" title="&lt;TABLE&gt;" alt="" coords="1387,424,1767,795"/>
+<area shape="rect" id="node5_6" href="./Namespace.html" title="com.salesforce.dva.argus.sdk.entity.Namespace" alt="" coords="1801,517,2072,701"/>
+<area shape="rect" id="node5" href="./Namespace.html" title="&lt;TABLE&gt;" alt="" coords="1791,512,2083,707"/>
+<area shape="rect" id="node6_7" href="./MetricSchemaRecord.html" title="com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord" alt="" coords="1943,43,2602,339"/>
+<area shape="rect" id="node6" href="./MetricSchemaRecord.html" title="&lt;TABLE&gt;" alt="" coords="1933,37,2613,344"/>
+<area shape="rect" id="node8_8" href="./History.html" title="com.salesforce.dva.argus.sdk.entity.History" alt="" coords="2648,11,2913,371"/>
+<area shape="rect" id="node8" href="./History.html" title="&lt;TABLE&gt;" alt="" coords="2637,5,2924,376"/>
+<area shape="rect" id="node9_9" href="./Dashboard.html" title="com.salesforce.dva.argus.sdk.entity.Dashboard" alt="" coords="2118,477,2366,741"/>
+<area shape="rect" id="node9" href="./Dashboard.html" title="&lt;TABLE&gt;" alt="" coords="2107,472,2377,747"/>
+<area shape="rect" id="node10_10" href="./Credentials.html" title="com.salesforce.dva.argus.sdk.entity.Credentials" alt="" coords="2959,107,3181,275"/>
+<area shape="rect" id="node10" href="./Credentials.html" title="&lt;TABLE&gt;" alt="" coords="2948,101,3192,280"/>
+<area shape="rect" id="node11_11" href="./Batch.html" title="com.salesforce.dva.argus.sdk.entity.Batch" alt="" coords="3227,59,3495,323"/>
+<area shape="rect" id="node11" href="./Batch.html" title="&lt;TABLE&gt;" alt="" coords="3216,53,3505,328"/>
+<area shape="rect" id="node12_12" href="./Batch.Query.html" title="com.salesforce.dva.argus.sdk.entity.Batch.Query" alt="" coords="3540,91,3920,291"/>
+<area shape="rect" id="node12" href="./Batch.Query.html" title="&lt;TABLE&gt;" alt="" coords="3529,85,3931,296"/>
+<area shape="rect" id="node13_13" href="./Audit.html" title="com.salesforce.dva.argus.sdk.entity.Audit" alt="" coords="3966,59,4209,323"/>
+<area shape="rect" id="node13" href="./Audit.html" title="&lt;TABLE&gt;" alt="" coords="3955,53,4219,328"/>
+<area shape="rect" id="node15_14" href="./Alert.html" title="com.salesforce.dva.argus.sdk.entity.Alert" alt="" coords="2411,429,2902,789"/>
+<area shape="rect" id="node15" href="./Alert.html" title="&lt;TABLE&gt;" alt="" coords="2401,424,2913,795"/>
+<area shape="rect" id="node16_15" href="http://java.sun.com/j2se/1.4.2/docs/api/com/salesforce/dva/argus/sdk/entity/Entity.html" title="com.salesforce.dva.argus.sdk.entity.Entity" alt="" coords="1616,67,1897,315"/>
+<area shape="rect" id="node16" href="http://java.sun.com/j2se/1.4.2/docs/api/com/salesforce/dva/argus/sdk/entity/Entity.html" title="&lt;TABLE&gt;" alt="" coords="1605,61,1908,320"/>
+</map>

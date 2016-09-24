@@ -1,0 +1,8 @@
+<map id="G" name="G">
+<area shape="rect" id="node1_0" href="./TSDBEntity.html" title="com.salesforce.dva.argus.sdk.entity.TSDBEntity" alt="" coords="211,11,449,211"/>
+<area shape="rect" id="node1" href="./TSDBEntity.html" title="&lt;TABLE&gt;" alt="" coords="200,5,460,216"/>
+<area shape="rect" id="node2_1" href="./Metric.html" title="com.salesforce.dva.argus.sdk.entity.Metric" alt="" coords="16,285,321,517"/>
+<area shape="rect" id="node2" href="./Metric.html" title="&lt;TABLE&gt;" alt="" coords="5,280,332,523"/>
+<area shape="rect" id="node3_2" href="./Annotation.html" title="com.salesforce.dva.argus.sdk.entity.Annotation" alt="" coords="367,269,619,533"/>
+<area shape="rect" id="node3" href="./Annotation.html" title="&lt;TABLE&gt;" alt="" coords="356,264,629,539"/>
+</map>
