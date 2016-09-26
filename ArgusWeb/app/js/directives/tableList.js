@@ -99,7 +99,9 @@ angular.module('argus.directives')
                 $scope.update = function(){
                     $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
                     var end = $scope.start + $scope.itemsPerPage - 1;
-                    $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
+                    if ($scope.dataSet) {
+                        $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
+                    }
                 };
             }]
         };
