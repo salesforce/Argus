@@ -67,6 +67,10 @@ public abstract class AbstractTest {
     static {
         tags = new HashMap<>();
         tags.put("source", "unittest");
+        ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
+        kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
     }
 
     protected TestingServer zkTestServer;

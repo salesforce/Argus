@@ -299,7 +299,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
-                _logger.error("Failed to get metrics from TSDB. Reason: " + e.getMessage());
+                _logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
                 throw new SystemException("Failed to get metrics from TSDB. Reason: " + e.getMessage());
             }
         }

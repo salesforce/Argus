@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.apache.commons.math.exception.MathIllegalArgumentException;
 import org.apache.commons.math.stat.descriptive.rank.Percentile;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -111,7 +110,7 @@ public class CullAboveValueMapping implements ValueMapping {
 
         try {
             pivotValue = new Percentile().evaluate(doubleValues, (double) limit);
-        } catch (MathIllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Please provide a valid percentile number!");
         }
         return pivotValue;
