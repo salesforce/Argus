@@ -25,8 +25,8 @@ angular.module('argus.directives.charts.metric', [])
 
             // separate specific series data from other attributes
             // 'color' & 'name' are used to supplement the 'series' data when rendering a chart
-            seriesData.color = attributes.color;
-            seriesData.name = attributes.name;
+            seriesData.color = attributes.seriescolor;
+            seriesData.name = attributes.seriesname;
 
             if (attributes.value && attributes.value.length > 0) {
                 value = attributes.value;
