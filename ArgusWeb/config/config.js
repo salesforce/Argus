@@ -25,7 +25,5 @@ angular.module("argus.urlConfig", [])
     feedUrl: '@@feedUrl',
     wikiUrl: '@@wikiUrl',
     issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    piwikUrl: @@piwikUrl,
-    piwikSiteId: '@@piwikSiteId'
+    templatePath: '@@templatePath'
 });
