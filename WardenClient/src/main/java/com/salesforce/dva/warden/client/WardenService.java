@@ -115,6 +115,16 @@ public class WardenService implements AutoCloseable {
     /**
      * DOCUMENT ME!
      *
+     * @return  DOCUMENT ME!
+     */
+    public UserService getUserService() {
+        return new UserService(httpClient);
+    }
+
+
+    /**
+     * DOCUMENT ME!
+     *
      * @throws  IOException  DOCUMENT ME!
      */
     public void close() throws IOException {

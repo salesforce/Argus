@@ -43,8 +43,8 @@ import java.util.Date;
  */
 @SuppressWarnings("serial")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeName("policy")
-public class User extends Entity {
+@JsonTypeName("wardenuser")
+public class WardenUser extends Entity {
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -97,7 +97,7 @@ public class User extends Entity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        User user = (User) o;
+        WardenUser user = (WardenUser) o;
 
         if (!getUserName().equals(user.getUserName())) return false;
         return getEmail().equals(user.getEmail());
@@ -113,7 +113,7 @@ public class User extends Entity {
 
     @Override
     public Object createExample() {
-        User user = new User();
+        WardenUser user = new WardenUser();
         user.setEmail("user@user.com");
         user.setUserName("exampleuser");
         user.setCreatedById(BigInteger.ONE);

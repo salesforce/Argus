@@ -36,12 +36,10 @@ import com.salesforce.dva.warden.client.WardenService.EndpointService;
 import com.salesforce.dva.warden.dto.Infraction;
 import com.salesforce.dva.warden.dto.Policy;
 import com.salesforce.dva.warden.dto.SuspensionLevel;
-import com.salesforce.dva.warden.dto.User;
-import com.sun.tools.internal.xjc.reader.xmlschema.bindinfo.BIConversion;
+import com.salesforce.dva.warden.dto.WardenUser;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
 
 /**
  * DOCUMENT ME!
@@ -74,12 +72,102 @@ public class UserService extends EndpointService {
      *
      * @throws  IOException  DOCUMENT ME!
      */
-    public WardenResponse<User> getUsers() throws IOException {
+    public WardenResponse<WardenUser> getUsers() throws IOException {
         String requestUrl = REQUESTURL;
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<WardenUser> getUserById(BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString();
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Policy> getPoliciesForUser(BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/policy";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Infraction> getInfractionsForUserAndPolicy(BigInteger userId, BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/policy/" + policyId.toString() + "/infraction";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Infraction> getInfractionsForUser(BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/infraction";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Metric> getMetricsForUserAndPolicy(BigInteger userId, BigInteger policyId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/policy" + policyId.toString() + "/metric";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Infraction> getSuspensionsForUser(BigInteger userId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/suspension";
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse<Infraction> getSuspensionForUser(BigInteger userId, BigInteger suspensionId) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/suspension/" + suspensionId.toString();
+
+        return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
+    }
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

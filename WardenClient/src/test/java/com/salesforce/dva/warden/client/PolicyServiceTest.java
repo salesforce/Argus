@@ -61,12 +61,32 @@ public class PolicyServiceTest extends AbstractTest {
     public void testCreatePolicies() throws IOException {
         try(WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
-            List<Policy> policies = Arrays.asList(new Policy[] { _constructPersistedPolicy() });
+            List<Policy> policies = Arrays.asList(new Policy[] { _constructUnPersistedPolicy() });
             WardenResponse<Policy> actualResponse = policyService.createPolicies(policies);
             WardenResponse<Policy> expectedResponse = _constructPersistedResponse("POST");
 
             assertEquals(expectedResponse, actualResponse);
         }
+    }
+
+    private Policy _constructUnPersistedPolicy() throws JsonProcessingException {
+        Policy result = new Policy();
+
+        result.setService("TestService");
+        result.setName("TestName");
+        result.setOwners(Arrays.asList("TestOwner"));
+        result.setUsers(Arrays.asList("TestUser"));
+        result.setSubSystem("TestSubSystem");
+        result.setMetricName("TestMetricName");
+        result.setTriggerType(Policy.TriggerType.BETWEEN);
+        result.setAggregator(Policy.Aggregator.AVG);
+        result.setThresholds(Arrays.asList(0.0));
+        result.setTimeUnit("5min");
+        result.setDefaultValue(0.0);
+        result.setCronEntry("0 */4 * * *");
+        System.out.println("inside construct unpersisted policy");
+        return result;
+
     }
 
     @Test
@@ -132,7 +152,6 @@ public class PolicyServiceTest extends AbstractTest {
 
             expectedResponse.getResources().get(0).getEntity().setMetricName("UpdatedMetric");
 
-            //System.out.println(MAPPER.writeValueAsString(expectedResponse));
 
             assertEquals(expectedResponse, actualResponse);
         }
@@ -150,18 +169,27 @@ public class PolicyServiceTest extends AbstractTest {
         }
 
     }
-    //"{[{\"entity\":{\"type\":\"suspensionlevel\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
 
     @Test
     public void testCreateSuspensionLevels() throws IOException {
         try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
-            List<SuspensionLevel> suspensionLevels = Arrays.asList(new SuspensionLevel[]{_constructPersistedSuspensionLevel()});
+            List<SuspensionLevel> suspensionLevels = Arrays.asList(new SuspensionLevel[]{_constructUnPersistedSuspensionLevel()});
             WardenResponse<SuspensionLevel> actualResponse = policyService.createSuspensionLevels(BigInteger.ONE, suspensionLevels);
             WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("POST");
 
             assertEquals(expectedResponse, actualResponse);
         }
+    }
+
+    private SuspensionLevel _constructUnPersistedSuspensionLevel() throws JsonProcessingException {
+            SuspensionLevel result = new SuspensionLevel();
+
+            result.setPolicyId(BigInteger.ONE);
+            result.setLevelNumber(1);
+            result.setInfractionCount(1);
+            result.setSuspensionTime(BigInteger.valueOf(3600000));
+            return result;
     }
 
     @Test
@@ -201,7 +229,6 @@ public class PolicyServiceTest extends AbstractTest {
         }
 
     }
-    //"{[{\"entity\":{\"type\":\"suspensionlevel\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
 
     @Test
     public void testDeleteSuspensionLevel() throws IOException {
@@ -220,13 +247,16 @@ public class PolicyServiceTest extends AbstractTest {
         try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
             SuspensionLevel suspensionLevel = _constructPersistedSuspensionLevel();
+            suspensionLevel.setInfractionCount(2);
             System.out.println(MAPPER.writeValueAsString(suspensionLevel));
             WardenResponse<SuspensionLevel> actualResponse = policyService.updateSuspensionLevel(BigInteger.ONE, BigInteger.ONE, suspensionLevel);
             WardenResponse<SuspensionLevel> expectedResponse = _constructPersistedResponseSuspensionLevel("PUT");
+            expectedResponse.getResources().get(0).getEntity().setInfractionCount(2);
 
             assertEquals(expectedResponse, actualResponse);
         }
     }
+
 
     private WardenResponse<SuspensionLevel> _constructPersistedResponseSuspensionLevel(String httpVerb) throws JsonProcessingException {
         WardenResponse<SuspensionLevel> result = new WardenResponse<>();
@@ -249,7 +279,6 @@ public class PolicyServiceTest extends AbstractTest {
         result.setMessage("success");
         result.setStatus(200);
         result.setResources(resources);
-        System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
 
@@ -342,8 +371,6 @@ public class PolicyServiceTest extends AbstractTest {
         result.setMessage("success");
         result.setStatus(200);
         result.setResources(resources);
-        System.out.println(MAPPER.writeValueAsString(result));
-        //"{\"resources\":[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}],\"message\":\"success\",\"status\":200}"
         return result;
     }
 
@@ -359,24 +386,17 @@ public class PolicyServiceTest extends AbstractTest {
         result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
         result.setModifiedDate(new Date(1472847819167L));
-        System.out.println(MAPPER.writeValueAsString(result));
-        //"{\"id\":null,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1}"
         return result;
     }
 
     private SuspensionLevel _constructPersistedSuspensionLevel() throws JsonProcessingException {
-        SuspensionLevel result = new SuspensionLevel();
+        SuspensionLevel result = _constructUnPersistedSuspensionLevel();
 
-        result.setPolicyId(BigInteger.ONE);
-        result.setLevelNumber(1);
-        result.setInfractionCount(1);
-        result.setSuspensionTime(BigInteger.valueOf(3600000));
+        result.setId(BigInteger.ONE);
         result.setCreatedById(BigInteger.ONE);
         result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
         result.setModifiedDate(new Date(1472847819167L));
-        System.out.println(MAPPER.writeValueAsString(result));
-//        "{\"id\":null,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policy_id\":1,\"levelNumber\":1,\"infractionCount\":1,\"suspensionTime\":3600000}"
         return result;
     }
 
@@ -400,31 +420,17 @@ public class PolicyServiceTest extends AbstractTest {
         result.setMessage("success");
         result.setStatus(200);
         result.setResources(resources);
-        System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
 
     private Policy _constructPersistedPolicy() throws JsonProcessingException {
-        Policy result = new Policy();
+        Policy result = _constructUnPersistedPolicy();
 
+        result.setId(BigInteger.ONE);
         result.setCreatedById(BigInteger.ONE);
         result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
         result.setModifiedDate(new Date(1472847819167L));
-        result.setService("TestService");
-        result.setName("TestName");
-        result.setOwners(Arrays.asList("TestOwner"));
-        result.setUsers(Arrays.asList("TestUser"));
-        result.setSubSystem("TestSubSystem");
-        result.setMetricName("TestMetricName");
-        result.setTriggerType(Policy.TriggerType.BETWEEN);
-        result.setAggregator(Policy.Aggregator.AVG);
-        result.setThresholds(Arrays.asList(0.0));
-        result.setTimeUnit("5min");
-        result.setDefaultValue(0.0);
-        result.setCronEntry("0 */4 * * *");
-        System.out.println("inside construct unpersisted policy");
-        System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
 }
