@@ -43,11 +43,6 @@ import java.util.List;
  */
 public interface NamespaceService extends Service {
 
-    //~ Instance fields ******************************************************************************************************************************
-
-    /** The namespace prefix used to delineate the namespace. */
-    String NAMEPSACE_PREFIX = "-__-";
-
     //~ Methods **************************************************************************************************************************************
 
     /**

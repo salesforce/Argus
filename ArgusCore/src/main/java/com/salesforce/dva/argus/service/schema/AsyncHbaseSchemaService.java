@@ -44,6 +44,8 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
+import com.stumbleupon.async.TimeoutException;
+
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
 import org.hbase.async.Config;
@@ -58,52 +60,82 @@ import org.hbase.async.RowFilter;
 import org.hbase.async.ScanFilter;
 import org.hbase.async.Scanner;
 import org.slf4j.Logger;
+
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * HBASE implementation of the schema service.
+ * Implementation of the schema service using Asynchbase.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @Singleton
 public class AsyncHbaseSchemaService extends DefaultService implements SchemaService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final byte[] METRIC_SCHEMA = "metric-schema".getBytes(Charset.forName("UTF-8"));
-    private static final byte[] SCOPE_SCHEMA = "scope-schema".getBytes(Charset.forName("UTF-8"));
+	private static final String METRIC_SCHEMA_TABLENAME = "metric-schema";
+	private static final String SCOPE_SCHEMA_TABLENAME = "scope-schema";
     private static final byte[] COLUMN_FAMILY = "f".getBytes(Charset.forName("UTF-8"));
     private static final byte[] COLUMN_QUALIFIER = "c".getBytes(Charset.forName("UTF-8"));
     private static final byte[] CELL_VALUE = "1".getBytes(Charset.forName("UTF-8"));
     private static final char ROWKEY_SEPARATOR = ':';
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
+    
+    private static final long TIMEOUT = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
 
     @SLF4JTypeListener.InjectLogger
     private Logger _logger;
-    private HBaseClient _client;
+    private final HBaseClient _client;
+    private final boolean _syncPut; 
 
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
     private AsyncHbaseSchemaService(SystemConfiguration systemConfig) {
     	super(systemConfig);
-        Config config = new Config();
-
-        config.overrideConfig("hbase.zookeeper.quorum",
-            systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
-        config.overrideConfig("hbase.rpcs.batch.size", "16192");
-        config.overrideConfig("hbase.rpcs.buffered_flush_interval", "5000");
-        config.overrideConfig("hbase.zookeeper.session.timeout", "6000");
+        
+    	_syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
+    	
+    	Config config = new Config();
+        
+    	config.overrideConfig("hbase.zookeeper.quorum",
+                systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
+    	config.overrideConfig("hbase.zookeeper.session.timeout",
+        		systemConfig.getValue(Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getName(), Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getDefaultValue()));
+    	
+    	config.overrideConfig("hbase.rpcs.batch.size",
+    			systemConfig.getValue(Property.HBASE_RPCS_BATCH_SIZE.getName(), Property.HBASE_RPCS_BATCH_SIZE.getDefaultValue()));
+        config.overrideConfig("hbase.rpcs.buffered_flush_interval",
+        		systemConfig.getValue(Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getName(), Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getDefaultValue()));
+        config.overrideConfig("hbase.rpc.timeout",
+    			systemConfig.getValue(Property.HBASE_RPC_TIMEOUT.getName(), Property.HBASE_RPC_TIMEOUT.getDefaultValue()));
+        
+        config.overrideConfig("hbase.security.auth.enable",
+                systemConfig.getValue(Property.HBASE_SECURITY_AUTH_ENABLE.getName(), Property.HBASE_SECURITY_AUTH_ENABLE.getDefaultValue()));
+        config.overrideConfig("hbase.rpc.protection", 
+        		systemConfig.getValue(Property.HBASE_RPC_PROTECTION.getName(), Property.HBASE_RPC_PROTECTION.getDefaultValue()));
+        config.overrideConfig("hbase.sasl.clientconfig",
+        		systemConfig.getValue(Property.HBASE_SASL_CLIENTCONFIG.getName(), Property.HBASE_SASL_CLIENTCONFIG.getDefaultValue()));
+        config.overrideConfig("hbase.kerberos.regionserver.principal",
+        		systemConfig.getValue(Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getName(), Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getDefaultValue()));
+        config.overrideConfig("hbase.security.authentication", 
+        		systemConfig.getValue(Property.HBASE_SECURITY_AUTHENTICATION.getName(), Property.HBASE_SECURITY_AUTHENTICATION.getDefaultValue()));
+        
         _client = new HBaseClient(config);
+        
+        _ensureTableWithColumnFamilyExists(Bytes.toBytes(SCOPE_SCHEMA_TABLENAME), COLUMN_FAMILY);
+        _ensureTableWithColumnFamilyExists(Bytes.toBytes(METRIC_SCHEMA_TABLENAME), COLUMN_FAMILY);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -231,68 +263,18 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     public void put(List<Metric> metrics) {
         requireNotDisposed();
         SystemAssert.requireArgument(metrics != null && !metrics.isEmpty(), "Metric list cannot be null or empty.");
+        
         for (Metric metric : metrics) {
             if (metric.getTags().isEmpty()) {
-                String rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), null, null, TableType.SCOPE);
-
-                _logger.trace(MessageFormat.format("Inserting row key {0} into table scope-schema", rowKeyStr));
-
-                final PutRequest scopePut = new PutRequest(SCOPE_SCHEMA, Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
-                Deferred<Object> scopePutDeferred = _client.put(scopePut);
-
-                scopePutDeferred.addErrback(new Callback<Object, Exception>() {
-
-                        @Override
-                        public Object call(Exception e) throws Exception {
-                            throw new SystemException("Error occured while trying to execute put() on scope schema table.", e);
-                        }
-                    });
-                rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), null, null, TableType.METRIC);
-                _logger.trace(MessageFormat.format("Inserting row key {0} into table metric-schema", rowKeyStr));
-
-                final PutRequest metricPut = new PutRequest(METRIC_SCHEMA, Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
-                Deferred<Object> metricPutDeferred = _client.put(metricPut);
-
-                metricPutDeferred.addErrback(new Callback<Object, Exception>() {
-
-                        @Override
-                        public Object call(Exception e) throws Exception {
-                            throw new SystemException("Error occured while trying to execute put() on metric schema table.", e);
-                        }
-                    });
+                _putWithoutTag(metric, SCOPE_SCHEMA_TABLENAME);
+                _putWithoutTag(metric, METRIC_SCHEMA_TABLENAME);
             }
+            
             for (Entry<String, String> tag : metric.getTags().entrySet()) {
-                String rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), tag.getValue(),
-                    TableType.SCOPE);
-
-                _logger.trace(MessageFormat.format("Inserting row key {0} into table scope-schema", rowKeyStr));
-
-                final PutRequest scopePut = new PutRequest(SCOPE_SCHEMA, Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
-                Deferred<Object> scopePutDeferred = _client.put(scopePut);
-
-                scopePutDeferred.addErrback(new Callback<Object, Exception>() {
-
-                        @Override
-                        public Object call(Exception e) throws Exception {
-                            throw new SystemException("Error occured while trying to execute put() on scope schema table.", e);
-                        }
-                    });
-                rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), tag.getValue(),
-                    TableType.METRIC);
-                _logger.trace(MessageFormat.format("Inserting row key {0} into table metric-schema", rowKeyStr));
-
-                final PutRequest metricPut = new PutRequest(METRIC_SCHEMA, Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
-                Deferred<Object> metricPutDeferred = _client.put(metricPut);
-
-                metricPutDeferred.addErrback(new Callback<Object, Exception>() {
-
-                        @Override
-                        public Object call(Exception e) throws Exception {
-                            throw new SystemException("Error occured while trying to execute put() on metric schema table.", e);
-                        }
-                    });
-            }
-        } // end for
+                _putWithTag(metric, tag, SCOPE_SCHEMA_TABLENAME);
+                _putWithTag(metric, tag, METRIC_SCHEMA_TABLENAME);
+            }  
+        } 
     }
 
     @Override
@@ -335,7 +317,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         /**
          * Scans HBASE rows.
          *
-         * @author  Tom Valine (tvaline@salesforce.com)
+         * @author  Bhinav Sura (bhinav.sura@salesforce.com)
          */
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
@@ -347,17 +329,21 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
              * @return  The list of metric schema records.
              */
             public Object scan() {
+            	_logger.debug("Getting next set of rows.");
                 return scanner.nextRows().addCallback(this);
             }
 
             @Override
             public Object call(ArrayList<ArrayList<KeyValue>> rows) throws Exception {
+            	_logger.debug("Inside nextRows() callback..");
                 try {
                     if (rows == null) {
                         results.callback(records);
                         scanner.close();
                         return null;
                     }
+                    
+                    _logger.debug("Retrieved " + rows.size() + " rows.");
                     if (recordsToSkip >= rows.size()) {
                         recordsToSkip -= rows.size();
                     } else {
@@ -381,12 +367,20 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return results.joinUninterruptibly();
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return results.join(TIMEOUT);
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+
     }
 
     @Override
@@ -478,12 +472,20 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return new ArrayList<String>(results.joinUninterruptibly());
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return new ArrayList<>(results.join(TIMEOUT));
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+        
     }
 
     @Override
@@ -495,30 +497,97 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             Deferred<Object> deferred = _client.shutdown();
 
             deferred.addCallback(new Callback<Void, Object>() {
-
-                    @Override
-                    public Void call(Object arg) throws Exception {
-                        _logger.info("Shutdown of asynchbase client complete.");
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Object arg) throws Exception {
+                    _logger.info("Shutdown of asynchbase client complete.");
+                    return null;
+                }
+            });
+            
             deferred.addErrback(new Callback<Void, Exception>() {
-
-                    @Override
-                    public Void call(Exception arg) throws Exception {
-                        _logger.warn("Error occured while shutting down asynchbase client. Trying again...");
-                        _client.shutdown();
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Exception arg) throws Exception {
+                    _logger.warn("Error occured while shutting down asynchbase client.");
+                    return null;
+                }
+            });
+            
             try {
-                deferred.joinUninterruptibly();
+                deferred.join();
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
         }
     }
+    
+    
+    private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
+        final AtomicBoolean fail = new AtomicBoolean(true);
+        
+        Deferred<Object> deferred = _client.ensureTableFamilyExists(table, family);
+        
+        deferred.addCallback(new Callback<Void, Object>() {
+			@Override
+			public Void call(Object arg) throws Exception {
+				fail.set(false);
+				return null;
+			}
+		});
+        
+        deferred.addErrback(new Callback<Void, Exception>() {
+			@Override
+			public Void call(Exception arg) throws Exception {
+				_logger.error("Table {} or family {} does not exist. Please create the appropriate table.", Bytes.toString(table), Bytes.toString(family));
+				return null;
+			}
+		});
+        
+        try {
+        	deferred.join(TIMEOUT);
+        } catch (InterruptedException e) {
+        	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
+        } catch (Exception e) {
+			_logger.error("Exception occured while waiting to ensure table {} with family {} exists", Bytes.toString(table), Bytes.toString(family));
+		}
+        
+	}
 
+    private void _putWithoutTag(Metric metric, String tableName) {
+    	String rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
+    			null, null, TableType.fromTableName(tableName));
+    	_put(tableName, rowKeyStr);
+    }
+    
+    private void _putWithTag(Metric metric, Entry<String, String> tag, String tableName) {
+    	String rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), 
+    			tag.getValue(), TableType.fromTableName(tableName));
+    	_put(tableName, rowKeyStr);
+    }
+
+	private void _put(String tableName, String rowKeyStr) {
+		_logger.trace(MessageFormat.format("Inserting rowkey {0} into table {1}", rowKeyStr, tableName));
+
+        final PutRequest put = new PutRequest(Bytes.toBytes(tableName), Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
+        Deferred<Object> deferred = _client.put(put);
+        
+        if(_syncPut) {
+        	deferred.addCallback(new Callback<Object, Object>() {
+    			@Override
+    			public Object call(Object arg) throws Exception {
+    				_logger.trace(MessageFormat.format("Put to {0} successfully.", tableName));
+    				return null;
+    			}
+            });
+        }
+
+        deferred.addErrback(new Callback<Object, Exception>() {
+            @Override
+            public Object call(Exception e) throws Exception {
+                throw new SystemException("Error occured while trying to execute put().", e);
+            }
+        });
+	}
+    
     private String _getValueForType(MetricSchemaRecord record, RecordType type) {
         switch (type) {
             case NAMESPACE:
@@ -627,8 +696,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      */
     public static enum TableType {
 
-        SCOPE("scope-schema"),
-        METRIC("metric-schema");
+        SCOPE(SCOPE_SCHEMA_TABLENAME),
+        METRIC(METRIC_SCHEMA_TABLENAME);
 
         private String _tableName;
 
@@ -670,8 +739,21 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      * @author  Tom Valine (tvaline@salesforce.com)
      */
     public enum Property {
-
-        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "hbase.zookeeper.com:1234");
+    	
+        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "hbase.zookeeper.com:1234"),
+        HBASE_ZOOKEEPER_SESSION_TIMEOUT("service.property.schema.hbase.zookeeper.session.timeout", "6000"),
+        
+        HBASE_SECURITY_AUTHENTICATION("service.property.schema.hbase.security.authentication", ""),
+        HBASE_RPC_PROTECTION("service.property.schema.hbase.rpc.protection", ""),
+        HBASE_SASL_CLIENTCONFIG("service.property.schema.hbase.sasl.clientconfig", "Client"),
+        HBASE_SECURITY_AUTH_ENABLE("service.property.schema.hbase.security.auth.enable", "false"),
+        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.schema.hbase.kerberos.regionserver.principal", ""),
+        
+        HBASE_RPCS_BATCH_SIZE("service.property.schema.hbase.rpcs.batch.size", "16192"),
+        HBASE_RPCS_BUFFERED_FLUSH_INTERVAL("service.property.schema.hbase.rpcs.buffered_flush_interval", "5000"),
+        HBASE_RPC_TIMEOUT("service.property.schema.hbase.rpc.timeout", "0"),
+        
+        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false");
 
         private final String _name;
         private final String _defaultValue;

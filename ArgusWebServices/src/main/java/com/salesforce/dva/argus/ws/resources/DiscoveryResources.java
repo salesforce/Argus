@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -80,13 +81,13 @@ public class DiscoveryResources extends AbstractResource {
     @Path("/metrics/schemarecords")
     @Description("Discover metric schema records. If type is specified, then records of that particular type are returned.")
     public List<? extends Object> getRecords(@Context HttpServletRequest req,
-        @QueryParam("namespace") final String namespaceRegex,
+    	@DefaultValue("*") @QueryParam("namespace") final String namespaceRegex,
         @QueryParam("scope") final String scopeRegex,
         @QueryParam("metric") final String metricRegex,
-        @QueryParam("tagk") final String tagkRegex,
-        @QueryParam("tagv") final String tagvRegex,
-        @QueryParam("limit") final int limit,
-        @QueryParam("page") final int page,
+        @DefaultValue("*") @QueryParam("tagk") final String tagkRegex,
+        @DefaultValue("*") @QueryParam("tagv") final String tagvRegex,
+        @DefaultValue("10") @QueryParam("limit") final int limit,
+        @DefaultValue("1") @QueryParam("page") final int page,
         @QueryParam("type") String type) {
         PrincipalUser remoteUser = validateAndGetOwner(req, null);
 
@@ -103,18 +104,6 @@ public class DiscoveryResources extends AbstractResource {
             return records;
         }
     }
-
-    /*
-     * @GET @Produces(MediaType.APPLICATION_JSON) @Path("/metrics/queries") @Description("Discover wildcard queries.") public List<String>
-     * matchQueries(@Context HttpServletRequest req, @QueryParam("scope") final String scopeRegex,          @QueryParam("metric") final String
-     * metricRegex) {
-     *
-     * PrincipalUser remoteUser = validateAndGetOwner(req, null);
-     *
-     * validateResourceAuthorization(req, remoteUser, remoteUser);  Map<String, String> tags = new HashMap<String, String>(); tags.put("device", "*");
-     * MetricQuery query = new MetricQuery(scopeRegex, metricRegex, tags, 1L, 2L); List<MetricQuery> queries =
-     * _discoveryService.getMatchingQueries(query);  List<String> queryStrs = new ArrayList<String>(queries.size()); for(MetricQuery mq : queries) {
-     * queryStrs.add(mq.toString()); }  return queryStrs; }
-     */
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -55,6 +55,8 @@ public class MetricReducerOrMappingTransform implements Transform {
     protected final ValueReducerOrMapping valueReducerOrMapping;
     protected final String defaultScope;
     protected final String defaultMetricName;
+    private static final String FULLJOIN = "UNION";
+    private Boolean fulljoinIndicator=false;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -93,6 +95,10 @@ public class MetricReducerOrMappingTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         if (constants == null || constants.isEmpty()) {
             return transform(metrics);
+        }
+        if (constants.size()==1 && constants.get(0).toUpperCase().equals(FULLJOIN)){
+        	fulljoinIndicator=true;
+        	return transform(metrics);
         }
         return mapping(metrics, constants);
     }
@@ -148,7 +154,18 @@ public class MetricReducerOrMappingTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
-
+    
+    private Map<Long, String> reduce(Map<Long, List<String>> collated, List<Metric> metrics) {
+        Map<Long, String> reducedDatapoints = new HashMap<>();
+        for (Map.Entry<Long, List<String>> entry : collated.entrySet()) {
+            if (entry.getValue().size() < metrics.size() && !fulljoinIndicator) {
+                continue;
+            }
+            reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue()));
+        }
+        return reducedDatapoints;
+    }
+    
     private Map<Long, List<String>> collate(List<Metric> metrics) {
         Map<Long, List<String>> collated = new HashMap<Long, List<String>>();
 
@@ -163,21 +180,11 @@ public class MetricReducerOrMappingTransform implements Transform {
         return collated;
     }
 
-    private Map<Long, String> reduce(Map<Long, List<String>> collated, List<Metric> metrics) {
-        Map<Long, String> reducedDatapoints = new HashMap<>();
-
-        for (Map.Entry<Long, List<String>> entry : collated.entrySet()) {
-            if (entry.getValue().size() < metrics.size()) {
-                continue;
-            }
-            reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue()));
-        }
-        return reducedDatapoints;
-    }
-
+   
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
     }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

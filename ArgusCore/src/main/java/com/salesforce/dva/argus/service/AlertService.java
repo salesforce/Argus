@@ -41,8 +41,10 @@ import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
+import com.salesforce.dva.argus.service.warden.WaaSNotifier;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Properties;
@@ -135,6 +137,15 @@ public interface AlertService extends Service {
      * @return  The alert or null if no alert exists for the primary key.
      */
     Alert findAlertByPrimaryKey(BigInteger id);
+    
+    /**
+     * Finds alerts for the given list of primary keys.
+     *
+     * @param   ids  The primary keys for the alerts to find. Cannot be null or empty and must be a positive non-zero number.
+     *
+     * @return  The list of alerts or an empty list if no alerts exist for the given primary keys.
+     */
+    List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids);
 
     /**
      * Finds an alert by its name and owner.
@@ -170,7 +181,7 @@ public interface AlertService extends Service {
      * @return  The list of all alerts. Will never be null, but may be empty.
      */
     List<Alert> findAllAlerts();
-
+    
     /**
      * Returns a list of alerts by status (enabled alerts or disabled alerts).
      *
@@ -179,7 +190,36 @@ public interface AlertService extends Service {
      * @return  The list of alerts for the given status. Will never be null but may be empty.
      */
     List<Alert> findAlertsByStatus(boolean enabled);
+    
+    /**
+     * Returns a list of alert ids by status (enabled alert ids or disabled alert ids).
+     *
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  The list of alert ids for the given status. Will never be null but may be empty.
+     */
+    List<BigInteger> findAlertIdsByStatus(boolean enabled);
 
+    /**
+     * Returns the total count of alerts by status (enabled alerts or disabled alerts).
+     *
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  Alert count
+     */
+    int alertCountByStatus(boolean enabled);
+
+    /**
+     * Returns a list of alerts by status (enabled alerts or disabled alerts), from a given offset.
+     *
+     * @param   limit    Number of alerts to fetch
+     * @param   offset   Position from where to start fetching the alerts
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  The list of alerts for the given status. Will never be null but may be empty.
+     */
+    List<Alert> findAlertsByLimitOffsetStatus(int limit, int offset, boolean enabled);
+    
     /**
      * Returns a list of alerts whose name start with prefix.
      *
@@ -219,6 +259,7 @@ public interface AlertService extends Service {
         GOC(GOCNotifier.class.getName()),
         WARDENAPI(WardenApiNotifier.class.getName()),
         WARDENPOSTING(WardenPostingNotifier.class.getName()),
+        WAAS(WaaSNotifier.class.getName()),
         GUS(GusNotifier.class.getName());
 
         String name;
@@ -245,7 +286,8 @@ public interface AlertService extends Service {
                     return n;
                 }
             }
-            return null;
+            
+            throw new IllegalArgumentException("No such notifier class: " + notifierClassName);
         }
 
         /**

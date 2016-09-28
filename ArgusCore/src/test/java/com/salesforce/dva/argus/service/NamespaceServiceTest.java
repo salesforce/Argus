@@ -34,26 +34,18 @@ package com.salesforce.dva.argus.service;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Namespace;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.junit.Before;
 import org.junit.Test;
-import java.text.MessageFormat;
+
+import java.math.BigInteger;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NamespaceServiceTest extends AbstractTest {
-
-    private static final String exp_all_fileds_with_namespace = "123000:234000:{0}:na1:app_record.count'{'tagk=tagv'}':avg:15m-avg";
-    private static final String exp_without_downsampler_with_namespace = "123000:234000:{0}:na1:app_record.count'{'tak=tagv'}':avg";
-    private static final String exp_without_tags_with_namespace = "123000:234000:{0}:na1:app_record.count:avg:15m-avg";
-    private static final String exp_without_tags_and_downsampler_with_namespace = "123000:234000:{0}:na1:app_record.count:avg";
-    private static final String exp_without_endTs_with_namespace = "123000:{0}:na1:app_record.count'{'tagk=tagv'}':avg:15m-avg";
-    private static final String exp_without_endTs_and_downsampler_with_namespace = "123000:" + NamespaceService.NAMEPSACE_PREFIX +
-        "12345__:na1:app_record.count{tagk=tagv}:avg";
-    private static final String exp_without_endTs_and_tags_with_namespace = "123000:" + NamespaceService.NAMEPSACE_PREFIX +
-        "123____:na1:app_record.count:avg:15m-avg";
+	
     private NamespaceService _namespaceService;
     private UserService _userService;
 
@@ -64,27 +56,12 @@ public class NamespaceServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testNamespaceGeneratedWithProperPrefix() {
+    public void testCreateNamespace() {
         PrincipalUser user = _userService.findAdminUser();
         Namespace namespace = new Namespace("namespace", user);
 
         namespace = _namespaceService.createNamespace(namespace);
-        assertTrue(namespace.getQualifier().startsWith(NamespaceService.NAMEPSACE_PREFIX));
-    }
-
-    @Test
-    public void testMetricExpressionWithNamespace() {
-        PrincipalUser user = _userService.findAdminUser();
-        Namespace namespace = new Namespace("namespace", user);
-
-        namespace = _namespaceService.createNamespace(namespace);
-        assertTrue(MetricReader.isValid(MessageFormat.format(exp_all_fileds_with_namespace, namespace.getQualifier())));
-        assertTrue(MetricReader.isValid(MessageFormat.format(exp_without_downsampler_with_namespace, namespace.getQualifier())));
-        assertTrue(MetricReader.isValid(MessageFormat.format(exp_without_tags_with_namespace, namespace.getQualifier())));
-        assertTrue(MetricReader.isValid(MessageFormat.format(exp_without_tags_and_downsampler_with_namespace, namespace.getQualifier())));
-        assertTrue(MetricReader.isValid(MessageFormat.format(exp_without_endTs_with_namespace, namespace.getQualifier())));
-        assertTrue(MetricReader.isValid(exp_without_endTs_and_downsampler_with_namespace));
-        assertTrue(MetricReader.isValid(exp_without_endTs_and_tags_with_namespace));
+        assertTrue(namespace.getId() != null && namespace.getId().compareTo(BigInteger.ZERO) > 0);
     }
 
     @Test(expected = SystemException.class)

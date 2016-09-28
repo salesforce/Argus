@@ -78,7 +78,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     private static final int CHUNK_SIZE = 50;
     private static final int TSDB_DATAPOINTS_WRITE_MAX_SIZE = 100;
     private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count";    
+    private static final String QUERY_COUNT_COUNTER = "query.count";
+    static final String DELIMITER = "-__-";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -158,17 +159,67 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
         return toAnnotationKey(scope, metric, type, tags);
     }
+    
+    /**
+     * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
+     * 			
+     * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+     * 
+     * @param metric
+     * @return OpenTSDB metric name constructed from scope, metric and namespace.
+     */
+    public static String constructTSDBMetricName(Metric metric) {
+        StringBuilder sb = new StringBuilder();
+        
+        sb.append(metric.getMetric()).append(DELIMITER).append(metric.getScope());
 
-    private ObjectMapper getMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        SimpleModule module = new SimpleModule();
+        if (metric.getNamespace() != null && !metric.getNamespace().isEmpty()) {
+            sb.append(DELIMITER).append(metric.getNamespace());
+        }
+        return sb.toString();
+    }
 
-        module.addSerializer(Metric.class, new MetricTransform.Serializer(this));
-        module.addDeserializer(Metric.class, new MetricTransform.Deserializer(this));
-        module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
-        module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
-        mapper.registerModule(module);
-        return mapper;
+    /**
+     * Given otsdb metric name, return argus metric.
+     * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
+     * 			
+     * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+     * 
+     * 
+     * @param tsdbMetricName
+     * @return Argus metric name.
+     */
+    public static String getMetricFromTSDBMetric(String tsdbMetricName) {
+    	return tsdbMetricName.split(DELIMITER)[0];
+    }
+    
+    /**
+     * Given otsdb metric name, return argus scope.
+     * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
+     * 			
+     * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+     * 
+     * 
+     * @param tsdbMetricName
+     * @return Argus scope.
+     */
+    public static String getScopeFromTSDBMetric(String tsdbMetricName) {
+    	return tsdbMetricName.split(DELIMITER)[1];
+    }
+    
+    /**
+     * Given otsdb metric name, return argus namespace.
+     * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
+     * 			
+     * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+     * 
+     * 
+     * @param tsdbMetricName
+     * @return Argus namespace. 
+     */
+    public static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
+    	String[] splits = tsdbMetricName.split(DELIMITER);
+        return (splits.length == 3) ? splits[2] : null;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -248,7 +299,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
-                _logger.error("Failed to get metrics from TSDB. Reason: " + e.getMessage());
+                _logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
                 throw new SystemException("Failed to get metrics from TSDB. Reason: " + e.getMessage());
             }
         }
@@ -302,26 +353,17 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         }
         return annotations;
     }
+    
+    private ObjectMapper getMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
 
-    @Override
-    public String constructTSDBMetricName(String scope, String namespace) {
-        StringBuilder sb = new StringBuilder(scope);
-
-        if (namespace != null && !namespace.isEmpty()) {
-            sb.append(namespace);
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String getScopeFromTSDBMetric(String tsdbMetricName) {
-	return tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX)[0];
-    }
-
-    @Override
-    public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-	String[] splits = tsdbMetricName.split(NamespaceService.NAMEPSACE_PREFIX);
-        return (splits.length == 2) ? NamespaceService.NAMEPSACE_PREFIX + splits[1] : null;
+        module.addSerializer(Metric.class, new MetricTransform.Serializer(this));
+        module.addDeserializer(Metric.class, new MetricTransform.Deserializer(this));
+        module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
+        module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
+        mapper.registerModule(module);
+        return mapper;
     }
 
     /* Writes objects in chunks. */

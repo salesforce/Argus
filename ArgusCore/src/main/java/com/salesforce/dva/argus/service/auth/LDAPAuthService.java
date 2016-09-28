@@ -58,6 +58,8 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Default implementation of Audit service.
@@ -77,6 +79,8 @@ public class LDAPAuthService extends DefaultService implements AuthService {
     private final UserService _userService;
     private final SystemConfiguration _config;
     private final MonitorService _monitorService;
+    private static final Map<String,Long> MONTHLY_USERS = Collections.synchronizedMap(new UserCountCache(2592000000L));
+    private static final Map<String,Long> DAILY_USERS = Collections.synchronizedMap(new UserCountCache(86400000L));
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -196,7 +200,11 @@ public class LDAPAuthService extends DefaultService implements AuthService {
                 result = new PrincipalUser(_userService.findAdminUser(), username, email);
                 result = _userService.updateUser(result);
             }
-            _monitorService.updateCounter(MonitorService.Counter.UNIQUE_USERS, _userService.getUniqueUserCount(), new HashMap<String, String>(0));
+            DAILY_USERS.put(username, System.currentTimeMillis());
+            MONTHLY_USERS.put(username, System.currentTimeMillis());
+            _monitorService.updateCounter(MonitorService.Counter.DAILY_USERS, DAILY_USERS.size(), new HashMap<>(0));
+            _monitorService.updateCounter(MonitorService.Counter.MONTHLY_USERS, MONTHLY_USERS.size(), new HashMap<>(0));
+            _monitorService.updateCounter(MonitorService.Counter.UNIQUE_USERS, _userService.getUniqueUserCount(), new HashMap<>(0));
             return result;
         } else {
             return null;

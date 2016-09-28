@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Down samples the one or more metric.<br/>
@@ -71,7 +70,6 @@ public class DownsampleTransform implements Transform {
      */
     public static String downsamplerReducer(List<String> values, String reducerType) {
         List<Double> operands = new ArrayList<Double>();
-
         for (String str : values) {
             if (str == null || str.equals("")) {
                 operands.add(0.0);
@@ -79,9 +77,7 @@ public class DownsampleTransform implements Transform {
                 operands.add(Double.parseDouble(str));
             }
         }
-
         InternalReducerType type = InternalReducerType.fromString(reducerType);
-
         switch (type) {
             case AVG:
                 return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
@@ -93,6 +89,9 @@ public class DownsampleTransform implements Transform {
                 return String.valueOf((new Sum()).evaluate(Doubles.toArray(operands), 0, operands.size()));
             case DEVIATION:
                 return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+            case COUNT:
+            	values.removeAll(Collections.singleton(null));
+            	return String.valueOf((float)values.size());
             default:
                 throw new UnsupportedOperationException(reducerType);
         }
@@ -113,58 +112,8 @@ public class DownsampleTransform implements Transform {
      * on minute level, 01:01:30 => 01:01:00 
      * on second level, 01:01:30 => 01:01:30 
      */
-    public static Long downsamplerTimestamp(Long millitimestamp, String unitStr) {
-
-        InternalTimeUnit unit = InternalTimeUnit.fromString(unitStr);
-
-        switch (unit) {
-            case HOUR:
-            	return TimeUnit.MILLISECONDS.toHours(millitimestamp) * 60 * 60 * 1000;                
-            case MINUTE:
-            	return TimeUnit.MILLISECONDS.toMinutes(millitimestamp) * 60 * 1000;                
-            case SECOND:
-            	return TimeUnit.MILLISECONDS.toSeconds(millitimestamp) * 1000;                            
-            default:
-                throw new UnsupportedOperationException(unitStr);
-        }
-    }
-    
-    private enum InternalTimeUnit { 	 
-
-        HOUR("h"),
-        MINUTE("m"),
-        SECOND("s");
-
-        /** The timeunit name. */
-        public final String unit;
-
-        //~ Constructors *********************************************************************************************************************************
-
-        private InternalTimeUnit(String unit) {
-            this.unit = unit;
-        }
-        
-        public static InternalTimeUnit fromString(String unitStr) {
-            if ( unitStr != null) {
-                for (InternalTimeUnit unit : InternalTimeUnit.values()) {
-                    if (unitStr.equalsIgnoreCase(unit.getUnit())) {
-                        return unit;
-                    }
-                }
-            }
-            throw new IllegalArgumentException(unitStr);
-        }
-
-        //~ Methods **************************************************************************************************************************************
-
-        /**
-         * Returns the time unit.
-         *
-         * @return  The time unit.
-         */
-        public String getUnit() {
-            return unit;
-        }
+    public static Long downsamplerTimestamp(Long millitimestamp, long windowSize) {
+    	return millitimestamp-(millitimestamp%windowSize);
     }
     
     //~ Methods **************************************************************************************************************************************
@@ -193,7 +142,7 @@ public class DownsampleTransform implements Transform {
         Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
         String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
         // init downsample type
-        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev"));
+        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev", "count"));
         String downsampleType = expArr[1];
 
         SystemAssert.requireArgument(typeSet.contains(downsampleType), "Please input a valid type.");
@@ -205,9 +154,12 @@ public class DownsampleTransform implements Transform {
 
     private Map<Long, String> createDownsampleDatapoints(Map<Long, String> originalDatapoints, long windowSize, String type, String windowUnit) {
         Map<Long, String> downsampleDatapoints = new HashMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
+        TreeMap<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
         List<String> values = new ArrayList<>();
-        Long windowStart = 0L;
+        if (sortedDatapoints.isEmpty()){
+        	return downsampleDatapoints;
+        }
+        Long windowStart = downsamplerTimestamp(sortedDatapoints.firstKey(),windowSize);
 
         for (Map.Entry<Long, String> entry : sortedDatapoints.entrySet()) {
             Long timestamp = entry.getKey();
@@ -215,21 +167,18 @@ public class DownsampleTransform implements Transform {
 
             if (values.isEmpty()) {
                 values.add(value);
-                windowStart = downsamplerTimestamp(timestamp, windowUnit);
             } else {
-                if (timestamp > windowStart + windowSize) {
+                if (timestamp >= windowStart + windowSize) {
                     String fillingValue = downsamplerReducer(values, type);
-
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
-                    windowStart = downsamplerTimestamp(timestamp, windowUnit);
+                    windowStart = downsamplerTimestamp(timestamp, windowSize);
                 }
                 values.add(value);
             }
         }
         if (!values.isEmpty()) {
             String fillingValue = downsamplerReducer(values, type);
-
             downsampleDatapoints.put(windowStart, fillingValue);
         }
         return downsampleDatapoints;
@@ -245,9 +194,7 @@ public class DownsampleTransform implements Transform {
 
         try {
             timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
-
             long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
-
             return timeDigits * timeunit.getValue() / 1000;
         } catch (Exception t) {
             throw new IllegalArgumentException("Fail to parse window size!");

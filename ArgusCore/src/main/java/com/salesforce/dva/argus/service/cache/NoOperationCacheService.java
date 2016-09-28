@@ -132,12 +132,12 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
 
     @Override
     public <V> Map<String, V> getRange(Set<String> keys, int startOffset, int endOffset) {
-        return Collections.emptyMap();
+        return null;
     }
 
     @Override
     public Set<String> getKeysByPattern(String pattern) {
-        return Collections.emptySet();
+        return null;
     }
 
     @Override

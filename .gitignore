@@ -9,4 +9,39 @@ logs/
 nbactions.xml
 nb-configuration.xml
 argus-build.properties
+.settings/
 .DS_Store
+/config
+
+# Eclipse ignore
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# Eclipse Core
+.[pP]roject
+
+# JDT-specific (Eclipse Java Development Tools)
+.classpath
+
+# Java annotation processor (APT)
+.factorypath
+
+# Intellij
+.idea/
+*.iml
+
+Makefile
+property
+
+#Scripts
+update_tomcat.sh
+update_views.sh
