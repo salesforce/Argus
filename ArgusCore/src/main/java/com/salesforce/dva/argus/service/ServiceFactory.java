@@ -86,8 +86,11 @@ public final class ServiceFactory {
     @Inject
     Provider<DiscoveryService> _discoveryServiceProvider;
     @Inject
+    Provider<WaaSService> _waaSServiceProvider;
+    @Inject
+    Provider<WaaSMonitorService> _waaSMonitorServiceProvider;
+    @Inject
     Provider<BatchService> _batchServiceProvider;
-
 
     //~ Methods **************************************************************************************************************************************
 
@@ -278,6 +281,24 @@ public final class ServiceFactory {
      */
     public synchronized DiscoveryService getDiscoveryService() {
         return _discoveryServiceProvider.get();
+    }
+    
+    /**
+     * Returns an instance of the WaaS service.
+     *
+     * @return  An instance of the WaaS service.
+     */
+    public synchronized WaaSService getWaaSService() {
+        return _waaSServiceProvider.get();
+    }
+    
+    /**
+     * Returns an instance of the WaaS Monitor service.
+     *
+     * @return  An instance of the WaaS monitor service.
+     */
+    public synchronized WaaSMonitorService getWaaSMonitorService() {
+        return _waaSMonitorServiceProvider.get();
     }
 
     /**

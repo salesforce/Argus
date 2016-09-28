@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
+import com.salesforce.dva.argus.service.warden.WaaSNotifier;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
 
@@ -59,6 +60,8 @@ public final class NotifierFactory {
     private Provider<WardenApiNotifier> _wardenApiNotifierProvider;
     @Inject
     private Provider<WardenPostingNotifier> _wardenPostingNotifierProvider;
+    @Inject
+    private Provider<WaaSNotifier> _waaSNotifierProvider;
     @Inject
     private Provider<GusNotifier> _gusNotifierProvider;
     
@@ -108,6 +111,15 @@ public final class NotifierFactory {
         return _wardenPostingNotifierProvider.get();
     }
 
+    /**
+     * Returns an instance of the WaaS Notifier.
+     *
+     * @return  An instance of the WaaS Notifier.
+     */
+    public synchronized WaaSNotifier getWaaSNotifier() {
+        return _waaSNotifierProvider.get();
+    }
+    
     /**
      * Returns an instance of the GUS Notifier.
      *

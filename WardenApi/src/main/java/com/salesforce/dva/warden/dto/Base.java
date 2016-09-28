@@ -49,4 +49,3 @@ public abstract class Base {
     public abstract Object createExample();
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
-

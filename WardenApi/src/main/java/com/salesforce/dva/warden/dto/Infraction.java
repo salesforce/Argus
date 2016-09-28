@@ -12,34 +12,34 @@ import java.math.BigInteger;
 @SuppressWarnings("serial")
 public class Infraction extends Entity{
 	
-	private BigInteger policy_id;
-	private BigInteger user_id;
-	private Long infraction_timestamp;
-	private Long expiration_timestamp;
+	private BigInteger policyId;
+	private BigInteger userId;
+	private Long infractionTimestamp;
+	private Long expirationTimestamp =0L;
 	
 	public BigInteger getPolicyId() {
-		return policy_id;
+		return policyId;
 	}
-	public void setPolicyId(BigInteger policy_id) {
-		this.policy_id = policy_id;
+	public void setPolicyId(BigInteger policyId) {
+		this.policyId = policyId;
 	}
 	public BigInteger getUserId() {
-		return user_id;
+		return userId;
 	}
-	public void setUserId(BigInteger user_id) {
-		this.user_id = user_id;
+	public void setUserId(BigInteger userId) {
+		this.userId = userId;
 	}
 	public Long getInfractionTimestamp() {
-		return infraction_timestamp;
+		return infractionTimestamp;
 	}
-	public void setInfractionTimestamp(Long infraction_timestamp) {
-		this.infraction_timestamp = infraction_timestamp;
+	public void setInfractionTimestamp(Long infractionTimestamp) {
+		this.infractionTimestamp = infractionTimestamp;
 	}
 	public Long getExpirationTimestamp() {
-		return expiration_timestamp;
+		return expirationTimestamp;
 	}
-	public void setExpirationTimestamp(Long expiration_timestamp) {
-		this.expiration_timestamp = expiration_timestamp;
+	public void setExpirationTimestamp(Long expirationTimestamp) {
+		this.expirationTimestamp = expirationTimestamp;
 	}
 	
 	@Override
