@@ -4,7 +4,7 @@
 angular.module('argus.controllers.d3test', [])
     .controller('D3test', ['$scope', 'Metrics', 'growl', function ($scope, Metrics, growl) {
         //some default val
-        $scope.expression = "-10d:argus.core:alerts.evaluated:sum";
+        $scope.expression = "-10h:argus.core:alerts.evaluated:sum";
 
         $scope.getMetricData = function () {
             Metrics.query({expression: $scope.expression}, function (data) {
