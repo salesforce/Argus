@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
+
 import org.junit.Test;
 import java.util.List;
 
@@ -44,7 +45,7 @@ import static org.junit.Assert.*;
 public class SchedulingServiceTest extends AbstractTest {
 
     @Test
-    public void testAlertScheduling() throws InterruptedException {
+    public void testAlertSchedulingWithGlobalInterlock() throws InterruptedException {
         SchedulingService schedulingService = system.getServiceFactory().getSchedulingService();
         AlertService alertService = system.getServiceFactory().getAlertService();
         MQService mqService = system.getServiceFactory().getMQService();

@@ -106,34 +106,29 @@ public class DefaultNamespaceService extends DefaultJPAService implements Namesp
     /**
      * Creates a new namespace.
      *
-     * @param   newNamespace  The namespace to create.  Cannot be null.
+     * @param   namespace  The namespace to create.  Cannot be null.
      *
-     * @return  The update namespace object having the ID field populated.
+     * @return  The updated namespace object having the ID field populated.
      *
      * @throws  SystemException  If a duplicate namespace exists.
      */
     @Override
-    public Namespace createNamespace(Namespace newNamespace) {
+    public Namespace createNamespace(Namespace namespace) {
         requireNotDisposed();
-        requireArgument(newNamespace != null, "null namespace cannot be created.");
-        if (!_validateQualifier(newNamespace.getQualifier())) {
+        requireArgument(namespace != null, "null namespace cannot be created.");
+        
+        if (!_validateQualifier(namespace.getQualifier())) {
             throw new SystemException(new IllegalArgumentException(
                     "Illegal characters found while generating namespace. Cannot generate a namespace with this qualifier."));
         }
-
-        String qualifierWithPrefix =
-            (newNamespace.getQualifier().length() >= NAMEPSACE_PREFIX.length() &&
-                newNamespace.getQualifier().substring(0, NAMEPSACE_PREFIX.length()).equals(NAMEPSACE_PREFIX))
-            ? newNamespace.getQualifier() : NAMEPSACE_PREFIX + newNamespace.getQualifier();
-        Namespace namespace = Namespace.findByQualifier(emf.get(), qualifierWithPrefix);
-
-        if (namespace != null) {
+        
+        if (Namespace.findByQualifier(emf.get(), namespace.getQualifier()) != null) {
             throw new SystemException(new IllegalArgumentException("Namespace already exists. Please try a different namespace."));
         }
-        newNamespace.setQualifier(qualifierWithPrefix);
-        newNamespace = updateNamespace(newNamespace);
-        _logger.debug("Generated namespace {}.", newNamespace);
-        return newNamespace;
+        
+        namespace = updateNamespace(namespace);
+        _logger.debug("Generated namespace {}.", namespace);
+        return namespace;
     }
 
     private boolean _validateQualifier(String qualifierSuffix) {

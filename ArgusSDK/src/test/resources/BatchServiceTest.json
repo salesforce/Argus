@@ -1,0 +1,29 @@
+[{
+    "type": "GET",
+    "endpoint": "/metrics/batch?expression=-1d:TestScope:TestMetric{TestTag=TagValue}:avg&ttl=3600",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"href\":\"/batches/1\",\"id\":\"1\"}"
+},{
+    "type": "GET",
+    "endpoint": "/batches/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"status\":\"QUEUED\",\"ttl\":3600,\"createdDate\":1472282830936,\"ownerName\":\"TestOwner\",\"queries\":[{\"expression\":\"-1d:TestScope:TestMetric{TestTag=TagValue}:avg\",\"result\":{\"scope\":\"TestScope\",\"metric\":\"TestMetric\",\"tags\":{},\"namespace\":\"TestNamespace\",\"displayName\":\"TestDisplayName\",\"units\":\"TestUnits\",\"datapoints\":{}},\"message\":\"TestMessage\"}]}"
+},{
+    "type": "GET",
+    "endpoint": "/batches",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"1\":\"QUEUED\"}"
+},{
+    "type": "DELETE",
+    "endpoint": "/batches/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : ""
+}]

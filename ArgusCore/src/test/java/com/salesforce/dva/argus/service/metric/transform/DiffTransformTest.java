@@ -292,5 +292,48 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
+    
+    @Test
+    public void testDiffTransformWithFullConstantShareSomeCommonDPs() {
+        Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+
+        datapoints_1.put(1000L, "1");
+        datapoints_1.put(2000L, "2");
+        datapoints_1.put(3000L, "3");
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+
+        datapoints_2.put(100L, "10");
+        datapoints_2.put(200L, "100");
+        datapoints_2.put(3000L, "1000");
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("union");
+        
+        Map<Long, String> expected = new HashMap<Long, String>();
+        expected.put(100L, "10.0");
+        expected.put(200L, "100.0");
+        expected.put(1000L, "1.0");
+        expected.put(2000L, "2.0");
+        expected.put(3000L, "-997.0");
+
+        List<Metric> result = diffTransform.transform(metrics, constants);
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

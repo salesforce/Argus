@@ -1,0 +1,23 @@
+<section>
+
+<div class="container" ng-show="isPrivilaged">
+		<div class="row">
+				<div class="col-md-6 col-md-offset-3">
+				<form name="reinstateUser">
+						<p class="h3">Reinstate User:</p>
+
+						<input type="text" size="25" class="form-control" name="username" ng-model="username" placeholder="username" /><br />
+
+						<select ng-model="subsystem" name="subsystem" class="form-control">
+								<option value="">-- SELECT SUBSYSTEM --</option>
+								<option value="POSTING">POSTING</option>
+								<option value="API">API</option>
+						</select>
+						<br />
+
+						<input class="btn btn-primary" type="submit" ng-click="submitUser()" value="Submit" />
+				</form>
+		</div>
+</div>
+
+</section>

@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+
 import java.util.List;
 
 /**
@@ -94,6 +95,19 @@ public interface MetricService extends Service {
      *          return null. Returns an empty list if all expressions return nothing.
      */
     List<Metric> getMetrics(String expression, long offset);
+
+    /**
+     * Batch and enqueue the given expressions and return the batch ID.
+     *
+     * @param   expressions  A list of query expressions
+     * @param   offset       The offset to use for start time and end time. All offsets are added to the start and end times. Negative offsets should
+     *                       be used to obtain earlier start and end times.
+     * @param   ttl          Time to live for the results of the expressions after the full batch has been computed
+     * @param   ownerName    Username of the user making the request
+     *
+     * @return  The ID of the batch in canonical UUID form
+     */
+    String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName);
 
     /**
      * Returns a list of <tt>MetricQuery</tt> objects corresponding to the given expression.
