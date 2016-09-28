@@ -10,6 +10,8 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,6 +27,7 @@ import com.salesforce.dva.argus.entity.SuspensionLevel;
 import com.salesforce.dva.argus.service.warden.WaaSNotifier;
 import com.salesforce.dva.warden.dto.Policy.Aggregator;
 import com.salesforce.dva.warden.dto.Policy.TriggerType;
+import com.sun.tools.javac.util.Log;
 
 public class WaaSServiceTest extends AbstractTest {
 	@Inject
@@ -78,6 +81,23 @@ public class WaaSServiceTest extends AbstractTest {
 				this.DEFAULT_VALUE, this.CRON_ENTRY);
     }
     
+  //============is this the reason?==================
+    @After
+    @Override
+    public void tearDown() {
+    	try{
+    		em.getTransaction().begin();
+        	em.flush();
+        	em.getTransaction().commit();
+        	em.close();
+        	factory.close();
+        	super.tearDown();
+    	}catch (Exception ex) {
+    		throw new RuntimeException("failed to tear down!!!");
+    	}
+    	
+    }
+  //============is this the reason?==================
    @Test
    public void testPolicyCRUD(){
 	   testPolicy.setName(testName.getMethodName());
