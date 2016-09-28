@@ -35,6 +35,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 import com.salesforce.dva.argus.system.SystemException;
+
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -263,21 +264,23 @@ public class AnnotationQuery {
      * @throws  UnsupportedEncodingException  If UTF-8 is not supported.
      */
     protected String toTagParameterArray(Map<String, String> tags) throws UnsupportedEncodingException {
+    	if(tags == null || tags.isEmpty()) {
+    		return "";
+    	}
+    	
         StringBuilder sb = new StringBuilder(encode("{", "UTF-8"));
+        for (Map.Entry<String, String> tagEntry : tags.entrySet()) {
+            sb.append(tagEntry.getKey()).append("=");
 
-        if (tags != null && !tags.isEmpty()) {
-            for (Map.Entry<String, String> tagEntry : tags.entrySet()) {
-                sb.append(tagEntry.getKey()).append("=");
+            String tagV = tagEntry.getValue().replaceAll("\\|", encode("|", "UTF-8"));
 
-                String tagV = tagEntry.getValue().replaceAll("\\|", encode("|", "UTF-8"));
-
-                sb.append(tagV).append(",");
-            }
+            sb.append(tagV).append(",");
         }
         sb.replace(sb.length() - 1, sb.length(), encode("}", "UTF-8"));
+        
         return sb.toString();
     }
-
+    
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -363,12 +366,14 @@ public class AnnotationQuery {
         String pattern = "start={0,number,#}&end={1,number,#}&m=avg:{2}{3}&ms=true&show_tsuids=true";
         long start = Math.max(0, getStartTimestamp() - 1);
         long end = Math.max(start, getEndTimestamp() + 1);
+        
         String scope = DefaultTSDBService.toAnnotationKey(_scope, _metric, _type, _tags);
+        //When creating the corresponding argus Metric for the annotations, _type is used as metric name. 
+        String tsdbMetricName = DefaultTSDBService.constructTSDBMetricName(new Metric(scope, _type));
         Map<String, String> tags = new HashMap<>(getTags());
-
-        tags.put(ReservedField.METRIC.getKey(), _type);
+        
         try {
-            return MessageFormat.format(pattern, start, end, scope, toTagParameterArray(tags));
+            return MessageFormat.format(pattern, start, end, tsdbMetricName, toTagParameterArray(tags));
         } catch (UnsupportedEncodingException ex) {
             throw new SystemException(ex);
         }

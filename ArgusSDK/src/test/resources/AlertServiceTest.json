@@ -1,0 +1,176 @@
+[{
+    "type": "POST",
+    "endpoint": "/auth/login",
+    "jsonInput" :"{\"username\":\"aUsername\",\"password\":\"aPassword\"}",
+    "status": 200,
+    "message": "login",
+    "jsonOutput" : ""
+},{
+    "type": "POST",
+    "endpoint": "/alerts",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}",
+    "status": 200,
+    "message": "create alert",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}"
+},{
+    "type": "GET",
+    "endpoint": "/alerts",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get alerts",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}]"
+},{
+    "type": "GET",
+    "endpoint": "/alerts/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get alert",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}"
+},{
+    "type": "PUT",
+    "endpoint": "/alerts/1",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}",
+    "status": 200,
+    "message": "update alert",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}"
+},{
+    "type": "GET",
+    "endpoint": "/alerts/1/notifications",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get notifications",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}]"
+},{
+    "type": "POST",
+    "endpoint": "/alerts/1/notifications",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}",
+    "status": 200,
+    "message": "create notification",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}]"
+},{
+    "type": "GET",
+    "endpoint": "/alerts/1/notifications/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get notification",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}"
+},{
+    "type": "PUT",
+    "endpoint": "/alerts/1/notifications/1",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}",
+    "status": 200,
+    "message": "update notification",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1}"
+},{
+  "type": "GET",
+    "endpoint": "/alerts/1/triggers",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get triggers",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+},{
+  "type": "POST",
+    "endpoint": "/alerts/1/triggers",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
+    "status": 200,
+    "message": "create trigger",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+},{
+  "type": "GET",
+    "endpoint": "/alerts/1/triggers/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get trigger",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+},{
+  "type": "PUT",
+    "endpoint": "/alerts/1/triggers/1",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
+    "status": 200,
+    "message": "update trigger",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+},{
+  "type": "GET",
+    "endpoint": "/alerts/1/notifications/1/triggers",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get linked triggers",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+},{
+  "type": "GET",
+    "endpoint": "/alerts/1/notifications/1/triggers/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "get linked trigger",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+},{
+  "type": "POST",
+    "endpoint": "/alerts/1/notifications/1/triggers/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "link trigger",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "delete alert, triggers and notifications",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/notifications",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "delete all notifications",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/notifications/1/triggers",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "unlink triggers",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/notifications/1/triggers/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "unlink trigger",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/notifications/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "delete notification",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/triggers",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "delete triggers",
+    "jsonOutput" : ""
+},{
+  "type": "DELETE",
+    "endpoint": "/alerts/1/triggers/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "delete trigger",
+    "jsonOutput" : ""
+},{
+    "type": "POST",
+    "endpoint": "/alerts",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}",
+    "status": 500,
+    "message": "create duplicate alert error",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\"}"
+},{
+    "type": "GET",
+    "endpoint": "/auth/logout",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "logout",
+    "jsonOutput" : ""
+}]

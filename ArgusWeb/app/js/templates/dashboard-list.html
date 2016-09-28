@@ -1,0 +1,11 @@
+<section>
+    <!-- Navigation tabs -->
+    <ul class="nav nav-tabs">
+        <li ng-class="{active:isTabSelected(1)}"><a href ng-click="getDashboards(false);selectTab(1)">{{currentUser()}}'s Dashboards</a></li>
+        <li ng-class="{active:isTabSelected(2)}"><a href ng-click="getDashboards(true);selectTab(2)">Shared</a></li>
+    </ul>
+	<!-- dashboard list -->
+	<table-list properties = "properties" col-name="colName" data="dashboards" tot="allDashboards" add-item="addDashboard()" delete="deleteDashboard" disabled="isDisabled"></table-list>
+	<!--loading spinner-->
+	<div ng-loading="allDashboards"></div>
+</section>

@@ -67,13 +67,17 @@ public abstract class AbstractTest {
     static {
         tags = new HashMap<>();
         tags.put("source", "unittest");
+        ch.qos.logback.classic.Logger apacheLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache");
+        apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
+        kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
     }
 
     protected TestingServer zkTestServer;
     protected SystemMain system;
     protected KafkaServerStartable kafkaServer;
     private String tempDir = "";
-
+    
     private static void deleteFolder(File folder) {
         File[] files = folder.listFiles();
 
@@ -203,6 +207,31 @@ public abstract class AbstractTest {
             }
         }
         return SystemMain.getInstance(config);
-    }    
+    } 
+    
+    public SystemMain getInstance(Properties props) {
+        Properties config = new Properties();
+        InputStream is = null;
+
+        try {
+            is = getClass().getResourceAsStream("/argus.properties");
+            config.load(is);
+            config.putAll(props);
+        } catch (IOException ex) {
+            throw new SystemException(ex);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ex) {
+                    assert false : "This should never occur.";
+                }
+            }
+        }
+        system.stop();
+        system = SystemMain.getInstance(config);
+        system.start();
+        return system;
+    } 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

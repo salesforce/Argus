@@ -579,21 +579,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
         return _defaultTsdbService.getAnnotations(queries);
     }
-
-    @Override
-    public String constructTSDBMetricName(String scope, String namespace) {
-        return _defaultTsdbService.constructTSDBMetricName(scope, namespace);
-    }
-
-    @Override
-    public String getScopeFromTSDBMetric(String tsdbMetricName) {
-	return _defaultTsdbService.getScopeFromTSDBMetric(tsdbMetricName);
-    }
-
-    @Override
-    public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-	return _defaultTsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
-    }
     
     private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start) {
 		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
