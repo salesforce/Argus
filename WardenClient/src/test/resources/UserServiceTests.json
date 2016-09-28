@@ -1,0 +1,45 @@
+[
+  {"type": "GET",
+  "endpoint": "/user",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput" :"[{\"entity\":{\"type\":\"wardenuser\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"userName\":\"exampleuser\",\"email\":\"user@user.com\"},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+},{"type": "GET",
+    "endpoint": "/user/1",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" :"[{\"entity\":{\"type\":\"wardenuser\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"userName\":\"exampleuser\",\"email\":\"user@user.com\"},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+ },{"type": "GET",
+  "endpoint": "/user/1/policy",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput" : "[{\"entity\":{\"type\":\"policy\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"service\":\"TestService\",\"name\":\"TestName\",\"owners\":[\"TestOwner\"],\"users\":[\"TestUser\"],\"subSystem\":\"TestSubSystem\",\"metricName\":\"TestMetricName\",\"triggerType\":\"BETWEEN\",\"aggregator\":\"AVG\",\"timeUnit\":\"5min\",\"defaultValue\":0.0,\"cronEntry\":\"0 */4 * * *\",\"thresholds\":[0.0],\"suspensionLevels\":[]},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+},{"type": "GET",
+  "endpoint": "/user/1/policy/1/infraction",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+ },{"type": "GET",
+  "endpoint": "/user/1/infraction",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+ },{"type": "GET",
+  "endpoint": "/user/1/suspension",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+ },{"type": "GET",
+  "endpoint": "/user/1/suspension/1",
+  "jsonInput" :null,
+  "status": 200,
+  "message": "success",
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+}
+]

@@ -186,7 +186,7 @@ public class WaaSResources extends AbstractResource {
         for (Policy p : policies) {
         	com.salesforce.dva.argus.entity.Policy policyEntity = null;
 			com.salesforce.dva.argus.entity.Policy entity = new com.salesforce.dva.argus.entity.Policy(remoteUser, p.getService(), p.getName(), p.getOwners(),
-					p.getUsers(), p.getTriggerType(), p.getAggregator(), p.getThreshold(), p.getTimeUnit(),
+					p.getUsers(), p.getTriggerType(), p.getAggregator(), p.getThresholds(), p.getTimeUnit(),
 					p.getDefaultValue(), p.getCronEntry());
 			try{
 				policyEntity = waaSService.updatePolicy(entity);
@@ -337,7 +337,7 @@ public class WaaSResources extends AbstractResource {
 				oldPolicy.setUsers(newPolicy.getUsers());
 				oldPolicy.setTriggerType(newPolicy.getTriggerType());
 				oldPolicy.setAggregator(newPolicy.getAggregator()); 
-				oldPolicy.setThreshold(newPolicy.getThreshold());
+				oldPolicy.setThreshold(newPolicy.getThresholds());
 				oldPolicy.setTimeUnit(newPolicy.getTimeUnit());
 				oldPolicy.setDefaultValue(newPolicy.getDefaultValue());
 				oldPolicy.setCronEntry(newPolicy.getCronEntry());
@@ -542,7 +542,7 @@ public class WaaSResources extends AbstractResource {
         	existingPolicy.setUsers(policy.getUsers());
         	existingPolicy.setTriggerType(policy.getTriggerType());
         	existingPolicy.setAggregator(policy.getAggregator()); 
-        	existingPolicy.setThreshold(policy.getThreshold());
+        	existingPolicy.setThreshold(policy.getThresholds());
         	existingPolicy.setTimeUnit(policy.getTimeUnit());
         	existingPolicy.setDefaultValue(policy.getDefaultValue());
         	existingPolicy.setCronEntry(policy.getCronEntry());
@@ -672,7 +672,7 @@ public class WaaSResources extends AbstractResource {
 			com.salesforce.dva.argus.entity.SuspensionLevel levelEntity = null;
 			com.salesforce.dva.argus.entity.SuspensionLevel newLevel = new com.salesforce.dva.argus.entity.SuspensionLevel(
 					remoteUser, existingPolicy, level.getLevelNumber(), level.getInfractionCount(),
-					level.getSuspensionTime());
+					level.getSuspensionTime().longValue());
 			try {
 				levelEntity = waaSService.updateLevel(newLevel);
 			} catch (Exception e) {
@@ -844,7 +844,7 @@ public class WaaSResources extends AbstractResource {
 			if (oldLevel != null) {
 				oldLevel.setLevelNumber(newLevel.getLevelNumber());
 				oldLevel.setInfractionCount(newLevel.getInfractionCount());
-				oldLevel.setSuspensionTime(newLevel.getSuspensionTime());
+				oldLevel.setSuspensionTime(newLevel.getSuspensionTime().longValue());
 
 				oldLevel.setModifiedBy(remoteUser);
 			}
@@ -1061,7 +1061,7 @@ public class WaaSResources extends AbstractResource {
          if(oldLevel != null){
      		oldLevel.setLevelNumber(level.getLevelNumber());
      		oldLevel.setInfractionCount(level.getInfractionCount());
-     		oldLevel.setSuspensionTime(level.getSuspensionTime());
+     		oldLevel.setSuspensionTime(level.getSuspensionTime().longValue());
      
      		oldLevel.setModifiedBy(remoteUser);
          }

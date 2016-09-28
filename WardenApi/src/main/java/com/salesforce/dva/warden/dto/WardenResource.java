@@ -78,7 +78,7 @@ public class WardenResource<T> {
      * @return  DOCUMENT ME!
      */
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-    @JsonSubTypes({ @JsonSubTypes.Type(Policy.class), @JsonSubTypes.Type(Infraction.class), @JsonSubTypes.Type(SuspensionLevel.class) })
+    @JsonSubTypes({ @JsonSubTypes.Type(Policy.class), @JsonSubTypes.Type(Infraction.class), @JsonSubTypes.Type(SuspensionLevel.class), @JsonSubTypes.Type(WardenUser.class),})
     public T getEntity() {
         return entity;
     }

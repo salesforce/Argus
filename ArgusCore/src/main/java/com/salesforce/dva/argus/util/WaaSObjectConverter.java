@@ -18,6 +18,7 @@ import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.warden.dto.Entity;
 import com.salesforce.dva.warden.dto.WardenResource;
 import com.salesforce.dva.warden.dto.WardenResource.MetaKey;
+import java.util.Arrays;
 
 import java.util.List;
 
@@ -79,7 +80,7 @@ public class WaaSObjectConverter implements Serializable {
         }
     	//com.salesforce.dva.warden.dto.Policy result = createDtoObject(com.salesforce.dva.warden.dto.Policy.class, policy);
     	com.salesforce.dva.warden.dto.Policy result = new com.salesforce.dva.warden.dto.Policy();
-    	result.setAggregator(policy.getAggregator().name());
+    	result.setAggregator(com.salesforce.dva.warden.dto.Policy.Aggregator.valueOf(policy.getAggregator().name()));
     	result.setCreatedById(policy.getCreatedBy() != null ? policy.getCreatedBy().getId() : null);
     	result.setCreatedDate(policy.getCreatedDate());
     	result.setCronEntry(policy.getCronEntry());
@@ -95,9 +96,9 @@ public class WaaSObjectConverter implements Serializable {
     	
     	
     	result.setSuspensionLevels(policy.getSuspensionLevels().stream().map(s -> s.getId()).collect(Collectors.toList()));
-    	result.setThreshold(policy.getThreshold());
+    	result.setThresholds(policy.getThreshold());
     	result.setTimeUnit(policy.getTimeUnit());
-    	result.setTriggerType(policy.getTriggerType().name());
+    	result.setTriggerType(com.salesforce.dva.warden.dto.Policy.TriggerType.valueOf(policy.getTriggerType().name()));
     	result.setUsers(policy.getUsers());
     	return result;
     }
@@ -132,7 +133,7 @@ public class WaaSObjectConverter implements Serializable {
     	result.setPolicyId(suspensionLevel.getPolicy().getId());
         result.setLevelNumber(suspensionLevel.getLevelNumber());
         result.setInfractionCount(suspensionLevel.getInfractionCount());
-        result.setSuspensionTime(suspensionLevel.getSuspensionTime());
+        result.setSuspensionTime(BigInteger.valueOf(suspensionLevel.getSuspensionTime()));
         
         result.setCreatedById(suspensionLevel.getCreatedBy() != null ? suspensionLevel.getCreatedBy().getId() : null);
     	result.setCreatedDate(suspensionLevel.getCreatedDate());

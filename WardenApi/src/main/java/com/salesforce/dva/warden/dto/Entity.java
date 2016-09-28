@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.dva.warden.dto;
 
 import java.io.Serializable;
@@ -50,7 +49,6 @@ public abstract class Entity extends Base implements Serializable {
     private Date createdDate;
     private BigInteger modifiedById;
     private Date modifiedDate;
-
 
     //~ Methods **************************************************************************************************************************************
 

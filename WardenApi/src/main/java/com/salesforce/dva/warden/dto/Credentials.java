@@ -28,49 +28,65 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.dva.warden;
+package com.salesforce.dva.warden.dto;
 
-import com.salesforce.dva.warden.dto.Policy;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.io.Serializable;
 
 /**
  * DOCUMENT ME!
  *
- * @author  jbhatt
+ * @author  Tom Valine (tvaline@salesforce.com)
  */
-public interface WardenClient {
+@SuppressWarnings("serial")
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Credentials implements Serializable {
+
+    //~ Instance fields ******************************************************************************************************************************
+
+    // ~ Instance fields
+    // ******************************************************************************************************************************
+    private String username;
+    private String password;
 
     //~ Methods **************************************************************************************************************************************
 
+    // ~ Methods
+    // **************************************************************************************************************************************
     /**
-     * This method is responsible for establishing communication with the warden server. It performs the following operations: Establish communication
-     * via the specified port by which the server can publish relevant events to. Compare policies provided as parameters and reconcile with whats on
-     * the server upserting as needed. Start the usage data push scheduling, so that usage data gets pushed to server on regular intervals.
+     * DOCUMENT ME!
      *
-     * @param  policy  DOCUMENT ME!
-     * @param  port    DOCUMENT ME!
+     * @return  DOCUMENT ME!
      */
-    void register(List<Policy> policy, int port);
-
-    /** DOCUMENT ME! */
-    void unregister();
+    public String getUsername() {
+        return username;
+    }
 
     /**
      * DOCUMENT ME!
      *
-     * @param  policy    DOCUMENT ME!
      * @param  username  DOCUMENT ME!
-     * @param  value     DOCUMENT ME!
      */
-    void updateMetric(Policy policy, String username, double value);
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     /**
      * DOCUMENT ME!
      *
-     * @param  policy    DOCUMENT ME!
-     * @param  username  DOCUMENT ME!
-     * @param  delta     DOCUMENT ME!
+     * @return  DOCUMENT ME!
      */
-    void modifyMetric(Policy policy, String username, double delta);
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @param  password  DOCUMENT ME!
+     */
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

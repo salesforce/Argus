@@ -28,49 +28,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.dva.warden;
+package com.salesforce.dva.warden.client;
 
-import com.salesforce.dva.warden.dto.Policy;
-import java.util.List;
+import org.junit.Test;
+import java.io.IOException;
 
-/**
- * DOCUMENT ME!
- *
- * @author  jbhatt
- */
-public interface WardenClient {
+import static org.junit.Assert.*;
 
-    //~ Methods **************************************************************************************************************************************
+public class AuthServiceTest extends AbstractTest {
 
-    /**
-     * This method is responsible for establishing communication with the warden server. It performs the following operations: Establish communication
-     * via the specified port by which the server can publish relevant events to. Compare policies provided as parameters and reconcile with whats on
-     * the server upserting as needed. Start the usage data push scheduling, so that usage data gets pushed to server on regular intervals.
-     *
-     * @param  policy  DOCUMENT ME!
-     * @param  port    DOCUMENT ME!
-     */
-    void register(List<Policy> policy, int port);
+    @Test
+    public void testLoginLogout() throws IOException {
+        try(WardenService wardenService = new WardenService(getMockedClient("/AuthServiceTest.testLoginLogout.json"))) {
+            AuthService authService = wardenService.getAuthService();
+            WardenResponse loginResult = authService.login("aUsername", "aPassword");
 
-    /** DOCUMENT ME! */
-    void unregister();
+            assertEquals(200, loginResult.getStatus());
 
-    /**
-     * DOCUMENT ME!
-     *
-     * @param  policy    DOCUMENT ME!
-     * @param  username  DOCUMENT ME!
-     * @param  value     DOCUMENT ME!
-     */
-    void updateMetric(Policy policy, String username, double value);
+            WardenResponse logoutResult = authService.logout();
 
-    /**
-     * DOCUMENT ME!
-     *
-     * @param  policy    DOCUMENT ME!
-     * @param  username  DOCUMENT ME!
-     * @param  delta     DOCUMENT ME!
-     */
-    void modifyMetric(Policy policy, String username, double delta);
+            assertEquals(200, logoutResult.getStatus());
+        }
+    }
+
+    @Test
+    public void testBadLogin() throws IOException {
+        try(WardenService wardenService = new WardenService(getMockedClient("/AuthServiceTest.testLoginLogout.json"))) {
+            AuthService authService = wardenService.getAuthService();
+            WardenResponse loginResult = authService.login("aBadUsername", "aBadPassword");
+
+            assertEquals(403, loginResult.getStatus());
+        }
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

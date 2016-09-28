@@ -28,89 +28,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
 package com.salesforce.dva.warden.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-//import org.apache.commons.beanutils.BeanUtils;
+import java.util.Date;
 
 /**
- * The principal user DTO.
+ * Policy Dto.
  *
- * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author Jigna Bhatt (jbhatt@salesforce.com) Failing to add comment.
  */
 @SuppressWarnings("serial")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeName("wardenuser")
 public class WardenUser extends Entity {
 
     //~ Instance fields ******************************************************************************************************************************
-	//just keep userName so far
+
     private String userName;
     private String email;
-//    private Map<Preference, String> preferences = new HashMap<>();
-//    private List<BigInteger> ownedDashboardIds = new ArrayList<>();
-//    private boolean privileged;
 
     //~ Methods **************************************************************************************************************************************
 
-//    /**
-//     * Converts a user entity to DTO.
-//     *
-//     * @param   user  The entity to convert.
-//     *
-//     * @return  The DTO.
-//     *
-//     * @throws  WebApplicationException  If an error occurs.
-//     */
-//    public static WardenUserDto transformToDto(PrincipalUser user) {
-//        if (user == null) {
-//            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
-//        }
-//
-//        WardenUserDto result = createDtoObject(WardenUserDto.class, user);
-//
-//        for (Dashboard dashboard : user.getOwnedDashboards()) {
-//            result.addOwnedDashboardId(dashboard.getId());
-//        }
-//        return result;
-//    }
-
-//    /**
-//     * Converts list of alert entity objects to list of alertDto objects.
-//     *
-//     * @param   users  alerts List of alert entities. Cannot be null.
-//     *
-//     * @return  List of alertDto objects.
-//     *
-//     * @throws  WebApplicationException  If an error occurs.
-//     */
-//    public static List<WardenUserDto> transformToDto(List<PrincipalUser> users) {
-//        if (users == null) {
-//            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
-//        }
-//
-//        List<WardenUserDto> result = new ArrayList<>();
-//
-//        for (PrincipalUser user : users) {
-//            result.add(transformToDto(user));
-//        }
-//        return result;
-//    }
-
-    //~ Methods **************************************************************************************************************************************
+//~ Methods **************************************************************************************************************************************
 
     /**
      * Returns the user name.
      *
-     * @return  The user name.
+     * @return The user name.
      */
     public String getUserName() {
         return userName;
@@ -119,7 +67,7 @@ public class WardenUser extends Entity {
     /**
      * Sets the user name.
      *
-     * @param  userName  The user name.
+     * @param userName The user name.
      */
     public void setUserName(String userName) {
         this.userName = userName;
@@ -128,7 +76,7 @@ public class WardenUser extends Entity {
     /**
      * Returns the email.
      *
-     * @return  The email.
+     * @return The email.
      */
     public String getEmail() {
         return email;
@@ -137,97 +85,44 @@ public class WardenUser extends Entity {
     /**
      * Sets the email.
      *
-     * @param  email  The email.
+     * @param email The email.
      */
     public void setEmail(String email) {
         this.email = email;
     }
-//
-//    /**
-//     * Returns the user preferences.
-//     *
-//     * @return  The user preferences.
-//     * 
-//     */
-//    public Map<Preference, String> getPreferences() {
-//        return preferences;
-//    }
-//
-//    /**
-//     * Sets the user preferences.
-//     *
-//     * @param  preferences  The user preferences.
-//     */
-//    public void setPreferences(Map<Preference, String> preferences) {
-//        this.preferences = preferences;
-//    }
-//
-//    /**
-//     * Returns the list of dashboards IDs owned by the user.
-//     *
-//     * @return  The list of dashboards IDs owned by the user.
-//     */
-//    public List<BigInteger> getOwnedDashboardIds() {
-//        return ownedDashboardIds;
-//    }
-//
-//    /**
-//     * Adds a dashboard ID to the list of owned dashboards.
-//     *
-//     * @param  id  The dashboard ID.
-//     */
-//    public void addOwnedDashboardId(BigInteger id) {
-//        this.getOwnedDashboardIds().add(id);
-//    }
-//
-//    /**
-//     * Indicates if the user has privileged access.
-//     *
-//     * @return  True if the user has privileged access.
-//     */
-//    public boolean isPrivileged() {
-//        return privileged;
-//    }
-//
-//    /**
-//     * Specifies if the user has privileged access.
-//     *
-//     * @param  privileged  True if the user has privileged access.
-//     */
-//    public void setPrivileged(boolean privileged) {
-//        this.privileged = privileged;
-//    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        WardenUser user = (WardenUser) o;
+
+        if (!getUserName().equals(user.getUserName())) return false;
+        return getEmail().equals(user.getEmail());
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getUserName().hashCode();
+        result = 31 * result + getEmail().hashCode();
+        return result;
+    }
 
     @Override
     public Object createExample() {
-        return null;
+        WardenUser user = new WardenUser();
+        user.setEmail("user@user.com");
+        user.setUserName("exampleuser");
+        user.setCreatedById(BigInteger.ONE);
+        user.setCreatedDate(new Date(1472847819167L));
+        user.setModifiedById(BigInteger.TEN);
+        user.setModifiedDate(new Date(1472847819167L));
+        user.setId(BigInteger.ONE);
+
+        return user;
     }
-//    /**
-//     * Creates BaseDto object and copies properties from entity object.
-//     *
-//     * @param   <D>     BaseDto object type.
-//     * @param   <E>     Entity type.
-//     * @param   clazz   BaseDto entity class.
-//     * @param   entity  entity object.
-//     *
-//     * @return  BaseDto object.
-//     *
-//     * @throws  WebApplicationException  The exception with 500 status will be thrown.
-//     */
-//    public static <D extends EntityDTO, E extends JPAEntity> D createDtoObject(Class<D> clazz, E entity) {
-//        D result = null;
-//
-//        try {
-//            result = clazz.newInstance();
-//            BeanUtils.copyProperties(result, entity);
-//
-//            // Now set IDs of JPA entity
-//            result.setCreatedById(entity.getCreatedBy() != null ? entity.getCreatedBy().getId() : null);
-//            result.setModifiedById(entity.getModifiedBy() != null ? entity.getModifiedBy().getId() : null);
-//        } catch (Exception ex) {
-//            throw new WebApplicationException("DTO transformation failed.", Status.INTERNAL_SERVER_ERROR);
-//        }
-//        return result;
-//    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

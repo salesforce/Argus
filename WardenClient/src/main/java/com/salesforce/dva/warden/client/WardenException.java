@@ -28,49 +28,84 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.dva.warden;
-
-import com.salesforce.dva.warden.dto.Policy;
-import java.util.List;
+package com.salesforce.dva.warden.client;
 
 /**
- * DOCUMENT ME!
+ * Exception class for the Argus SDK.
  *
- * @author  jbhatt
+ * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
-public interface WardenClient {
+public class WardenException extends RuntimeException {
+
+    //~ Instance fields ******************************************************************************************************************************
+
+    private int _status;
+    private String _message;
+    private String _url;
+    private String _json;
+
+    //~ Constructors *********************************************************************************************************************************
+
+    /**
+     * Constructs an instance of <code>ArgusServiceException</code> with the specified detail message.
+     *
+     * @param  msg  the detail message.
+     */
+    public WardenException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates a new WardenException object.
+     *
+     * @param  status   DOCUMENT ME!
+     * @param  message  DOCUMENT ME!
+     * @param  url      DOCUMENT ME!
+     * @param  json     DOCUMENT ME!
+     */
+    public WardenException(int status, String message, String url, String json) {
+        _status = status;
+        _message = message;
+        _url = url;
+        _json = json;
+    }
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * This method is responsible for establishing communication with the warden server. It performs the following operations: Establish communication
-     * via the specified port by which the server can publish relevant events to. Compare policies provided as parameters and reconcile with whats on
-     * the server upserting as needed. Start the usage data push scheduling, so that usage data gets pushed to server on regular intervals.
+     * DOCUMENT ME!
      *
-     * @param  policy  DOCUMENT ME!
-     * @param  port    DOCUMENT ME!
+     * @return  DOCUMENT ME!
      */
-    void register(List<Policy> policy, int port);
-
-    /** DOCUMENT ME! */
-    void unregister();
+    public int getStatus() {
+        return _status;
+    }
 
     /**
      * DOCUMENT ME!
      *
-     * @param  policy    DOCUMENT ME!
-     * @param  username  DOCUMENT ME!
-     * @param  value     DOCUMENT ME!
+     * @return  DOCUMENT ME!
      */
-    void updateMetric(Policy policy, String username, double value);
+    public String getMessage() {
+        return _message;
+    }
 
     /**
      * DOCUMENT ME!
      *
-     * @param  policy    DOCUMENT ME!
-     * @param  username  DOCUMENT ME!
-     * @param  delta     DOCUMENT ME!
+     * @return  DOCUMENT ME!
      */
-    void modifyMetric(Policy policy, String username, double delta);
+    public String getUrl() {
+        return _url;
+    }
+
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     */
+    public String getJson() {
+        return _json;
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

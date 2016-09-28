@@ -220,6 +220,57 @@
                     </execution>
                 </executions>
             </plugin>
+             <!-- <plugin>
+                <groupId>triemax</groupId>
+                <artifactId>jalopy-maven</artifactId>
+                <version>1.9.5-328</version>
+                <executions>
+                    <execution>
+                        <id>format-src</id>
+                        <configuration>
+                            <compile>true</compile>
+                            <convention>.jalopy.xml</convention>
+                            <javadoc>true</javadoc>
+                            <logLevel>error</logLevel>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <repository>false</repository>
+                            <sources>
+                                <source>src/main/java</source>
+                            </sources>
+                            <profile>sfdc</profile>
+                            <outputEncoding>UTF-8</outputEncoding>
+                        </configuration>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>format-test</id>
+                        <configuration>
+                            <compile>true</compile>
+                            <convention>.jalopy-test.xml</convention>
+                            <javadoc>true</javadoc>
+                            <logLevel>error</logLevel>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                            <repository>false</repository>
+                            <sources>
+                                <source>src/test/java</source>
+                            </sources>
+                            <profile>sfdc-test</profile>
+                            <outputEncoding>UTF-8</outputEncoding>
+                        </configuration>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin> --> 
         </plugins>
     </build>
     <reporting>

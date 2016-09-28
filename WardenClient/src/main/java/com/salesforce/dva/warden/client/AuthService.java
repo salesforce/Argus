@@ -30,34 +30,64 @@
  */
 package com.salesforce.dva.warden.client;
 
-import com.salesforce.dva.warden.WardenClient;
-import com.salesforce.dva.warden.dto.Policy;
-import java.util.List;
+import com.salesforce.dva.warden.client.WardenService.EndpointService;
+import com.salesforce.dva.warden.dto.Credentials;
+import java.io.IOException;
 
 /**
  * DOCUMENT ME!
  *
  * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
-public class DefaultWardenClient implements WardenClient {
-    //~ Constructors *********************************************************************************************************************************
-    // This is how the client talks to the server.
+public class AuthService extends EndpointService {
 
-    /** Creates a new DefaultWardenClient object. */
-    public DefaultWardenClient() { }
+    //~ Static fields/initializers *******************************************************************************************************************
+
+    private static final String REQUESTURL = "/auth";
+
+    //~ Constructors *********************************************************************************************************************************
+
+    /**
+     * Creates a new AuthService object.
+     *
+     * @param  client  DOCUMENT ME!
+     */
+    AuthService(WardenHttpClient client) {
+        super(client);
+    }
 
     //~ Methods **************************************************************************************************************************************
 
-    @Override
-    public void register(List<Policy> policies, int port) { }
+    /**
+     * Logs into the web services.
+     *
+     * @param   username  The username.
+     * @param   password  The password.
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse login(String username, String password) throws IOException {
+        String requestUrl = REQUESTURL + "/login";
+        Credentials creds = new Credentials();
 
-    @Override
-    public void unregister() { }
+        creds.setPassword(password);
+        creds.setUsername(username);
+        return getClient().executeHttpRequest(WardenHttpClient.RequestType.POST, requestUrl, creds);
+    }
 
-    @Override
-    public void updateMetric(Policy policy, String user, double value) { }
+    /**
+     * DOCUMENT ME!
+     *
+     * @return  DOCUMENT ME!
+     *
+     * @throws  IOException  DOCUMENT ME!
+     */
+    public WardenResponse logout() throws IOException {
+        String requestUrl = REQUESTURL + "/logout";
 
-    @Override
-    public void modifyMetric(Policy policy, String user, double delta) { }
+        return getClient().executeHttpRequest(WardenHttpClient.RequestType.GET, requestUrl, null);
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
