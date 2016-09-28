@@ -1,0 +1,212 @@
+<section>
+<h3 class="bcTitle">{{alert.name}}</h3>
+
+    <!-- Navigation tabs -->
+    <ul class='nav nav-tabs' style="margin-top:20px;">
+        <li ng-class="{active:isTabSelected(1)}"><a href ng-click='selectTab(1)'>Alert</a></li>
+        <li ng-class="{active:isTabSelected(2)}"><a href ng-click='selectTab(2)'>Triggers</a></li>
+        <li ng-class="{active:isTabSelected(3)}"><a href ng-click='selectTab(3)'>Notifications</a></li>
+        <li ng-class="{active:isTabSelected(4)}"><a href ng-click='selectTab(4)'>History</a></li>
+        <li ng-class="{active:isTabSelected(5)}"><a href ng-click='selectTab(5)'>Alert Evaluation Logs</a></li>
+    </ul>
+    
+    <!--Alert information tab -->
+    <div ng-show='isTabSelected(1)'>
+    <form novalidate class="form-horizontal">
+        <label for='alertId'>ID</label>
+        <input id='alertId' disabled="true" class="form-control" type="text" ng-model="alert.id" />
+        <label for='alertName'>Name</label>
+        <input id='alertName' class="form-control" type="text" ng-model="alert.name" />
+        <label for='cronEntry'>CRON Entry</label>
+        <input id='cronEntry' class="form-control" type="text" ng-model="alert.cronEntry" />
+        <label for='ownerName'>Owner</label>
+        <input id='ownerName' disabled="true" class="form-control" type="text" ng-model="alert.ownerName" />
+        <span>
+            <label for='expression'>Expression</label>
+            <a href="#/viewmetrics?expression={{alert.expression | urlencode}}" target="new">
+                <span title="View expression" class="glyphicon glyphicon-stats"></span>
+            </a>
+        </span>
+        <textarea id='expression' class="form-control" ng-model="alert.expression"></textarea>
+        <br />
+        <div class="form-inline">
+            <label for='alertOnMissingData'>Alert on Missing Data?</label>
+            <button id="alertOnMissingData" class="btn btn-default" ng-click="alert.missingDataNotificationEnabled = !alert.missingDataNotificationEnabled">
+                <span ng-show='alert.missingDataNotificationEnabled'>Yes</span>
+                <span ng-show='!alert.missingDataNotificationEnabled'>No</span>
+            </button>
+            <label for='alertOnMissingData'>&nbsp; Enabled?</label>
+            <button id="alertOnMissingData" class="btn btn-default" ng-click="alert.enabled = !alert.enabled">
+                <span ng-show='alert.enabled'>Yes</span>
+                <span ng-show='!alert.enabled'>No</span>
+            </button>
+        </div>
+        <br/>
+        <input class="btn btn-default" ng-show='isAlertDirty()' type="button" ng-click="resetAlert()" value="Revert"/>
+        <input class="btn btn-primary" ng-disabled='!isAlertDirty()' type="submit" ng-click="updateAlert()" value="Save" />
+    </form>
+    <br/>
+    </div>
+    <!-- Trigger tab -->
+    <div ng-show='isTabSelected(2)'>
+        <form novalidate class="form-horizontal">
+            <!-- Trigger search control -->
+            <div class='row'>
+                <div class='col-md-3 h3'>Triggers</div>
+                <div class='col-md-8 text-right'></div>
+                <div class='col-md-3 pull-right'>
+                    <span class="pull-right input-group">
+                        <input type="text" class="form-control" placeholder="Search..." ng-model="triggerSearchText">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default dropdown-toggle" ng-show="triggerSearchText" ng-click="triggerSearchText = null">
+                                <span class="glyphicon glyphicon-ban-circle"></span>
+                            </button>
+                            <button class="btn btn-default active" ng-show="!triggerSearchText">
+                                <span class="glyphicon glyphicon-filter"></span>
+                            </button>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <!-- Trigger listing table -->
+            <table class="table table-striped table-bordered">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Primary Threshold</th>
+                    <th>Secondary Threshold</th>
+                    <th>Inertia Millis</th>
+                    <th>
+                        <button class="btn btn-success btn-sm" type="button" ng-click="addTrigger()">
+                            <i class="glyphicon glyphicon-plus"></i>
+                        </button>
+                    </th>
+                </tr>
+                <tr ng-repeat="trigger in triggers|filter:triggerSearchText |orderBy:'name'">
+                    <td>{{trigger.id}}</td>
+                    <td><input class="form-control" type="text" ng-model="trigger.name" /></td>
+                    <td>
+                        <select class="form-control" ng-model="trigger.type">
+                            <option ng-selected="{{type.value === trigger.type}}"
+                                    ng-repeat="type in triggerTypes" value="{{type.value}}">{{type.label}}</option>
+                        </select>
+                    </td>
+                    <td><input class="form-control" type="text" ng-model="trigger.threshold" /></td>
+                    <td><input class="form-control" type="text" ng-model="trigger.secondaryThreshold" /></td>
+                    <td><input class="form-control" type="text" ng-model="trigger.inertia" /></td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" type="button"
+                                ng-confirm='Delete "{{trigger.name}}"?' ng-confirm-action='removeTrigger(trigger)'>
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+            <input class="btn btn-default" ng-show='isTriggerDirty()' type="button" ng-click="resetTriggers()" value="Revert" />
+            <input class="btn btn-primary" ng-disabled='!isTriggerDirty()' type="submit" ng-click="updateTriggers(triggers)" value="Save" />
+        </form>
+        <br/>
+    </div>
+    
+    <!-- Notifications tab -->
+    <div ng-show='isTabSelected(3)'>
+        <form novalidate class="form-horizontal">
+            <div class='row'>
+            <div class='col-md-3 h3'>Notifications</div>
+                <div class='col-md-8 text-right'></div>
+                <div class='col-md-3 pull-right'>
+                    <span class="pull-right input-group">
+                        <input type="text" class="form-control" placeholder="Search..." ng-model="notificationSearchText">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default dropdown-toggle" ng-show="notificationSearchText" ng-click="notificationSearchText = null">
+                                <span class="glyphicon glyphicon-ban-circle"></span>
+                            </button>
+                            <button class="btn btn-default active" ng-show="!notificationSearchText">
+                                <span class="glyphicon glyphicon-filter"></span>
+                            </button>
+                        </span>
+                    </span>
+                </div>
+            </div>
+            <table class="table table-striped table-bordered">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Subscriptions</th>
+                    <th>Metrics to Annotate</th>
+                    <th>Cooldown Millis</th>
+                    <th>Triggers</th>
+                    <th>
+                        <button class="btn btn-success btn-sm" type="button" ng-click="addNotification()">
+                            <i class="glyphicon glyphicon-plus"></i>
+                        </button>
+                    </th>
+                </tr>
+                <tr ng-repeat="notification in notifications| filter:notificationSearchText |orderBy:'name'">
+                    <td>{{notification.id}}</td>
+                    <td><input class="form-control" type="text" ng-model="notification.name" /></td>
+                    <td>
+                        <select class="form-control" ng-model="notification.notifierName">
+                            <option ng-selected="{{type.value === notification.notifierName}}"
+                                    ng-repeat="type in notificationTypes" value="{{type.value}}">{{type.label}}</option>
+                        </select>
+                    </td>
+                    <td><input class="form-control" type="text" ng-list ng-model="notification.subscriptions" /></td>
+                    <td><input class="form-control" type="text" ng-list ng-model="notification.metricsToAnnotate" /></td>
+                    <td><input class="form-control" type="text" ng-model="notification.cooldownPeriod" /></td>
+                    <td><select class="form-control" multiple="multiple" ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()"></select></td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" type="button"
+                                ng-confirm='Delete "{{notification.name}}"?' ng-confirm-action='removeNotification(notification)'>
+                            <i class="glyphicon glyphicon-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+            <input class="btn btn-default" ng-show='isNotificationDirty()' type="button" ng-click="resetNotifications()" value="Revert" />
+            <input class="btn btn-primary" ng-disabled='!isNotificationDirty()'  type="submit" ng-click="updateNotifications(notifications)" value="Save" />
+        </form>
+        <br/>
+    </div>
+
+    <!-- History tab -->
+    <div ng-show='isTabSelected(4)'>
+        <br />
+        <table class="table table-striped table-bordered">
+            <tr>
+                <th>Date</th>
+                <th>Host</th>
+                <th>Detail</th>
+            </tr>
+            <tr ng-repeat="entry in history| orderBy:'-createdDate'">
+                <td>{{entry.createdDate|date:'short'}}</td>
+                <td>{{entry.hostName}}</td>
+                <td ng-bind-html='entry.message | trustedhtml'></td>
+            </tr>
+        </table>
+    </div>
+
+    <div ng-show='isTabSelected(5)'>
+
+        <div ng-if="jobExecutionDetailsError != ''">
+            {{jobExecutionDetailsError}}
+        </div>
+
+        <div ng-if="jobExecutionDetailsError == ''">
+            <table class="table table-striped table-bordered">
+                <tr>
+                    <th>Date</th>
+                    <th>Host</th>
+                    <th>Detail</th>
+                </tr>
+                <tr ng-repeat="entry in jobExecutionDetails | orderBy:'-createdDate'">
+                    <td>{{entry.createdDate|date:'short'}}</td>
+                    <td>{{entry.hostName}}</td>
+                    <td><span ng-bind-html="entry.message | newline | trustedhtml"></span></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</section>

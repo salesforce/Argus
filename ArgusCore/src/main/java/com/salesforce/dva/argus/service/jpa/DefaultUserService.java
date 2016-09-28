@@ -161,7 +161,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
 
         PrincipalUser result;
 
-        _logger.debug("Retrieving the administrative user.");
+        _logger.debug("Retrieving the default user.");
         if ((result = findUserByPrimaryKey(BigInteger.valueOf(2))) == null) {
             try {
                 Method method = PrincipalUser.class.getDeclaredMethod("createDefaultUser", new Class<?>[0]);

@@ -89,6 +89,8 @@ public final class ServiceFactory {
     Provider<WaaSService> _waaSServiceProvider;
     @Inject
     Provider<WaaSMonitorService> _waaSMonitorServiceProvider;
+    @Inject
+    Provider<BatchService> _batchServiceProvider;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -297,6 +299,15 @@ public final class ServiceFactory {
      */
     public synchronized WaaSMonitorService getWaaSMonitorService() {
         return _waaSMonitorServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the batch service.
+     *
+     * @return  An instance of the batch service.
+     */
+    public synchronized BatchService getBatchService() {
+        return _batchServiceProvider.get();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

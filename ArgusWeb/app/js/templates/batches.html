@@ -1,0 +1,66 @@
+<section>
+    <div>
+        <div class="page-header"><h1>Batch HUD <small>Info about the focused batch</small></h1>
+        </div>
+        <pre style="white-space: pre-wrap; max-height: 350px; overflow: scroll;" ng-show="hudMode == 0" ng-bind="currBatchState"></pre>
+        <div id="graphs-container" ng-show="hudMode == 1"></div>
+        <div class="text-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-default" ng-click="toggleHudMode()">Switch to {{hudModes[hudMode]}} view</button>
+                <button class="btn btn-warning" ng-click="refreshBatchState()">Refresh</button>
+            </div>
+            <div>{{currBatchId != '' ? '(' + currBatchId + ')' : ''}}</div>
+        </div>
+    </div>
+    <div>
+        <div class="page-header"><h1>New Batch <small>Submit a new batch of expressions</small></h1></div>
+        <form novalidate class="form-horizontal">
+            <div ng-repeat="expression in expressions">
+                <div ng-class="{'input-group': $last}">
+                    <input type="text" class="form-control" placeholder="Enter metric expression..." ng-model='expression.expression'>
+                <span class="input-group-btn">
+                    <button class="btn btn-danger" type="button" ng-show="$last" ng-click="removeExpression()">-</button>
+                </span>
+                </div><!-- /input-group -->
+                <br />
+            </div>
+        </form>
+        <div class="row">
+            <div class="col-md-offset-3 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" ng-click='addExpression()'>Add expression</button>
+                    </span>
+                    <input type="text" class="form-control" placeholder="TTL (Default: 30 min.)" data-toggle="tooltip"
+                           data-placement="bottom" title="Seconds to keep results after computation" ng-model='currTtl'>
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" ng-click='submitBatch()'>Submit batch</button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div class="page-header"><h1>My Batches <small>Click on id to check status</small></h1></div>
+        <table class="table table-striped table-bordered">
+            <tr>
+                <th>ID</th><th>Status</th><th></th>
+            </tr>
+            <tr ng-repeat="batch in batches">
+                <td><a ng-click="refreshBatchState(batch.id)">{{batch.id}}</a></td>
+                <td>{{batch.status}}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" type="button" 
+                            ng-confirm='Delete "{{batch.id}}"?' ng-confirm-action='deleteBatch(batch.id)'>
+                        <i class="glyphicon glyphicon-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        </table>
+        <div class="text-center">
+            <button class="btn btn-warning" ng-click="getBatches()">Refresh list</button>
+        </div>
+        <br />
+    </div>
+    <div growl inline="true" reference="batches-error"></div>
+</section>

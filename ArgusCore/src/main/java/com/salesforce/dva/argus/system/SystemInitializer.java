@@ -36,47 +36,27 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.persist.jpa.JpaPersistModule;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
-import com.salesforce.dva.argus.service.AlertService;
-import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.AuditService;
-import com.salesforce.dva.argus.service.AuthService;
-import com.salesforce.dva.argus.service.CacheService;
-import com.salesforce.dva.argus.service.CollectionService;
-import com.salesforce.dva.argus.service.DashboardService;
-import com.salesforce.dva.argus.service.DiscoveryService;
-import com.salesforce.dva.argus.service.GlobalInterlockService;
-import com.salesforce.dva.argus.service.HistoryService;
-import com.salesforce.dva.argus.service.MQService;
-import com.salesforce.dva.argus.service.MailService;
-import com.salesforce.dva.argus.service.ManagementService;
-import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.NamedBinding;
-import com.salesforce.dva.argus.service.NamespaceService;
-import com.salesforce.dva.argus.service.SchedulingService;
-import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.service.ServiceManagementService;
-import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.UserService;
-import com.salesforce.dva.argus.service.WaaSService;
-import com.salesforce.dva.argus.service.WaaSMonitorService;
-import com.salesforce.dva.argus.service.WardenService;
+import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
 import com.salesforce.dva.argus.service.audit.DefaultAuditService;
+import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
 import com.salesforce.dva.argus.service.history.DefaultHistoryService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
+import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
 import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.jpa.DefaultUserService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
-import com.salesforce.dva.argus.service.metric.DefaultMetricService;
+import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
+import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.warden.DefaultWaaSMonitorService;
@@ -84,7 +64,9 @@ import com.salesforce.dva.argus.service.warden.DefaultWaaSMonitorService;
 import com.salesforce.dva.argus.service.warden.DefaultWaaSService;
 import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
+
 import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -237,14 +219,16 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
 
         // Named annotation binding
-        bindConcreteClassWithNamedAnnotation(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class);
+        bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
+        bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
 
         // static binding
         bindConcreteClass(CachedTSDBService.class, TSDBService.class);
         bindConcreteClass(DefaultUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);
-        bindConcreteClass(DefaultMetricService.class, MetricService.class);
+        bindConcreteClass(AsyncMetricService.class, MetricService.class);
+        bindConcreteClass(DefaultBatchService.class, BatchService.class);
         bindConcreteClass(DefaultGlobalInterlockService.class, GlobalInterlockService.class);
         bindConcreteClass(DefaultMonitorService.class, MonitorService.class);
         bindConcreteClass(DefaultWardenService.class, WardenService.class);
@@ -254,7 +238,8 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultAuditService.class, AuditService.class);
         bindConcreteClass(DefaultHistoryService.class, HistoryService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
-        bindConcreteClass(DefaultDiscoveryService.class, DiscoveryService.class);
+        bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
+        bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
         bindConcreteClass(DefaultWaaSService.class, WaaSService.class);
         bindConcreteClass(DefaultWaaSMonitorService.class, WaaSMonitorService.class);
     }
@@ -263,8 +248,8 @@ final class SystemInitializer extends AbstractModule {
         bind(type).to(getConcreteClassToBind(property, type));
     }
 
-    private <T, S> void bindConcreteClassWithNamedAnnotation(Property property, Class<T> type) {
-        bind(type).annotatedWith(NamedBinding.class).to(getConcreteClassToBind(property, type));
+    private <I, T extends I> void bindConcreteClassWithNamedAnnotation(Class<T> implClass, Class<I> interfaceType) {
+        bind(interfaceType).annotatedWith(NamedBinding.class).to(implClass);
     }
 
     @SuppressWarnings("unchecked")

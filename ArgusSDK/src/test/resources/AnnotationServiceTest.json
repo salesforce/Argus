@@ -1,0 +1,15 @@
+[{
+    "type": "POST",
+    "endpoint": "/collection/annotations",
+    "jsonInput" :"[{\"scope\":\"TestScope\",\"metric\":\"TestMetric\",\"tags\":{\"TestTag\":\"TagValue\"},\"source\":\"TestSource\",\"id\":\"TestID\",\"timestamp\":1472282830936,\"type\":\"TestType\",\"fields\":{\"TestField\":\"FieldValue\"}}]",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"Error Messages\":[],\"Errors\":\"0\",\"Success\":\"1\"}"
+},{
+    "type": "GET",
+    "endpoint": "/annotations?expression=-1d:TestScope:TestMetric{TestTag=TagValue}:TestType",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"scope\":\"TestScope\",\"metric\":\"TestMetric\",\"tags\":{\"TestTag\":\"TagValue\"},\"source\":\"TestSource\",\"id\":\"TestID\",\"timestamp\":1472282830936,\"type\":\"TestType\",\"fields\":{\"TestField\":\"FieldValue\"}}]"
+}]

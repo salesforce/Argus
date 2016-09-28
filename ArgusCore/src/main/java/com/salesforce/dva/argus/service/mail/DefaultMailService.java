@@ -89,10 +89,13 @@ public class DefaultMailService extends DefaultService implements MailService {
     private Properties getMailProperties() {
         Properties result = new Properties();
 
-        result.put("mail.smtp.host", _config.getValue(Property.EMAIL_SMTP_HOST.getName(), Property.EMAIL_SMTP_HOST.getDefaultValue()));
+        result.put("mail.transport.protocol", _config.getValue(Property.EMAIL_SMTP_TRANSPORT_PROTOCOL.getName(), Property.EMAIL_SMTP_TRANSPORT_PROTOCOL.getDefaultValue()));
+        result.put("mail.smtp.port",_config.getValue(Property.EMAIL_SMTP_PORT.getName(), Property.EMAIL_SMTP_PORT.getDefaultValue()));
+        
         result.put("mail.smtp.auth", _config.getValue(Property.EMAIL_SMTP_AUTH.getName(), Property.EMAIL_SMTP_AUTH.getDefaultValue()));
-        result.put("mail.smtp.starttls.enable",
-            _config.getValue(Property.EMAIL_SMTP_STARTTTLS.getName(), Property.EMAIL_SMTP_STARTTTLS.getDefaultValue()));
+        result.put("mail.smtp.starttls.enable",_config.getValue(Property.EMAIL_SMTP_STARTTTLS_ENABLED.getName(),Property.EMAIL_SMTP_STARTTTLS_ENABLED.getDefaultValue()));
+        result.put("mail.smtp.starttls.required",_config.getValue(Property.EMAIL_SMTP_STARTTTLS_REQUIRED.getName(),Property.EMAIL_SMTP_STARTTTLS_REQUIRED.getDefaultValue()));
+        
         return result;
     }
 
@@ -124,7 +127,14 @@ public class DefaultMailService extends DefaultService implements MailService {
 
                 multipart.addBodyPart(messageBodyPart1);
                 message.setContent(multipart);
-                Transport.send(message);
+               
+                Transport transport = session.getTransport();
+                
+                transport.connect(_config.getValue(Property.EMAIL_SMTP_HOST.getName(),Property.EMAIL_SMTP_HOST.getDefaultValue()), 
+                		_config.getValue(Property.EMAIL_SMTP_USERNAME.getName(),Property.EMAIL_SMTP_USERNAME.getDefaultValue()), 
+                		_config.getValue(Property.EMAIL_SMTP_PASSWORD.getName(), Property.EMAIL_SMTP_PASSWORD.getDefaultValue())); 
+            	
+                transport.sendMessage(message, message.getAllRecipients());
                 _logger.info("Sent email having subject '{}' to {}.", subject, to);
             } catch (Exception ex) {
                 throw new SystemException("Failed to send an email notification.", ex);
@@ -164,10 +174,13 @@ public class DefaultMailService extends DefaultService implements MailService {
 
         /** The SMTP endpoint URL. */
         EMAIL_SMTP_HOST("service.property.mail.smtp.host", "test.smtp.net"),
-        /** Indicates if SMTP authentication is required.  Default is false. */
         EMAIL_SMTP_AUTH("service.property.mail.smtp.auth", "false"),
-        /** Indicates if TLS should be used. */
-        EMAIL_SMTP_STARTTTLS("service.property.mail.smtp.starttls.enable", "false");
+        EMAIL_SMTP_STARTTTLS_ENABLED("service.property.mail.smtp.starttls.enable", "false"),
+        EMAIL_SMTP_STARTTTLS_REQUIRED("service.property.mail.smtp.starttls.required", "false"),
+        EMAIL_SMTP_TRANSPORT_PROTOCOL("service.property.email.transport.protocol","smtps"),
+        EMAIL_SMTP_PORT("service.property.smtp.port",""),
+        EMAIL_SMTP_USERNAME("service.property.username",""),
+        EMAIL_SMTP_PASSWORD("service.property.password","");
 
         private final String _name;
         private final String _defaultValue;
