@@ -126,7 +126,8 @@ public class DefaultWaaSService extends DefaultJPAService implements WaaSService
 		_annotationService = annotationService;
 		_tsdbService = tsdbService;
 		_adminUser = _userService.findAdminUser();
-		_waaSMonitorService.startPushingMetrics();
+                /* todo: move this out of the constructor */
+//		_waaSMonitorService.startPushingMetrics();
 	}
 
 	// ~ Methods
