@@ -383,6 +383,32 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 
     }
     
+    /**
+     * Fast scan works when trying to discover either scopes or metrics with all other fields being *. 
+     * In this case, when the first result is obtained, we skip all other rows starting with that prefix and directly move
+     * on to the next possible value which is obtained value incremented by 1 Ascii character. If that value exists, then 
+     * it is returned, otherwise HBase returns the next possible value in lexicographical order. 
+     * 
+     * For e.g. suppose if we have the following rows in HBase:
+     * 
+     * scope:metric1:null:null:null
+     * scope:metric2:null:null:null
+     * .
+     * .
+     * .
+     * scope:metric1000:null:null:null
+     * scopu:metric1:null:null:null
+     * scopu:metric2:null:null:null
+     * .
+     * .
+     * .
+     * scopu:metric1000:null:null:null
+     * 
+     * And our start row is "sco", then this method would first find "scope" and then jump the next 1000 rows
+     * to start from the next possible value of scopf. Since nothing like scopf exists, HBase would directly
+     * jump to scopu and return that. 
+     * 
+     */
     private List<String> _getUniqueFastScan(MetricSchemaRecordQuery query, final int limit, final RecordType type) {
     	requireNotDisposed();
     	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
@@ -402,12 +428,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
         filters.add(new KeyOnlyFilter());
         filters.add(new FirstKeyOnlyFilter());
-        FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
+        FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
     	
         
         String start = Bytes.toString(metadata.startRow);
         String end = Bytes.toString(metadata.stopRow);
-        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, fl, metadata.type.getTableName());
+        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, metadata.type.getTableName());
         while(rows != null && !rows.isEmpty()) {
         	for(ArrayList<KeyValue> row : rows) {
         		String rowKey = Bytes.toString(row.get(0).key());
@@ -416,18 +442,19 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         	if(result.size() == limit) {
     			break;
     		}
-        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, fl, metadata.type.getTableName());
+        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, filterList, metadata.type.getTableName());
         }
         
     	return result;
     }
 
-	private ArrayList<ArrayList<KeyValue>> _getSingleRow(String start, String end, FilterList fl, String tableName) {
+	private ArrayList<ArrayList<KeyValue>> _getSingleRow(final String start, final String end, 
+			final FilterList filterList, final String tableName) {
 		final Scanner scanner = _client.newScanner(tableName);
     	scanner.setStartKey(start);
     	scanner.setStopKey(end);
     	scanner.setMaxNumRows(1);
-    	scanner.setFilter(fl);
+    	scanner.setFilter(filterList);
     	
     	_logger.debug("Using table: " + tableName);
         _logger.debug("Scan startRow: " + start);
@@ -463,9 +490,13 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		return end;
 	}
 	
+	
+	/**
+	 * Check if we can perform a faster scan. We can only perform a faster scan when we are trying to discover scopes or metrics
+	 * without having information on any other fields.
+	 */
 	private boolean _canFastScan(MetricSchemaRecordQuery query, RecordType type) {
 		
-		//Can only fast scan for metric and scope types
 		if(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type)) {
 			if(RecordType.METRIC.equals(type)) {
 				if("*".equals(query.getScope()) && "*".equals(query.getTagKey()) && "*".equals(query.getTagValue()) && "*".equals(query.getNamespace())) {
@@ -519,12 +550,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         filters.add(new KeyOnlyFilter());
         filters.add(new FirstKeyOnlyFilter());
 
-        FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
+        FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
         final Scanner scanner = _client.newScanner(metadata.type.getTableName());
 
         scanner.setStartKey(metadata.startRow);
         scanner.setStopKey(metadata.stopRow);
-        scanner.setFilter(fl);
+        scanner.setFilter(filterList);
         scanner.setMaxNumRows(10000);
 
         final Deferred<Set<String>> results = new Deferred<Set<String>>();
