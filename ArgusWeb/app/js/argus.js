@@ -51,6 +51,7 @@ angular.module('argus', [
   'argus.directives.controls.text',
   'argus.directives.charts.chart',
   'argus.directives.charts.d3LineChart',
+  'argus.directives.charts.d3LineChartTest',
   'argus.directives.charts.flags',
   'argus.directives.charts.heatmap',
   'argus.directives.charts.metric',
@@ -110,7 +111,8 @@ angular.module('argus.controllers', [
   'argus.controllers.metricelements',
   'argus.controllers.namespace',
   'argus.controllers.viewelements',
-  'argus.controllers.viewMetrics'
+  'argus.controllers.viewMetrics',
+  'argus.controllers.d3test'
 ]);
 
 // Directives

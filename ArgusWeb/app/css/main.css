@@ -237,6 +237,12 @@ g.legend-items text .value {
   opacity: 0.9;
 }
 
+.crossLine {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1px;
+}
+
 div.loadingSpinner {
   width: 80px;
   height: 80px;
