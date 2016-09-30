@@ -13,6 +13,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 // Layout parameters
                 var margin = {top: 20, right: 20, bottom: 450, left: 50};
                 var tipPadding = 6;
+                var crossLineTipPadding = 2;
                 var width = element.parent().width() - margin.left - margin.right;
                 var height = 800 - margin.top - margin.bottom;
 
@@ -82,7 +83,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 focus.append('line')
                     .attr('id', 'crossLineY')
                     .attr('class', 'crossLine');
-
+                focus.append('text')
+                    .attr('id', 'crossLineTip');
 
                 function mousemove() {
                     if (!currSeries || currSeries.length === 0) {
@@ -94,6 +96,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     var positionX = position[0];
                     var positionY = position[1];
                     var mouseX = x.invert(positionX);
+                    var mouseY = y.invert(positionY);
                     currSeries.forEach(function(metric) {
                         if (metric.data.length === 0) {
                             return;
@@ -115,7 +118,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         datapoints.push(d);
                     });
                     tooltipCreator(tipItems, datapoints);
-                    generateCrossLine(tipItems, datapoints, positionX, positionY);
+                    generateCrossLine(mouseY, positionX, positionY);
                 }
 
                 function newTooltipCreator(names) {
@@ -145,13 +148,18 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 }
 
                 //Generate cross lines at the point/cursor
-                function generateCrossLine(group, datapoints, X, Y) {
+                function generateCrossLine(mouseY, X, Y) {
                     focus.select('#crossLineX')
-                        .attr('x1', X).attr('y1', 0  )
+                        .attr('x1', X).attr('y1', 0)
                         .attr('x2', X).attr('y2', height);
                     focus.select('#crossLineY')
                         .attr('x1', 0).attr('y1', Y)
                         .attr('x2', width).attr('y2', Y);
+                    //add some information around the cross point
+                    focus.select('#crossLineTip')
+                        .attr('x', X + crossLineTipPadding)
+                        .attr('y', Y - crossLineTipPadding)
+                        .text(d3.format('.4f')(mouseY));
 
                 }
 
