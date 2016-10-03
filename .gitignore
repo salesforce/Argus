@@ -11,6 +11,7 @@ nb-configuration.xml
 argus-build.properties
 .settings/
 .DS_Store
+/config
 
 # Eclipse ignore
 .metadata
@@ -40,3 +41,7 @@ local.properties
 
 Makefile
 property
+
+#Scripts
+update_tomcat.sh
+update_views.sh

@@ -1,4 +1,4 @@
-Argus  [![Build Status](https://travis-ci.org/SalesforceEng/Argus.svg?branch=master)](https://travis-ci.org/SalesforceEng/Argus) [![Coverage](https://codecov.io/github/SalesforceEng/Argus/coverage.svg?branch=master)](https://codecov.io/github/SalesforceEng/Argus?branch=master) [![Static Analysis](https://scan.coverity.com/projects/8155/badge.svg)](https://scan.coverity.com/projects/salesforceeng-argus)
+Argus  [![Build Status](https://travis-ci.org/SalesforceEng/Argus.svg?branch=master)](https://travis-ci.org/SalesforceEng/Argus)  [![Static Analysis](https://scan.coverity.com/projects/8155/badge.svg)](https://scan.coverity.com/projects/salesforceeng-argus)
 =====
 
 Argus is a time-series monitoring and alerting platform. It consists of discrete services to configure alerts, ingest and transform metrics & events, send notifications, create namespaces, and to both establish and enforce policies and quotas for usage.
@@ -31,7 +31,7 @@ mvn test
 
 ### Running The Integration Tests
 
-The integration tests for Argus use the `LDAPAuthService` implementation of the `AuthService` interface and the `DefaultTSDBService` implementation of the `TSDBService` interface (which targets OpenTSDB).  In order to run the integration tests you must update the `argus-build.properties` file to correctly setup the external LDAP you'll be testing against and the OpenTSDB endpoints to use.  The snippet below shows the specific properties that should be modified in the `argus-build.properties` file.  Of course, after you make these updates, you must re-install the resource filter dependencies as described above and execute the `clean` goal, before running the integration tests.
+The integration tests for Argus use the `LDAPAuthService` implementation of the `AuthService` interface and the `DefaultTSDBService` implementation of the `TSDBService` interface (which targets OpenTSDB).  Additionally it uses the `RedisCacheService` implementation of the `CacheService` interface to facilitate integration testing of the `BatchService`.  In order to run the integration tests you must update the `argus-build.properties` file to correctly setup the external LDAP you'll be testing against and the OpenTSDB endpoints to use as well as the Redis cluster.  The snippet below shows the specific properties that should be modified in the `argus-build.properties` file.  Of course, after you make these updates, you must re-install the resource filter dependencies as described above and execute the `clean` goal, before running the integration tests.
 
 ```
 # The LDAP endpoint to use
@@ -50,6 +50,8 @@ service.property.auth.ldap.usernamefield=sAMAccountName
 service.property.tsdb.endpoint.read=http://readtsdb.yourdomain.com:4466
 # The TSDB write endpoint
 service.property.tsdb.endpoint.write=http://writetsdb.yourdomain.com:4477
+# The Redis cache cluster information
+service.property.cache.redis.cluster=redis0.mycompany.com:6379,redis1.mycompany.com:6389
 ```
 
 Once the modifications have been made and the resource filters re-installed, you're ready to run the complete suite of tests, including the integration tests.

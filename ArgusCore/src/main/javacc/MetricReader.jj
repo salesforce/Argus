@@ -123,7 +123,6 @@ SKIP : { "\n" | "\r" | "\r\n" }
 
 TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> )+ > }
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
-//TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT>(<OR><TSDB_ALLOWED_TEXT>)* > }
 TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT>> }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
 TOKEN : { < #DIGIT : ["0"-"9"] > }
@@ -138,8 +137,10 @@ TOKEN : { < #SQUARE_OPEN : "[" > }
 TOKEN : { < #SQUARE_CLOSE : "]" > }
 TOKEN : { < #OR : "|" > }
 TOKEN : { < #DOLLAR : "$" > }
+TOKEN : { < #POUND : "#" > }
 TOKEN : { < #NOT : "!" > }
 TOKEN : { < #TIME_UNIT : "s" | "m" | "h" | "d" > }
+TOKEN : { < #ANYTHING : ~["#"] > }
 
 TOKEN : { < IDENTITY : "IDENTITY" > }
 TOKEN : { < SUM : "SUM" > }
@@ -194,7 +195,8 @@ TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
 TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
 TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
-
+TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
+TOKEN : { < GROUPBY : "GROUPBY" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -207,11 +209,12 @@ TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "min
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
 
-TOKEN : { < NAMESPACE : <HYPHEN><UNDERSCORE><UNDERSCORE><HYPHEN><TSDB_ALLOWED_TEXT> > }
+TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
-TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
+//TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
+TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :
 {}
@@ -266,7 +269,7 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 		t = <CONSTANT>
 			{
 				constant = t.image;
-				constant = constant.substring(1);
+				constant = constant.substring(1, constant.length() - 1);
 				constants.add(constant);
 			}
 		)
@@ -282,7 +285,7 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 			t = <CONSTANT>
 			{
 				constant = t.image;
-				constant = constant.substring(1);
+				constant = constant.substring(1, constant.length() - 1);
 				constants.add(constant);
 			}  
           )
@@ -457,6 +460,12 @@ private String functionName() :
 	|
     t = <ANOMALY_KMEANS>
     { return t.image; }
+    |
+    t = <ANOMALY_RPCA>
+    { return t.image; }
+    | 
+    t = <GROUPBY>
+    { return t.image; }
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, boolean syntaxOnly, Class<T> clazz) :
@@ -489,6 +498,18 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 	}
 }
 
+/**
+ * The metric expression is now of the form:
+ *
+ *  	start:end:scope:metric{tagk=tagv}:aggregator:downsampler:namespace
+ *
+ * We moved namespace to the very end because with namespace being optional, the parser cannot really
+ * decide whether the given expression has namespace:scope:metric or just scope:metric. Even with a
+ * larger local lookahead, it becomes very complex to make that decision since there are more optional
+ * entities further down the expression like tags and downsampler. Hence in lieu of greater complexity,
+ * we decided to move it to the very end. 
+ *  
+ */
 private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> clazz) :
 {
   	Long startTimestamp = null;
@@ -502,14 +523,14 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
 }
-{
+{ 	
   	startTimestamp = getTime()<COLON>
   	(endTimestamp = getTime()<COLON>)?
-  	(namespace = getNamespace()<COLON>)?
   	scope = getString() <COLON> metric = getString()
   	(<LEFT_CURLY> tags = getTags() <RIGHT_CURLY>)?
   	<COLON>aggregator = getAggregator()
-  	(<COLON>downsampleTokenStr = getDownsampleToken())?
+  	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
+  	(<COLON>namespace = getString())?
 	{
 	  	if(MetricQuery.class.equals(clazz)) {
 	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
@@ -584,6 +605,9 @@ private String getString() :
   	{ return t.image; }
  	|
  	t = <METRIC>
+  	{ return t.image; }
+  	|
+ 	t = <NAMESPACE>
   	{ return t.image; }
  	|
   	t = <AGGREGATOR>

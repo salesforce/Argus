@@ -89,15 +89,16 @@ class MetricTransform {
 
             Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
             String tsdbMetricName = node.get("metric").asText();
-            String scope = tsdbService.getScopeFromTSDBMetric(tsdbMetricName);
-            String namespace = tsdbService.getNamespaceFromTSDBMetric(tsdbMetricName);
-		
+         
             // Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
-            if (scope.isEmpty()) {
+            if (tsdbMetricName.isEmpty()) {
                 return null;
             }
 
-            String metric = tags.get(ReservedField.METRIC.getKey());
+            String scope = DefaultTSDBService.getScopeFromTSDBMetric(tsdbMetricName);
+            String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
+            String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
+            
             Map<String, String> userTags = new HashMap<>();
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
@@ -171,7 +172,7 @@ class MetricTransform {
 
             for (Map.Entry<Long, String> entry : datapoints.entrySet()) {
                 jgen.writeStartObject();
-                jgen.writeStringField("metric", tsdbService.constructTSDBMetricName(metric.getScope(), metric.getNamespace()));
+                jgen.writeStringField("metric", DefaultTSDBService.constructTSDBMetricName(metric));
                 jgen.writeNumberField("timestamp", entry.getKey());
                 jgen.writeStringField("value", entry.getValue());
                 serializeTags(metric, jgen);
@@ -184,7 +185,7 @@ class MetricTransform {
 
             Map<String, String> tags = new HashMap<>(metric.getTags());
 
-            tags.put(ReservedField.METRIC.getKey(), metric.getMetric());
+            //tags.put(ReservedField.METRIC.getKey(), metric.getMetric());
             tags.put(ReservedField.META.getKey(), toMeta(metric));
             for (Map.Entry<String, String> tagEntry : tags.entrySet()) {
                 jgen.writeStringField(tagEntry.getKey(), tagEntry.getValue());
