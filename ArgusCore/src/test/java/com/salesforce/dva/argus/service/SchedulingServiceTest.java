@@ -70,7 +70,7 @@ public class SchedulingServiceTest extends AbstractTest {
         Thread.sleep((1000L * 60L * schedulingIterations));
         schedulingService.stopAlertScheduling();
 
-        List<AlertIdWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000,
+        List<AlertIdWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000 * noOfAlerts,
             (int) (noOfAlerts * schedulingIterations));
 
         assertEquals(schedulingIterations * noOfAlerts, list.size());

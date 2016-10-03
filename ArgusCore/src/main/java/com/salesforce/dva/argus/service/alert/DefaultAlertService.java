@@ -338,7 +338,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn(logMessage);
 				appendMessageNUpdateHistory(history.getId(), mde.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
-					_sendNotifocationForMissingData(alert);
+					_sendNotificationForMissingData(alert);
 				}
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
@@ -481,7 +481,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		if (metric.getDatapoints().isEmpty()) {
 			if (alert.isMissingDataNotificationEnabled()) {
-				_sendNotifocationForMissingData(alert);
+				_sendNotificationForMissingData(alert);
 				logMessage = MessageFormat.format("Metric data does not exit for metric: {0}. Sent notification for missing data.",
 						getMetricExpression(metric));
 				_logger.info(logMessage);
@@ -530,13 +530,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 		if (alert != null && alert.getOwner() != null && alert.getOwner().getEmail() != null && !alert.getOwner().getEmail().isEmpty()) {
-			to.clear();
 			to.add(alert.getOwner().getEmail());
 			_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 		}
 	}
 
-	private void _sendNotifocationForMissingData(Alert alert) {
+	private void _sendNotificationForMissingData(Alert alert) {
 		Set<String> to = new HashSet<>();
 
 		to.add(alert.getOwner().getEmail());
