@@ -448,6 +448,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                             if (!tagNameAndMetricMap.containsKey(metric.getTags().toString())) {
                                 combinedMetric = new Metric(metric);
                                 tagNameAndMetricMap.put(metric.getTags().toString(), combinedMetric);
+                                combinedMetric.setDatapoints(null);
                             } else {
                                 combinedMetric = tagNameAndMetricMap.get(metric.getTags().toString());
                             }
