@@ -61,7 +61,7 @@
     </tr>
 </table>
 
-<div ng-if="allData">
+<div ng-if="loaded">
   <div class="row text-center" ng-show="searchText.length == 0">
       <ng-pluralize count="dataSet.length"
                     when="{'0': 'No {{properties.type}} to show.',
