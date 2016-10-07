@@ -81,7 +81,10 @@ public class AuthFilter implements Filter {
             Object remoteUser = session.getAttribute(USER_ATTRIBUTE_NAME);
 
             if (!"options".equalsIgnoreCase(req.getMethod()) && !_isAuthEndpoint(req) && remoteUser == null) {
-                HttpServletResponse.class.cast(response).sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+            	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+            	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+            	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             } else if (remoteUser != null) {
                 user = PrincipalUserDto.class.cast(session.getAttribute(USER_ATTRIBUTE_NAME)).getUserName();
             }
