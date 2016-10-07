@@ -416,13 +416,15 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	
     	final List<String> result = new ArrayList<>();
     	
+    	TableType tableType = type.equals(RecordType.METRIC) ? TableType.METRIC : TableType.SCOPE;
+    	
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = _convertToRegex(query.getNamespace());
         String scope = _convertToRegex(query.getScope());
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
     	
     	List<ScanFilter> filters = new ArrayList<ScanFilter>();
     	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
@@ -433,7 +435,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         
         String start = Bytes.toString(metadata.startRow);
         String end = Bytes.toString(metadata.stopRow);
-        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, metadata.type.getTableName());
+        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, tableType.getTableName());
         while(rows != null && !rows.isEmpty()) {
         	for(ArrayList<KeyValue> row : rows) {
         		String rowKey = Bytes.toString(row.get(0).key());
@@ -442,7 +444,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         	if(result.size() == limit) {
     			break;
     		}
-        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, filterList, metadata.type.getTableName());
+        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, filterList, tableType.getTableName());
         }
         
     	return result;
@@ -529,6 +531,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         	}
         }
 
+        
         final Set<String> records = new TreeSet<String>();
         final Set<String> skip = new HashSet<String>();
         final ScanMetadata metadata = _constructScanMetadata(query);
