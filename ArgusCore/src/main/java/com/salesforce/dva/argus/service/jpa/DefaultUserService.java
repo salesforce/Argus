@@ -55,8 +55,8 @@ import static java.math.BigInteger.ZERO;
  */
 public class DefaultUserService extends DefaultJPAService implements UserService {
 	
-	private static PrincipalUser _adminUser = null;
-	private static PrincipalUser _defaultUser = null;
+	static PrincipalUser _adminUser = null;
+	static PrincipalUser _defaultUser = null;
 
     //~ Instance fields ******************************************************************************************************************************
 

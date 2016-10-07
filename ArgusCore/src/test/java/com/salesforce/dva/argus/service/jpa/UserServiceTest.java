@@ -29,12 +29,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
      
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.jpa;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
+import com.salesforce.dva.argus.service.UserService;
+
 import org.junit.Test;
+
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -66,7 +69,13 @@ public class UserServiceTest extends AbstractTest {
         assertEquals(preferences, user.getPreferences());
         userService.deleteUser(user);
         assertNull(userService.findUserByPrimaryKey(user.getId()));
+        _deleteCachedUsers();
     }
+
+	private void _deleteCachedUsers() {
+		DefaultUserService._adminUser = null;
+        DefaultUserService._defaultUser = null;
+	}
 
     @Test
     public void testAdminUserExistence() {
@@ -75,6 +84,7 @@ public class UserServiceTest extends AbstractTest {
 
         assertNotNull(admin);
         assertEquals(BigInteger.ONE, admin.getId());
+        _deleteCachedUsers();
     }
     
     @Test
@@ -84,6 +94,7 @@ public class UserServiceTest extends AbstractTest {
 
         assertNotNull(defaultUser);
         assertEquals(BigInteger.valueOf(2), defaultUser.getId());
+        _deleteCachedUsers();
     }
 
     @Test
@@ -92,6 +103,7 @@ public class UserServiceTest extends AbstractTest {
         long uniqueUserCount = userService.getUniqueUserCount();
 
         assertTrue("There should always be at least one user at system startup.", uniqueUserCount >= 1);
+        _deleteCachedUsers();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
