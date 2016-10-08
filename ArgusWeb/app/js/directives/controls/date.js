@@ -29,9 +29,18 @@ angular.module('argus.directives.controls.date', [])
                 '</ul>' +
             '</div>',
         link: function(scope, element, attributes, dashboardCtrl) {
+            //used for process time to GMT format
+            function processGMTTime(timeString){
+                timeStringGMT=timeString+' GMT';
+                dateGMT = Date.parse(timeStringGMT);
+                if(isNaN(dateGMT)){
+                    return timeString;
+                }
+                return dateGMT;
+            };
             dashboardCtrl.updateControl(scope.controlName, scope.controlValue, "agDate");
             scope.$watch('controlValue', function(newValue, oldValue) {
-                dashboardCtrl.updateControl(scope.controlName, newValue, "agDate");
+                dashboardCtrl.updateControl(scope.controlName, processGMTTime(newValue), "agDate");
             });
         }
     }
