@@ -22,7 +22,6 @@
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 .controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', function (Auth, $scope, growl, Dashboards, $sessionStorage) {
 
-    $scope.shared = false;
     $scope.dashboards = [];
     var sharedDashboards = [];
     var usersDashboards = [];
@@ -31,8 +30,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     // session storage for selectedTab
     if ($sessionStorage.selectedTab) {
         $scope.selectedTab = $sessionStorage.selectedTab;
+        $scope.shared = $sessionStorage.shared;
     } else {
         $scope.selectedTab = 1;
+        $scope.shared = false;
     }
 
     // used in html files only
@@ -48,6 +49,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.getDashboards = function(shared) {
         $scope.dashboards = shared? sharedDashboards: usersDashboards;
         $scope.shared = shared;
+        $sessionStorage.shared = shared;
     };
 
     function getDashboardsUnderTab (allDashboards, shared) {
