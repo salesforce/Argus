@@ -239,10 +239,22 @@ g.legend-items text .value {
 
 .crossLine {
   fill: none;
-  stroke: steelblue;
+  stroke: #000;
   stroke-width: 1px;
+  stroke-dasharray: 3,3; /* dotted line*/
 }
 
+.grid line{
+  stroke: lightgrey; /* grid line */
+  opacity: 0.7;
+}
+
+.grid text{
+  visibility: hidden;
+}
+.grid path {
+  stroke-width: 0;
+}
 div.loadingSpinner {
   width: 80px;
   height: 80px;
