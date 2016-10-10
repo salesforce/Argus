@@ -31,7 +31,6 @@ angular.module('argus', [
   'angular-growl',
   'angularUtils.directives.dirPagination',
   'angulartics',
-  'angulartics.piwik',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
   'argus.urlConfig',

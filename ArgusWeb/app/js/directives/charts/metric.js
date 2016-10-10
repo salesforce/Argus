@@ -15,18 +15,21 @@ angular.module('argus.directives.charts.metric', [])
             var seriesData = {};
             var metricName = 'metric_' + metricNameIndex++;
 
+            // TODO: refactor this to assign correct controllers. if an additional controller is added, this will break!
             if (controllers[0]) {
                 elementCtrl = controllers[0];
             } else if (controllers[1]) {
                 elementCtrl = controllers[1];
-            } else {
+            } else if (controllers[2]) {
                 elementCtrl = controllers[2];
+            } else {
+                elementCtrl = controllers[3];
             }
 
             // separate specific series data from other attributes
             // 'color' & 'name' are used to supplement the 'series' data when rendering a chart
-            seriesData.color = attributes.color;
-            seriesData.name = attributes.name;
+            seriesData.color = attributes.seriescolor;
+            seriesData.name = attributes.seriesname;
 
             if (attributes.value && attributes.value.length > 0) {
                 value = attributes.value;
