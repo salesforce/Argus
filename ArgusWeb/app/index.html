@@ -22,16 +22,6 @@
 <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
 <script src="bower_components/q/q.js"></script>
 
-<!-- Piwik -->
-<script type="text/javascript">
-	var userString = window.localStorage.getItem("ngStorage-user");
-	var user = JSON.parse(userString);
-	var _paq = _paq || [];
-	if(user)
-    	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
-</script>
-<!-- End Piwik Code -->
-
 <title>Argus</title>
 
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -84,7 +74,6 @@
 <script src="bower_components/ngstorage/ngStorage.js"></script>
 <script src="bower_components/at-table/dist/angular-table.js"></script>
 <script src="bower_components/angulartics/src/angulartics.js"></script>
-<script src="bower_components/angulartics/src/angulartics-piwik.js"></script>
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
 
