@@ -28,21 +28,39 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var y = d3.scaleLinear().range([height, 0]);
                 var z = d3.scaleOrdinal().range(d3.schemeCategory10);
 
-                var xAxis = d3.axisBottom().scale(x);
+                //Axis
+                var xAxis = d3.axisBottom()
+                    .scale(x)
+                    ;
 
                 var yAxis = d3.axisLeft()
                     .scale(y)
-                    .tickFormat(d3.format('s'));
+                    .tickFormat(d3.format('s'))
+                    ;
 
+                //grid
+                var xGrid = d3.axisBottom()
+                    .scale(x)
+                    .tickSizeInner(-height)
+                    ;
+
+                var yGrid = d3.axisLeft()
+                    .scale(y)
+                    .tickSizeInner(-width)
+                    ;
+
+                //line
                 var line = d3.line()
                     .x(function(d) { return x(d[0]); })
                     .y(function(d) { return y(d[1]); });
 
+                //Add elements to SVG
                 var svg = d3.select(element[0]).append('svg')
                     .attr('width', width + margin.left + margin.right)
                     .attr('height', height + margin.top + margin.bottom)
                     .append('g')
-                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+                    .style("cursor", "crosshair");
 
                 svg.append('g')
                     .attr('class', 'x axis')
@@ -52,6 +70,15 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 svg.append('g')
                     .attr('class', 'y axis')
                     .call(yAxis);
+
+                svg.append('g')
+                    .attr('class', 'x grid')
+                    .attr('transform', 'translate(0,' + height + ')')
+                    .call(xGrid);
+
+                svg.append('g')
+                    .attr('class', 'y grid')
+                    .call(yGrid);
 
                 // Mouseover/tooltip setup
                 var focus = svg.append('g')
@@ -64,8 +91,12 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     .attr('class', 'overlay')
                     .attr('width', width)
                     .attr('height', height)
-                    .on('mouseover', function() { focus.style('display', null); })
-                    .on('mouseout', function() { focus.style('display', 'none'); })
+                    .on('mouseover', function() {
+                        focus.style('display', null);
+                    })
+                    .on('mouseout', function() {
+                        focus.style('display', 'none');
+                    })
                     .on('mousemove', mousemove);
 
                 var tip = svg.append('g')
@@ -200,6 +231,12 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svgTransition.select('.y.axis')
                         .duration(750)
                         .call(yAxis);
+                    svgTransition.select('.x.grid')
+                        .duration(750)
+                        .call(xGrid)
+                    svgTransition.select('.y.grid')
+                        .duration(750)
+                        .call(yGrid)
                 });
             }
         };
