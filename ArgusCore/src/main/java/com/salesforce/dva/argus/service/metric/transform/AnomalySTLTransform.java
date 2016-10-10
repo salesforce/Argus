@@ -38,8 +38,6 @@ import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
 
-import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
-import org.apache.commons.math3.distribution.*;
 
 /**
  * Created by vmuruganantham on 7/13/16.
