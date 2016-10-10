@@ -37,7 +37,9 @@ import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import com.salesforce.dva.argus.service.UserService;
 
 import org.junit.After;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import java.math.BigInteger;
 import java.util.Map;
@@ -47,6 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class UserServiceTest extends AbstractTest {
 	
 	@After
