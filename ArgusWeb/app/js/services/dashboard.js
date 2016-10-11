@@ -166,8 +166,8 @@ angular.module('argus.services.dashboard', [])
                         if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             var processedMetric = {};
                             processedMetric['expression'] = processedExpression;
-                            processedMetric['name'] = metrics.seriesName;
-                            processedMetric['color'] = metrics.seriesColor;
+                            processedMetric['name'] = metrics.name;
+                            processedMetric['color'] = metrics.color;
                             processedMetric['metricSpecificOptions'] = getMetricSpecificOptionsInArray(metricSpecificOptions);
 
                             // update metric list with new processed metric object
@@ -178,7 +178,7 @@ angular.module('argus.services.dashboard', [])
 
                 for (var key in scope.annotations) {
                     if (scope.annotations.hasOwnProperty(key)) {
-                        var processedExpression = augmentExpressionWithControlsData(event, scope.annotations[key],controls);
+                        var processedExpression = DashboardService.augmentExpressionWithControlsData(event, scope.annotations[key],controls);
                         if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                             updatedAnnotationList.push(processedExpression);
                         }
