@@ -621,7 +621,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
                 if (!isInterrupted() && _isMonitoringServiceEnabled()) {
                     try {
                         _pushCounters();
-                    } catch (Exception t) {
+                    } catch (Throwable t) {
                         _logger.error("Error occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, t.getMessage());
                     }
                 }
