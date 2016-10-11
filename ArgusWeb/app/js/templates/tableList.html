@@ -1,6 +1,7 @@
 <div class="row">
     <div class="col-md-3 h3">{{properties.title}} list</div>
-    <div class="col-md-5 text-right">
+
+    <div class="col-md-4 text-right">
         <dir-pagination-controls></dir-pagination-controls>
     </div>
     <div class="col-md-1">
@@ -18,6 +19,11 @@
                 </button>
             </span>
         </span>
+    </div>
+    <div class="col-md-1">
+        <a class="btn btn-default" ng-click="refreshData()">
+          <span class="glyphicon glyphicon-refresh"></span>
+        </a>
     </div>
 </div>
 <table class="table table-striped table-bordered">

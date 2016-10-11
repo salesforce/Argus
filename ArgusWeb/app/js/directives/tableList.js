@@ -35,7 +35,8 @@ angular.module('argus.directives')
                 addItem: '&',
                 delete: '&',
                 disabled: '&',
-                enable: '&'
+                enable: '&',
+                refreshData: '&'
             },
             controller: ['$scope', 'InputTracker', function($scope, InputTracker) {
                 // TODO: move this to a service

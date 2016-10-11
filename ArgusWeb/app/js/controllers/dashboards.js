@@ -71,19 +71,29 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         return result;
     }
 
+    function setDashboardsAfterLoading(dashboards) {
+      $scope.dashboardsLoaded = true;
+      sharedDashboards = getDashboardsUnderTab(dashboards, true);
+      usersDashboards = getDashboardsUnderTab(dashboards, false);
+      $scope.getDashboards($scope.shared);
+    }
+
     // TODO: refactor to DashboardService
     if ($sessionStorage.cachedDashboards) {
         var dashboards = $sessionStorage.cachedDashboards;
-        $scope.dashboardsLoaded = true;
-        sharedDashboards = getDashboardsUnderTab(dashboards, true);
-        usersDashboards = getDashboardsUnderTab(dashboards, false);
-        $scope.getDashboards($scope.shared);
+        setDashboardsAfterLoading(dashboards);
     } else {
         Dashboards.getMeta().$promise.then(function(dashboards) {
-            $scope.dashboardsLoaded = true;
-            sharedDashboards = getDashboardsUnderTab(dashboards, true);
-            usersDashboards = getDashboardsUnderTab(dashboards, false);
-            $scope.getDashboards($scope.shared);
+            setDashboardsAfterLoading(dashboards);
+            $sessionStorage.cachedDashboards = dashboards;
+        });
+    }
+
+    $scope.refreshDashboards = function () {
+        delete $sessionStorage.cachedDashboards;
+        delete $scope.dashboards;
+        Dashboards.getMeta().$promise.then(function(dashboards) {
+            setDashboardsAfterLoading(dashboards);
             $sessionStorage.cachedDashboards = dashboards;
         });
     }

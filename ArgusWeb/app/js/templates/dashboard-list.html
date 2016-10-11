@@ -5,7 +5,7 @@
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click="getDashboards(true);selectTab(2)">Shared</a></li>
     </ul>
 	<!-- dashboard list -->
-	<table-list properties = "properties" col-name="colName" data="dashboards" loaded="dashboardsLoaded" add-item="addDashboard()" delete="deleteDashboard" disabled="isDisabled"></table-list>
+	<table-list properties = "properties" col-name="colName" data="dashboards" loaded="dashboardsLoaded" add-item="addDashboard()" delete="deleteDashboard" disabled="isDisabled" refresh-data="refreshDashboards()"></table-list>
 	<!--loading spinner-->
 	<div ng-loading="dashboardsLoaded"></div>
 </section>
