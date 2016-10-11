@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
      
-package com.salesforce.dva.argus.service.jpa;
+package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
