@@ -20,8 +20,8 @@
             </span>
         </span>
     </div>
-    <div class="col-md-1">
-        <a class="btn btn-default" ng-click="refreshData()">
+    <div class="col-md-1 text-right">
+        <a class="btn btn-primary btn-sm" ng-click="refreshData()">
           <span class="glyphicon glyphicon-refresh"></span>
         </a>
     </div>
@@ -32,7 +32,7 @@
             {{value}}
             <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
         </th>
-        <th class="col-centered">
+        <th class="col-centered text-center">
             <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
                 <i class="glyphicon glyphicon-plus"></i>
             </button>
@@ -46,7 +46,7 @@
     <td ng-if="colName.createdDate">{{item.createdDate| date:'medium'}}</td>
     <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
     <td ng-if="colName.ownerName">{{item.ownerName}}</td>
-    <td ng-if="colName.state">
+    <td ng-if="colName.state" class="text-center">
         <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled'
                 ng-click='enableItem(item, true)'>
             <i class="glyphicon glyphicon-play"></i>
@@ -56,7 +56,7 @@
             <i class="glyphicon glyphicon-pause"></i>
         </button>
     </td>
-    <td>
+    <td class="text-center">
         <button class="btn btn-warning btn-sm" type="button"
                 ng-disabled="isDisabled(item)"
                 ng-confirm="Delete '{{item.name}}'?"
