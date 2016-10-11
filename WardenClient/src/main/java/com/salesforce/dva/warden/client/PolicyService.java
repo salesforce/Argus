@@ -30,16 +30,16 @@
  */
 package com.salesforce.dva.warden.client;
 
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
 import com.salesforce.dva.warden.client.WardenService.EndpointService;
 import com.salesforce.dva.warden.dto.Infraction;
 import com.salesforce.dva.warden.dto.Policy;
 import com.salesforce.dva.warden.dto.SuspensionLevel;
-import scala.util.parsing.combinator.testing.Str;
+import java.util.Map;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
 /**
@@ -250,16 +250,16 @@ public class PolicyService extends EndpointService {
 
     //============================ Metrics given a PolicyId and a UserId CRUD=================================
 
-    public WardenResponse<Metric> getMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/metric";
+    public WardenResponse<Map<Long, Double>> getMetricForUserAndPolicy(BigInteger policyId, BigInteger userId, Long start, Long end) throws IOException {
+        String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/metric?start=" + start + "&end=" + end;
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }
 
-    public WardenResponse<Metric> createMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId, List<Metric> metrics) throws IOException {
+    public WardenResponse updateMetricsForUserAndPolicy(BigInteger policyId, BigInteger userId, Map<Long, Double> values) throws IOException {
         String requestUrl = REQUESTURL + "/" + policyId.toString() + "/user/" + userId.toString() + "/metric";
 
-        return getClient().executeHttpRequest(RequestType.POST, requestUrl, metrics);
+        return getClient().executeHttpRequest(RequestType.PUT, requestUrl, values);
 
     }
 

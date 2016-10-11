@@ -62,7 +62,7 @@ public interface WardenClient {
      * @param  username  DOCUMENT ME!
      * @param  value     DOCUMENT ME!
      */
-    void updateMetric(Policy policy, String username, double value);
+    void updateMetric(Policy policy, String username, double value) throws SuspendedException;
 
     /**
      * DOCUMENT ME!
@@ -71,6 +71,6 @@ public interface WardenClient {
      * @param  username  DOCUMENT ME!
      * @param  delta     DOCUMENT ME!
      */
-    void modifyMetric(Policy policy, String username, double delta);
+    void modifyMetric(Policy policy, String username, double delta) throws SuspendedException;
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
