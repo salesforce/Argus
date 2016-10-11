@@ -33,18 +33,23 @@ package com.salesforce.dva.argus;
 
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.jpa.DefaultUserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.system.SystemMain;
+
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
+
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.security.SecureRandom;
 import java.sql.DriverManager;
 import java.sql.SQLNonTransientConnectionException;
@@ -176,6 +181,7 @@ public abstract class AbstractTest {
             system.stop();
         }
         tearDownEmbeddedKafka();
+        _deleteCachedUsers();
         try {
             zkTestServer.close();
             DriverManager.getConnection("jdbc:derby:memory:argus;shutdown=true").close();
@@ -186,6 +192,21 @@ public abstract class AbstractTest {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+    
+    private void _deleteCachedUsers() {
+    	try {
+			Field adminUserField = DefaultUserService.class.getDeclaredField("_adminUser");
+			Field defaultUserField = DefaultUserService.class.getDeclaredField("_defaultUser");
+			
+			adminUserField.setAccessible(true);
+			defaultUserField.setAccessible(true);
+			
+			adminUserField.set(null, null);
+			defaultUserField.set(null, null);
+		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
     }
 
     public SystemMain getInstance() {
