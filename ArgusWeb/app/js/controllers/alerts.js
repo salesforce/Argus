@@ -23,8 +23,15 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 .controller('Alerts', ['$scope', 'growl', 'Alerts', function ($scope, growl, Alerts) {
 
 		Alerts.query().$promise.then(function(alerts) {
-			$scope.alerts = alerts;		
+			$scope.alerts = alerts;
 		});
+
+		$scope.refreshAlerts = function () {
+			delete $scope.alerts;
+			Alerts.query().$promise.then(function(alerts) {
+				$scope.alerts = alerts;
+			});
+		}
 
     $scope.addAlert = function () {
         var alert = {
