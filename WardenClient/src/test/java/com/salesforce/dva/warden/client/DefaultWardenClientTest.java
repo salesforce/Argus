@@ -71,35 +71,48 @@ public class DefaultWardenClientTest extends AbstractTest {
         }
     }
 
-/*
+
     //Check that update metric throws exception for suspended user
-    @Test
-    public void testUpdateMetricSuspendedUser() throws IOException {
+    @Test (expected = SuspendedException.class)
+    public void testUpdateMetricSuspendedUser() throws IOException, SuspendedException {
         try(WardenService wardenService = new WardenService(getMockedClient("/AuthServiceTest.testLoginLogout.json"))) {
 
             Infraction infraction = new Infraction();
 
             infraction.setPolicyId(BigInteger.ONE);
-            infraction.setUserId(BigInteger.ONE);
-            infraction.setInfractionTimestamp((long) 1);
-            infraction.setExpirationTimestamp((long) 10);
-            infraction.setValue(1.00);
+            infraction.setExpirationTimestamp((long) System.currentTimeMillis()+600000);
 
             DefaultWardenClient client = new DefaultWardenClient(wardenService);
             Policy policy = new Policy();
             policy.setId(BigInteger.ONE);
-            policy.setDefaultValue(0.0);
 
-            WardenUser user = new WardenUser();
-            user.setId(BigInteger.ONE);
-            user.setUserName("hpotter");
 
-            client._infractions.put(client._createKey(policy, user), infraction);
-            client.updateMetric(policy, user, 10);
+            client._infractions.put(client._createKey(policy, "hpotter"), infraction);
+            client.updateMetric(policy, "hpotter", 10);
 
-            assertEquals(10.0, client._values.get(client._createKey(policy, user)).doubleValue(), 0.0);
         }
     }
-    */
+
+    //Check that modify metric throws exception for suspended user
+    @Test (expected = SuspendedException.class)
+    public void testModifyMetricSuspendedUser() throws IOException, SuspendedException {
+        try(WardenService wardenService = new WardenService(getMockedClient("/AuthServiceTest.testLoginLogout.json"))) {
+
+            Infraction infraction = new Infraction();
+
+            infraction.setPolicyId(BigInteger.ONE);
+            infraction.setExpirationTimestamp((long) System.currentTimeMillis()+600000);
+
+            DefaultWardenClient client = new DefaultWardenClient(wardenService);
+            Policy policy = new Policy();
+            policy.setId(BigInteger.ONE);
+
+
+            client._infractions.put(client._createKey(policy, "hpotter"), infraction);
+            client.modifyMetric(policy, "hpotter", 10);
+
+        }
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

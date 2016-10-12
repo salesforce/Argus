@@ -22,24 +22,24 @@
   "jsonInput" :null,
   "status": 200,
   "message": "success",
-  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"value\":10.0,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
  },{"type": "GET",
   "endpoint": "/user/1/infraction",
   "jsonInput" :null,
   "status": 200,
   "message": "success",
-  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"value\":10.0,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
  },{"type": "GET",
   "endpoint": "/user/1/suspension",
   "jsonInput" :null,
   "status": 200,
   "message": "success",
-  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"value\":10.0,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
  },{"type": "GET",
   "endpoint": "/user/1/suspension/1",
   "jsonInput" :null,
   "status": 200,
   "message": "success",
-  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
+  "jsonOutput": "[{\"entity\":{\"type\":\"infraction\",\"id\":1,\"createdById\":1,\"createdDate\":1472847819167,\"modifiedById\":10,\"modifiedDate\":1472847819167,\"value\":10.0,\"policyId\":1,\"userId\":1,\"infractionTimestamp\":100000,\"expirationTimestamp\":-1},\"meta\":{\"HREF\":\"TestHref\",\"STATUS\":\"200\",\"VERB\":\"GET\",\"MESSAGE\":\"TestMessage\",\"UI_MESSAGE\":\"TestUIMessage\",\"DEV_MESSAGE\":\"TestDevMessage\"}}]"
 }
 ]

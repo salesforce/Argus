@@ -72,29 +72,38 @@ public class DefaultWardenClient implements WardenClient {
 
     @Override
     public void register(List<Policy> policies, int port) {
-
+        //login
+        //pull in data from the server to populate infraction cache
+        //update the server with the policy information
+        //register for events
     }
 
     @Override
-    public void unregister() { }
+    public void unregister() {
+        //unregister for events
+        //logout
+        //shutdown
+    }
 
     @Override
     public void updateMetric(Policy policy, String user, double value) throws SuspendedException {
-        if (!_isSuspended(policy, user)){
-            _updateLocalValue(policy, user, value, true);
-        }
+        _checkIsSuspended(policy, user);
+        _updateLocalValue(policy, user, value, true);
     }
 
     @Override
     public void modifyMetric(Policy policy, String user, double delta) throws SuspendedException {
-        if (!_isSuspended(policy, user)){
-            _updateLocalValue(policy, user, delta, false);
-        }
+        _checkIsSuspended(policy, user);
+        _updateLocalValue(policy, user, delta, false);
     }
 
-    private Boolean _isSuspended(Policy policy, String user ) throws SuspendedException {
+    private void _checkIsSuspended(Policy policy, String user ) throws SuspendedException {
        Infraction infraction = _infractions.get(_createKey(policy, user));
-        return infraction != null && infraction.getExpirationTimestamp()>=System.currentTimeMillis();
+        if (infraction != null && infraction.getExpirationTimestamp()>=System.currentTimeMillis()){
+            throw new SuspendedException(policy, user, infraction.getExpirationTimestamp(), infraction.getValue());
+        }
+
+
     }
 
      String _createKey(Policy policy, String user) {

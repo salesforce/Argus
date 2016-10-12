@@ -127,6 +127,7 @@ public class UserServiceTest extends AbstractTest {
         result.setUserId(BigInteger.ONE);
         result.setInfractionTimestamp(100000L);
         result.setExpirationTimestamp(-1L);
+        result.setValue(Double.valueOf(10.0));
         result.setCreatedById(BigInteger.ONE);
         result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
