@@ -209,6 +209,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
   fill: none;
   stroke: steelblue;
   stroke-width: 1.5px;
+  clip-path: url('#clip');
 }
 .overlay {
   fill: none;
