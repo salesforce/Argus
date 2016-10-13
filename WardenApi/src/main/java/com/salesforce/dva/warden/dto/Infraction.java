@@ -48,6 +48,7 @@ public class Infraction extends Entity {
     private BigInteger user_id;
     private Long infraction_timestamp;
     private Long expiration_timestamp;
+    private Double value;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -124,63 +125,6 @@ public class Infraction extends Entity {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-
-        result = prime * result + ((expiration_timestamp == null) ? 0 : expiration_timestamp.hashCode());
-        result = prime * result + ((infraction_timestamp == null) ? 0 : infraction_timestamp.hashCode());
-        result = prime * result + ((policy_id == null) ? 0 : policy_id.hashCode());
-        result = prime * result + ((user_id == null) ? 0 : user_id.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-
-        Infraction other = (Infraction) obj;
-
-        if (expiration_timestamp == null) {
-            if (other.expiration_timestamp != null) {
-                return false;
-            }
-        } else if (!expiration_timestamp.equals(other.expiration_timestamp)) {
-            return false;
-        }
-        if (infraction_timestamp == null) {
-            if (other.infraction_timestamp != null) {
-                return false;
-            }
-        } else if (!infraction_timestamp.equals(other.infraction_timestamp)) {
-            return false;
-        }
-        if (policy_id == null) {
-            if (other.policy_id != null) {
-                return false;
-            }
-        } else if (!policy_id.equals(other.policy_id)) {
-            return false;
-        }
-        if (user_id == null) {
-            if (other.user_id != null) {
-                return false;
-            }
-        } else if (!user_id.equals(other.user_id)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public Object createExample() {
         Infraction result = new Infraction();
 
@@ -188,7 +132,41 @@ public class Infraction extends Entity {
         result.setUserId(BigInteger.ONE);
         result.setInfractionTimestamp((long) 1);
         result.setExpirationTimestamp((long) 10);
+        result.setValue(1.00);
         return null;
+    }
+
+    public Double getValue() {
+        return value;
+    }
+
+    public void setValue(Double value) {
+        this.value = value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Infraction that = (Infraction) o;
+
+        if (!policy_id.equals(that.policy_id)) return false;
+        if (!user_id.equals(that.user_id)) return false;
+        if (!infraction_timestamp.equals(that.infraction_timestamp)) return false;
+        if (!expiration_timestamp.equals(that.expiration_timestamp)) return false;
+        return getValue().equals(that.getValue());
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = policy_id.hashCode();
+        result = 31 * result + user_id.hashCode();
+        result = 31 * result + infraction_timestamp.hashCode();
+        result = 31 * result + expiration_timestamp.hashCode();
+        result = 31 * result + getValue().hashCode();
+        return result;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -30,9 +30,13 @@
  */
 package com.salesforce.dva.warden.client;
 
+import com.salesforce.dva.warden.SuspendedException;
 import com.salesforce.dva.warden.WardenClient;
+import com.salesforce.dva.warden.dto.Infraction;
 import com.salesforce.dva.warden.dto.Policy;
-import java.util.List;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * DOCUMENT ME!
@@ -40,24 +44,84 @@ import java.util.List;
  * @author  Jigna Bhatt (jbhatt@salesforce.com)
  */
 public class DefaultWardenClient implements WardenClient {
+
+    final Map<String, Infraction> _infractions;
+    final Map<String, Double> _values;
+    final WardenService _service;
+
     //~ Constructors *********************************************************************************************************************************
     // This is how the client talks to the server.
+    public DefaultWardenClient(String endpoint) throws IOException{
+        this(WardenService.getInstance(endpoint, 10));
+    }
 
     /** Creates a new DefaultWardenClient object. */
-    public DefaultWardenClient() { }
+     DefaultWardenClient(WardenService service) {
+         _service = service;
+        _infractions = Collections.synchronizedMap(new LinkedHashMap<String, Infraction>(){
+            @Override
+            protected boolean removeEldestEntry(Map.Entry <String, Infraction> eldest) {
+                return eldest.getValue().getExpirationTimestamp().compareTo(System.currentTimeMillis()) == -1;
+            }
+        });
+
+        _values = Collections.synchronizedMap(new HashMap<String, Double>());
+    }
 
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public void register(List<Policy> policies, int port) { }
+    public void register(List<Policy> policies, int port) {
+        //login
+        //pull in data from the server to populate infraction cache
+        //update the server with the policy information
+        //register for events
+    }
 
     @Override
-    public void unregister() { }
+    public void unregister() {
+        //unregister for events
+        //logout
+        //shutdown
+    }
 
     @Override
-    public void updateMetric(Policy policy, String user, double value) { }
+    public void updateMetric(Policy policy, String user, double value) throws SuspendedException {
+        _checkIsSuspended(policy, user);
+        _updateLocalValue(policy, user, value, true);
+    }
 
     @Override
-    public void modifyMetric(Policy policy, String user, double delta) { }
+    public void modifyMetric(Policy policy, String user, double delta) throws SuspendedException {
+        _checkIsSuspended(policy, user);
+        _updateLocalValue(policy, user, delta, false);
+    }
+
+    private void _checkIsSuspended(Policy policy, String user ) throws SuspendedException {
+       Infraction infraction = _infractions.get(_createKey(policy, user));
+        if (infraction != null && infraction.getExpirationTimestamp()>=System.currentTimeMillis()){
+            throw new SuspendedException(policy, user, infraction.getExpirationTimestamp(), infraction.getValue());
+        }
+
+
+    }
+
+     String _createKey(Policy policy, String user) {
+        return policy.getId().toString() + ":" + user;
+    }
+
+    private void _updateLocalValue(Policy policy, String user, Double value, Boolean replace){
+        String key = _createKey(policy, user);
+        Double cachedValue = _values.get(key);
+
+        if (cachedValue == null){
+            cachedValue = replace ? value: policy.getDefaultValue()+value;
+        } else {
+          cachedValue = replace ? value : cachedValue + value;
+        }
+
+        _values.put(key, cachedValue);
+
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -30,7 +30,6 @@
  */
 package com.salesforce.dva.warden.client;
 
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.warden.client.WardenHttpClient.RequestType;
 import com.salesforce.dva.warden.client.WardenService.EndpointService;
 import com.salesforce.dva.warden.dto.Infraction;
@@ -40,6 +39,7 @@ import com.salesforce.dva.warden.dto.WardenUser;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Map;
 
 /**
  * DOCUMENT ME!
@@ -137,8 +137,8 @@ public class UserService extends EndpointService {
      *
      * @throws  IOException  DOCUMENT ME!
      */
-    public WardenResponse<Metric> getMetricsForUserAndPolicy(BigInteger userId, BigInteger policyId) throws IOException {
-        String requestUrl = REQUESTURL + "/" + userId.toString() + "/policy" + policyId.toString() + "/metric";
+    public WardenResponse<Map<Long, Double>> getMetricForUserAndPolicy(BigInteger userId, BigInteger policyId, Long start, Long end) throws IOException {
+        String requestUrl = REQUESTURL + "/" + userId.toString() + "/policy" + policyId.toString() + "/metric?start=" + start + "&end=" + end;
 
         return getClient().executeHttpRequest(RequestType.GET, requestUrl, null);
     }

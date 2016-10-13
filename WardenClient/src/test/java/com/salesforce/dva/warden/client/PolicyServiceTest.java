@@ -284,6 +284,7 @@ public class PolicyServiceTest extends AbstractTest {
 
     @Test
     public void testGetInfractions() throws IOException {
+        Infraction infraction = _constructPersistedInfraction();
         try (WardenService wardenService = new WardenService(getMockedClient("/PolicyServiceTest.testGetPolicies.json"))) {
             PolicyService policyService = wardenService.getPolicyService();
             WardenResponse<Infraction> actual = policyService.getInfractions(BigInteger.ONE);
@@ -371,6 +372,7 @@ public class PolicyServiceTest extends AbstractTest {
         result.setMessage("success");
         result.setStatus(200);
         result.setResources(resources);
+        System.out.println(MAPPER.writeValueAsString(result));
         return result;
     }
 
@@ -382,6 +384,7 @@ public class PolicyServiceTest extends AbstractTest {
         result.setUserId(BigInteger.ONE);
         result.setInfractionTimestamp(100000L);
         result.setExpirationTimestamp(-1L);
+        result.setValue(Double.valueOf(10.0));
         result.setCreatedById(BigInteger.ONE);
         result.setCreatedDate(new Date(1472847819167L));
         result.setModifiedById(BigInteger.TEN);
