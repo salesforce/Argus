@@ -35,6 +35,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Infraction;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Policy;
 import com.salesforce.dva.argus.entity.PrincipalUser;
@@ -43,9 +44,12 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.WaaSService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.alert.notifier.DefaultNotifier;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.warden.dto.WardenEvent;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -117,19 +121,37 @@ public  class WaaSNotifier extends DefaultNotifier {
     @Override
     protected void sendAdditionalNotification(NotificationContext context){
     	List<String> nameAndService = _parseMetricExpression(context);
-    	Policy policy = _waaSService.getPolicy(nameAndService.get(0),nameAndService.get(1));
-    	_waaSService.suspendUser(getWaaSUser(context.getAlert().getName()).getUserName(), policy);
-    	//TODO:send out warden event, where socket communication happens
-        addAnnotationSuspendedUser(context, policy);
+    	System.out.println("nameAndService name: " + nameAndService.get(0));
+    	System.out.println("nameAndService service:" + nameAndService.get(1));
+    	//Policy policy = _waaSService.getPolicy(nameAndService.get(0),nameAndService.get(1));
+    	Policy policy = _waaSService.getPolicy("policyName.descriptor.max","service");
+    	System.out.println("policy Found:" + policy.getName());
+    	Infraction newInfraction = _waaSService.suspendUser(getWaaSUser(context.getAlert().getName()).getUserName(), policy);
+    	
+    	//wrap warden event data
+    	WardenEvent wardenEvent = new WardenEvent();
+    	byte[] data = wardenEvent.getWardenEventData(Infraction.transformToDto(newInfraction), WardenEvent.WardenEventType.NEW_INFRACTION);
+    	
+    	//send out warden event
+    	try {
+    		System.out.println("I am here!!!!!!");
+			WaaSNotifierWorker.doStart(InetAddress.getByName("localhost"),9090, data);
+    		//WaaSNotifierWorker.doStart(InetAddress.getByName("www.google.com"),80, data);
+			System.out.println("I want to jump here!!!!");
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+    	addAnnotationSuspendedUser(context, policy);
     }
 
     private List<String> _parseMetricExpression(NotificationContext context) {
 		
     	String metricExpression = context.getAlert().getExpression();
-    	
-		int policyNameBeginIndex = metricExpression.lastIndexOf(":") + 1;
+    	System.out.println(metricExpression);
+		int policyNameBeginIndex = metricExpression.indexOf(":") + 1;
         int policyNameEndIndex = metricExpression.lastIndexOf("{");
         String name = metricExpression.substring(policyNameBeginIndex, policyNameEndIndex);
+        System.out.println("metricName:" + name);
 		int scopeBeginIndex = metricExpression.indexOf(":") + 1;
 		int scopeEndIndex = metricExpression.lastIndexOf(":");
 		String scope = metricExpression.substring(scopeBeginIndex, scopeEndIndex);
@@ -160,6 +182,7 @@ public  class WaaSNotifier extends DefaultNotifier {
 
         Annotation annotation = new Annotation(ANNOTATION_SOURCE, waaSUser.getUserName(), ANNOTATION_TYPE, scope,
             policy.getName(), context.getTriggerFiredTime());
+        System.out.println("=======" + annotation.toString());
         Map<String, String> fields = new TreeMap<>();
 
         fields.put("Suspended from service", policy.getService());

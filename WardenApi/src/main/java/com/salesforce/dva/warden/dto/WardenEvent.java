@@ -1,39 +1,130 @@
-/*
- * Copyright (c) 2016, Salesforce.com, Inc.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. Neither the name of Salesforce.com nor the names of its contributors may
- * be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 package com.salesforce.dva.warden.dto;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.salesforce.dva.warden.dto.WardenEvent.WardenEventType;
+
 /**
- * DOCUMENT ME!
+ * Warden object for warden event notification
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Ruofan Zhang(rzhang@salesforce.com)
  */
-public class WardenEvent { }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+public class WardenEvent {
+
+	   //~ Instance fields ******************************************************************************************************************************
+	
+    private final ObjectMapper _mapper;
+	
+    public WardenEvent(){
+    	_mapper = getMapper();
+    }
+	
+    private ObjectMapper getMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+
+        module.addSerializer(Infraction.class, new WardenObjectTransform.InfractionSerializer());
+       
+        mapper.registerModule(module);
+        return mapper;
+    }
+    
+    
+    
+    /* Writes new infractions.*/
+    public  byte[] getWardenEventData(Infraction infraction, WardenEventType wardenEventType) {
+    	if(infraction == null)
+    		throw new IllegalArgumentException("No wardenObject found!");
+    	
+    	//byte[] eventCodeArr = ByteBuffer.allocate(4).putInt(wardenEventType.value()).array();
+//    	byte[] eventCodeArr = WardenEvent.WardenEventType.NEW_INFRACTION.value().getBytes();
+//    	byte[] dtoArr = fromEntity(infraction).getBytes();
+//    	byte[] data = new byte[eventCodeArr.length + dtoArr.length];
+//    	System.arraycopy(eventCodeArr, 0, data, 0, eventCodeArr.length);
+//    	System.arraycopy(dtoArr, 0, data, eventCodeArr.length, data.length);
+//    	
+//    	return data;
+    	
+    	byte[] code = WardenEvent.WardenEventType.NEW_INFRACTION.value().getBytes();
+	      byte[] delimiter = "-".getBytes();
+	      byte[] entity =fromEntity(infraction).getBytes();
+	      ByteBuffer message = ByteBuffer.allocate(code.length + delimiter.length + entity.length);
+	      message.put(code);
+	      message.put(delimiter);
+	      message.put(entity);
+	      
+	      return message.array();
+    }
+    
+    
+//	/* Helper method to convert JSON String representation to the corresponding Java entity. */
+//    private <T> T toEntity(String content, TypeReference<T> type) {
+//        try {
+//            return _mapper.readValue(content, type);
+//        } catch (IOException ex) {
+//            throw new RuntimeException(ex);
+//        }
+//    }
+
+    /* Helper method to convert a Java entity to a JSON string. */
+    private <T> String fromEntity(T type) {
+        try {
+            return _mapper.writeValueAsString(type);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+    
+    //~ Enums ****************************************************************************************************************************************
+
+    /**
+     * The type of warden event.
+     *
+     * @author  Ruofan Zhang (rzhang@salesforce.com)
+     */
+    public enum WardenEventType {
+
+        /** New Infraction */
+        NEW_INFRACTION("new");
+
+    	private final String eventType;
+    	private WardenEventType(String eventType) {
+    		this.eventType = eventType;
+    	}
+        /**
+         * Converts a string to a warden event type.
+         *
+         * @param   eventCode  The warden event type code.
+         *
+         * @return  The corresponding trigger type.
+         *
+         * @throws  IllegalArgumentException  If no corresponding trigger type is found.
+         */
+        @JsonCreator
+        public static WardenEventType fromEventCode(String type) {
+            for (WardenEventType t : WardenEventType.values()) {
+                if (t.equals(type)) {
+                    return t;
+                }
+            }
+            throw new IllegalArgumentException("Warden Event Type does not exist.");
+        }
+
+        /**
+         * Returns the event code of the warden event type.
+         *
+         * @return  The event code of the warden event type.
+         */
+        @JsonValue
+        public  String value() {
+            return this.eventType;
+        }
+    }
+}
