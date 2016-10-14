@@ -1,8 +1,8 @@
 /*! Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
- *  
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
+ *
  *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *
  *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
@@ -97,7 +97,7 @@ angular.module('argus.config', [])
         growlProvider.globalPosition('top-center');
         growlProvider.globalDisableIcons(true);
         growlProvider.globalTimeToLive(3000);
-        
+
         $analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
         $analyticsProvider.withAutoBase(true);  /* Records full path */
 }])
@@ -108,7 +108,7 @@ angular.module('argus.config', [])
         var loggedIn = Auth.isLoggedIn();
         var target = Auth.getTarget();
         var path = $location.path();
-        
+
         if (loggedIn) {
         	if (path === '/login') {
         		event.preventDefault();
@@ -128,17 +128,4 @@ angular.module('argus.config', [])
         	$route.reload();
         }
     });
-    
-    (function(config) {
-		_paq.push([ "trackPageView" ]);
-		_paq.push([ "enableLinkTracking" ]);
-		_paq.push([ "setTrackerUrl", config.piwikUrl + "piwik.php" ]);
-		_paq.push([ "setSiteId", config.piwikSiteId ]);
-		var d = document, g = d.createElement("script"), s = d.getElementsByTagName("script")[0];
-		g.type = "text/javascript";
-		g.defer = true;
-		g.async = true;
-		g.src = config.piwikUrl + "piwik.js";
-		s.parentNode.insertBefore(g, s);
-	})(CONFIG);        
 }]);

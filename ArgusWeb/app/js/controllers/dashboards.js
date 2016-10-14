@@ -20,22 +20,37 @@
 'use strict';
 
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
-.controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', function (Auth, $scope, growl, Dashboards) {
+.controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', function (Auth, $scope, growl, Dashboards, $sessionStorage) {
 
-    $scope.shared = false;
-    $scope.selectedTab = 1;
     $scope.dashboards = [];
     var sharedDashboards = [];
     var usersDashboards = [];
     var remoteUser = Auth.remoteUser();
 
+    // session storage for selectedTab
+    if ($sessionStorage.selectedTab) {
+        $scope.selectedTab = $sessionStorage.selectedTab;
+        $scope.shared = $sessionStorage.shared;
+    } else {
+        $scope.selectedTab = 1;
+        $scope.shared = false;
+    }
+
+    // used in html files only
+    $scope.isTabSelected = function (tab) {
+        return $scope.selectedTab === tab;
+    };
+    $scope.selectTab = function (tab) {
+        $scope.selectedTab = tab;
+        $sessionStorage.selectedTab = tab;
+    };
+
     // TODO: refactor to DashboardService
-    Dashboards.getMeta().$promise.then(function(dashboards) {
-        $scope.allDashboards = dashboards;
-        sharedDashboards = getDashboardsUnderTab(dashboards, true);
-        usersDashboards = getDashboardsUnderTab(dashboards, false);
-        $scope.getDashboards($scope.shared);
-    });
+    $scope.getDashboards = function(shared) {
+        $scope.dashboards = shared? sharedDashboards: usersDashboards;
+        $scope.shared = shared;
+        $sessionStorage.shared = shared;
+    };
 
     function getDashboardsUnderTab (allDashboards, shared) {
         var result = [];
@@ -54,21 +69,34 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             }
         }
         return result;
-    };
-    
-    $scope.isTabSelected = function (tab) {
-        return $scope.selectedTab === tab;
-    };
+    }
 
-    $scope.selectTab = function (tab) {
-        $scope.selectedTab = tab;
-    };
+    function setDashboardsAfterLoading(dashboards) {
+      $scope.dashboardsLoaded = true;
+      sharedDashboards = getDashboardsUnderTab(dashboards, true);
+      usersDashboards = getDashboardsUnderTab(dashboards, false);
+      $scope.getDashboards($scope.shared);
+    }
 
     // TODO: refactor to DashboardService
-    $scope.getDashboards = function(shared) {
-        $scope.dashboards = shared? sharedDashboards: usersDashboards;
-        $scope.shared = shared;
-    };
+    if ($sessionStorage.cachedDashboards) {
+        var dashboards = $sessionStorage.cachedDashboards;
+        setDashboardsAfterLoading(dashboards);
+    } else {
+        Dashboards.getMeta().$promise.then(function(dashboards) {
+            setDashboardsAfterLoading(dashboards);
+            $sessionStorage.cachedDashboards = dashboards;
+        });
+    }
+
+    $scope.refreshDashboards = function () {
+        delete $sessionStorage.cachedDashboards;
+        delete $scope.dashboards;
+        Dashboards.getMeta().$promise.then(function(dashboards) {
+            setDashboardsAfterLoading(dashboards);
+            $sessionStorage.cachedDashboards = dashboards;
+        });
+    }
 
     // TODO: refactor to DashboardService
     $scope.addDashboard = function () {
@@ -80,7 +108,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         };
         Dashboards.save(dashboard, function (result) {
             // update all dashboards
-            $scope.allDashboards.push(result);
+            result.content = "";
+            $sessionStorage.cachedDashboards.push(result);
             // update individual tab's dashboards if needed
             if(result.shared) {
                 sharedDashboards.push(result);
@@ -100,7 +129,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.deleteDashboard = function (dashboard) {
         Dashboards.delete({dashboardId: dashboard.id}, function (result) {
             // update all dashboards
-            $scope.allDashboards = deleteDashboardFromList($scope.allDashboards, dashboard);
+            $sessionStorage.cachedDashboards = deleteDashboardFromList($sessionStorage.cachedDashboards, dashboard);
             // update individual tab's dashboards if needed
             if(dashboard.shared) {
                 sharedDashboards = deleteDashboardFromList(sharedDashboards, dashboard);
@@ -124,41 +153,36 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 
     // factor html template to /templates
     $scope.getContentTemplate = function () {
-    	
-    	var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
-        
-    	template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
-    	template += "<ag-date type='datetime' name='start' label='Start Date' default='-2d'></ag-date>\n";
+        var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
+
+        template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
+        template += "<ag-date type='datetime' name='start' label='Start Date' default='-2d'></ag-date>\n";
         template += "<ag-date type='datetime' name='end' label='End Date' default='-0d'></ag-date>\n";
         template += "<ag-text type='text' name='scope' label='Scope' default='argus.jvm'></ag-text>\n";
         template += "<ag-text type='text' name='metric' label='Metric' default='mem.heap.used'></ag-text>\n";
-        template += "<ag-text type='text' name='tags' label='Tags' default='host=*'></ag-text>\n"; 
+        template += "<ag-text type='text' name='tags' label='Tags' default='host=*'></ag-text>\n";
         template += "<ag-text type='text' name='aggregator' label='Aggregator' default='avg'></ag-text>\n";
         template += "<!-- A button used to submit the query. -->\n";
         template += "<ag-submit>Submit</ag-submit>\n\n";
 
         template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
         template += "<h4>Argus mem heap used - Chart</h4>\n\n";
-        
+
         template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
         template += "<ag-chart name='Chart'>\n\n";
-        
+
         template += "<!-- This defines options for a chart or a table. The value of 'name' attribute is directly used as the key for the config object(options object for highcharts/highstocks, config object for at-table. Hence use valid values for name attribute.). The values for the corresponding keys can either be provided using the value attribute on the tag or using innerHtml for the tag. -->\n";
         template += "<ag-option name='title.text' value='This title was set with a chart option'></ag-option>\n";
         template += "<!-- This defines each timeseries to be displayed on a chart/table. The timeseries to be displayed is specified as the innerHtml using the Argus Query Language. The individual component/s can be parameterized by placing them between $ signs and using the value of ag-text tag's name attribute. In the example below, all components have are parameterized. -->\n";
         template += "<ag-metric>$start$:$end$:$scope$:$metric${$tags$}:$aggregator$</ag-metric>\n";
-        
+
         template += "</ag-chart>\n\n";
         template += "</ag-dashboard>";
-        
+
         return template;
     };
-    
+
     $scope.isDisabled = function(dashboard) {
-    	// if (remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName)) {
-         //    return false;
-    	// }
-    	// return true;
         return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
     };
 

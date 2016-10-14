@@ -1,9 +1,9 @@
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
-.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History',
-    function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History) {
+.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage',
+    function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage) {
         $http.pendingRequests = []; //This line should be deleted.
 		$scope.dashboardEditable = false;
-        
+
         $scope.isDashboardDirty = function () {
             return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
         };
@@ -15,6 +15,9 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
                     $scope.unmodifiedDashboard = angular.copy(dashboard);
                     growl.success(('Updated "') + dashboard.name + '"');
                     $scope.fetchHistory();
+                    // remove existing session storage for update
+                    delete $sessionStorage.cachedDashboards;
+                    console.log("delete session storage");
                 }, function (error) {
                     growl.error('Failed to update "' + dashboard.name + '"');
                 });
@@ -57,7 +60,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 
         $scope.dashboardId = $routeParams.dashboardId;
         $scope.selectedTab = 1;
-        
+
         $scope.editorOptions = {
             lineWrapping: true,
             lineNumbers: true,
@@ -81,7 +84,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
         }
 
         $scope.resetDashboard();
-        
+
         function isDashboardEditable() {
         	var remoteUser = Storage.get('user');
         	if(remoteUser.privileged || remoteUser.userName === $scope.dashboard.ownerName)
