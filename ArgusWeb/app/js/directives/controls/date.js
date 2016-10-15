@@ -13,6 +13,10 @@ angular.module('argus.directives.controls.date', [])
             for (var prop in $routeParams) {
                 if (prop == $scope.controlName) {
                     $scope.ctrlVal = $routeParams[prop];
+                    // remove GMT from page refreshing
+                    if( $scope.ctrlVal.indexOf('GMT') >= 0){
+                        $scope.ctrlVal = $scope.ctrlVal.replace('GMT','');
+                    }
                 }
             }
 
@@ -32,7 +36,7 @@ angular.module('argus.directives.controls.date', [])
                 '<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
                     '<input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal">' +
                 '</a>' +
-                '<label>GMT: <input type="checkbox" ng-model="GMTon"></label>' +
+                '<label class="GMT-select">GMT: <input type="checkbox" ng-model="GMTon" ng-init="GMTon=true"></label>' +
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' +
                     '<datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker>' +
                 '</ul>' +
