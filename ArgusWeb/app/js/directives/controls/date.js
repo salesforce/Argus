@@ -32,6 +32,7 @@ angular.module('argus.directives.controls.date', [])
                 '<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
                     '<input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal">' +
                 '</a>' +
+                '<label>GMT: <input type="checkbox" ng-model="GMTon"></label>' +
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' +
                     '<datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker>' +
                 '</ul>' +
@@ -39,7 +40,18 @@ angular.module('argus.directives.controls.date', [])
         link: function(scope, element, attributes, dashboardCtrl) {
             dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agDate");
             scope.$watch('ctrlVal', function(newValue, oldValue) {
-                dashboardCtrl.updateControl(scope.controlName, newValue, "agDate", true);
+                if (scope.GMTon) {
+                    dashboardCtrl.updateControl(scope.controlName, newValue + " GMT", "agDate", true);
+                } else {
+                    dashboardCtrl.updateControl(scope.controlName, newValue, "agDate", true);
+                }
+            });
+            scope.$watch('GMTon', function(newValue, oldValue) {
+                if (newValue) {
+                    dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal + " GMT", "agDate", true);
+                } else {
+                    dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agDate", true);
+                }
             });
         }
     }
