@@ -301,6 +301,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn(logMessage);
 				continue;
 			}
+			
+			if(!alert.isEnabled()) {
+				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertID);
+				_logger.warn(logMessage);
+				continue;
+			}
 
 			History history = _historyService.createHistory(addDateToMessage(JobStatus.STARTED.getDescription()), alert, JobStatus.STARTED, 0, 0);
 
