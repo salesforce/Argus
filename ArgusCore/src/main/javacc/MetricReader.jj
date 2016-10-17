@@ -33,11 +33,14 @@ import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.metric.transform.TransformIterator;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
+
 
 public class MetricReader<T> {
 
@@ -186,6 +189,7 @@ TOKEN : { < DOWNSAMPLE : "DOWNSAMPLE" > }
 TOKEN : { < DEVIATION : "DEVIATION" > }
 TOKEN : { < JOIN : "JOIN" > }
 TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
+TOKEN : { < foreach : "foreach" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
 TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
@@ -411,7 +415,7 @@ private String functionName() :
 	|
 	t = <FILL_CALCULATE>
 	{ return t.image; }
-	|	
+	|
 	t = <LOG>
 	{ return t.image; }
 	|	
@@ -423,7 +427,7 @@ private String functionName() :
 	|	
 	t = <SORT>
 	{ return t.image; }
-	|	
+	|
 	t = <SHIFT>
 	{ return t.image; }
 	|	
@@ -437,6 +441,9 @@ private String functionName() :
 	{ return t.image; }
     |    
     t = <CONSECUTIVE>
+    { return t.image; }
+	|
+	t = <foreach>
     { return t.image; }
 	|
 	t = <HW_FORECAST>
@@ -472,7 +479,17 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
 	  	  	  	Transform transform = factory.getTransform(functionName);
-				//return (constants == null || constants.isEmpty()) ? transform.transform(result) : transform.transform(result, constants);
+	  	  	  	
+	  	  	  	if (functionName.equals("foreach")){
+	                SystemAssert.requireArgument(constants!=null&&constants.size()>=2, "map function requires at least two constants. e.g., $device, $SCALE");
+	                Transform _mapper = factory.getTransform(constants.get(1));
+	                List<Metric> mapped=new ArrayList<Metric>();
+	                for(List<Metric> m:((TransformIterator) transform).iterate((List<Metric>) result,constants.subList(0, 1))){
+	                	mapped.addAll((constants.size()==2)?_mapper.transform(m):_mapper.transform(m,constants.subList(2, constants.size())));
+	                }
+	                return (List<T>)mapped;
+	            }
+				
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
 	  	} else {
