@@ -205,15 +205,29 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {
   display: none;
 }
+
 .line {
   fill: none;
   stroke: steelblue;
   stroke-width: 1.5px;
   clip-path: url('#clip');
 }
+.brushLine {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
 .overlay {
   fill: none;
   pointer-events: all;
+  cursor: crosshair;
+}
+
+.zoom {
+  fill: none;
+  pointer-events: all;
+  cursor: crosshair;
 }
 .focus circle {
   opacity: 0.5;

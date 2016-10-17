@@ -8,6 +8,11 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
         return {
             restrict: 'E',
             replace: false,
+            template: '<div>' +
+                        '<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
+                        '<button id="oneHour">1h</button>' +
+                        '<button id="oneDay">1d</button>' +
+                      '</div>',
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
                 // Layout parameters
@@ -31,10 +36,12 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var y = d3.scaleLinear().range([height, 0]);
                 var y2 = d3.scaleLinear().range([height2, 0]);
                 var z = d3.scaleOrdinal().range(d3.schemeCategory10);
-
+                var nGridX = 10;
+                var nGridY = 10;
                 //Axis
                 var xAxis = d3.axisBottom()
                     .scale(x)
+                    .ticks(nGridX)
                     ;
 
                 var xAxis2 = d3.axisBottom() //for brush
@@ -42,28 +49,39 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 var yAxis = d3.axisLeft()
                     .scale(y)
-                    .tickFormat(d3.format('s'))
+                    .ticks(nGridY)
+                    .tickFormat(d3.format('.2s'))
                     ;
 
                 //grid
                 var xGrid = d3.axisBottom()
                     .scale(x)
+                    .ticks(nGridX)
                     .tickSizeInner(-height)
                     ;
 
                 var yGrid = d3.axisLeft()
                     .scale(y)
+                    .ticks(nGridY)
                     .tickSizeInner(-width)
                     ;
 
                 //line
                 var line = d3.line()
-                    .x(function(d) { return x(d[0]); })
-                    .y(function(d) { return y(d[1]); });
+                    .x(function(d) {
+                        return x(d[0]);
+                    })
+                    .y(function(d) {
+                        return y(d[1]);
+                    });
                 //line2 (for brush area)
                 var line2 = d3.line()
-                    .x(function(d) { return x2(d[0]); })
-                    .y(function(d) { return y2(d[1]); });
+                    .x(function(d) {
+                        return x2(d[0]);
+                    })
+                    .y(function(d) {
+                        return y2(d[1]);
+                    });
 
 
                 //brush
@@ -78,14 +96,13 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     .extent([[0, 0], [width, height]])
                     .on("zoom", zoomed);
 
-
                 //Add elements to SVG
                 var svg = d3.select(element[0]).append('svg')
                     .attr('width', width + margin.left + margin.right)
                     .attr('height', height + margin.top + margin.bottom)
                     .append('g')
                     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-                    .style("cursor", "crosshair")
+
                     ;
 
                 var xAxisG = svg.append('g')
@@ -106,6 +123,15 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     .attr('class', 'y grid')
                     .call(yGrid);
 
+
+                // Mouseover/tooltip setup
+                var focus = svg.append('g')
+                    .attr('class', 'focus')
+                    .style('display', 'none');
+                focus.append('circle')
+                    .attr('r', 4.5);
+
+                //Brush, zoom, pan
                 //clip path
                 svg.append("defs").append("clipPath")
                     .attr("id", "clip")
@@ -128,15 +154,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     .call(brush)
                     .call(brush.move, x.range()); //change the x axis range when brush area changes
 
-
-
-                // Mouseover/tooltip setup
-                var focus = svg.append('g')
-                    .attr('class', 'focus')
-                    .style('display', 'none');
-                focus.append('circle')
-                    .attr('r', 4.5);
-
+                //the graph rectangle area
                 svg.append('rect')
                     .attr('class', 'overlay')
                     .attr('width', width)
@@ -148,8 +166,23 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         focus.style('display', 'none');
                     })
                     .on('mousemove', mousemove)
+                    ;
+
+                //
+                svg.append('rect')
+                    .attr('class', 'zoom')
+                    .attr('width', width)
+                    .attr('height', height)
                     .call(zoom);
 
+                var reset = d3.select('#reset')
+                    .on('click', reset);
+
+                var oneHour = d3.select('#oneHour')
+                    .on('click', brushMinute(60));
+
+                var oneDay = d3.select('#oneDay')
+                    .on('click', brushMinute(60*24));
 
                 var tip = svg.append('g')
                     .attr('class', 'legend');
@@ -244,36 +277,83 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     focus.select('#crossLineTip')
                         .attr('x', X + crossLineTipPadding)
                         .attr('y', Y - crossLineTipPadding)
-                        .text(d3.format('.4f')(mouseY));
+                        .text(d3.format('.2f')(mouseY));
 
                 }
+
+
+                //reset the brush area
+                function reset() {
+                    d3.selectAll(".brush").call(brush.move, null);
+                }
+
+                //brushed
+                function brushed() {
+                    // ignore the case when it is called by the zoomed function
+                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return;
+                    var s = d3.event.selection || x2.range();
+                    x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
+                                                        //invert the x value in brush axis range to the
+                                                        //value in domain
+                    //redraw
+                    svg.selectAll(".line").attr("d", line);//redraw the line
+                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
+
+                    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
+                        .scale(width / (s[1] - s[0]))
+                        .translate(-s[0], 0));
+                }
+
 
 
                 //zoomed
                 function zoomed() {
-                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return; // ignore zoom-by-brush
+                    // ignore the case when it is called by the brushed function
+                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
                     var t = d3.event.transform;
-                    x.domain(t.rescaleX(x2).domain());//rescale the domain of x axis
-                    svg.select("#line").attr("d", line);
-                    svg.select(".x.axis").call(xAxis);
-                    context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+                    x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
+                                                        //invert the x value in brush axis range to the
+                                                        //value in domain
+
+                    //redraw
+                    svg.selectAll(".line").attr("d", line);//redraw the line
+                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
+
+                    // sync the brush
+                    context.select(".brush").call
+                    (brush.move, x.range().map(t.invertX, t));
+
+                    //sync the crossline
                     var position = d3.mouse(this);
                     var positionX = position[0];
                     var positionY = position[1];
-                    var mouseY = y.invert(positionY);//domian value
+                    var mouseY = y.invert(positionY);//domain value
                     generateCrossLine(mouseY, positionX, positionY);
                 }
 
+                //change brush focus range
+                function brushMinute(k){
+                    return function(){
+                        if(!k) k = (x2.domain()[1] - x2.domain()[0]);
+                        //the unit of time value is millisecond
+                        //x2.domain is the domain of total
+                        var interval = k * 60000; //one minute is 60000 millisecond
+                        var scale = (x2.domain()[1].getTime() - x2.domain()[0].getTime()) / interval;
+                        //rescale x axis
+                        var start = x.domain()[0];
+                        var end = new Date(start.getTime() + interval);
+                        x.domain([start, end]);
 
-                function brushed() {
-                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
-                    var s = d3.event.selection || x2.range();
-                    x.domain(s.map(x2.invert, x2));
-                    svg.select("#line").attr("d", line);
-                    svg.select(".x.axis").call(xAxis);
-                    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
-                        .scale(width / (s[1] - s[0]))
-                        .translate(-s[0], 0));
+                        //redraw the line&brush
+                        svg.selectAll(".line").attr("d", line);//redraw the line
+                        svg.select(".x.axis").call(xAxis);  //redraw xAxis
+
+                        // sync the brush
+                        var start2 = x2.range()[0];
+                        var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
+                        context.select(".brush").call
+                        (brush.move, [start2, end2]);
+                    }
                 }
 
                 // Update graph on new metric results
@@ -302,22 +382,20 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     y2.domain(y.domain());
 
                     svg.selectAll('.line').remove();
+                    svg.selectAll('.brushLine').remove();
+
                     series.forEach(function(metric) {
                         svg.append('path')
                             .datum(metric.data)
-                            .attr('id','line')
                             .attr('class', 'line')
                             .attr('d', line)
                             .style('stroke', z(metric.id));
 
                         context.append('path')
                             .datum(metric.data)
-                            .attr('id', 'line2')
-                            .attr('class', 'line')
+                            .attr('class', 'brushLine')
                             .attr('d', line2)
                             .style('stroke', z(metric.id));
-
-
                     });
 
                     svgTransition.select('.x.axis')
