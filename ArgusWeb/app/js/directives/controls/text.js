@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.text', [])
-.directive('agText', ['CONFIG', '$routeParams', function(CONFIG, $routeParams) {
+.directive('agText', ['CONFIG', 'Controls', function(CONFIG, Controls) {
     return {
         restrict: 'EA',
         scope: {
@@ -8,13 +8,8 @@ angular.module('argus.directives.controls.text', [])
             controlValue: '@default'
         },
         controller: function($scope) {
-            $scope.ctrlVal = $scope.controlValue;
-
-            for (var prop in $routeParams) {
-                if (prop == $scope.controlName) {
-                    $scope.ctrlVal = $routeParams[prop];
-                }
-            }
+            // check if Controls ($routeParams) should override controlValue
+            $scope.ctrlVal = Controls.updateControlValue($scope.controlName, $scope.controlValue);
         },
         require:'^agDashboard',
         template:'<B>{{labelName}} : </B> <input type="text" ng-model="ctrlVal">',
