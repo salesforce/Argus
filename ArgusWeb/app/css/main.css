@@ -218,17 +218,12 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
   stroke-width: 1.5px;
 }
 
-.overlay {
+.chartOverlay {
   fill: none;
   pointer-events: all;
   cursor: crosshair;
 }
 
-.zoom {
-  fill: none;
-  pointer-events: all;
-  cursor: crosshair;
-}
 .focus circle {
   opacity: 0.5;
 }

@@ -156,7 +156,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 //the graph rectangle area
                 svg.append('rect')
-                    .attr('class', 'overlay')
+                    .attr('class', 'chartOverlay')
                     .attr('width', width)
                     .attr('height', height)
                     .on('mouseover', function() {
@@ -166,14 +166,9 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         focus.style('display', 'none');
                     })
                     .on('mousemove', mousemove)
+                    .call(zoom)
                     ;
 
-                //
-                svg.append('rect')
-                    .attr('class', 'zoom')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .call(zoom);
 
                 var reset = d3.select('#reset')
                     .on('click', reset);
@@ -299,7 +294,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.selectAll(".line").attr("d", line);//redraw the line
                     svg.select(".x.axis").call(xAxis);  //redraw xAxis
 
-                    svg.select(".zoom").call(zoom.transform, d3.zoomIdentity
+                    svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
                         .scale(width / (s[1] - s[0]))
                         .translate(-s[0], 0));
                 }
