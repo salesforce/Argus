@@ -15,6 +15,8 @@ angular.module('argus.directives.charts.metric', [])
             var seriesData = {};
             var metricName = 'metric_' + metricNameIndex++;
 
+            console.log( controllers );
+
             // TODO: refactor this to assign correct controllers. if an additional controller is added, this will break!
             if (controllers[0]) {
                 elementCtrl = controllers[0];

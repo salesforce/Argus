@@ -1,5 +1,5 @@
 angular.module('argus.directives.charts.statusIndicator', [])
-.directive('agStatusIndicator', ['DashboardService', 'growl', 'VIEWELEMENT', function(DashboardService, growl, VIEWELEMENT) {
+.directive('agStatusIndicator', ['ChartDataProcessingService', 'DashboardService', 'VIEWELEMENT', function(ChartDataProcessingService, VIEWELEMENT) {
     var metricNameIndex = 1;
     return {
         restrict: 'E',
@@ -14,12 +14,12 @@ angular.module('argus.directives.charts.statusIndicator', [])
         template: '<div ng-transclude=""> </div>',
         link: function(scope, element, attributes, dashboardCtrl) {
             var metricExpression;
-            var indicatorHTML = 
+            var indicatorHTML =
                 '<div class="serviceItem">' +
                     '<div class="serviceName">' + attributes.name + '</div>' +
                     '<div id="'+ attributes.name + '-status" class="statusIndicator"></div>' +
                 '</div>';
-            
+
             // render status indicator
             element.html(indicatorHTML);
 
@@ -32,7 +32,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
 
                         // process mertricExpression from controls if present
                         if ( controls ) {
-                            metricExpression = DashboardService.augmentExpressionWithControlsData(event, metricExpression, controls);
+                            metricExpression = ChartDataProcessingService.augmentExpressionWithControlsData(event, metricExpression, controls);
                         }
                     }
                 }
@@ -46,7 +46,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
                             lastStatusVal = datapoints[lastStatusVal];
 
                             // update status indicator
-                            DashboardService.updateIndicatorStatus(attributes, lastStatusVal);
+                            ChartDataProcessingService.updateIndicatorStatus(attributes, lastStatusVal);
                         });
                 }
             });

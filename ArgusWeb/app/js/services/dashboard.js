@@ -1,46 +1,11 @@
 angular.module('argus.services.dashboard', [])
 .service('DashboardService', ['$filter', '$compile', '$resource', 'CONFIG', 'VIEWELEMENT', 'Metrics', '$sce', '$http', 'Annotations', 'growl',
-    function ($filter, $compile, $resource, CONFIG, VIEWELEMENT, Metrics, $sce, $http,Annotations,growl) {
+    function ($filter, $compile, $resource, CONFIG, VIEWELEMENT, Metrics, $sce, $http, Annotations, growl) {
+
+        this.updateIndicatorStatus = updateIndicatorStatus;
 
         this.getDashboardById = function(dashboardId){
             return $http.get(CONFIG.wsUrl + 'dashboards/' + dashboardId);
-        };
-
-        this.populateView = function(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
-
-            if(metricList && metricList.length>0 && divId) {
-
-                if (metricList && metricList.length > 0) {
-                    if(elementType === VIEWELEMENT.chart){
-                        populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
-                    }else{
-                        var metricExpressionList = getMetricExpressionList(metricList);
-                        $http({
-                            method: 'GET',
-                            url: CONFIG.wsUrl + 'metrics',
-                            params: {'expression': metricExpressionList}
-                        }).success(function(data, status, headers, config){
-                            if(data && data.length>0) {
-                                $('#' + divId).show();
-                                if(elementType === VIEWELEMENT.heatmap)
-                                    updateHeatmap({}, data, divId, optionList, attributes);
-                                else if(elementType === VIEWELEMENT.table)
-                                    updateTable(data, scope, divId, optionList);
-                            } else {
-                                updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
-                                growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
-
-                            }
-                        }).error(function(data, status, headers, config) {
-                            growl.error(data.message);
-                            $('#' + divId).hide();
-                        });
-                    }
-                } else {
-                    growl.error('Valid metric expressions are required to display the chart/table.');
-                    $('#' + divId).hide();
-                }
-            }
         };
 
         // TODO: refactor this duplicate code also in: viewMetrics.js $scope function
@@ -92,57 +57,7 @@ angular.module('argus.services.dashboard', [])
             return result;
         };
 
-        this.updateIndicatorStatus = updateIndicatorStatus;
-
-        this.buildViewElement = buildViewElement;
-
-        function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
-
-            var objMetricCount = {};
-            objMetricCount.totalCount = metricList.length;
-
-            $('#' + divId).empty();
-            $('#' + divId).show();
-
-            // 'smallChart' currently viewed in the 'Services Dashboard'
-            var smallChart = attributes.smallchart ? true : false;
-            var chartType = attributes.type ? attributes.type : 'LINE';
-            var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
-
-            setCustomOptions(highChartOptions, optionList);
-
-            $('#' + divId).highcharts('StockChart', highChartOptions);
-
-            var chart = $('#' + divId).highcharts('StockChart');
-
-            // show loading spinner & hide 'no data message' during api request
-            chart.showLoading();
-            chart.hideNoData();
-
-            // define series first; then build list for each metric expression
-            var series = [];
-
-            for (var i = 0; i < metricList.length; i++) {
-                var metricExpression = metricList[i].expression;
-                var metricOptions = metricList[i].metricSpecificOptions;
-
-                // make api call to get data for each metric item
-                populateSeries(metricList[i], highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount);
-            }
-            //populateAnnotations(annotationExpressionList, chart);
-        };
-
-        function updateIndicatorStatus(attributes, lastStatusVal) {
-            if (lastStatusVal < attributes.lo) {
-                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
-            } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
-                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
-            } else if (lastStatusVal > attributes.hi) {
-                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
-            }
-        };
-
-        function buildViewElement(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
+        this.buildViewElement = function(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
             var elementId = 'element_' + elementType + index;
             var smallChartCss = ( attributes.smallchart ) ? 'class="smallChart"' : '';
             element.prepend('<div id=' + elementId + ' ' + smallChartCss +'></div>');
@@ -153,6 +68,9 @@ angular.module('argus.services.dashboard', [])
             });
 
             function populateView(event, controls) {
+                // processListData(event, controls)
+                // metrics, annotations, options
+
                 var updatedMetricList = [];
                 var updatedAnnotationList = [];
                 var updatedOptionList = [];
@@ -198,8 +116,8 @@ angular.module('argus.services.dashboard', [])
                 if (updatedMetricList.length > 0) {
                     DashboardService.populateView(updatedMetricList, updatedAnnotationList, updatedOptionList, elementId, attributes, elementType, scope);
                 } else {
-                    growl.error('The valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
-                    $('#' + elementId).hide();
+                    // growl.error('A valid metric expression(s) is required to display the chart.', {referenceId: 'growl-error'});
+                    // $('#' + elementId).hide();
                 }
             }
 
@@ -214,7 +132,83 @@ angular.module('argus.services.dashboard', [])
             }
         };
 
+        this.populateView = function(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope) {
+            if (!metricList && !divId) return;
+
+            if (!metricList) {
+                growl.error('Valid metric expressions are required to display the chart/table.');
+                $('#' + divId).hide();
+                return;
+            }
+
+            if ( elementType === VIEWELEMENT.chart ) {
+                populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope);
+            } else {
+                var metricExpressionList = getMetricExpressionList(metricList);
+
+                $http({
+                    method: 'GET',
+                    url: CONFIG.wsUrl + 'metrics',
+                    params: {'expression': metricExpressionList}
+                }).success(function(data, status, headers, config) {
+                    if ( data && data.length > 0) {
+                        $('#' + divId).show();
+
+                        if (elementType === VIEWELEMENT.heatmap)
+                            updateHeatmap({}, data, divId, optionList, attributes);
+                        else if (elementType === VIEWELEMENT.table)
+                            updateTable(data, scope, divId, optionList);
+
+                    } else {
+                        updateChart({}, data, divId, annotationExpressionList, optionList, attributes);
+                        growl.info('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
+                    }
+                }).error(function(data, status, headers, config) {
+                    growl.error(data.message);
+                    $('#' + divId).hide();
+                });
+            }
+        };
+
+        // ---------------
+
+        // not used: elementType, scope
+        function populateChart(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope){
+
+            $('#' + divId).empty();
+            $('#' + divId).show();
+
+            var smallChart = attributes.smallchart ? true : false;
+            var chartType = attributes.type ? attributes.type : 'LINE';
+            var highChartOptions = getOptionsByChartType(CONFIG, chartType, smallChart);
+
+            setCustomOptions(highChartOptions, optionList);
+
+            $('#' + divId).highcharts('StockChart', highChartOptions);
+            var chart = $('#' + divId).highcharts('StockChart');
+
+            // show loading spinner & hide 'no data message' during api request
+            chart.showLoading();
+            chart.hideNoData();
+
+            // define series first; then build list for each metric expression
+            var series = [];
+            var objMetricCount = {};
+
+            objMetricCount.totalCount = metricList.length;
+
+            for (var i = 0; i < metricList.length; i++) {
+                var metricExpression = metricList[i].expression;
+                var metricOptions = metricList[i].metricSpecificOptions;
+
+                // make api call to get data for each metric item
+                populateSeries(metricList[i], highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount);
+            }
+            //populateAnnotations(annotationExpressionList, chart);
+        };
+
         function populateSeries(metricItem, highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount) {
+
             $http({
                 method: 'GET',
                 url: CONFIG.wsUrl + 'metrics',
@@ -256,13 +250,58 @@ angular.module('argus.services.dashboard', [])
             });
         };
 
+        // ---------------
+
+        // 'dataProcessing'
+        function copySeriesDataNSetOptions(data, metricItem) {
+            var result = [];
+            if (data) {
+                for (var i = 0; i < data.length; i++) {
+                    var series = [];
+
+                    for (var key in data[i].datapoints) {
+                        var timestamp = parseInt(key);
+                        if (data[i].datapoints[key] != null) {
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
+
+                    var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
+                    var metricColor = (metricItem.color) ? metricItem.color : null;
+                    var objSeries = {
+                        name: metricName,
+                        color: metricColor,
+                        data: series
+                    };
+                    var objSeriesWithOptions = setCustomOptions(objSeries, metricItem.metricSpecificOptions);
+
+                    result.push(objSeriesWithOptions);
+                }
+            } else {
+                result.push({name: 'result', data: []});
+            }
+            return result;
+        };
+
+        // 'dataProcessing'
+        function setCustomOptions(options, optionList){
+          for(var idx in optionList) {
+                var propertyName = optionList[idx].name;
+                var propertyValue = optionList[idx].value;
+                var result = constructObjectTree(propertyName, propertyValue);
+                copyProperties(result,options);
+            }
+            return options;
+        };
+
+        // 'chartRendering' & 'dataProcessing'
         function bindDataToChart(divId, highChartOptions, series, annotationExpressionList) {
             // bind series data to highchart options
             highChartOptions.series = series;
 
             // display chart in DOM
             $('#' + divId).highcharts('StockChart', highChartOptions);
-
             var chart = $('#' + divId).highcharts('StockChart');
 
             // hide the loading spinner after data loads.
@@ -275,17 +314,178 @@ angular.module('argus.services.dashboard', [])
                 chart.showNoData();
             }
 
+            // ----------------
+
             populateAnnotations(annotationExpressionList, chart);
         };
 
+        // 'dataProcessing'
+        function populateAnnotations(annotationsList, chart){
+            if (annotationsList && annotationsList.length>0 && chart) {
+                for (var i = 0; i < annotationsList.length; i++) {
+                    addAlertFlag(annotationsList[i],chart);
+                }
+            }
+        };
+
+        // 'dataProcessing', update to return promise instead
+        function addAlertFlag(annotationExpression, chart) {
+            Annotations.query({expression: annotationExpression}, function (data) {
+                if(data && data.length>0) {
+                    var forName = createSeriesName(data[0]);
+                    var series = copyFlagSeries(data);
+                    series.linkedTo = forName;
+
+                    for(var i=0;i<chart.series.length;i++){
+                        if(chart.series[i].name == forName){
+                            series.color = chart.series[i].color;
+                            break;
+                        }
+                    }
+
+                    chart.addSeries(series);
+                }
+            });
+        };
+
+        // 'dataProcessing'
         function getMetricExpressionList(metrics){
             var result = [];
-            for(var i=0;i<metrics.length; i++){
+            for(var i=0; i < metrics.length; i++){
                 result.push(metrics[i].expression);
             }
             return result;
         };
 
+        // 'dataProcessing'
+        function copyHeatmapSeries(data, timeSpan) {
+            var table = data.map(getHourlyAverage.bind(null, timeSpan));
+            for (var i = 0; i < data.length; i++) {
+                table[i].push(getAverage(data[i]));
+            }
+            var dataSeries = [];
+            for (var i = 0; i < data.length; i++) {
+                for (var j = 0; j < table[0].length; j++) {
+                    var intValue = table[data.length - 1 - i][j] ? Math.floor(table[data.length - 1 - i][j]) : null;
+                    dataSeries.push([j, i, intValue]);
+                }
+            }
+            return dataSeries;
+        };
+
+        // 'dataProcessing'
+        function copySeries(data) {
+            var result = [];
+            if (data) {
+                for (var i = 0; i < data.length; i++) {
+                    var series = [];
+                    for(var key in data[i].datapoints) {
+                        var timestamp = parseInt(key);
+                        if(data[i].datapoints[key] !=null){
+                            var value = parseFloat(data[i].datapoints[key]);
+                            series.push([timestamp, value]);
+                        }
+                    }
+                    result.push({name: createSeriesName(data[i]), data: series});
+                }
+            } else {
+                result.push({name: 'result', data: []});
+            }
+            return result;
+        };
+
+        // 'dataProcessing'
+        function createSeriesName(metric) {
+            var scope = metric.scope;
+            var name = metric.metric;
+            var tags = createTagString(metric.tags);
+            return scope + ':' + name + tags;
+        };
+
+        // 'dataProcessing'
+        function createTagString(tags) {
+            var result = '';
+            if (tags) {
+                var tagString ='';
+                for (var key in tags) {
+                    if (tags.hasOwnProperty(key)) {
+                        tagString += (key + '=' + tags[key] + ',');
+                    }
+                }
+                if(tagString.length) {
+                    result += '{';
+                    result += tagString.substring(0, tagString.length - 1);
+                    result += '}';
+                }
+            }
+            return result;
+        };
+
+        // 'dataProcessing'
+        function copyFlagSeries(data) {
+            var result;
+            if (data) {
+                result = {type: 'flags', shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2};
+                result.data = [];
+                for (var i = 0; i < data.length; i++) {
+                    var flagData = data[i];
+                    result.data.push({x: flagData.timestamp, title: 'A', text: formatFlagText(flagData.fields)});
+                }
+            } else {
+                result = null;
+            }
+            return result;
+        };
+
+        // 'dataProcessing'
+        function formatFlagText(fields) {
+            var result = '';
+            if (fields) {
+                for (var field in fields) {
+                    if (fields.hasOwnProperty(field)) {
+                        result += (field + ': ' + fields[field] + '<br/>');
+                    }
+                }
+            }
+            return result;
+        };
+
+        // --------
+
+        // 'chartRendering'
+        function updateIndicatorStatus(attributes, lastStatusVal) {
+            if (lastStatusVal < attributes.lo) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+            } else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+            } else if (lastStatusVal > attributes.hi) {
+                $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+            }
+        };
+
+        // 'chartRendering'
+        function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
+            var chartType = attributes.type ? attributes.type : 'LINE';
+
+            if (data && data.length > 0) {
+                var options = getOptionsByChartType(config,chartType);
+                options.series = copySeries(data);
+                //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
+                setCustomOptions(options,optionList);
+                $('#' + divId).highcharts('StockChart', options);
+            } else {
+                $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, chartType));
+            }
+
+            var chart = $('#' + divId).highcharts('StockChart');
+            //chart.chart={renderTo: 'container',defaultSeriesType: 'line'};
+            //chart.renderTo='container';
+            //chart.defaultSeriesType='line';
+
+            populateAnnotations(annotationExpressionList, chart);
+        };
+
+        // 'chartRendering'
         function updateTable(data, scope, divId, options) {
             if(data && data.length > 0) {
 
@@ -381,31 +581,28 @@ angular.module('argus.services.dashboard', [])
             }
         };
 
-        function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
-            var chartType = attributes.type ? attributes.type : 'LINE';
-
-            if (data && data.length > 0) {
-                var options = getOptionsByChartType(config,chartType);
-                options.series = copySeries(data);
-                //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
+        // 'chartRendering'
+        function updateHeatmap(config, data, divId, optionList, attributes) {
+            if(data && data.length>0) {
+                var top = attributes.top? parseInt(attributes.top) : data.length;
+                var options = getOptionsByHeatmapType(config, top);
+                data.sort(compareAverage);
+                data = data.slice(0, Math.min(top, data.length));
+                var orgAxis = data.map(createSeriesName);
+                var timeSpan = getTimeSpan(data);
+                var timeAxis = getTimeAxis(timeSpan);
+                var dataSeries = copyHeatmapSeries(data, timeSpan);
+                options.series[0].data = dataSeries;
+                options.xAxis.categories = timeAxis;
+                options.yAxis.categories = orgAxis.reverse();
                 setCustomOptions(options,optionList);
-                $('#' + divId).highcharts('StockChart', options);
-            } else {
-                $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, chartType));
+                $('#' + divId).highcharts(options);
+            }else {
+                $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, 'LINE'));
             }
-
-            var chart = $('#' + divId).highcharts('StockChart');
-            //chart.chart={renderTo: 'container',defaultSeriesType: 'line'};
-            //chart.renderTo='container';
-            //chart.defaultSeriesType='line';
-
-            populateAnnotations(annotationExpressionList, chart);
         };
 
-        function resetChart(chart){
-            chart.zoomOut();
-        };
-
+        // 'chartOptions'
         function getOptionsByChartType(config, chartType, smallChart){
             var options = config ? angular.copy(config) : {};
             options.legend = {
@@ -494,26 +691,7 @@ angular.module('argus.services.dashboard', [])
             return options;
         };
 
-        function updateHeatmap(config, data, divId, optionList, attributes) {
-            if(data && data.length>0) {
-                var top = attributes.top? parseInt(attributes.top) : data.length;
-                var options = getOptionsByHeatmapType(config, top);
-                data.sort(compareAverage);
-                data = data.slice(0, Math.min(top, data.length));
-                var orgAxis = data.map(createSeriesName);
-                var timeSpan = getTimeSpan(data);
-                var timeAxis = getTimeAxis(timeSpan);
-                var dataSeries = copyHeatmapSeries(data, timeSpan);
-                options.series[0].data = dataSeries;
-                options.xAxis.categories = timeAxis;
-                options.yAxis.categories = orgAxis.reverse();
-                setCustomOptions(options,optionList);
-                $('#' + divId).highcharts(options);
-            }else {
-                $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, 'LINE'));
-            }
-        };
-
+        // 'chartOptions'
         function getOptionsByHeatmapType(config, top){
             var options = config ? angular.copy(config) : {};
             options.credits = {enabled: false};
@@ -565,6 +743,27 @@ angular.module('argus.services.dashboard', [])
             return options;
         };
 
+        // 'chartTools' --> moved to 'ChartRenderingService.chartTools'
+        function getTimeAxis(timeSpan) {
+            var hours = [
+                '12AM', '1AM', '2AM', '3AM', '4AM', '5AM',
+                '6AM', '7AM', '8AM', '9AM', '10AM', '11AM',
+                '12PM', '1PM', '2PM', '3PM', '4PM', '5PM',
+                '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'
+            ];
+            var axis = [];
+            var firstHour = (new Date(timeSpan.begin)).getHours();
+            for (var i = 0; i < timeSpan.span; i++) {
+                axis.push(hours[(firstHour + i) % 24]);
+            }
+            axis.push('<b><i>Average</i></b>');
+            return axis;
+        };
+
+        // --------
+
+        // 'utilService'
+
         function compareAverage(a,b) {
             if (getAverage(a) < getAverage(b)) return 1;
             if (getAverage(a) > getAverage(b)) return -1;
@@ -582,22 +781,6 @@ angular.module('argus.services.dashboard', [])
             }
             var span = Math.floor(end/1000/60/60) - Math.floor(begin/1000/60/60) + 1;
             return {begin: begin, end: end, span: span};
-        };
-
-        function getTimeAxis(timeSpan) {
-            var hours = [
-                '12AM', '1AM', '2AM', '3AM', '4AM', '5AM',
-                '6AM', '7AM', '8AM', '9AM', '10AM', '11AM',
-                '12PM', '1PM', '2PM', '3PM', '4PM', '5PM',
-                '6PM', '7PM', '8PM', '9PM', '10PM', '11PM'
-            ];
-            var axis = [];
-            var firstHour = (new Date(timeSpan.begin)).getHours();
-            for (var i = 0; i < timeSpan.span; i++) {
-                axis.push(hours[(firstHour + i) % 24]);
-            }
-            axis.push('<b><i>Average</i></b>');
-            return axis;
         };
 
         function getAverage(data) {
@@ -630,161 +813,6 @@ angular.module('argus.services.dashboard', [])
             return avgs;
         };
 
-        function copyHeatmapSeries(data, timeSpan) {
-            var table = data.map(getHourlyAverage.bind(null, timeSpan));
-            for (var i = 0; i < data.length; i++) {
-                table[i].push(getAverage(data[i]));
-            }
-            var dataSeries = [];
-            for (var i = 0; i < data.length; i++) {
-                for (var j = 0; j < table[0].length; j++) {
-                    var intValue = table[data.length - 1 - i][j] ? Math.floor(table[data.length - 1 - i][j]) : null;
-                    dataSeries.push([j, i, intValue]);
-                }
-            }
-            return dataSeries;
-        };
-
-        function copySeries(data) {
-            var result = [];
-            if (data) {
-                for (var i = 0; i < data.length; i++) {
-                    var series = [];
-                    for(var key in data[i].datapoints) {
-                        var timestamp = parseInt(key);
-                        if(data[i].datapoints[key] !=null){
-                            var value = parseFloat(data[i].datapoints[key]);
-                            series.push([timestamp, value]);
-                        }
-                    }
-                    result.push({name: createSeriesName(data[i]), data: series});
-                }
-            } else {
-                result.push({name: 'result', data: []});
-            }
-            return result;
-        };
-
-        function copySeriesDataNSetOptions(data, metricItem) {
-            var result = [];
-            if (data) {
-                for (var i = 0; i < data.length; i++) {
-                    var series = [];
-
-                    for (var key in data[i].datapoints) {
-                        var timestamp = parseInt(key);
-                        if (data[i].datapoints[key] != null) {
-                            var value = parseFloat(data[i].datapoints[key]);
-                            series.push([timestamp, value]);
-                        }
-                    }
-
-                    var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
-                    var metricColor = (metricItem.color) ? metricItem.color : null;
-                    var objSeries = {
-                        name: metricName,
-                        color: metricColor,
-                        data: series
-                    };
-                    var objSeriesWithOptions = setCustomOptions(objSeries, metricItem.metricSpecificOptions);
-
-                    result.push(objSeriesWithOptions);
-                }
-            } else {
-                result.push({name: 'result', data: []});
-            }
-            return result;
-        };
-
-        function createSeriesName(metric) {
-            var scope = metric.scope;
-            var name = metric.metric;
-            var tags = createTagString(metric.tags);
-            return scope + ':' + name + tags;
-        };
-
-        function createTagString(tags) {
-            var result = '';
-            if (tags) {
-                var tagString ='';
-                for (var key in tags) {
-                    if (tags.hasOwnProperty(key)) {
-                        tagString += (key + '=' + tags[key] + ',');
-                    }
-                }
-                if(tagString.length) {
-                    result += '{';
-                    result += tagString.substring(0, tagString.length - 1);
-                    result += '}';
-                }
-            }
-            return result;
-        };
-
-        function populateAnnotations(annotationsList, chart){
-            if (annotationsList && annotationsList.length>0 && chart) {
-                for (var i = 0; i < annotationsList.length; i++) {
-                    addAlertFlag(annotationsList[i],chart);
-                }
-            }
-        };
-
-        function addAlertFlag(annotationExpression, chart) {
-            Annotations.query({expression: annotationExpression}, function (data) {
-                if(data && data.length>0) {
-                    var forName = createSeriesName(data[0]);
-                    var series = copyFlagSeries(data);
-                    series.linkedTo = forName;
-
-                    for(var i=0;i<chart.series.length;i++){
-                        if(chart.series[i].name == forName){
-                            series.color = chart.series[i].color;
-                            break;
-                        }
-                    }
-
-                    chart.addSeries(series);
-                }
-            });
-        };
-
-        function copyFlagSeries(data) {
-            var result;
-            if (data) {
-                result = {type: 'flags', shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2};
-                result.data = [];
-                for (var i = 0; i < data.length; i++) {
-                    var flagData = data[i];
-                    result.data.push({x: flagData.timestamp, title: 'A', text: formatFlagText(flagData.fields)});
-                }
-            } else {
-                result = null;
-            }
-            return result;
-        };
-
-        function formatFlagText(fields) {
-            var result = '';
-            if (fields) {
-                for (var field in fields) {
-                    if (fields.hasOwnProperty(field)) {
-                        result += (field + ': ' + fields[field] + '<br/>');
-                    }
-                }
-            }
-            return result;
-        };
-
-        function setCustomOptions(options, optionList){
-          for(var idx in optionList) {
-                var propertyName = optionList[idx].name;
-                var propertyValue = optionList[idx].value;
-                var result = constructObjectTree(propertyName, propertyValue);
-                copyProperties(result,options);
-            }
-            return options;
-        };
-
         function copyProperties(from, to){
             for (var key in from) {
                 if (from.hasOwnProperty(key)) {
@@ -797,7 +825,6 @@ angular.module('argus.services.dashboard', [])
             }
         };
 
-        //It constructs the object tree.
         function constructObjectTree(name, value) {
             var result = {};
             var index = name.indexOf('.');
