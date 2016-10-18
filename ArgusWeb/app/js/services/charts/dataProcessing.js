@@ -1,5 +1,5 @@
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations' function(ChartOptionService, Annotations) {
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', function(ChartOptionService, Annotations) {
     'use strict';
 
     // Private methods
@@ -220,8 +220,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                     chart.addSeries(series);
                 }
             }, function (error) {
-                console.log( error );
-                console.log( 'no data found', data.message );
+                console.log( 'no data found', error.data.message );
             });
         }
     };

@@ -1,9 +1,17 @@
 angular.module('argus.services.utils', [])
 .service('UtilService', [function() {
-	'use strict';
+    'use strict';
 
-	var options = {
-		copyProperties: function(from, to) {
+    var options = {
+        assignController: function(controllers) {
+            if (!controllers) return;
+            for (var i=0; i < controllers.length; i++) {
+                if (controllers[i])
+                    return controllers[i];
+            }
+        },
+
+        copyProperties: function(from, to) {
             for (var key in from) {
                 if (from.hasOwnProperty(key)) {
                     //if from[key] is not an object and is last property then just copy so that it will overwrite the existing value
@@ -43,7 +51,7 @@ angular.module('argus.services.utils', [])
             }
             return value;
         }
-	};
+    };
 
     return options;
 }]);

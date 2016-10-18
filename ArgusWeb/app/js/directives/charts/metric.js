@@ -1,5 +1,5 @@
 angular.module('argus.directives.charts.metric', [])
-.directive('agMetric', function() {
+.directive('agMetric', ['UtilService', function(UtilService) {
     var metricNameIndex = 100;
     return {
         restrict: 'E',
@@ -15,18 +15,8 @@ angular.module('argus.directives.charts.metric', [])
             var seriesData = {};
             var metricName = 'metric_' + metricNameIndex++;
 
-            console.log( controllers );
-
-            // TODO: refactor this to assign correct controllers. if an additional controller is added, this will break!
-            if (controllers[0]) {
-                elementCtrl = controllers[0];
-            } else if (controllers[1]) {
-                elementCtrl = controllers[1];
-            } else if (controllers[2]) {
-                elementCtrl = controllers[2];
-            } else {
-                elementCtrl = controllers[3];
-            }
+            // assign proper controller
+            elementCtrl = UtilService.assignController(controllers);
 
             // separate specific series data from other attributes
             // 'color' & 'name' are used to supplement the 'series' data when rendering a chart
@@ -51,4 +41,4 @@ angular.module('argus.directives.charts.metric', [])
             element.html('<span> </span>');
         }
     }
-});
+}]);
