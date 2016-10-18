@@ -1,9 +1,9 @@
 angular.module('argus.services.charts.dataProcessing', [])
 .service('ChartDataProcessingService', ['ChartOptionService', function(ChartOptionService) {
-		'use strict';
+	'use strict';
 
-		// Private methods
-		function copySeries(data) {
+	// Private methods
+	function copySeries(data) {
         var result = [];
         if (data) {
             for (var i = 0; i < data.length; i++) {
@@ -74,19 +74,19 @@ angular.module('argus.services.charts.dataProcessing', [])
     };
 
     // Public Service methods
-		var service = {
-				getMetricSpecificOptionsInArray: function(metricSpecificOptions) {
-						var options = [];
+	var service = {
+		getMetricSpecificOptionsInArray: function(metricSpecificOptions) {
+            var options = [];
             for (var key in metricSpecificOptions) {
                 if (metricSpecificOptions.hasOwnProperty(key)) {
                     options.push({'name': key, 'value': metricSpecificOptions[key]});
                 }
             }
             return options;
-				},
+        },
 
-				augmentExpressionWithControlsData: function(event, expression, controls) {
-						var result = expression;
+		augmentExpressionWithControlsData: function(event, expression, controls) {
+			var result = expression;
 
             for (var controlIndex in controls) {
                 var controlName = '\\$' + controls[controlIndex].name + '\\$';
@@ -101,12 +101,12 @@ angular.module('argus.services.charts.dataProcessing', [])
 
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
-				},
+		},
 
-				processMetricData: function(data, event, controls) {
-						if (!data) return;
+		processMetricData: function(data, event, controls) {
+			if (!data) return;
 
-						var processedData = [];
+			var processedData = [];
             var updatedMetricList = [];
             var updatedAnnotationList = [];
             var updatedOptionList = [];
@@ -149,18 +149,17 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
 
             if (updatedMetricList.length > 0) {
+        		processedData = {
+            		updatedMetricList: updatedMetricList,
+            		updatedAnnotationList: updatedAnnotationList,
+            		updatedOptionList: updatedOptionList
+        		};
 
-            		processedData = {
-	            			updatedMetricList: updatedMetricList,
-	            			updatedAnnotationList: updatedAnnotationList,
-	            			updatedOptionList: updatedOptionList
-            		};
-
-								return processedData;
+				return processedData;
             }
-				},
+		},
 
-				copySeriesDataNSetOptions: function(data, metricItem) {
+		copySeriesDataNSetOptions: function(data, metricItem) {
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
@@ -194,13 +193,13 @@ angular.module('argus.services.charts.dataProcessing', [])
         populateAnnotations: function(annotationsList, chart) {
             if (annotationsList && annotationsList.length > 0 && chart) {
                 for (var i=0; i < annotationsList.length; i++) {
-										this.addAlertFlag(annotationsList[i], chart);
+					this.addAlertFlag(annotationsList[i], chart);
                 }
             }
         },
 
         addAlertFlag: function(annotationExpression, chart) {
-						Annotations.query({expression: annotationExpression}, function (data) {
+			Annotations.query({expression: annotationExpression}, function (data) {
                 if (data && data.length > 0) {
                     var forName = createSeriesName(data[0]);
                     var series = copyFlagSeries(data);
@@ -217,7 +216,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                 }
             });
         }
-		};
+	};
 
-		return service;
+	return service;
 }]);

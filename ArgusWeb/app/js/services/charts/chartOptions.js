@@ -1,8 +1,8 @@
 angular.module('argus.services.charts.options', [])
 .service('ChartOptionService', ['UtilService', function(UtilService) {
-	'use strict';
+    'use strict';
 
-	var options = {
+    var options = {
         setCustomOptions: function(options, optionList) {
             for (var idx in optionList) {
                 var propertyName = optionList[idx].name;
