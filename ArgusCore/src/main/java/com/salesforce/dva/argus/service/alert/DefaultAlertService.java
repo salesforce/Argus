@@ -286,24 +286,35 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		int failedNotificationsCount = 0;
 		String logMessage = null;
 		long jobEndTime = 0;
+		
+		List<BigInteger> alertIds = new ArrayList<>(alertIdWithTimestampList.size());
+		for(AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
+			alertIds.add(alertIdWithTimestamp.alertId);
+		}
+		
+		List<Alert> alerts = findAlertsByPrimaryKeys(alertIds);
+		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
+		for(Alert alert : alerts) {
+			alertsByIds.put(alert.getId(), alert);
+		}
 
 		for (AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
 			long jobStartTime = System.currentTimeMillis();
-			BigInteger alertID = alertIdWithTimestamp.alertId;
+			BigInteger alertId = alertIdWithTimestamp.alertId;
 			Long enqueuedTimestamp = alertIdWithTimestamp.alertEnqueueTime;
 
 			failedNotificationsCount = 0;
 
-			Alert alert = findAlertByPrimaryKey(alertID);
+			Alert alert = alertsByIds.get(alertId);
 
 			if (alert == null) {
-				logMessage = MessageFormat.format("Could not find alert ID {0}", alertID);
+				logMessage = MessageFormat.format("Could not find alert ID {0}", alertId);
 				_logger.warn(logMessage);
 				continue;
 			}
 			
 			if(!alert.isEnabled()) {
-				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertID);
+				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertId);
 				_logger.warn(logMessage);
 				continue;
 			}
@@ -319,6 +330,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					appendMessageNUpdateHistory(history.getId(), logMessage, null, 0, 0);
 					continue;
 				}
+				
 				for (Metric metric : metrics) {
 					if (!shouldEvaluateMetric(metric, alert, history.getId())) {
 						continue;
@@ -352,7 +364,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					appendMessageNUpdateHistory(history.getId(), ex.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
 					_logger.warn("Failed to evaluate alert : {}. Reason: {}", alert, ex.getMessage());
 				} finally {
-					sendEmailToAdmin(alert, alertID, ex);
+					sendEmailToAdmin(alert, alertId, ex);
 				}
 			} finally {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
