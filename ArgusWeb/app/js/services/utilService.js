@@ -21,13 +21,29 @@ angular.module('argus.services.utils', [])
             var index = name.indexOf('.');
 
             if (index == -1) {
-                result[name] = getParsedValue(value);
+                result[name] = this.getParsedValue(value);
                 return result;
             } else {
                 var property = name.substring(0, index);
-                result[property] = constructObjectTree(name.substring(index + 1), value);
+                result[property] = this.constructObjectTree(name.substring(index + 1), value);
                 return result;
             }
+        },
+
+        getParsedValue: function(value) {
+            if (value instanceof Object || value.length == 0) {
+                return value;
+            }
+            if (value == 'true') {
+                return true;
+            } else if (value == 'false') {
+                return false;
+            } else if (!isNaN(value)) {
+                return parseInt(value);
+            }
+            return value;
         }
 	};
+
+    return options;
 }]);

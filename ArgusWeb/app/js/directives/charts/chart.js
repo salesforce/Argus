@@ -14,7 +14,9 @@ angular.module('argus.directives.charts.chart', [])
 
                 // generate a new chart ID, set css options for main chart container
                 var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
-                var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
+                var smallChart = attributes.smallchart ? true : false;
+                var chartType = attributes.type ? attributes.type : 'LINE';
+                var cssOpts = ( smallChart ) ? 'smallChart' : '';
 
                 // set the charts container for rendering
                 ChartRenderingService.setChartContainer(element, newChartId, cssOpts);
@@ -34,11 +36,7 @@ angular.module('argus.directives.charts.chart', [])
                     var updatedAnnotationList = processedData.updatedAnnotationList;
                     var updatedOptionList = processedData.updatedOptionList;
 
-                    // set chart options
-                    var smallChart = attributes.smallchart ? true : false;
-                    var chartType = attributes.type ? attributes.type : 'LINE';
-
-                    // add above options to Highcharts options
+                    // add options to Highcharts options
                     var highChartOptions = ChartOptionService.getOptionsByChartType(CONFIG, chartType, smallChart);
 
                     // set options to Highcharts
@@ -51,15 +49,12 @@ angular.module('argus.directives.charts.chart', [])
                     var series = [];
                     var metricCount = updatedMetricList.length;
 
-
                     /* Process Metric List:
-
                         1. query data for each Metric Expression
                         2. update status indicator if needed
                         3. set options to the series data
                         4. bind series data to charts, display chart
                         5. populate annotations post chart rendering
-
                     **/
                     for (var i=0; i < updatedMetricList.length; i++) {
                         var metricItem = updatedMetricList[i];
@@ -68,13 +63,12 @@ angular.module('argus.directives.charts.chart', [])
                         Metrics.query({expression: metricItem.expression}, function (data) {
                             if (data && data.length > 0) {
 
-                                // check to update statusIndicator
-                                // TODO: refactor to 'chartRendering' service
+                                // check to update statusIndicator with correct status color
                                 if (smallChart) {
-                                    // get last status values & broadcast to 'agStatusIndicator' directive
-                                    var lastStatusVal = Object.keys(data[0].datapoints).sort().reverse()[0];
-                                    lastStatusVal = data[0].datapoints[lastStatusVal];
+                                    // get the last data point
+                                    var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
 
+                                    // update status indicator
                                     ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
                                 }
 

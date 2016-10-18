@@ -1,9 +1,9 @@
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', function(ChartOptionService) {
-	'use strict';
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations' function(ChartOptionService, Annotations) {
+    'use strict';
 
-	// Private methods
-	function copySeries(data) {
+    // Private methods
+    function copySeries(data) {
         var result = [];
         if (data) {
             for (var i = 0; i < data.length; i++) {
@@ -74,8 +74,13 @@ angular.module('argus.services.charts.dataProcessing', [])
     };
 
     // Public Service methods
-	var service = {
-		getMetricSpecificOptionsInArray: function(metricSpecificOptions) {
+    var service = {
+        getLastDataPoint: function(datapoints) {
+            if (!datapoints) return;
+            return datapoints[Object.keys(datapoints).sort().reverse()[0]];
+        },
+
+        getMetricSpecificOptionsInArray: function(metricSpecificOptions) {
             var options = [];
             for (var key in metricSpecificOptions) {
                 if (metricSpecificOptions.hasOwnProperty(key)) {
@@ -85,7 +90,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             return options;
         },
 
-		augmentExpressionWithControlsData: function(event, expression, controls) {
+        augmentExpressionWithControlsData: function(event, expression, controls) {
 			var result = expression;
 
             for (var controlIndex in controls) {
@@ -101,9 +106,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
-		},
+        },
 
-		processMetricData: function(data, event, controls) {
+        processMetricData: function(data, event, controls) {
 			if (!data) return;
 
 			var processedData = [];
@@ -157,9 +162,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 				return processedData;
             }
-		},
+        },
 
-		copySeriesDataNSetOptions: function(data, metricItem) {
+        copySeriesDataNSetOptions: function(data, metricItem) {
             var result = [];
             if (data) {
                 for (var i = 0; i < data.length; i++) {
@@ -214,9 +219,12 @@ angular.module('argus.services.charts.dataProcessing', [])
 
                     chart.addSeries(series);
                 }
+            }, function (error) {
+                console.log( error );
+                console.log( 'no data found', data.message );
             });
         }
-	};
+    };
 
-	return service;
+    return service;
 }]);
