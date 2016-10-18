@@ -205,6 +205,9 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {
   display: none;
 }
+.xBrush.axis path {
+  display: none;
+}
 
 .line {
   fill: none;
