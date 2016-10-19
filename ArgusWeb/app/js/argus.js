@@ -79,10 +79,15 @@ angular.module('argus.services', [
   'argus.services.auth',
   'argus.services.batches',
   'argus.services.breadcrumbs',
+  'argus.services.charts.options',
+  'argus.services.charts.rendering',
+  'argus.services.charts.tools',
+  'argus.services.charts.dataProcessing',
   'argus.services.dashboard',
   'argus.services.dashboards',
   'argus.services.history',
   'argus.services.interceptor',
+  'argus.services.inputTracker',
   'argus.services.jobexecutiondetails',
   'argus.services.metrics',
   'argus.services.namespace',
@@ -92,7 +97,7 @@ angular.module('argus.services', [
   'argus.services.tags',
   'argus.services.triggers',
   'argus.services.triggersmap',
-  'argus.services.inputTracker'
+  'argus.services.utils',
 ]);
 
 // Controllers

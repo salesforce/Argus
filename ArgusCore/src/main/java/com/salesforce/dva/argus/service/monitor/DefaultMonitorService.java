@@ -190,6 +190,16 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
             _logger.info("Starting system monitor thread.");
             _checkAlertExistence(true);
             _monitorThread = new MonitorThread("system-monitor");
+            
+            _monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+				
+				@Override
+				public void uncaughtException(Thread t, Throwable e) {
+					_logger.error("Uncaught exception occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
+					t.interrupt();
+				}
+			});
+            
             _monitorThread.start();
             _logger.info("System monitor thread started.");
         }
@@ -621,8 +631,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
                 if (!isInterrupted() && _isMonitoringServiceEnabled()) {
                     try {
                         _pushCounters();
-                    } catch (Exception t) {
-                        _logger.error("Error occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, t.getMessage());
+                    } catch (Exception ex) {
+                        _logger.error("Error occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
                     }
                 }
             }

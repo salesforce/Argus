@@ -276,3 +276,6 @@ div.loadingSpinner {
   content:url(../img/ajax-loader.gif);
 }
 
+.GMT-select {
+  padding: 3px;
+}
