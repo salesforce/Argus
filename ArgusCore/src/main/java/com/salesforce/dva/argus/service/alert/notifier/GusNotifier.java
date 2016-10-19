@@ -37,9 +37,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -50,7 +48,6 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 
 import com.google.gson.Gson;
@@ -162,15 +159,15 @@ public class GusNotifier extends AuditNotifier {
 		String triggerEventValue = context.getTriggerEventValue();
 		Object[] arguments = new Object[] {
 				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-				triggerEventValue
+				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric()
 		};
 
 		/** gus feed template for notification information. */
 		String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
 				"Notification:   {0}\n" +
 				"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
-				"Evaluated metric expression:   {5}\n" + "Trigger details:  {6}\n" +
-				"Triggering event value:   {7}\n\n";
+				"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
+				"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";
 
 		sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
 

@@ -252,23 +252,23 @@ public class Metric extends TSDBEntity implements Serializable {
      */
     @JsonIgnore
     public String getIdentifier() {
+        
+        String tags = "";
+        
         Map<String, String> sortedTags = new TreeMap<>();
-
         sortedTags.putAll(getTags());
-
-        StringBuilder tagListBuffer = new StringBuilder();
-
-        tagListBuffer.append("{");
-        for (String tagKey : sortedTags.keySet()) {
-            tagListBuffer.append(tagKey).append('=').append(sortedTags.get(tagKey)).append(',');
+        if(!sortedTags.isEmpty()) {
+        	StringBuilder tagListBuffer = new StringBuilder("{");
+            for (String tagKey : sortedTags.keySet()) {
+                tagListBuffer.append(tagKey).append('=').append(sortedTags.get(tagKey)).append(',');
+            }
+            
+            tags = tagListBuffer.substring(0, tagListBuffer.length() - 1).concat("}");
         }
 
-        String tagList = tagListBuffer.toString();
-
-        tagList = tagList.substring(0, tagList.length() - 1).concat("}");
-
-        Object[] params = { getNamespace(), getScope(), getMetric(), tagList };
-        String format = "{0}:{1}:{2}" + "{3}";
+        String namespace = getNamespace();
+        Object[] params = { namespace == null ? "" : namespace + ":", getScope(), getMetric(), tags };
+        String format = "{0}{1}:{2}" + "{3}";
 
         return MessageFormat.format(format, params);
     }
