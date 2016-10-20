@@ -99,6 +99,10 @@ angular.module('argus.services.charts.dataProcessing', [])
                 var controlType = controls[controlIndex].type;
                 if ( controlType === "agDate" ) {
                     controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
+                    // remove GMT from offset input from
+                    if( typeof (controlValue) === "string" && controlValue.indexOf('GMT') >= 0){
+                        controlValue = controlValue.replace('GMT','');
+                    }
                 }
                 controlValue = controlValue == undefined ? "" : controlValue;
                 result = result.replace(new RegExp(controlName, "g"), controlValue);
