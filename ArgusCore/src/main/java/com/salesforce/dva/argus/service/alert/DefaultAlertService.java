@@ -301,7 +301,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for (AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
 			long jobStartTime = System.currentTimeMillis();
 			BigInteger alertId = alertIdWithTimestamp.alertId;
-			Long enqueuedTimestamp = alertIdWithTimestamp.alertEnqueueTime;
 
 			failedNotificationsCount = 0;
 
@@ -322,7 +321,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			History history = _historyService.createHistory(addDateToMessage(JobStatus.STARTED.getDescription()), alert, JobStatus.STARTED, 0, 0);
 
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), enqueuedTimestamp - System.currentTimeMillis());
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertIdWithTimestamp.alertEnqueueTime);
 
 				if (metrics == null || metrics.isEmpty()) {
 					logMessage = "The metric expression associated with the alert did not return any metric data.";
@@ -838,7 +837,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		/** The serial version UID. */
 		private static final long serialVersionUID = 1L;
 		protected BigInteger alertId;
-		protected Long alertEnqueueTime;
+		protected long alertEnqueueTime;
 
 		/** Creates a new AlertIdWithTimestamp object. */
 		public AlertIdWithTimestamp() { }
@@ -849,7 +848,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  id         The alert ID.  Cannot be null.
 		 * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
 		 */
-		public AlertIdWithTimestamp(BigInteger id, Long timestamp) {
+		public AlertIdWithTimestamp(BigInteger id, long timestamp) {
 			this.alertId = id;
 			this.alertEnqueueTime = timestamp;
 		}
@@ -877,7 +876,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @return  The enqueue timestamp.
 		 */
-		public Long getAlertEnqueueTime() {
+		public long getAlertEnqueueTime() {
 			return alertEnqueueTime;
 		}
 
@@ -886,7 +885,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @param  alertEnqueueTime  The enqueue timestamp.
 		 */
-		public void setAlertEnqueueTime(Long alertEnqueueTime) {
+		public void setAlertEnqueueTime(long alertEnqueueTime) {
 			this.alertEnqueueTime = alertEnqueueTime;
 		}
 	}
