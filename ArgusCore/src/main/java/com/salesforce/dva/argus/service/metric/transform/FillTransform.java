@@ -193,7 +193,10 @@ public class FillTransform implements Transform {
         if (metrics == null || metrics.isEmpty()) {
         	// Last constant is added by MetricReader. It is the timestamp using which relative start and end timestamps 
         	// should be calculated
-        	String relativeTo = constants.remove(constants.size() - 1);
+        	String relativeTo = "";
+        	if(constants != null && !constants.isEmpty()) {
+        		relativeTo = constants.remove(constants.size() - 1);
+        	}
             return _fillLine(constants, Long.parseLong(relativeTo));
         }
         
