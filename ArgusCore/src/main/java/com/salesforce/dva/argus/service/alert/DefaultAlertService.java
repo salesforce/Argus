@@ -596,7 +596,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
 		}
-		_tsdbService.putMetrics(metricsAlertScheduled);
+		
+		try {
+			_tsdbService.putMetrics(metricsAlertScheduled);
+		} catch (Exception ex) {
+			_logger.error("Error occured while pushing alert audit scheduling time series. Reason: {}", ex.getMessage());
+		}		
 	}
 
 
