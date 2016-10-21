@@ -433,17 +433,12 @@ public class QuartzSchedulingService extends DefaultService implements Schedulin
         private void _disposeScheduler(Scheduler scheduler) {
             if (scheduler != null) {
                 try {
-                    scheduler.shutdown();
-
-                    /* Add a small sleep so Tomcat does not complain - the web application has started a thread,
-                     * but has failed to stop it.This is very likely to create a memory leak.
-                     */
-                    Thread.sleep(2000);
+					_logger.info("Stopping scheduler {}", _getSchedulerName(scheduler));
+					scheduler.clear();
+					scheduler.shutdown();
+					_logger.info("Finished stopping scheduler {}", _getSchedulerName(scheduler));
                 } catch (SchedulerException e) {
                     _logger.error("Quartz failed to shutdown {}", e);
-                } catch (InterruptedException e) {
-                    _logger.warn("Shutdown of quartz scheduler was interrupted.");
-                    Thread.currentThread().interrupt();
                 }
             }
         }
@@ -466,6 +461,19 @@ public class QuartzSchedulingService extends DefaultService implements Schedulin
                 }
             }
         }
+        
+		private String _getSchedulerName(Scheduler scheduler){
+
+			if(scheduler==null)
+				return "no-scheduler-instance";
+
+			try {
+				return scheduler.getSchedulerName();
+			} catch (SchedulerException e) {
+				_logger.error(e.toString()); 
+				return "no-scheduler";
+			}
+		}
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
