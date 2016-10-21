@@ -3,7 +3,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
     function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History) {
         $http.pendingRequests = []; //This line should be deleted.
 		$scope.dashboardEditable = false;
-        
+
         $scope.isDashboardDirty = function () {
             return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
         };

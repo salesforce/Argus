@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -142,6 +142,12 @@ public class FillTransform implements Transform {
 
         SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
+
+        // snapping start and end time
+        long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
+        startTimestamp = startTimestamp - startSnapping;
+        long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
+        endTimestamp = endTimestamp - endSnapping;
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
         Map<Long, String> filledDatapoints = new TreeMap<Long, String>();
