@@ -42,10 +42,12 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+
 import java.sql.Date;
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -157,8 +159,10 @@ public class EmailNotifier extends AuditNotifier {
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+        sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric()));
         sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
         sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
+        sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             sb.append("<a href='");

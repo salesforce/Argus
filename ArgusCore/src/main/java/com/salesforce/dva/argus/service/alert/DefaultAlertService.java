@@ -286,24 +286,34 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		int failedNotificationsCount = 0;
 		String logMessage = null;
 		long jobEndTime = 0;
+		
+		List<BigInteger> alertIds = new ArrayList<>(alertIdWithTimestampList.size());
+		for(AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
+			alertIds.add(alertIdWithTimestamp.alertId);
+		}
+		
+		List<Alert> alerts = findAlertsByPrimaryKeys(alertIds);
+		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
+		for(Alert alert : alerts) {
+			alertsByIds.put(alert.getId(), alert);
+		}
 
 		for (AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
 			long jobStartTime = System.currentTimeMillis();
-			BigInteger alertID = alertIdWithTimestamp.alertId;
-			Long enqueuedTimestamp = alertIdWithTimestamp.alertEnqueueTime;
+			BigInteger alertId = alertIdWithTimestamp.alertId;
 
 			failedNotificationsCount = 0;
 
-			Alert alert = findAlertByPrimaryKey(alertID);
+			Alert alert = alertsByIds.get(alertId);
 
 			if (alert == null) {
-				logMessage = MessageFormat.format("Could not find alert ID {0}", alertID);
+				logMessage = MessageFormat.format("Could not find alert ID {0}", alertId);
 				_logger.warn(logMessage);
 				continue;
 			}
 			
 			if(!alert.isEnabled()) {
-				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertID);
+				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertId);
 				_logger.warn(logMessage);
 				continue;
 			}
@@ -311,7 +321,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			History history = _historyService.createHistory(addDateToMessage(JobStatus.STARTED.getDescription()), alert, JobStatus.STARTED, 0, 0);
 
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), enqueuedTimestamp - System.currentTimeMillis());
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertIdWithTimestamp.alertEnqueueTime);
 
 				if (metrics == null || metrics.isEmpty()) {
 					logMessage = "The metric expression associated with the alert did not return any metric data.";
@@ -352,7 +362,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					appendMessageNUpdateHistory(history.getId(), ex.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
 					_logger.warn("Failed to evaluate alert : {}. Reason: {}", alert, ex.getMessage());
 				} finally {
-					sendEmailToAdmin(alert, alertID, ex);
+					sendEmailToAdmin(alert, alertId, ex);
 				}
 			} finally {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
@@ -454,8 +464,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notification.setActive(true);
 		notification.setFiredTrigger(trigger);
 		notification = mergeEntity(em, notification);
-
-		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value);
+		
+		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric.getIdentifier());
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		notifier.sendNotification(context);
@@ -473,7 +483,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notification.setFiredTrigger(null);
 		notification = mergeEntity(em, notification);
 
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), value);
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), value, metric.getIdentifier());
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		notifier.clearNotification(context);
@@ -813,7 +823,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		/** The serial version UID. */
 		private static final long serialVersionUID = 1L;
 		protected BigInteger alertId;
-		protected Long alertEnqueueTime;
+		protected long alertEnqueueTime;
 
 		/** Creates a new AlertIdWithTimestamp object. */
 		public AlertIdWithTimestamp() { }
@@ -824,7 +834,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  id         The alert ID.  Cannot be null.
 		 * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
 		 */
-		public AlertIdWithTimestamp(BigInteger id, Long timestamp) {
+		public AlertIdWithTimestamp(BigInteger id, long timestamp) {
 			this.alertId = id;
 			this.alertEnqueueTime = timestamp;
 		}
@@ -852,7 +862,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @return  The enqueue timestamp.
 		 */
-		public Long getAlertEnqueueTime() {
+		public long getAlertEnqueueTime() {
 			return alertEnqueueTime;
 		}
 
@@ -861,7 +871,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @param  alertEnqueueTime  The enqueue timestamp.
 		 */
-		public void setAlertEnqueueTime(Long alertEnqueueTime) {
+		public void setAlertEnqueueTime(long alertEnqueueTime) {
 			this.alertEnqueueTime = alertEnqueueTime;
 		}
 	}
@@ -879,6 +889,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private Notification notification;
 		private long triggerFiredTime;
 		private String triggerEventValue;
+		private String triggeredMetric;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -889,13 +900,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  triggerFiredTime   The time stamp of the last data point in metric at which the trigger was decided to be fired.
 		 * @param  triggerEventValue  The value of the metric at the event trigger time.
 		 */
-		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, String triggerEventValue) {
+		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, String triggerEventValue, String triggeredMetric) {
 			this.alert = alert;
 			this.trigger = trigger;
 			this.coolDownExpiration = notification.getCooldownExpiration();
 			this.notification = notification;
 			this.triggerFiredTime = triggerFiredTime;
 			this.triggerEventValue = triggerEventValue;
+			this.triggeredMetric = triggeredMetric;
 		}
 
 		/** Creates a new NotificationContext object. */
@@ -1008,6 +1020,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setTriggerEventValue(String triggerEventValue) {
 			this.triggerEventValue = triggerEventValue;
 		}
+
+		public String getTriggeredMetric() {
+			return triggeredMetric;
+		}
+
+		public void setTriggeredMetric(String triggeredMetric) {
+			this.triggeredMetric = triggeredMetric;
+		}
+		
 	}
 
 }
