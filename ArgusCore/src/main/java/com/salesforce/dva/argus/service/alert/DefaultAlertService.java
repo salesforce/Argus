@@ -720,9 +720,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		long datapointsInterval, inertialLength;
-		int inertiaDatapointsCount, count = 0, left, right, currWindowStart;
-
 		Collections.sort(sortedDatapoints, new Comparator<Map.Entry<Long, String>>() {
 
 			@Override
@@ -730,36 +727,19 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				return e1.getKey().compareTo(e2.getKey());
 			}
 		});
-		datapointsInterval = sortedDatapoints.get(1).getKey() - sortedDatapoints.get(0).getKey();
-		inertialLength = trigger.getInertia() / datapointsInterval;
-		if (trigger.getInertia() < datapointsInterval) {
-			inertiaDatapointsCount = 1;
-		} else if (inertialLength * datapointsInterval < trigger.getInertia()) {
-			inertiaDatapointsCount = (int) inertialLength + 2;
-		} else {
-			inertiaDatapointsCount = (int) inertialLength + 1;
-		}
-		if (inertiaDatapointsCount > sortedDatapoints.size()) {
-			return null;
-		}
-		currWindowStart = left = sortedDatapoints.size() - inertiaDatapointsCount;
-		right = sortedDatapoints.size() - 1; // -1 as index starts from 0
-		while (left <= right) {
-			if (sortedDatapoints.get(left).getValue() != null &&
-					Trigger.evaluateTrigger(trigger, new Double(sortedDatapoints.get(left).getValue()))) {
-				count++;
-				left++;
-			} else {
-				right = currWindowStart - 1;
-				left = right - inertiaDatapointsCount + count + 1; // +1 as index starts from 0
-				count = 0;
-				currWindowStart = left;
-				if (left < 0) {
-					return null;
-				}
+		
+		int endIndex=sortedDatapoints.size();
+		
+		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0;startIndex--){
+			if(Trigger.evaluateTrigger(trigger, new Double(sortedDatapoints.get(startIndex).getValue()))){
+				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
+				if(interval>=trigger.getInertia())
+					return sortedDatapoints.get(endIndex-1).getKey();
+			}else{
+				endIndex=startIndex;
 			}
 		}
-		return sortedDatapoints.get(currWindowStart + inertiaDatapointsCount - 1).getKey(); // -1 as index starts from 0
+		return null;
 	}
 
 	@Override
