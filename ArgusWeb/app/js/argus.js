@@ -79,6 +79,7 @@ angular.module('argus.services', [
   'argus.services.auth',
   'argus.services.batches',
   'argus.services.breadcrumbs',
+  'argus.services.charts.lineChart',
   'argus.services.charts.options',
   'argus.services.charts.rendering',
   'argus.services.charts.tools',
