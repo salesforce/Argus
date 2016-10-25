@@ -416,7 +416,7 @@ public class ManagementResources extends AbstractResource {
     }
 
     /**
-     * Cleans up records marked for deletion and orphan records.
+     * Cleans up expired audit and history records.
      *
      * @param   req  The HTTP request.
      *
@@ -425,10 +425,27 @@ public class ManagementResources extends AbstractResource {
     @PUT
     @Path("/cleanuprecords")
     @Produces(MediaType.APPLICATION_JSON)
-    @Description("Cleans up records marked for deletion and orphan records.")
+    @Description("Cleans up expired audit and history records.")
     public Response cleanupRecords(@Context HttpServletRequest req) {
         validatePrivilegedUser(req);
         managementService.cleanupRecords();
+        return Response.status(Status.OK).build();
+    }
+    
+    /**
+     * Cleans up alerts marked for deletion.
+     *
+     * @param   req  The HTTP request.
+     *
+     * @return  Response object indicating whether the operation was successful or not.
+     */
+    @PUT
+    @Path("/cleanupalerts")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Description("Cleans up alerts marked for deletion.")
+    public Response cleanupDeletedAlerts(@Context HttpServletRequest req, @FormParam("limit") int limit) {
+        validatePrivilegedUser(req);
+        managementService.cleanupDeletedAlerts(limit);
         return Response.status(Status.OK).build();
     }
 }
