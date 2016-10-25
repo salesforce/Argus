@@ -229,7 +229,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Transactional
 	public List<Alert> findAlertsMarkedForDeletion() {
 		requireNotDisposed();
-		return findEntitiesMarkedForDeletion(emf.get(), Alert.class);
+		return findEntitiesMarkedForDeletion(emf.get(), Alert.class, -1);
+	}
+	
+	@Override
+	@Transactional
+	public List<Alert> findAlertsMarkedForDeletion(final int limit) {
+		requireNotDisposed();
+		requireArgument(limit > 0, "Limit must be greater than 0.");
+		return findEntitiesMarkedForDeletion(emf.get(), Alert.class, limit);
 	}
 
 	@Override
