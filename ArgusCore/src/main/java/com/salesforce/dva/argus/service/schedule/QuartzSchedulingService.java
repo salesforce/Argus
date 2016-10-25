@@ -304,6 +304,11 @@ public class QuartzSchedulingService extends DefaultService implements Schedulin
                     }
                 }
 
+                if(scheduler != null) {
+                	_logger.info("Machine is no longer master disposing current scheduler instance");
+                	_disposeScheduler(scheduler);
+                }
+                
                 boolean interrupted = interrupted();
 
                 _releaseLock(key);
@@ -437,6 +442,7 @@ public class QuartzSchedulingService extends DefaultService implements Schedulin
 					scheduler.clear();
 					scheduler.shutdown();
 					_logger.info("Finished stopping scheduler {}", _getSchedulerName(scheduler));
+					scheduler = null;
                 } catch (SchedulerException e) {
                     _logger.error("Quartz failed to shutdown {}", e);
                 }

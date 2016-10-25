@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -130,12 +131,12 @@ public class FillTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private List<Metric> _fillLine(List<String> constants) {
+    private List<Metric> _fillLine(List<String> constants, long relativeTo) {
         SystemAssert.requireArgument(constants != null && constants.size() == 5,
-            "Line Filling Transform needs 5 constants (<start><end><interval><offset><value>)!");
+            "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
 
-        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0));
-        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1));
+        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
+        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
         String value = constants.get(4);
@@ -165,15 +166,15 @@ public class FillTransform implements Transform {
         return lineMetrics;
     }
 
-    private long _parseStartAndEndTimestamps(String timeStr) {
+    private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
         if (timeStr == null || timeStr.isEmpty()) {
-            return System.currentTimeMillis();
+            return relativeTo;
         }
         try {
             if (timeStr.charAt(0) == '-') {
                 long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
 
-                return (System.currentTimeMillis() - timeToDeductInSeconds * 1000);
+                return (relativeTo - timeToDeductInSeconds * 1000);
             }
             return Long.parseLong(timeStr);
         } catch (NumberFormatException nfe) {
@@ -188,14 +189,20 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        List<Metric> fillMetricList = new ArrayList<Metric>();
-
+    	
         if (metrics == null || metrics.isEmpty()) {
-            return _fillLine(constants);
+        	// Last constant is added by MetricReader. It is the timestamp using which relative start and end timestamps 
+        	// should be calculated
+        	String relativeTo = "";
+        	if(constants != null && !constants.isEmpty()) {
+        		relativeTo = constants.remove(constants.size() - 1);
+        	}
+            return _fillLine(constants, Long.parseLong(relativeTo));
         }
+        
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics!");
-        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Fill Transform needs a max window size!");
-        SystemAssert.requireArgument(constants.size() == 3, "Fill Transform needs exactly three constants!");
+        SystemAssert.requireArgument(constants != null && constants.size() == 3, 
+        		"Fill Transform needs exactly three constants: interval, offset, value");
 
         String interval = constants.get(0);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(interval);
@@ -206,6 +213,7 @@ public class FillTransform implements Transform {
         long offsetInSeconds = _parseTimeIntervalInSeconds(offset);
         String value = constants.get(2);
 
+        List<Metric> fillMetricList = new ArrayList<Metric>();
         for (Metric metric : metrics) {
             Metric newMetric = new Metric(metric);
 

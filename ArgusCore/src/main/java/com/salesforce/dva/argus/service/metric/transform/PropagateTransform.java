@@ -49,25 +49,24 @@ public class PropagateTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, String> propagateMetricTransform(Metric metric, long windowSizeInSeconds) {
+    private void _propagateMetricTransform(Metric metric, long windowSizeInSeconds) {
+    	
+    	// if the datapoint set is empty or has a single datapoint, return directly
+    	if(metric.getDatapoints().isEmpty() || metric.getDatapoints().size() == 1) {
+    		return;
+    	}
+    	
         Map<Long, String> propagateDatapoints = new TreeMap<Long, String>();
         Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
-
         sortedDatapoints.keySet().toArray(sortedTimestamps);
 
         Long startTimestamp = sortedTimestamps[0];
         Long endTimestamp = sortedTimestamps[sortedTimestamps.length - 1];
 
-        // if this metric only have one point, return directly
-        if (startTimestamp.equals(endTimestamp)) {
-            return sortedDatapoints;
-        }
-
         // create a new datapoints map propagateDatpoints, which have all the
         // expected timestamps, then fill the missing value
         int index = 1;
-
         while (startTimestamp <= endTimestamp) {
             propagateDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
@@ -99,7 +98,8 @@ public class PropagateTransform implements Transform {
                 propagateDatapoints.put(newTimestamps.get(i), prev);
             }
         }
-        return propagateDatapoints;
+        
+        metric.setDatapoints(propagateDatapoints);
     }
 
     private static long parseTimeIntervalInSeconds(String interval) {
@@ -138,7 +138,7 @@ public class PropagateTransform implements Transform {
         long windowSizeInSeconds = parseTimeIntervalInSeconds(window);
 
         for (Metric metric : metrics) {
-            metric.setDatapoints(propagateMetricTransform(metric, windowSizeInSeconds));
+            _propagateMetricTransform(metric, windowSizeInSeconds);
         }
         return metrics;
     }
