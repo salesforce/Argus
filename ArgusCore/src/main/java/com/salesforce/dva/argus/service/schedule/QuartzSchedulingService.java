@@ -305,6 +305,7 @@ public class QuartzSchedulingService extends DefaultService implements Schedulin
                 }
 
                 if(scheduler != null) {
+                	_logger.info("Machine is no longer master disposing current scheduler instance");
                 	_disposeScheduler(scheduler);
                 }
                 
