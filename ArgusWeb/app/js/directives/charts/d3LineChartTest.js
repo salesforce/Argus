@@ -49,8 +49,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var formatValue = d3.format(',');
                 var tooltipCreator = function() {};
 
-
-
                 //graph setup variables
                 var x, x2, y, y2, z,
                     nGridX = 10, nGridY = 10,
@@ -323,6 +321,17 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     d3.selectAll(".brush").call(brush.move, null);
                 }
 
+
+                //redraw the lines Axises grids
+                function redraw(){
+                    //redraw
+                    svg.selectAll(".line").attr("d", line);//redraw the line
+                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
+                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".x.grid").call(xGrid);
+                    svg.select(".y.grid").call(yGrid);
+                }
+
                 //brushed
                 function brushed() {
                     // ignore the case when it is called by the zoomed function
@@ -334,20 +343,13 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                     reScaleY(); //rescale domain of y axis
                     //redraw
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
-                    svg.select(".x.grid").call(xGrid);
-                    svg.select(".y.grid").call(yGrid);
-
+                    redraw();
                     //sync with zoom
                     svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
                         .scale(width / (s[1] - s[0]))
                         .translate(-s[0], 0));
 
                 }
-
-
 
                 //zoomed
                 function zoomed() {
@@ -360,11 +362,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                     reScaleY(); //rescale domain of y axis
                     //redraw
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
-                    svg.select(".x.grid").call(xGrid);
-                    svg.select(".y.grid").call(yGrid);
+                    redraw();
 
                     // sync the brush
                     context.select(".brush").call
