@@ -565,7 +565,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		to.add(alert.getOwner().getEmail());
 		for (Notification notification : alert.getNotifications()) {
-			to.addAll(notification.getSubscriptions());
+			if(SupportedNotifier.EMAIL.equals(SupportedNotifier.fromClassName(notification.getNotifierName()))) {
+				to.addAll(notification.getSubscriptions());
+			}
 		}
 
 		String subject = "Alert scheduling failure notification.";
