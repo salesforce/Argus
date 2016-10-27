@@ -78,7 +78,7 @@ public class AlertResources extends AbstractResource {
 
     /**
      * Return all alerts in alert objects filtered by owner.
-     * @param   alertName  The alert name filter.
+     * @param   alertname  The alert name filter.
      * @param   owner          The principlaUser owner for owner name filter.
      *
      * @return  The list of filtered alerts in alert object.
@@ -109,7 +109,7 @@ public class AlertResources extends AbstractResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @path("/meta")
+    @Path("/meta")
     @Description("Returns all alerts' metadata.")
     public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req,
                                         @QueryParam("alertname") String alertname,

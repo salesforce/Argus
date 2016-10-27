@@ -127,8 +127,9 @@ public class AlertDto extends EntityDTO {
         }
 
         AlertDto result = createDtoObject(AlertDto.class, alert);
+        result.setOwnerName(alert.getOwner().getUserName());
         // set expression to be empty; notification and triggers are empty by default
-        result.setExpression = "";
+        result.setExpression("");
         return result;
     }
 
@@ -142,7 +143,7 @@ public class AlertDto extends EntityDTO {
      * @throws  WebApplicationException  If an error occurs.
      */
     public static List<AlertDto> transformToDtoNoContent(List<Alert> alerts) {
-        if (alertss == null) {
+        if (alerts == null) {
             throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
         }
 
@@ -258,7 +259,7 @@ public class AlertDto extends EntityDTO {
     /**
      * Sets the list of notification Ids.
      *
-     * @param  array of notifications.
+     * @param  notificationIds list of notifications.
      */
     public void setNotificationsIds(List<BigInteger> notificationIds) {
         this.notificationsIds = notificationIds;
@@ -285,7 +286,7 @@ public class AlertDto extends EntityDTO {
     /**
      * Sets the list of notification Ids.
      *
-     * @param  array of notifications.
+     * @param  triggersIds list of notifications.
      */
     public void setTriggersIds(List<BigInteger> triggersIds) {
         this.triggersIds = triggersIds;
