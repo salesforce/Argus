@@ -77,6 +77,49 @@ public class AlertResources extends AbstractResource {
     //~ Methods **************************************************************************************************************************************
 
     /**
+     * Return all alerts in alert objects filtered by owner.
+     * @param   alertName  The alert name filter.
+     * @param   owner          The principlaUser owner for owner name filter.
+     *
+     * @return  The list of filtered alerts in alert object.
+     */
+    private List<Alert> getAlertsObj(String alertname, PrincipalUser owner) {
+        List<Alert> result = null;
+        if (alertname != null && !alertname.isEmpty()) {
+            Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
+
+            result = new ArrayList<Alert>();
+            if (alert != null) {
+                result.add(alert);
+            }
+        } else {
+            result = owner.isPrivileged() ? alertService.findAllAlerts() : alertService.findAlertsByOwner(owner);
+        }
+        return result;
+    }
+
+    /**
+     * Returns the list of alerts' metadata created by the user.
+     *
+     * @param   req        The HttpServlet request object. Cannot be null.
+     * @param   alertname  Name of the alert. It is optional.
+     * @param   ownerName  Name of the owner. It is optional.
+     *
+     * @return  The list of alerts' metadata created by the user.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @path("/meta")
+    @Description("Returns all alerts' metadata.")
+    public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req,
+                                        @QueryParam("alertname") String alertname,
+                                        @QueryParam(OWNER_NAME) String ownerName) {
+        PrincipalUser owner = validateAndGetOwner(req, ownerName);
+        List<Alert> result = getAlertsObj(alertname, owner);
+        return AlertDto.transformToDtoNoContent(result);
+    }
+
+    /**
      * Returns the list of alerts created by the user.
      *
      * @param   req        The HttpServlet request object. Cannot be null.
@@ -89,21 +132,22 @@ public class AlertResources extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Description("Returns all alerts.")
     public List<AlertDto> getAlerts(@Context HttpServletRequest req,
-        @QueryParam("alertname") String alertname,
-        @QueryParam(OWNER_NAME) String ownerName) {
-        List<Alert> result = null;
+                                    @QueryParam("alertname") String alertname,
+                                    @QueryParam(OWNER_NAME) String ownerName) {
+        // List<Alert> result = null;
         PrincipalUser owner = validateAndGetOwner(req, ownerName);
 
-        if (alertname != null && !alertname.isEmpty()) {
-            Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
+        // if (alertname != null && !alertname.isEmpty()) {
+        //     Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
 
-            result = new ArrayList<Alert>();
-            if (alert != null) {
-                result.add(alert);
-            }
-        } else {
-            result = owner.isPrivileged() ? alertService.findAllAlerts() : alertService.findAlertsByOwner(owner);
-        }
+        //     result = new ArrayList<Alert>();
+        //     if (alert != null) {
+        //         result.add(alert);
+        //     }
+        // } else {
+        //     result = owner.isPrivileged() ? alertService.findAllAlerts() : alertService.findAlertsByOwner(owner);
+        // }
+        List<Alert> result = getAlertsObj(alertname, owner);
         return AlertDto.transformToDto(result);
     }
 
