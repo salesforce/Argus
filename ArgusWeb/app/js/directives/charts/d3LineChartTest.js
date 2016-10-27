@@ -337,6 +337,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.selectAll(".line").attr("d", line);//redraw the line
                     svg.select(".x.axis").call(xAxis);  //redraw xAxis
                     svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".x.grid").call(xGrid);
+                    svg.select(".y.grid").call(yGrid);
 
                     //sync with zoom
                     svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
@@ -361,6 +363,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.selectAll(".line").attr("d", line);//redraw the line
                     svg.select(".x.axis").call(xAxis);  //redraw xAxis
                     svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".x.grid").call(xGrid);
+                    svg.select(".y.grid").call(yGrid);
 
                     // sync the brush
                     context.select(".brush").call
@@ -386,11 +390,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         var start = x.domain()[0];
                         var end = new Date(start.getTime() + interval);
                         x.domain([start, end]);
-                        //
-                        // //redraw the line&brush
-                        // svg.selectAll(".line").attr("d", line);//redraw the line
-                        // svg.select(".x.axis").call(xAxis);  //redraw xAxis
-
                         // sync the brush
                         var start2 = x2.range()[0];
                         var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
