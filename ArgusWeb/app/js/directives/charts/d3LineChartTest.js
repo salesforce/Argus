@@ -326,7 +326,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //brushed
                 function brushed() {
                     // ignore the case when it is called by the zoomed function
-                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" || d3.event.sourceEvent.type === "resize")) return;
+                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" )) return;
                     var s = d3.event.selection || x2.range();
                     x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
                                                         //invert the x value in brush axis range to the
@@ -350,7 +350,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //zoomed
                 function zoomed() {
                     // ignore the case when it is called by the brushed function
-                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "brush" || d3.event.sourceEvent.type === "end") )return;
                     var t = d3.event.transform;
                     x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
                                                         //invert the x value in brush axis range to the
@@ -386,10 +386,10 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         var start = x.domain()[0];
                         var end = new Date(start.getTime() + interval);
                         x.domain([start, end]);
-
-                        //redraw the line&brush
-                        svg.selectAll(".line").attr("d", line);//redraw the line
-                        svg.select(".x.axis").call(xAxis);  //redraw xAxis
+                        //
+                        // //redraw the line&brush
+                        // svg.selectAll(".line").attr("d", line);//redraw the line
+                        // svg.select(".x.axis").call(xAxis);  //redraw xAxis
 
                         // sync the brush
                         var start2 = x2.range()[0];
@@ -414,36 +414,27 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 //resize
                 function resize(){
-                    var temp = x.domain(); //remember that when resize
+                    var tempX = x.domain(); //remember that when resize
+                    //calculate new size for chart
                     containerWidth = element.parent().width();
-
                     width = containerWidth - marginLeft - marginRight;
                     margin = {top: marginTop,
                         right: marginRight,
                         bottom: containerHeight - marginTop - height,
                         left: marginLeft};
-
                     margin2 = {top: containerHeight - height2 - marginBottom,
                         right: marginRight,
                         bottom: marginBottom,
                         left: marginLeft};
 
+                    //clear every chart
                     d3.select('svg').remove();
                     setGraph(); //set up the chart
                     updateGraph(currSeries); //refill the data draw the line
 
                     //restore the zoom&brush
-                    x.domain(temp);
-
-                    //redraw the line&brush
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.selectAll(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.selectAll(".x.grid").call(xGrid); //redraw the grid
-
-                    // restore the brush
                     context.select(".brush").call
-                    (brush.move, [x2(temp[0]), x2(temp[1])]);
-
+                    (brush.move, [x2(tempX[0]), x2(tempX[1])]);
                 }
                 d3.select(window).on('resize', resize);
 
@@ -455,7 +446,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     var allDatapoints = [];
                     var names = series.map(function(metric) { return metric.id; });
                     var svg = d3.select('svg').select('g');
-                    var svgTransition = d3.select(element[0]).transition();
 
                     currSeries = series;
 
@@ -490,22 +480,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                             .style('stroke', z(metric.id));
                     });
 
-                    svgTransition.select('.x.axis')
-                        .duration(750)
-                        .call(xAxis);
-                    svgTransition.select('.y.axis')
-                        .duration(750)
-                        .call(yAxis);
-                    svgTransition.select('.x.grid')
-                        .duration(750)
-                        .call(xGrid);
-                    svgTransition.select('.y.grid')
-                        .duration(750)
-                        .call(yGrid);
-
-                    svgTransition.select('.xBrush.axis')
-                        .duration(750)
-                        .call(xAxis2);
                 }
 
                 // Update graph on new metric results
