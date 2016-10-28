@@ -26,7 +26,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var marginTop = 20,
                     marginBottom = 100,
                     marginLeft = 40,
-                    marginRight = 20;
+                    marginRight = 40;
 
                 var width = containerWidth - marginLeft - marginRight;
                 var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
@@ -57,10 +57,10 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //graph setup variables
                 var x, x2, y, y2, z,
                     nGridX = 10, nGridY = 10,
-                    xAxis, xAxis2, yAxis, xGrid, yGrid,
+                    xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
                     line, line2,
                     brush, zoom,
-                    svg, xAxisG, xAxisG2, yAxisG, xGridG, yGridG, //g
+                    svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                     focus, context, clip, brushG, chartRect, //g
                     tip, tipBox, tipItems,
                     crossline
@@ -86,6 +86,11 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         .ticks(nGridX);
 
                     yAxis = d3.axisLeft()
+                        .scale(y)
+                        .ticks(nGridY)
+                        .tickFormat(d3.format('.2s'))
+                    ;
+                    yAxisR = d3.axisRight()
                         .scale(y)
                         .ticks(nGridY)
                         .tickFormat(d3.format('.2s'))
@@ -152,6 +157,11 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     yAxisG = svg.append('g')
                         .attr('class', 'y axis')
                         .call(yAxis);
+
+                    yAxisRG = svg.append('g')
+                        .attr('class', 'y axis')
+                        .attr('transform', 'translate(' + width + ')')
+                        .call(yAxisR);
 
                     xGridG = svg.append('g')
                         .attr('class', 'x grid')
@@ -323,6 +333,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.selectAll(".line").attr("d", line);//redraw the line
                     svg.select(".x.axis").call(xAxis);  //redraw xAxis
                     svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".y.axis:nth-child(3)").call(yAxisR); //redraw yAxis right
                     svg.select(".x.grid").call(xGrid);
                     svg.select(".y.grid").call(yGrid);
                     if(!isBrushOn){
