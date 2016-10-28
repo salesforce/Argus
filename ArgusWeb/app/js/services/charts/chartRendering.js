@@ -12,7 +12,7 @@ angular.module('argus.services.charts.rendering', [])
 
 				setChartContainer: function(element, chartId, cssOpts) {
 						if (!element || !chartId) return;
-						element.prepend('<div id='+ chartId +' class='+ cssOpts +'></div>');
+						element.prepend('<div id='+ chartId +' class="chartContainer ' + cssOpts +'"></div>');
 				},
 
 				loadChart: function(chartId, highChartOptions) {
