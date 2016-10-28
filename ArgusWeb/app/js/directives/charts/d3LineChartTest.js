@@ -536,6 +536,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);
+                    reset();//clear the brush and allow the user to create it easilly
                 });
             }
         };
