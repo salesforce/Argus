@@ -22,6 +22,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
             ChartRenderingService.setChartContainer(element, newChartId, cssOpts);
 
             scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
+
                 var data = {
                     metrics: scope.metrics,
                     annotations: scope.annotations,
@@ -108,6 +109,9 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
             function bindDataToChart(newChartId, series, updatedAnnotationList) {
 
                 // LineChartService
+
+                // empty any previous content
+                $("#" + newChartId).empty();
 
                 LineChartService.render(newChartId, series);
 
