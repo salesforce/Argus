@@ -12,6 +12,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             '<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
             '<button id="oneHour">1h</button>' +
             '<button id="oneDay">1d</button>' +
+            '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
+            '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
             '</div>',
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
@@ -48,6 +50,9 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var formatDate = d3.timeFormat('%A, %b %e, %H:%M');
                 var formatValue = d3.format(',');
                 var tooltipCreator = function() {};
+
+                var isBrushOn = true;
+
 
                 //graph setup variables
                 var x, x2, y, y2, z,
@@ -227,16 +232,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 setGraph();
 //graph set up done====================================================================>
 
-                //button set up
-                d3.select('#reset')
-                    .on('click', reset);
-
-                d3.select('#oneHour')
-                    .on('click', brushMinute(60));
-
-                d3.select('#oneDay')
-                    .on('click', brushMinute(60*24));
-
                 function mousemove() {
                     if (!currSeries || currSeries.length === 0) {
                         return;
@@ -318,7 +313,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 //reset the brush area
                 function reset() {
-                    d3.selectAll(".brush").call(brush.move, null);
+                    svg.selectAll(".brush").call(brush.move, null);
                 }
 
 
@@ -330,6 +325,9 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.select(".y.axis").call(yAxis);  //redraw yAxis
                     svg.select(".x.grid").call(xGrid);
                     svg.select(".y.grid").call(yGrid);
+                    if(!isBrushOn){
+                        svg.select(".context").attr("display", "none");
+                    }
                 }
 
                 //brushed
@@ -479,6 +477,31 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 }
 
+                //toggle time brush
+                function toggleBrush(){
+                    if(isBrushOn){
+                        //disable the brush
+                        svg.select('.context').attr('display', 'none');
+                        isBrushOn = false;
+                    }else{
+                        //enable the brush
+                        svg.select('.context').attr('display', null);
+                        isBrushOn = true;
+                    }
+                }
+
+                //button set up
+                d3.select('#reset')
+                    .on('click', reset);
+
+                d3.select('#oneHour')
+                    .on('click', brushMinute(60));
+
+                d3.select('#oneDay')
+                    .on('click', brushMinute(60*24));
+                //toggle
+                d3.select('#toggle-brush')
+                    .on('change', toggleBrush);
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);
