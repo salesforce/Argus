@@ -12,6 +12,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             '<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
             '<button id="oneHour">1h</button>' +
             '<button id="oneDay">1d</button>' +
+            '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
+            '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
             '</div>',
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
@@ -49,7 +51,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var formatValue = d3.format(',');
                 var tooltipCreator = function() {};
 
-
+                var isBrushOn = true;
+                var isWheelOn = true;
 
                 //graph setup variables
                 var x, x2, y, y2, z,
@@ -229,16 +232,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 setGraph();
 //graph set up done====================================================================>
 
-                //button set up
-                d3.select('#reset')
-                    .on('click', reset);
-
-                d3.select('#oneHour')
-                    .on('click', brushMinute(60));
-
-                d3.select('#oneDay')
-                    .on('click', brushMinute(60*24));
-
                 function mousemove() {
                     if (!currSeries || currSeries.length === 0) {
                         return;
@@ -320,13 +313,27 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 //reset the brush area
                 function reset() {
-                    d3.selectAll(".brush").call(brush.move, null);
+                    svg.selectAll(".brush").call(brush.move, null);
+                }
+
+
+                //redraw the lines Axises grids
+                function redraw(){
+                    //redraw
+                    svg.selectAll(".line").attr("d", line);//redraw the line
+                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
+                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".x.grid").call(xGrid);
+                    svg.select(".y.grid").call(yGrid);
+                    if(!isBrushOn){
+                        svg.select(".context").attr("display", "none");
+                    }
                 }
 
                 //brushed
                 function brushed() {
                     // ignore the case when it is called by the zoomed function
-                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" || d3.event.sourceEvent.type === "resize")) return;
+                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" )) return;
                     var s = d3.event.selection || x2.range();
                     x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
                                                         //invert the x value in brush axis range to the
@@ -334,10 +341,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                     reScaleY(); //rescale domain of y axis
                     //redraw
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
-
+                    redraw();
                     //sync with zoom
                     svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
                         .scale(width / (s[1] - s[0]))
@@ -345,12 +349,10 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 }
 
-
-
                 //zoomed
                 function zoomed() {
                     // ignore the case when it is called by the brushed function
-                    if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+                    if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "brush" || d3.event.sourceEvent.type === "end") )return;
                     var t = d3.event.transform;
                     x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
                                                         //invert the x value in brush axis range to the
@@ -358,9 +360,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                     reScaleY(); //rescale domain of y axis
                     //redraw
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    redraw();
 
                     // sync the brush
                     context.select(".brush").call
@@ -386,11 +386,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         var start = x.domain()[0];
                         var end = new Date(start.getTime() + interval);
                         x.domain([start, end]);
-
-                        //redraw the line&brush
-                        svg.selectAll(".line").attr("d", line);//redraw the line
-                        svg.select(".x.axis").call(xAxis);  //redraw xAxis
-
                         // sync the brush
                         var start2 = x2.range()[0];
                         var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
@@ -414,36 +409,27 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 //resize
                 function resize(){
-                    var temp = x.domain(); //remember that when resize
+                    var tempX = x.domain(); //remember that when resize
+                    //calculate new size for chart
                     containerWidth = element.parent().width();
-
                     width = containerWidth - marginLeft - marginRight;
                     margin = {top: marginTop,
                         right: marginRight,
                         bottom: containerHeight - marginTop - height,
                         left: marginLeft};
-
                     margin2 = {top: containerHeight - height2 - marginBottom,
                         right: marginRight,
                         bottom: marginBottom,
                         left: marginLeft};
 
+                    //clear every chart
                     d3.select('svg').remove();
                     setGraph(); //set up the chart
                     updateGraph(currSeries); //refill the data draw the line
 
                     //restore the zoom&brush
-                    x.domain(temp);
-
-                    //redraw the line&brush
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.selectAll(".x.axis").call(xAxis);  //redraw xAxis
-                    svg.selectAll(".x.grid").call(xGrid); //redraw the grid
-
-                    // restore the brush
                     context.select(".brush").call
-                    (brush.move, [x2(temp[0]), x2(temp[1])]);
-
+                    (brush.move, [x2(tempX[0]), x2(tempX[1])]);
                 }
                 d3.select(window).on('resize', resize);
 
@@ -455,7 +441,6 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     var allDatapoints = [];
                     var names = series.map(function(metric) { return metric.id; });
                     var svg = d3.select('svg').select('g');
-                    var svgTransition = d3.select(element[0]).transition();
 
                     currSeries = series;
 
@@ -490,24 +475,53 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                             .style('stroke', z(metric.id));
                     });
 
-                    svgTransition.select('.x.axis')
-                        .duration(750)
-                        .call(xAxis);
-                    svgTransition.select('.y.axis')
-                        .duration(750)
-                        .call(yAxis);
-                    svgTransition.select('.x.grid')
-                        .duration(750)
-                        .call(xGrid);
-                    svgTransition.select('.y.grid')
-                        .duration(750)
-                        .call(yGrid);
-
-                    svgTransition.select('.xBrush.axis')
-                        .duration(750)
-                        .call(xAxis2);
                 }
 
+                //toggle time brush
+                function toggleBrush(){
+                    if(isBrushOn){
+                        //disable the brush
+                        svg.select('.context').attr('display', 'none');
+                        isBrushOn = false;
+                    }else{
+                        //enable the brush
+                        svg.select('.context').attr('display', null);
+                        isBrushOn = true;
+                    }
+                }
+
+                //toggle the mousewheel for zoom
+                function toggleWheel(){
+                    if(isWheelOn){
+                        svg.select(".chartOverlay").on("wheel.zoom", null);
+                        isWheelOn = false;
+                    }else{
+                        svg.select(".chartOverlay").call(zoom);
+                        isWheelOn = true;
+                    }
+                }
+
+                //button set up
+                d3.select('#reset')
+                    .on('click', reset);
+
+                d3.select('#oneHour')
+                    .on('click', brushMinute(60));
+
+                d3.select('#oneDay')
+                    .on('click', brushMinute(60*24));
+                //toggle
+                d3.select('#toggle-brush')
+                    .on('change', toggleBrush);
+
+                d3.select('#toggle-wheel')
+                    .on('change', toggleWheel);
+
+                d3.select('#toggle-brush')
+                    .attr("checked","true");
+
+                d3.select('#toggle-wheel')
+                    .attr("checked","true");
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);
