@@ -52,7 +52,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var tooltipCreator = function() {};
 
                 var isBrushOn = true;
-
+                var isWheelOn = true;
 
                 //graph setup variables
                 var x, x2, y, y2, z,
@@ -490,6 +490,17 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     }
                 }
 
+                //toggle the mousewheel for zoom
+                function toggleWheel(){
+                    if(isWheelOn){
+                        svg.select(".chartOverlay").on("wheel.zoom", null);
+                        isWheelOn = false;
+                    }else{
+                        svg.select(".chartOverlay").call(zoom);
+                        isWheelOn = true;
+                    }
+                }
+
                 //button set up
                 d3.select('#reset')
                     .on('click', reset);
@@ -502,6 +513,15 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //toggle
                 d3.select('#toggle-brush')
                     .on('change', toggleBrush);
+
+                d3.select('#toggle-wheel')
+                    .on('change', toggleWheel);
+
+                d3.select('#toggle-brush')
+                    .attr("checked","true");
+
+                d3.select('#toggle-wheel')
+                    .attr("checked","true");
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);
