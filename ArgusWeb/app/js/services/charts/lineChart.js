@@ -1,26 +1,28 @@
 angular.module('argus.services.charts.lineChart', [])
 .service('LineChartService', function() {
-		'use strict';
+	'use strict';
 
-		var service = {
-				generateTopToolBar: function(chartId) {
-						if (!chartId) return;
+	var service = {
+		generateTopToolBar: function(chartId) {
+			if (!chartId) return;
 
-						var toolBarHTML =
-								'<div id="toolBar-' + chartId +'" class="lineChartToolbar">' +
-										'<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
-										'<button id="oneHour">1h</button>' +
-										'<button id="oneDay">1d</button>' +
-								'</div>'
+			var toolBarHTML =
+				'<div id="toolBar-' + chartId +'" class="lineChartToolbar">' +
+					'<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
+					'<button id="oneHour">1h</button>' +
+					'<button id="oneDay">1d</button>' +
+                    '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
+                    '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
+				'</div>'
 
-						// add toolBar to page
-						$("#" + chartId).prepend(toolBarHTML);
-				},
+			// add toolBar to page
+			$("#" + chartId).prepend(toolBarHTML);
+		},
 
-				render: function(chartId, series) {
-						if (!chartId || !series) return;
+		render: function(chartId, series) {
+            if (!chartId || !series) return;
 
-						var currSeries = series;
+            var currSeries = series;
 
             // Layout parameters
             var containerHeight = 300;
@@ -40,14 +42,14 @@ angular.module('argus.services.charts.lineChart', [])
             var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
 
             var margin = {top: marginTop,
-                          right: marginRight,
-                          bottom: containerHeight - marginTop - height,
-                          left: marginLeft};
+                        right: marginRight,
+                        bottom: containerHeight - marginTop - height,
+                        left: marginLeft};
 
             var margin2 = {top: containerHeight - height2 - marginBottom,
-                          right: marginRight,
-                          bottom: marginBottom,
-                          left: marginLeft};
+                        right: marginRight,
+                        bottom: marginBottom,
+                        left: marginLeft};
 
             var tipPadding = 6;
             var crossLineTipPadding = 2;
@@ -58,9 +60,12 @@ angular.module('argus.services.charts.lineChart', [])
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
+            var isBrushOn = true;
+            var isWheelOn = true;
+
             //graph setup variables
             var x, x2, y, y2, z,
-                nGridX = 10, nGridY = 10,
+                nGridX = 7, nGridY = 5,
                 xAxis, xAxis2, yAxis, yAxis2, xGrid, yGrid,
                 line, line2, area, area2,
                 brush, zoom,
@@ -70,7 +75,7 @@ angular.module('argus.services.charts.lineChart', [])
                 crossline
                 ;
 
-						// Base graph setup
+            // Base graph setup
             function setGraph() {
                 x = d3.scaleTime().range([0, width]);
                 x2 = d3.scaleTime().range([0, width]); //for brush
@@ -78,13 +83,11 @@ angular.module('argus.services.charts.lineChart', [])
                 y2 = d3.scaleLinear().range([height2, 0]);
                 z = d3.scaleOrdinal().range(d3.schemeCategory10);
 
-                nGridX = 7;
-                nGridY = 5;
-
                 //Axis
                 xAxis = d3.axisBottom()
                     .scale(x)
-                    .ticks(nGridX);
+                    .ticks(nGridX)
+                    ;
 
                 xAxis2 = d3.axisBottom() //for brush
                     .scale(x2)
@@ -93,44 +96,39 @@ angular.module('argus.services.charts.lineChart', [])
                 yAxis = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'));
-
-                yAxis2 = d3.axisRight()
-                		.scale(y)
-                    .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'));
+                    .tickFormat(d3.format('.2s'))
+                    ;
 
                 //grid
                 xGrid = d3.axisBottom()
                     .scale(x)
                     .ticks(nGridX)
-                    .tickSizeInner(-height);
+                    .tickSizeInner(-height)
+                    ;
 
                 yGrid = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickSizeInner(-width);
+                    .tickSizeInner(-width)
+                    ;
 
                 //line
                 line = d3.line()
-                    .x(function (d) { return x(d[0]); })
-                    .y(function (d) { return y(d[1]); });
+                    .x(function (d) {
+                        return x(d[0]);
+                    })
+                    .y(function (d) {
+                        return y(d[1]);
+                    });
 
                 //line2 (for brush area)
                 line2 = d3.line()
-                    .x(function (d) { return x2(d[0]); })
-                    .y(function (d) { return y2(d[1]); });
-
-                // line2 + area2 (for brush area)
-                area = d3.area()
-                		.x(function(d) { return x(d[0]); })
-                		.y0(height)
-                		.y1(function(d) { return y(d[1]); });
-
-                area2 = d3.area()
-                		.x(function(d) { return x2(d[0]); })
-                		.y0(height)
-                		.y1(function(d) { return y2(d[1]); });
+                    .x(function (d) {
+                        return x2(d[0]);
+                    })
+                    .y(function (d) {
+                        return y2(d[1]);
+                    });
 
                 //brush
                 brush = d3.brushX()
@@ -151,7 +149,7 @@ angular.module('argus.services.charts.lineChart', [])
                     .attr('id', 'svg')
                     .append('g')
                     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-                		;
+                    ;
 
                 xAxisG = svg.append('g')
                     .attr('class', 'x axis')
@@ -171,6 +169,7 @@ angular.module('argus.services.charts.lineChart', [])
                     .attr('class', 'y grid')
                     .call(yGrid);
 
+
                 // Mouseover/tooltip setup
                 focus = svg.append('g')
                     .attr('class', 'focus')
@@ -185,7 +184,6 @@ angular.module('argus.services.charts.lineChart', [])
                     .append("rect")
                     .attr("width", width)
                     .attr("height", height);
-
                 //brush area
                 context = svg.append("g")
                     .attr("class", "context")
@@ -215,7 +213,7 @@ angular.module('argus.services.charts.lineChart', [])
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
-                ;
+                    ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -239,13 +237,7 @@ angular.module('argus.services.charts.lineChart', [])
             }
 
             setGraph();
-						//graph set up done
-
-
-            //reset the brush area
-            function reset() {
-                d3.selectAll(".brush").call(brush.move, null);
-            }
+//graph set up done====================================================================>
 
             function mousemove() {
                 if (!currSeries || currSeries.length === 0) {
@@ -324,10 +316,28 @@ angular.module('argus.services.charts.lineChart', [])
                     .text(d3.format('.2f')(mouseY));
             }
 
+            //reset the brush area
+            function reset() {
+                svg.selectAll(".brush").call(brush.move, null);
+            }
+
+            //redraw the lines Axises grids
+            function redraw(){
+                //redraw
+                svg.selectAll(".line").attr("d", line);//redraw the line
+                svg.select(".x.axis").call(xAxis);  //redraw xAxis
+                svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                svg.select(".x.grid").call(xGrid);
+                svg.select(".y.grid").call(yGrid);
+                if(!isBrushOn){
+                    svg.select(".context").attr("display", "none");
+                }
+            }
+
             //brushed
             function brushed() {
                 // ignore the case when it is called by the zoomed function
-                if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" || d3.event.sourceEvent.type === "resize")) return;
+                if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "zoom" )) return;
                 var s = d3.event.selection || x2.range();
                 x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
                                                     //invert the x value in brush axis range to the
@@ -335,10 +345,7 @@ angular.module('argus.services.charts.lineChart', [])
 
                 reScaleY(); //rescale domain of y axis
                 //redraw
-                svg.selectAll(".line").attr("d", line);//redraw the line
-                svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                svg.select(".y.axis").call(yAxis);  //redraw yAxis
-
+                redraw();
                 //sync with zoom
                 svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
                     .scale(width / (s[1] - s[0]))
@@ -348,7 +355,7 @@ angular.module('argus.services.charts.lineChart', [])
             //zoomed
             function zoomed() {
                 // ignore the case when it is called by the brushed function
-                if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+                if (d3.event.sourceEvent && (d3.event.sourceEvent.type === "brush" || d3.event.sourceEvent.type === "end") )return;
                 var t = d3.event.transform;
                 x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
                                                     //invert the x value in brush axis range to the
@@ -356,9 +363,7 @@ angular.module('argus.services.charts.lineChart', [])
 
                 reScaleY(); //rescale domain of y axis
                 //redraw
-                svg.selectAll(".line").attr("d", line);//redraw the line
-                svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                redraw();
 
                 // sync the brush
                 context.select(".brush").call
@@ -384,11 +389,6 @@ angular.module('argus.services.charts.lineChart', [])
                     var start = x.domain()[0];
                     var end = new Date(start.getTime() + interval);
                     x.domain([start, end]);
-
-                    //redraw the line&brush
-                    svg.selectAll(".line").attr("d", line);//redraw the line
-                    svg.select(".x.axis").call(xAxis);  //redraw xAxis
-
                     // sync the brush
                     var start2 = x2.range()[0];
                     var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
@@ -412,36 +412,27 @@ angular.module('argus.services.charts.lineChart', [])
 
             //resize
             function resize(){
-                var temp = x.domain(); //remember that when resize
-                containerWidth = $("#" + chartId).width();
-
+                var tempX = x.domain(); //remember that when resize
+                //calculate new size for chart
+                containerWidth = $('#' + chartId).width();
                 width = containerWidth - marginLeft - marginRight;
                 margin = {top: marginTop,
                     right: marginRight,
                     bottom: containerHeight - marginTop - height,
                     left: marginLeft};
-
                 margin2 = {top: containerHeight - height2 - marginBottom,
                     right: marginRight,
                     bottom: marginBottom,
                     left: marginLeft};
 
+                //clear every chart
                 d3.select('svg').remove();
-
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
 
                 //restore the zoom&brush
-                x.domain(temp);
-
-                //redraw the line&brush
-                svg.selectAll(".line").attr("d", line);//redraw the line
-                svg.selectAll(".x.axis").call(xAxis);  //redraw xAxis
-                svg.selectAll(".x.grid").call(xGrid); //redraw the grid
-
-                // restore the brush
                 context.select(".brush").call
-                (brush.move, [x2(temp[0]), x2(temp[1])]);
+                (brush.move, [x2(tempX[0]), x2(tempX[1])]);
             }
 
             //updateGraph
@@ -451,7 +442,6 @@ angular.module('argus.services.charts.lineChart', [])
                 var allDatapoints = [];
                 var names = series.map(function(metric) { return metric.id; });
                 var svg = d3.select('svg').select('g');
-                var svgTransition = d3.select('#' + chartId).transition();
 
                 currSeries = series;
 
@@ -485,23 +475,30 @@ angular.module('argus.services.charts.lineChart', [])
                         .attr('d', line2)
                         .style('stroke', z(metric.id));
                 });
+            }
 
-                svgTransition.select('.x.axis')
-                    .duration(250)
-                    .call(xAxis);
-                svgTransition.select('.y.axis')
-                    .duration(250)
-                    .call(yAxis);
-                svgTransition.select('.x.grid')
-                    .duration(250)
-                    .call(xGrid);
-                svgTransition.select('.y.grid')
-                    .duration(250)
-                    .call(yGrid);
+            //toggle time brush
+            function toggleBrush(){
+                if(isBrushOn){
+                    //disable the brush
+                    svg.select('.context').attr('display', 'none');
+                    isBrushOn = false;
+                }else{
+                    //enable the brush
+                    svg.select('.context').attr('display', null);
+                    isBrushOn = true;
+                }
+            }
 
-                svgTransition.select('.xBrush.axis')
-                    .duration(250)
-                    .call(xAxis2);
+            //toggle the mousewheel for zoom
+            function toggleWheel(){
+                if(isWheelOn){
+                    svg.select(".chartOverlay").on("wheel.zoom", null);
+                    isWheelOn = false;
+                }else{
+                    svg.select(".chartOverlay").call(zoom);
+                    isWheelOn = true;
+                }
             }
 
             // call resize when browser size changes
@@ -522,6 +519,18 @@ angular.module('argus.services.charts.lineChart', [])
 
             d3.select('#oneDay')
                 .on('click', brushMinute(60*24));
+            //toggle
+            d3.select('#toggle-brush')
+                .on('change', toggleBrush);
+
+            d3.select('#toggle-wheel')
+                .on('change', toggleWheel);
+
+            d3.select('#toggle-brush')
+                .attr("checked","true");
+
+            d3.select('#toggle-wheel')
+                .attr("checked","true");
         }
     };
 

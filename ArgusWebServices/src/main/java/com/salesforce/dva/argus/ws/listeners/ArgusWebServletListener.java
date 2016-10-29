@@ -90,7 +90,7 @@ public class ArgusWebServletListener implements ServletContextListener {
             _logger.info("Initializing Argus web services.");
             _system = SystemMain.getInstance();
             _system.start();
-            //_system.getServiceFactory().getManagementService().cleanupRecords();
+            _system.getServiceFactory().getManagementService().cleanupRecords();
             _system.getServiceFactory().getSchedulingService().startAlertScheduling();
             _system.getServiceFactory().getMonitorService().startRecordingCounters();
             _system.getServiceFactory().getWardenService().enableWarden();
