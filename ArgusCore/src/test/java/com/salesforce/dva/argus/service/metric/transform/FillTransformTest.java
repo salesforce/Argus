@@ -457,8 +457,8 @@ public class FillTransformTest {
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
-        expected.put(0L, "100.0");
-        expected.put(2000L, "100.0");
+        expected.put(-1000L, "100.0");
+        expected.put(1000L, "100.0");
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -480,12 +480,33 @@ public class FillTransformTest {
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
-        expected.put(0L, "100.0");
+        expected.put(-1000L, "100.0");
         expected.put(2000L, "100.0");
 
         List<Metric> result = fillTransform.transform(null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test
+    public void testFillLineWithFillRangeZeroAfterSnappingOffsetZero() {
+        Transform fillTransform = new FillTransform();
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1000");
+        constants.add("3000");
+        constants.add("4s");
+        constants.add("0s");
+        constants.add("100.0");
+
+        Map<Long, String> expected = new HashMap<Long, String>();
+
+        expected.put(0L, "100.0");
+
+        List<Metric> result = fillTransform.transform(null, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 

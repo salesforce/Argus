@@ -147,7 +147,7 @@ public abstract class AbstractResource {
     }
 
     /**
-     * Overridden by the context root to describe the available endpoints.  Specific service endpoints should always return null as they will 
+     * Overridden by the context root to describe the available endpoints.  Specific service endpoints should always return null as they will
      * only make available the method help.
      *
      * @return  The list of endpoints for which to make help information available.
