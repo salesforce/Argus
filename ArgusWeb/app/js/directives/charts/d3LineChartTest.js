@@ -137,7 +137,14 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         .scaleExtent([1, Infinity])
                         .translateExtent([[0, 0], [width, height]])
                         .extent([[0, 0], [width, height]])
-                        .on("zoom", zoomed);
+                        .on("zoom", zoomed)
+                        .on("start", function(){
+                            svg.select(".chartOverlay").style("cursor", "move");
+                        })
+                        .on("end", function(){
+                            svg.select(".chartOverlay").style("cursor", "crosshair");
+                        })
+                    ;
 
                     //Add elements to SVG
                     svg = d3.select(element[0]).append('svg')
