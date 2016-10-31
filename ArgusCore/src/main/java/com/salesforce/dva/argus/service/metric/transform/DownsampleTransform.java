@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
@@ -57,7 +57,7 @@ import java.util.TreeMap;
 public class DownsampleTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
-   
+
 	/**
      * Implements down sampling.
      *
@@ -99,23 +99,23 @@ public class DownsampleTransform implements Transform {
 
     /**
      * Creating timestamp for downsampling in order to be consistent with TSDB downsampling func on hour/minute level
-     *      
+     *
      * @param   millitimestamp       original transform timestamp in milliseconds.
      * @param   timeunit  The time unit of down sampling to perform.
      *
      * @return  new timestamp.
      *
      * @throws  UnsupportedOperationException  If an unknown down sampling type is specified.
-     * 
+     *
      * i.e.
      * on hour level, 01:01:30 => 01:00:00
-     * on minute level, 01:01:30 => 01:01:00 
-     * on second level, 01:01:30 => 01:01:30 
+     * on minute level, 01:01:30 => 01:01:00
+     * on second level, 01:01:30 => 01:01:30
      */
     public static Long downsamplerTimestamp(Long millitimestamp, long windowSize) {
     	return millitimestamp-(millitimestamp%windowSize);
     }
-    
+
     //~ Methods **************************************************************************************************************************************
 
     @Override

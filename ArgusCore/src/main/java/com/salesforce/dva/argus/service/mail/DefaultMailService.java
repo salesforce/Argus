@@ -137,6 +137,7 @@ public class DefaultMailService extends DefaultService implements MailService {
                 transport.sendMessage(message, message.getAllRecipients());
                 _logger.info("Sent email having subject '{}' to {}.", subject, to);
             } catch (Exception ex) {
+		_logger.error("MailService: Failed to send an email notification.", ex);
                 throw new SystemException("Failed to send an email notification.", ex);
             }
         } else {
