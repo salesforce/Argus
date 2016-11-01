@@ -32,7 +32,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var marginTop = 20,
                 marginBottom = 50,
                 marginLeft = 40,
-                marginRight = 20;
+                marginRight = 40;
 
             var width = containerWidth - marginLeft - marginRight;
             var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
@@ -63,10 +63,10 @@ angular.module('argus.directives.charts.lineChart', [])
             //graph setup variables
             var x, x2, y, y2, z,
                 nGridX = 7, nGridY = 5,
-                xAxis, xAxis2, yAxis, yAxis2, xGrid, yGrid,
+                xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
                 line, line2, area, area2,
                 brush, zoom,
-                svg, xAxisG, xAxisG2, yAxisG, xGridG, yGridG, //g
+                svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                 focus, context, clip, brushG, chartRect, //g
                 tip, tipBox, tipItems,
                 crossline
@@ -91,6 +91,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     .ticks(nGridX);
 
                 yAxis = d3.axisLeft()
+                    .scale(y)
+                    .ticks(nGridY)
+                    .tickFormat(d3.format('.2s'))
+                    ;
+
+                yAxisR = d3.axisRight()
                     .scale(y)
                     .ticks(nGridY)
                     .tickFormat(d3.format('.2s'))
@@ -137,7 +143,14 @@ angular.module('argus.directives.charts.lineChart', [])
                     .scaleExtent([1, Infinity])
                     .translateExtent([[0, 0], [width, height]])
                     .extent([[0, 0], [width, height]])
-                    .on("zoom", zoomed);
+                    .on("zoom", zoomed)
+                    .on("start", function(){
+                        svg.select(".chartOverlay").style("cursor", "move");
+                    })
+                    .on("end", function(){
+                        svg.select(".chartOverlay").style("cursor", "crosshair");
+                    })
+                    ;
 
                 //Add elements to SVG
                 svg = d3.select('#' + chartId).append('svg')
@@ -156,6 +169,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxisG = svg.append('g')
                     .attr('class', 'y axis')
                     .call(yAxis);
+
+                yAxisRG = svg.append('g')
+                    .attr('class', 'y axis')
+                    .attr('transform', 'translate(' + width + ')')
+                    .call(yAxisR);
 
                 xGridG = svg.append('g')
                     .attr('class', 'x grid')
@@ -184,7 +202,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 //brush area
                 context = svg.append("g")
                     .attr("class", "context")
-                    .attr("transform", "translate(0," + (height + margin.top + 10) + ")");
+                    // .attr("transform", "translate(0," + (height + margin.top + 10) + ")");
+                    .attr("transform", "translate(0," + margin2.top + ")");
 
                 //set brush area axis
                 xAxisG2 = context.append("g")
@@ -288,7 +307,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
                     }
                     var tipBounds = group.node().getBBox();
-                    tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
+                    // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
+                    tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
                     tipBox.attr('x', tipBounds.x - tipPadding);
                     tipBox.attr('y', tipBounds.y - tipPadding);
                     tipBox.attr('width', tipBounds.width + 2*tipPadding);
@@ -323,11 +343,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg.selectAll(".line").attr("d", line);//redraw the line
                 svg.select(".x.axis").call(xAxis);  //redraw xAxis
                 svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                svg.select(".y.axis:nth-child(3)").call(yAxisR); //redraw yAxis right
                 svg.select(".x.grid").call(xGrid);
                 svg.select(".y.grid").call(yGrid);
                 if(!isBrushOn){
                     svg.select(".context").attr("display", "none");
                 }
+                updateDateRange();
             }
 
             //brushed
@@ -436,7 +458,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (!series) return;
 
                 var allDatapoints = [];
-                var names = series.map(function(metric) { return metric.id; });
+                var names = series.map(function(metric) {
+                    return metric.name;
+                });
+                var colors = series.map(function(metric) {
+                    return metric.color;
+                });
+
                 var svg = d3.select('svg').select('g');
 
                 currSeries = series;
@@ -495,6 +523,14 @@ angular.module('argus.directives.charts.lineChart', [])
                     svg.select(".chartOverlay").call(zoom);
                     isWheelOn = true;
                 }
+            }
+
+            //date range
+            function updateDateRange(){
+                var start = formatDate(x.domain()[0]);
+                var end = formatDate(x.domain()[1]);
+                var str = "Date range: [" + start + " - " + end + "]";
+                d3.select('#date-range').text(str);
             }
 
 
