@@ -49,7 +49,7 @@ angular.module('argus', [
   'argus.directives.controls.submit',
   'argus.directives.controls.text',
   'argus.directives.charts.chart',
-  'argus.directives.charts.d3LineChart',
+  'argus.directives.charts.lineChart',
   'argus.directives.charts.d3LineChartTest',
   'argus.directives.charts.flags',
   'argus.directives.charts.heatmap',
@@ -68,6 +68,7 @@ angular.module('argus', [
   $http.get('js/templates/dashboard-list.html', {cache: $templateCache});
   $http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
   $http.get('js/templates/viewmetrics.html', {cache: $templateCache});
+  $http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
 }]);
 
 // Services
@@ -79,7 +80,6 @@ angular.module('argus.services', [
   'argus.services.auth',
   'argus.services.batches',
   'argus.services.breadcrumbs',
-  'argus.services.charts.lineChart',
   'argus.services.charts.options',
   'argus.services.charts.rendering',
   'argus.services.charts.tools',
