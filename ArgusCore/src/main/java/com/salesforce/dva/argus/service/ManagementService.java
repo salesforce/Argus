@@ -116,7 +116,14 @@ public interface ManagementService extends Service {
     /** @see  SchedulingService#disableScheduling() */
     void disableScheduling();
 
-    /** Perform clean up of the database. Delete alerts that have been marked for deletion, expired Audit and History records etc. */
+    /** Perform clean up of the database. Delete expired Audit and History records etc. */
     void cleanupRecords();
+
+    /**
+     * Cleans up alerts that have been marked for deletion.
+     *  
+     * @param limit	 The maximun number of alerts to delete. 
+     */
+	void cleanupDeletedAlerts(int limit);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

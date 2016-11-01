@@ -195,7 +195,12 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     overflow: scroll;
 }
 
-/* D3 styles */
+/* chart styles */
+
+/* main elements */
+.chartContainer {padding-top:1em; border:solid 1px lightgrey; border-radius:5px;}
+.lineChartToolbar {margin-left:3em;}
+
 .axis path,
 .axis line {
   fill: none;
@@ -222,6 +227,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 }
 
 .chartOverlay {
+  stroke: #CCC;
   fill: none;
   pointer-events: all;
   cursor: crosshair;
@@ -257,6 +263,9 @@ g.legend-items text .value {
   stroke-dasharray: 3,3; /* dotted line*/
 }
 
+.tick line {stroke: lightgrey;}
+.tick text {fill:#606060;}
+
 .grid line{
   stroke: lightgrey; /* grid line */
   opacity: 0.7;
@@ -266,7 +275,7 @@ g.legend-items text .value {
   visibility: hidden;
 }
 .grid path {
-  stroke-width: 0;
+  stroke:white;
 }
 .date-range{
   float: right;

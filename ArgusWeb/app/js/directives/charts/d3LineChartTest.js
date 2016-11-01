@@ -19,19 +19,20 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
                 // Layout parameters
-                var containerHeight = 500;
+                var containerHeight = 300;
                 var containerWidth = element.parent().width();
-                var mainChartRatio = 0.6 //ratio of height
+                var brushHeightFactor = 10;
+                var mainChartRatio = 0.8 //ratio of height
                     , tipBoxRatio = 0.2
                     , brushChartRatio = 0.2;
                 var marginTop = 20,
-                    marginBottom = 100,
+                    marginBottom = 50,
                     marginLeft = 40,
                     marginRight = 40;
 
                 var width = containerWidth - marginLeft - marginRight;
                 var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
-                var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio);
+                var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
                 var margin = {top: marginTop,
                               right: marginRight,
                               bottom: containerHeight - marginTop - height,
@@ -58,8 +59,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //graph setup variables
                 var x, x2, y, y2, z,
                     nGridX = 10, nGridY = 10,
-                    xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
-                    line, line2,
+                    xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
+                    line, line2, area, area2,
                     brush, zoom,
                     svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                     focus, context, clip, brushG, chartRect, //g
@@ -198,8 +199,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     //brush area
                     context = svg.append("g")
                         .attr("class", "context")
+                        //.attr("transform", "translate(0," + -(marginTop/2) + ")");
                         .attr("transform", "translate(0," + margin2.top + ")");
-
                     //set brush area axis
                     xAxisG2 = context.append("g")
                         .attr("class", "xBrush axis")
@@ -303,6 +304,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                             circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
                         }
                         var tipBounds = group.node().getBBox();
+                        //tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
                         tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
                         tipBox.attr('x', tipBounds.x - tipPadding);
                         tipBox.attr('y', tipBounds.y - tipPadding);

@@ -50,8 +50,11 @@ import com.salesforce.dva.argus.service.WardenService.PolicyCounter;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.slf4j.Logger;
+
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -272,9 +275,18 @@ public class DefaultManagementService extends DefaultService implements Manageme
         _logger.info("Performing database clean up.");
         _historyService.deleteExpiredHistory();
         _auditService.deleteExpiredAudits();
-        for (Alert alert : _alertService.findAlertsMarkedForDeletion()) {
-            _alertService.deleteAlert(alert);
-        }
+    }
+    
+    @Override
+    @Transactional
+    public void cleanupDeletedAlerts(int limit) {
+    	requireNotDisposed();
+    	_logger.info("Deleting {} alerts which are marked for deletion.", limit);
+    	List<Alert> alerts = _alertService.findAlertsMarkedForDeletion(limit);
+    	for(Alert alert : alerts) {
+    		_alertService.deleteAlert(alert);
+    	}
+    	_logger.info("Deleted {} alerts,", alerts.size());
     }
 
     @Override
