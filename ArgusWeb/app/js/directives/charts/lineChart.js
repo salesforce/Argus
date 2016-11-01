@@ -11,6 +11,8 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
 
+            // add $scope for clicks
+
         },
         // compile: function (iElement, iAttrs, transclude) {},
         link: function(scope, element, attributes) {

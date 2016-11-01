@@ -7,12 +7,8 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         // empty any previous content
         $("#" + newChartId).empty();
 
-        // LineChartService.render(newChartId, series);
-
-        // -----------------
-
         // create a new scope to pass to compiled line-chart directive
-        var lineChartScope = scope.$new(false);
+        var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
         // assign chartId, series data to new $scope
         lineChartScope.chartId = newChartId;
@@ -20,11 +16,6 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
 
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series"></line-chart>')(lineChartScope) );
-
-        // var x = '<line-chart data="data"></line-chart>';
-        // $compile(x)(scope);
-        // element.append(x);
-        // $compile(element.contents())(scope);
     }
 
     // TODO: below functions 'should' be refactored to the chart services.
