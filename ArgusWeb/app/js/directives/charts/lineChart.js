@@ -1,26 +1,23 @@
-angular.module('argus.services.charts.lineChart', [])
-.service('LineChartService', function() {
-	'use strict';
+angular.module('argus.directives.charts.lineChart', [])
+.directive('lineChart', [function() {
 
-	var service = {
-		generateTopToolBar: function(chartId) {
-			if (!chartId) return;
+    return {
+        restrict: 'E',
+        replace: true,
+        scope: {
+            chartId: '=chartid',
+            series: '=series'
+        },
+        templateUrl: 'js/templates/charts/topToolbar.html',
+        controller: function ($scope) {
 
-			var toolBarHTML =
-				'<div id="toolBar-' + chartId +'" class="lineChartToolbar">' +
-					'<button id="reset" class="glyphicon glyphicon-refresh"></button>' +
-					'<button id="oneHour">1h</button>' +
-					'<button id="oneDay">1d</button>' +
-                    '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
-                    '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
-				'</div>'
+            // add $scope for clicks
 
-			// add toolBar to page
-			$("#" + chartId).prepend(toolBarHTML);
-		},
-
-		render: function(chartId, series) {
-            if (!chartId || !series) return;
+        },
+        // compile: function (iElement, iAttrs, transclude) {},
+        link: function(scope, element, attributes) {
+            var chartId = scope.chartId;
+            var series = scope.series;
 
             var currSeries = series;
 
@@ -237,7 +234,6 @@ angular.module('argus.services.charts.lineChart', [])
             }
 
             setGraph();
-//graph set up done====================================================================>
 
             function mousemove() {
                 if (!currSeries || currSeries.length === 0) {
@@ -501,15 +497,15 @@ angular.module('argus.services.charts.lineChart', [])
                 }
             }
 
+
             // call resize when browser size changes
             d3.select(window).on('resize', resize);
 
             // Update graph on new metric results
             updateGraph(series);
 
-            // generate HTML toolbar
-            this.generateTopToolBar(chartId);
 
+            // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
             d3.select('#reset')
                 .on('click', reset);
@@ -533,6 +529,4 @@ angular.module('argus.services.charts.lineChart', [])
                 .attr("checked","true");
         }
     };
-
-    return service;
-});
+}]);
