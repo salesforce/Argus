@@ -231,7 +231,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return findEntitiesMarkedForDeletion(emf.get(), Alert.class, -1);
 	}
-	
+
 	@Override
 	@Transactional
 	public List<Alert> findAlertsMarkedForDeletion(final int limit) {
@@ -294,12 +294,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		int failedNotificationsCount = 0;
 		String logMessage = null;
 		long jobEndTime = 0;
-		
+
 		List<BigInteger> alertIds = new ArrayList<>(alertIdWithTimestampList.size());
 		for(AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
 			alertIds.add(alertIdWithTimestamp.alertId);
 		}
-		
+
 		List<Alert> alerts = findAlertsByPrimaryKeys(alertIds);
 		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
 		for(Alert alert : alerts) {
@@ -319,7 +319,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn(logMessage);
 				continue;
 			}
-			
+
 			if(!alert.isEnabled()) {
 				logMessage = MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alertId);
 				_logger.warn(logMessage);
@@ -370,7 +370,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					appendMessageNUpdateHistory(history.getId(), ex.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
 					_logger.warn("Failed to evaluate alert : {}. Reason: {}", alert, ex.getMessage());
 				} finally {
-					sendEmailToAdmin(alert, alertId, ex);
+					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+						sendEmailToAdmin(alert, alertId, ex);
+					}
 				}
 			} finally {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
@@ -472,7 +474,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notification.setActive(true);
 		notification.setFiredTrigger(trigger);
 		notification = mergeEntity(em, notification);
-		
+
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric.getIdentifier());
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
@@ -539,7 +541,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private void sendEmailToAdmin(Alert alert, BigInteger alertId, Throwable ex) {
 		Set<String> to = new HashSet<>();
 
-		to.add(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.ADMIN_EMAIL));
+		to.add(_configuration.getValue(SystemConfiguration.Property.ADMIN_EMAIL));
 
 		String subject = "Alert evaluation failure notification.";
 		StringBuilder message = new StringBuilder();
@@ -606,7 +608,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
-		
+
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
 			Map<Long, String> datapoints = new HashMap<>();
@@ -617,7 +619,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
 		}
-		
+
 		try {
 			_tsdbService.putMetrics(metricsAlertScheduled);
 		} catch (Exception ex) {
@@ -747,9 +749,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				return e1.getKey().compareTo(e2.getKey());
 			}
 		});
-		
+
 		int endIndex=sortedDatapoints.size();
-		
+
 		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0;startIndex--){
 			if(Trigger.evaluateTrigger(trigger, new Double(sortedDatapoints.get(startIndex).getValue()))){
 				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
@@ -1038,7 +1040,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setTriggeredMetric(String triggeredMetric) {
 			this.triggeredMetric = triggeredMetric;
 		}
-		
+
 	}
 
 }
