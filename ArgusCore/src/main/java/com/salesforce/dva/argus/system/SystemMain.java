@@ -135,6 +135,7 @@ public final class SystemMain extends SystemService {
             _dispose(_serviceFactory.getMQService());
             _dispose(_serviceFactory.getSchemaService());
             _dispose(_serviceFactory.getTSDBService());
+            _dispose(_serviceFactory.getCacheService());
             _persistService.stop();
             _log.info("{} stopped.", getName());
         } catch (Exception ex) {

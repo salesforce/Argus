@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.directives.controls.date', [])
 .directive('agDate', ['CONFIG', '$routeParams', function(CONFIG, $routeParams) {
     return {
@@ -15,7 +17,8 @@ angular.module('argus.directives.controls.date', [])
                     $scope.ctrlVal = $routeParams[prop];
                     // remove GMT from page refreshing
                     if( $scope.ctrlVal.indexOf('GMT') >= 0){
-                        $scope.ctrlVal = $scope.ctrlVal.replace('GMT','');
+                        $scope.ctrlVal = $scope.ctrlVal.replace('GMT','').trim();
+                        $scope.GMTon = true;
                     }
                 }
             }
@@ -36,27 +39,27 @@ angular.module('argus.directives.controls.date', [])
                 '<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
                     '<input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal">' +
                 '</a>' +
-                '<label class="GMT-select">GMT: <input type="checkbox" ng-model="GMTon" ng-init="GMTon=true"></label>' +
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' +
                     '<datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker>' +
                 '</ul>' +
-            '</div>',
+            '</div>' +
+            '<label class="GMT-select">GMT: <input type="checkbox" ng-model="GMTon" ng-checked="GMTon || (ctrlVal[0] === \'-\')" ng-disabled="ctrlVal[0] === \'-\'"></label>',
         link: function(scope, element, attributes, dashboardCtrl) {
-            dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agDate");
+            dashboardCtrlUpdateControlGMTHelper(scope.ctrlVal, scope.GMTon);
             scope.$watch('ctrlVal', function(newValue, oldValue) {
-                if (scope.GMTon) {
-                    dashboardCtrl.updateControl(scope.controlName, newValue + " GMT", "agDate", true);
-                } else {
-                    dashboardCtrl.updateControl(scope.controlName, newValue, "agDate", true);
-                }
+                dashboardCtrlUpdateControlGMTHelper(newValue, scope.GMTon);
             });
             scope.$watch('GMTon', function(newValue, oldValue) {
-                if (newValue) {
-                    dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal + " GMT", "agDate", true);
-                } else {
-                    dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agDate", true);
-                }
+                dashboardCtrlUpdateControlGMTHelper(scope.ctrlVal, newValue);
             });
+
+            function dashboardCtrlUpdateControlGMTHelper(controlValue, GMTon) {
+                if (GMTon) {
+                    dashboardCtrl.updateControl(scope.controlName, controlValue + " GMT", "agDate", true);
+                } else {
+                    dashboardCtrl.updateControl(scope.controlName, controlValue, "agDate", true);
+                }
+            }
         }
-    }
+    };
 }]);

@@ -63,11 +63,9 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
     //~ Instance fields ******************************************************************************************************************************
 
+    private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final SystemConfiguration _config;
-    private final Set<HostAndPort> jedisClusterNodes;
-    private Logger _logger = LoggerFactory.getLogger(getClass());
-    private GenericObjectPoolConfig poolConfig;
-    private JedisCluster jc;
+    private JedisCluster _jedisClusterClient;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -80,19 +78,19 @@ public class RedisCacheService extends DefaultService implements CacheService {
     public RedisCacheService(SystemConfiguration config) {
     	super(config);
         _config = config;
-        poolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
         poolConfig.setMaxTotal(Integer.parseInt(
                 _config.getValue(Property.REDIS_SERVER_MAX_CONNECTIONS.getName(), Property.REDIS_SERVER_MAX_CONNECTIONS.getDefaultValue())));
 
         String[] hostsPorts = _config.getValue(Property.REDIS_CLUSTER.getName(), Property.REDIS_CLUSTER.getDefaultValue()).split(",");
 
-        jedisClusterNodes = new HashSet<HostAndPort>();
+        Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
         for (String hostPort : hostsPorts) {
             String[] hostPortPair = hostPort.split(":");
 
             jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
         }
-        jc = new JedisCluster(jedisClusterNodes, poolConfig);
+        _jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -101,7 +99,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public <V> V get(String key) {
         V returnValue = null;
-        returnValue = (V) jc.get(key);
+        returnValue = (V) _jedisClusterClient.get(key);
         return returnValue;
     }
 
@@ -125,8 +123,8 @@ public class RedisCacheService extends DefaultService implements CacheService {
     public <V> void put(String key, V value, int ttl) {
 
     	try {
-            jc.set(key, (String) value);
-            jc.expire(key, ttl);
+            _jedisClusterClient.set(key, (String) value);
+            _jedisClusterClient.expire(key, ttl);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
         }
@@ -141,7 +139,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
     @Override
     public <V> void expire(String key, int ttl) {
-        jc.expire(key, ttl);
+        _jedisClusterClient.expire(key, ttl);
     }
 
     @Override
@@ -153,7 +151,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
     @Override
     public void clear() {
-        Iterator<JedisPool> poolIterator = jc.getClusterNodes().values().iterator();
+        Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
 
         while (poolIterator.hasNext()) {
             JedisPool pool = poolIterator.next();
@@ -172,7 +170,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public boolean exist(String key) {
         boolean isKeyExisting = false;
-        isKeyExisting = jc.exists(key);
+        isKeyExisting = _jedisClusterClient.exists(key);
         return isKeyExisting;
     }
 
@@ -189,7 +187,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public Set<String> getKeysByPattern(String pattern) {
         Set<String> keysMatched = new TreeSet<String>();
-        Iterator<JedisPool> poolIterator = jc.getClusterNodes().values().iterator();
+        Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
 
         while (poolIterator.hasNext()) {
             JedisPool pool = poolIterator.next();
@@ -214,7 +212,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public void delete(String key) {
         try {
-            jc.del(key);
+            _jedisClusterClient.del(key);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
         }
@@ -230,7 +228,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public <V> void append(String key, V value) {
         try {
-            jc.rpush(key, (String) value);
+            _jedisClusterClient.rpush(key, (String) value);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
         }
@@ -242,7 +240,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
         List<V> returnValue = null;
 
         try {
-            returnValue = (List<V>) jc.lrange(key, startOffset, endOffset);
+            returnValue = (List<V>) _jedisClusterClient.lrange(key, startOffset, endOffset);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
             returnValue = null;
@@ -254,7 +252,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     public <V> void append(String key, V value, int ttl) {
         try {
             append(key, value);
-            jc.expire(key, ttl);
+            _jedisClusterClient.expire(key, ttl);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
         }
@@ -289,6 +287,12 @@ public class RedisCacheService extends DefaultService implements CacheService {
                     serviceProps.put(property.getName(), property.getDefaultValue());
             }
             return serviceProps;
+    }
+    
+    @Override
+    public void dispose() {
+    	super.dispose();
+    	_jedisClusterClient.close();
     }
 
     //~ Enums ****************************************************************************************************************************************
