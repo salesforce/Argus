@@ -128,7 +128,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
 
         MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
         try {
-            List<Metric> results = reader.parse(query.getExpression(), query.getOffset(), Metric.class);
+            List<Metric> results = reader.parse(query.getExpression(), query.getRelativeTo(), Metric.class);
             query.setStatus(Status.DONE);
             if (results.size() != 0) {
                 query.setResult(results.get(0));
@@ -232,12 +232,12 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         try {
             Map<String, Object> queryData = MAPPER.readValue(json, Map.class);
             String expression = (String) queryData.get("expression");
-            long offset = Long.valueOf(queryData.get("offset").toString());
+            long relativeTo = Long.valueOf(queryData.get("relativeTo").toString());
             BatchMetricQuery.Status status = BatchMetricQuery.Status.fromInt((Integer) queryData.get("status"));
             String message = (String) queryData.get("message");
             String metricJson = (String) queryData.get("metric");
             Metric result = MAPPER.readValue(metricJson, Metric.class);
-            return new AsyncBatchedMetricQuery(expression, offset, batchId, index, status, result, message);
+            return new AsyncBatchedMetricQuery(expression, relativeTo, batchId, index, status, result, message);
         } catch (IOException ex) {
             throw new SystemException(ex);
         }
@@ -247,7 +247,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         Map<String,Object> queryData = new HashMap<>();
         try {
             queryData.put("expression", query.getExpression());
-            queryData.put("offset", query.getOffset());
+            queryData.put("relativeTo", query.getRelativeTo());
             queryData.put("index", query.getIndex());
             queryData.put("batchId", query.getBatchId());
             queryData.put("status", query.getStatus().toInt());

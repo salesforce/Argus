@@ -89,7 +89,6 @@ public class AlertServiceIT extends AbstractTest {
 			Metric metric = createMetric(scope, metricName, triggerMinValue, inertiaPeriod, startTime, tagName, tagValue);
 
 			tsdbService.putMetrics(Arrays.asList(new Metric[] { metric }));
-			Thread.sleep(2000);
 
 			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", expression.toString(), "* * * * *");
 			Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
@@ -99,12 +98,14 @@ public class AlertServiceIT extends AbstractTest {
 			alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
 			alert.setNotifications(Arrays.asList(new Notification[] { notification }));
 			notification.setTriggers(alert.getTriggers());
+			alert.setEnabled(true);
 			alert = alertService.updateAlert(alert);
 			for (int i = 0; i < expectedNotifications; i++) {
 				for (int j = 0; j < 1 + random.nextInt(5); j++) {
 					alertService.enqueueAlerts(Arrays.asList(new Alert[] { alert }));
 				}
-				alertService.executeScheduledAlerts(10, 100);
+				Thread.sleep(2000);
+				alertService.executeScheduledAlerts(10, 1000);
 				try {
 					Thread.sleep(2 * cooldownPeriod);
 				} catch (InterruptedException e) {
@@ -152,7 +153,6 @@ public class AlertServiceIT extends AbstractTest {
 			metric2.setDatapoints(dps2);
 			metric2.setTag(tagName, tagValue2);
 			tsdbService.putMetrics(Arrays.asList(new Metric[] { metric1, metric2 }));
-			Thread.sleep(2000);
 
 			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", expression.toString(), "* * * * *");
 			Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
@@ -161,10 +161,12 @@ public class AlertServiceIT extends AbstractTest {
 			alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
 			alert.setNotifications(Arrays.asList(new Notification[] { notification }));
 			notification.setTriggers(alert.getTriggers());
+			alert.setEnabled(true);
 			alert = alertService.updateAlert(alert);
 			for (int i = 0; i < expectedNotifications; i++) {
 				alertService.enqueueAlerts(Arrays.asList(new Alert[] { alert }));
-				alertService.executeScheduledAlerts(10, 100);
+				Thread.sleep(2000);
+				alertService.executeScheduledAlerts(10, 1000);
 			}
 
 			AuditNotifier dbNotifier = AuditNotifier.class.cast(alertService.getNotifier(SupportedNotifier.DATABASE));
