@@ -12,7 +12,7 @@ public class AsyncBatchedMetricQuery implements Serializable {
     //~ Instance fields ******************************************************************************************************************************
 
     private String _expression;
-    private long _offset;
+    private long _relativeTo;
     private String _batchId;
     private int _index;
     private Status _status;
@@ -21,18 +21,18 @@ public class AsyncBatchedMetricQuery implements Serializable {
 
     //~ Constructors *********************************************************************************************************************************
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, int index) {
+    public AsyncBatchedMetricQuery(String expression, long relativeTo, String batchId, int index) {
         _expression = expression;
-        _offset = offset;
+        _relativeTo = relativeTo;
         _batchId = batchId;
         _index = index;
         _status = Status.QUEUED;
     }
 
-    public AsyncBatchedMetricQuery(String expression, long offset, String batchId, int index,
+    public AsyncBatchedMetricQuery(String expression, long relativeTo, String batchId, int index,
                                    Status status, Metric result, String message) {
         _expression = expression;
-        _offset = offset;
+        _relativeTo = relativeTo;
         _batchId = batchId;
         _index = index;
         _status = status;
@@ -54,12 +54,12 @@ public class AsyncBatchedMetricQuery implements Serializable {
         _expression = expression;
     }
 
-    public long getOffset() {
-        return _offset;
+    public long getRelativeTo() {
+        return _relativeTo;
     }
 
-    public void setOffset(long offset) {
-        _offset = offset;
+    public void setRelativeTo(long relativeTo) {
+        _relativeTo = relativeTo;
     }
 
     public String getBatchId() {

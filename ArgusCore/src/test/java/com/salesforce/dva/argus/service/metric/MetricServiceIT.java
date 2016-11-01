@@ -52,7 +52,7 @@ import static org.junit.Assert.*;
 public class MetricServiceIT extends AbstractTest {
 
     @Test
-    public void testGetMetricsWithOffset() throws InterruptedException {
+    public void testGetMetricsRelativeTo() throws InterruptedException {
         MetricService metricService = system.getServiceFactory().getMetricService();
         TSDBService tsdbService = system.getServiceFactory().getTSDBService();
 
@@ -72,12 +72,11 @@ public class MetricServiceIT extends AbstractTest {
             tsdbService.putMetrics(Arrays.asList(new Metric[] { m }));
             Thread.sleep(5 * 1000);
 
-            List<Metric> metrics = metricService.getMetrics((currentTime - 10000000) +
-                MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()), 0);
-
+            List<Metric> metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()), currentTime);
             assertTrue(metrics.size() == 0 || metrics.get(0).getDatapoints().size() == 0);
-            metrics = metricService.getMetrics((currentTime - 10000000) + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()),
-                -10000000);
+            
+            metrics = metricService.getMetrics("-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric()),
+                (currentTime - 10000000));
             assertTrue(_datapointsBetween(metrics.get(0).getDatapoints(), currentTime - 20000000, System.currentTimeMillis() - 10000000));
         } finally {
             metricService.dispose();
