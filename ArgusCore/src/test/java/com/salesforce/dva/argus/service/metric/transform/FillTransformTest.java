@@ -429,6 +429,7 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
@@ -452,6 +453,7 @@ public class FillTransformTest {
         constants.add("2s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
@@ -474,6 +476,7 @@ public class FillTransformTest {
         constants.add("3s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
@@ -488,7 +491,9 @@ public class FillTransformTest {
 
     @Test
     public void testMinusTimestamp_1() {
-        Transform fillTransform = new FillTransform();
+    	long now = System.currentTimeMillis();
+    	
+    	Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
         constants.add("-1d");
@@ -496,9 +501,10 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
+        constants.add(String.valueOf(now));
 
-        Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
-        Long expectedEndTimestamp = System.currentTimeMillis() - 12L * 3600L * 1000L;
+        Long expectedStartTimestamp = now - 1L * 86400L * 1000L;
+        Long expectedEndTimestamp = now - 12L * 3600L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -514,6 +520,8 @@ public class FillTransformTest {
 
     @Test
     public void testMinusTimestamp_2() {
+    	long now = System.currentTimeMillis();
+    	
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
@@ -522,8 +530,8 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
-
-        long now = System.currentTimeMillis();
+        constants.add(String.valueOf(now));
+        
         Long expectedStartTimestamp = now - 7L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 0L * 60L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
@@ -549,6 +557,7 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = System.currentTimeMillis();

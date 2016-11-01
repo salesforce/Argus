@@ -64,7 +64,7 @@ public class NotifierTest extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo", "scope:metric");
         int count = 1 + random.nextInt(5);
 
         for (int i = 0; i < count; i++) {
