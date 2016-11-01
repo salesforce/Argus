@@ -14,6 +14,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             '<button id="oneDay">1d</button>' +
             '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
             '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
+            '<span id="date-range" class="date-range">Date Range: {{}} </span>' +
             '</div>',
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
@@ -346,6 +347,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     if(!isBrushOn){
                         svg.select(".context").attr("display", "none");
                     }
+                    updateDateRange();
                 }
 
                 //brushed
@@ -476,6 +478,9 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     x2.domain(x.domain());
                     y2.domain(y.domain());
 
+                    //update date range
+                    updateDateRange();
+
                     svg.selectAll('.line').remove();
                     svg.selectAll('.brushLine').remove();
 
@@ -517,6 +522,14 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         svg.select(".chartOverlay").call(zoom);
                         isWheelOn = true;
                     }
+                }
+
+                //date range
+                function updateDateRange(){
+                    var start = formatDate(x.domain()[0]);
+                    var end = formatDate(x.domain()[1]);
+                    var str = "Date range: [" + start + " - " + end + "]";
+                    d3.select('#date-range').text(str);
                 }
 
                 //button set up
