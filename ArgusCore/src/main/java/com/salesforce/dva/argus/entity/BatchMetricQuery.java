@@ -30,7 +30,7 @@ public class BatchMetricQuery implements Serializable {
 
     //~ Constructors *********************************************************************************************************************************
 
-    public BatchMetricQuery(List<String> expressions, long offset, int ttl, String ownerName) {
+    public BatchMetricQuery(List<String> expressions, long relativeTo, int ttl, String ownerName) {
         _status = Status.QUEUED;
         _ttl = ttl;
         _createdDate = System.currentTimeMillis();
@@ -38,7 +38,7 @@ public class BatchMetricQuery implements Serializable {
         _ownerName = ownerName;
         _queries = new ArrayList<>(expressions.size());
         for (int i = 0; i < expressions.size(); i++) {
-            _queries.add(new AsyncBatchedMetricQuery(expressions.get(i), offset, _batchId, i));
+            _queries.add(new AsyncBatchedMetricQuery(expressions.get(i), relativeTo, _batchId, i));
         }
     }
 
