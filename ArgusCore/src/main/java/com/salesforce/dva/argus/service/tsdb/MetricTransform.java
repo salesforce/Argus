@@ -43,12 +43,13 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
-import com.salesforce.dva.argus.service.TSDBService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -67,90 +68,180 @@ class MetricTransform {
 
     //~ Inner Classes ********************************************************************************************************************************
 
+    /*
+    public static void main(String args[]) {
+    	
+    	ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+
+        module.addSerializer(Metric.class, new MetricTransform.Serializer());
+        module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
+        mapper.registerModule(module);
+        
+        String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000B\"],\"dps\":{\"1477386300\":8.006441472E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000C\"],\"dps\":{\"1477386300\":3.309366528E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000D\"],\"dps\":{\"1477386300\":1.300514304E10}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000E\"],\"dps\":{\"1477386300\":2.38351872E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000F\"],\"dps\":{\"1477386300\":9.868027904E9,\"1477386360\":1.851240448E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000011\"],\"dps\":{\"1477386300\":6.21617024E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000012\"],\"dps\":{\"1477386300\":6.798724608E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000013\"],\"dps\":{\"1477386300\":1.0080017408E10,\"1477386360\":4.912295936E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000003350\"],\"dps\":{\"1477386300\":1.528459264E9,\"1477386360\":4.78055232E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-6-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621D\"],\"dps\":{\"1477386300\":3.221302784E9,\"1477386360\":3.025265152E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621E\"],\"dps\":{\"1477386300\":2.402182656E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621F\"],\"dps\":{\"1477386300\":7.01328128E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000006220\"],\"dps\":{\"1477386300\":9.165336576E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C20F\"],\"dps\":{\"1477386300\":3.70932896E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C423\"],\"dps\":{\"1477386300\":6.170502656E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C434\"],\"dps\":{\"1477386300\":3.12518176E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C43A\"],\"dps\":{\"1477386300\":4.6273376E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C50F\"],\"dps\":{\"1477386300\":2.01913376E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C57D\"],\"dps\":{\"1477386300\":6.907629056E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-6-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C5BB\"],\"dps\":{\"1477386300\":5.9191936E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C5CC\"],\"dps\":{\"1477386300\":5.955135488E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C786\"],\"dps\":{\"1477386300\":5.228676608E9}}]";
+        
+        try {
+			ResultSet set = mapper.readValue(content, new TypeReference<ResultSet>() { });
+			List<Metric> metrics = set.getMetrics();
+			int i = 0;
+			
+			System.out.println(metrics.size());
+			for(Metric metric : metrics) {
+				if(metric != null) {
+					System.out.println("Metric" + ++i + " ==== " + metric);
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    }
+    
+    
+    public static void main(String[] args) {
+    	ObjectMapper mapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+
+        module.addSerializer(Metric.class, new MetricTransform.Serializer());
+        module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
+        mapper.registerModule(module);
+        
+        //String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000B\"],\"dps\":{\"1477386300\":8.006441472E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000C\"],\"dps\":{\"1477386300\":3.309366528E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000D\"],\"dps\":{\"1477386300\":1.300514304E10}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000E\"],\"dps\":{\"1477386300\":2.38351872E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000F\"],\"dps\":{\"1477386300\":9.868027904E9,\"1477386360\":1.851240448E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000011\"],\"dps\":{\"1477386300\":6.21617024E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws2-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000012\"],\"dps\":{\"1477386300\":6.798724608E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000013\"],\"dps\":{\"1477386300\":1.0080017408E10,\"1477386360\":4.912295936E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000003350\"],\"dps\":{\"1477386300\":1.528459264E9,\"1477386360\":4.78055232E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-6-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621D\"],\"dps\":{\"1477386300\":3.221302784E9,\"1477386360\":3.025265152E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621E\"],\"dps\":{\"1477386300\":2.402182656E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000621F\"],\"dps\":{\"1477386300\":7.01328128E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics1-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000006220\"],\"dps\":{\"1477386300\":9.165336576E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C20F\"],\"dps\":{\"1477386300\":3.70932896E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-4-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C423\"],\"dps\":{\"1477386300\":6.170502656E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C434\"],\"dps\":{\"1477386300\":3.12518176E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C43A\"],\"dps\":{\"1477386300\":4.6273376E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C50F\"],\"dps\":{\"1477386300\":2.01913376E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C57D\"],\"dps\":{\"1477386300\":6.907629056E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-6-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C5BB\"],\"dps\":{\"1477386300\":5.9191936E8}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusmetrics2-3-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C5CC\"],\"dps\":{\"1477386300\":5.955135488E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusalert1-1-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000C786\"],\"dps\":{\"1477386300\":5.228676608E9}}]";
+        String content = "[]";
+        try {
+			ResultSet set = mapper.readValue(content, new TypeReference<ResultSet>() { });
+			List<Metric> metrics = set.getMetrics();
+			int i = 0;
+			
+			System.out.println(metrics.size());
+			for(Metric metric : metrics) {
+				if(metric != null) {
+					System.out.println("Metric" + ++i + " ==== " + metric);
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+    */
+    
+    /**
+     * The metric deserializer.
+     *
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     */
+    static class MetricListDeserializer extends JsonDeserializer<ResultSet> {
+
+		@Override
+		public ResultSet deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+			
+			List<Metric> metrics = new ArrayList<Metric>();
+			
+			JsonNode arraynode = jp.getCodec().readTree(jp);
+			Iterator<JsonNode> nodes = arraynode.elements();
+			
+			while(nodes.hasNext()) {
+				JsonNode node = nodes.next();
+				Metric metric = _deserializeMetric(node);
+				if(metric != null) {
+					metrics.add(metric);
+				}
+			}			
+			
+			return new ResultSet(metrics);
+		}
+		
+    }
+    
+    private static Metric _deserializeMetric(JsonNode node) throws IOException {
+    	ObjectMapper mapper = new ObjectMapper();
+    	Map<Long, String> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, String>>() { });
+    	if(datapoints.isEmpty()) {
+    		return null;
+    	}
+
+    	Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
+
+    	Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
+    	String tsdbMetricName = node.get("metric").asText();
+
+    	// Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
+    	if (tsdbMetricName.isEmpty()) {
+    		return null;
+    	}
+
+    	String scope = DefaultTSDBService.getScopeFromTSDBMetric(tsdbMetricName);
+    	String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
+    	String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
+
+    	Map<String, String> userTags = new HashMap<>();
+
+    	for (Map.Entry<String, String> entry : tags.entrySet()) {
+    		String key = entry.getKey();
+
+    		if (!ReservedField.isReservedField(key)) {
+    			userTags.put(key, entry.getValue());
+    		}
+    	}
+
+    	Metric result = new Metric(scope, metric);
+
+    	if (meta != null) {
+    		String displayName = meta.get(ReservedField.DISPLAY_NAME.getKey());
+    		String units = meta.get(ReservedField.UNITS.getKey());
+
+    		result.setDisplayName(displayName);
+    		result.setUnits(units);
+    	}
+    	result.setTags(userTags);
+    	result.setDatapoints(datapoints);
+    	if (namespace != null) {
+    		result.setNamespace(namespace);
+    	}
+
+    	Iterator<JsonNode> tsuidsIter = node.get("tsuids").elements();
+    	String tsuid = tsuidsIter.next().asText();
+
+    	try {
+    		Field tsuidField = TSDBEntity.class.getDeclaredField("_uid");
+
+    		tsuidField.setAccessible(true);
+    		tsuidField.set(result, tsuid);
+    	} catch (Exception ex) {
+    		throw new IOException(ex);
+    	}
+    	return result;
+    }
+    
+    private static Map<String, String> fromMeta(String meta) throws IOException {
+        if (meta != null) {
+            try {
+                String decoded = new String(DatatypeConverter.parseBase64Binary(meta.replace("_", "=")), "UTF-8");
+
+                return new ObjectMapper().readValue(decoded, new TypeReference<Map<String, String>>() { });
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
+        } else {
+            return new HashMap<>();
+        }
+    }
+    
     /**
      * The metric deserializer.
      *
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Deserializer extends JsonDeserializer<Metric> {
-	TSDBService tsdbService;
-
-        Deserializer(TSDBService tsdbService) {
-	    this.tsdbService = tsdbService;
-        }
 
         @Override
         public Metric deserialize(JsonParser jp, DeserializationContext dc) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
-            ObjectMapper mapper = new ObjectMapper();
-            Map<Long, String> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, String>>() { });
-
-            Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
-
-            Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
-            String tsdbMetricName = node.get("metric").asText();
-         
-            // Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
-            if (tsdbMetricName.isEmpty()) {
-                return null;
-            }
-
-            String scope = DefaultTSDBService.getScopeFromTSDBMetric(tsdbMetricName);
-            String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
-            String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
-            
-            Map<String, String> userTags = new HashMap<>();
-
-            for (Map.Entry<String, String> entry : tags.entrySet()) {
-                String key = entry.getKey();
-
-                if (!ReservedField.isReservedField(key)) {
-                    userTags.put(key, entry.getValue());
-                }
-            }
-
-            Metric result = new Metric(scope, metric);
-
-            if (meta != null) {
-                String displayName = meta.get(ReservedField.DISPLAY_NAME.getKey());
-                String units = meta.get(ReservedField.UNITS.getKey());
-
-                result.setDisplayName(displayName);
-                result.setUnits(units);
-            }
-            result.setTags(userTags);
-            result.setDatapoints(datapoints);
-            if (namespace != null) {
-                result.setNamespace(namespace);
-            }
-
-            Iterator<JsonNode> tsuidsIter = node.get("tsuids").elements();
-            String tsuid = tsuidsIter.next().asText();
-
-            try {
-                Field tsuidField = TSDBEntity.class.getDeclaredField("_uid");
-
-                tsuidField.setAccessible(true);
-                tsuidField.set(result, tsuid);
-            } catch (Exception ex) {
-                throw new IOException(ex);
-            }
-            return result;
+            return _deserializeMetric(node);
         }
 
-        private Map<String, String> fromMeta(String meta) throws IOException {
-            if (meta != null) {
-                try {
-                    String decoded = new String(DatatypeConverter.parseBase64Binary(meta.replace("_", "=")), "UTF-8");
-
-                    return new ObjectMapper().readValue(decoded, new TypeReference<Map<String, String>>() { });
-                } catch (Exception ex) {
-                    throw new IOException(ex);
-                }
-            } else {
-                return new HashMap<>();
-            }
-        }
     }
 
     /**
@@ -159,12 +250,6 @@ class MetricTransform {
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Serializer extends JsonSerializer<Metric> {
-       
-	TSDBService tsdbService;
-
-        Serializer(TSDBService tsdbService) {
-	    this.tsdbService = tsdbService;
-        }
 
         @Override
         public void serialize(Metric metric, JsonGenerator jgen, SerializerProvider sp) throws IOException {
