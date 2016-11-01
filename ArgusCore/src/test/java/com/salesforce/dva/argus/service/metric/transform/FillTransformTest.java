@@ -499,6 +499,7 @@ public class FillTransformTest {
         constants.add("4s");
         constants.add("0s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
