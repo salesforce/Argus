@@ -499,6 +499,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('d', line2)
                         .style('stroke', z(metric.id));
                 });
+                setZoomExtent(3);
             }
 
             //toggle time brush
@@ -533,7 +534,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 d3.select('#date-range').text(str);
             }
 
-
+            //extent, k is the least number of points in one line you want to see on the main chart view
+            function setZoomExtent(k){
+                var numOfPoints= currSeries[0].data.length;
+                if(!k || k > numOfPoints) k = 3;
+                zoom.scaleExtent([1, numOfPoints/k]);
+            }
             // call resize when browser size changes
             d3.select(window).on('resize', resize);
 
