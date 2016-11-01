@@ -1,6 +1,6 @@
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'LineChartService', 'CONFIG', 'VIEWELEMENT', '$compile',
-function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, LineChartService, CONFIG, VIEWELEMENT, $compile) {
+.directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'CONFIG', 'VIEWELEMENT', '$compile',
+function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
 
     function renderLineChart(scope, newChartId, series, updatedAnnotationList) {
