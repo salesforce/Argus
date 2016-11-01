@@ -42,7 +42,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
             m.setDatapoints(datapoints);
             tsdbService.putMetrics(Arrays.asList(new Metric[] { m }));
 
-            String expectedExpression = (currentTime - 10000000) + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric());
+            String expectedExpression = "-10000s" + MessageFormat.format(":{0}:{1}:avg", m.getScope(), m.getMetric());
             int expectedTtl = 20;
             String expectedOwnerName = "ownerName-test-async";
             Thread.sleep(3 * 1000);
@@ -51,7 +51,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
             expressions.add(expectedExpression);
 
             // Start async metric pipeline
-            String batchId = metricService.getAsyncMetrics(expressions, -10000000, expectedTtl, expectedOwnerName);
+            String batchId = metricService.getAsyncMetrics(expressions, (currentTime - 10000000), expectedTtl, expectedOwnerName);
 
             batchService.executeNextQuery(3000);
 

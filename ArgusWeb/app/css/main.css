@@ -277,6 +277,9 @@ g.legend-items text .value {
 .grid path {
   stroke:white;
 }
+.date-range{
+  float: right;
+}
 div.loadingSpinner {
   width: 80px;
   height: 80px;
