@@ -14,6 +14,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             '<button id="oneDay">1d</button>' +
             '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
             '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
+            '<span id="date-range" class="date-range">Date Range: {{}} </span>' +
             '</div>',
             link: function(scope, element, attrs) {
                 var currSeries = attrs.series;
@@ -27,7 +28,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 var marginTop = 20,
                     marginBottom = 50,
                     marginLeft = 40,
-                    marginRight = 20;
+                    marginRight = 40;
 
                 var width = containerWidth - marginLeft - marginRight;
                 var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
@@ -58,10 +59,10 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 //graph setup variables
                 var x, x2, y, y2, z,
                     nGridX = 10, nGridY = 10,
-                    xAxis, xAxis2, yAxis, yAxis2, xGrid, yGrid,
+                    xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
                     line, line2, area, area2,
                     brush, zoom,
-                    svg, xAxisG, xAxisG2, yAxisG, xGridG, yGridG, //g
+                    svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                     focus, context, clip, brushG, chartRect, //g
                     tip, tipBox, tipItems,
                     crossline
@@ -87,6 +88,11 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         .ticks(nGridX);
 
                     yAxis = d3.axisLeft()
+                        .scale(y)
+                        .ticks(nGridY)
+                        .tickFormat(d3.format('.2s'))
+                    ;
+                    yAxisR = d3.axisRight()
                         .scale(y)
                         .ticks(nGridY)
                         .tickFormat(d3.format('.2s'))
@@ -133,7 +139,14 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                         .scaleExtent([1, Infinity])
                         .translateExtent([[0, 0], [width, height]])
                         .extent([[0, 0], [width, height]])
-                        .on("zoom", zoomed);
+                        .on("zoom", zoomed)
+                        .on("start", function(){
+                            svg.select(".chartOverlay").style("cursor", "move");
+                        })
+                        .on("end", function(){
+                            svg.select(".chartOverlay").style("cursor", "crosshair");
+                        })
+                    ;
 
                     //Add elements to SVG
                     svg = d3.select(element[0]).append('svg')
@@ -153,6 +166,11 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     yAxisG = svg.append('g')
                         .attr('class', 'y axis')
                         .call(yAxis);
+
+                    yAxisRG = svg.append('g')
+                        .attr('class', 'y axis')
+                        .attr('transform', 'translate(' + width + ')')
+                        .call(yAxisR);
 
                     xGridG = svg.append('g')
                         .attr('class', 'x grid')
@@ -181,8 +199,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     //brush area
                     context = svg.append("g")
                         .attr("class", "context")
-                        .attr("transform", "translate(0," + -(marginTop/2) + ")");
-
+                        //.attr("transform", "translate(0," + -(marginTop/2) + ")");
+                        .attr("transform", "translate(0," + margin2.top + ")");
                     //set brush area axis
                     xAxisG2 = context.append("g")
                         .attr("class", "xBrush axis")
@@ -286,7 +304,8 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                             circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
                         }
                         var tipBounds = group.node().getBBox();
-                        tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
+                        //tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
+                        tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
                         tipBox.attr('x', tipBounds.x - tipPadding);
                         tipBox.attr('y', tipBounds.y - tipPadding);
                         tipBox.attr('width', tipBounds.width + 2*tipPadding);
@@ -324,11 +343,13 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     svg.selectAll(".line").attr("d", line);//redraw the line
                     svg.select(".x.axis").call(xAxis);  //redraw xAxis
                     svg.select(".y.axis").call(yAxis);  //redraw yAxis
+                    svg.select(".y.axis:nth-child(3)").call(yAxisR); //redraw yAxis right
                     svg.select(".x.grid").call(xGrid);
                     svg.select(".y.grid").call(yGrid);
                     if(!isBrushOn){
                         svg.select(".context").attr("display", "none");
                     }
+                    updateDateRange();
                 }
 
                 //brushed
@@ -459,6 +480,9 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     x2.domain(x.domain());
                     y2.domain(y.domain());
 
+                    //update date range
+                    updateDateRange();
+
                     svg.selectAll('.line').remove();
                     svg.selectAll('.brushLine').remove();
 
@@ -502,6 +526,14 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     }
                 }
 
+                //date range
+                function updateDateRange(){
+                    var start = formatDate(x.domain()[0]);
+                    var end = formatDate(x.domain()[1]);
+                    var str = "Date range: [" + start + " - " + end + "]";
+                    d3.select('#date-range').text(str);
+                }
+
                 //button set up
                 d3.select('#reset')
                     .on('click', reset);
@@ -526,6 +558,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);
+                    reset();//clear the brush and allow the user to create it easilly
                 });
             }
         };
