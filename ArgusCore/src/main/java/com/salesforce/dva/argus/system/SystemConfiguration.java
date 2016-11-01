@@ -218,6 +218,7 @@ public final class SystemConfiguration extends Properties {
         ADMIN_EMAIL("system.property.admin.email", "someone@mycompany.com"),
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
+        EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
