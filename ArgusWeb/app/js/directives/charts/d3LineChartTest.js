@@ -14,6 +14,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
             '<button id="oneDay">1d</button>' +
             '<input type="checkbox" name="toggle-brush" id="toggle-brush" value="0">Show brush' +
             '<input type="checkbox" name="toggle-wheel" id="toggle-wheel" value="0">Enable mouse scroll on chart' +
+            '<input type="checkbox" name="toggle-logbase" id="toggle-logbase" value="0">Enable log10 base Y Axis' +
             '<span id="date-range" class="date-range">Date Range: {{}} </span>' +
             '</div>',
             link: function(scope, element, attrs) {
@@ -55,6 +56,7 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
 
                 var isBrushOn = true;
                 var isWheelOn = true;
+                var isLogOn = false;
 
                 //graph setup variables
                 var x, x2, y, y2, z,
@@ -534,6 +536,36 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     d3.select('#date-range').text(str);
                 }
 
+                //toggle log
+                function toggleLog(){
+                    var domain = y.domain();
+                    if(isLogOn){
+                        y = d3.scaleLinear()
+                            .range([height, 0]);
+                    }else{
+                        y = d3.scaleLog()
+                            .base(10)
+                            .range([height, 0])
+                            ;
+                    }
+                    y.domain(domain);
+                    isLogOn = !isLogOn;
+
+                    //must reasign the yAxis function
+                    yAxis = d3.axisLeft()
+                        .scale(y)
+                        .ticks(nGridY)
+                        .tickFormat(d3.format('.2s'))
+                    ;
+                    yAxisR = d3.axisRight()
+                        .scale(y)
+                        .ticks(nGridY)
+                        .tickFormat(d3.format('.2s'))
+                    ;
+
+                    redraw();
+                }
+
                 //button set up
                 d3.select('#reset')
                     .on('click', reset);
@@ -545,16 +577,16 @@ angular.module('argus.directives.charts.d3LineChartTest', [])
                     .on('click', brushMinute(60*24));
                 //toggle
                 d3.select('#toggle-brush')
-                    .on('change', toggleBrush);
+                    .on('change', toggleBrush)
+                    .attr('checked', 'true');
 
                 d3.select('#toggle-wheel')
-                    .on('change', toggleWheel);
+                    .on('change', toggleWheel)
+                    .attr('checked', 'true');
 
-                d3.select('#toggle-brush')
-                    .attr("checked","true");
+                d3.select('#toggle-logbase')
+                    .on('change', toggleLog);
 
-                d3.select('#toggle-wheel')
-                    .attr("checked","true");
                 // Update graph on new metric results
                 scope.$watch(attrs.series, function(series) {
                     updateGraph(series);

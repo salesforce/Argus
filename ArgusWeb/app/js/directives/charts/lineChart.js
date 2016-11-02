@@ -499,6 +499,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('d', line2)
                         .style('stroke', z(metric.id));
                 });
+                setZoomExtent(3);
             }
 
             //toggle time brush
@@ -533,13 +534,49 @@ angular.module('argus.directives.charts.lineChart', [])
                 d3.select('#date-range').text(str);
             }
 
+            //extent, k is the least number of points in one line you want to see on the main chart view
+            function setZoomExtent(k){
+                var numOfPoints= currSeries[0].data.length;
+                //choose the max among all the series
+                for(var i = 1; i < currSeries.length; i++){
+                    if(numOfPoints < currSeries[i].data.length){
+                        numOfPoints = currSeries[i].data.length;
+                    }
+                }
+                if(!k || k > numOfPoints) k = 3;
+                zoom.scaleExtent([1, numOfPoints/k]);
+            }
 
+            //dynamically enable button for brush time period(1h/1d/1w/1m/1y)
+            function enableBrushTime(){
+                var range = x2.domain()[1] - x2.domain()[0];
+                if(range > 3600000){
+                    //enable 1h button
+                    d3.select('#oneHour').attr("disabled", null);
+                }
+                if(range > 3600000 * 24){
+                    //enable 1d button
+                    d3.select('#oneDay').attr("disabled", null);
+                }
+                if(range > 3600000 * 24 * 7){
+                    //enable 1w button
+                    d3.select('#oneWeek').attr("disabled", null);
+                }
+                if(range > 3600000 * 24 * 30){
+                    //enable 1month button
+                    d3.select('#oneMonth').attr("disabled", null);
+                }
+                if(range > 3600000 * 24 * 365){
+                    //enable 1y button
+                    d3.select('#oneYear').attr("disabled", null);
+                }
+            }
             // call resize when browser size changes
             d3.select(window).on('resize', resize);
 
             // Update graph on new metric results
             updateGraph(series);
-
+            enableBrushTime();
 
             // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
@@ -551,6 +588,16 @@ angular.module('argus.directives.charts.lineChart', [])
 
             d3.select('#oneDay')
                 .on('click', brushMinute(60*24));
+
+            d3.select('#oneWeek')
+                .on('click', brushMinute(60*24*7));
+
+            d3.select('#oneMonth')
+                .on('click', brushMinute(60*24*30));
+
+            d3.select('#oneYear')
+                .on('click', brushMinute(60*24*365));
+
             //toggle
             d3.select('#toggle-brush')
                 .on('change', toggleBrush);
