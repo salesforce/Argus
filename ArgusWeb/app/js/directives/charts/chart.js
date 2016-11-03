@@ -3,7 +3,7 @@ angular.module('argus.directives.charts.chart', [])
 function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
 
-    function renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime) {
+    function renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon) {
         // empty any previous content
         $("#" + newChartId).empty();
 
@@ -15,9 +15,9 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         lineChartScope.series = series;
         lineChartScope.startTime = startTime;
         lineChartScope.endTime = endTime;
-        debugger;
+        lineChartScope.GMTon = GMTon
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" starttime="startTime" endtime="endTime"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" starttime="startTime" endtime="endTime" gmton="GMTon"></line-chart>')(lineChartScope) );
     }
 
     // TODO: below functions 'should' be refactored to the chart services.
@@ -39,15 +39,17 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
             options: scope.options
         };
 
-        // get start and end time for the charts
-        var startTime, endTime;
+        // get start and end time for the charts as well as whether GMT/UTC scale is used or not
+        var startTime, endTime, GMTon = false;
         for (var i = 0; i < controls.length; i++) {
             if (controls[i].type === "agDate") {
                 var timeValue = controls[i].value;
                 if (controls[i].name === "start") {
                     startTime = timeProcessingHelper(timeValue);
+                    GMTon = GMTon || GMTVerifier(timeValue);
                 } else if (controls[i].name === "end"){
                     endTime = timeProcessingHelper(timeValue);
+                    GMTon = GMTon || GMTVerifier(timeValue);
                 }
             }
         }
@@ -55,8 +57,8 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         function timeProcessingHelper(timeValue) {
             var result;
             if (timeValue[0] === '-') {
-                timeValue = timeValue.toLowerCase().trim();
                 // apply offset to current time
+                timeValue = timeValue.toLowerCase().trim();
                 var offsetValue = parseInt(timeValue.substring(1, timeValue.length - 1));
                 var offsetUnit = timeValue[timeValue.length - 1];
                 result = new Date();
@@ -76,9 +78,15 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                 }
                 return new Date(result);
             } else {
+                // convert timepicker string to Date object
                 result = new Date(timeValue);
                 return result.toString() === 'Invalid Date' ? new Date() : result;
             }
+        }
+
+        function GMTVerifier(timeValue) {
+            // true if offset and string with GMT are used for input
+            return (timeValue.indexOf('-') !== -1) || (timeValue.indexOf('GMT') !== -1);
         }
 
         // process data for: metrics, annotations, options
@@ -127,7 +135,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
                 }
 
             }, function (error) {
@@ -140,7 +148,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
                 }
             });
         }

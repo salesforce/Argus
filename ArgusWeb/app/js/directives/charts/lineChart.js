@@ -10,7 +10,8 @@ angular.module('argus.directives.charts.lineChart', [])
             chartId: '=chartid',
             series: '=series',
             startTime: '=starttime',
-            endTime: '=endtime'
+            endTime: '=endtime',
+            GMTon: '=gmton'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
@@ -22,9 +23,9 @@ angular.module('argus.directives.charts.lineChart', [])
         link: function(scope, element, attributes) {
             var chartId = scope.chartId;
             var series = scope.series;
-            debugger;
             var startTime = scope.startTime;
             var endTime = scope.endTime;
+            var GMTon = scope.GMTon;
 
             var currSeries = series;
 
@@ -81,9 +82,15 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // Base graph setup
             function setGraph() {
-                debugger;
-                x = d3.scaleTime().domain([scope.startTime, scope.endTime]).range([0, width]);
-                x2 = d3.scaleTime().domain([scope.startTime, scope.endTime]).range([0, width]); //for brush
+                // use different x axis scale based on timezone
+                if (GMTon) {
+                    x = d3.scaleUtc().domain([startTime, endTime]).range([0, width]);
+                    x2 = d3.scaleUtc().domain([startTime, endTime]).range([0, width]); //for brush
+                } else {
+                    x = d3.scaleTime().domain([startTime, endTime]).range([0, width]);
+                    x2 = d3.scaleTime().domain([startTime, endTime]).range([0, width]); //for brush
+                }
+
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
                 z = d3.scaleOrdinal().range(d3.schemeCategory10);
