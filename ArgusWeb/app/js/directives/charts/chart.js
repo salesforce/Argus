@@ -3,26 +3,27 @@ angular.module('argus.directives.charts.chart', [])
 function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
 
-    function renderLineChart(scope, newChartId, series, updatedAnnotationList) {
+    function renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon) {
         // empty any previous content
         $("#" + newChartId).empty();
 
         // create a new scope to pass to compiled line-chart directive
         var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
-        // assign chartId, series data to new $scope
+        // assign chartId, series data, time domain to new $scope
         lineChartScope.chartId = newChartId;
         lineChartScope.series = series;
-
+        lineChartScope.startTime = startTime;
+        lineChartScope.endTime = endTime;
+        lineChartScope.GMTon = GMTon
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" starttime="startTime" endtime="endTime" gmton="GMTon"></line-chart>')(lineChartScope) );
     }
 
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         // remove/clear any previous chart rendering from DOM
         element.empty();
-
         // generate a new chart ID, set css options for main chart container
         var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
         var smallChart = attributes.smallchart ? true : false;
@@ -37,6 +38,56 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
             annotations: scope.annotations,
             options: scope.options
         };
+
+        // get start and end time for the charts as well as whether GMT/UTC scale is used or not
+        var startTime, endTime, GMTon = false;
+        for (var i = 0; i < controls.length; i++) {
+            if (controls[i].type === "agDate") {
+                var timeValue = controls[i].value;
+                if (controls[i].name === "start") {
+                    startTime = timeProcessingHelper(timeValue);
+                    GMTon = GMTon || GMTVerifier(timeValue);
+                } else if (controls[i].name === "end"){
+                    endTime = timeProcessingHelper(timeValue);
+                    GMTon = GMTon || GMTVerifier(timeValue);
+                }
+            }
+        }
+
+        function timeProcessingHelper(timeValue) {
+            var result;
+            if (timeValue[0] === '-') {
+                // apply offset to current time
+                timeValue = timeValue.toLowerCase().trim();
+                var offsetValue = parseInt(timeValue.substring(1, timeValue.length - 1));
+                var offsetUnit = timeValue[timeValue.length - 1];
+                result = new Date();
+                switch (offsetUnit) {
+                    case "s":
+                        result = result.setSeconds(result.getSeconds() - offsetValue);
+                        break;
+                    case "m":
+                        result = result.setMinutes(result.getMinutes() - offsetValue);
+                        break;
+                    case "h":
+                        result = result.setHours(result.getHours() - offsetValue);
+                        break;
+                    case "d":
+                        result = result.setDate(result.getDate() - offsetValue);
+                        break;
+                }
+                return new Date(result);
+            } else {
+                // convert timepicker string to Date object
+                result = new Date(timeValue);
+                return result.toString() === 'Invalid Date' ? new Date() : result;
+            }
+        }
+
+        function GMTVerifier(timeValue) {
+            // true if offset and string with GMT are used for input
+            return (timeValue.indexOf('-') !== -1) || (timeValue.indexOf('GMT') !== -1);
+        }
 
         // process data for: metrics, annotations, options
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
@@ -84,7 +135,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
                 }
 
             }, function (error) {
@@ -97,7 +148,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
                 }
             });
         }
