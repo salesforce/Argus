@@ -63,8 +63,8 @@ angular.module('argus.directives.charts.lineChart', [])
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
+            var isWheelOn = false;
             var isBrushOn = true;
-            var isWheelOn = true;
 
             //graph setup variables
             var x, x2, y, y2, z,
