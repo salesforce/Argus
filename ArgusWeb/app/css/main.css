@@ -26,6 +26,11 @@ label {
 
 a:hover {text-decoration:none; color:inherit;}
 
+ul {margin-bottom:0;}
+ul li {list-style:none;}
+
+button[disabled] {color:#CCC;}
+
 .floatL {float:left;}
 .floatR {float:right;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
@@ -37,24 +42,28 @@ a:hover {text-decoration:none; color:inherit;}
 .loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
-#navbar li.topMenu {position:relative;}
-#navbar li.topMenu ul.subMenu {
-  display:none;
-  position:absolute;
-  top:40px;
-  right:4px;
-  padding:0;
+#navbar li a.glyphicon {font-size:20px; color:#777;}
+
+/* Common drop down menu */
+.topMenu {position:relative;}
+.topMenu ul.subMenu {display:none; position:absolute;}
+.topMenu ul.subMenu li {margin:5px 0; padding:2px 7px;}
+.topMenu ul.subMenu li:hover {background-color:#EEE;}
+.topMenu ul.subMenu a:hover {text-decoration:none;}
+.topMenu:hover ul.subMenu {display:block;}
+
+#navbar ul.subMenu {top:40px; right:4px; padding:0;}
+#navbar ul.subMenu li {text-align:right;}
+
+/* drop down common panel */
+.menuPanel {
+  border-radius:5px;
   box-shadow:2px 2px 3px 0px #EEE;
   list-style:none;
   border:solid 1px #CCC;
   background:#FFF;
   z-index:9;
 }
-#navbar li a.glyphicon {font-size:20px; color:#777;}
-#navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
-#navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
-#navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
-#navbar .topMenu:hover ul.subMenu {display:block;}
 
 .breadcrumb {
   position:absolute;
@@ -83,6 +92,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+.loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
+
 /* metrics & discovery lookup */
 .metricFields {width:35%; margin-top:.5em;}
 .metricFields, .metricFields .form-control {margin:0 2em .5em 0;}
@@ -100,32 +111,29 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     border-bottom-left-radius: 0;
 }
 
+/* checkbox for date control */
+.GMT-select {padding: 3px;}
+
 /* Growl settings */
 .growl-container.growl-fixed.top-center {
-    top : 2em!important;
-    width: 25%!important;
-    max-width: 50%!important;
+    top : 2em !important;
+    width: 25% !important;
+    max-width: 50% !important;
     text-align: center;
 }
 
-.growl-container > .growl-item {
-    padding-right:0!important;
-}
+.growl-container > .growl-item {padding-right:0 !important;}
 
-.pagination {
-    margin:0!important;
-}
+.pagination {margin:0 !important;}
 
-.table-header-rotated th.row-header{
-  width: auto;
-}
+.table-header-rotated th.row-header {width:auto;}
 
 .table-header-rotated td{
   width: 40px;
-  border-top: 1px solid #dddddd;
-  border-left: 1px solid #dddddd;
-  border-right: 1px solid #dddddd;
-  border-bottom: 1px solid #dddddd;
+  border-top: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
   vertical-align: middle;
   text-align: center;
 }
@@ -183,9 +191,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .table > tbody > tr > td,
 .table > tfoot > tr > td {vertical-align: middle;}
 
-.table th:hover{
-    cursor: pointer;
-}
+.table th:hover {cursor:pointer;}
 
 .search-bar .dropdown-menu {
     margin: 0 0 0 0;
@@ -201,93 +207,47 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .chartContainer {padding-top:1em; border:solid 1px lightgrey; border-radius:5px;}
 .lineChartToolbar {margin-left:3em;}
 
+/** Toolbars */
+.topToolbar {padding:0 3em 0 2.8em;}
+
+.toolbarItem {display:inline-block; margin-right:1em; /*width:25%;*/}
+
+.toolbarMenu {display:inline-block; white-space:nowrap;}
+.toolbarMenu a.glyphicon {font-size:16px;}
+
+.chartMenu li label {font-weight:400; font-size:13px;}
+
+.dateRange {float:right; margin-top:8px; font-size:12px; color:#999;}
+
+
 .axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-.x.axis path {
-  display: none;
-}
-.xBrush.axis path {
-  display: none;
-}
+.axis line {fill:none; stroke:#000; shape-rendering:crispEdges;}
+.x.axis path {display:none;}
+.xBrush.axis path {display:none;}
 
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-  clip-path: url('#clip');
-}
-.brushLine {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
+.line {fill:none; stroke:steelblue; stroke-width:1.5px; clip-path: url('#clip');}
 
-.chartOverlay {
-  stroke: #CCC;
-  fill: none;
-  pointer-events: all;
-  cursor: crosshair;
-}
+.brushLine {fill:none; stroke:steelblue; stroke-width:1.5px;}
 
-.focus circle {
-  opacity: 0.5;
-}
-g.legend-items text {
-  color: #444;
-  font-size: 12px;
-}
-g.legend-items circle {
-  opacity: 0.5;
-}
-g.legend-items text .timestamp {
-  font-variant: small-caps;
-}
-g.legend-items text .value {
-  font-weight: 600;
-  font-size: 14px;
-}
-.legend rect {
-  fill: #eee;
-  stroke: steelblue;
-  opacity: 0.9;
-}
+.chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
-.crossLine {
-  fill: none;
-  stroke: #000;
-  stroke-width: 1px;
-  stroke-dasharray: 3,3; /* dotted line*/
-}
+.focus circle {opacity:0.5;}
+
+g.legend-items text {color: #444; font-size: 12px;}
+g.legend-items circle {opacity: 0.5;}
+g.legend-items text .timestamp {font-variant: small-caps;}
+g.legend-items text .value {font-weight: 600; font-size: 14px;}
+
+.legend rect {fill:#EEE; stroke:steelblue; opacity:0.9;}
+
+/* dotted line on main line graph */
+.crossLine {fill:none; stroke:#000; stroke-width:1px; stroke-dasharray:3,3;}
 
 .tick line {stroke: lightgrey;}
 .tick text {fill:#606060;}
 
-.grid line{
-  stroke: lightgrey; /* grid line */
-  opacity: 0.7;
-}
+/* grid line */
+.grid line {stroke:lightgrey; opacity:0.7;}
 
-.grid text{
-  visibility: hidden;
-}
-.grid path {
-  stroke:white;
-}
-.date-range{
-  float: right;
-}
-div.loadingSpinner {
-  width: 80px;
-  height: 80px;
-  margin: 100px auto;
-  position: relative;
-  content:url(../img/ajax-loader.gif);
-}
-
-.GMT-select {
-  padding: 3px;
-}
+.grid text {visibility:hidden;}
+.grid path {stroke:#FFF;}
