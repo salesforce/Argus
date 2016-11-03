@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', [function() {
 
@@ -6,7 +8,10 @@ angular.module('argus.directives.charts.lineChart', [])
         replace: true,
         scope: {
             chartId: '=chartid',
-            series: '=series'
+            series: '=series',
+            startTime: '=starttime',
+            endTime: '=endtime',
+            GMTon: '=gmton'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
@@ -18,6 +23,9 @@ angular.module('argus.directives.charts.lineChart', [])
         link: function(scope, element, attributes) {
             var chartId = scope.chartId;
             var series = scope.series;
+            var startTime = scope.startTime;
+            var endTime = scope.endTime;
+            var GMTon = scope.GMTon;
 
             var currSeries = series;
 
@@ -25,9 +33,9 @@ angular.module('argus.directives.charts.lineChart', [])
             var containerHeight = 300;
             var containerWidth = $("#" + chartId).width();
             var brushHeightFactor = 10;
-            var mainChartRatio = 0.8 //ratio of height
-                , tipBoxRatio = 0.2
-                , brushChartRatio = 0.2
+            var mainChartRatio = 0.8, //ratio of height
+                tipBoxRatio = 0.2,
+                brushChartRatio = 0.2
                 ;
             var marginTop = 20,
                 marginBottom = 50,
@@ -74,8 +82,15 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // Base graph setup
             function setGraph() {
-                x = d3.scaleTime().range([0, width]);
-                x2 = d3.scaleTime().range([0, width]); //for brush
+                // use different x axis scale based on timezone
+                if (GMTon) {
+                    x = d3.scaleUtc().domain([startTime, endTime]).range([0, width]);
+                    x2 = d3.scaleUtc().domain([startTime, endTime]).range([0, width]); //for brush
+                } else {
+                    x = d3.scaleTime().domain([startTime, endTime]).range([0, width]);
+                    x2 = d3.scaleTime().domain([startTime, endTime]).range([0, width]); //for brush
+                }
+
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
                 z = d3.scaleOrdinal().range(d3.schemeCategory10);
@@ -88,7 +103,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 xAxis2 = d3.axisBottom() //for brush
                     .scale(x2)
-                    .ticks(nGridX);
+                    .ticks(nGridX)
+                    ;
 
                 yAxis = d3.axisLeft()
                     .scale(y)
@@ -412,7 +428,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
                     context.select(".brush").call
                     (brush.move, [start2, end2]);
-                }
+                };
             }
 
             //rescale YAxis based on XAxis Domain
