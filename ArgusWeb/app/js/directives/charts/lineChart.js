@@ -10,11 +10,17 @@ angular.module('argus.directives.charts.lineChart', [])
             chartId: '=chartid',
             series: '=series',
             dateConfig: '=dateconfig'
+            // sources: '=sources',
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
 
-            // add $scope for clicks
+            // set $scope values
+            $scope.isWheelOn = false;
+            $scope.isBrushOn = true;
+
+            // legend sources
+            $scope.sources = {};
 
         },
         // compile: function (iElement, iAttrs, transclude) {},
@@ -28,15 +34,15 @@ angular.module('argus.directives.charts.lineChart', [])
             var currSeries = series;
 
             // Layout parameters
-            var containerHeight = 300;
+            var containerHeight = 320;
             var containerWidth = $("#" + chartId).width();
             var brushHeightFactor = 10;
             var mainChartRatio = 0.8, //ratio of height
                 tipBoxRatio = 0.2,
                 brushChartRatio = 0.2
                 ;
-            var marginTop = 20,
-                marginBottom = 50,
+            var marginTop = 10,
+                marginBottom = 30,
                 marginLeft = 40,
                 marginRight = 40;
 
@@ -63,8 +69,8 @@ angular.module('argus.directives.charts.lineChart', [])
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
+            var isWheelOn = false;
             var isBrushOn = true;
-            var isWheelOn = true;
 
             //graph setup variables
             var x, x2, y, y2, z,
@@ -303,30 +309,65 @@ angular.module('argus.directives.charts.lineChart', [])
                 generateCrossLine(mouseY, positionX, positionY);
             }
 
+            function applyScope() {
+                scope.$apply();
+            }
+
             function newTooltipCreator(names) {
                 return function(group, datapoints) {
                     group.selectAll('text').remove();
                     group.selectAll('circle').remove();
+
                     for (var i = 0; i < datapoints.length; i++) {
+
+                        // set names into $scope for legend
+                        var tmpSource = {
+                            name: names[i],
+                            value: datapoints[i][1]
+                        };
+                        scope.sources = tmpSource;
+
+                        // can only use this once.
+                        applyScope();
+
+                        /*
                         var circle = group.append('circle')
                             .attr('r', 4.5)
                             .attr('fill', z(names[i]));
+
                         var textLine = group.append('text')
-                            .attr('dy', (1.2*(i+1)) + 'em')
+                            .attr('dy', (1.2 * (i + 1)) + 'em')
                             .attr('dx', 8);
-                        textLine.append('tspan').attr('class', 'timestamp').text(formatDate(new Date(datapoints[i][0])));
-                        textLine.append('tspan').attr('class', 'value').attr('dx', 8).text(formatValue(datapoints[i][1]));
-                        textLine.append('tspan').attr('dx', 8).text(names[i]);
+
+                        textLine.append('tspan')
+                            .attr('class', 'timestamp')
+                            .text(formatDate(new Date(datapoints[i][0])));
+
+                        textLine.append('tspan')
+                            .attr('class', 'value')
+                            .attr('dx', 8)
+                            .text(formatValue(datapoints[i][1]));
+
+                        textLine
+                            .append('tspan')
+                            .attr('dx', 8)
+                            .text(names[i]);
+
                         var textLineBounds = textLine.node().getBBox();
                         circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
+                        */
                     }
+
+                    /*
                     var tipBounds = group.node().getBBox();
-                    // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
-                    tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
+
+                    tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
+                    // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
                     tipBox.attr('x', tipBounds.x - tipPadding);
                     tipBox.attr('y', tipBounds.y - tipPadding);
-                    tipBox.attr('width', tipBounds.width + 2*tipPadding);
-                    tipBox.attr('height', tipBounds.height + 2*tipPadding);
+                    tipBox.attr('width', tipBounds.width + 2 * tipPadding);
+                    tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+                    */
                 };
             }
 
@@ -484,13 +525,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 currSeries = series;
 
                 series.forEach(function(metric) {
-                    metric.data.sort(function(a, b) {
-                        return a[0] - b[0];
-                    });
+                    // metric.data.sort(function(a, b) {
+                    //     return a[0] - b[0];
+                    // });
                     allDatapoints = allDatapoints.concat(metric.data);
                 });
 
                 tooltipCreator = newTooltipCreator(names);
+
                 x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
                 y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));
                 z.domain(names);
@@ -544,8 +586,14 @@ angular.module('argus.directives.charts.lineChart', [])
             function updateDateRange(){
                 var start = formatDate(x.domain()[0]);
                 var end = formatDate(x.domain()[1]);
-                var str = "Date range: [" + start + " - " + end + "]";
-                d3.select('#date-range').text(str);
+                var str = start + ' - ' + end;
+
+                // update view
+                d3.select('#topTb-' + chartId + ' .dateRange').text(str);
+
+                // add to scope
+                // scope.dateRange.start = start;
+                // scope.dateRange.end = end;
             }
 
             //extent, k is the least number of points in one line you want to see on the main chart view
