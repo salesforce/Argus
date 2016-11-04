@@ -66,6 +66,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // Local helpers
             var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
             var formatDate = d3.timeFormat('%A, %b %e, %H:%M');
+            var GMTformatDate = d3.utcFormat('%A, %b %e, %H:%M');
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
@@ -584,9 +585,16 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //date range
             function updateDateRange(){
-                var start = formatDate(x.domain()[0]);
-                var end = formatDate(x.domain()[1]);
-                var str = start + ' - ' + end;
+                var start, end, str;
+                if (GMTon) {
+                    start = GMTformatDate(x.domain()[0]);
+                    end = GMTformatDate(x.domain()[1]);
+                    str = start + ' - ' + end + " in GMT/UTC";
+                } else {
+                    start = formatDate(x.domain()[0]);
+                    end = formatDate(x.domain()[1]);
+                    str = start + ' - ' + end + " in local time zone";
+                }
 
                 // update view
                 d3.select('#topTb-' + chartId + ' .dateRange').text(str);
