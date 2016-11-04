@@ -84,6 +84,7 @@ angular.module('argus.services', [
   'argus.services.charts.rendering',
   'argus.services.charts.tools',
   'argus.services.charts.dataProcessing',
+  'argus.services.charts.dateHandler',
   'argus.services.dashboard',
   'argus.services.dashboards',
   'argus.services.history',

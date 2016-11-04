@@ -9,9 +9,7 @@ angular.module('argus.directives.charts.lineChart', [])
         scope: {
             chartId: '=chartid',
             series: '=series',
-            startTime: '=starttime',
-            endTime: '=endtime',
-            GMTon: '=gmton'
+            dateConfig: '=dateconfig'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
@@ -23,9 +21,9 @@ angular.module('argus.directives.charts.lineChart', [])
         link: function(scope, element, attributes) {
             var chartId = scope.chartId;
             var series = scope.series;
-            var startTime = scope.startTime;
-            var endTime = scope.endTime;
-            var GMTon = scope.GMTon;
+            var startTime = scope.dateConfig.startTime;
+            var endTime = scope.dateConfig.endTime;
+            var GMTon = scope.dateConfig.gmt;
 
             var currSeries = series;
 
