@@ -233,25 +233,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr("transform", "translate(0," + height2 + ")")
                     .call(xAxis2);
 
-                brushG = context.append("g")
-                    .attr("class", "brush")
-                    .call(brush)
-                    .call(brush.move, x.range()); //change the x axis range when brush area changes
-
-                //the graph rectangle area
-                chartRect = svg.append('rect')
-                    .attr('class', 'chartOverlay')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .on('mouseover', function () {
-                        focus.style('display', null);
-                    })
-                    .on('mouseout', function () {
-                        focus.style('display', 'none');
-                    })
-                    .on('mousemove', mousemove)
-                    .call(zoom)
-                ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -560,6 +541,30 @@ angular.module('argus.directives.charts.lineChart', [])
                 setZoomExtent(3);
             }
 
+            //this function add the overlay element to the graph when mouse interaction takes place
+            //need to call this after drawing the lines in order to put mouse interaction overlay on top
+            function addOverlay(){
+                //the graph rectangle area
+                chartRect = svg.append('rect')
+                    .attr('class', 'chartOverlay')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .on('mouseover', function () {
+                        focus.style('display', null);
+                    })
+                    .on('mouseout', function () {
+                        focus.style('display', 'none');
+                    })
+                    .on('mousemove', mousemove)
+                    .call(zoom)
+                ;
+                //the brush overlay
+                brushG = context.append("g")
+                    .attr("class", "brush")
+                    .call(brush)
+                    .call(brush.move, x.range()); //change the x axis range when brush area changes
+            }
+
             //toggle time brush
             function toggleBrush(){
                 if(isBrushOn){
@@ -641,6 +646,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // Update graph on new metric results
             setGraph();
             updateGraph(series);
+            addOverlay();
             enableBrushTime();
             reset();//to remove the brush cover first for user the drag
 
