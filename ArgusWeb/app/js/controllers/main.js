@@ -1,5 +1,5 @@
 angular.module('argus.controllers.main', [])
-.controller('Main', ['$scope', '$location', 'Auth', function ($scope, $location, Auth) {
+.controller('Main', ['$scope', '$location', 'Auth', '$sessionStorage', function ($scope, $location, Auth, $sessionStorage) {
 
     $scope.login = function (username, password) {
     	if(username.indexOf("@") != -1) {
@@ -19,4 +19,7 @@ angular.module('argus.controllers.main', [])
     $scope.isPrivileged = function () {
         return Auth.isPrivileged();
     };
+
+    // delete session cache when the entire page is reloaded i.e. refresh the tab
+    $sessionStorage.$reset();
 }]);

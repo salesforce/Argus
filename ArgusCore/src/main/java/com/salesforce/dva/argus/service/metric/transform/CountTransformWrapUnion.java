@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,33 +55,45 @@ public class CountTransformWrapUnion implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics.");
+        
         if (metrics.isEmpty()) {
             return metrics;
         }
-        for (Metric metric : metrics) {
-            Map<Long, String> resetDatapoints = resetDatapointsValueAsOne(metric.getDatapoints());
+        
+        MetricDistiller distiller = new MetricDistiller();
+        distiller.distill(metrics);
 
-            metric.setDatapoints(resetDatapoints);
-        }
+        String newMetricName = distiller.getMetric() == null ? TransformFactory.DEFAULT_METRIC_NAME : distiller.getMetric();
+        Metric newMetric = new Metric(getResultScopeName(), newMetricName);
 
-        Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
+        newMetric.setDisplayName(distiller.getDisplayName());
+        newMetric.setUnits(distiller.getUnits());
+        newMetric.setTags(distiller.getTags());
+        newMetric.setDatapoints(_collate(metrics));
 
-        return unionTransform.transform(metrics);
+        return Arrays.asList(newMetric);
     }
+    
+    private Map<Long, String> _collate(List<Metric> metrics) {
+        Map<Long, String> collated = new HashMap<>();
 
-    private Map<Long, String> resetDatapointsValueAsOne(Map<Long, String> originalDatapoints) {
-        Map<Long, String> newDatapoints = new HashMap<Long, String>();
-
-        for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-            newDatapoints.put(entry.getKey(), "1.0");
+        for (Metric metric : metrics) {
+            for (Map.Entry<Long, String> point : metric.getDatapoints().entrySet()) {
+                if (!collated.containsKey(point.getKey())) {
+                    collated.put(point.getKey(), "1.0");
+                } else {
+                	double oldValue = Double.parseDouble(collated.get(point.getKey()));
+                	collated.put(point.getKey(), String.valueOf(oldValue + 1.0));
+                }
+            }
         }
-        return newDatapoints;
+        return collated;
     }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("COUNT Transform with reducer is not supposed to be used without a constant");
+        throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
     }
 
     @Override
