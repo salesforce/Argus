@@ -86,7 +86,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossline
                 ;
 
-            // Base graph setup
+            // Base graph setup, initialize all the graph variables
             function setGraph() {
                 // use different x axis scale based on timezone
                 if (GMTon) {
@@ -251,7 +251,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
-                    ;
+                ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -273,8 +273,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossline.append('text')
                     .attr('id', 'crossLineTip');
             }
-
-            setGraph();
 
             function mousemove() {
                 if (!currSeries || currSeries.length === 0) {
@@ -510,7 +508,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 (brush.move, [x2(tempX[0]), x2(tempX[1])]);
             }
 
-            //updateGraph
+            //updateGraph, update the graph with new data
             function updateGraph(series){
                 if (!series) return;
 
@@ -557,6 +555,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('d', line2)
                         .style('stroke', z(metric.id));
                 });
+                //draw the brush xAxis
+                xAxisG2.call(xAxis2);
                 setZoomExtent(3);
             }
 
@@ -639,8 +639,10 @@ angular.module('argus.directives.charts.lineChart', [])
             d3.select(window).on('resize', resize);
 
             // Update graph on new metric results
+            setGraph();
             updateGraph(series);
             enableBrushTime();
+            reset();//to remove the brush cover first for user the drag
 
             // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
