@@ -31,6 +31,16 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.system.SystemAssert;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+
 /**
  * Normalizes the data point values of time series. If a normal constant is supplied, it is used as the unit normal,
  * if a metric normal is supplied the value at each timestamp of the metric normal is used as the unit normal,
@@ -65,21 +75,6 @@ package com.salesforce.dva.argus.service.metric.transform;
  *
  *
  * @author Ruofan Zhang(rzhang@salesforce.com)
- */
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.system.SystemAssert;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-
-/**
- * Implements a normalization.
- *
- * @author  Tom Valine (tvaline@salesforce.com)
  */
 public class NormalizeTransformWrap implements Transform {
 

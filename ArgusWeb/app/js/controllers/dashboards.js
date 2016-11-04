@@ -23,6 +23,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 .controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', function (Auth, $scope, growl, Dashboards, $sessionStorage) {
 
     $scope.dashboards = [];
+    $scope.dashboardsLoaded = false;
     var sharedDashboards = [];
     var usersDashboards = [];
     var remoteUser = Auth.remoteUser();
@@ -92,6 +93,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.refreshDashboards = function () {
         delete $sessionStorage.cachedDashboards;
         delete $scope.dashboards;
+        $scope.dashboardsLoaded = false;
         Dashboards.getMeta().$promise.then(function(dashboards) {
             setDashboardsAfterLoading(dashboards);
             $sessionStorage.cachedDashboards = dashboards;

@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.services.dashboard', [])
 .service('DashboardService', ['$filter', '$compile', '$resource', 'CONFIG', 'VIEWELEMENT', 'Metrics', '$sce', '$http', 'Annotations', 'growl',
     function ($filter, $compile, $resource, CONFIG, VIEWELEMENT, Metrics, $sce, $http, Annotations, growl) {
@@ -46,7 +48,7 @@ angular.module('argus.services.dashboard', [])
                     controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
                     // remove GMT from offset input from
                     if( typeof (controlValue) === "string" && controlValue.indexOf('GMT') >= 0){
-                        controlValue = controlValue.replace('GMT','');
+                        controlValue = controlValue.replace('GMT','').trim();
                     }
                 }
                 controlValue = controlValue == undefined ? "" : controlValue;
@@ -130,7 +132,7 @@ angular.module('argus.services.dashboard', [])
                 }
                 return options;
             }
-        };
+        }
 
         this.populateView = function(metricList, annotationExpressionList, optionList, divId, attributes, elementType, scope) {
             if (!metricList && !divId) return;
@@ -205,7 +207,7 @@ angular.module('argus.services.dashboard', [])
                 populateSeries(metricList[i], highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount);
             }
             //populateAnnotations(annotationExpressionList, chart);
-        };
+        }
 
         function populateSeries(metricItem, highChartOptions, series, divId, attributes, annotationExpressionList, objMetricCount) {
 
@@ -248,7 +250,7 @@ angular.module('argus.services.dashboard', [])
                    bindDataToChart(divId, highChartOptions, series, annotationExpressionList);
                 }
             });
-        };
+        }
 
         // ---------------
 
@@ -282,7 +284,7 @@ angular.module('argus.services.dashboard', [])
                 result.push({name: 'result', data: []});
             }
             return result;
-        };
+        }
 
         // 'dataProcessing'
         function setCustomOptions(options, optionList){
@@ -293,7 +295,7 @@ angular.module('argus.services.dashboard', [])
                 copyProperties(result,options);
             }
             return options;
-        };
+        }
 
         // 'chartRendering' & 'dataProcessing'
         function bindDataToChart(divId, highChartOptions, series, annotationExpressionList) {
@@ -317,7 +319,7 @@ angular.module('argus.services.dashboard', [])
             // ----------------
 
             populateAnnotations(annotationExpressionList, chart);
-        };
+        }
 
         // 'dataProcessing'
         function populateAnnotations(annotationsList, chart){
@@ -326,7 +328,7 @@ angular.module('argus.services.dashboard', [])
                     addAlertFlag(annotationsList[i],chart);
                 }
             }
-        };
+        }
 
         // 'dataProcessing', update to return promise instead
         function addAlertFlag(annotationExpression, chart) {
@@ -346,7 +348,7 @@ angular.module('argus.services.dashboard', [])
                     chart.addSeries(series);
                 }
             });
-        };
+        }
 
         // 'dataProcessing'
         function getMetricExpressionList(metrics){
@@ -355,7 +357,7 @@ angular.module('argus.services.dashboard', [])
                 result.push(metrics[i].expression);
             }
             return result;
-        };
+        }
 
         // 'dataProcessing'
         function copyHeatmapSeries(data, timeSpan) {
@@ -371,7 +373,7 @@ angular.module('argus.services.dashboard', [])
                 }
             }
             return dataSeries;
-        };
+        }
 
         // 'dataProcessing'
         function copySeries(data) {
@@ -392,7 +394,7 @@ angular.module('argus.services.dashboard', [])
                 result.push({name: 'result', data: []});
             }
             return result;
-        };
+        }
 
         // 'dataProcessing'
         function createSeriesName(metric) {
@@ -400,7 +402,7 @@ angular.module('argus.services.dashboard', [])
             var name = metric.metric;
             var tags = createTagString(metric.tags);
             return scope + ':' + name + tags;
-        };
+        }
 
         // 'dataProcessing'
         function createTagString(tags) {
@@ -419,7 +421,7 @@ angular.module('argus.services.dashboard', [])
                 }
             }
             return result;
-        };
+        }
 
         // 'dataProcessing'
         function copyFlagSeries(data) {
@@ -435,7 +437,7 @@ angular.module('argus.services.dashboard', [])
                 result = null;
             }
             return result;
-        };
+        }
 
         // 'dataProcessing'
         function formatFlagText(fields) {
@@ -448,7 +450,7 @@ angular.module('argus.services.dashboard', [])
                 }
             }
             return result;
-        };
+        }
 
         // --------
 
@@ -461,7 +463,7 @@ angular.module('argus.services.dashboard', [])
             } else if (lastStatusVal > attributes.hi) {
                 $('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
             }
-        };
+        }
 
         // 'chartRendering'
         function updateChart(config, data, divId, annotationExpressionList, optionList, attributes) {
@@ -483,7 +485,7 @@ angular.module('argus.services.dashboard', [])
             //chart.defaultSeriesType='line';
 
             populateAnnotations(annotationExpressionList, chart);
-        };
+        }
 
         // 'chartRendering'
         function updateTable(data, scope, divId, options) {
@@ -579,7 +581,7 @@ angular.module('argus.services.dashboard', [])
                 $("#" + divId).empty();
                 $compile($("#" + divId).prepend(html))(scope);
             }
-        };
+        }
 
         // 'chartRendering'
         function updateHeatmap(config, data, divId, optionList, attributes) {
@@ -600,7 +602,7 @@ angular.module('argus.services.dashboard', [])
             }else {
                 $('#' + divId).highcharts('StockChart', getOptionsByChartType(config, 'LINE'));
             }
-        };
+        }
 
         // 'chartOptions'
         function getOptionsByChartType(config, chartType, smallChart){
@@ -689,9 +691,8 @@ angular.module('argus.services.dashboard', [])
             }
 
             return options;
-        };
+        }
 
-        // 'chartOptions'
         function getOptionsByHeatmapType(config, top){
             var options = config ? angular.copy(config) : {};
             options.credits = {enabled: false};
@@ -741,7 +742,7 @@ angular.module('argus.services.dashboard', [])
                 }
             }];
             return options;
-        };
+        }
 
         // 'chartTools' --> moved to 'ChartRenderingService.chartTools'
         function getTimeAxis(timeSpan) {
@@ -758,7 +759,7 @@ angular.module('argus.services.dashboard', [])
             }
             axis.push('<b><i>Average</i></b>');
             return axis;
-        };
+        }
 
         // --------
 
@@ -768,7 +769,7 @@ angular.module('argus.services.dashboard', [])
             if (getAverage(a) < getAverage(b)) return 1;
             if (getAverage(a) > getAverage(b)) return -1;
             return 0;
-        };
+        }
 
         function getTimeSpan(data) {
             var begin = 9999999999999;
@@ -781,7 +782,7 @@ angular.module('argus.services.dashboard', [])
             }
             var span = Math.floor(end/1000/60/60) - Math.floor(begin/1000/60/60) + 1;
             return {begin: begin, end: end, span: span};
-        };
+        }
 
         function getAverage(data) {
             var total = 0;
@@ -794,7 +795,7 @@ angular.module('argus.services.dashboard', [])
                 return total / count;
             else
                 return 0;
-        };
+        }
 
         function getHourlyAverage(timeSpan, data) {
             var sums = Array.apply(null, Array(timeSpan.span)).map(Number.prototype.valueOf,0);
@@ -811,7 +812,7 @@ angular.module('argus.services.dashboard', [])
                 else avgs.push(null);
             }
             return avgs;
-        };
+        }
 
         function copyProperties(from, to){
             for (var key in from) {
@@ -823,7 +824,7 @@ angular.module('argus.services.dashboard', [])
                     }
                 }
             }
-        };
+        }
 
         function constructObjectTree(name, value) {
             var result = {};
@@ -836,7 +837,7 @@ angular.module('argus.services.dashboard', [])
                 result[property] = constructObjectTree(name.substring(index + 1), value);
                 return result;
             }
-        };
+        }
 
         function getParsedValue(value){
 
@@ -852,5 +853,5 @@ angular.module('argus.services.dashboard', [])
                 return parseInt(value);
             }
             return value;
-        };
+        }
     }]);

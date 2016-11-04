@@ -267,5 +267,55 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
     }
+    
+    @Test
+    public void testCountTransformWithThreeMetrics() {
+        Transform countTransform = new CountTransformWrapUnion();
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+
+        datapoints_1.put(1000L, "1");
+        datapoints_1.put(2000L, "2");
+        datapoints_1.put(3000L, "3");
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+
+        datapoints_2.put(1000L, "1");
+        datapoints_2.put(2000L, "2");
+        datapoints_2.put(3000L, "3");
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+        
+        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+
+        datapoints_3.put(1000L, "1");
+        datapoints_3.put(3000L, "3");
+
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_3.setDatapoints(datapoints_3);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+        metrics.add(metric_3);
+
+        Map<Long, String> expected = new HashMap<Long, String>();
+
+        expected.put(1000L, "3.0");
+        expected.put(2000L, "2.0");
+        expected.put(3000L, "3.0");
+
+        List<Metric> result = countTransform.transform(metrics);
+
+        //assertEquals(result.get(0).getDatapoints().size(), 4);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
