@@ -1,6 +1,7 @@
 <div class="row">
     <div class="col-md-3 h3">{{properties.title}} list</div>
-    <div class="col-md-5 text-right">
+
+    <div class="col-md-4 text-right">
         <dir-pagination-controls></dir-pagination-controls>
     </div>
     <div class="col-md-1">
@@ -19,6 +20,11 @@
             </span>
         </span>
     </div>
+    <div class="col-md-1 text-right">
+        <a class="btn btn-primary btn-sm" ng-click="refreshData()">
+          <span class="glyphicon glyphicon-refresh"></span>
+        </a>
+    </div>
 </div>
 <table class="table table-striped table-bordered">
     <tr>
@@ -26,7 +32,7 @@
             {{value}}
             <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
         </th>
-        <th class="col-centered">
+        <th class="col-centered text-center">
             <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
                 <i class="glyphicon glyphicon-plus"></i>
             </button>
@@ -40,7 +46,7 @@
     <td ng-if="colName.createdDate">{{item.createdDate| date:'medium'}}</td>
     <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
     <td ng-if="colName.ownerName">{{item.ownerName}}</td>
-    <td ng-if="colName.state">
+    <td ng-if="colName.state" class="text-center">
         <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled'
                 ng-click='enableItem(item, true)'>
             <i class="glyphicon glyphicon-play"></i>
@@ -50,7 +56,7 @@
             <i class="glyphicon glyphicon-pause"></i>
         </button>
     </td>
-    <td>
+    <td class="text-center">
         <button class="btn btn-warning btn-sm" type="button"
                 ng-disabled="isDisabled(item)"
                 ng-confirm="Delete '{{item.name}}'?"
@@ -61,11 +67,11 @@
     </tr>
 </table>
 
-<div ng-if="allData">
+<div ng-if="loaded">
   <div class="row text-center" ng-show="searchText.length == 0">
       <ng-pluralize count="dataSet.length"
                     when="{'0': 'No {{properties.type}} to show.',
-                          'one': 'Showing 1 {{properties.type.slice(0,-1)}}.',
+                          'one': 'Showing 1 of 1 {{properties.type.slice(0,-1)}}.',
                           'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
       </ng-pluralize>
   </div>

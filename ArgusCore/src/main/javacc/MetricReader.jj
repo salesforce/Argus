@@ -188,6 +188,7 @@ TOKEN : { < JOIN : "JOIN" > }
 TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
+TOKEN : { < ANOMALY_STL : "ANOMALY_STL" > }
 TOKEN : { < ANOMALY_DENSITY : "ANOMALY_DENSITY" > }
 TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
@@ -220,16 +221,16 @@ boolean isValidExpression(String expression) :
   	}
 }
 
-List<T> parse(String expression, long offsetInMillis, Class<T> clazz) :
+List<T> parse(String expression, long relativeTo, Class<T> clazz) :
 {}
 {
   	{
-  	  	return start(expression, offsetInMillis, false, clazz);
+  	  	return start(expression, relativeTo, false, clazz);
   	}
 }
 
 
-private List<T> start(String expression, long offsetInMillis, boolean syntaxOnly, Class<T> clazz) :
+private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 {
   	List<T> result = new ArrayList<T>();
 }
@@ -238,13 +239,13 @@ private List<T> start(String expression, long offsetInMillis, boolean syntaxOnly
         requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
-        (result = expression(offsetInMillis, syntaxOnly, clazz) | result = function(offsetInMillis, syntaxOnly, clazz))<EOF>
+        (result = expression(relativeTo, syntaxOnly, clazz) | result = function(relativeTo, syntaxOnly, clazz))<EOF>
 	{
         return result;
     }
 }
 
-private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz) :
+private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 {
   	List<T> totalResult = new ArrayList<T>();
   	List<T> result = new ArrayList<T>();
@@ -256,10 +257,10 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 	functionName = functionName()
 	<LEFT_PARENTHESIS>
 		(
-		result = expression(offsetInMillis, syntaxOnly, clazz)
+		result = expression(relativeTo, syntaxOnly, clazz)
 		{ totalResult.addAll(result); }
 		| 
-		result = function(offsetInMillis, syntaxOnly, clazz)
+		result = function(relativeTo, syntaxOnly, clazz)
 		{ totalResult.addAll(result); }
 		| 
 		t = <CONSTANT>
@@ -272,10 +273,10 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 		(
 		  <COMMA>
           ( 
-            result = expression(offsetInMillis, syntaxOnly, clazz)
+            result = expression(relativeTo, syntaxOnly, clazz)
             { totalResult.addAll(result); }
 			|
-            result = function(offsetInMillis, syntaxOnly, clazz)
+            result = function(relativeTo, syntaxOnly, clazz)
             { totalResult.addAll(result); }
 			|
 			t = <CONSTANT>
@@ -288,7 +289,7 @@ private List<T> function(long offsetInMillis, boolean syntaxOnly, Class<T> clazz
 		)*
 	<RIGHT_PARENTHESIS>
 	{
-	  	return evaluateFunction(functionName, totalResult, constants, syntaxOnly, clazz);
+	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz);
 	}
 }
 
@@ -445,6 +446,9 @@ private String functionName() :
 	t = <HW_DEVIATION>
 	{ return t.image; }
 	|
+	t = <ANOMALY_STL>
+	{ return t.image; }
+    |
 	t = <ANOMALY_DENSITY>
 	{ return t.image; }
 	|
@@ -461,7 +465,7 @@ private String functionName() :
     { return t.image; }
 }
 
-private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, boolean syntaxOnly, Class<T> clazz) :
+private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 {}
 {
   	{
@@ -471,8 +475,9 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
   	  	  	if(syntaxOnly) {
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
+	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
+	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
 	  	  	  	Transform transform = factory.getTransform(functionName);
-				//return (constants == null || constants.isEmpty()) ? transform.transform(result) : transform.transform(result, constants);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
 	  	} else {
@@ -493,7 +498,7 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
  * we decided to move it to the very end. 
  *  
  */
-private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> clazz) :
+private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 {
   	Long startTimestamp = null;
   	Long endTimestamp = null;
@@ -507,8 +512,8 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
   	String downsampleTokenStr = null;
 }
 { 	
-  	startTimestamp = getTime()<COLON>
-  	(endTimestamp = getTime()<COLON>)?
+  	startTimestamp = getTime(relativeTo)<COLON>
+  	(endTimestamp = getTime(relativeTo)<COLON>)?
   	scope = getString() <COLON> metric = getString()
   	(<LEFT_CURLY> tags = getTags() <RIGHT_CURLY>)?
   	<COLON>aggregator = getAggregator()
@@ -518,8 +523,7 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
 	  	if(MetricQuery.class.equals(clazz)) {
 	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
 			downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-			startTimestamp += offsetInMillis;
-			endTimestamp = endTimestamp == null ? System.currentTimeMillis() + offsetInMillis : endTimestamp + offsetInMillis;
+			endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 	        query.setNamespace(namespace);
 	        query.setAggregator(aggregator);
@@ -533,8 +537,7 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
 	        } else {
 	          	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
 				downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-				startTimestamp += offsetInMillis;
-				endTimestamp = endTimestamp == null ? System.currentTimeMillis() + offsetInMillis : endTimestamp + offsetInMillis;
+				endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
 		        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 		        query.setNamespace(namespace);
 		        query.setAggregator(aggregator);
@@ -554,7 +557,7 @@ private List<T> expression(long offsetInMillis, boolean syntaxOnly, Class<T> cla
 	}
 }
 
-private Long getTime() :
+private Long getTime(long relativeTo) :
 {
   	Token t = null;
   	Token t1 = null;
@@ -570,7 +573,7 @@ private Long getTime() :
 				String timeUnit = timeStr.substring(timeStr.length() - 1);
 	  	  		Long time = Long.parseLong(timeDigits);
 	  	  		TimeUnit unit = TimeUnit.fromString(timeUnit);
-	  	  		return (System.currentTimeMillis() - (time * unit.getValue())) / 1000 * 1000;
+	  	  		return (relativeTo - (time * unit.getValue())) / 1000 * 1000;
 		  	}
 		  	return Long.parseLong(timeStr);
 		} catch(NumberFormatException nfe) {

@@ -429,6 +429,7 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
@@ -452,11 +453,12 @@ public class FillTransformTest {
         constants.add("2s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
-        expected.put(0L, "100.0");
-        expected.put(2000L, "100.0");
+        expected.put(-1000L, "100.0");
+        expected.put(1000L, "100.0");
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -474,10 +476,11 @@ public class FillTransformTest {
         constants.add("3s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Map<Long, String> expected = new HashMap<Long, String>();
 
-        expected.put(0L, "100.0");
+        expected.put(-1000L, "100.0");
         expected.put(2000L, "100.0");
 
         List<Metric> result = fillTransform.transform(null, constants);
@@ -487,8 +490,32 @@ public class FillTransformTest {
     }
 
     @Test
-    public void testMinusTimestamp_1() {
+    public void testFillLineWithFillRangeZeroAfterSnappingOffsetZero() {
         Transform fillTransform = new FillTransform();
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("1000");
+        constants.add("3000");
+        constants.add("4s");
+        constants.add("0s");
+        constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
+
+        Map<Long, String> expected = new HashMap<Long, String>();
+
+        expected.put(0L, "100.0");
+
+        List<Metric> result = fillTransform.transform(null, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), 1);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test
+    public void testMinusTimestamp_1() {
+    	long now = System.currentTimeMillis();
+    	
+    	Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
         constants.add("-1d");
@@ -496,9 +523,10 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
+        constants.add(String.valueOf(now));
 
-        Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
-        Long expectedEndTimestamp = System.currentTimeMillis() - 12L * 3600L * 1000L;
+        Long expectedStartTimestamp = now - 1L * 86400L * 1000L;
+        Long expectedEndTimestamp = now - 12L * 3600L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -514,6 +542,8 @@ public class FillTransformTest {
 
     @Test
     public void testMinusTimestamp_2() {
+    	long now = System.currentTimeMillis();
+    	
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
@@ -522,8 +552,8 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
-
-        long now = System.currentTimeMillis();
+        constants.add(String.valueOf(now));
+        
         Long expectedStartTimestamp = now - 7L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 0L * 60L * 1000L;
         int expectedSize = (int) ((expectedEndTimestamp - expectedStartTimestamp) / (10 * 60 * 1000) + 1);
@@ -549,6 +579,7 @@ public class FillTransformTest {
         constants.add("10m");
         constants.add("0m");
         constants.add("100.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
 
         Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = System.currentTimeMillis();

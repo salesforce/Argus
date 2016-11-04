@@ -1,34 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>2.0.1</version>
+    <version>2.2.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <name>Argus</name>
     <description>A pom for all Argus projects. It provides standards for plugin versions, configuration and a number of other things.</description>
     <inceptionYear>2016</inceptionYear>
+    <url>https://www.github.com/salesforceeng/argus</url>
     <organization>
-        <name>salesforce.com</name>
+        <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
-    </organization>
+    </organization>    
     <licenses>
         <license>
             <name>BSD 3-Clause</name>
             <url>file://${basedir}/LICENSE.txt</url>
         </license>
     </licenses>
-    <prerequisites>
-        <maven>3.2.3</maven>
-    </prerequisites>
-    <properties>
-        <timestamp>${maven.build.timestamp}</timestamp>
-        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-        <top>${project.basedir}</top>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
     <developers>
         <developer>
             <name>Tom Valine</name>
@@ -86,60 +78,93 @@
             <email>jbhatt@salesforce.com</email>
             <organization>Salesforce</organization>
         </developer>
+        <developer>
+            <name>Chris Nardi</name>
+            <roles>
+                <role>Member</role>
+            </roles>
+            <email>cnardi</email>
+            <organization>Salesforce</organization>
+        </developer>
+        <developer>
+            <name>John Xu</name>
+            <roles>
+                <role>Member</role>
+            </roles>
+            <email>liuxizi.xu@salesforce.com</email>
+            <organization>Salesforce</organization>
+        </developer>
+        <developer>
+            <name>Preston Fu</name>
+            <roles>
+                <role>Member</role>
+            </roles>
+            <email>pfu@salesforce.com</email>
+            <organization>Salesforce</organization>
+        </developer>
     </developers>
+    <scm>
+        <connection>scm:git:git://github.com/SalesforceEng/Argus.git</connection>
+        <developerConnection>scm:git:ssh://github.com:SalesforceEng/Argus.git</developerConnection>
+        <url>https://github.com/SalesforceEng/Argus/tree/master</url>
+        <tag>argus-2.2.0</tag>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <properties>
+        <top>${project.basedir}</top>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+    </properties>
     <build>
         <filters>
             <filter>${top}/argus-build.properties</filter>
         </filters>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>2.4.1</version>
-                    <configuration>
-                        <releaseProfiles>release</releaseProfiles>
-                        <goals>deploy</goals>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>1.2</version>
-                    <configuration>
-                        <rules>
-                            <requireMavenVersion>
-                                <message>Apache Maven Version 3.2.3 or greater required.</message>
-                                <version>[3.2.3,)</version>
-                            </requireMavenVersion>
-                        </rules>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>enforce-versions</id>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>2.10</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>2.5.3</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy</goals>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.5.201505241946</version>
+                <version>0.7.7.201606060606</version>
                 <executions>
                     <execution>
                         <goals>
@@ -158,7 +183,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>2.19.1</version>
                 <executions>
                     <execution>
                         <id>default-test</id>
@@ -184,6 +209,9 @@
                             <goal>verify</goal>
                         </goals>
                         <configuration>
+                            <includes>
+                                <include>**/*IT.java</include>
+                            </includes>
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
                         </configuration>
@@ -193,6 +221,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.6</version>
                 <executions>
                     <execution>
                         <id>make-shared-resources</id>
@@ -227,19 +256,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9</version>
+                <version>2.10.4</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
                     <doclet>org.umlgraph.doclet.UmlGraphDoc</doclet>
                     <docletArtifact>
                         <groupId>org.umlgraph</groupId>
                         <artifactId>umlgraph</artifactId>
-                        <version>5.6</version>
+                        <version>5.6.6</version>
                     </docletArtifact>
+                    <aggregate>true</aggregate>
                     <additionalparam>-Xdoclint:none -views -all -dotexecutable /usr/local/bin/dot</additionalparam>
-                    <useStandardDocletOptions>true</useStandardDocletOptions>
                     <author>false</author>
                     <show>public</show>
+                    <failOnError>false</failOnError>
+                    <links>
+                        <link>http://docs.oracle.com/javase/8/docs/api/</link>
+                    </links>                    
                     <windowtitle>API Documentation</windowtitle>
                 </configuration>
             </plugin>
@@ -252,20 +285,13 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <inherited>true</inherited>
-                        <configuration>
-                            <updateReleaseInfo>true</updateReleaseInfo>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
                                 <goals>
-                                    <goal>jar</goal>
+                                    <goal>jar-no-fork</goal>
                                 </goals>
                             </execution>
                         </executions>
@@ -273,14 +299,29 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <encoding>${project.build.sourceEncoding}</encoding>
-                        </configuration>
+                        <version>2.10.4</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
                                 <goals>
                                     <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <additionalparam>-Xdoclint:none</additionalparam>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
                                 </goals>
                             </execution>
                         </executions>

@@ -20,11 +20,26 @@
 'use strict';
 
 angular.module('argus.controllers.alerts', ['ngResource'])
-.controller('Alerts', ['$scope', 'growl', 'Alerts', function ($scope, growl, Alerts) {
+.controller('Alerts', ['$scope', 'growl', 'Alerts', '$sessionStorage', function ($scope, growl, Alerts, $sessionStorage) {
 
-		Alerts.query().$promise.then(function(alerts) {
-			$scope.alerts = alerts;		
-		});
+    function getAlerts() {
+        Alerts.getMeta().$promise.then(function(alerts) {
+            $scope.alerts = alerts;
+            $sessionStorage.cachedAlerts = alerts;
+        });
+    }
+
+    if($sessionStorage.cachedAlerts) {
+        $scope.alerts = $sessionStorage.cachedAlerts;
+    } else {
+        getAlerts();
+    }
+
+	$scope.refreshAlerts = function () {
+		delete $sessionStorage.cachedAlerts;
+        delete $scope.alerts;
+		getAlerts();
+	}
 
     $scope.addAlert = function () {
         var alert = {
@@ -33,7 +48,10 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             cronEntry: "0 */4 * * *"
         };
         Alerts.save(alert, function (result) {
+            // update both scope and session alerts
+            result.expression = "";
             $scope.alerts.push(result);
+            $sessionStorage.cachedAlerts = $scope.alerts;
             growl.success('Created "' + alert.name + '"');
         }, function (error) {
             growl.error('Failed to create "' + alert.name + '"');
@@ -42,13 +60,15 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 
     $scope.enableAlert = function (alert, enabled) {
         if (!alert.enabled === enabled) {
-            var updated = angular.copy(alert);
-            updated.enabled = enabled;
-            Alerts.update({alertId: alert.id}, updated, function (result) {
-                alert.enabled = enabled;
-                growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
-            }, function (error) {
-                growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+            Alerts.get({alertId: alert.id}, function(updated) {
+                updated.enabled = enabled;
+                Alerts.update({alertId: alert.id}, updated, function (result) {
+                    alert.enabled = enabled;
+                    $sessionStorage.cachedAlerts = $scope.alerts;
+                    growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
+                }, function (error) {
+                    growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+                });
             });
         }
     };
@@ -58,6 +78,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             $scope.alerts = $scope.alerts.filter(function (element) {
                 return element.id !== alert.id;
             });
+            $sessionStorage.cachedAlerts = $scope.alerts;
             growl.success('Deleted "' + alert.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + alert.name + '"');

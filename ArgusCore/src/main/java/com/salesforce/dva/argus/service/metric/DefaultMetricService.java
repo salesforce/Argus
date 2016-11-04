@@ -89,23 +89,23 @@ public class DefaultMetricService extends DefaultService implements MetricServic
     @Override
     public List<Metric> getMetrics(String expression) {
         requireNotDisposed();
-        return getMetrics(expression, 0);
+        return getMetrics(expression, System.currentTimeMillis());
     }
 
     @Override
-    public List<Metric> getMetrics(String expression, long offset) {
+    public List<Metric> getMetrics(String expression, long relativeTo) {
         requireNotDisposed();
-        return getMetrics(Arrays.asList(new String[] { expression }), offset);
+        return getMetrics(Arrays.asList(new String[] { expression }), relativeTo);
     }
 
     @Override
     public List<Metric> getMetrics(List<String> expressions) {
         requireNotDisposed();
-        return getMetrics(expressions, 0);
+        return getMetrics(expressions, System.currentTimeMillis());
     }
 
     @Override
-    public List<Metric> getMetrics(List<String> expressions, long offset) {
+    public List<Metric> getMetrics(List<String> expressions, long relativeTo) {
         requireNotDisposed();
         SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
@@ -115,7 +115,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
         try {
             for (String expression : expressions) {
                 _logger.debug("Reading metric for expression {}", expression);
-                metrics.addAll(reader.parse(expression, offset, Metric.class));
+                metrics.addAll(reader.parse(expression, relativeTo, Metric.class));
             }
         } catch (ParseException ex) {
             throw new SystemException("Failed to parse the given expression", ex);
@@ -125,30 +125,30 @@ public class DefaultMetricService extends DefaultService implements MetricServic
     }
 
     @Override
-    public String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName) {
+    public String getAsyncMetrics(List<String> expressions, long relativeTo, int ttl, String ownerName) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public List<MetricQuery> getQueries(String expression) {
         requireNotDisposed();
-        return getQueries(expression, 0);
+        return getQueries(expression, System.currentTimeMillis());
     }
 
     @Override
-    public List<MetricQuery> getQueries(String expression, long offset) {
+    public List<MetricQuery> getQueries(String expression, long relativeTo) {
         requireNotDisposed();
-        return getQueries(Arrays.asList(new String[] { expression }), offset);
+        return getQueries(Arrays.asList(new String[] { expression }), relativeTo);
     }
 
     @Override
     public List<MetricQuery> getQueries(List<String> expressions) {
         requireNotDisposed();
-        return getQueries(expressions, 0);
+        return getQueries(expressions, System.currentTimeMillis());
     }
 
     @Override
-    public List<MetricQuery> getQueries(List<String> expressions, long offset) {
+    public List<MetricQuery> getQueries(List<String> expressions, long relativeTo) {
         requireNotDisposed();
         SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
@@ -158,7 +158,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
         try {
             for (String expression : expressions) {
                 _logger.debug("Creating metric query for expression {}", expression);
-                queries.addAll(reader.parse(expression, offset, MetricQuery.class));
+                queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class));
             }
         } catch (ParseException ex) {
             throw new SystemException("Failed to parse the given expression", ex);
