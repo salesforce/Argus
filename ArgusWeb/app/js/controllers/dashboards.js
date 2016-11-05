@@ -48,7 +48,9 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 
     // TODO: refactor to DashboardService
     $scope.getDashboards = function(shared) {
-        $scope.dashboards = shared? sharedDashboards: usersDashboards;
+        if ($scope.dashboardsLoaded) {
+            $scope.dashboards = shared? sharedDashboards: usersDashboards;
+        }
         $scope.shared = shared;
         $sessionStorage.shared = shared;
     };
@@ -98,7 +100,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             setDashboardsAfterLoading(dashboards);
             $sessionStorage.cachedDashboards = dashboards;
         });
-    }
+    };
 
     // TODO: refactor to DashboardService
     $scope.addDashboard = function () {
