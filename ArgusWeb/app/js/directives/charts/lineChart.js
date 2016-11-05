@@ -98,7 +98,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
-                z = d3.scaleOrdinal().range(d3.schemeCategory10);
+                z = d3.scaleOrdinal(d3.schemeCategory10);
 
                 //Axis
                 xAxis = d3.axisBottom()
@@ -302,7 +302,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     } else {
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
-                    var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.id));
+                    var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
                     circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
@@ -548,13 +548,29 @@ angular.module('argus.directives.charts.lineChart', [])
                         .datum(metric.data)
                         .attr('class', 'line')
                         .attr('d', line)
-                        .style('stroke', z(metric.id));
+                        // .style('stroke', z(metric.id))
+                        .style('stroke', function () {
+                            if (metric.color == null) {
+                                return z(metric.name);
+                            } else {
+                                return metric.color;
+                            }
+                        })
+                    ;
 
                     context.append('path')
                         .datum(metric.data)
                         .attr('class', 'brushLine')
                         .attr('d', line2)
-                        .style('stroke', z(metric.id));
+                        // .style('stroke', z(metric.id))
+                        .style('stroke', function () {
+                            if (metric.color == null) {
+                                return z(metric.name);
+                            } else {
+                                return metric.color;
+                            }
+                        })
+                    ;
                 });
                 setZoomExtent(3);
             }
