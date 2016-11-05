@@ -37,9 +37,9 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 
 	$scope.refreshAlerts = function () {
 		delete $sessionStorage.cachedAlerts;
-        delete $scope.alerts;
+    delete $scope.alerts;
 		getAlerts();
-	}
+	};
 
     $scope.addAlert = function () {
         var alert = {
@@ -59,7 +59,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     };
 
     $scope.enableAlert = function (alert, enabled) {
-        if (!alert.enabled === enabled) {
+        if (alert.enabled !== enabled) {
             Alerts.get({alertId: alert.id}, function(updated) {
                 updated.enabled = enabled;
                 Alerts.update({alertId: alert.id}, updated, function (result) {
