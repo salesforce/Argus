@@ -33,8 +33,12 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.junit.Test;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -354,5 +358,21 @@ public class PropagateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
+    
+    @Test
+    public void testEmptyDatapointSet() {
+    	
+    	Transform propagateTransform = new PropagateTransform();
+    	
+    	Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+        metric.setDatapoints(Collections.<Long, String> emptyMap());
+
+        List<Metric> metrics = Arrays.asList(metric);
+        List<String> constants = Arrays.asList("1m");
+        
+        List<Metric> result = propagateTransform.transform(metrics, constants);
+        assertEquals(metrics, result);
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

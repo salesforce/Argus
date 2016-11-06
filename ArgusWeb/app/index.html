@@ -22,16 +22,6 @@
 <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
 <script src="bower_components/q/q.js"></script>
 
-<!-- Piwik -->
-<script type="text/javascript">
-	var userString = window.localStorage.getItem("ngStorage-user");
-	var user = JSON.parse(userString);
-	var _paq = _paq || [];
-	if(user)
-    	_paq.push(['setCustomVariable','1','User', user.userName, 'page']);
-</script>
-<!-- End Piwik Code -->
-
 <title>Argus</title>
 
 <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -45,37 +35,7 @@
 
 <div growl limit-messages="3"></div>
 
-<nav class="navbar navbar-default navbar-fixed-top">
-    <div style="width: 93%;" class="container">
-        <div class="navbar-header">
-            <a href="#dashboards"><img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left"></a>
-            <p class="navbar-text" ng-show="isLoggedIn()" ng-cloak>Welcome {{getRemoteUser()}}</p>
-        </div>
-
-        <div id="navbar" class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right" ng-show="isLoggedIn()">
-                <li ng-class="{'activeTab': activeTab == 'dashboards'}">
-                    <a class="glyphicon glyphicon-dashboard" href="#dashboards" title="Dashboards"></a>
-                </li>
-                <li ng-class="{'activeTab': activeTab == 'alerts'}">
-                    <a class="glyphicon glyphicon-bell" href="#alerts" title="Alerts"></a>
-                </li>
-                <li ng-class="{'activeTab': activeTab == 'metrics'}">
-                    <a class="glyphicon glyphicon-stats" href="#viewmetrics" title="Metrics"></a>
-                </li>
-                
-                <li class="topMenu">
-                    <a class="glyphicon glyphicon-menu-hamburger"></a>
-                    <ul class="subMenu">
-                        <li><a href="#namespace">Namespace</a></li>
-                        <li><a href="#about">About</a></li>
-                        <li><a href="#/login" ng-click="logout()" ng-show="isLoggedIn()">Logout</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<header-menu></header-menu>
 
 <div class="container" style="width: 93%;">
     <!-- breadcrumb navigation -->
@@ -114,7 +74,6 @@
 <script src="bower_components/ngstorage/ngStorage.js"></script>
 <script src="bower_components/at-table/dist/angular-table.js"></script>
 <script src="bower_components/angulartics/src/angulartics.js"></script>
-<script src="bower_components/angulartics/src/angulartics-piwik.js"></script>
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
 
@@ -150,6 +109,8 @@
 <script src="js/services/search.js"></script>
 <script src="js/services/storage.js"></script>
 <script src="js/services/tags.js"></script>
+<script src="js/services/inputTracker.js"></script>
+<script src="js/services/controls.js"></script>
 
 <script src="js/services/factories/alerts.js"></script>
 <script src="js/services/factories/asyncMetrics.js"></script>
@@ -166,7 +127,8 @@
 <script src="js/services/factories/triggersMap.js"></script>
 
 <!-- directives -->
-<script src="js/directives/autoFocus.js"></script>
+<script src="js/directives/headerMenu.js"></script>
+<script src="js/directives/tableList.js"></script>
 <script src="js/directives/breadcrumbs.js"></script>
 <script src="js/directives/dashboardResource.js"></script>
 <script src="js/directives/controls/dashboard.js"></script>
@@ -182,9 +144,9 @@
 <script src="js/directives/charts/option.js"></script>
 <script src="js/directives/charts/statusIndicator.js"></script>
 <script src="js/directives/charts/table.js"></script>
-<script src="js/directives/ngConfirm.js"></script>
-<script src="js/directives/stopEvent.js"></script>
-<script src="js/directives/spinningWheel.js"></script>
-<script src="js/directives/ngLoading.js"></script>
-<script src="js/directives/totalNumber.js"></script>
+<script src="js/directives/UItools/autoFocus.js"></script>
+<script src="js/directives/UItools/stopEvent.js"></script>
+<script src="js/directives/UItools/ngConfirm.js"></script>
+<script src="js/directives/UItools/ngLoading.js"></script>
+<script src="js/directives/UItools/ngEnter.js"></script>
 </html>

@@ -46,7 +46,7 @@ class Alerter implements Runnable {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final long POLL_INTERVAL_MS = 100;
+    private static final long POLL_INTERVAL_MS = 500;
     private static final Logger LOGGER = LoggerFactory.getLogger(Alerter.class);
 
     //~ Instance fields ******************************************************************************************************************************
@@ -76,8 +76,8 @@ class Alerter implements Runnable {
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                jobCounter.addAndGet(service.executeScheduledAlerts(10, timeout).size());
-                LOGGER.info("alerts evaluated so far: ", jobCounter.get()); 
+                jobCounter.addAndGet(service.executeScheduledAlerts(50, timeout).size());
+                LOGGER.info("alerts evaluated so far: {}", jobCounter.get()); 
                 Thread.sleep(POLL_INTERVAL_MS);
             } catch (InterruptedException ex) {
                 LOGGER.info("Execution was interrupted.");

@@ -14,14 +14,16 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import java.util.Collections;
+import java.util.Map;
 
 public class NoAuthService extends DefaultService implements AuthService {
 
 	private final UserService _userService;
 	private final MonitorService _monitorService;
 	private final SystemConfiguration _config;
-        private final UserCountCache _monthlyUsers;
-        private final UserCountCache _dailyUsers;
+        private static final Map<String,Long> MONTHLY_USERS = Collections.synchronizedMap(new UserCountCache(2592000000L));
+        private static final Map<String,Long> DAILY_USERS = Collections.synchronizedMap(new UserCountCache(86400000L));
 	
 	/**
 	 * Creates a new NoAuthService object.
@@ -39,8 +41,6 @@ public class NoAuthService extends DefaultService implements AuthService {
 		_userService = userService;
 		_monitorService = monitorService;
 		_config = config;
-                _dailyUsers = new UserCountCache(86400000L);
-                _monthlyUsers = new UserCountCache(2592000000L);                
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -54,10 +54,10 @@ public class NoAuthService extends DefaultService implements AuthService {
 		if(result == null){
 			result = new PrincipalUser(_userService.findAdminUser(), username, username+"@gmail.com");
 		}
-                _dailyUsers.put(username, System.currentTimeMillis());
-                _monthlyUsers.put(username, System.currentTimeMillis());
-                _monitorService.updateCounter(MonitorService.Counter.DAILY_USERS, _dailyUsers.size(), new HashMap<>(0));
-                _monitorService.updateCounter(MonitorService.Counter.MONTHLY_USERS, _monthlyUsers.size(), new HashMap<>(0));
+                DAILY_USERS.put(username, System.currentTimeMillis());
+                MONTHLY_USERS.put(username, System.currentTimeMillis());
+                _monitorService.updateCounter(MonitorService.Counter.DAILY_USERS, DAILY_USERS.size(), new HashMap<>(0));
+                _monitorService.updateCounter(MonitorService.Counter.MONTHLY_USERS, MONTHLY_USERS.size(), new HashMap<>(0));
 		_monitorService.updateCounter(MonitorService.Counter.UNIQUE_USERS, _userService.getUniqueUserCount(), new HashMap<String, String>(0));
 
 		try{

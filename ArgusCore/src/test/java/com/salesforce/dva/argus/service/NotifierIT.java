@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +51,7 @@ import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
 public class NotifierIT extends AbstractTest {
@@ -73,7 +73,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
         notifier.sendNotification(context);
@@ -108,7 +108,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
         notifier.sendNotification(context);
@@ -130,23 +130,21 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
         notifier.sendNotification(context);
-        Thread.sleep(2000);
+        Thread.sleep(5000);
 
         List<Annotation> annotations = system.getServiceFactory().getAnnotationService().getAnnotations(
-            "-3s:argus.core:triggers.warden:WARDEN:aUser");
+            "-30s:argus.core:triggers.warden:WARDEN:aUser");
 
         assertFalse(annotations.isEmpty());
 
         Annotation annotation = annotations.get(annotations.size() - 1);
 
-        if (System.currentTimeMillis() - annotation.getTimestamp() < 3000) {
-            assertTrue(true);
-        } else {
-            assertTrue(false);
+        if (System.currentTimeMillis() - annotation.getTimestamp() > 30000) {
+            fail();
         }
     }
 }

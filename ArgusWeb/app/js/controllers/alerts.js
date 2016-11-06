@@ -1,8 +1,8 @@
 /*! Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
- *  
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
+ *
  *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *
  *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
@@ -20,13 +20,27 @@
 'use strict';
 
 angular.module('argus.controllers.alerts', ['ngResource'])
-.controller('Alerts', ['Storage', '$scope', 'growl', 'Alerts', function (Storage, $scope, growl, Alerts) {
-		
-    $scope.searchText = Storage.get("alerts-searchText") == null ? "" : Storage.get("alerts-searchText");
-    $scope.alerts = Alerts.query();
-    $scope.itemsPerPageOptions=[5,10,15,25,50,100,200];
-    $scope.itemsPerPage = Storage.get("alerts-itemsPerPage") == null ? $scope.itemsPerPageOptions[1] : Storage.get("alerts-itemsPerPage");
-    
+.controller('Alerts', ['$scope', 'growl', 'Alerts', '$sessionStorage', function ($scope, growl, Alerts, $sessionStorage) {
+
+    function getAlerts() {
+        Alerts.getMeta().$promise.then(function(alerts) {
+            $scope.alerts = alerts;
+            $sessionStorage.cachedAlerts = alerts;
+        });
+    }
+
+    if($sessionStorage.cachedAlerts) {
+        $scope.alerts = $sessionStorage.cachedAlerts;
+    } else {
+        getAlerts();
+    }
+
+	$scope.refreshAlerts = function () {
+		delete $sessionStorage.cachedAlerts;
+    delete $scope.alerts;
+		getAlerts();
+	};
+
     $scope.addAlert = function () {
         var alert = {
             name: 'new-alert-' + Date.now(),
@@ -34,7 +48,10 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             cronEntry: "0 */4 * * *"
         };
         Alerts.save(alert, function (result) {
+            // update both scope and session alerts
+            result.expression = "";
             $scope.alerts.push(result);
+            $sessionStorage.cachedAlerts = $scope.alerts;
             growl.success('Created "' + alert.name + '"');
         }, function (error) {
             growl.error('Failed to create "' + alert.name + '"');
@@ -42,14 +59,16 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     };
 
     $scope.enableAlert = function (alert, enabled) {
-        if (!alert.enabled === enabled) {
-            var updated = angular.copy(alert);
-            updated.enabled = enabled;
-            Alerts.update({alertId: alert.id}, updated, function (result) {
-                alert.enabled = enabled;
-                growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
-            }, function (error) {
-                growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+        if (alert.enabled !== enabled) {
+            Alerts.get({alertId: alert.id}, function(updated) {
+                updated.enabled = enabled;
+                Alerts.update({alertId: alert.id}, updated, function (result) {
+                    alert.enabled = enabled;
+                    $sessionStorage.cachedAlerts = $scope.alerts;
+                    growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
+                }, function (error) {
+                    growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+                });
             });
         }
     };
@@ -59,26 +78,25 @@ angular.module('argus.controllers.alerts', ['ngResource'])
             $scope.alerts = $scope.alerts.filter(function (element) {
                 return element.id !== alert.id;
             });
+            $sessionStorage.cachedAlerts = $scope.alerts;
             growl.success('Deleted "' + alert.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + alert.name + '"');
         });
     };
-    
-    $scope.$watch('searchText', function(newValue, oldValue) {
-    	newValue = newValue == null ? "" : newValue;
-    	Storage.set("alerts-searchText", newValue);
-    });
-    
-    $scope.$watch('itemsPerPage', function(newValue, oldValue) {
-    	newValue = newValue == null ? $scope.itemsPerPageOptions[1] : newValue;
-    	Storage.set("alerts-itemsPerPage", newValue);
-    });
 
-    $scope.sortKey = 'modifiedDate';
-    $scope.reverse = true;
-    $scope.sort = function (key) {
-        $scope.sortKey = key;
-        $scope.reverse = !$scope.reverse;
+    $scope.colName = {
+        id:'ID',
+        name:'Name',
+        cronEntry:'CRON Entry',
+        createdDate:'Created',
+        modifiedDate:'Last Modified',
+        ownerName:'Owner',
+        state: "State"
+    };
+
+    $scope.properties = {
+        title: "Alert",
+        type: "alerts"
     };
 }]);

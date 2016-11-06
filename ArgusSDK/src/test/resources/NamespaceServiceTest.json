@@ -1,0 +1,29 @@
+[{
+    "type": "POST",
+    "endpoint": "/namespace",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"qualifier\":\"TestQualifier\",\"usernames\":[\"TestUser\"]}",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"qualifier\":\"TestQualifier\",\"usernames\":[\"TestUser\"]}"
+},{
+    "type": "GET",
+    "endpoint": "/namespace",
+    "jsonInput" :null,
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"qualifier\":\"TestQualifier\",\"usernames\":[\"TestUser\"]}]"
+},{
+    "type": "PUT",
+    "endpoint": "/namespace/1",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"qualifier\":\"TestQualifier\",\"usernames\":[\"UpdatedUser\",\"TestUser\"]}",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"qualifier\":\"TestQualifier\",\"usernames\":[\"UpdatedUser\",\"TestUser\"]}"
+},{
+    "type": "PUT",
+    "endpoint": "/namespace/1/users",
+    "jsonInput" :"[\"UpdatedUser\",\"TestUser\"]",
+    "status": 200,
+    "message": "success",
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"qualifier\":\"TestQualifier\",\"usernames\":[\"UpdatedUser\",\"TestUser\"]}"
+}]

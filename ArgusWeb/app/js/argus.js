@@ -31,7 +31,6 @@ angular.module('argus', [
   'angular-growl',
   'angularUtils.directives.dirPagination',
   'angulartics',
-  'angulartics.piwik',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
   'argus.urlConfig',
@@ -56,7 +55,8 @@ angular.module('argus', [
   'argus.directives.charts.metric',
   'argus.directives.charts.option',
   'argus.directives.charts.statusIndicator',
-  'argus.directives.charts.table'
+  'argus.directives.charts.table',
+  'argus.directives.headerMenu'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
@@ -91,6 +91,7 @@ angular.module('argus.services', [
   'argus.services.tags',
   'argus.services.triggers',
   'argus.services.triggersmap',
+  'argus.services.inputTracker'
 ]);
 
 // Controllers
@@ -108,7 +109,7 @@ angular.module('argus.controllers', [
   'argus.controllers.metricelements',
   'argus.controllers.namespace',
   'argus.controllers.viewelements',
-  'argus.controllers.viewMetrics',
+  'argus.controllers.viewMetrics'
 ]);
 
 // Directives

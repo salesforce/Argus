@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
+import com.stumbleupon.async.TimeoutException;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
@@ -63,18 +64,18 @@ import org.slf4j.Logger;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * HBASE implementation of the schema service.
+ * Implementation of the schema service using Asynchbase.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @Singleton
 public class AsyncHbaseSchemaService extends DefaultService implements SchemaService {
@@ -88,6 +89,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private static final byte[] CELL_VALUE = "1".getBytes(Charset.forName("UTF-8"));
     private static final char ROWKEY_SEPARATOR = ':';
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
+    
+    private static final long TIMEOUT = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -314,7 +317,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         /**
          * Scans HBASE rows.
          *
-         * @author  Tom Valine (tvaline@salesforce.com)
+         * @author  Bhinav Sura (bhinav.sura@salesforce.com)
          */
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
@@ -364,13 +367,152 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return results.joinUninterruptibly();
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return results.join(TIMEOUT);
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+
     }
+    
+    /**
+     * Fast scan works when trying to discover either scopes or metrics with all other fields being *. 
+     * In this case, when the first result is obtained, we skip all other rows starting with that prefix and directly move
+     * on to the next possible value which is obtained value incremented by 1 Ascii character. If that value exists, then 
+     * it is returned, otherwise HBase returns the next possible value in lexicographical order. 
+     * 
+     * For e.g. suppose if we have the following rows in HBase:
+     * 
+     * scope:metric1:null:null:null
+     * scope:metric2:null:null:null
+     * .
+     * .
+     * .
+     * scope:metric1000:null:null:null
+     * scopu:metric1:null:null:null
+     * scopu:metric2:null:null:null
+     * .
+     * .
+     * .
+     * scopu:metric1000:null:null:null
+     * 
+     * And our start row is "sco", then this method would first find "scope" and then jump the next 1000 rows
+     * to start from the next possible value of scopf. Since nothing like scopf exists, HBase would directly
+     * jump to scopu and return that. 
+     * 
+     */
+    private List<String> _getUniqueFastScan(MetricSchemaRecordQuery query, final int limit, final RecordType type) {
+    	requireNotDisposed();
+    	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
+    			"This method is only for use with metric or scope.");
+    	
+    	final List<String> result = new ArrayList<>();
+    	
+    	TableType tableType = type.equals(RecordType.METRIC) ? TableType.METRIC : TableType.SCOPE;
+    	
+    	final ScanMetadata metadata = _constructScanMetadata(query);
+        String namespace = _convertToRegex(query.getNamespace());
+        String scope = _convertToRegex(query.getScope());
+        String metric = _convertToRegex(query.getMetric());
+        String tagKey = _convertToRegex(query.getTagKey());
+        String tagValue = _convertToRegex(query.getTagValue());
+        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
+    	
+    	List<ScanFilter> filters = new ArrayList<ScanFilter>();
+    	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
+        filters.add(new KeyOnlyFilter());
+        filters.add(new FirstKeyOnlyFilter());
+        FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
+    	
+        
+        String start = Bytes.toString(metadata.startRow);
+        String end = Bytes.toString(metadata.stopRow);
+        ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, tableType.getTableName());
+        while(rows != null && !rows.isEmpty()) {
+        	for(ArrayList<KeyValue> row : rows) {
+        		String rowKey = Bytes.toString(row.get(0).key());
+        		result.add(rowKey.split(":")[0]);
+        	}
+        	if(result.size() == limit) {
+    			break;
+    		}
+        	rows = _getSingleRow(_plusOne(result.get(result.size() - 1)), end, filterList, tableType.getTableName());
+        }
+        
+    	return result;
+    }
+
+	private ArrayList<ArrayList<KeyValue>> _getSingleRow(final String start, final String end, 
+			final FilterList filterList, final String tableName) {
+		final Scanner scanner = _client.newScanner(tableName);
+    	scanner.setStartKey(start);
+    	scanner.setStopKey(end);
+    	scanner.setMaxNumRows(1);
+    	scanner.setFilter(filterList);
+    	
+    	_logger.debug("Using table: " + tableName);
+        _logger.debug("Scan startRow: " + start);
+        _logger.debug("Scan stopRow: " + end);
+        
+        Deferred<ArrayList<ArrayList<KeyValue>>> deferred = scanner.nextRows();
+        
+        deferred.addCallback(new Callback<ArrayList<ArrayList<KeyValue>>, ArrayList<ArrayList<KeyValue>>>() {
+
+			@Override
+			public ArrayList<ArrayList<KeyValue>> call(ArrayList<ArrayList<KeyValue>> rows) throws Exception {
+				scanner.close();
+				return rows;
+			}
+		});
+        
+        try {
+			ArrayList<ArrayList<KeyValue>> result = deferred.join(TIMEOUT);
+			return result;
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query", e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results.");
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query", e);
+		}
+		return null;
+	}
+
+	private String _plusOne(String prefix) {
+		char newChar = (char) (prefix.charAt(prefix.length() - 1) + 1);
+    	String end = prefix.substring(0, prefix.length() - 1) + newChar;
+		return end;
+	}
+	
+	
+	/**
+	 * Check if we can perform a faster scan. We can only perform a faster scan when we are trying to discover scopes or metrics
+	 * without having information on any other fields.
+	 */
+	private boolean _canFastScan(MetricSchemaRecordQuery query, RecordType type) {
+		
+		if(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type)) {
+			if(RecordType.METRIC.equals(type)) {
+				if("*".equals(query.getScope()) && "*".equals(query.getTagKey()) && "*".equals(query.getTagValue()) && "*".equals(query.getNamespace())) {
+					return true;
+				}
+			} else {
+				if("*".equals(query.getMetric()) && "*".equals(query.getTagKey()) && "*".equals(query.getTagValue()) && "*".equals(query.getNamespace())) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
 
     @Override
     public List<String> getUnique(MetricSchemaRecordQuery query, final int limit, final int page, final RecordType type) {
@@ -378,7 +520,18 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         SystemAssert.requireArgument(query != null, "Metric Schema Record query cannot be null.");
         SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
         SystemAssert.requireArgument(page > 0, "Page must be a positive integer.");
+        SystemAssert.requireArgument(type != null, "Must specify a valid record type.");
+        
+        if(_canFastScan(query, type)) {
+        	List<String> results = _getUniqueFastScan(query, limit * page, type);
+        	if(results.size() <= limit * (page-1))  {
+        		return Collections.emptyList();
+        	} else {
+        		return results.subList(limit * (page-1), results.size());
+        	}
+        }
 
+        
         final Set<String> records = new TreeSet<String>();
         final Set<String> skip = new HashSet<String>();
         final ScanMetadata metadata = _constructScanMetadata(query);
@@ -400,12 +553,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         filters.add(new KeyOnlyFilter());
         filters.add(new FirstKeyOnlyFilter());
 
-        FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
+        FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
         final Scanner scanner = _client.newScanner(metadata.type.getTableName());
 
         scanner.setStartKey(metadata.startRow);
         scanner.setStopKey(metadata.stopRow);
-        scanner.setFilter(fl);
+        scanner.setFilter(filterList);
         scanner.setMaxNumRows(10000);
 
         final Deferred<Set<String>> results = new Deferred<Set<String>>();
@@ -461,15 +614,23 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 }
             }
         }
+        
         new ScannerCB().scan();
+        
         try {
-            return new ArrayList<String>(results.joinUninterruptibly());
-        } catch (Exception e) {
-            throw new SystemException(e);
-        }
+			return new ArrayList<>(results.join(TIMEOUT));
+		} catch (InterruptedException e) {
+			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
+		} catch (TimeoutException e) {
+			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
+			return Collections.emptyList();
+		} catch (Exception e) {
+			throw new SystemException("Exception occured in getting results for query: " + query, e);
+		}
+        
     }
 
-    @Override
+	@Override
     public void dispose() {
         super.dispose();
         if (_client != null) {
@@ -478,24 +639,23 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             Deferred<Object> deferred = _client.shutdown();
 
             deferred.addCallback(new Callback<Void, Object>() {
-
-                    @Override
-                    public Void call(Object arg) throws Exception {
-                        _logger.info("Shutdown of asynchbase client complete.");
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Object arg) throws Exception {
+                    _logger.info("Shutdown of asynchbase client complete.");
+                    return null;
+                }
+            });
+            
             deferred.addErrback(new Callback<Void, Exception>() {
-
-                    @Override
-                    public Void call(Exception arg) throws Exception {
-                        _logger.warn("Error occured while shutting down asynchbase client. Trying again...");
-                        _client.shutdown();
-                        return null;
-                    }
-                });
+                @Override
+                public Void call(Exception arg) throws Exception {
+                    _logger.warn("Error occured while shutting down asynchbase client.");
+                    return null;
+                }
+            });
+            
             try {
-                deferred.joinUninterruptibly();
+                deferred.join();
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
@@ -504,38 +664,34 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     
     
     private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
-		final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicBoolean fail = new AtomicBoolean(false);
-		_client.ensureTableFamilyExists(table, family).addCallbacks(
-        		new Callback<Object, Object>() {
-
-					@Override
-					public Object call(Object arg) throws Exception {
-						latch.countDown();
-						return null;
-					}
-        			
-        		},
-        		new Callback<Object, Object>() {
-
-					@Override
-					public Object call(Object arg) throws Exception {
-						fail.set(true);
-						latch.countDown();
-						return null;
-					}
-        		}
-        );
+        final AtomicBoolean fail = new AtomicBoolean(true);
+        
+        Deferred<Object> deferred = _client.ensureTableFamilyExists(table, family);
+        
+        deferred.addCallback(new Callback<Void, Object>() {
+			@Override
+			public Void call(Object arg) throws Exception {
+				fail.set(false);
+				return null;
+			}
+		});
+        
+        deferred.addErrback(new Callback<Void, Exception>() {
+			@Override
+			public Void call(Exception arg) throws Exception {
+				_logger.error("Table {} or family {} does not exist. Please create the appropriate table.", Bytes.toString(table), Bytes.toString(family));
+				return null;
+			}
+		});
         
         try {
-        	latch.await();
+        	deferred.join(TIMEOUT);
         } catch (InterruptedException e) {
-        	throw new SystemException("Interrupted", e);
-        }
+        	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
+        } catch (Exception e) {
+			_logger.error("Exception occured while waiting to ensure table {} with family {} exists", Bytes.toString(table), Bytes.toString(family));
+		}
         
-        if(fail.get()) {
-        	throw new SystemException("Table or Column Family doesn't exist.");
-        }
 	}
 
     private void _putWithoutTag(Metric metric, String tableName) {

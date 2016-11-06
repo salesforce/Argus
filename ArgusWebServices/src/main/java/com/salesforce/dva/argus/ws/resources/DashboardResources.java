@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.Dashboard;
@@ -74,23 +74,14 @@ public class DashboardResources extends AbstractResource {
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Returns all dashboards filtered by owner.
-     *
-     * @param   req            The HTTP request.
+     * Return all dashboards in dashboard objects filtered by owner.
      * @param   dashboardName  The dashboard name filter.
-     * @param   ownerName      The owner name filter.
+     * @param   owner          The principlaUser owner for owner name filter.
      *
-     * @return  The list of filtered dashboards.
+     * @return  The list of filtered dashboards in dashboard object.
      */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Description("Returns all dashboards.")
-    public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
-        @QueryParam("dashboardName") String dashboardName,
-        @QueryParam("owner") String ownerName) {
+    private Set<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner) {
         Set<Dashboard> result = new HashSet<>();
-        PrincipalUser owner = validateAndGetOwner(req, ownerName);
-
         if (dashboardName != null && !dashboardName.isEmpty()) {
             Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
 
@@ -105,6 +96,63 @@ public class DashboardResources extends AbstractResource {
                 result.addAll(dService.findSharedDashboards());
             }
         }
+        return result;
+    }
+
+    /**
+     * Returns all dashboards' metadata filtered by owner.
+     *
+     * @param   req            The HTTP request.
+     * @param   dashboardName  The dashboard name filter.
+     * @param   ownerName      The owner name filter.
+     *
+     * @return  The list of filtered dashboards' metadata.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/meta")
+    @Description("Returns all dashboards' metadata.")
+    public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req,
+                                                @QueryParam("dashboardName") String dashboardName,
+                                                @QueryParam("owner") String ownerName) {
+        PrincipalUser owner = validateAndGetOwner(req, ownerName);
+        Set<Dashboard> result = getDashboardsObj(dashboardName, owner);
+        return DashboardDto.transformToDtoNoContent(new LinkedList<>(result));
+    }
+
+    /**
+     * Returns all dashboards filtered by owner.
+     *
+     * @param   req            The HTTP request.
+     * @param   dashboardName  The dashboard name filter.
+     * @param   ownerName      The owner name filter.
+     *
+     * @return  The list of filtered dashboards.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Description("Returns all dashboards.")
+    public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
+                                            @QueryParam("dashboardName") String dashboardName,
+                                            @QueryParam("owner") String ownerName) {
+//        Set<Dashboard> result = new HashSet<>();
+        PrincipalUser owner = validateAndGetOwner(req, ownerName);
+
+//        if (dashboardName != null && !dashboardName.isEmpty()) {
+//            Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
+//
+//            if (dashboard != null) {
+//                result.add(dashboard);
+//            }
+//        } else {
+//            if (owner.isPrivileged()) {
+//                result.addAll(dService.findDashboards(null));
+//            } else {
+//                result.addAll(dService.findDashboardsByOwner(owner));
+//                result.addAll(dService.findSharedDashboards());
+//            }
+//        }
+        Set<Dashboard> result = getDashboardsObj(dashboardName, owner);
         return DashboardDto.transformToDto(new LinkedList<>(result));
     }
 
@@ -123,7 +171,7 @@ public class DashboardResources extends AbstractResource {
     @Path("/{dashboardId}")
     @Description("Returns a dashboard by its ID.")
     public DashboardDto getDashboardByID(@Context HttpServletRequest req,
-        @PathParam("dashboardId") BigInteger dashboardId) {
+                                         @PathParam("dashboardId") BigInteger dashboardId) {
         if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
             throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
         }
@@ -183,7 +231,7 @@ public class DashboardResources extends AbstractResource {
     @Path("/{dashboardId}")
     @Description("Updates a dashboard having the given ID.")
     public DashboardDto updateDashboard(@Context HttpServletRequest req,
-        @PathParam("dashboardId") BigInteger dashboardId, DashboardDto dashboardDto) {
+                                        @PathParam("dashboardId") BigInteger dashboardId, DashboardDto dashboardDto) {
         if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
             throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
         }
@@ -218,7 +266,7 @@ public class DashboardResources extends AbstractResource {
     @Path("/{dashboardId}")
     @Description("Deletes the dashboard having the given ID.")
     public Response deleteDashboard(@Context HttpServletRequest req,
-        @PathParam("dashboardId") BigInteger dashboardId) {
+                                    @PathParam("dashboardId") BigInteger dashboardId) {
         if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
             throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
         }

@@ -172,8 +172,10 @@ public class TransformFactory {
                 return new MetricZipperTransform(new DivideValueZipper());
             case NORMALIZE_V:
                 return new MetricZipperTransform(new DivideValueZipper());
+            case ANOMALY_STL:
+                return new AnomalySTLTransform();
             case GROUPBY:
-            	throw new UnsupportedOperationException(functionName);
+            	return new GroupByTransform(this);
             case ANOMALY_DENSITY:
                 return new AnomalyDetectionGaussianDensityTransform();
             case ANOMALY_ZSCORE:
@@ -248,6 +250,7 @@ public class TransformFactory {
         CONSECUTIVE("CONSECUTIVE","Filter out all values that are non-consecutive"),
         HW_FORECAST("HW_FORECAST", "Performns HoltWinters Forecast."),
         HW_DEVIATION("HW_DEVIATION", "Performns HoltWinters Deviation."),
+        ANOMALY_STL("ANOMALY_STL", "Performs a seasonal trend decomposition and returns the probability that each point is an anomaly based on the residual component."),
         GROUPBY("GROUPBY", "Creates groups of metrics based on some matching criteria and then performs the given aggregation."),
         ANOMALY_DENSITY("ANOMALY_DENSITY", "Calculates an anomaly score (0-100) for each value of the metric based on the probability density of each value with a Gaussian distribution."),
         ANOMALY_ZSCORE("ANOMALY_ZSCORE", "Calculates an anomaly score (0-100) for each value of the metric based on the z-score of each value with a Gaussian distribution."),

@@ -121,6 +121,15 @@ public interface AlertService extends Service {
     List<Alert> findAlertsMarkedForDeletion();
 
     /**
+     * Returns a list of alerts that have been marked for deletion.
+     * 
+     * @param	limit  The maximum number of such alerts to find. Must be greater than 0. 
+     *
+     * @return  The list of alerts marked for deletion.
+     */
+    List<Alert> findAlertsMarkedForDeletion(int limit);
+    
+    /**
      * Marks the given alert for deletion. Subsequent reads for this alert would result in null entity. All alerts marked for deletion will be
      * periodically/eventually removed from the system.
      *

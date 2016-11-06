@@ -43,12 +43,13 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
-import com.salesforce.dva.argus.service.TSDBService;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -66,91 +67,122 @@ class MetricTransform {
     private MetricTransform() { }
 
     //~ Inner Classes ********************************************************************************************************************************
+    
+    /**
+     * The metric list deserializer.
+     *
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     */
+    static class MetricListDeserializer extends JsonDeserializer<ResultSet> {
 
+		@Override
+		public ResultSet deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+			
+			List<Metric> metrics = new ArrayList<Metric>();
+			
+			JsonNode arraynode = jp.getCodec().readTree(jp);
+			Iterator<JsonNode> nodes = arraynode.elements();
+			
+			while(nodes.hasNext()) {
+				JsonNode node = nodes.next();
+				Metric metric = _deserializeMetric(node);
+				if(metric != null) {
+					metrics.add(metric);
+				}
+			}			
+			
+			return new ResultSet(metrics);
+		}
+		
+    }
+    
+    private static Metric _deserializeMetric(JsonNode node) throws IOException {
+    	ObjectMapper mapper = new ObjectMapper();
+    	Map<Long, String> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, String>>() { });
+    	if(datapoints.isEmpty()) {
+    		return null;
+    	}
+
+    	Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
+
+    	Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
+    	String tsdbMetricName = node.get("metric").asText();
+
+    	// Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
+    	if (tsdbMetricName.isEmpty()) {
+    		return null;
+    	}
+
+    	String scope = DefaultTSDBService.getScopeFromTSDBMetric(tsdbMetricName);
+    	String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
+    	String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
+
+    	Map<String, String> userTags = new HashMap<>();
+
+    	for (Map.Entry<String, String> entry : tags.entrySet()) {
+    		String key = entry.getKey();
+
+    		if (!ReservedField.isReservedField(key)) {
+    			userTags.put(key, entry.getValue());
+    		}
+    	}
+
+    	Metric result = new Metric(scope, metric);
+
+    	if (meta != null) {
+    		String displayName = meta.get(ReservedField.DISPLAY_NAME.getKey());
+    		String units = meta.get(ReservedField.UNITS.getKey());
+
+    		result.setDisplayName(displayName);
+    		result.setUnits(units);
+    	}
+    	result.setTags(userTags);
+    	result.setDatapoints(datapoints);
+    	if (namespace != null) {
+    		result.setNamespace(namespace);
+    	}
+
+    	Iterator<JsonNode> tsuidsIter = node.get("tsuids").elements();
+    	String tsuid = tsuidsIter.next().asText();
+
+    	try {
+    		Field tsuidField = TSDBEntity.class.getDeclaredField("_uid");
+
+    		tsuidField.setAccessible(true);
+    		tsuidField.set(result, tsuid);
+    	} catch (Exception ex) {
+    		throw new IOException(ex);
+    	}
+    	return result;
+    }
+    
+    private static Map<String, String> fromMeta(String meta) throws IOException {
+        if (meta != null) {
+            try {
+                String decoded = new String(DatatypeConverter.parseBase64Binary(meta.replace("_", "=")), "UTF-8");
+
+                return new ObjectMapper().readValue(decoded, new TypeReference<Map<String, String>>() { });
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
+        } else {
+            return new HashMap<>();
+        }
+    }
+    
     /**
      * The metric deserializer.
      *
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Deserializer extends JsonDeserializer<Metric> {
-	TSDBService tsdbService;
-
-        Deserializer(TSDBService tsdbService) {
-	    this.tsdbService = tsdbService;
-        }
 
         @Override
         public Metric deserialize(JsonParser jp, DeserializationContext dc) throws IOException {
             JsonNode node = jp.getCodec().readTree(jp);
-            ObjectMapper mapper = new ObjectMapper();
-            Map<Long, String> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, String>>() { });
-
-            Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
-
-            Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
-            String tsdbMetricName = node.get("metric").asText();
-         
-            // Post filtering metric , since in some cases TSDB metric can be empty https://github.com/OpenTSDB/opentsdb/issues/540
-            if (tsdbMetricName.isEmpty()) {
-                return null;
-            }
-
-            String scope = DefaultTSDBService.getScopeFromTSDBMetric(tsdbMetricName);
-            String metric = DefaultTSDBService.getMetricFromTSDBMetric(tsdbMetricName);
-            String namespace = DefaultTSDBService.getNamespaceFromTSDBMetric(tsdbMetricName);
-            
-            Map<String, String> userTags = new HashMap<>();
-
-            for (Map.Entry<String, String> entry : tags.entrySet()) {
-                String key = entry.getKey();
-
-                if (!ReservedField.isReservedField(key)) {
-                    userTags.put(key, entry.getValue());
-                }
-            }
-
-            Metric result = new Metric(scope, metric);
-
-            if (meta != null) {
-                String displayName = meta.get(ReservedField.DISPLAY_NAME.getKey());
-                String units = meta.get(ReservedField.UNITS.getKey());
-
-                result.setDisplayName(displayName);
-                result.setUnits(units);
-            }
-            result.setTags(userTags);
-            result.setDatapoints(datapoints);
-            if (namespace != null) {
-                result.setNamespace(namespace);
-            }
-
-            Iterator<JsonNode> tsuidsIter = node.get("tsuids").elements();
-            String tsuid = tsuidsIter.next().asText();
-
-            try {
-                Field tsuidField = TSDBEntity.class.getDeclaredField("_uid");
-
-                tsuidField.setAccessible(true);
-                tsuidField.set(result, tsuid);
-            } catch (Exception ex) {
-                throw new IOException(ex);
-            }
-            return result;
+            return _deserializeMetric(node);
         }
 
-        private Map<String, String> fromMeta(String meta) throws IOException {
-            if (meta != null) {
-                try {
-                    String decoded = new String(DatatypeConverter.parseBase64Binary(meta.replace("_", "=")), "UTF-8");
-
-                    return new ObjectMapper().readValue(decoded, new TypeReference<Map<String, String>>() { });
-                } catch (Exception ex) {
-                    throw new IOException(ex);
-                }
-            } else {
-                return new HashMap<>();
-            }
-        }
     }
 
     /**
@@ -159,12 +191,6 @@ class MetricTransform {
      * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
      */
     static class Serializer extends JsonSerializer<Metric> {
-       
-	TSDBService tsdbService;
-
-        Serializer(TSDBService tsdbService) {
-	    this.tsdbService = tsdbService;
-        }
 
         @Override
         public void serialize(Metric metric, JsonGenerator jgen, SerializerProvider sp) throws IOException {

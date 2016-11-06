@@ -1,5 +1,5 @@
 angular.module('argus.directives.controls.dashboard', [])
-.directive('agDashboard', ['$rootScope', function($rootScope) {
+.directive('agDashboard', ['$location', '$rootScope', '$routeParams', 'Controls', function($location, $rootScope, $routeParams, Controls) {
     return {
         restrict: 'E',
         scope: {
@@ -9,16 +9,25 @@ angular.module('argus.directives.controls.dashboard', [])
         template: '<div ng-transclude=""></div>',
         controller: function($scope) {
             $scope.controls = [];
-            this.updateControl = function(controlName, controlValue, controlType) {
+            this.updateControl = function(controlName, controlValue, controlType, localSubmit) {
             	var controlExists = false;
-            	for (var i in $scope.controls) {
-            		if ($scope.controls[i].name === controlName) {
-            			$scope.controls[i].value = controlValue;
-            			controlExists = true;
-            			break;
-            		}
-            	}
-            	
+
+                if (!localSubmit) {
+                    for (var prop in $routeParams) {
+                        if (prop == $scope.controlName) {
+                            controlValue = $routeParams[prop];
+                        }
+                    }
+                }
+
+                for (var i in $scope.controls) {
+                    if ($scope.controls[i].name === controlName) {
+                        $scope.controls[i].value = controlValue;
+                        controlExists = true;
+                        break;
+                    }
+                }
+
             	if (!controlExists) {
             		var control = {
             			name: controlName,
@@ -27,6 +36,16 @@ angular.module('argus.directives.controls.dashboard', [])
                 	};
                 	$scope.controls.push(control);
             	}
+
+                //add controls to url
+            	this.addControlsToUrl();
+            };
+
+            this.addControlsToUrl = function () {
+                var controls = $scope.controls;
+                // update url with controls params
+                var urlStr = Controls.getUrl(controls);
+                $location.search(urlStr);
             };
 
             this.getAllControls = function(){
@@ -39,7 +58,7 @@ angular.module('argus.directives.controls.dashboard', [])
             this.broadcastEvent = function(eventName, data){
             	console.log(eventName + ' was broadcast');
             	$scope.$broadcast(eventName, data);
-            }
+            };
         },
         link:function(scope,element,attributes){
             if (!attributes.onload || attributes.onload == true) {

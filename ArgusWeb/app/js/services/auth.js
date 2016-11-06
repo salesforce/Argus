@@ -33,11 +33,20 @@ angular.module('argus.services.auth', [])
         remoteUser: function () {
             return Storage.get('user');
         },
+        getUsername: function() {
+            var user = this.remoteUser();
+            if (user) {
+                return user.userName;
+            } else {
+                return null;
+            }
+        },
         isLoggedIn: function () {
             return this.remoteUser() !== null;
         },
         isPrivileged: function () {
-            return this.remoteUser().privileged;
+            var user = this.remoteUser();
+            return (user) ? user.privileged : null;
         }
     };
 }]);

@@ -299,7 +299,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
-                _logger.error("Failed to get metrics from TSDB. Reason: " + e.getMessage());
+                _logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
                 throw new SystemException("Failed to get metrics from TSDB. Reason: " + e.getMessage());
             }
         }
@@ -358,8 +358,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         ObjectMapper mapper = new ObjectMapper();
         SimpleModule module = new SimpleModule();
 
-        module.addSerializer(Metric.class, new MetricTransform.Serializer(this));
-        module.addDeserializer(Metric.class, new MetricTransform.Deserializer(this));
+        module.addSerializer(Metric.class, new MetricTransform.Serializer());
+        module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
         module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
         module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
         mapper.registerModule(module);
@@ -808,7 +808,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
             _logger.debug("TSDB Query = " + _requestUrl);
 
             HttpResponse response = executeHttpRequest(HttpMethod.GET, _requestUrl, null);
-            List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<List<Metric>>() { });
+            List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
             return metrics;
         }
     }

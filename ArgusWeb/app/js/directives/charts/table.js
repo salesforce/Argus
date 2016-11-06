@@ -6,7 +6,7 @@ angular.module('argus.directives.charts.table', [])
         transclude: true,
         scope: {},
         require: '^agDashboard',
-        controller: 'ViewElementCtrl',
+        controller: 'ViewElements',
         template: '<div ng-transclude=""></div>',
         link: function(scope, element, attributes, dashboardCtrl) {
         	DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);

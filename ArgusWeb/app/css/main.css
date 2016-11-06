@@ -24,13 +24,19 @@ label {
     padding-top: 5px;
 }
 
-.floatR {float:right;}
+a:hover {text-decoration:none; color:inherit;}
 
-/* increase font size for icons */
-#navbar li a.glyphicon {font-size:20px;}
+.floatL {float:left;}
+.floatR {float:right;}
+.error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
+
+.glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
+.glyphicon.glyphicon-search:hover {color:#2C4386;}
+
+/* loading spinner small, eg input field */
+.loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
-
 #navbar li.topMenu {position:relative;}
 #navbar li.topMenu ul.subMenu {
   display:none;
@@ -44,6 +50,7 @@ label {
   background:#FFF;
   z-index:9;
 }
+#navbar li a.glyphicon {font-size:20px; color:#777;}
 #navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
 #navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
 #navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
@@ -76,6 +83,22 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .smallChart {padding-left:8em; width:100%;}
 
+/* metrics & discovery lookup */
+.metricFields {width:35%; margin-top:.5em;}
+.metricFields, .metricFields .form-control {margin:0 2em .5em 0;}
+
+/* main graph/chart - i.e. metrics */
+#graphContainer {margin:1.5em auto 0; min-width:310px; height:400px;}
+
+/* autocomplete */
+.autoComplete .category {padding:4px; border:1px solid #71ABCE; border-radius:5px; font-size:11px;}
+
+/* btn last */
+.btn-last {
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
 
 /* Growl settings */
 .growl-container.growl-fixed.top-center {
@@ -222,3 +245,6 @@ div.loadingSpinner {
   content:url(../img/ajax-loader.gif);
 }
 
+.GMT-select {
+  padding: 3px;
+}
