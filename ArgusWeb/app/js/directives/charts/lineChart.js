@@ -85,7 +85,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossline
                 ;
 
-            // Base graph setup
+            // Base graph setup, initialize all the graph variables
             function setGraph() {
                 // use different x axis scale based on timezone
                 if (GMTon) {
@@ -232,25 +232,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr("transform", "translate(0," + height2 + ")")
                     .call(xAxis2);
 
-                brushG = context.append("g")
-                    .attr("class", "brush")
-                    .call(brush)
-                    .call(brush.move, x.range()); //change the x axis range when brush area changes
-
-                //the graph rectangle area
-                chartRect = svg.append('rect')
-                    .attr('class', 'chartOverlay')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .on('mouseover', function () {
-                        focus.style('display', null);
-                    })
-                    .on('mouseout', function () {
-                        focus.style('display', 'none');
-                    })
-                    .on('mousemove', mousemove)
-                    .call(zoom)
-                    ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -272,8 +253,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossline.append('text')
                     .attr('id', 'crossLineTip');
             }
-
-            setGraph();
 
             function mousemove() {
                 if (!currSeries || currSeries.length === 0) {
@@ -509,7 +488,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 (brush.move, [x2(tempX[0]), x2(tempX[1])]);
             }
 
-            //updateGraph
+            //updateGraph, update the graph with new data
             function updateGraph(series){
                 if (!series) return;
 
@@ -572,7 +551,33 @@ angular.module('argus.directives.charts.lineChart', [])
                         })
                     ;
                 });
+                //draw the brush xAxis
+                xAxisG2.call(xAxis2);
                 setZoomExtent(3);
+            }
+
+            //this function add the overlay element to the graph when mouse interaction takes place
+            //need to call this after drawing the lines in order to put mouse interaction overlay on top
+            function addOverlay(){
+                //the graph rectangle area
+                chartRect = svg.append('rect')
+                    .attr('class', 'chartOverlay')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .on('mouseover', function () {
+                        focus.style('display', null);
+                    })
+                    .on('mouseout', function () {
+                        focus.style('display', 'none');
+                    })
+                    .on('mousemove', mousemove)
+                    .call(zoom)
+                ;
+                //the brush overlay
+                brushG = context.append("g")
+                    .attr("class", "brush")
+                    .call(brush)
+                    .call(brush.move, x.range()); //change the x axis range when brush area changes
             }
 
             //toggle time brush
@@ -661,8 +666,11 @@ angular.module('argus.directives.charts.lineChart', [])
             d3.select(window).on('resize', resize);
 
             // Update graph on new metric results
+            setGraph();
             updateGraph(series);
+            addOverlay();
             enableBrushTime();
+            reset();//to remove the brush cover first for user the drag
 
             // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
