@@ -1,9 +1,9 @@
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'CONFIG', 'VIEWELEMENT', '$compile',
-function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, CONFIG, VIEWELEMENT, $compile) {
+.directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
+function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
 
-    function renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon) {
+    function renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig) {
         // empty any previous content
         $("#" + newChartId).empty();
 
@@ -13,11 +13,9 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         // assign chartId, series data, time domain to new $scope
         lineChartScope.chartId = newChartId;
         lineChartScope.series = series;
-        lineChartScope.startTime = startTime;
-        lineChartScope.endTime = endTime;
-        lineChartScope.GMTon = GMTon
+        lineChartScope.dateConfig = dateConfig;
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" starttime="startTime" endtime="endTime" gmton="GMTon"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
 
     // TODO: below functions 'should' be refactored to the chart services.
@@ -40,54 +38,21 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         };
 
         // get start and end time for the charts as well as whether GMT/UTC scale is used or not
-        var startTime, endTime, GMTon = false;
+        var dateConfig = {};
+        var GMTon = false;
         for (var i = 0; i < controls.length; i++) {
             if (controls[i].type === "agDate") {
                 var timeValue = controls[i].value;
                 if (controls[i].name === "start") {
-                    startTime = timeProcessingHelper(timeValue);
-                    GMTon = GMTon || GMTVerifier(timeValue);
+                    dateConfig.startTime = DateHandlerService.timeProcessingHelper(timeValue);
+                    GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
                 } else if (controls[i].name === "end"){
-                    endTime = timeProcessingHelper(timeValue);
-                    GMTon = GMTon || GMTVerifier(timeValue);
+                    dateConfig.endTime = DateHandlerService.timeProcessingHelper(timeValue);
+                    GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
                 }
             }
         }
-
-        function timeProcessingHelper(timeValue) {
-            var result;
-            if (timeValue[0] === '-') {
-                // apply offset to current time
-                timeValue = timeValue.toLowerCase().trim();
-                var offsetValue = parseInt(timeValue.substring(1, timeValue.length - 1));
-                var offsetUnit = timeValue[timeValue.length - 1];
-                result = new Date();
-                switch (offsetUnit) {
-                    case "s":
-                        result = result.setSeconds(result.getSeconds() - offsetValue);
-                        break;
-                    case "m":
-                        result = result.setMinutes(result.getMinutes() - offsetValue);
-                        break;
-                    case "h":
-                        result = result.setHours(result.getHours() - offsetValue);
-                        break;
-                    case "d":
-                        result = result.setDate(result.getDate() - offsetValue);
-                        break;
-                }
-                return new Date(result);
-            } else {
-                // convert timepicker string to Date object
-                result = new Date(timeValue);
-                return result.toString() === 'Invalid Date' ? new Date() : result;
-            }
-        }
-
-        function GMTVerifier(timeValue) {
-            // true if offset and string with GMT are used for input
-            return (timeValue.indexOf('-') !== -1) || (timeValue.indexOf('GMT') !== -1);
-        }
+        dateConfig.gmt = GMTon;
 
         // process data for: metrics, annotations, options
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
@@ -135,7 +100,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
 
             }, function (error) {
@@ -148,7 +113,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, startTime, endTime, GMTon);
+                    renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
             });
         }
