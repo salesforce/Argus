@@ -9,10 +9,8 @@ angular.module('argus.directives.charts.lineChart', [])
         scope: {
             chartId: '=chartid',
             series: '=series',
+            dateConfig: '=dateconfig'
             // sources: '=sources',
-            startTime: '=starttime',
-            endTime: '=endtime',
-            GMTon: '=gmton'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: function ($scope) {
@@ -29,9 +27,9 @@ angular.module('argus.directives.charts.lineChart', [])
         link: function(scope, element, attributes) {
             var chartId = scope.chartId;
             var series = scope.series;
-            var startTime = scope.startTime;
-            var endTime = scope.endTime;
-            var GMTon = scope.GMTon;
+            var startTime = scope.dateConfig.startTime;
+            var endTime = scope.dateConfig.endTime;
+            var GMTon = scope.dateConfig.gmt;
 
             var currSeries = series;
 
@@ -68,6 +66,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // Local helpers
             var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
             var formatDate = d3.timeFormat('%A, %b %e, %H:%M');
+            var GMTformatDate = d3.utcFormat('%A, %b %e, %H:%M');
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
@@ -99,7 +98,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
-                z = d3.scaleOrdinal().range(d3.schemeCategory10);
+                z = d3.scaleOrdinal(d3.schemeCategory10);
 
                 //Axis
                 xAxis = d3.axisBottom()
@@ -303,7 +302,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     } else {
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
-                    var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.id));
+                    var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
                     circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
@@ -549,13 +548,29 @@ angular.module('argus.directives.charts.lineChart', [])
                         .datum(metric.data)
                         .attr('class', 'line')
                         .attr('d', line)
-                        .style('stroke', z(metric.id));
+                        // .style('stroke', z(metric.id))
+                        .style('stroke', function () {
+                            if (metric.color == null) {
+                                return z(metric.name);
+                            } else {
+                                return metric.color;
+                            }
+                        })
+                    ;
 
                     context.append('path')
                         .datum(metric.data)
                         .attr('class', 'brushLine')
                         .attr('d', line2)
-                        .style('stroke', z(metric.id));
+                        // .style('stroke', z(metric.id))
+                        .style('stroke', function () {
+                            if (metric.color == null) {
+                                return z(metric.name);
+                            } else {
+                                return metric.color;
+                            }
+                        })
+                    ;
                 });
                 setZoomExtent(3);
             }
@@ -586,9 +601,16 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //date range
             function updateDateRange(){
-                var start = formatDate(x.domain()[0]);
-                var end = formatDate(x.domain()[1]);
-                var str = start + ' - ' + end;
+                var start, end, str;
+                if (GMTon) {
+                    start = GMTformatDate(x.domain()[0]);
+                    end = GMTformatDate(x.domain()[1]);
+                    str = start + ' - ' + end + " in GMT/UTC";
+                } else {
+                    start = formatDate(x.domain()[0]);
+                    end = formatDate(x.domain()[1]);
+                    str = start + ' - ' + end + " in local time zone";
+                }
 
                 // update view
                 d3.select('#topTb-' + chartId + ' .dateRange').text(str);
