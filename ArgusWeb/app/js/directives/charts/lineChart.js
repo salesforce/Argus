@@ -445,16 +445,19 @@ angular.module('argus.directives.charts.lineChart', [])
                     //the unit of time value is millisecond
                     //x2.domain is the domain of total
                     var interval = k * 60000; //one minute is 60000 millisecond
-                    var scale = (x2.domain()[1].getTime() - x2.domain()[0].getTime()) / interval;
-                    //rescale x axis
-                    var start = x.domain()[0];
-                    var end = new Date(start.getTime() + interval);
-                    x.domain([start, end]);
-                    // sync the brush
-                    var start2 = x2.range()[0];
-                    var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
+
+                    //take current x domain value and extend it
+                    var start = x.domain()[0].getTime();
+                    var end = x.domain()[1].getTime();
+                    var middle = (start + end) / 2;
+                    start = middle - interval / 2;
+                    var min = x2.domain()[0].getTime();
+                    var max = x2.domain()[1].getTime();
+                    if (start < min) start = min;
+                    end = start + interval;
+                    if (end > max) end = max;
                     context.select(".brush").call
-                    (brush.move, [start2, end2]);
+                    (brush.move, [x2(new Date(start)), x2(new Date(end))]);
                 };
             }
 
