@@ -13,7 +13,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // sources: '=sources',
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
-        controller: function ($scope) {
+        controller: ['$scope', function($scope) {
 
             // set $scope values
             $scope.isWheelOn = false;
@@ -22,14 +22,13 @@ angular.module('argus.directives.charts.lineChart', [])
             // legend sources
             $scope.sources = {};
 
-        },
-        // compile: function (iElement, iAttrs, transclude) {},
-        link: function(scope, element, attributes) {
-            var chartId = scope.chartId;
-            var series = scope.series;
-            var startTime = scope.dateConfig.startTime;
-            var endTime = scope.dateConfig.endTime;
-            var GMTon = scope.dateConfig.gmt;
+            // ---------
+
+            var chartId = $scope.chartId;
+            var series = $scope.series;
+            var startTime = $scope.dateConfig.startTime;
+            var endTime = $scope.dateConfig.endTime;
+            var GMTon = $scope.dateConfig.gmt;
 
             var currSeries = series;
 
@@ -41,10 +40,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 tipBoxRatio = 0.2,
                 brushChartRatio = 0.2
                 ;
-            var marginTop = 10,
-                marginBottom = 30,
-                marginLeft = 40,
-                marginRight = 40;
+            var marginTop = 15,
+                marginBottom = 35,
+                marginLeft = 50,
+                marginRight = 60;
 
             var width = containerWidth - marginLeft - marginRight;
             var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
@@ -64,9 +63,17 @@ angular.module('argus.directives.charts.lineChart', [])
             var crossLineTipPadding = 2;
 
             // Local helpers
+
+            // date formats
+            // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
+            var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
+            var shortDate = '%b %e, %H:%M';
+            var numericalDate = '%x';   // output same as %m/%d/%Y
+
             var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
-            var formatDate = d3.timeFormat('%A, %b %e, %H:%M');
-            var GMTformatDate = d3.utcFormat('%A, %b %e, %H:%M');
+            var formatDate = d3.timeFormat(shortDate);
+            var GMTformatDate = d3.utcFormat(shortDate);
+
             var formatValue = d3.format(',');
             var tooltipCreator = function() {};
 
@@ -230,8 +237,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 xAxisG2 = context.append("g")
                     .attr("class", "xBrush axis")
                     .attr("transform", "translate(0," + height2 + ")")
-                    .call(xAxis2);
+                    .call(xAxis2)
+                    ;
 
+                brushG = context.append("g")
+                    .attr("class", "brush")
+                    .call(brush)
+                    .call(brush.move, x.range())    //change the x axis range when brush area changes
+                    ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -290,65 +303,23 @@ angular.module('argus.directives.charts.lineChart', [])
                 generateCrossLine(mouseY, positionX, positionY);
             }
 
-            function applyScope() {
-                scope.$apply();
-            }
-
-            function newTooltipCreator(names) {
+            function newTooltipCreator(names, colors) {
                 return function(group, datapoints) {
-                    group.selectAll('text').remove();
-                    group.selectAll('circle').remove();
-
+                    var tmpSources = [];
                     for (var i = 0; i < datapoints.length; i++) {
-
-                        // set names into $scope for legend
-                        var tmpSource = {
+                        tmpSources.push({
                             name: names[i],
                             value: datapoints[i][1]
-                        };
-                        scope.sources = tmpSource;
-
-                        // can only use this once.
-                        applyScope();
-
-                        /*
-                        var circle = group.append('circle')
-                            .attr('r', 4.5)
-                            .attr('fill', z(names[i]));
-
-                        var textLine = group.append('text')
-                            .attr('dy', (1.2 * (i + 1)) + 'em')
-                            .attr('dx', 8);
-
-                        textLine.append('tspan')
-                            .attr('class', 'timestamp')
-                            .text(formatDate(new Date(datapoints[i][0])));
-
-                        textLine.append('tspan')
-                            .attr('class', 'value')
-                            .attr('dx', 8)
-                            .text(formatValue(datapoints[i][1]));
-
-                        textLine
-                            .append('tspan')
-                            .attr('dx', 8)
-                            .text(names[i]);
-
-                        var textLineBounds = textLine.node().getBBox();
-                        circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
-                        */
+                        });
                     }
 
-                    /*
-                    var tipBounds = group.node().getBBox();
+                    // set names into $scope for legend
+                    $scope.sources = tmpSources;
 
-                    tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + -(marginTop/2) + ')');
-                    // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
-                    tipBox.attr('x', tipBounds.x - tipPadding);
-                    tipBox.attr('y', tipBounds.y - tipPadding);
-                    tipBox.attr('width', tipBounds.width + 2 * tipPadding);
-                    tipBox.attr('height', tipBounds.height + 2 * tipPadding);
-                    */
+                    // can only do this once! try '$scope.watch' in link method next
+                    $scope.$apply();
+
+                    console.log( $scope.sources );
                 };
             }
 
@@ -517,13 +488,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 currSeries = series;
 
                 series.forEach(function(metric) {
-                    // metric.data.sort(function(a, b) {
-                    //     return a[0] - b[0];
-                    // });
                     allDatapoints = allDatapoints.concat(metric.data);
                 });
 
-                tooltipCreator = newTooltipCreator(names);
+                // correlate source names
+                tooltipCreator = newTooltipCreator(names, colors);
 
                 x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
                 y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));
@@ -584,7 +553,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
-                ;
+                    ;
+
+                // no wheel zoom on page load
+                if (!isWheelOn)
+                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
+
                 //the brush overlay
                 brushG = context.append("g")
                     .attr("class", "brush")
@@ -622,19 +596,19 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (GMTon) {
                     start = GMTformatDate(x.domain()[0]);
                     end = GMTformatDate(x.domain()[1]);
-                    str = start + ' - ' + end + " in GMT/UTC";
+                    str = start + ' - ' + end + " (GMT/UTC)";
                 } else {
                     start = formatDate(x.domain()[0]);
                     end = formatDate(x.domain()[1]);
-                    str = start + ' - ' + end + " in local time zone";
+                    // TODO: detect local time zone, display as 'PST', etc.
+                    str = start + ' - ' + end;  // + " in local time zone";
                 }
+
+                // update $scope
+                $scope.dateRange = str;
 
                 // update view
                 d3.select('#topTb-' + chartId + ' .dateRange').text(str);
-
-                // add to scope
-                // scope.dateRange.start = start;
-                // scope.dateRange.end = end;
             }
 
             //extent, k is the least number of points in one line you want to see on the main chart view
@@ -674,16 +648,19 @@ angular.module('argus.directives.charts.lineChart', [])
                     d3.select('#oneYear').attr("disabled", null);
                 }
             }
+
             // call resize when browser size changes
             d3.select(window).on('resize', resize);
 
             // Update graph on new metric results
             setGraph();
             updateGraph(series);
-            addOverlay();
 
+            // initialize starting point for graph settings & info
+            addOverlay();
+            updateDateRange();
             enableBrushTime();
-            reset();//to remove the brush cover first for user the drag
+            reset();    //to remove the brush cover first for user the drag
 
             // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
@@ -717,6 +694,29 @@ angular.module('argus.directives.charts.lineChart', [])
 
             d3.select('#toggle-wheel')
                 .attr("checked","true");
+
+        }],
+        // compile: function (iElement, iAttrs, transclude) {},
+        link: function (scope, element, attributes) {
+            // scope.$watch('series', function() {
+            //     scope.$apply();
+            // });
+
+            // angular.element('').on('click', function() {
+            //     scope.$apply();
+            // });
+
+            // toggle source to hide/show, leave other sources showing
+            scope.toggleSource = function(source) {
+                console.log( source );
+
+            };
+
+            // show ONLY this 1 source, hide all others
+            scope.hideOtherSources = function(source) {
+                console.log( source );
+
+            };
         }
     };
 }]);

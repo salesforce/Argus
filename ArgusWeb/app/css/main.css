@@ -45,7 +45,7 @@ button[disabled] {color:#CCC;}
 #navbar li a.glyphicon {font-size:20px; color:#777;}
 
 /* Common drop down menu */
-.topMenu {position:relative;}
+.topMenu {position:relative; margin-right:.5em;}
 .topMenu ul.subMenu {display:none; position:absolute;}
 .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px;}
 .topMenu ul.subMenu li:hover {background-color:#EEE;}
@@ -208,20 +208,29 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
-.topToolbar {padding:0 3em 0 2.8em;}
+.topToolbar {padding:0 3.5em;}
 
-.toolbarItem {display:inline-block; margin-right:1em; /*width:25%;*/}
+.toolbarItem {display:inline-block;}
+
+/* legend */
+.toolbarItem.legend {margin-left:10em; padding:.5em; height:45px;}
+.toolbarItem.legend.floatPanel {
+  position:absolute;
+  z-index:99;
+  height:auto;
+  border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
+}
 
 .toolbarMenu {display:inline-block; white-space:nowrap;}
 .toolbarMenu a.glyphicon {font-size:16px;}
 
 .chartMenu li label {font-weight:400; font-size:13px;}
 
-.dateRange {float:right; margin-top:8px; font-size:12px; color:#999;}
-
+.dateRange {float:right; margin-top:3px; font-size:12px; color:#999;}
 
 .axis path,
-.axis line {fill:none; stroke:#000; shape-rendering:crispEdges;}
+.axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
+
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
