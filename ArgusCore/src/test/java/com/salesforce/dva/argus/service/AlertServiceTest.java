@@ -31,7 +31,6 @@
 
 package com.salesforce.dva.argus.service;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -51,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
@@ -59,8 +57,6 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public class AlertServiceTest extends AbstractTest {
 
@@ -248,11 +244,14 @@ public class AlertServiceTest extends AbstractTest {
 
 				auditService.createAudit(audit);
 			}
+			
+			/*
 			for (int j = 0; j < historyCount; j++) {
-				History history = new History("message", "localhost", alerts[i], JobStatus.DEQUEUED);
-
-				historyService.updateHistory(history);
+				//History history = new History("message", "localhost", alerts[i].getId(), JobStatus.DEQUEUED);
+				//historyService.updateHistory(history);
+				historyService.createHistory("message", alerts[i], JobStatus.DEQUEUED, 0);
 			}
+			*/
 			LoggerFactory.getLogger(getClass()).info("Created alert " + i);
 		}
 

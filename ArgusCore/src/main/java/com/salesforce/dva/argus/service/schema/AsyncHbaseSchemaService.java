@@ -655,7 +655,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             });
             
             try {
-                deferred.join();
+                deferred.join(30000);
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
