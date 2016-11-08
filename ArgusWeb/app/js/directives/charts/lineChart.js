@@ -41,7 +41,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 brushChartRatio = 0.2
                 ;
             var marginTop = 15,
-                marginBottom = 30,
+                marginBottom = 35,
                 marginLeft = 50,
                 marginRight = 60;
 
@@ -245,25 +245,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brush)
                     .call(brush.move, x.range())    //change the x axis range when brush area changes
                     ;
-
-                //the graph rectangle area
-                chartRect = svg.append('rect')
-                    .attr('class', 'chartOverlay')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .on('mouseover', function () {
-                        focus.style('display', null);
-                    })
-                    .on('mouseout', function () {
-                        focus.style('display', 'none');
-                    })
-                    .on('mousemove', mousemove)
-                    .call(zoom);    // enables 'double-click' to zoom
-                    ;
-
-                // no wheel zoom on page load
-                if (!isWheelOn)
-                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -560,7 +541,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
-                ;
+                    ;
+
+                // no wheel zoom on page load
+                if (!isWheelOn)
+                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
+
                 //the brush overlay
                 brushG = context.append("g")
                     .attr("class", "brush")
