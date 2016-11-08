@@ -282,6 +282,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
                     var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
+                    circle.attr('dx',  d[0]).attr('dy', d[1]); //store the data
                     circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
@@ -427,6 +428,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionX = position[0];
                 var positionY = position[1];
                 var mouseY = y.invert(positionY);//domain value
+                focus.selectAll('circle');
+                focus.selectAll('circle').each(function(d, i){
+                    var circle = d3.select(this);
+                    var dx = circle.attr('dx');
+                    var dy = circle.attr('dy');
+                    circle.attr('transform','translate(' + x(dx)  + ',' + y(dy) + ')');
+                });
                 generateCrossLine(mouseY, positionX, positionY);
             }
 
@@ -482,6 +490,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 d3.select('svg').remove();
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
+                addOverlay();
 
                 //restore the zoom&brush
                 context.select(".brush").call
@@ -669,6 +678,7 @@ angular.module('argus.directives.charts.lineChart', [])
             setGraph();
             updateGraph(series);
             addOverlay();
+
             enableBrushTime();
             reset();//to remove the brush cover first for user the drag
 
