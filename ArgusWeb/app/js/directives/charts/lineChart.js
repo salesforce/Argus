@@ -461,6 +461,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 d3.select('svg').remove();
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
+                addOverlay();
 
                 //restore the zoom&brush
                 context.select(".brush").call
