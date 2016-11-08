@@ -52,10 +52,9 @@ public interface HistoryService extends Service {
     /**
      * Creates a new job history record.
      *
-     * @param   message        The message pattern.
      * @param   entity         The entity to which the job history will be attached.
+     * @param   message        The message.
      * @param   jobStatus      The status of the job.
-     * @param   waitTime       Job waiting time in MS.
      * @param   executionTime  Total job execution time in MS.
      *
      * @return  Created audit object.
@@ -75,7 +74,7 @@ public interface HistoryService extends Service {
      * Finds Job history for a given job.
      *
      * @param   entityId  		The entity for which the history is requested. Cannot be null and must be greater than 0.
-     * @param   createdAfter    Only return entries created after this time. 
+     * @param   limit    		Maximum number of history objects to retrieve. 
      *
      * @return  List of History objects for a given entity.
      */
@@ -85,7 +84,7 @@ public interface HistoryService extends Service {
      * Finds Job history for a given job.
      *
      * @param   entityId  		The entity for which the history is requested. Cannot be null and must be greater than 0.
-     * @param   createdAfter    Only return entries created after this time.
+     * @param   limit    		Maximum number of history objects to retrieve.
      * @param   jobStatus  		The status of the job.
      *
      * @return  History for a given entity.

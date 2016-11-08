@@ -328,7 +328,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
      */
     public enum Property {
     	
-        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "perfeng-tools1-4-sfm.ops.sfdc.net:2181"),
+        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "localhost:2181"),
         HBASE_ZOOKEEPER_SESSION_TIMEOUT("service.property.schema.hbase.zookeeper.session.timeout", "6000"),
         
         HBASE_SECURITY_AUTHENTICATION("service.property.schema.hbase.security.authentication", ""),
