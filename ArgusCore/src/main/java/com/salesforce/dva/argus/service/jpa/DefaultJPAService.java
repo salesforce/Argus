@@ -116,7 +116,7 @@ public abstract class DefaultJPAService extends DefaultService {
     private <E extends Identifiable> void _deleteGlobalRecords(E entity, EntityManager em) {
         if (JPAEntity.class.isAssignableFrom(entity.getClass())) {
             _deleteGlobalRecordsForType(entity, em, Audit.class);
-            _deleteGlobalRecordsForType(entity, em, History.class);
+            //_deleteGlobalRecordsForType(entity, em, History.class);
         }
     }
 

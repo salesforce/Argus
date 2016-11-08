@@ -44,13 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
@@ -223,16 +223,17 @@ public class AlertServiceTest extends AbstractTest {
 		assertNull(alertService.findAlertByNameAndOwner(alertName, user));
 	}
 
+	@Ignore
 	@Test
 	public void testAlertDeletePerformance() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		AuditService auditService = system.getServiceFactory().getAuditService();
-		HistoryService historyService = system.getServiceFactory().getHistoryService();
+		//HistoryService historyService = system.getServiceFactory().getHistoryService();
 		PrincipalUser user = userService.findAdminUser();
 		int alertCount = 10;
 		int auditCount = 5000;
-		int historyCount = 5000;
+		//int historyCount = 5000;
 		Alert[] alerts = new Alert[alertCount];
 
 		for (int i = 0; i < alerts.length; i++) {
@@ -247,8 +248,8 @@ public class AlertServiceTest extends AbstractTest {
 			
 			/*
 			for (int j = 0; j < historyCount; j++) {
-				//History history = new History("message", "localhost", alerts[i].getId(), JobStatus.DEQUEUED);
-				//historyService.updateHistory(history);
+				History history = new History("message", "localhost", alerts[i].getId(), JobStatus.DEQUEUED);
+				historyService.updateHistory(history);
 				historyService.createHistory("message", alerts[i], JobStatus.DEQUEUED, 0);
 			}
 			*/
