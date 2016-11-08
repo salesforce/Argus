@@ -84,8 +84,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 tip, tipBox, tipItems,
                 crossline
                 ;
-            //track mouse
-            var lastPosition;
 
             // Base graph setup, initialize all the graph variables
             function setGraph() {
@@ -284,13 +282,12 @@ angular.module('argus.directives.charts.lineChart', [])
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
                     var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
-                    circle.attr('x',  x(d[0])).attr('y', y(d[1]));
+                    circle.attr('dx',  d[0]).attr('dy', d[1]); //store the data
                     circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
                 tooltipCreator(tipItems, datapoints);
                 generateCrossLine(mouseY, positionX, positionY);
-                lastPosition = position;
             }
 
             function applyScope() {
@@ -432,18 +429,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionY = position[1];
                 var mouseY = y.invert(positionY);//domain value
                 focus.selectAll('circle');
-                if(lastPosition){
-                    focus.selectAll('circle').each(function(d, i){
-                        var circle = d3.select(this);
-                        var translateX = circle.attr('x');
-                        var translateY = circle.attr('y');
-                        var diffX = positionX - lastPosition[0];
-                        translateX = +translateX + diffX;
-                        circle.attr('x', translateX)
-                            .attr('transform','translate(' + translateX  + ',' + translateY + ')');
-                    });
-                }
-                lastPosition = position;
+                focus.selectAll('circle').each(function(d, i){
+                    var circle = d3.select(this);
+                    var dx = circle.attr('dx');
+                    var dy = circle.attr('dy');
+                    circle.attr('transform','translate(' + x(dx)  + ',' + y(dy) + ')');
+                });
                 generateCrossLine(mouseY, positionX, positionY);
             }
 
