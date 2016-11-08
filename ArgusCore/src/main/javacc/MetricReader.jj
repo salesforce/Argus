@@ -33,11 +33,14 @@ import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.metric.transform.TransformIterator;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
+
 
 public class MetricReader<T> {
 
@@ -186,6 +189,7 @@ TOKEN : { < DOWNSAMPLE : "DOWNSAMPLE" > }
 TOKEN : { < DEVIATION : "DEVIATION" > }
 TOKEN : { < JOIN : "JOIN" > }
 TOKEN : { < CONSECUTIVE : "CONSECUTIVE" > }
+TOKEN : { < foreach : "foreach" > }
 TOKEN : { < HW_FORECAST : "HW_FORECAST" > }
 TOKEN : { < HW_DEVIATION : "HW_DEVIATION" > }
 TOKEN : { < ANOMALY_STL : "ANOMALY_STL" > }
@@ -412,7 +416,7 @@ private String functionName() :
 	|
 	t = <FILL_CALCULATE>
 	{ return t.image; }
-	|	
+	|
 	t = <LOG>
 	{ return t.image; }
 	|	
@@ -424,7 +428,7 @@ private String functionName() :
 	|	
 	t = <SORT>
 	{ return t.image; }
-	|	
+	|
 	t = <SHIFT>
 	{ return t.image; }
 	|	
@@ -438,6 +442,9 @@ private String functionName() :
 	{ return t.image; }
     |    
     t = <CONSECUTIVE>
+    { return t.image; }
+	|
+	t = <foreach>
     { return t.image; }
 	|
 	t = <HW_FORECAST>
