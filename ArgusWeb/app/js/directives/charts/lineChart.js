@@ -90,7 +90,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 left: marginLeft};
 
             var tipPadding = 6;
-            var crossLineTipPadding = 2;
+            var crossLineTipWidth = 35;
+            var crossLineTipHeight = 15;
 
             // Local helpers
 
@@ -288,7 +289,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('id', 'crossLineY')
                     .attr('class', 'crossLine');
                 crossline.append('text')
-                    .attr('id', 'crossLineTip')
+                    .attr('id', 'crossLineTipY')
+                    .attr('class', 'crossLineTip');
+                crossline.append('text')
+                    .attr('id', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
             }
 
@@ -325,7 +329,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     datapoints.push(d);
                 });
                 tooltipCreator(tipItems, datapoints);
-                generateCrossLine(mouseY, positionX, positionY);
+                generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             function newTooltipCreator(names, colors) {
@@ -349,7 +353,7 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             //Generate cross lines at the point/cursor
-            function generateCrossLine(mouseY, X, Y) {
+            function generateCrossLine(mouseX, mouseY, X, Y) {
                 if(!mouseY) return;
                 focus.select('#crossLineX')
                     .attr('x1', X).attr('y1', 0)
@@ -357,11 +361,24 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus.select('#crossLineY')
                     .attr('x1', 0).attr('y1', Y)
                     .attr('x2', width).attr('y2', Y);
-                //add some information around the cross point
-                focus.select('#crossLineTip')
-                    .attr('x', 0 + crossLineTipPadding)
-                    .attr('y', Y - crossLineTipPadding)
+                //add some information around the axis
+                focus.select('#crossLineTipY')
+                    .attr('x', 0)
+                    .attr('y', Y)
+                    .attr('dx', -crossLineTipWidth)
                     .text(d3.format('.2s')(mouseY));
+
+                var date;
+                if (GMTon) {
+                    date = GMTformatDate(mouseX);
+                } else {
+                    date = formatDate(mouseX);
+                }
+                focus.select('#crossLineTipX')
+                    .attr('x', X)
+                    .attr('y', height )
+                    .attr('dy', crossLineTipHeight)
+                    .text(date);
             }
 
             //reset the brush area
