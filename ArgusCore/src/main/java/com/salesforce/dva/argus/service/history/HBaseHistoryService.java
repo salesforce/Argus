@@ -53,6 +53,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
     private Logger _logger;
     private final HBaseClient _client;
     private final ObjectMapper _mapper;
+    private final boolean _syncPut;
 
     
     //~ Constructors *********************************************************************************************************************************
@@ -85,6 +86,8 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         		systemConfig.getValue(Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getName(), Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getDefaultValue()));
         config.overrideConfig("hbase.security.authentication", 
         		systemConfig.getValue(Property.HBASE_SECURITY_AUTHENTICATION.getName(), Property.HBASE_SECURITY_AUTHENTICATION.getDefaultValue()));
+        
+        _syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
         
         _client = new HBaseClient(config);
         _mapper = new ObjectMapper();
@@ -141,10 +144,20 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			        throw new SystemException("Error occured while trying to execute put().", e);
 			    }
 			});
+			
+			if(_syncPut) {
+				deferred.join(10000);
+			}
 		
-		} catch (JsonProcessingException e1) {
-			_logger.warn("Failed to parse history object to bytes.");
+		} catch (JsonProcessingException e) {
+			_logger.warn("Failed to parse history object to bytes.", e);
 			return null;
+		} catch (InterruptedException e) {
+			_logger.warn("Interrupted while waiting for put to finish.", e);
+			return null;
+		} catch (Exception e) {
+			_logger.error("Exception while trying to create history.", e);
+			throw new SystemException(e);
 		}
 		
 		return history;
@@ -328,20 +341,20 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
      */
     public enum Property {
     	
-        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "localhost:2181"),
+        HBASE_ZOOKEEPER_CONNECT("service.property.history.hbase.zookeeper.connect", "localhost:2181"),
         HBASE_ZOOKEEPER_SESSION_TIMEOUT("service.property.schema.hbase.zookeeper.session.timeout", "6000"),
         
-        HBASE_SECURITY_AUTHENTICATION("service.property.schema.hbase.security.authentication", ""),
-        HBASE_RPC_PROTECTION("service.property.schema.hbase.rpc.protection", ""),
-        HBASE_SASL_CLIENTCONFIG("service.property.schema.hbase.sasl.clientconfig", "Client"),
-        HBASE_SECURITY_AUTH_ENABLE("service.property.schema.hbase.security.auth.enable", "false"),
-        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.schema.hbase.kerberos.regionserver.principal", ""),
+        HBASE_SECURITY_AUTHENTICATION("service.property.history.hbase.security.authentication", ""),
+        HBASE_RPC_PROTECTION("service.property.history.hbase.rpc.protection", ""),
+        HBASE_SASL_CLIENTCONFIG("service.property.history.hbase.sasl.clientconfig", "Client"),
+        HBASE_SECURITY_AUTH_ENABLE("service.property.history.hbase.security.auth.enable", "false"),
+        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.history.hbase.kerberos.regionserver.principal", ""),
         
-        HBASE_RPCS_BATCH_SIZE("service.property.schema.hbase.rpcs.batch.size", "16192"),
-        HBASE_RPCS_BUFFERED_FLUSH_INTERVAL("service.property.schema.hbase.rpcs.buffered_flush_interval", "5000"),
-        HBASE_RPC_TIMEOUT("service.property.schema.hbase.rpc.timeout", "0"),
+        HBASE_RPCS_BATCH_SIZE("service.property.history.hbase.rpcs.batch.size", "16192"),
+        HBASE_RPCS_BUFFERED_FLUSH_INTERVAL("service.property.history.hbase.rpcs.buffered_flush_interval", "5000"),
+        HBASE_RPC_TIMEOUT("service.property.history.hbase.rpc.timeout", "0"),
         
-        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false");
+        HBASE_SYNC_PUT("service.property.history.hbase.sync.put", "true");
 
         private final String _name;
         private final String _defaultValue;

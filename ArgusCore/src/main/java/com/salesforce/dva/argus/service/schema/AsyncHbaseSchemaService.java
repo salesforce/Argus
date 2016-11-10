@@ -664,14 +664,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     
     
     private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
-        final AtomicBoolean fail = new AtomicBoolean(true);
         
         Deferred<Object> deferred = _client.ensureTableFamilyExists(table, family);
         
         deferred.addCallback(new Callback<Void, Object>() {
 			@Override
 			public Void call(Object arg) throws Exception {
-				fail.set(false);
 				return null;
 			}
 		});

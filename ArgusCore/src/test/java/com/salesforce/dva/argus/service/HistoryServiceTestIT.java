@@ -31,17 +31,19 @@
      
 package com.salesforce.dva.argus.service;
 
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
 import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
-import org.junit.Test;
 
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-
-public class HistoryServiceTest extends AbstractTest {
+@Category(IntegrationTest.class)
+public class HistoryServiceTestIT extends AbstractTest {
 
     private static final String expression = "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg";
 
@@ -54,19 +56,16 @@ public class HistoryServiceTest extends AbstractTest {
 
         job = alertService.updateAlert(job);
 
-        History expectedHistory = new History("test", "hostname_test", job, JobStatus.SUCCESS, 0, 0);
+        History expected = new History("test", "hostname_test", job.getId(), JobStatus.SUCCESS, 0);
 
-        expectedHistory = historyService.updateHistory(expectedHistory);
-
-        History actual = historyService.findHistoryByPrimaryKey(expectedHistory.getId());
-
-        assertTrue(actual.equals(expectedHistory));
-        historyService.deleteExpiredHistory();
-        assertNotNull(historyService.findHistoryByPrimaryKey(expectedHistory.getId()));
+        History actual = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
+        expected.setCreationTime(actual.getCreationTime());
+        
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void testFindByJob() {
+    public void testFindByJob() throws InterruptedException {
         HistoryService historyService = system.getServiceFactory().getHistoryService();
         UserService userService = system.getServiceFactory().getUserService();
         AlertService alertService = system.getServiceFactory().getAlertService();
@@ -74,17 +73,15 @@ public class HistoryServiceTest extends AbstractTest {
 
         job = alertService.updateAlert(job);
 
-        History expectedHistory = new History("test", "hostname_test", job, JobStatus.SUCCESS, 0, 0);
+        History expected = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
 
-        expectedHistory = historyService.updateHistory(expectedHistory);
-
-        History actual = historyService.findByJob(job.getId()).get(0);
-
-        assertTrue(actual.equals(expectedHistory));
+        History actual = historyService.findByJob(job.getId(), 1).get(0);
+        
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void testFindByJobAndStatus() {
+    public void testFindByJobAndStatus() throws InterruptedException {
         HistoryService historyService = system.getServiceFactory().getHistoryService();
         UserService userService = system.getServiceFactory().getUserService();
         AlertService alertService = system.getServiceFactory().getAlertService();
@@ -92,32 +89,13 @@ public class HistoryServiceTest extends AbstractTest {
 
         job = alertService.updateAlert(job);
 
-        History expectedHistory = new History("test", "hostname_test", job, JobStatus.SUCCESS, 0, 0);
+        History expected = historyService.createHistory(job, "test", JobStatus.SUCCESS, 0);
+        
+        History actual = historyService.findByJobAndStatus(job.getId(), 1, JobStatus.SUCCESS).get(0);
 
-        expectedHistory = historyService.updateHistory(expectedHistory);
-
-        History actual = historyService.findByJobAndStatus(job.getId(), null, JobStatus.SUCCESS).get(0);
-
-        assertTrue(actual.equals(expectedHistory));
-        assertEquals(0, historyService.findByJobAndStatus(job.getId(), null, JobStatus.FAILURE).size());
+        assertEquals(expected, actual);
+        assertEquals(0, historyService.findByJobAndStatus(job.getId(), 1, JobStatus.FAILURE).size());
     }
-
-    @Test
-    public void testAppendMessage() {
-        HistoryService historyService = system.getServiceFactory().getHistoryService();
-        UserService userService = system.getServiceFactory().getUserService();
-        AlertService alertService = system.getServiceFactory().getAlertService();
-        Alert job = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", expression, "* * * * *");
-
-        job = alertService.updateAlert(job);
-
-        History expectedHistory = new History("test1", "hostname_test", job, JobStatus.SUCCESS, 0, 0);
-
-        expectedHistory = historyService.updateHistory(expectedHistory);
-
-        History actual = historyService.appendMessageAndUpdate(expectedHistory.getId(), "test2", null, 0, 0);
-
-        assertEquals("test1test2", actual.getMessage());
-    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
