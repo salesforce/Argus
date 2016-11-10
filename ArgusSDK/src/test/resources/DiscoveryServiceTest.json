@@ -1,13 +1,13 @@
 [{
     "type": "GET",
-    "endpoint": "/discover?namespace=nsReg&scope=scpReg&metric=metReg&tagk=tkReg&tagv=tvReg&limit=1",
+    "endpoint": "/discover/metrics/schemarecords?namespace=nsReg&scope=scpReg&metric=metReg&tagk=tkReg&tagv=tvReg&limit=1",
     "jsonInput" :null,
     "status": 200,
     "message": "success",
     "jsonOutput" : "[{\"namespace\":\"nsReg\",\"scope\":\"scpReg\",\"metric\":\"metReg\",\"tagKey\":\"tkReg\",\"tagValue\":\"tvReg\"}]"
 },{
     "type": "GET",
-    "endpoint": "/discover?namespace=nsReg&scope=scpReg&metric=metReg&tagk=tkReg&tagv=tvReg&limit=2&type=namespace",
+    "endpoint": "/discover/metrics/schemarecords?namespace=nsReg&scope=scpReg&metric=metReg&tagk=tkReg&tagv=tvReg&limit=2&type=namespace",
     "jsonInput" :null,
     "status": 200,
     "message": "success",

@@ -47,7 +47,7 @@ public class DiscoveryService extends EndpointService {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/discover";
+    private static final String RESOURCE = "/discover/metrics/schemarecords";
 
     //~ Constructors *********************************************************************************************************************************
 
