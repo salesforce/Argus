@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.JPAEntity;
@@ -37,6 +38,7 @@ import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
 import com.stumbleupon.async.TimeoutException;
 
+@Singleton
 public class HBaseHistoryService extends DefaultService implements HistoryService {
 	
 	//~ Static fields/initializers *******************************************************************************************************************
@@ -63,7 +65,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		super(systemConfig);
 		
 		Config config = new Config();
-        
+		
     	config.overrideConfig("hbase.zookeeper.quorum",
                 systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
     	config.overrideConfig("hbase.zookeeper.session.timeout",
@@ -243,7 +245,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         String stopRow = _plusOne(startRow);
         scanner.setStartKey(startRow);
         scanner.setStopKey(stopRow);
-        scanner.setMaxNumRows(Math.min(limit, 5000));
+        scanner.setMaxNumRows(Math.min(limit, 500));
         scanner.setFilter(filter);
 		
 		final List<History> records = new ArrayList<>(limit);
