@@ -236,7 +236,7 @@ public final class SystemConfiguration extends Properties {
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.HbaseSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
-        HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.schema.HBaseHistoryService"),
+        HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties");
