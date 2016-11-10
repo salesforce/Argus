@@ -270,12 +270,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(xAxis2)
                 ;
 
-                brushG = context.append("g")
-                    .attr("class", "brush")
-                    .call(brush)
-                    .call(brush.move, x.range())    //change the x axis range when brush area changes
-                ;
-
                 tip = svg.append('g')
                     .attr('class', 'legend');
                 tipBox = tip.append('rect')
