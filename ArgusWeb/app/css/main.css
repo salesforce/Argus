@@ -263,3 +263,8 @@ g.legend-items text .value {font-weight: 600; font-size: 14px;}
 .crossLineTip {
 
 }
+.crossLineTipRect {
+    stroke: black;
+    stroke-width: 1px;
+    fill: white;
+}

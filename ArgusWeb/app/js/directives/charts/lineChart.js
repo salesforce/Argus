@@ -92,6 +92,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var tipPadding = 6;
             var crossLineTipWidth = 35;
             var crossLineTipHeight = 15;
+            var crossLineTipPadding = 3;
 
             // Local helpers
 
@@ -120,7 +121,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                 focus, context, clip, brushG, chartRect, //g
                 tip, tipBox, tipItems,
-                crossline
+                crossLine
                 ;
 
             // Base graph setup, initialize all the graph variables
@@ -280,19 +281,27 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'legend-items');
 
                 //focus tracking
-                crossline = focus.append('g')
-                    .attr('id', 'crossline');
-                crossline.append('line')
-                    .attr('id', 'crossLineX')
+                crossLine = focus.append('g')
+                    .attr('name', 'crossLine');
+                crossLine.append('line')
+                    .attr('name', 'crossLineX')
                     .attr('class', 'crossLine');
-                crossline.append('line')
-                    .attr('id', 'crossLineY')
+                crossLine.append('line')
+                    .attr('name', 'crossLineY')
                     .attr('class', 'crossLine');
-                crossline.append('text')
-                    .attr('id', 'crossLineTipY')
+                //tooltip background rect
+                crossLine.append('rect')
+                    .attr('name', 'crossLineTipRectX')
+                    .attr('class', 'crossLineTipRect');
+                crossLine.append('rect')
+                    .attr('name', 'crossLineTipRectY')
+                    .attr('class', 'crossLineTipRect');
+                //tooltip text
+                crossLine.append('text')
+                    .attr('name', 'crossLineTipY')
                     .attr('class', 'crossLineTip');
-                crossline.append('text')
-                    .attr('id', 'crossLineTipX')
+                crossLine.append('text')
+                    .attr('name', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
             }
 
@@ -355,18 +364,28 @@ angular.module('argus.directives.charts.lineChart', [])
             //Generate cross lines at the point/cursor
             function generateCrossLine(mouseX, mouseY, X, Y) {
                 if(!mouseY) return;
-                focus.select('#crossLineX')
+
+                focus.select('[name=crossLineX]')
                     .attr('x1', X).attr('y1', 0)
                     .attr('x2', X).attr('y2', height);
-                focus.select('#crossLineY')
+                focus.select('[name=crossLineY]')
                     .attr('x1', 0).attr('y1', Y)
                     .attr('x2', width).attr('y2', Y);
                 //add some information around the axis
-                focus.select('#crossLineTipY')
+                focus.select('[name=crossLineTipY')
                     .attr('x', 0)
                     .attr('y', Y)
                     .attr('dx', -crossLineTipWidth)
                     .text(d3.format('.2s')(mouseY));
+
+                //add a background to it
+                var boxY = focus.select('[name=crossLineTipY]').node().getBBox();
+                focus.select('[name=crossLineTipRectY]')
+                    .attr('x', boxY.x - crossLineTipPadding)
+                    .attr('y', boxY.y - crossLineTipPadding)
+                    .attr('width', boxY.width + 2 * crossLineTipPadding)
+                    .attr('height', boxY.height + 2 * crossLineTipPadding);
+
 
                 var date;
                 if (GMTon) {
@@ -374,11 +393,21 @@ angular.module('argus.directives.charts.lineChart', [])
                 } else {
                     date = formatDate(mouseX);
                 }
-                focus.select('#crossLineTipX')
+
+
+                focus.select('[name=crossLineTipX]')
                     .attr('x', X)
                     .attr('y', height )
                     .attr('dy', crossLineTipHeight)
                     .text(date);
+
+                //add a background to it
+                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
+                focus.select('[name=crossLineTipRectX]')
+                    .attr('x', boxX.x - crossLineTipPadding)
+                    .attr('y', boxX.y - crossLineTipPadding)
+                    .attr('width', boxX.width + 2 * crossLineTipPadding)
+                    .attr('height', boxX.height + 2 * crossLineTipPadding);
             }
 
             //reset the brush area
@@ -436,7 +465,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 context.select(".brush").call
                 (brush.move, x.range().map(t.invertX, t));
 
-                //sync the crossline
+                //sync the crossLine
                 var position = d3.mouse(this);
                 var positionX = position[0];
                 var positionY = position[1];
