@@ -15,20 +15,50 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
 
+
+
+        }],
+        // compile: function (iElement, iAttrs, transclude) {},
+        link: function (scope, element, attributes) {
+            // scope.$watch('series', function() {
+            //     scope.$apply();
+            // });
+
+            // angular.element('').on('click', function() {
+            //     scope.$apply();
+            // });
+
+            // toggle source to hide/show, leave other sources showing
+            scope.toggleSource = function(source) {
+                console.log( source );
+
+            };
+
+            // show ONLY this 1 source, hide all others
+            scope.hideOtherSources = function(source) {
+                console.log( source );
+
+            };
+
+
+
+
+            //TODO figure what to put in controller, some dom modification should go in link
+
             // set $scope values
-            $scope.isWheelOn = false;
-            $scope.isBrushOn = true;
+            scope.isWheelOn = false;
+            scope.isBrushOn = true;
 
             // legend sources
-            $scope.sources = {};
+            scope.sources = {};
 
             // ---------
-
-            var chartId = $scope.chartId;
-            var series = $scope.series;
-            var startTime = $scope.dateConfig.startTime;
-            var endTime = $scope.dateConfig.endTime;
-            var GMTon = $scope.dateConfig.gmt;
+            var topToolbar = $(element);
+            var chartId = scope.chartId;
+            var series = scope.series;
+            var startTime = scope.dateConfig.startTime;
+            var endTime = scope.dateConfig.endTime;
+            var GMTon = scope.dateConfig.gmt;
 
             var currSeries = series;
 
@@ -50,17 +80,18 @@ angular.module('argus.directives.charts.lineChart', [])
             var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
 
             var margin = {top: marginTop,
-                        right: marginRight,
-                        bottom: containerHeight - marginTop - height,
-                        left: marginLeft};
+                right: marginRight,
+                bottom: containerHeight - marginTop - height,
+                left: marginLeft};
 
             var margin2 = {top: containerHeight - height2 - marginBottom,
-                        right: marginRight,
-                        bottom: marginBottom,
-                        left: marginLeft};
+                right: marginRight,
+                bottom: marginBottom,
+                left: marginLeft};
 
             var tipPadding = 6;
-            var crossLineTipPadding = 2;
+            var crossLineTipWidth = 35;
+            var crossLineTipHeight = 15;
 
             // Local helpers
 
@@ -111,37 +142,37 @@ angular.module('argus.directives.charts.lineChart', [])
                 xAxis = d3.axisBottom()
                     .scale(x)
                     .ticks(nGridX)
-                    ;
+                ;
 
                 xAxis2 = d3.axisBottom() //for brush
                     .scale(x2)
                     .ticks(nGridX)
-                    ;
+                ;
 
                 yAxis = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
                     .tickFormat(d3.format('.2s'))
-                    ;
+                ;
 
                 yAxisR = d3.axisRight()
                     .scale(y)
                     .ticks(nGridY)
                     .tickFormat(d3.format('.2s'))
-                    ;
+                ;
 
                 //grid
                 xGrid = d3.axisBottom()
                     .scale(x)
                     .ticks(nGridX)
                     .tickSizeInner(-height)
-                    ;
+                ;
 
                 yGrid = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
                     .tickSizeInner(-width)
-                    ;
+                ;
 
                 //line
                 line = d3.line()
@@ -178,7 +209,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .on("end", function(){
                         svg.select(".chartOverlay").style("cursor", "crosshair");
                     })
-                    ;
+                ;
 
                 //Add elements to SVG
                 svg = d3.select('#' + chartId).append('svg')
@@ -187,7 +218,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('id', 'svg')
                     .append('g')
                     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-                    ;
+                ;
 
                 xAxisG = svg.append('g')
                     .attr('class', 'x axis')
@@ -238,13 +269,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr("class", "xBrush axis")
                     .attr("transform", "translate(0," + height2 + ")")
                     .call(xAxis2)
-                    ;
-
-                brushG = context.append("g")
-                    .attr("class", "brush")
-                    .call(brush)
-                    .call(brush.move, x.range())    //change the x axis range when brush area changes
-                    ;
+                ;
 
                 tip = svg.append('g')
                     .attr('class', 'legend');
@@ -264,7 +289,11 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('id', 'crossLineY')
                     .attr('class', 'crossLine');
                 crossline.append('text')
-                    .attr('id', 'crossLineTip');
+                    .attr('id', 'crossLineTipY')
+                    .attr('class', 'crossLineTip');
+                crossline.append('text')
+                    .attr('id', 'crossLineTipX')
+                    .attr('class', 'crossLineTip');
             }
 
             function mousemove() {
@@ -295,12 +324,12 @@ angular.module('argus.directives.charts.lineChart', [])
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
                     var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
-                    circle.attr('dx',  d[0]).attr('dy', d[1]); //store the data
+                    circle.attr('dataX',  d[0]).attr('dataY', d[1]); //store the data
                     circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
                 tooltipCreator(tipItems, datapoints);
-                generateCrossLine(mouseY, positionX, positionY);
+                generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             function newTooltipCreator(names, colors) {
@@ -314,17 +343,17 @@ angular.module('argus.directives.charts.lineChart', [])
                     }
 
                     // set names into $scope for legend
-                    $scope.sources = tmpSources;
+                    scope.sources = tmpSources;
 
                     // can only do this once! try '$scope.watch' in link method next
-                    $scope.$apply();
+                    scope.$apply();
 
-                    console.log( $scope.sources );
+                    //console.log( scope.sources );
                 };
             }
 
             //Generate cross lines at the point/cursor
-            function generateCrossLine(mouseY, X, Y) {
+            function generateCrossLine(mouseX, mouseY, X, Y) {
                 if(!mouseY) return;
                 focus.select('#crossLineX')
                     .attr('x1', X).attr('y1', 0)
@@ -332,11 +361,24 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus.select('#crossLineY')
                     .attr('x1', 0).attr('y1', Y)
                     .attr('x2', width).attr('y2', Y);
-                //add some information around the cross point
-                focus.select('#crossLineTip')
-                    .attr('x', X + crossLineTipPadding)
-                    .attr('y', Y - crossLineTipPadding)
-                    .text(d3.format('.2f')(mouseY));
+                //add some information around the axis
+                focus.select('#crossLineTipY')
+                    .attr('x', 0)
+                    .attr('y', Y)
+                    .attr('dx', -crossLineTipWidth)
+                    .text(d3.format('.2s')(mouseY));
+
+                var date;
+                if (GMTon) {
+                    date = GMTformatDate(mouseX);
+                } else {
+                    date = formatDate(mouseX);
+                }
+                focus.select('#crossLineTipX')
+                    .attr('x', X)
+                    .attr('y', height )
+                    .attr('dy', crossLineTipHeight)
+                    .text(date);
             }
 
             //reset the brush area
@@ -402,9 +444,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus.selectAll('circle');
                 focus.selectAll('circle').each(function(d, i){
                     var circle = d3.select(this);
-                    var dx = circle.attr('dx');
-                    var dy = circle.attr('dy');
-                    circle.attr('transform','translate(' + x(dx)  + ',' + y(dy) + ')');
+                    var dataX = circle.attr('dataX');
+                    var dataY = circle.attr('dataY');
+                    circle.attr('transform','translate(' + x(dataX)  + ',' + y(dataY) + ')');
                 });
                 generateCrossLine(mouseY, positionX, positionY);
             }
@@ -416,16 +458,19 @@ angular.module('argus.directives.charts.lineChart', [])
                     //the unit of time value is millisecond
                     //x2.domain is the domain of total
                     var interval = k * 60000; //one minute is 60000 millisecond
-                    var scale = (x2.domain()[1].getTime() - x2.domain()[0].getTime()) / interval;
-                    //rescale x axis
-                    var start = x.domain()[0];
-                    var end = new Date(start.getTime() + interval);
-                    x.domain([start, end]);
-                    // sync the brush
-                    var start2 = x2.range()[0];
-                    var end2 = start2 + (x2.range()[1] - x2.range()[0]) / scale;
+
+                    //take current x domain value and extend it
+                    var start = x.domain()[0].getTime();
+                    var end = x.domain()[1].getTime();
+                    var middle = (start + end) / 2;
+                    start = middle - interval / 2;
+                    var min = x2.domain()[0].getTime();
+                    var max = x2.domain()[1].getTime();
+                    if (start < min) start = min;
+                    end = start + interval;
+                    if (end > max) end = max;
                     context.select(".brush").call
-                    (brush.move, [start2, end2]);
+                    (brush.move, [x2(new Date(start)), x2(new Date(end))]);
                 };
             }
 
@@ -550,7 +595,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
-                    ;
+                ;
 
                 // no wheel zoom on page load
                 if (!isWheelOn)
@@ -602,7 +647,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
 
                 // update $scope
-                $scope.dateRange = str;
+                scope.dateRange = str;
 
                 // update view
                 d3.select('#topTb-' + chartId + ' .dateRange').text(str);
@@ -626,23 +671,23 @@ angular.module('argus.directives.charts.lineChart', [])
                 var range = x2.domain()[1] - x2.domain()[0];
                 if(range > 3600000){
                     //enable 1h button
-                    d3.select('#oneHour').attr("disabled", null);
+                    $('[name=oneHour]', topToolbar).prop('disabled', false);
                 }
                 if(range > 3600000 * 24){
                     //enable 1d button
-                    d3.select('#oneDay').attr("disabled", null);
+                    $('[name=oneDay]', topToolbar).prop('disabled', false);
                 }
                 if(range > 3600000 * 24 * 7){
                     //enable 1w button
-                    d3.select('#oneWeek').attr("disabled", null);
+                    $('[name=oneWeek]', topToolbar).prop('disabled', false);
                 }
                 if(range > 3600000 * 24 * 30){
                     //enable 1month button
-                    d3.select('#oneMonth').attr("disabled", null);
+                    $('[name=oneMonth]', topToolbar).prop('disabled', false);
                 }
                 if(range > 3600000 * 24 * 365){
                     //enable 1y button
-                    d3.select('#oneYear').attr("disabled", null);
+                    $('[name=oneYear]', topToolbar).prop('disabled', false);
                 }
             }
 
@@ -661,59 +706,16 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
-            d3.select('#reset')
-                .on('click', reset);
-
-            d3.select('#oneHour')
-                .on('click', brushMinute(60));
-
-            d3.select('#oneDay')
-                .on('click', brushMinute(60*24));
-
-            d3.select('#oneWeek')
-                .on('click', brushMinute(60*24*7));
-
-            d3.select('#oneMonth')
-                .on('click', brushMinute(60*24*30));
-
-            d3.select('#oneYear')
-                .on('click', brushMinute(60*24*365));
+            $('[name=reset]', topToolbar).click(reset);
+            $('[name=oneHour]', topToolbar).click(brushMinute(60));
+            $('[name=oneDay]', topToolbar).click(brushMinute(60*24));
+            $('[name=oneWeek]', topToolbar).click(brushMinute(60*24*7));
+            $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
+            $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
 
             //toggle
-            d3.select('#toggle-brush')
-                .on('change', toggleBrush);
-
-            d3.select('#toggle-wheel')
-                .on('change', toggleWheel);
-
-            d3.select('#toggle-brush')
-                .attr("checked","true");
-
-            d3.select('#toggle-wheel')
-                .attr("checked","true");
-
-        }],
-        // compile: function (iElement, iAttrs, transclude) {},
-        link: function (scope, element, attributes) {
-            // scope.$watch('series', function() {
-            //     scope.$apply();
-            // });
-
-            // angular.element('').on('click', function() {
-            //     scope.$apply();
-            // });
-
-            // toggle source to hide/show, leave other sources showing
-            scope.toggleSource = function(source) {
-                console.log( source );
-
-            };
-
-            // show ONLY this 1 source, hide all others
-            scope.hideOtherSources = function(source) {
-                console.log( source );
-
-            };
+            $('[name=toggle-brush]', topToolbar).change(toggleBrush);
+            $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
         }
     };
 }]);

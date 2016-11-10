@@ -1,25 +1,25 @@
 <div class="topToolbar">
 	<div id="topTb-{{chartId}}">
 		<div class="toolbarItem graphControls">
-			<a id="reset" class="glyphicon glyphicon-refresh topMenu" style="cursor:pointer;"></a>
+			<a name="reset" class="glyphicon glyphicon-refresh topMenu" style="cursor:pointer;"></a>
 
 			<div class="toolbarMenu topMenu">
 				<a class="glyphicon glyphicon-menu-hamburger"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li>
-					<button id="oneHour" disabled="disabled">1h</button>
+					<button name="oneHour" disabled="disabled">1h</button>
 				</li>
 				<li>
-					<button id="oneDay" disabled="disabled">1d</button>
+					<button name="oneDay" disabled="disabled">1d</button>
 				</li>
 				<li>
-					<button id="oneWeek" disabled="disabled">1w</button>
+					<button name="oneWeek" disabled="disabled">1w</button>
 				</li>
 				<li>
-					<button id="oneMonth" disabled="disabled">1m</button>
+					<button name="oneMonth" disabled="disabled">1m</button>
 				</li>
 				<li>
-					<button id="oneYear" disabled="disabled">1y</button>
+					<button name="oneYear" disabled="disabled">1y</button>
 				</li>
 				</ul>
 			</div>
@@ -28,12 +28,12 @@
 				<a class="glyphicon glyphicon-cog"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li>
-					<input type="checkbox" id="toggle-brush" ng-model="isBrushOn" />
-					<label for="toggle-brush">Time brush</label>
+					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartId}}" ng-model="isBrushOn" />
+					<label for="toggle-brush-{{chartId}}">Time brush</label>
 				</li>
 				<li>
-					<input type="checkbox" id="toggle-wheel" ng-model="isWheelOn" />
-					<label for="toggle-wheel">Mouse scrolling</label>
+					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartId}}" ng-model="isWheelOn" />
+					<label for="toggle-wheel-{{chartId}}">Mouse scrolling</label>
 				</li>
 				</ul>
 			</div>
@@ -47,6 +47,6 @@
 			</ul>
 		</div>
 
-		<div class="toolbarItem right dateRange" id="date-range">{{dateRange}}</div>
+		<div class="toolbarItem right dateRange" id="date-range-{{chartId}}">{{dateRange}}</div>
 	</div>
 </div>
