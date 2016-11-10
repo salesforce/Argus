@@ -14,9 +14,36 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
+            $scope.toggleSource = function(source) {
+                toggleGraphOnOff(source.name);
+            };
 
+            // show ONLY this 1 source, hide all others
+            $scope.hideOtherSources = function(sourceToShow, sources) {
+                for (var i = 0; i < sources.length; i++) {
+                    if (sourceToShow.name !== sources[i].name) {
+                        toggleGraphOnOff(sources[i].name);
+                    }
+                }
+            };
 
+            $scope.labelTextColor = function(source) {
+                var graphID = "path[id='" + source.name.replace(/\s+/g, '') +"']";
+                if (d3.select(graphID).style("opacity") === "1") {
+                    return 'blue';
+                } else {
+                    return 'grey';
+                }
+            };
 
+            function toggleGraphOnOff(sourceName) {
+                // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
+                var graphID = "path[id='" + sourceName.replace(/\s+/g, '') +"']";
+                var newOpacity = 1 - d3.select(graphID).style("opacity"); // not type strict. . .
+                d3.select(graphID)
+                    .transition().duration(100)
+                    .style("opacity", newOpacity);
+            }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
@@ -27,21 +54,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // angular.element('').on('click', function() {
             //     scope.$apply();
             // });
-
             // toggle source to hide/show, leave other sources showing
-            scope.toggleSource = function() {
-                var graphID = this.source.name.replace(/\s+/g, '');
-                var temp = "path[id='"+ graphID +"']"; // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
-                var newOpacity = 1 - d3.select(temp).style("opacity"); // not type strict. . .
-                d3.select(temp)
-                    .transition().duration(100)
-                    .style("opacity", newOpacity);
-            };
-
-            // show ONLY this 1 source, hide all others
-            scope.hideOtherSources = function(source) {
-                var shownGraphID = "path[id='"+ this.source.name.replace(/\s+/g, '') +"']";
-            };
 
             //TODO figure what to put in controller, some dom modification should go in link
 
@@ -347,8 +360,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     // can only do this once! try '$scope.watch' in link method next
                     scope.$apply();
-                    // console.log( $scope.sources );
-                    // console.log( scope.sources );
                 };
             }
 
