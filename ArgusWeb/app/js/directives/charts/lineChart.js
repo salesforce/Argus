@@ -319,7 +319,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     // can only do this once! try '$scope.watch' in link method next
                     $scope.$apply();
 
-                    console.log( $scope.sources );
+                    // console.log( $scope.sources );
                 };
             }
 
@@ -503,11 +503,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 series.forEach(function(metric) {
                     svg.append('path')
                         .datum(metric.data)
+                        .attr('id', metric.name.replace(/\s+/g, ''))
                         .attr('class', 'line')
                         .attr('d', line)
                         // .style('stroke', z(metric.id))
                         .style('stroke', function () {
-                            if (metric.color == null) {
+                            if (metric.color === null) {
                                 return z(metric.name);
                             } else {
                                 return metric.color;
@@ -521,7 +522,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('d', line2)
                         // .style('stroke', z(metric.id))
                         .style('stroke', function () {
-                            if (metric.color == null) {
+                            if (metric.color === null) {
                                 return z(metric.name);
                             } else {
                                 return metric.color;
@@ -702,17 +703,22 @@ angular.module('argus.directives.charts.lineChart', [])
             // angular.element('').on('click', function() {
             //     scope.$apply();
             // });
+            debugger;
 
             // toggle source to hide/show, leave other sources showing
-            scope.toggleSource = function(source) {
-                console.log( source );
-
+            scope.toggleSource = function() {
+                debugger;
+                var graphID = this.source.name.replace(/\s+/g, '');
+                var temp = "path[id='"+ graphID +"']"; // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
+                var newOpacity = 1 - d3.select(temp).style("opacity"); // not type strict. . .
+                d3.select(temp)
+                    .transition().duration(100)
+                    .style("opacity", newOpacity);
             };
 
             // show ONLY this 1 source, hide all others
             scope.hideOtherSources = function(source) {
-                console.log( source );
-
+                var shownGraphID = "path[id='"+ this.source.name.replace(/\s+/g, '') +"']";
             };
         }
     };

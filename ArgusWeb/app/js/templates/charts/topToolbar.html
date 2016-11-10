@@ -42,7 +42,7 @@
 		<div class="toolbarItem legend floatPanel" ng-if="!(sources | isEmpty)">
 			<ul style="padding-left:0;">
 			<li ng-repeat="source in sources track by $index">
-				<a ng-click="hideOtherSources(source.id)">Hide others</a> - <a ng-click="toggleSource(source.id)">{{source.name}}</a> - {{source.value | nullable_decimal | base10si}}
+				<a ng-click="hideOtherSources()">Hide others</a> - <a ng-click="toggleSource()">{{source.name}}</a> - {{source.value | nullable_decimal | base10si}}
 			</li>
 			</ul>
 		</div>
