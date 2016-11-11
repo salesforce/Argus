@@ -14,9 +14,33 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
+            $scope.toggleSource = function(source) {
+                debugger;
+                toggleGraphOnOff(source);
+            };
 
+            // show ONLY this 1 source, hide all others
+            $scope.hideOtherSources = function(sourceToShow, sources) {
+                for (var i = 0; i < sources.length; i++) {
+                    if (sourceToShow.name !== sources[i].name) {
+                        toggleGraphOnOff(sources[i]);
+                    }
+                }
+            };
 
+            $scope.labelTextColor = function(source) {
+                return source.displaying? 'blue': 'gray';
+            };
 
+            function toggleGraphOnOff(source) {
+                // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
+                var graphID = "path[id='" + source.name.replace(/\s+/g, '') +"']";
+                var newOpacity = source.displaying? 0 : 1;
+                source.displaying = !source.displaying;
+                d3.select(graphID)
+                    .transition().duration(100)
+                    .style("opacity", newOpacity);
+            }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
@@ -27,21 +51,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // angular.element('').on('click', function() {
             //     scope.$apply();
             // });
-
             // toggle source to hide/show, leave other sources showing
-            scope.toggleSource = function(source) {
-                console.log( source );
-
-            };
-
-            // show ONLY this 1 source, hide all others
-            scope.hideOtherSources = function(source) {
-                console.log( source );
-
-            };
-
-
-
 
             //TODO figure what to put in controller, some dom modification should go in link
 
@@ -336,9 +346,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 return function(group, datapoints) {
                     var tmpSources = [];
                     for (var i = 0; i < datapoints.length; i++) {
+                        var tempColor = colors[i] === null? z(names[i]): colors[i];
                         tmpSources.push({
                             name: names[i],
-                            value: datapoints[i][1]
+                            value: datapoints[i][1],
+                            displaying: true,
+                            color: tempColor
                         });
                     }
 
@@ -347,8 +360,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     // can only do this once! try '$scope.watch' in link method next
                     scope.$apply();
-
-                    //console.log( scope.sources );
                 };
             }
 
@@ -548,11 +559,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 series.forEach(function(metric) {
                     svg.append('path')
                         .datum(metric.data)
+                        .attr('id', metric.name.replace(/\s+/g, ''))
                         .attr('class', 'line')
                         .attr('d', line)
                         // .style('stroke', z(metric.id))
                         .style('stroke', function () {
-                            if (metric.color == null) {
+                            if (metric.color === null) {
                                 return z(metric.name);
                             } else {
                                 return metric.color;
@@ -566,7 +578,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('d', line2)
                         // .style('stroke', z(metric.id))
                         .style('stroke', function () {
-                            if (metric.color == null) {
+                            if (metric.color === null) {
                                 return z(metric.name);
                             } else {
                                 return metric.color;
@@ -712,8 +724,6 @@ angular.module('argus.directives.charts.lineChart', [])
             $('[name=oneWeek]', topToolbar).click(brushMinute(60*24*7));
             $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
             $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
-
-            //toggle
             $('[name=toggle-brush]', topToolbar).change(toggleBrush);
             $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
         }

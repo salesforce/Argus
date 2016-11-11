@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
 function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
@@ -96,7 +98,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                 // decrement metric count each time an expression is added to the series.
                 metricCount = metricCount - 1;
 
-                if (metricCount == 0) {
+                if (metricCount === 0) {
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
@@ -109,7 +111,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
 
                 metricCount = metricCount - 1;
 
-                if (metricCount == 0) {
+                if (metricCount === 0) {
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
@@ -135,5 +137,5 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                 }
             };
         }
-    }
+    };
 }]);
