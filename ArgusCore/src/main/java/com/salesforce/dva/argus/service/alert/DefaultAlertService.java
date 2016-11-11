@@ -326,8 +326,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				continue;
 			}
 
-			//History history = _historyService.createHistory(addDateToMessage(JobStatus.STARTED.getDescription()), alert, JobStatus.STARTED, 0);
-
 			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			
 			try {

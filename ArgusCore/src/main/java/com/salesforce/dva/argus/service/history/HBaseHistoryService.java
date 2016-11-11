@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.hadoop.hbase.util.Bytes;
-import org.hbase.async.Config;
 import org.hbase.async.HBaseClient;
 import org.hbase.async.KeyValue;
 import org.hbase.async.PutRequest;
@@ -29,6 +28,7 @@ import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
+import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.system.SystemAssert;
@@ -61,38 +61,12 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
     //~ Constructors *********************************************************************************************************************************
     
     @Inject
-	protected HBaseHistoryService(SystemConfiguration systemConfig) {
+	protected HBaseHistoryService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory) {
 		super(systemConfig);
-		
-		Config config = new Config();
-		
-    	config.overrideConfig("hbase.zookeeper.quorum",
-                systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
-    	config.overrideConfig("hbase.zookeeper.session.timeout",
-        		systemConfig.getValue(Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getName(), Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getDefaultValue()));
-    	
-    	config.overrideConfig("hbase.rpcs.batch.size",
-    			systemConfig.getValue(Property.HBASE_RPCS_BATCH_SIZE.getName(), Property.HBASE_RPCS_BATCH_SIZE.getDefaultValue()));
-        config.overrideConfig("hbase.rpcs.buffered_flush_interval",
-        		systemConfig.getValue(Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getName(), Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getDefaultValue()));
-        config.overrideConfig("hbase.rpc.timeout",
-    			systemConfig.getValue(Property.HBASE_RPC_TIMEOUT.getName(), Property.HBASE_RPC_TIMEOUT.getDefaultValue()));
-        
-        config.overrideConfig("hbase.security.auth.enable",
-                systemConfig.getValue(Property.HBASE_SECURITY_AUTH_ENABLE.getName(), Property.HBASE_SECURITY_AUTH_ENABLE.getDefaultValue()));
-        config.overrideConfig("hbase.rpc.protection", 
-        		systemConfig.getValue(Property.HBASE_RPC_PROTECTION.getName(), Property.HBASE_RPC_PROTECTION.getDefaultValue()));
-        config.overrideConfig("hbase.sasl.clientconfig",
-        		systemConfig.getValue(Property.HBASE_SASL_CLIENTCONFIG.getName(), Property.HBASE_SASL_CLIENTCONFIG.getDefaultValue()));
-        config.overrideConfig("hbase.kerberos.regionserver.principal",
-        		systemConfig.getValue(Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getName(), Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getDefaultValue()));
-        config.overrideConfig("hbase.security.authentication", 
-        		systemConfig.getValue(Property.HBASE_SECURITY_AUTHENTICATION.getName(), Property.HBASE_SECURITY_AUTHENTICATION.getDefaultValue()));
-        
-        _syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
-        
-        _client = new HBaseClient(config);
+        _client = factory.getClient();
         _mapper = new ObjectMapper();
+        _syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), 
+        		Property.HBASE_SYNC_PUT.getDefaultValue()));
 	}
     
     
@@ -343,19 +317,6 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
      */
     public enum Property {
     	
-        HBASE_ZOOKEEPER_CONNECT("service.property.history.hbase.zookeeper.connect", "localhost:2181"),
-        HBASE_ZOOKEEPER_SESSION_TIMEOUT("service.property.schema.hbase.zookeeper.session.timeout", "6000"),
-        
-        HBASE_SECURITY_AUTHENTICATION("service.property.history.hbase.security.authentication", ""),
-        HBASE_RPC_PROTECTION("service.property.history.hbase.rpc.protection", ""),
-        HBASE_SASL_CLIENTCONFIG("service.property.history.hbase.sasl.clientconfig", "Client"),
-        HBASE_SECURITY_AUTH_ENABLE("service.property.history.hbase.security.auth.enable", "false"),
-        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.history.hbase.kerberos.regionserver.principal", ""),
-        
-        HBASE_RPCS_BATCH_SIZE("service.property.history.hbase.rpcs.batch.size", "16192"),
-        HBASE_RPCS_BUFFERED_FLUSH_INTERVAL("service.property.history.hbase.rpcs.buffered_flush_interval", "5000"),
-        HBASE_RPC_TIMEOUT("service.property.history.hbase.rpc.timeout", "0"),
-        
         HBASE_SYNC_PUT("service.property.history.hbase.sync.put", "true");
 
         private final String _name;

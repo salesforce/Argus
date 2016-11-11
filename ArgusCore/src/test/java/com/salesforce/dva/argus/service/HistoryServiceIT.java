@@ -43,7 +43,7 @@ import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
 
 @Category(IntegrationTest.class)
-public class HistoryServiceTestIT extends AbstractTest {
+public class HistoryServiceIT extends AbstractTest {
 
     private static final String expression = "-1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg";
 

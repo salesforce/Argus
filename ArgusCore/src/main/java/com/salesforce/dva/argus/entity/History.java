@@ -113,7 +113,7 @@ public class History implements Serializable, Identifiable {
      *
      * @param  message    Describes the job status in detail.
      * @param  hostname   The host where the job is executed. Cannot be null.
-     * @param  entity     The job entity. Cannot be null.
+     * @param  entityId   The entity id of the job for which this history is created. Cannot be null.
      * @param  jobStatus  Status of the job.
      */
     public History(String message, String hostname, BigInteger entityId, JobStatus jobStatus) {
@@ -125,7 +125,7 @@ public class History implements Serializable, Identifiable {
      *
      * @param  message        Describes the job status in detail.
      * @param  hostname       The host where the job is executed. Cannot be null.
-     * @param  entity         The job entity. Cannot be null.
+     * @param  entityId   	  The entity id of the job for which this history is created. Cannot be null.
      * @param  jobStatus      Status of the job.
      * @param  executionTime  The job execution time in MS.
      */
@@ -138,7 +138,7 @@ public class History implements Serializable, Identifiable {
      *
      * @param  message        Describes the job status in detail.
      * @param  hostname       The host where the job is executed. Cannot be null.
-     * @param  entity         The job entity. Cannot be null.
+     * @param  entityId   	  The entity id of the job for which this history is created. Cannot be null.
      * @param  jobStatus      Status of the job.
      * @param  executionTime  The job execution time in ms.
      * @param  creationTime   The history object creation timestamp.

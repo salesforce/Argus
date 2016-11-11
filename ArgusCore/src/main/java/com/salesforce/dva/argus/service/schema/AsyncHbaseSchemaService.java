@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
+import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.system.SystemAssert;
@@ -48,7 +49,6 @@ import com.stumbleupon.async.TimeoutException;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
-import org.hbase.async.Config;
 import org.hbase.async.FilterList;
 import org.hbase.async.FirstKeyOnlyFilter;
 import org.hbase.async.HBaseClient;
@@ -101,37 +101,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
-    private AsyncHbaseSchemaService(SystemConfiguration systemConfig) {
+    private AsyncHbaseSchemaService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory) {
     	super(systemConfig);
         
     	_syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
     	
-    	Config config = new Config();
-        
-    	config.overrideConfig("hbase.zookeeper.quorum",
-                systemConfig.getValue(Property.HBASE_ZOOKEEPER_CONNECT.getName(), Property.HBASE_ZOOKEEPER_CONNECT.getDefaultValue()));
-    	config.overrideConfig("hbase.zookeeper.session.timeout",
-        		systemConfig.getValue(Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getName(), Property.HBASE_ZOOKEEPER_SESSION_TIMEOUT.getDefaultValue()));
-    	
-    	config.overrideConfig("hbase.rpcs.batch.size",
-    			systemConfig.getValue(Property.HBASE_RPCS_BATCH_SIZE.getName(), Property.HBASE_RPCS_BATCH_SIZE.getDefaultValue()));
-        config.overrideConfig("hbase.rpcs.buffered_flush_interval",
-        		systemConfig.getValue(Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getName(), Property.HBASE_RPCS_BUFFERED_FLUSH_INTERVAL.getDefaultValue()));
-        config.overrideConfig("hbase.rpc.timeout",
-    			systemConfig.getValue(Property.HBASE_RPC_TIMEOUT.getName(), Property.HBASE_RPC_TIMEOUT.getDefaultValue()));
-        
-        config.overrideConfig("hbase.security.auth.enable",
-                systemConfig.getValue(Property.HBASE_SECURITY_AUTH_ENABLE.getName(), Property.HBASE_SECURITY_AUTH_ENABLE.getDefaultValue()));
-        config.overrideConfig("hbase.rpc.protection", 
-        		systemConfig.getValue(Property.HBASE_RPC_PROTECTION.getName(), Property.HBASE_RPC_PROTECTION.getDefaultValue()));
-        config.overrideConfig("hbase.sasl.clientconfig",
-        		systemConfig.getValue(Property.HBASE_SASL_CLIENTCONFIG.getName(), Property.HBASE_SASL_CLIENTCONFIG.getDefaultValue()));
-        config.overrideConfig("hbase.kerberos.regionserver.principal",
-        		systemConfig.getValue(Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getName(), Property.HBASE_KERBEROS_REGIONSERVER_PRINCIPAL.getDefaultValue()));
-        config.overrideConfig("hbase.security.authentication", 
-        		systemConfig.getValue(Property.HBASE_SECURITY_AUTHENTICATION.getName(), Property.HBASE_SECURITY_AUTHENTICATION.getDefaultValue()));
-        
-        _client = new HBaseClient(config);
+    	_client = factory.getClient();
         
         _ensureTableWithColumnFamilyExists(Bytes.toBytes(SCOPE_SCHEMA_TABLENAME), COLUMN_FAMILY);
         _ensureTableWithColumnFamilyExists(Bytes.toBytes(METRIC_SCHEMA_TABLENAME), COLUMN_FAMILY);
@@ -878,19 +853,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      * @author  Tom Valine (tvaline@salesforce.com)
      */
     public enum Property {
-    	
-        HBASE_ZOOKEEPER_CONNECT("service.property.schema.hbase.zookeeper.connect", "hbase.zookeeper.com:1234"),
-        HBASE_ZOOKEEPER_SESSION_TIMEOUT("service.property.schema.hbase.zookeeper.session.timeout", "6000"),
-        
-        HBASE_SECURITY_AUTHENTICATION("service.property.schema.hbase.security.authentication", ""),
-        HBASE_RPC_PROTECTION("service.property.schema.hbase.rpc.protection", ""),
-        HBASE_SASL_CLIENTCONFIG("service.property.schema.hbase.sasl.clientconfig", "Client"),
-        HBASE_SECURITY_AUTH_ENABLE("service.property.schema.hbase.security.auth.enable", "false"),
-        HBASE_KERBEROS_REGIONSERVER_PRINCIPAL("service.property.schema.hbase.kerberos.regionserver.principal", ""),
-        
-        HBASE_RPCS_BATCH_SIZE("service.property.schema.hbase.rpcs.batch.size", "16192"),
-        HBASE_RPCS_BUFFERED_FLUSH_INTERVAL("service.property.schema.hbase.rpcs.buffered_flush_interval", "5000"),
-        HBASE_RPC_TIMEOUT("service.property.schema.hbase.rpc.timeout", "0"),
         
         HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false");
 
