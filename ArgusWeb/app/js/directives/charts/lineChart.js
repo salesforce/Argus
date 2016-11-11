@@ -15,31 +15,28 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
             $scope.toggleSource = function(source) {
-                toggleGraphOnOff(source.name);
+                debugger;
+                toggleGraphOnOff(source);
             };
 
             // show ONLY this 1 source, hide all others
             $scope.hideOtherSources = function(sourceToShow, sources) {
                 for (var i = 0; i < sources.length; i++) {
                     if (sourceToShow.name !== sources[i].name) {
-                        toggleGraphOnOff(sources[i].name);
+                        toggleGraphOnOff(sources[i]);
                     }
                 }
             };
 
             $scope.labelTextColor = function(source) {
-                var graphID = "path[id='" + source.name.replace(/\s+/g, '') +"']";
-                if (d3.select(graphID).style("opacity") === "1") {
-                    return 'blue';
-                } else {
-                    return 'grey';
-                }
+                return source.displaying? 'blue': 'gray';
             };
 
-            function toggleGraphOnOff(sourceName) {
+            function toggleGraphOnOff(source) {
                 // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
-                var graphID = "path[id='" + sourceName.replace(/\s+/g, '') +"']";
-                var newOpacity = 1 - d3.select(graphID).style("opacity"); // not type strict. . .
+                var graphID = "path[id='" + source.name.replace(/\s+/g, '') +"']";
+                var newOpacity = source.displaying? 0 : 1;
+                source.displaying = !source.displaying;
                 d3.select(graphID)
                     .transition().duration(100)
                     .style("opacity", newOpacity);
@@ -349,9 +346,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 return function(group, datapoints) {
                     var tmpSources = [];
                     for (var i = 0; i < datapoints.length; i++) {
+                        var tempColor = colors[i] === null? z(names[i]): colors[i];
                         tmpSources.push({
                             name: names[i],
-                            value: datapoints[i][1]
+                            value: datapoints[i][1],
+                            displaying: true,
+                            color: tempColor
                         });
                     }
 
