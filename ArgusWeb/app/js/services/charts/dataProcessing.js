@@ -226,7 +226,11 @@ angular.module('argus.services.charts.dataProcessing', [])
             }, function (error) {
                 console.log( 'no data found', error.data.message );
             });
-        }
+        },
+
+        createSeriesName: createSeriesName,
+
+        copyFlagSeries: copyFlagSeries
     };
 
     return service;
