@@ -48,7 +48,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // set $scope values
             scope.isWheelOn = false;
             scope.isBrushOn = true;
-            scope.isMainBrushOn = false;
+            scope.isBrushMainOn = false;
             // legend sources
             scope.sources = {};
 
@@ -660,7 +660,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brushMain)
                     .call(brush.move, x.range());
 
-                if (scope.isMainBrushOn){
+                if (scope.isBrushMainOn){
                     brushMainG.attr('display', null);
                 }else{
                     brushMainG.attr('display', 'none');
@@ -672,15 +672,24 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isBrushOn){
                     //disable the brush
                     svg.select('.context').attr('display', 'none');
-                    //enable main chart brush
-                    svg.select('.brushMain').attr('display', null);
                     isBrushOn = false;
                 }else{
                     //enable the brush
                     svg.select('.context').attr('display', null);
+                    isBrushOn = true;
+                }
+            }
+
+            //toggle time brush
+            function toggleBrushMain(){
+                //enable main chart brush
+                if(scope.isBrushMainOn){
+                    svg.select('.brushMain').attr('display', null);
+                    //isBrushMainOn = false;   ---------ng-model is auto changed.
+                }else{
                     //disable main chart brush
                     svg.select('.brushMain').attr('display', 'none');
-                    isBrushOn = true;
+                    //isBrushMainOn = true;
                 }
             }
 
@@ -778,6 +787,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //toggle
             $('[name=toggle-brush]', topToolbar).change(toggleBrush);
+            $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
             $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
         }
     };
