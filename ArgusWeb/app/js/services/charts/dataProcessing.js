@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.services.charts.dataProcessing', [])
 .service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', function(ChartOptionService, Annotations) {
     'use strict';
@@ -21,14 +23,14 @@ angular.module('argus.services.charts.dataProcessing', [])
             result.push({name: 'result', data: []});
         }
         return result;
-    };
+    }
 
     function createSeriesName(metric) {
         var scope = metric.scope;
         var name = metric.metric;
         var tags = createTagString(metric.tags);
         return scope + ':' + name + tags;
-    };
+    }
 
     function createTagString(tags) {
         var result = '';
@@ -44,7 +46,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
         }
         return result;
-    };
+    }
 
     function copyFlagSeries(data) {
         var result;
@@ -59,7 +61,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             result = null;
         }
         return result;
-    };
+    }
 
     function formatFlagText(fields) {
         var result = '';
@@ -71,7 +73,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
         }
         return result;
-    };
+    }
 
     // Public Service methods
     var service = {
@@ -226,7 +228,11 @@ angular.module('argus.services.charts.dataProcessing', [])
             }, function (error) {
                 console.log( 'no data found', error.data.message );
             });
-        }
+        },
+
+        createSeriesName: createSeriesName,
+
+        copyFlagSeries: copyFlagSeries
     };
 
     return service;

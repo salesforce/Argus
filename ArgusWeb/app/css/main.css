@@ -260,9 +260,7 @@ g.legend-items text .value {font-weight: 600; font-size: 14px;}
 
 .grid text {visibility:hidden;}
 .grid path {stroke:#FFF;}
-.crossLineTip {
 
-}
 .crossLineTipRect {
     stroke: black;
     stroke-width: 1px;
