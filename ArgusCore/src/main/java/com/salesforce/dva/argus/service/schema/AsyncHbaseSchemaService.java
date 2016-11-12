@@ -89,7 +89,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private static final char ROWKEY_SEPARATOR = ':';
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
     
-    private static final long TIMEOUT = 2 * 60 * 1000;
+    private static final long TIMEOUT_MS = 10 * 1000;
+    private static final long SCAN_TIMEOUT_MS = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -345,7 +346,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         new ScannerCB().scan();
         
         try {
-			return results.join(TIMEOUT);
+			return results.join(SCAN_TIMEOUT_MS);
 		} catch (InterruptedException e) {
 			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
 		} catch (TimeoutException e) {
@@ -448,7 +449,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		});
         
         try {
-			ArrayList<ArrayList<KeyValue>> result = deferred.join(TIMEOUT);
+			ArrayList<ArrayList<KeyValue>> result = deferred.join(SCAN_TIMEOUT_MS);
 			return result;
 		} catch (InterruptedException e) {
 			throw new SystemException("Interrupted while waiting to obtain results for query", e);
@@ -592,7 +593,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         new ScannerCB().scan();
         
         try {
-			return new ArrayList<>(results.join(TIMEOUT));
+			return new ArrayList<>(results.join(SCAN_TIMEOUT_MS));
 		} catch (InterruptedException e) {
 			throw new SystemException("Interrupted while waiting to obtain results for query: " + query, e);
 		} catch (TimeoutException e) {
@@ -629,7 +630,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             });
             
             try {
-                deferred.join(30000);
+                deferred.join(TIMEOUT_MS);
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
@@ -657,7 +658,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		});
         
         try {
-        	deferred.join(TIMEOUT);
+        	deferred.join(TIMEOUT_MS);
         } catch (InterruptedException e) {
         	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
         } catch (Exception e) {
@@ -684,7 +685,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         final PutRequest put = new PutRequest(Bytes.toBytes(tableName), Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
         Deferred<Object> deferred = _client.put(put);
         
-        if(_syncPut) {
         	deferred.addCallback(new Callback<Object, Object>() {
     			@Override
     			public Object call(Object arg) throws Exception {
@@ -692,7 +692,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     				return null;
     			}
             });
-        }
 
         deferred.addErrback(new Callback<Object, Exception>() {
             @Override
@@ -700,6 +699,18 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                 throw new SystemException("Error occured while trying to execute put().", e);
             }
         });
+        
+
+        if(_syncPut) {
+        	try {
+				deferred.join(TIMEOUT_MS);
+			} catch (InterruptedException e) {
+				_logger.warn("Interrupted while waiting for put to finish.", e);
+			} catch (Exception e) {
+				_logger.error("Exception while trying to put schema records.", e);
+				throw new SystemException(e);
+			}
+        }
 	}
     
     private String _getValueForType(MetricSchemaRecord record, RecordType type) {

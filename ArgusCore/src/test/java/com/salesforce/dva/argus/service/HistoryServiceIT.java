@@ -65,7 +65,7 @@ public class HistoryServiceIT extends AbstractTest {
     }
 
     @Test
-    public void testFindByJob() throws InterruptedException {
+    public void testFindByJob() {
         HistoryService historyService = system.getServiceFactory().getHistoryService();
         UserService userService = system.getServiceFactory().getUserService();
         AlertService alertService = system.getServiceFactory().getAlertService();
@@ -81,7 +81,7 @@ public class HistoryServiceIT extends AbstractTest {
     }
 
     @Test
-    public void testFindByJobAndStatus() throws InterruptedException {
+    public void testFindByJobAndStatus() {
         HistoryService historyService = system.getServiceFactory().getHistoryService();
         UserService userService = system.getServiceFactory().getUserService();
         AlertService alertService = system.getServiceFactory().getAlertService();

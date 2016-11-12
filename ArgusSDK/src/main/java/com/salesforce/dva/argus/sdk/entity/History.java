@@ -31,10 +31,9 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.Date;
-import java.util.Objects;
 
 /**
  * The history object.
@@ -47,42 +46,22 @@ public class History implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private BigInteger id;
-    private Date createdDate;
+    private long creationTime;
     private String message;
     private String hostName;
     private BigInteger entityId;
     private String jobStatus;
-    private long waitTime;
     private long executionTime;
 
     //~ Methods **************************************************************************************************************************************
-
-    /**
-     * Returns the entity ID.
-     *
-     * @return  The entity ID.
-     */
-    public BigInteger getId() {
-        return id;
-    }
-
-    /**
-     * Specifies the entity ID.
-     *
-     * @param  id  The entity ID.
-     */
-    public void setId(BigInteger id) {
-        this.id = id;
-    }
 
     /**
      * Returns the created date.
      *
      * @return  The created date.
      */
-    public Date getCreatedDate() {
-        return createdDate == null ? null : new Date(createdDate.getTime());
+    public long getCreationTime() {
+        return creationTime;
     }
 
     /**
@@ -90,8 +69,8 @@ public class History implements Serializable {
      *
      * @param  createdDate  The created date.
      */
-    public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate == null ? null : new Date(createdDate.getTime());
+    public void setCreationTime(long creationTime) {
+        this.creationTime = creationTime;
     }
 
     /**
@@ -167,24 +146,6 @@ public class History implements Serializable {
     }
 
     /**
-     * Returns the wait time in milliseconds.
-     *
-     * @return  The wait time in milliseconds.
-     */
-    public long getWaitTime() {
-        return waitTime;
-    }
-
-    /**
-     * Specifies the wait time in milliseconds.
-     *
-     * @param  waitTime  The wait time in milliseconds.
-     */
-    public void setWaitTime(long waitTime) {
-        this.waitTime = waitTime;
-    }
-
-    /**
      * Returns the execution time in milliseconds.
      *
      * @return  The execution time in milliseconds.
@@ -202,60 +163,35 @@ public class History implements Serializable {
         this.executionTime = executionTime;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (int) (creationTime ^ (creationTime >>> 32));
+		result = prime * result
+				+ ((entityId == null) ? 0 : entityId.hashCode());
+		return result;
+	}
 
-        hash = 97 * hash + Objects.hashCode(this.id);
-        hash = 97 * hash + Objects.hashCode(this.createdDate);
-        hash = 97 * hash + Objects.hashCode(this.message);
-        hash = 97 * hash + Objects.hashCode(this.hostName);
-        hash = 97 * hash + Objects.hashCode(this.entityId);
-        hash = 97 * hash + Objects.hashCode(this.jobStatus);
-        hash = 97 * hash + (int) (this.waitTime ^ (this.waitTime >>> 32));
-        hash = 97 * hash + (int) (this.executionTime ^ (this.executionTime >>> 32));
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-
-        final History other = (History) obj;
-
-        if (this.waitTime != other.waitTime) {
-            return false;
-        }
-        if (this.executionTime != other.executionTime) {
-            return false;
-        }
-        if (!Objects.equals(this.message, other.message)) {
-            return false;
-        }
-        if (!Objects.equals(this.hostName, other.hostName)) {
-            return false;
-        }
-        if (!Objects.equals(this.jobStatus, other.jobStatus)) {
-            return false;
-        }
-        if (!Objects.equals(this.id, other.id)) {
-            return false;
-        }
-        if (!Objects.equals(this.createdDate, other.createdDate)) {
-            return false;
-        }
-        if (!Objects.equals(this.entityId, other.entityId)) {
-            return false;
-        }
-        return true;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		History other = (History) obj;
+		if (creationTime != other.creationTime)
+			return false;
+		if (entityId == null) {
+			if (other.entityId != null)
+				return false;
+		} else if (!entityId.equals(other.entityId))
+			return false;
+		return true;
+	}
+    
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

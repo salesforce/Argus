@@ -47,6 +47,11 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
     private static final byte[] COLUMN_FAMILY = "f".getBytes(Charset.forName("UTF-8"));
     private static final byte[] COLUMN_QUALIFIER = "c".getBytes(Charset.forName("UTF-8"));
     private static final char ROWKEY_SEPARATOR = ':';
+    private static final int MAX_NUM_ROWS = 500;
+    
+    private static final long PUT_TIMEOUT_MS = 10 * 1000;
+    private static final long SCAN_TIMEOUT_MS = 60 * 1000;
+    private static final long SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 	
     
     //~ Instance fields ******************************************************************************************************************************
@@ -93,7 +98,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 						append(ROWKEY_SEPARATOR).
 						append(jobStatus).
 						toString();
-		_logger.info("Creatiing history with row key: {}", rowKey);
+		_logger.debug("Creating history with row key: {}", rowKey);
 		
 		History history = new History(message, SystemConfiguration.getHostname(), entity.getId(), jobStatus, 
 				executionTime, creationTime);
@@ -122,7 +127,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			});
 			
 			if(_syncPut) {
-				deferred.join(10000);
+				deferred.join(PUT_TIMEOUT_MS);
 			}
 		
 		} catch (JsonProcessingException e) {
@@ -201,7 +206,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
             });
             
             try {
-                deferred.join(30000);
+                deferred.join(SHUTDOWN_TIMEOUT_MS);
             } catch (Exception e) {
                 throw new SystemException("Exception while waiting for shutdown to complete.", e);
             }
@@ -219,7 +224,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         String stopRow = _plusOne(startRow);
         scanner.setStartKey(startRow);
         scanner.setStopKey(stopRow);
-        scanner.setMaxNumRows(Math.min(limit, 500));
+        scanner.setMaxNumRows(Math.min(limit, MAX_NUM_ROWS));
         scanner.setFilter(filter);
 		
 		final List<History> records = new ArrayList<>(limit);
@@ -273,7 +278,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         new ScannerCB().scan();
         
         try {
-			List<History> histories = results.join(100000);
+			List<History> histories = results.join(SCAN_TIMEOUT_MS);
 			if(histories.size() <= limit) {
 				return histories;
 			}
@@ -290,6 +295,13 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		}
 	}
 	
+	/**
+	 * Return a 9's complement of the given timestamp. Since AsyncHBase doesn't allow a reverse scan and we want to scan data in descending order
+	 * of creation time.  
+	 * 
+	 * @param 	creationTime
+	 * @return 	The 9's complement of the given timestamp. 
+	 */
 	private static long _9sComplement(long creationTime) {
 		String time = String.valueOf(creationTime);
 		char[] timeArr = time.toCharArray();
