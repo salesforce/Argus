@@ -10,16 +10,17 @@ angular.module('argus.directives.charts.lineChart', [])
             chartId: '=chartid',
             series: '=series',
             dateConfig: '=dateconfig'
-            // sources: '=sources',
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
+            $scope.sources = [];
             $scope.toggleSource = function(source) {
                 toggleGraphOnOff(source);
             };
 
             // show ONLY this 1 source, hide all others
-            $scope.hideOtherSources = function(sourceToShow, sources) {
+            $scope.hideOtherSources = function(sourceToShow) {
+                var sources = $scope.sources;
                 for (var i = 0; i < sources.length; i++) {
                     if (sourceToShow.name !== sources[i].name) {
                         toggleGraphOnOff(sources[i]);
@@ -28,17 +29,17 @@ angular.module('argus.directives.charts.lineChart', [])
             };
 
             $scope.labelTextColor = function(source) {
-                return source.displaying? 'blue': 'gray';
+                return source.displaying? source.color: 'white';
             };
 
             function toggleGraphOnOff(source) {
                 // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
-                var graphID = "path[id='" + source.name.replace(/\s+/g, '') +"']";
+                // var graphID = source.name.replace(/\s+/g, '');
                 var newOpacity = source.displaying? 0 : 1;
                 source.displaying = !source.displaying;
-                d3.select(graphID)
+                d3.selectAll("." + source.graphClassName)
                     .transition().duration(100)
-                    .style("opacity", newOpacity);
+                    .style('opacity', newOpacity);
             }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
@@ -306,12 +307,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     return;
                 }
                 var datapoints = [];
-                focus.selectAll('circle').remove();
                 var position = d3.mouse(this);
                 var positionX = position[0];
                 var positionY = position[1];
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY);
+
                 currSeries.forEach(function(metric) {
                     if (metric.data.length === 0) {
                         return;
@@ -328,9 +329,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     } else {
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
-                    var circle = focus.append('circle').attr('r', 4.5).attr('fill', z(metric.name));
-                    circle.attr('dataX',  d[0]).attr('dataY', d[1]); //store the data
-                    circle.attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+                    // update circle's position on each graph
+                    focus.select('.' + metric.graphClassName)
+                        .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
+                        .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push(d);
                 });
                 tooltipCreator(tipItems, datapoints);
@@ -356,6 +358,21 @@ angular.module('argus.directives.charts.lineChart', [])
                     // can only do this once! try '$scope.watch' in link method next
                     scope.$apply();
                 };
+            }
+
+            function legendCreator(names, colors, graphClassNames) {
+                var tmpSources = [];
+                for (var i = 0; i < names.length; i++) {
+                    var tempColor = colors[i] === null? z(names[i]): colors[i];
+                    tmpSources.push({
+                        name: names[i],
+                        displaying: true,
+                        color: tempColor,
+                        graphClassName: graphClassNames[i]
+                    });
+                }
+                // set names into $scope for legend
+                scope.sources = tmpSources;
             }
 
             //Generate cross lines at the point/cursor
@@ -530,6 +547,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 var colors = series.map(function(metric) {
                     return metric.color;
                 });
+                var graphClassNames = series.map(function(metric) {
+                    return metric.graphClassName;
+                });
 
                 var svg = d3.select('svg').select('g');
 
@@ -540,7 +560,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
 
                 // correlate source names
-                tooltipCreator = newTooltipCreator(names, colors);
+                legendCreator(names, colors, graphClassNames);
+                // tooltipCreator = newTooltipCreator(names, colors);
 
                 x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
                 y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));
@@ -552,12 +573,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg.selectAll('.brushLine').remove();
 
                 series.forEach(function(metric) {
+                    // main graph
                     svg.append('path')
                         .datum(metric.data)
-                        .attr('id', metric.name.replace(/\s+/g, ''))
-                        .attr('class', 'line')
+                        // group all the element of each graph into a single class
+                        .attr('class', metric.graphClassName + ' line')
+                        // .attr('class', 'line')
                         .attr('d', line)
-                        // .style('stroke', z(metric.id))
                         .style('stroke', function () {
                             if (metric.color === null) {
                                 return z(metric.name);
@@ -566,12 +588,11 @@ angular.module('argus.directives.charts.lineChart', [])
                             }
                         })
                     ;
-
+                    // brush
                     context.append('path')
                         .datum(metric.data)
                         .attr('class', 'brushLine')
                         .attr('d', line2)
-                        // .style('stroke', z(metric.id))
                         .style('stroke', function () {
                             if (metric.color === null) {
                                 return z(metric.name);
@@ -580,6 +601,11 @@ angular.module('argus.directives.charts.lineChart', [])
                             }
                         })
                     ;
+                    // circles during mouse over
+                    focus.append('circle')
+                        .attr('r', 4.5)
+                        .attr('fill', z(metric.name))
+                        .attr('class', metric.graphClassName);
                 });
                 //draw the brush xAxis
                 xAxisG2.call(xAxis2);
