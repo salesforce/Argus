@@ -38,6 +38,10 @@ button[disabled] {color:#CCC;}
 .glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
 
+.eyeIcon {display:inline-block; width:14px; height:14px; vertical-align:middle;}
+.eyeIcon.open {background:url(../img/glyphicons-halflings.png) -96px -120px no-repeat;}
+.eyeIcon.closed {}
+
 /* loading spinner small, eg input field */
 .loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
@@ -208,7 +212,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
-.topToolbar {padding:0 3.5em;}
+.topToolbar {padding:0 3.5em; height:1.5em;}
+.topToolbar a {cursor:pointer;}
 
 .toolbarItem {display:inline-block; vertical-align:middle;}
 
@@ -223,11 +228,12 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 }
 
 .toolbarMenu {display:inline-block; white-space:nowrap;}
-.toolbarMenu a.glyphicon {font-size:16px;}
+.toolbarMenu a.glyphicon {font-size:18px; color:#999;}
+.toolbarMenu a.glyphicon:hover {color:inherit;}
 
 .chartMenu li label {font-weight:400; font-size:13px;}
 
-.dateRange {float:right; margin-right:2em; font-size:12px; color:#999;}
+.dateRange {float:right; margin:6px 2em 0 0; font-size:12px; color:#999;}
 
 .axis path,
 .axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
