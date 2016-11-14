@@ -44,14 +44,6 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-            // scope.$watch('series', function() {
-            //     scope.$apply();
-            // });
-
-            // angular.element('').on('click', function() {
-            //     scope.$apply();
-            // });
-            // toggle source to hide/show, leave other sources showing
 
             //TODO figure what to put in controller, some dom modification should go in link
 
@@ -128,7 +120,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 line, line2, area, area2,
                 brush, zoom,
                 svg, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
-                focus, context, clip, brushG, chartRect, //g
+                focus, context, clip, brushG, chartRect, flags, //g
                 tip, tipBox, tipItems,
                 crossline
                 ;
@@ -268,11 +260,15 @@ angular.module('argus.directives.charts.lineChart', [])
                     .append("rect")
                     .attr("width", width)
                     .attr("height", height);
+
                 //brush area
                 context = svg.append("g")
                     .attr("class", "context")
                     // .attr("transform", "translate(0," + (height + margin.top + 10) + ")");
                     .attr("transform", "translate(0," + margin2.top + ")");
+
+                // flags (annotations)
+                flags = svg.append("g").attr("class", "flags");
 
                 //set brush area axis
                 xAxisG2 = context.append("g")
@@ -614,6 +610,42 @@ angular.module('argus.directives.charts.lineChart', [])
                 //draw the brush xAxis
                 xAxisG2.call(xAxis2);
                 setZoomExtent(3);
+
+                // draw flag(s) to denote annotation mark
+                updateAnnotations();
+            }
+
+            function updateAnnotations() {
+                if (!scope || scope.series.length > 1 ) return;
+
+                var flagSeries = scope.series[0].flagSeries.data
+                var flagsG = d3.select('svg').select('.flags');
+                var label = flagsG.selectAll("flagItem")
+                    .data(flagSeries)
+                    .enter().append("g")
+                    .attr("class", "flagItem")
+                    .attr("transform", function(d) {
+                        // x, xAxis, xAxisG
+                        var x_Val = 200   // x(d.x); // d.x is timestamp of X axis
+                        var y_Val = height - 35;
+                        return "translate("+ x_Val + ", "+ y_Val +")";
+                    });
+
+                label.append("line")
+                    .attr("y2", 35)
+                    .attr("stroke-width", 2)
+                    .attr("stroke", "steelblue");
+
+                label.append("circle")
+                    .attr("r", 5)
+                    .attr("class", "flag");
+
+                // TODO: add mouseover for short text description when it comes available
+                // label.append("text")
+                //     .attr("x", 10)
+                    // text is currently too large and unreadable.
+                    // TODO: need separate panel to satisfy use case for user to select text
+                    // .text(function(d) { return d.text; });
             }
 
             //this function add the overlay element to the graph when mouse interaction takes place
@@ -741,7 +773,6 @@ angular.module('argus.directives.charts.lineChart', [])
             enableBrushTime();
             reset();    //to remove the brush cover first for user the drag
 
-            // TODO: move click events to controller as $scope functions utilzed in topToolbar.html
             //button set up
             $('[name=reset]', topToolbar).click(reset);
             $('[name=oneHour]', topToolbar).click(brushMinute(60));

@@ -1,11 +1,11 @@
 'use strict';
 
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
-function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
+.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
+function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
 
-    function renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig) {
+    function compileLineChart(scope, newChartId, series, dateConfig) {
         // empty any previous content
         $("#" + newChartId).empty();
 
@@ -16,13 +16,43 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         lineChartScope.chartId = newChartId;
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
-
         // give each series an unique ID
         for (var i = 0; i < series.length; i++) {
             lineChartScope.series[i].graphClassName = newChartId + "_graph" + i;
         }
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
+    }
+
+    function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig) {
+
+        if (updatedAnnotationList.length === 0) {
+            // no annotations list, continue to render chart as normal
+            compileLineChart(scope, newChartId, series, dateConfig);
+        } else {
+            // check annotations & add to series data for line-chart
+            for (var i=0; i < updatedAnnotationList.length; i++) {
+                Annotations.query({expression: updatedAnnotationList[i]}, function (data) {
+                    if (data && data.length > 0) {
+                        var forName = ChartDataProcessingService.createSeriesName(data[0]);
+                        var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
+                        flagSeries.linkedTo = forName;
+
+                        // add flagSeries if any data exists
+                        series[0].flagSeries = (flagSeries) ? flagSeries: null;
+                    }
+
+                    // append, compile, & attach new scope to line-chart directive
+                    compileLineChart(scope, newChartId, series, dateConfig);
+
+                }, function (error) {
+                    console.log( 'no data found', error.data.message );
+
+                    // append, compile, & attach new scope to line-chart directive
+                    compileLineChart(scope, newChartId, series, dateConfig);
+                });
+            }
+        }
     }
 
     // TODO: below functions 'should' be refactored to the chart services.
@@ -107,7 +137,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig);
+                    setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
 
             }, function (error) {
@@ -120,7 +150,7 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
 
-                    renderLineChart(scope, newChartId, series, updatedAnnotationList, dateConfig);
+                    setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
             });
         }

@@ -1,8 +1,21 @@
 <div class="topToolbar">
 	<div id="topTb-{{chartId}}">
-		<div class="toolbarItem graphControls">
-			<a name="reset" class="glyphicon glyphicon-refresh topMenu" style="cursor:pointer;"></a>
 
+		<div class="toolbarItem legend floatPanel" ng-if="!(sources | isEmpty)"
+			ng-class="{open: hover}"
+			ng-mouseover="hover = true"
+			ng-mouseleave="hover = false">
+
+			<ul style="padding-left:0;">
+			<li ng-repeat="source in sources track by $index">
+				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
+				<span ng-click="toggleSource(source)">{{source.name}}</span> -
+				<span ng-click="hideOtherSources(source)">Hide others</span>
+			</li>
+			</ul>
+		</div>
+
+		<div class="toolbarItem graphControls floatR">
 			<div class="toolbarMenu topMenu">
 				<a class="glyphicon glyphicon-menu-hamburger"></a>
 				<ul class="subMenu menuPanel list-group">
@@ -36,22 +49,9 @@
 					<label for="toggle-wheel-{{chartId}}">Mouse scrolling</label>
 				</li>
 				</ul>
+				<a name="reset" class="glyphicon glyphicon-refresh topMenu" style="cursor:pointer;"></a>
 			</div>
-		</div>
 
-		<div class="toolbarItem legend floatPanel" ng-if="!(sources | isEmpty)">
-			<ul style="padding-left:0;">
-			<li ng-repeat="source in sources track by $index">
-				<!--<div ng-style="{color: labelTextColor(source)}">-->
-					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
-					<span ng-click="toggleSource(source)">{{source.name}}</span> -
-					<span ng-click="hideOtherSources(source)">Hide others</span>
-					<!-- - {{source.value | nullable_decimal | base10si}}-->
-				<!--</div>-->
-			</li>
-			</ul>
-		</div>
-
-		<div class="toolbarItem right dateRange" id="date-range-{{chartId}}">{{dateRange}}</div>
 	</div>
+	<div class="toolbarItem right dateRange" id="date-range-{{chartId}}">{{dateRange}}</div>
 </div>
