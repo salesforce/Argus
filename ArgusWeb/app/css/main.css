@@ -210,14 +210,15 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 /** Toolbars */
 .topToolbar {padding:0 3.5em;}
 
-.toolbarItem {display:inline-block;}
+.toolbarItem {display:inline-block; vertical-align:middle;}
 
 /* legend */
-.toolbarItem.legend {margin-left:10em; padding:.5em; height:45px;}
-.toolbarItem.legend.floatPanel {
-  position:absolute;
-  z-index:99;
-  height:auto;
+.toolbarItem.legend {padding:.5em .5em .5em 0; height:30px;}
+
+.legend.floatPanel {overflow:hidden;}
+.legend.floatPanel.open {
+  overflow:scroll; position:absolute; height:315px; z-index:9;
+  padding-left:.5em;
   border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
 }
 
@@ -226,7 +227,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .chartMenu li label {font-weight:400; font-size:13px;}
 
-.dateRange {float:right; margin-top:3px; font-size:12px; color:#999;}
+.dateRange {float:right; margin-right:2em; font-size:12px; color:#999;}
 
 .axis path,
 .axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
@@ -260,6 +261,8 @@ g.legend-items text .value {font-weight: 600; font-size: 14px;}
 
 .grid text {visibility:hidden;}
 .grid path {stroke:#FFF;}
-.crossLineTip {
 
-}
+.crossLineTip {}
+
+/* flags (annotations) */
+.flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
