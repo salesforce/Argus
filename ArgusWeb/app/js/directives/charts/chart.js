@@ -16,6 +16,11 @@ function(Metrics, ChartRenderingService, ChartDataProcessingService, ChartOption
         lineChartScope.chartId = newChartId;
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
+
+        // give each series an unique ID
+        for (var i = 0; i < series.length; i++) {
+            lineChartScope.series[i].graphClassName = newChartId + "_graph" + i;
+        }
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
