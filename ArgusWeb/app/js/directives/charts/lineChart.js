@@ -34,7 +34,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function toggleGraphOnOff(source) {
                 // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
-                // var graphID = source.name.replace(/\s+/g, '').replace(/\./g, '');
+                // var graphID = source.name.replace(/\s+/g, '');
                 var newOpacity = source.displaying? 0 : 1;
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
