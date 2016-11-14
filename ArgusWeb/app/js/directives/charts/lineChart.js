@@ -618,7 +618,7 @@ angular.module('argus.directives.charts.lineChart', [])
             function updateAnnotations() {
                 if (!scope || scope.series.length > 1 ) return;
 
-                var flagSeries = scope.series[0].flagSeries.data
+                var flagSeries = scope.series[0].flagSeries.data;
                 var flagsG = d3.select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
                     .data(flagSeries)
@@ -626,7 +626,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr("class", "flagItem")
                     .attr("transform", function(d) {
                         // x, xAxis, xAxisG
-                        var x_Val = 200   // x(d.x); // d.x is timestamp of X axis
+                        var x_Val = 200;   // x(d.x); // d.x is timestamp of X axis
                         var y_Val = height - 35;
                         return "translate("+ x_Val + ", "+ y_Val +")";
                     });
