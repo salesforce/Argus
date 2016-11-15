@@ -68,16 +68,16 @@ import com.fasterxml.jackson.annotation.JsonValue;
 @Entity
 @NamedQueries(
     {
-        @NamedQuery(name = "History.findByJob", query = "SELECT a FROM History a WHERE a.entityId = :entityId order by a.creationTime DESC"),
         @NamedQuery(
-        	name = "History.findByJobCreatedAfter", 
-        	query = "SELECT a FROM History a WHERE a.entityId = :entityId and a.creationTime > :createdAfter order by a.creationTime DESC"
-        ),
+        	name = "History.findByJob", 
+        	query = "SELECT a FROM History a WHERE a.entityId = :entityId order by a.creationTime DESC"),
         @NamedQuery(
             name = "History.findByJobAndStatus",
             query = "SELECT a FROM History a WHERE a.entityId = :entityId and a.jobStatus = :jobStatus order by a.creationTime DESC"
-        ), @NamedQuery(
-            name = "History.cullExpired", query = "DELETE FROM History AS h WHERE H.creationTime < :expiryTime"
+        ), 
+        @NamedQuery(
+            name = "History.cullExpired", 
+            query = "DELETE FROM History AS h WHERE H.creationTime < :expiryTime"
         )
     }
 )

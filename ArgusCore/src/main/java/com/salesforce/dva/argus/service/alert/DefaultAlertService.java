@@ -531,7 +531,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			history.setJobStatus(jobStatus);
 		}
 		history.setExecutionTime(executionTime);
-		//return _historyService.appendMessageAndUpdate(historyId, addDateToMessage(message), jobStatus, waitTime, executionTime);
 	}
 
 	private boolean shouldEvaluateNotification(Notification notification, History history) {
