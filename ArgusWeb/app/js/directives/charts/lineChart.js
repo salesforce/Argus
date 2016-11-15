@@ -612,10 +612,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
                 addOverlay();
-                reset();
-                //restore the zoom&brush
-                context.select(".brush").call
-                (brush.move, [x2(tempX[0]), x2(tempX[1])]);
+                if(tempX[0].getTime() == x2.domain()[0].getTime() &&
+                    tempX[1].getTime() == x2.domain()[1].getTime()) {
+                    reset();
+                }else{
+                    //restore the zoom&brush
+                    context.select(".brush").call
+                    (brush.move, [x2(tempX[0]), x2(tempX[1])]);
+                }
             }
 
             //updateGraph, update the graph with new data
