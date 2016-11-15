@@ -208,7 +208,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 /* chart styles */
 
 /* main elements */
-.chartContainer {padding-top:1em; border:solid 1px lightgrey; border-radius:5px;}
+.chartContainer {margin-top:2em; padding-top:1em; border:solid 1px lightgrey; border-radius:5px;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
@@ -222,7 +222,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .legend.floatPanel {overflow:hidden;}
 .legend.floatPanel.open {
-  overflow:scroll; position:absolute; height:315px; z-index:9;
+  overflow:auto; position:absolute; height:300px; z-index:9;
   padding-left:.5em;
   border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
 }
