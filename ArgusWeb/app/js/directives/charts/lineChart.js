@@ -601,7 +601,9 @@ angular.module('argus.directives.charts.lineChart', [])
                     left: marginLeft};
 
                 //clear every chart
+                // BUG: resize causes charts to re-attach in wrong DOM position
                 d3.select('svg').remove();
+
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
                 addOverlay();
@@ -630,7 +632,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     return metric.graphClassName;
                 });
 
-                var svg = d3.select('svg').select('g');
+                var svg = d3.select('#' + chartId).select('svg').select('g');
 
                 currSeries = series;
 
@@ -696,15 +698,15 @@ angular.module('argus.directives.charts.lineChart', [])
             function updateAnnotations() {
                 if (!scope || scope.series.length > 1 ) return;
 
-                var flagSeries = scope.series[0].flagSeries.data
-                var flagsG = d3.select('svg').select('.flags');
+                var flagSeries = scope.series[0].flagSeries.data;
+                var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
                     .data(flagSeries)
                     .enter().append("g")
                     .attr("class", "flagItem")
                     .attr("transform", function(d) {
                         // x, xAxis, xAxisG
-                        var x_Val = 200   // x(d.x); // d.x is timestamp of X axis
+                        var x_Val = 200;   // x(d.x); // d.x is timestamp of X axis
                         var y_Val = height - 35;
                         return "translate("+ x_Val + ", "+ y_Val +")";
                     });
