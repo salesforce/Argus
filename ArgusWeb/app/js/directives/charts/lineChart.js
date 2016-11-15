@@ -480,9 +480,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 //redraw
                 redraw();
                 //sync with zoom
-                svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
+                chartRect.call(zoom.transform, d3.zoomIdentity
                     .scale(width / (s[1] - s[0]))
                     .translate(-s[0], 0));
+
+                if(brushMainG){
+                    brushMainG.call(zoom.transform, d3.zoomIdentity
+                        .scale(width / (s[1] - s[0]))
+                        .translate(-s[0], 0));
+                }
             }
 
             function brushedMain(){
@@ -738,9 +744,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(zoom)
                 ;
 
-                // no wheel zoom on page load
-                if (!isWheelOn)
-                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
 
                 //the brush overlay
                 brushG = context.append("g")
@@ -748,15 +751,29 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brush)
                     .call(brush.move, x.range()); //change the x axis range when brush area changes
 
-                brushMainG = mainChart.append("g")
+                brushMainG = mainChart.append("g")//have to do this seperately, because rect svg cannot register brush
                     .attr("class", "brushMain")
+                    .call(zoom)
+                    .on("mousedown.zoom", null)
                     .call(brushMain)
-                    .call(brush.move, x.range());
+                    .on('mouseover', function () {
+                        focus.style('display', null);
+                    })
+                    .on('mouseout', function () {
+                        focus.style('display', 'none');
+                    })
+                    .on('mousemove', mousemove);
+
 
                 if (scope.isBrushMainOn){
                     brushMainG.attr('display', null);
                 }else{
                     brushMainG.attr('display', 'none');
+                }
+                // no wheel zoom on page load
+                if (!isWheelOn){
+                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
+                    brushMainG.on("wheel.zoom", null);
                 }
             }
 
@@ -779,6 +796,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(scope.isBrushMainOn){
                     svg.select('.brushMain').attr('display', null);
                     //isBrushMainOn = false;   ---------ng-model is auto changed.
+
                 }else{
                     //disable main chart brush
                     svg.select('.brushMain').attr('display', 'none');
@@ -789,10 +807,13 @@ angular.module('argus.directives.charts.lineChart', [])
             //toggle the mousewheel for zoom
             function toggleWheel(){
                 if(isWheelOn){
-                    mainChart.select(".chartOverlay").on("wheel.zoom", null);
+                    chartRect.on("wheel.zoom", null);
+                    brushMainG.on("wheel.zoom", null);
                     isWheelOn = false;
                 }else{
-                    mainChart.select(".chartOverlay").call(zoom);
+                    chartRect.call(zoom);
+                    brushMainG.call(zoom)
+                        .on("mousedown.zoom", null);
                     isWheelOn = true;
                 }
             }
