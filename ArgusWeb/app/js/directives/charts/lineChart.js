@@ -93,6 +93,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 left: marginLeft};
 
             var tipPadding = 3;
+            var tipOffset = 4;
+            var circleRadius = 4.5;
+
             var crossLineTipWidth = 35;
             var crossLineTipHeight = 15;
             var crossLineTipPadding = 3;
@@ -253,12 +256,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'y grid')
                     .call(yGrid);
 
-
-                // Mouseover/tooltip setup
-                focus = mainChart.append('g')
-                    .attr('class', 'focus')
-                    .style('display', 'none');
-
                 //Brush, zoom, pan
                 //clip path
                 clip = svg.append("defs").append("clipPath")
@@ -283,8 +280,14 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(xAxis2)
                 ;
 
+                // Mouseover/tooltip setup
+                focus = mainChart.append('g')
+                    .attr('class', 'focus')
+                    .style('display', 'none');
                 tip = svg.append('g')
-                    .attr('class', 'tooltip');
+                    .attr('class', 'tooltip')
+                    .style('opacity', 1)
+                    .style('display', 'none');
                 tipBox = tip.append('rect')
                     .attr('rx', tipPadding)
                     .attr('ry', tipPadding);
@@ -350,25 +353,22 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
                 });
-                toolTipUpdate(tipItems, datapoints);
+                toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
-            function toolTipUpdate(group, datapoints) {
-                tip.style('opacity', 1);
+            function toolTipUpdate(group, datapoints, X, Y) {
                 for (var i = 0; i < datapoints.length; i++) {
                     var circle = group.select("circle." + datapoints[i].graphClassName);
                     var textLine = group.select("text." + datapoints[i].graphClassName);
-                    circle.attr('cy', 1.2*(i+0.75) + 'em').attr('cx', 4);
-                    textLine.attr('dy', (1.2*(i+1)) + 'em').attr('dx', 12)
+                    circle.attr('cy', 20*(i+0.75) + Y).attr('cx', X + tipOffset + tipPadding + circleRadius);
+                    textLine.attr('dy', (20*(i+1)) + Y).attr('dx', X + tipOffset + tipPadding + circleRadius * 2 + 2)
                         .text(formatValue(datapoints[i].data[1]));
-                    // circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
                 }
                 var tipBounds = group.node().getBBox();
-                // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
-                tipBox.attr('x', tipBounds.x - tipPadding);
-                tipBox.attr('y', tipBounds.y - tipPadding);
-                tipBox.attr('width', tipBounds.width + 2*tipPadding);
+                tipBox.attr('x', X + tipOffset);
+                tipBox.attr('y', Y + tipOffset);
+                tipBox.attr('width', tipBounds.width + 4*tipPadding);
                 tipBox.attr('height', tipBounds.height + 2*tipPadding);
             }
 
@@ -481,7 +481,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     brushG.call(brush.move, [x2(start), x2(end)]);
                 }
             }
-
 
             //zoomed
             function zoomed() {
@@ -641,17 +640,16 @@ angular.module('argus.directives.charts.lineChart', [])
                     ;
                     // circles during mouse over
                     focus.append('circle')
-                        .attr('r', 4.5)
+                        .attr('r', circleRadius)
                         .attr('fill', tempColor)
                         .attr('class', metric.graphClassName)
                     ;
                     // tooltip
                     tipItems.append('circle')
-                        .attr('r', 4.5)
+                        .attr('r', circleRadius)
                         .attr('fill', tempColor)
                         .attr('class', metric.graphClassName);
                     tipItems.append('text')
-                        .attr('class', 'value')
                         .attr('class', metric.graphClassName);
                 });
                 //draw the brush xAxis
@@ -705,9 +703,11 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('height', height)
                     .on('mouseover', function () {
                         focus.style('display', null);
+                        tip.style('display', null);
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
+                        tip.style('display', 'none');
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
