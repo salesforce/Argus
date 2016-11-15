@@ -235,9 +235,9 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
-.line {fill:none; stroke:steelblue; stroke-width:1.5px; clip-path: url('#clip');}
+.line {fill:none; stroke:steelblue; stroke-width:1.5; clip-path: url('#clip');}
 
-.brushLine {fill:none; stroke:steelblue; stroke-width:1.5px;}
+.brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
 
 .chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
@@ -262,7 +262,13 @@ g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
 .grid text {visibility:hidden;}
 .grid path {stroke:#FFF;}
 
+.crossLineTipRect {
+    stroke: black;
+    stroke-width: 1px;
+    fill: white;
+}
 .crossLineTip {}
 
 /* flags (annotations) */
 .flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
+
