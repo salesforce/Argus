@@ -44,27 +44,7 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-            // scope.$watch('series', function() {
-            //     scope.$apply();
-            // });
-
-            // angular.element('').on('click', function() {
-            //     scope.$apply();
-            // });
-
-            // toggle source to hide/show, leave other sources showing
-            scope.toggleSource = function(source) {
-                console.log( source );
-
-            };
-
-            // show ONLY this 1 source, hide all others
-            scope.hideOtherSources = function(source) {
-                console.log( source );
-
-            };
-
-
+           
             //TODO figure what to put in controller, some dom modification should go in link
 
             // set $scope values
