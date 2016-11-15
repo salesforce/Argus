@@ -129,6 +129,10 @@ public class GOCNotifier extends AuditNotifier {
         if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
             try {
                 GOCDataBuilder builder = new GOCDataBuilder();
+                
+                className = _truncateIfSizeGreaterThan(className, 100);
+                elementName = _truncateIfSizeGreaterThan(elementName, 100);
+                eventName = _truncateIfSizeGreaterThan(eventName, 50);
 
                 builder.withClassName(className).withElementName(elementName).withEventName(eventName).withEventText(message);
                 if (severity == Severity.OK) {
@@ -181,7 +185,17 @@ public class GOCNotifier extends AuditNotifier {
                 eventName, severity.name());
         }
     }
-    @Override
+    
+    private static String _truncateIfSizeGreaterThan(String str, int maxAllowed) {
+    	if(str != null && str.length() > maxAllowed) {
+        	str = str.substring(0, maxAllowed - 3);
+        	str += "...";
+        }
+    	
+    	return str;
+	}
+
+	@Override
     public String getName() {
         return GOCNotifier.class.getName();
     }
