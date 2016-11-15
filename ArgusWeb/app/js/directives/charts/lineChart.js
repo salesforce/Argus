@@ -82,6 +82,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
 
+            var maxScaleExtent = 100 //zoom in extent
             var currSeries = series;
 
             // Layout parameters
@@ -506,9 +507,13 @@ angular.module('argus.directives.charts.lineChart', [])
             function brushedMain(){
                 var selection = d3.event.selection; //the brushMain selection
                 if(selection) {
-                    x.domain([x.invert(selection[0]), x.invert(selection[1])]);
-                    redraw();
+                    var start = x.invert(selection[0]);
+                    var end = x.invert(selection[1]);
+                    var range = end - start;
                     brushMainG.call(brushMain.move, null);
+                        if(range * maxScaleExtent < x2.domain()[1] - x2.domain()[0]) return;
+                    x.domain([start, end]);
+                    brushG.call(brush.move, [x2(start), x2(end)]);
                 }
             }
 
@@ -828,6 +833,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
                 if(!k || k > numOfPoints) k = 3;
                 zoom.scaleExtent([1, numOfPoints/k]);
+                maxScaleExtent = parseInt(numOfPoints/k);
             }
 
             //dynamically enable button for brush time period(1h/1d/1w/1m/1y)
