@@ -530,7 +530,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 reScaleY(); //rescale domain of y axis
                 //redraw
                 redraw();
-
                 // sync the brush
                 context.select(".brush").call
                 (brush.move, x.range().map(t.invertX, t));
@@ -578,13 +577,19 @@ angular.module('argus.directives.charts.lineChart', [])
             function reScaleY(){
                 if(currSeries === "series" || !currSeries) return;
                 var xDomain = x.domain();
-                var start = bisectDate(currSeries[0].data, xDomain[0]);
-                var end = bisectDate(currSeries[0].data, xDomain[1], start);
                 var datapoints = [];
+
                 currSeries.forEach(function(metric){
+                    var len = metric.data.length;
+                    if(metric.data[0][0] > xDomain[1].getTime() || metric.data[len-1][0] < xDomain[0].getTime()) return;
+                    //if this metric time range is within the xDomain
+                    var start = bisectDate(metric.data, xDomain[0]);
+                    var end = bisectDate(metric.data, xDomain[1], start);
                     datapoints = datapoints.concat(metric.data.slice(start, end+1));
                 });
+
                 y.domain(d3.extent(datapoints, function(d) {return d[1];}));
+
             }
 
             //resize
