@@ -91,7 +91,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 bottom: marginBottom,
                 left: marginLeft};
 
-            var tipPadding = 6;
+            var tipPadding = 3;
             var crossLineTipWidth = 35;
             var crossLineTipHeight = 15;
 
@@ -108,7 +108,6 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTformatDate = d3.utcFormat(shortDate);
 
             var formatValue = d3.format(',');
-            var tooltipCreator = function() {};
 
             var isWheelOn = false;
             var isBrushOn = true;
@@ -250,8 +249,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus = svg.append('g')
                     .attr('class', 'focus')
                     .style('display', 'none');
-                focus.append('circle')
-                    .attr('r', 4.5);
 
                 //Brush, zoom, pan
                 //clip path
@@ -278,12 +275,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 ;
 
                 tip = svg.append('g')
-                    .attr('class', 'legend');
+                    .attr('class', 'tooltip');
                 tipBox = tip.append('rect')
                     .attr('rx', tipPadding)
                     .attr('ry', tipPadding);
                 tipItems = tip.append('g')
-                    .attr('class', 'legend-items');
+                    .attr('class', 'tooltip-items');
 
                 //focus tracking
                 crossline = focus.append('g')
@@ -333,31 +330,28 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.select('.' + metric.graphClassName)
                         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
-                    datapoints.push(d);
+                    datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
                 });
-                tooltipCreator(tipItems, datapoints);
+                toolTipUpdate(tipItems, datapoints);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
-            function newTooltipCreator(names, colors) {
-                return function(group, datapoints) {
-                    var tmpSources = [];
-                    for (var i = 0; i < datapoints.length; i++) {
-                        var tempColor = colors[i] === null? z(names[i]): colors[i];
-                        tmpSources.push({
-                            name: names[i],
-                            value: datapoints[i][1],
-                            displaying: true,
-                            color: tempColor
-                        });
-                    }
-
-                    // set names into $scope for legend
-                    scope.sources = tmpSources;
-
-                    // can only do this once! try '$scope.watch' in link method next
-                    scope.$apply();
-                };
+            function toolTipUpdate(group, datapoints) {
+                tip.style('opacity', 1);
+                for (var i = 0; i < datapoints.length; i++) {
+                    var circle = group.select("circle." + datapoints[i].graphClassName);
+                    var textLine = group.select("text." + datapoints[i].graphClassName);
+                    circle.attr('cy', 1.2*(i+0.75) + 'em').attr('cx', 4);
+                    textLine.attr('dy', (1.2*(i+1)) + 'em').attr('dx', 12)
+                        .text(formatValue(datapoints[i].data[1]));
+                    // circle.attr('transform', 'translate(0,' + (textLineBounds.y + 9) + ')');
+                }
+                var tipBounds = group.node().getBBox();
+                // tip.attr('transform', 'translate(' + (width/2 - tipBounds.width/2) + ',' + (height + 50) + ')');
+                tipBox.attr('x', tipBounds.x - tipPadding);
+                tipBox.attr('y', tipBounds.y - tipPadding);
+                tipBox.attr('width', tipBounds.width + 2*tipPadding);
+                tipBox.attr('height', tipBounds.height + 2*tipPadding);
             }
 
             function legendCreator(names, colors, graphClassNames) {
@@ -390,13 +384,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('y', Y)
                     .attr('dx', -crossLineTipWidth)
                     .text(d3.format('.2s')(mouseY));
-
-                var date;
-                if (GMTon) {
-                    date = GMTformatDate(mouseX);
-                } else {
-                    date = formatDate(mouseX);
-                }
+                var date = GMTon? GMTformatDate(mouseX): formatDate(mouseX);
                 focus.select('#crossLineTipX')
                     .attr('x', X)
                     .attr('y', height )
@@ -464,7 +452,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionX = position[0];
                 var positionY = position[1];
                 var mouseY = y.invert(positionY);//domain value
-                focus.selectAll('circle');
                 focus.selectAll('circle').each(function(d, i){
                     var circle = d3.select(this);
                     var dataX = circle.attr('dataX');
@@ -561,7 +548,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 // correlate source names
                 legendCreator(names, colors, graphClassNames);
-                // tooltipCreator = newTooltipCreator(names, colors);
 
                 x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
                 y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));
@@ -573,6 +559,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg.selectAll('.brushLine').remove();
 
                 series.forEach(function(metric) {
+                    var tempColor = metric.color === null? z(metric.name): metric.color;
                     // main graph
                     svg.append('path')
                         .datum(metric.data)
@@ -580,31 +567,29 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('class', metric.graphClassName + ' line')
                         // .attr('class', 'line')
                         .attr('d', line)
-                        .style('stroke', function () {
-                            if (metric.color === null) {
-                                return z(metric.name);
-                            } else {
-                                return metric.color;
-                            }
-                        })
+                        .style('stroke', tempColor)
                     ;
+                    //TODO: create this item only once after data is loaded
                     // brush
                     context.append('path')
                         .datum(metric.data)
                         .attr('class', 'brushLine')
                         .attr('d', line2)
-                        .style('stroke', function () {
-                            if (metric.color === null) {
-                                return z(metric.name);
-                            } else {
-                                return metric.color;
-                            }
-                        })
+                        .style('stroke', tempColor)
                     ;
                     // circles during mouse over
                     focus.append('circle')
                         .attr('r', 4.5)
-                        .attr('fill', z(metric.name))
+                        .attr('fill', tempColor)
+                        .attr('class', metric.graphClassName)
+                    ;
+                    // tooltip
+                    tipItems.append('circle')
+                        .attr('r', 4.5)
+                        .attr('fill', tempColor)
+                        .attr('class', metric.graphClassName);
+                    tipItems.append('text')
+                        .attr('class', 'value')
                         .attr('class', metric.graphClassName);
                 });
                 //draw the brush xAxis
