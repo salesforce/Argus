@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service.jpa;
 
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Identifiable;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.service.AuditService;
@@ -116,7 +115,6 @@ public abstract class DefaultJPAService extends DefaultService {
     private <E extends Identifiable> void _deleteGlobalRecords(E entity, EntityManager em) {
         if (JPAEntity.class.isAssignableFrom(entity.getClass())) {
             _deleteGlobalRecordsForType(entity, em, Audit.class);
-            _deleteGlobalRecordsForType(entity, em, History.class);
         }
     }
 

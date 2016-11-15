@@ -200,11 +200,15 @@
                     <th>Date</th>
                     <th>Host</th>
                     <th>Detail</th>
+                    <th>Execution Time (in ms)</th>
+                    <th>Status</th>
                 </tr>
-                <tr ng-repeat="entry in jobExecutionDetails | orderBy:'-createdDate'">
-                    <td>{{entry.createdDate|date:'short'}}</td>
+                <tr ng-repeat="entry in jobExecutionDetails | orderBy:'-creationTime'">
+                    <td>{{entry.creationTime|date:'short'}}</td>
                     <td>{{entry.hostName}}</td>
                     <td><span ng-bind-html="entry.message | newline | trustedhtml"></span></td>
+                    <td>{{entry.executionTime}}</td>
+                    <td>{{entry.jobStatus}}</td>
                 </tr>
             </table>
         </div>

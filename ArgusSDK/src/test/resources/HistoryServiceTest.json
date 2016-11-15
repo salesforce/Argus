@@ -4,12 +4,5 @@
     "jsonInput" :null,
     "status": 200,
     "message": "success",
-    "jsonOutput" : "[{\"id\":1,\"createdDate\":1472282830936,\"message\":\"TestMessage\",\"hostName\":\"TestHost\",\"entityId\":1,\"jobStatus\":\"TestStatus\",\"waitTime\":100,\"executionTime\":100}]"
-},{
-    "type": "GET",
-    "endpoint": "/history/1",
-    "jsonInput" :null,
-    "status": 200,
-    "message": "success",
-    "jsonOutput" : "{\"id\":1,\"createdDate\":1472282830936,\"message\":\"TestMessage\",\"hostName\":\"TestHost\",\"entityId\":1,\"jobStatus\":\"TestStatus\",\"waitTime\":100,\"executionTime\":100}"
+    "jsonOutput" : "[{\"creationTime\":1472282830936,\"message\":\"TestMessage\",\"hostName\":\"TestHost\",\"entityId\":1,\"jobStatus\":\"TestStatus\",\"executionTime\":100}]"
 }]
