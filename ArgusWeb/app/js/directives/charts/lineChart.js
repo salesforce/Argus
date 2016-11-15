@@ -44,7 +44,7 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-           
+
             //TODO figure what to put in controller, some dom modification should go in link
 
             // set $scope values
@@ -97,6 +97,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var crossLineTipHeight = 15;
             var crossLineTipPadding = 3;
 
+            var bufferRatio = 0.2 //the ratio of buffer above/below max/min on yAxis for better showing experience
 
             // Local helpers
 
@@ -568,7 +569,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     datapoints = datapoints.concat(metric.data.slice(start, end+1));
                 });
 
-                y.domain(d3.extent(datapoints, function(d) {return d[1];}));
+                var extent = d3.extent(datapoints, function(d) {return d[1];});
+                var diff = extent[1] - extent[0];
+                var buffer = diff * bufferRatio;
+                var yMin = extent[0] - buffer;
+                if(yMin < 0) yMin = 0;
+                var yMax = extent[1] + buffer;
+                y.domain([yMin, yMax]);
 
             }
 
