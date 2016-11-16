@@ -45,9 +45,7 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-
             //TODO: figure what to put in controller, some dom modification should go in link
-
             // set $scope values
             scope.isWheelOn = false;
             scope.isBrushOn = true;
@@ -100,6 +98,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var crossLineTipHeight = 15;
             var crossLineTipPadding = 3;
 
+            var bufferRatio = 0.2 //the ratio of buffer above/below max/min on yAxis for better showing experience
 
             // Local helpers
 
@@ -475,9 +474,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 //redraw
                 redraw();
                 //sync with zoom
-                svg.select(".chartOverlay").call(zoom.transform, d3.zoomIdentity
+                chartRect.call(zoom.transform, d3.zoomIdentity
                     .scale(width / (s[1] - s[0]))
                     .translate(-s[0], 0));
+
+                if(brushMainG){
+                    brushMainG.call(zoom.transform, d3.zoomIdentity
+                        .scale(width / (s[1] - s[0]))
+                        .translate(-s[0], 0));
+                }
             }
 
             function brushedMain(){
@@ -562,7 +567,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     datapoints = datapoints.concat(metric.data.slice(start, end+1));
                 });
 
-                y.domain(d3.extent(datapoints, function(d) {return d[1];}));
+                var extent = d3.extent(datapoints, function(d) {return d[1];});
+                var diff = extent[1] - extent[0];
+                var buffer = diff * bufferRatio;
+                var yMin = extent[0] - buffer;
+                if(yMin < 0) yMin = 0;
+                var yMax = extent[1] + buffer;
+                y.domain([yMin, yMax]);
 
             }
 
@@ -726,24 +737,36 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(zoom)
                 ;
 
-                // no wheel zoom on page load
-                if (!isWheelOn) chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
-
                 //the brush overlay
                 brushG = context.append("g")
                     .attr("class", "brush")
                     .call(brush)
                     .call(brush.move, x.range()); //change the x axis range when brush area changes
 
-                brushMainG = mainChart.append("g")
+                brushMainG = mainChart.append("g")//have to do this seperately, because rect svg cannot register brush
                     .attr("class", "brushMain")
+                    .call(zoom)
+                    .on("mousedown.zoom", null)
                     .call(brushMain)
-                    .call(brush.move, x.range());
+                    .on('mouseover', function () {
+                        focus.style('display', null);
+                        if (isTooltipOn) tip.style('display', null);
+                    })
+                    .on('mouseout', function () {
+                        focus.style('display', 'none');
+                        tip.style('display', 'none');
+                    })
+                    .on('mousemove', mousemove);
 
                 if (scope.isBrushMainOn){
                     brushMainG.attr('display', null);
                 } else {
                     brushMainG.attr('display', 'none');
+                }
+                // no wheel zoom on page load
+                if (!isWheelOn){
+                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
+                    brushMainG.on("wheel.zoom", null);
                 }
             }
 
@@ -776,10 +799,13 @@ angular.module('argus.directives.charts.lineChart', [])
             //toggle the mousewheel for zoom
             function toggleWheel(){
                 if(isWheelOn){
-                    mainChart.select(".chartOverlay").on("wheel.zoom", null);
+                    chartRect.on("wheel.zoom", null);
+                    brushMainG.on("wheel.zoom", null);
                     isWheelOn = false;
                 } else {
-                    mainChart.select(".chartOverlay").call(zoom);
+                    chartRect.call(zoom);
+                    brushMainG.call(zoom)
+                        .on("mousedown.zoom", null);
                     isWheelOn = true;
                 }
             }
