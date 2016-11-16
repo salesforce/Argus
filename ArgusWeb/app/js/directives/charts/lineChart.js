@@ -14,7 +14,6 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
             $scope.sources = [];
-            $scope.hiddensources = [];
             $scope.toggleSource = function(source) {
                 toggleGraphOnOff(source);
             };
@@ -36,9 +35,6 @@ angular.module('argus.directives.charts.lineChart', [])
             function toggleGraphOnOff(source) {
                 // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
                 // var graphID = source.name.replace(/\s+/g, '');
-                if (source.displaying) {
-                    $scope.hiddensources.splice()
-                }
                 var displayProperty = source.displaying? 'none' : null;
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
@@ -367,7 +363,6 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function toolTipUpdate(group, datapoints, X, Y) {
-                console.log(datapoints.length);
                 for (var i = 0; i < datapoints.length; i++) {
                     var tempData = formatValue(datapoints[i].data[1]);
                     var tempDate = new Date(datapoints[i].data[0]);
@@ -423,7 +418,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 //add a background to it
                 var boxY = focus.select('[name=crossLineTipY]').node().getBBox();
-                focus.select( '[name=crossLineTipRectY]')
+                focus.select('[name=crossLineTipRectY]')
                     .attr('x', boxY.x - crossLineTipPadding)
                     .attr('y', boxY.y - crossLineTipPadding)
                     .attr('width', boxY.width + 2 * crossLineTipPadding)
