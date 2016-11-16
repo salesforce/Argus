@@ -614,7 +614,6 @@ angular.module('argus.directives.charts.lineChart', [])
             function resize(){
                 var tempX = x.domain(); //remember that when resize
                 //calculate new size for chart
-                console.log(container);
                 containerWidth = $(container).width();
                 width = containerWidth - marginLeft - marginRight;
                 margin = {top: marginTop,
