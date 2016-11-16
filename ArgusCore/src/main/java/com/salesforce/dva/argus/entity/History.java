@@ -45,6 +45,8 @@ import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Lob;
@@ -87,6 +89,7 @@ public class History implements Serializable, Identifiable {
     //~ Instance fields ******************************************************************************************************************************
 
 	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Basic(optional = false)
     @Column(nullable = false, updatable = false)
 	private BigInteger id;
