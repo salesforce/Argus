@@ -249,13 +249,6 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .focus circle {opacity:0.5;}
 
-g.legend-items text {color: #444; font-size: 12px;}
-g.legend-items circle {opacity: 0.5;}
-g.legend-items text .timestamp {font-variant: small-caps;}
-g.legend-items text .value {font-weight: 600; font-size: 14px;}
-
-.legend rect {fill:#EEE; stroke:steelblue; opacity:0.9;}
-
 /* dotted line on main line graph */
 .crossLine {fill:none; stroke:#000; stroke-width:1px; stroke-dasharray:3,3;}
 
@@ -277,4 +270,9 @@ g.legend-items text .value {font-weight: 600; font-size: 14px;}
 
 /* flags (annotations) */
 .flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
+
+/* tooltip stuff */
+g.tooltip-items text {color: #444; font-size: 12px;}
+g.tooltip-items circle {opacity: 0.5;}
+.tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
 

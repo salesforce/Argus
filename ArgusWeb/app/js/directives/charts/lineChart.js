@@ -35,24 +35,22 @@ angular.module('argus.directives.charts.lineChart', [])
             function toggleGraphOnOff(source) {
                 // d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
                 // var graphID = source.name.replace(/\s+/g, '');
-                var newOpacity = source.displaying? 0 : 1;
+                var displayProperty = source.displaying? 'none' : null;
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
-                    .transition().duration(100)
-                    .style('opacity', newOpacity);
+                    // .transition().duration(100)
+                    // .style('opacity', newOpacity);
+                    .style('display', displayProperty);
             }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-
-            //TODO figure what to put in controller, some dom modification should go in link
-
+            //TODO: figure what to put in controller, some dom modification should go in link
             // set $scope values
             scope.isWheelOn = false;
             scope.isBrushOn = true;
             scope.isBrushMainOn = false;
-            // legend sources
-            scope.sources = {};
+            scope.isTooltipOn = true;
 
             // ---------
             var topToolbar = $(element); //jquery selection
@@ -64,7 +62,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
 
-            var maxScaleExtent = 100 //zoom in extent
+            var maxScaleExtent = 100; //zoom in extent
             var currSeries = series;
 
             // Layout parameters
@@ -94,7 +92,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 bottom: marginBottom,
                 left: marginLeft};
 
-            var tipPadding = 6;
+            var tipPadding = 3;
+            var tipOffset = 8;
+            var circleRadius = 4.5;
+
             var crossLineTipWidth = 35;
             var crossLineTipHeight = 15;
             var crossLineTipPadding = 3;
@@ -114,10 +115,10 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTformatDate = d3.utcFormat(shortDate);
 
             var formatValue = d3.format(',');
-            var tooltipCreator = function() {};
 
             var isWheelOn = false;
             var isBrushOn = true;
+            var isTooltipOn = true;
 
             //graph setup variables
             var x, x2, y, y2, z,
@@ -257,14 +258,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'y grid')
                     .call(yGrid);
 
-
-                // Mouseover/tooltip setup
-                focus = mainChart.append('g')
-                    .attr('class', 'focus')
-                    .style('display', 'none');
-                focus.append('circle')
-                    .attr('r', 4.5);
-
                 //Brush, zoom, pan
                 //clip path
                 clip = svg.append("defs").append("clipPath")
@@ -289,13 +282,19 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(xAxis2)
                 ;
 
+                // Mouseover/tooltip setup
+                focus = mainChart.append('g')
+                    .attr('class', 'focus')
+                    .style('display', 'none');
                 tip = svg.append('g')
-                    .attr('class', 'legend');
+                    .attr('class', 'tooltip')
+                    .style('opacity', 1)
+                    .style('display', 'none');
                 tipBox = tip.append('rect')
                     .attr('rx', tipPadding)
                     .attr('ry', tipPadding);
                 tipItems = tip.append('g')
-                    .attr('class', 'legend-items');
+                    .attr('class', 'tooltip-items');
 
                 //focus tracking
                 crossLine = focus.append('g')
@@ -354,32 +353,35 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.select('.' + metric.graphClassName)
                         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
-                    datapoints.push(d);
+                    //TODO: have a better implementation of this later
+                    if (d3.select("." + metric.graphClassName).style("display") != 'none') {
+                        console.log("not none");
+                        datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
+                    }
                 });
-                tooltipCreator(tipItems, datapoints);
+                toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
-            function newTooltipCreator(names, colors) {
-                return function(group, datapoints) {
-                    var tmpSources = [];
-                    for (var i = 0; i < datapoints.length; i++) {
-                        var tempColor = colors[i] === null? z(names[i]): colors[i];
-                        tmpSources.push({
-                            name: names[i],
-                            value: datapoints[i][1],
-                            displaying: true,
-                            color: tempColor
-                        });
-                    }
+            function toolTipUpdate(group, datapoints, X, Y) {
+                for (var i = 0; i < datapoints.length; i++) {
+                    var tempData = formatValue(datapoints[i].data[1]);
+                    var tempDate = new Date(datapoints[i].data[0]);
+                    tempDate = GMTon? GMTformatDate(tempDate): formatDate(tempDate);
 
-                    // set names into $scope for legend
-                    scope.sources = tmpSources;
-
-                    // can only do this once! try '$scope.watch' in link method next
-                    scope.$apply();
-                    console.log( scope.sources );
-                };
+                    var circle = group.select("circle." + datapoints[i].graphClassName);
+                    var textLine = group.select("text." + datapoints[i].graphClassName);
+                    circle.attr('cy', 20*(i+0.75) + Y)
+                        .attr('cx', X + tipOffset + tipPadding + circleRadius);
+                    textLine.attr('dy', (20*(i+1)) + Y)
+                        .attr('dx', X + tipOffset + tipPadding + circleRadius * 2 + 2)
+                        .text(tempDate + " - " + tempData);
+                }
+                var tipBounds = group.node().getBBox();
+                tipBox.attr('x', X + tipOffset);
+                tipBox.attr('y', Y + tipOffset);
+                tipBox.attr('width', tipBounds.width + 4*tipPadding);
+                tipBox.attr('height', tipBounds.height + 2*tipPadding);
             }
 
             function legendCreator(names, colors, graphClassNames) {
@@ -423,16 +425,8 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('width', boxY.width + 2 * crossLineTipPadding)
                     .attr('height', boxY.height + 2 * crossLineTipPadding);
 
-
-                var date;
-                if (GMTon) {
-                    date = GMTformatDate(mouseX);
-                } else {
-                    date = formatDate(mouseX);
-                }
-
+                var date = GMTon? GMTformatDate(mouseX): formatDate(mouseX);
                 focus.select('[name=crossLineTipX]')
-
                     .attr('x', X)
                     .attr('y', height )
                     .attr('dy', crossLineTipHeight)
@@ -506,7 +500,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-
             //zoomed
             function zoomed() {
                 // ignore the case when it is called by the brushed function
@@ -529,7 +522,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionY = position[1];
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY);//domain value
-                focus.selectAll('circle');
                 focus.selectAll('circle').each(function(d, i){
                     var circle = d3.select(this);
                     var dataX = circle.attr('dataX');
@@ -643,7 +635,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 // correlate source names
                 legendCreator(names, colors, graphClassNames);
-                // tooltipCreator = newTooltipCreator(names, colors);
 
                 x.domain(d3.extent(allDatapoints, function(d) { return d[0]; }));
                 y.domain(d3.extent(allDatapoints, function(d) { return d[1]; }));
@@ -655,37 +646,35 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg.selectAll('.brushLine').remove();
 
                 series.forEach(function(metric) {
+                    var tempColor = metric.color === null? z(metric.name): metric.color;
                     mainChart.append('path')
                         .datum(metric.data)
                         // group all the element of each graph into a single class
                         .attr('class', metric.graphClassName + ' line')
                         // .attr('class', 'line')
                         .attr('d', line)
-                        .style('stroke', function () {
-                            if (metric.color === null) {
-                                return z(metric.name);
-                            } else {
-                                return metric.color;
-                            }
-                        })
+                        .style('stroke', tempColor)
                     ;
+                    //TODO: create this item only once after data is loaded
                     // brush
                     context.append('path')
                         .datum(metric.data)
                         .attr('class', 'brushLine')
                         .attr('d', line2)
-                        .style('stroke', function () {
-                            if (metric.color === null) {
-                                return z(metric.name);
-                            } else {
-                                return metric.color;
-                            }
-                        })
+                        .style('stroke', tempColor)
                     ;
                     // circles during mouse over
                     focus.append('circle')
-                        .attr('r', 4.5)
-                        .attr('fill', z(metric.name))
+                        .attr('r', circleRadius)
+                        .attr('fill', tempColor)
+                        .attr('class', metric.graphClassName)
+                    ;
+                    // tooltip
+                    tipItems.append('circle')
+                        .attr('r', circleRadius)
+                        .attr('fill', tempColor)
+                        .attr('class', metric.graphClassName);
+                    tipItems.append('text')
                         .attr('class', metric.graphClassName);
                 });
                 //draw the brush xAxis
@@ -739,14 +728,15 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('height', height)
                     .on('mouseover', function () {
                         focus.style('display', null);
+                        if (isTooltipOn) tip.style('display', null);
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
+                        tip.style('display', 'none');
                     })
                     .on('mousemove', mousemove)
                     .call(zoom)
                 ;
-
 
                 //the brush overlay
                 brushG = context.append("g")
@@ -761,16 +751,17 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brushMain)
                     .on('mouseover', function () {
                         focus.style('display', null);
+                        if (isTooltipOn) tip.style('display', null);
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
+                        tip.style('display', 'none');
                     })
                     .on('mousemove', mousemove);
 
-
                 if (scope.isBrushMainOn){
                     brushMainG.attr('display', null);
-                }else{
+                } else {
                     brushMainG.attr('display', 'none');
                 }
                 // no wheel zoom on page load
@@ -786,7 +777,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     //disable the brush
                     svg.select('.context').attr('display', 'none');
                     isBrushOn = false;
-                }else{
+                } else {
                     //enable the brush
                     svg.select('.context').attr('display', null);
                     isBrushOn = true;
@@ -799,8 +790,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(scope.isBrushMainOn){
                     svg.select('.brushMain').attr('display', null);
                     //isBrushMainOn = false;   ---------ng-model is auto changed.
-
-                }else{
+                } else {
                     //disable main chart brush
                     svg.select('.brushMain').attr('display', 'none');
                     //isBrushMainOn = true;
@@ -813,11 +803,22 @@ angular.module('argus.directives.charts.lineChart', [])
                     chartRect.on("wheel.zoom", null);
                     brushMainG.on("wheel.zoom", null);
                     isWheelOn = false;
-                }else{
+                } else {
                     chartRect.call(zoom);
                     brushMainG.call(zoom)
                         .on("mousedown.zoom", null);
                     isWheelOn = true;
+                }
+            }
+
+            //toggle tooltip
+            function toggleTooltip() {
+                if(isTooltipOn) {
+                    svg.select(".tooltip").attr("display", 'none');
+                    isTooltipOn = false;
+                } else {
+                    svg.select(".tooltip").attr("display", null);
+                    isTooltipOn = true;
                 }
             }
 
@@ -918,6 +919,7 @@ angular.module('argus.directives.charts.lineChart', [])
             $('[name=toggle-brush]', topToolbar).change(toggleBrush);
             $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
             $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
+            $('[name=toggle-tooltip]', topToolbar).change(toggleTooltip);
         }
     };
 }]);

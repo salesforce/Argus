@@ -44,11 +44,15 @@
 				</li>
 				<li>
 					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartId}}" ng-model="isBrushMainOn" />
-					<label for="toggle-brush-main-{{chartId}}">Brush on main chart</label>
+					<label for="toggle-brush-main-{{chartId}}" title="Toggle time brush on main chart">Brush on main chart</label>
 				</li>
 				<li>
 					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartId}}" ng-model="isWheelOn" />
 					<label for="toggle-wheel-{{chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
+				</li>
+				<li>
+					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartId}}" ng-model="isTooltipOn" />
+					<label for="toggle-tooltip-{{chartId}}" title="Toggle tooltip on mouseover">Tooltip</label>
 				</li>
 				</ul>
 			</div>
