@@ -272,7 +272,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
 
 /* tooltip stuff */
-g.tooltip-items text {color: #444; font-size: 12px;}
-g.tooltip-items circle {opacity: 0.5;}
 .tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
-
+g.tooltip-items text {color: #444; font-size: 12px;}
+g.tooltip-items circle {opacity: 0.7;}
+g.tooltip-items text .timestamp {font-variant: small-caps;}
+g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
