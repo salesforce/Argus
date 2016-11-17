@@ -89,7 +89,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private static final char ROWKEY_SEPARATOR = ':';
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
     
-    private static final long TIMEOUT_MS = 10 * 1000;
+    private static final long TIMEOUT_MS = 30 * 1000;
     private static final long SCAN_TIMEOUT_MS = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
@@ -108,9 +108,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	_syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
     	
     	_client = factory.getClient();
-        
-        _ensureTableWithColumnFamilyExists(Bytes.toBytes(SCOPE_SCHEMA_TABLENAME), COLUMN_FAMILY);
-        _ensureTableWithColumnFamilyExists(Bytes.toBytes(METRIC_SCHEMA_TABLENAME), COLUMN_FAMILY);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -636,36 +633,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             }
         }
     }
-    
-    
-    private void _ensureTableWithColumnFamilyExists(byte[] table, byte[] family) {
-        
-        Deferred<Object> deferred = _client.ensureTableFamilyExists(table, family);
-        
-        deferred.addCallback(new Callback<Void, Object>() {
-			@Override
-			public Void call(Object arg) throws Exception {
-				return null;
-			}
-		});
-        
-        deferred.addErrback(new Callback<Void, Exception>() {
-			@Override
-			public Void call(Exception arg) throws Exception {
-				_logger.error("Table {} or family {} does not exist. Please create the appropriate table.", Bytes.toString(table), Bytes.toString(family));
-				return null;
-			}
-		});
-        
-        try {
-        	deferred.join(TIMEOUT_MS);
-        } catch (InterruptedException e) {
-        	throw new SystemException("Interrupted while waiting to ensure schema tables exist.", e);
-        } catch (Exception e) {
-			_logger.error("Exception occured while waiting to ensure table {} with family {} exists", Bytes.toString(table), Bytes.toString(family));
-		}
-        
-	}
 
     private void _putWithoutTag(Metric metric, String tableName) {
     	String rowKeyStr = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
@@ -685,13 +652,13 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         final PutRequest put = new PutRequest(Bytes.toBytes(tableName), Bytes.toBytes(rowKeyStr), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
         Deferred<Object> deferred = _client.put(put);
         
-        	deferred.addCallback(new Callback<Object, Object>() {
-    			@Override
-    			public Object call(Object arg) throws Exception {
-    				_logger.trace(MessageFormat.format("Put to {0} successfully.", tableName));
-    				return null;
-    			}
-            });
+    	deferred.addCallback(new Callback<Object, Object>() {
+			@Override
+			public Object call(Object arg) throws Exception {
+				_logger.trace(MessageFormat.format("Put to {0} successfully.", tableName));
+				return null;
+			}
+        });
 
         deferred.addErrback(new Callback<Object, Exception>() {
             @Override
