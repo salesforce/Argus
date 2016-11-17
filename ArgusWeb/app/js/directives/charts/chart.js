@@ -18,6 +18,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.dateConfig = dateConfig;
         // give each series an unique ID
         for (var i = 0; i < series.length; i++) {
+            // use graphClassName to bind all the graph element of a metric together
             lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
         }
         // append, compile, & attach new scope to line-chart directive
