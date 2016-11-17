@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', [function() {
+.directive('lineChart', ['$timeout', function($timeout) {
 
     return {
         restrict: 'E',
@@ -101,7 +101,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var crossLineTipPadding = 3;
 
             var bufferRatio = 0.2 //the ratio of buffer above/below max/min on yAxis for better showing experience
-
+            var resizeTimeout = 250; //the time for resize function to fire
             // Local helpers
 
             // date formats
@@ -399,7 +399,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 scope.sources = tmpSources;
             }
 
-            //Generate cross lines at the point/cursor
+            /*  Generate cross lines at the point/cursor
+                mouseX,mouseY are actual values
+                X,Y are coordinates value
+             */
             function generateCrossLine(mouseX, mouseY, X, Y) {
                 if(!mouseY) return;
 
@@ -531,7 +534,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
-            //change brush focus range
+            //change brush focus range, k is the number of minutes
             function brushMinute(k){
                 return function(){
                     if(!k) k = (x2.domain()[1] - x2.domain()[0]);
@@ -881,16 +884,22 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
+            //TODO improve the resize efficiency if performance becomes an issue
             // call resize when browser size changes
             var parent = scope.$parent.$parent.$parent;
             //It is weird that the parent scope directive descending from is scope.$parent.$parent.$parent
             if(!parent.resize){
                 parent.resizeJobs = [];
-                parent.resize = function(){
-                    parent.resizeJobs.forEach(function(resize){
-                        resize();
-                    });
-                }
+                var timer;
+                parent.resize = function() {
+                    $timeout.cancel(timer); //clear to improve performance
+                    timer = $timeout(function () {
+                        parent.resizeJobs.forEach(function (resize) { //resize all the charts
+                            resize();
+                        });
+                    }, resizeTimeout); //only execute resize after a timeout
+                };
+
                 d3.select(window).on('resize', parent.resize);
             }
             parent.resizeJobs.push(resize);
