@@ -53,7 +53,9 @@ angular.module('argus.directives.charts.lineChart', [])
             scope.isTooltipOn = true;
 
             // ---------
-            var topToolbar = $(element);
+            var topToolbar = $(element); //jquery selection
+            var container = topToolbar.parent()[0];//real DOM
+
             var chartId = scope.chartId;
             var series = scope.series;
             var startTime = scope.dateConfig.startTime;
@@ -223,7 +225,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 ;
 
                 //Add elements to SVG
-                svg = d3.select('#' + chartId).append('svg')
+                svg = d3.select(container).append('svg')
                     .attr('width', width + margin.left + margin.right)
                     .attr('height', height + margin.top + margin.bottom)
                     .attr('id', 'svg')
@@ -612,7 +614,7 @@ angular.module('argus.directives.charts.lineChart', [])
             function resize(){
                 var tempX = x.domain(); //remember that when resize
                 //calculate new size for chart
-                containerWidth = $('#' + chartId).width();
+                containerWidth = $(container).width();
                 width = containerWidth - marginLeft - marginRight;
                 margin = {top: marginTop,
                     right: marginRight,
@@ -625,7 +627,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 //clear every chart
                 // BUG: resize causes charts to re-attach in wrong DOM position
-                d3.select('svg').remove();
+                d3.select(container).select('svg').remove();
 
                 setGraph(); //set up the chart
                 updateGraph(currSeries); //refill the data draw the line
@@ -654,8 +656,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var graphClassNames = series.map(function(metric) {
                     return metric.graphClassName;
                 });
-
-                var svg = d3.select('#' + chartId).select('svg').select('g');
 
                 currSeries = series;
 
@@ -917,7 +917,18 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             // call resize when browser size changes
-            d3.select(window).on('resize', resize);
+            var parent = scope.$parent.$parent.$parent;
+            //It is weird that the parent scope directive descending from is scope.$parent.$parent.$parent
+            if(!parent.resize){
+                parent.resizeJobs = [];
+                parent.resize = function(){
+                    parent.resizeJobs.forEach(function(resize){
+                        resize();
+                    });
+                }
+                d3.select(window).on('resize', parent.resize);
+            }
+            parent.resizeJobs.push(resize);
 
             // Update graph on new metric results
             setGraph();
