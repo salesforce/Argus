@@ -337,17 +337,19 @@ angular.module('argus.directives.charts.lineChart', [])
                 legendCreator(names, colors, graphClassNames);
                 // create mouse over circle and tooltip
                 series.forEach(function(metric) {
-                    var tempColor = metric.color === null? z(metric.name): metric.color;
-                    focus.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName);
-                    tipItems.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName);
-                    tipItems.append('text')
-                        .attr('class', metric.graphClassName);
+                    if (metric.data.length > 0) {
+                      var tempColor = metric.color === null? z(metric.name): metric.color;
+                      focus.append('circle')
+                          .attr('r', circleRadius)
+                          .attr('fill', tempColor)
+                          .attr('class', metric.graphClassName);
+                      tipItems.append('circle')
+                          .attr('r', circleRadius)
+                          .attr('fill', tempColor)
+                          .attr('class', metric.graphClassName);
+                      tipItems.append('text')
+                          .attr('class', metric.graphClassName);
+                    }
                 });
             }
 
@@ -381,7 +383,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     //TODO: have a better implementation of this later
-                    if (d3.select("." + metric.graphClassName).style("display") != 'none') {
+                    if (d3.select("." + metric.graphClassName).style("display") !== 'none') {
                         datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
                     }
                 });
@@ -631,7 +633,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 currSeries.forEach(function(metric){
                     if (metric !== null && metric.data.length > 0) {
                       var len = metric.data.length;
-                      // TODO: this generates bug when there is no data
+                      // TODO: empty data issue
                       if(metric.data[0][0] > xDomain[1].getTime() || metric.data[len-1][0] < xDomain[0].getTime()) return;
                       //if this metric time range is within the xDomain
                       var start = bisectDate(metric.data, xDomain[0]);
@@ -888,7 +890,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //extent, k is the least number of points in one line you want to see on the main chart view
             function setZoomExtent(k){
-              //TODO: deal with empty data
+              //TODO: empty data issue
                 var numOfPoints= currSeries[0].data.length;
                 //choose the max among all the series
                 for(var i = 1; i < currSeries.length; i++){
