@@ -616,7 +616,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //updateGraph, update the graph with new data
             function updateGraph(series){
-                if (!series) return;
+                if (!series || series.length === 0) return;
 
                 var allDatapoints = [];
                 var names = series.map(function(metric) {
@@ -847,6 +847,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //extent, k is the least number of points in one line you want to see on the main chart view
             function setZoomExtent(k){
+                if(!currSeries || currSeries.length === 0) return;
                 var numOfPoints= currSeries[0].data.length;
                 //choose the max among all the series
                 for(var i = 1; i < currSeries.length; i++){
