@@ -399,7 +399,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     // create a new col after every itemsPerCol
                     if (i % itemsPerCol === 0) {
                         OffsetMultiplier++;
-                        YOffset = OffsetMultiplier * itemsPerCol
+                        YOffset = OffsetMultiplier * itemsPerCol;
                     }
                     var tempData = formatValue(datapoints[i].data[1]);
                     var tempDate = new Date(datapoints[i].data[0]);
@@ -442,8 +442,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
                 // move tooltip on the right if there is not enough to display it on the right
                 var transformAttr;
-                if (X + Number(tipBox.attr('width')) > (width + marginRight)
-                    && X - Number(tipBox.attr('width')) > 0) {
+                if (X + Number(tipBox.attr('width')) > (width + marginRight) &&
+                    X - Number(tipBox.attr('width')) > 0) {
                     transformAttr = 'translate(-' + (Number(tipBox.attr('width')) + 2*tipOffset) + ')';
                 } else {
                     transformAttr = null;
@@ -589,8 +589,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionX = position[0];
                 var positionY = position[1];
                 var mouseX = x.invert(positionX);
-                var mouseY = y.invert(positionY);//domain value
-                focus.selectAll('circle').each(function(d, i){
+                var mouseY = y.invert(positionY); //domain value
+                focus.selectAll('circle').each(function(d, i) {
                     var circle = d3.select(this);
                     var dataX = circle.attr('dataX');
                     var dataY = circle.attr('dataY');
@@ -630,7 +630,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 currSeries.forEach(function(metric){
                     if (metric !== null && metric.data.length > 0) {
-                      var len = metric.data.length
+                      var len = metric.data.length;
                       // TODO: this generates bug when there is no data
                       if(metric.data[0][0] > xDomain[1].getTime() || metric.data[len-1][0] < xDomain[0].getTime()) return;
                       //if this metric time range is within the xDomain
