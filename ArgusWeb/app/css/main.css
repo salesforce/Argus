@@ -34,12 +34,13 @@ button[disabled] {color:#CCC;}
 .floatL {float:left;}
 .floatR {float:right;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
+.pointer {cursor:pointer;}
 
 .glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
 
 .eyeIcon {display:inline-block; width:14px; height:14px; vertical-align:middle;}
-.eyeIcon.open {background:url(../img/glyphicons-halflings.png) -96px -120px no-repeat;}
+.eyeIcon.open {background:url(../img/glyphicons-halflings.png) -96px -121px no-repeat;}
 .eyeIcon.closed {}
 
 /* loading spinner small, eg input field */
@@ -94,7 +95,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.red {background-color:red; border-color:red;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
-.smallChart {padding-left:8em; width:100%;}
+.smallChart {padding-left:9em; width:100%;}
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
@@ -208,24 +209,14 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 /* chart styles */
 
 /* main elements */
-.chartContainer {margin-top:2em; padding-top:1em; border:solid 1px lightgrey; border-radius:5px;}
+.chartContainer {margin-top:2em; padding-top:1em; border:solid 1px #CCC; border-radius:5px; background:#FBFBFB;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
-.topToolbar {padding:0 3.5em; height:1.5em;}
+.topToolbar {padding:0 3.5em;}
 .topToolbar a {cursor:pointer;}
 
-.toolbarItem {display:inline-block; vertical-align:middle;}
-
-/* legend */
-.toolbarItem.legend {padding:.5em .5em .5em 0; height:30px;}
-
-.legend.floatPanel {overflow:hidden;}
-.legend.floatPanel.open {
-  overflow:auto; position:absolute; height:300px; z-index:9;
-  padding-left:.5em;
-  border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
-}
+.toolbarItem {display:inline-block;}
 
 .toolbarMenu {display:inline-block; white-space:nowrap;}
 .toolbarMenu a.glyphicon {font-size:18px; color:#999;}
@@ -233,7 +224,19 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .chartMenu li label {font-weight:400; font-size:13px;}
 
-.dateRange {float:right; margin:6px 2em 0 0; font-size:12px; color:#999;}
+/* legend & other graph menus */
+.toolbarItem.legend {padding:5px 5px 5px 8px; height:28px;}
+.legend.floatPanel {overflow:hidden;}
+.legend.floatPanel.open {
+  overflow:auto; position:absolute; height:300px; z-index:9;
+  padding-left:.5em;
+  border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
+}
+
+.toolbarItem .graphControls {margin:4px 10px 0 0;}
+.graphControls .subMenu {right:-1em;}
+
+.dateRange {float:right; margin:7px 2em 0 0; font-size:12px; color:#999;}
 
 .axis path,
 .axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
@@ -250,7 +253,9 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .focus circle {opacity:0.5;}
 
 /* dotted line on main line graph */
-.crossLine {fill:none; stroke:#000; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLine {fill:none; stroke:#066EEA; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
+.crossLineTip {font-size:12px;}
 
 .tick line {stroke: lightgrey;}
 .tick text {fill:#606060;}
@@ -261,18 +266,12 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .grid text {visibility:hidden;}
 .grid path {stroke:#FFF;}
 
-.crossLineTipRect {
-    stroke: black;
-    stroke-width: 1px;
-    fill: white;
-}
-.crossLineTip {}
-
 /* flags (annotations) */
 .flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
 
 /* tooltip stuff */
-g.tooltip-items text {color: #444; font-size: 12px;}
-g.tooltip-items circle {opacity: 0.5;}
 .tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
-
+g.tooltip-items text {color: #444; font-size: 12px;}
+g.tooltip-items circle {opacity: 0.7;}
+g.tooltip-items text .timestamp {font-variant: small-caps;}
+g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
