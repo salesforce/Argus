@@ -85,6 +85,7 @@ public class Notification extends JPAEntity implements Serializable {
     )
     List<Trigger> triggers = new ArrayList<>(0);
     boolean active = false;
+    boolean isSRActionable = false;
     Trigger firedTrigger;
 
     //~ Constructors *********************************************************************************************************************************
@@ -106,6 +107,7 @@ public class Notification extends JPAEntity implements Serializable {
         setSubscriptions(subscriptions);
         setCooldownPeriod(cooldownPeriod);
         setActive(false);
+        setSRActionable(false);
     }
 
     /** Creates a new Notification object. */
@@ -341,6 +343,25 @@ public class Notification extends JPAEntity implements Serializable {
         this.active = active;
     }
 
+    
+    /**
+     * Indicates whether the notification is monitored by SR
+     *
+     * @return  True if notification is monitored by SR
+     */
+    public boolean getSRActionable() {
+        return isSRActionable;
+    }
+
+    /**
+     * Specifies whether the notification should be monitored by SR (actionable by SR)
+     *
+     * @param  isSRActionable  True if  SR should monitor the notification
+     */
+    public void setSRActionable(boolean isSRActionable) {
+        this.isSRActionable = isSRActionable;
+    }
+
     /**
      * Indicates the trigger which caused the notification to last be sent.
      *
@@ -391,7 +412,8 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", cooldownExpiration=" + cooldownExpiration + ", triggers=" + triggers + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", cooldownExpiration=" + cooldownExpiration + ","
+            		+ ", triggers=" + triggers + ", srActionable=" + isSRActionable + '}';
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
