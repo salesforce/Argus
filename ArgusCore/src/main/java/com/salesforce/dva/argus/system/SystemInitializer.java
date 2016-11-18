@@ -46,7 +46,6 @@ import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
 import com.salesforce.dva.argus.service.audit.DefaultAuditService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
-import com.salesforce.dva.argus.service.history.DefaultHistoryService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
 import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
@@ -214,6 +213,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.MAIL_SERVICE_IMPL_CLASS, MailService.class);
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
+        bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -233,7 +233,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
         bindConcreteClass(DefaultAuditService.class, AuditService.class);
-        bindConcreteClass(DefaultHistoryService.class, HistoryService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
@@ -271,8 +270,10 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.MAIL_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.AUTH_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
+        readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
         return properties;
     }
 }
