@@ -55,6 +55,7 @@ public class Notification extends Entity {
     private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
+    private boolean isSRActionable;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -202,6 +203,25 @@ public class Notification extends Entity {
         this.alertId = alertId;
     }
 
+    
+    /**
+     * Indicates whether the notification is monitored by SR
+     *
+     * @return  True if notification is monitored by SR
+     */
+    public boolean getSRActionable() {
+        return isSRActionable;
+    }
+
+    /**
+     * Specifies whether the notification should be monitored by SR (actionable by SR)
+     *
+     * @param  isSRActionable  True if  SR should monitor the notification
+     */
+    public void setSRActionable(boolean isSRActionable) {
+        this.isSRActionable = isSRActionable;
+    }
+    
     @Override
     public int hashCode() {
         int hash = 7;
@@ -215,6 +235,7 @@ public class Notification extends Entity {
         hash = 59 * hash + (int) (this.cooldownExpiration ^ (this.cooldownExpiration >>> 32));
         hash = 59 * hash + Objects.hashCode(this.triggersIds);
         hash = 59 * hash + Objects.hashCode(this.alertId);
+        hash = 59 * hash + Objects.hashCode(this.isSRActionable);
         return hash;
     }
 
@@ -259,6 +280,9 @@ public class Notification extends Entity {
         if (!Objects.equals(this.alertId, other.alertId)) {
             return false;
         }
+        if (!Objects.equals(this.isSRActionable, other.isSRActionable)) {
+            return false;
+        }        
         return true;
     }
 }
