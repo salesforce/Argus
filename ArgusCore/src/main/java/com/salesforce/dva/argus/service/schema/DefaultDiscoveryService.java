@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import org.slf4j.Logger;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +61,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final int HARD_LIMIT = 20;
+    private static final int HARD_LIMIT = 25;
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 
     //~ Instance fields ******************************************************************************************************************************
@@ -136,8 +137,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         if (isWildcardQuery(query)) {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             if (query.getTags() == null || query.getTags().isEmpty()) {
-                MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(), "*",
-                    "*");
+                MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
+                		query.getScope(), query.getMetric(), "*", "*");
                 int page = 1;
 
                 while (true) {
@@ -147,11 +148,12 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                     for (MetricSchemaRecord record : records) {
-                        String identifier = new StringBuilder(record.getScope()).append(record.getMetric()).append(record.getNamespace()).toString();
+                        String identifier = _getIdentifier(record);
 
                         if (!queries.containsKey(identifier)) {
                             if (queries.size() == HARD_LIMIT) {
-                                break;
+                            	String msg = MessageFormat.format("Wildcard query expands to more than {0} queries. Please narrow your search.", HARD_LIMIT);
+                                throw new WildcardExpansionLimitExceededException(msg);
                             }
 
                             MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
@@ -160,9 +162,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             _copyRemainingProperties(mq, query);
                             queries.put(identifier, mq);
                         }
-                    }
-                    if (queries.size() == HARD_LIMIT) {
-                        break;
                     }
                 }
             } else {
@@ -178,8 +177,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             break;
                         }
                         for (MetricSchemaRecord record : records) {
-                            String identifier = new StringBuilder(record.getScope()).append(record.getMetric()).append(record.getNamespace())
-                                .toString();
+                            String identifier = _getIdentifier(record);
 
                             if (queries.containsKey(identifier)) {
                                 MetricQuery mq = queries.get(identifier);
@@ -194,7 +192,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 }
                             } else {
                                 if (queries.size() == HARD_LIMIT) {
-                                    break;
+                                	String msg = MessageFormat.format("Wildcard query expands to more than {0} queries. Please narrow your search.", HARD_LIMIT);
+                                    throw new WildcardExpansionLimitExceededException(msg);
                                 }
 
                                 Map<String, String> tags = new HashMap<String, String>();
@@ -208,9 +207,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 queries.put(identifier, mq);
                             }
                         }
-                        if (queries.size() == HARD_LIMIT) {
-                            break;
-                        }
                     }
                 }
             } // end if-else
@@ -222,9 +218,17 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
         List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries.values());
 
-        _printMatchedQueries(queryList);
+        _logMatchedQueries(queryList);
         return queryList;
     }
+
+	private String _getIdentifier(MetricSchemaRecord record) {
+		String identifier = new StringBuilder(record.getScope()).
+													append(record.getMetric()).
+													append(record.getNamespace()).
+													toString();
+		return identifier;
+	}
 
     @Override
     public boolean isWildcardQuery(MetricQuery query) {
@@ -244,11 +248,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         return false;
     }
 
-    private void _printMatchedQueries(List<MetricQuery> queryList) {
+    private void _logMatchedQueries(List<MetricQuery> queryList) {
         _logger.debug("Matched Queries:");
 
         int i = 1;
-
         for (MetricQuery q : queryList) {
             _logger.debug(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
         }
@@ -260,7 +263,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         }
 
         char[] arr = str.toCharArray();
-
         for (char ch : arr) {
             if (_isWildcard(ch)) {
                 return true;
