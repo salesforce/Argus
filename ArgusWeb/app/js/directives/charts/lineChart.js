@@ -145,7 +145,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
-                z = d3.scaleOrdinal(d3.schemeCategory10);
+                z = d3.scaleOrdinal(d3.schemeCategory20);
 
                 //Axis
                 xAxis = d3.axisBottom()
@@ -323,9 +323,7 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function mousemove() {
-                if (!currSeries || currSeries.length === 0) {
-                    return;
-                }
+                if (!currSeries || currSeries.length === 0) return;
                 var datapoints = [];
                 var position = d3.mouse(this);
                 var positionX = position[0];
@@ -355,7 +353,6 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
                     //TODO: have a better implementation of this later
                     if (d3.select("." + metric.graphClassName).style("display") != 'none') {
-                        console.log("not none");
                         datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
                     }
                 });
@@ -364,24 +361,55 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function toolTipUpdate(group, datapoints, X, Y) {
+                var XOffset = 0;
+                var YOffset = 0;
+                var OffsetMultiplier = -1;
+                var itemsPerCol = 8;
+                var circleLen = circleRadius*2;
                 for (var i = 0; i < datapoints.length; i++) {
+                    // create a new col after every itemsPerCol
+                    if (i % itemsPerCol === 0) {
+                        OffsetMultiplier++;
+                        YOffset = OffsetMultiplier * itemsPerCol
+                    }
                     var tempData = formatValue(datapoints[i].data[1]);
                     var tempDate = new Date(datapoints[i].data[0]);
                     tempDate = GMTon? GMTformatDate(tempDate): formatDate(tempDate);
-
                     var circle = group.select("circle." + datapoints[i].graphClassName);
                     var textLine = group.select("text." + datapoints[i].graphClassName);
-                    circle.attr('cy', 20*(i+0.75) + Y)
-                        .attr('cx', X + tipOffset + tipPadding + circleRadius);
-                    textLine.attr('dy', (20*(i+1)) + Y)
-                        .attr('dx', X + tipOffset + tipPadding + circleRadius * 2 + 2)
+                    circle.attr('cy', 20*(0.75 + i - YOffset) + Y)
+                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset*OffsetMultiplier);
+                    textLine.attr('dy', (20*(1 + i - YOffset)) + Y)
+                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset*OffsetMultiplier)
                         .text(tempDate + " - " + tempData);
+                    /*
+                    // keep this just in case different styles are needed for time and value
+                    textLine.append('tspan')
+                        .attr('class', 'timestamp')
+                        .text(formatDate(new Date(datapoints[i][0])));
+                    textLine.append('tspan').attr('class', 'value')
+                        .attr('dx', 8)
+                        .text(formatValue(datapoints[i][1]));
+                    textLine.append('tspan').attr('dx', 8).text(names[i]);
+                    */
+
+                    // update XOffset if existing offset is smaller than texLine
+                    var tempXOffset = textLine.node().getBBox().width + circleLen + 8;
+                    if (tempXOffset > XOffset) {
+                        XOffset = tempXOffset;
+                    }
                 }
                 var tipBounds = group.node().getBBox();
                 tipBox.attr('x', X + tipOffset);
                 tipBox.attr('y', Y + tipOffset);
-                tipBox.attr('width', tipBounds.width + 4*tipPadding);
-                tipBox.attr('height', tipBounds.height + 2*tipPadding);
+                if (tipBounds.width === 0 || tipBounds.height === 0) {
+                    // when there is no graph, make the tipBox 0 size
+                    tipBox.attr('width', 0);
+                    tipBox.attr('height', 0);
+                } else {
+                    tipBox.attr('width', tipBounds.width + 4*tipPadding);
+                    tipBox.attr('height', tipBounds.height + 2*tipPadding);
+                }
             }
 
             function legendCreator(names, colors, graphClassNames) {
@@ -561,12 +589,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 var datapoints = [];
 
                 currSeries.forEach(function(metric){
-                    var len = metric.data.length;
-                    if(metric.data[0][0] > xDomain[1].getTime() || metric.data[len-1][0] < xDomain[0].getTime()) return;
-                    //if this metric time range is within the xDomain
-                    var start = bisectDate(metric.data, xDomain[0]);
-                    var end = bisectDate(metric.data, xDomain[1], start);
-                    datapoints = datapoints.concat(metric.data.slice(start, end+1));
+                    if (metric !== null && metric.data.length > 0) {
+                      var len = metric.data.length
+                      // TODO: this generates bug when there is no data
+                      if(metric.data[0][0] > xDomain[1].getTime() || metric.data[len-1][0] < xDomain[0].getTime()) return;
+                      //if this metric time range is within the xDomain
+                      var start = bisectDate(metric.data, xDomain[0]);
+                      var end = bisectDate(metric.data, xDomain[1], start);
+                      datapoints = datapoints.concat(metric.data.slice(start, end+1));
+                    }
                 });
 
                 var extent = d3.extent(datapoints, function(d) {return d[1];});
@@ -645,36 +676,39 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg.selectAll('.brushLine').remove();
 
                 series.forEach(function(metric) {
-                    var tempColor = metric.color === null? z(metric.name): metric.color;
-                    mainChart.append('path')
-                        .datum(metric.data)
-                        // group all the element of each graph into a single class
-                        .attr('class', metric.graphClassName + ' line')
-                        // .attr('class', 'line')
-                        .attr('d', line)
-                        .style('stroke', tempColor)
-                    ;
-                    //TODO: create this item only once after data is loaded
-                    // brush
-                    context.append('path')
-                        .datum(metric.data)
-                        .attr('class', 'brushLine')
-                        .attr('d', line2)
-                        .style('stroke', tempColor)
-                    ;
-                    // circles during mouse over
-                    focus.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName)
-                    ;
-                    // tooltip
-                    tipItems.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName);
-                    tipItems.append('text')
-                        .attr('class', metric.graphClassName);
+                    if (metric.data.length > 0) {
+                        var tempColor = metric.color === null? z(metric.name): metric.color;
+                        mainChart.append('path')
+                            .datum(metric.data)
+                            // group all the element of each graph into a single class
+                            .attr('class', metric.graphClassName + ' line')
+                            // .attr('class', 'line')
+                            .attr('d', line)
+                            .style('stroke', tempColor)
+                        ;
+                        //TODO: create this item only once after data is loaded
+                        // brush
+                        context.append('path')
+                            .datum(metric.data)
+                            .attr('class', 'brushLine')
+                            .attr('d', line2)
+                            .style('stroke', tempColor)
+                        ;
+                        // circles during mouse over
+                        focus.append('circle')
+                            .attr('r', circleRadius)
+                            .attr('fill', tempColor)
+                            .attr('class', metric.graphClassName)
+                        ;
+                        // tooltip
+                        tipItems.append('circle')
+                            .attr('r', circleRadius)
+                            .attr('fill', tempColor)
+                            .attr('class', metric.graphClassName);
+                        tipItems.append('text')
+                            .attr('class', metric.graphClassName);
+                    }
+
                 });
                 //draw the brush xAxis
                 xAxisG2.call(xAxis2);
@@ -754,7 +788,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
-                        tip.style('display', 'none');
+                        if (isTooltipOn) tip.style('display', 'none');
                     })
                     .on('mousemove', mousemove);
 
@@ -844,6 +878,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //extent, k is the least number of points in one line you want to see on the main chart view
             function setZoomExtent(k){
+              //TODO: deal with empty data
                 var numOfPoints= currSeries[0].data.length;
                 //choose the max among all the series
                 for(var i = 1; i < currSeries.length; i++){
