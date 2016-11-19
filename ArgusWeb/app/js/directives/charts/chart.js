@@ -127,6 +127,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     Array.prototype.push.apply(series, seriesWithOptions);
 
                 } else {
+                    //TODO: this will break the d3 graph since no seres is passed in as []
                     console.log( 'No data found for the metric expression: ', JSON.stringify(metricItem.expression) );
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 }
@@ -142,6 +143,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }
 
             }, function (error) {
+                //TODO: this will break the d3 graph since no seres is passed in as []
                 // growl.error(data.message);
                 console.log( 'no data found', data.message );
 

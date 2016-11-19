@@ -296,7 +296,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 tipItems = tip.append('g')
                     .attr('class', 'tooltip-items');
 
-                //focus tracking
+                //focus tracking/crossLine
                 crossLine = focus.append('g')
                     .attr('name', 'crossLine');
                 crossLine.append('line')
@@ -306,14 +306,14 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('name', 'crossLineY')
                     .attr('class', 'crossLine');
 
-                //tooltip background rect
+                //tooltip label on axis background rect
                 crossLine.append('rect')
                     .attr('name', 'crossLineTipRectX')
                     .attr('class', 'crossLineTipRect');
                 crossLine.append('rect')
                     .attr('name', 'crossLineTipRectY')
                     .attr('class', 'crossLineTipRect');
-                //tooltip text
+                //tooltip label on axis text
                 crossLine.append('text')
                     .attr('name', 'crossLineTipY')
                     .attr('class', 'crossLineTip');
@@ -322,38 +322,44 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'crossLineTip');
             }
 
-            // Graph tools that only needs to be created once
+            // Graph tools that only needs to be created once in theory; all of these are data independent
             function setGraphTools(series) {
-                var names = series.map(function(metric) {
-                    return metric.name;
-                });
-                var colors = series.map(function(metric) {
-                    return metric.color;
-                });
-                var graphClassNames = series.map(function(metric) {
-                    return metric.graphClassName;
-                });
+                //TODO: empty data issue
+                if (!series || series.length === 0) return;
+                var names = series.map(function(metric) { return metric.name; });
+                var colors = series.map(function(metric) { return metric.color; });
+                var graphClassNames = series.map(function(metric) { return metric.graphClassName; });
+                // set z to metric names and set legend content
                 z.domain(names);
                 legendCreator(names, colors, graphClassNames);
-                // create mouse over circle and tooltip
+                // create mouse over circle, tooltip items, lines and brush lines
                 series.forEach(function(metric) {
-                    if (metric.data.length > 0) {
-                      var tempColor = metric.color === null? z(metric.name): metric.color;
-                      focus.append('circle')
-                          .attr('r', circleRadius)
-                          .attr('fill', tempColor)
-                          .attr('class', metric.graphClassName);
-                      tipItems.append('circle')
-                          .attr('r', circleRadius)
-                          .attr('fill', tempColor)
-                          .attr('class', metric.graphClassName);
-                      tipItems.append('text')
-                          .attr('class', metric.graphClassName);
-                    }
+                    var tempColor = metric.color === null? z(metric.name): metric.color;
+                    // main graphs
+                    mainChart.append('path')
+                      .attr('class', 'line ' + metric.graphClassName)
+                      .style('stroke', tempColor);
+                    // graphs in the brush
+                    context.append('path')
+                      .attr('class', 'brushLine ' + metric.graphClassName + '_brushline')
+                      .style('stroke', tempColor);
+                    // circle on graph during mouse over
+                    focus.append('circle')
+                      .attr('r', circleRadius)
+                      .attr('fill', tempColor)
+                      .attr('class', metric.graphClassName);
+                    // tooltip items
+                    tipItems.append('circle')
+                      .attr('r', circleRadius)
+                      .attr('fill', tempColor)
+                      .attr('class', metric.graphClassName);
+                    tipItems.append('text')
+                      .attr('class', metric.graphClassName);
                 });
             }
 
             function mouseMove() {
+                //TODO: empty data issue
                 if (!currSeries || currSeries.length === 0) return;
                 var datapoints = [];
                 var position = d3.mouse(this);
@@ -363,9 +369,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 currSeries.forEach(function(metric) {
+                    //TODO: empty data issue
                     if (metric.data.length === 0) {
                         return;
                     }
+                    //TODO: improve this logic
                     var data = metric.data;
                     var i = bisectDate(data, mouseX, 1);
                     var d0 = data[i - 1];
@@ -410,7 +418,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     var textLine = group.select("text." + datapoints[i].graphClassName);
                     circle.attr('cy', 20*(0.75 + i - YOffset) + Y)
                         .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset*OffsetMultiplier);
-                    textLine.attr('dy', (20*(1 + i - YOffset)) + Y)
+                    textLine.attr('dy', 20*(1 + i - YOffset) + Y)
                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset*OffsetMultiplier)
                         .text(tempDate + " - " + tempData);
                     /*
@@ -671,10 +679,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     left: marginLeft};
 
                 //clear every chart
-                // BUG: resize causes charts to re-attach in wrong DOM position
+                //TODO: bug-resize causes charts to re-attach in wrong DOM position
                 d3.select(container).select('svg').remove();
 
                 setGraph(); //set up the chart
+                //TODO: should not need to call this function
+                setGraphTools(currSeries);
+
                 updateGraph(currSeries); //refill the data draw the line
                 addOverlay();
                 if(tempX[0].getTime() == x2.domain()[0].getTime() &&
@@ -703,25 +714,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 x2.domain(x.domain());
                 y2.domain(y.domain());
 
-                svg.selectAll('.line').remove();
-                svg.selectAll('.brushLine').remove();
-
                 series.forEach(function(metric) {
+                    //TODO: empty data issue
                     if (metric.data.length > 0) {
-                        var tempColor = metric.color === null? z(metric.name): metric.color;
-                        mainChart.append('path')
+                        mainChart.select('path.line.'+ metric.graphClassName)
                             .datum(metric.data)
-                            .attr('class', metric.graphClassName + ' line')
-                            .attr('d', line)
-                            .style('stroke', tempColor)
-                        ;
-                        // graphs in the brush
-                        context.append('path')
+                            .attr('d', line);
+                        context.select('path.brushLine.'+ metric.graphClassName + '_brushline')
                             .datum(metric.data)
-                            .attr('class', 'brushLine')
-                            .attr('d', line2)
-                            .style('stroke', tempColor)
-                        ;
+                            .attr('d', line2);
                     }
 
                 });
@@ -735,7 +736,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateAnnotations() {
                 if (!scope || scope.series.length > 1 ) return;
-                // TODO: empty data issue
+                // TODO: empty data issue for flagSeries
                 var flagSeries = scope.series[0].flagSeries.data;
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
@@ -780,7 +781,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
-                        tip.style('display', 'none');
+                        if (isTooltipOn) tip.style('display', 'none');
                     })
                     .on('mousemove', mouseMove)
                     .call(zoom)
