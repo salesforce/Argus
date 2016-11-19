@@ -58,6 +58,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
+        //tell the sub charts the setupChart event, in order to reset variables like resizeJobs
+        scope.$broadcast('setupChart');
         // remove/clear any previous chart rendering from DOM
         element.empty();
         // generate a new chart ID, set css options for main chart container
