@@ -121,9 +121,11 @@ public class GOCNotifier extends AuditNotifier {
      * @param  elementName   The element/instance name
      * @param  eventName     The event name
      * @param  message       The message body.
+     * @param  srActionable  Is the GOC notification SR actionable
      * @param  lastNotified  The last message time. (typically current time)
      */
-    public void sendMessage(Severity severity, String className, String elementName, String eventName, String message, long lastNotified) {
+    public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
+    		boolean srActionable,long lastNotified) {
         requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
         requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
         if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -134,7 +136,8 @@ public class GOCNotifier extends AuditNotifier {
                 elementName = _truncateIfSizeGreaterThan(elementName, 100);
                 eventName = _truncateIfSizeGreaterThan(eventName, 50);
 
-                builder.withClassName(className).withElementName(elementName).withEventName(eventName).withEventText(message);
+                builder.withClassName(className).withElementName(elementName).withEventName(eventName).
+                        withSRActionable(srActionable).withEventText(message);
                 if (severity == Severity.OK) {
                     builder.withActive(false).withClearedAt(lastNotified);
                 } else {
@@ -242,7 +245,7 @@ public class GOCNotifier extends AuditNotifier {
         Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
         sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
-            context.getTriggerFiredTime());
+        		context.getNotification().getSRActionable(), context.getTriggerFiredTime());
     }
 
     /**
@@ -456,7 +459,7 @@ public class GOCNotifier extends AuditNotifier {
             gocData.addProperty(SM_LASTNOTIFIEDAT__C_FIELD, smLastNotifiedAtc);
             gocData.addProperty(SM_SEVERITY__C_FIELD, smSeverityc);
             gocData.addProperty(SM_SOURCEDOMAIN__C_FIELD, smSourceDomainc);
-            //gocData.addProperty(SR_ACTIONABLE__C_FIELD, srActionablec);
+            gocData.addProperty(SR_ACTIONABLE__C_FIELD, srActionablec);
             return gocData.toString();
         }
 
