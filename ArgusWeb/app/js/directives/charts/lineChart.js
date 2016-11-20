@@ -346,6 +346,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 legendCreator(names, colors, graphClassNames);
                 // create mouse over circle, tooltip items, lines and brush lines
                 series.forEach(function(metric) {
+                    //TODO: empty data issue
+                    if (metric.data.length === 0) return;
                     var tempColor = metric.color === null? z(metric.name): metric.color;
                     // main graphs
                     mainChart.append('path')
@@ -443,13 +445,11 @@ angular.module('argus.directives.charts.lineChart', [])
                         .text(formatValue(datapoints[i][1]));
                     textLine.append('tspan').attr('dx', 8).text(names[i]);
                     */
-
                     // update XOffset if existing offset is smaller than texLine
                     var tempXOffset = textLine.node().getBBox().width + circleLen + 8;
                     if (tempXOffset > XOffset) {
                         XOffset = tempXOffset;
                     }
-
                 }
                 var tipBounds = group.node().getBBox();
                 tipBox.attr('x', X + tipOffset);
