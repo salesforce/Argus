@@ -58,7 +58,7 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-            //TODO: figure what to put in controller, some dom modification should go in link
+
             // set $scope values
             scope.isWheelOn = false;
             scope.isBrushOn = true;
@@ -747,9 +747,16 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function updateAnnotations() {
-                if (!scope || scope.series.length > 1 ) return;
-                // TODO: empty data issue for flagSeries
-                var flagSeries = scope.series[0].flagSeries.data;
+                if (!scope || !scope.series) return;
+
+                var flagSeries;
+                if (scope.series.length === 1 && scope.series[0].flagSeries) {
+                    flagSeries = scope.series[0].flagSeries.data;
+                } else {
+                    // TODO: do any dashboards have flag data for multiple series?
+                    return;
+                }
+
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
                     .data(flagSeries)
