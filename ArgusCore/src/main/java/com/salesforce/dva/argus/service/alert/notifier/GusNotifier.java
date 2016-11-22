@@ -178,6 +178,7 @@ public class GusNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
 					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
+		sb.append(context.getNotification().getCustomText()).append("\n>"); 
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}

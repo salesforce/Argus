@@ -274,6 +274,7 @@ public class GOCNotifier extends AuditNotifier {
             sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
                     getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
         }
+        sb.append(context.getNotification().getCustomText()).append("\n"); 
         sb.append("\n");
         sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
         return sb.toString();
