@@ -56,6 +56,7 @@ public class Notification extends Entity {
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private boolean isSRActionable;
+    private String customText;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -222,7 +223,21 @@ public class Notification extends Entity {
         this.isSRActionable = isSRActionable;
     }
     
-    @Override
+    /**
+	 * @return the customText
+	 */
+	public String getCustomText() {
+		return customText;
+	}
+
+	/**
+	 * @param customText the customText to set
+	 */
+	public void setCustomText(String customText) {
+		this.customText = customText;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 7;
 
@@ -236,6 +251,7 @@ public class Notification extends Entity {
         hash = 59 * hash + Objects.hashCode(this.triggersIds);
         hash = 59 * hash + Objects.hashCode(this.alertId);
         hash = 59 * hash + Objects.hashCode(this.isSRActionable);
+        hash = 59 * hash + Objects.hashCode(this.customText);
         return hash;
     }
 
@@ -282,7 +298,10 @@ public class Notification extends Entity {
         }
         if (!Objects.equals(this.isSRActionable, other.isSRActionable)) {
             return false;
-        }        
+        } 
+        if (!Objects.equals(this.customText, other.customText)) {
+            return false;
+        } 
         return true;
     }
 }

@@ -432,7 +432,7 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
 		Alert alert = new Alert(getRemoteUser(req), owner, alertDto.getName(), alertDto.getExpression(), alertDto.getCronEntry());
-
+		alert.setShared(alertDto.isShared()); 
 		copyProperties(alert, alertDto);
 		return AlertDto.transformToDto(alertService.updateAlert(alert));
 	}
@@ -608,6 +608,7 @@ public class AlertResources extends AbstractResource {
 
 			Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 					notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
+			notification.setCustomText(notificationDto.getCustomText());
 
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 

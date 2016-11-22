@@ -61,6 +61,7 @@ public class NotificationDto extends EntityDTO {
     private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
+    private String customText;
     private boolean isSRActionable;
 
     //~ Methods **************************************************************************************************************************************
@@ -255,8 +256,24 @@ public class NotificationDto extends EntityDTO {
     public void setAlertId(BigInteger alertId) {
         this.alertId = alertId;
     }
+   
+    /**
+     * Returns the custom text .
+     *
+     * @return  The custom text.
+     */
+    public String getCustomText() {
+		return customText;
+	}
+    /**
+     * Sets the custom text.
+     *
+     * @param  customText  The custom text.
+     */
+	public void setCustomText(String customText) {
+		this.customText = customText;
+	}
 
-    
     /**
      * Indicates whether the notification is monitored by SR
      *
@@ -292,6 +309,7 @@ public class NotificationDto extends EntityDTO {
         result.setNotifierName("email");
         result.setSRActionable(false);
         result.setSubscriptions(Arrays.asList(new String[] { "joe.smith@salesforce.com" }));
+        result.setCustomText("Sample custom text to include in the notification"); 
         return result;
     }
 }

@@ -46,6 +46,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
+import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -87,6 +88,8 @@ public class Notification extends JPAEntity implements Serializable {
     boolean active = false;
     boolean isSRActionable = false;
     Trigger firedTrigger;
+    @Lob
+    private String customText;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -380,7 +383,24 @@ public class Notification extends JPAEntity implements Serializable {
         this.firedTrigger = firedTrigger;
     }
 
-    @Override
+    
+    /**
+     * Return the custom text in order to include in the notification
+	 * @return the customText is optional
+	 */
+	public String getCustomText() {
+		return customText;
+	}
+
+	/**
+	 * Sets the custom text to the notification
+	 * @param customText customText is optional
+	 */
+	public void setCustomText(String customText) {
+		this.customText = customText;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 5;
 
@@ -413,7 +433,7 @@ public class Notification extends JPAEntity implements Serializable {
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
             metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", cooldownExpiration=" + cooldownExpiration + ","
-            		+ ", triggers=" + triggers + ", srActionable=" + isSRActionable + '}';
+            		+ ", triggers=" + triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
