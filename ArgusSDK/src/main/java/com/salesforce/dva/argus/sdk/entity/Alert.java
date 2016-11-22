@@ -55,6 +55,7 @@ public class Alert extends Entity {
     private final List<BigInteger> notificationsIds = new ArrayList<>(0);
     private final List<BigInteger> triggersIds = new ArrayList<>(0);
     private String ownerName;
+    private boolean shared;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -202,7 +203,21 @@ public class Alert extends Entity {
         this.ownerName = ownerName;
     }
 
-    @Override
+    /**
+	 * @return the shared
+	 */
+	public boolean isShared() {
+		return shared;
+	}
+
+	/**
+	 * @param shared the shared to set
+	 */
+	public void setShared(boolean shared) {
+		this.shared = shared;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 5;
 

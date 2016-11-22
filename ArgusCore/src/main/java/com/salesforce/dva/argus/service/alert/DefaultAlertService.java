@@ -688,6 +688,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		return result;
 	}
+	
+	@Override
+	@Transactional
+	public List<Alert> findSharedAlerts() {
+		requireNotDisposed();
+		return Alert.findSharedAlerts(emf.get());
+	}
 
 	/**
 	 * Returns an instance of a supported notifier.
