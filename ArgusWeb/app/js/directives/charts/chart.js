@@ -51,7 +51,6 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
                 }, function (error) {
                     console.log( 'no data found', error.data.message );
-
                     // append, compile, & attach new scope to line-chart directive
                     compileLineChart(scope, newChartId, series, dateConfig);
                 });
@@ -110,7 +109,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var series = [];
         var metricCount = updatedMetricList.length;
 
-        for (var i=0; i < updatedMetricList.length; i++) {
+        for (var i = 0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
             // make api call to get data for each metric item
             Metrics.query({expression: metricItem.expression}, function (data) {
@@ -134,7 +133,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
                 } else {
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
-                    console.log( 'No data found for the metric expression: ', JSON.stringify(metricItem.expression) );
+                    console.log( 'No data found for the metric expression');
                     tempSeries = ['No data found for the metric expression: ' +
                                             JSON.stringify(metricItem.expression)];
                 }
@@ -152,7 +151,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
             }, function (error) {
                 // growl.error(data.message);
-                console.log( 'no data found: ');
+                console.log( 'Metric expression does not exist in database');
                 var emptyDataSeries = error.statusText + '(' + error.status + ') - ' +
                                         error.data.message.substring(0, 31) + ': "' +
                                         error.config.params.expression + '"';
