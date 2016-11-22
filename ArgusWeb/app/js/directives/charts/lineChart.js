@@ -5,16 +5,17 @@ angular.module('argus.directives.charts.lineChart', [])
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
-    function resize(){
+
+    function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
         timer = $timeout(function () {
-            resizeJobs.forEach(function (resize) { //resize all the charts
-                resize();
+            resizeJobs.forEach(function (resizeJob) { //resize all the charts
+                resizeJob();
             });
         }, resizeTimeout); //only execute resize after a timeout
     }
 
-    d3.select(window).on('resize', resize);
+    d3.select(window).on('resize', resizeHelper);
 
     return {
         restrict: 'E',
@@ -736,7 +737,11 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateAnnotations() {
                 if (!scope || scope.series.length > 1 ) return;
-
+                /* for query like:
+                -2d:-0d:argus.jvm:mem.heap.used{host=argus.jvm:mem.heap.used{host=shared1-argusws1-2-prd.eng.sfdc.net}:avg
+                the scope.series[0].flagSeries can be undefined.
+                */
+                if (!scope.series[0].flagSeries) return;
                 var flagSeries = scope.series[0].flagSeries.data;
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
