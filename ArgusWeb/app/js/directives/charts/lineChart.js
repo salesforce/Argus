@@ -671,7 +671,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var diff = extent[1] - extent[0];
                 var buffer = diff * bufferRatio;
                 var yMin = extent[0] - buffer;
-                if(yMin < 0) yMin = 0;
                 var yMax = extent[1] + buffer;
                 y.domain([yMin, yMax]);
 
