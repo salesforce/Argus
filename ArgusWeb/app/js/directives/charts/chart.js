@@ -18,6 +18,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.dateConfig = dateConfig;
         // give each series an unique ID
         for (var i = 0; i < series.length; i++) {
+            // use graphClassName to bind all the graph element of a metric together
             lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
         }
         // append, compile, & attach new scope to line-chart directive
@@ -58,6 +59,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         //tell the sub charts the setupChart event, in order to reset variables like resizeJobs
+        //TODO this solution does not work when click menu to navigate back and in, will work
         scope.$broadcast('setupChart');
         // remove/clear any previous chart rendering from DOM
         element.empty();
@@ -128,6 +130,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     Array.prototype.push.apply(series, seriesWithOptions);
 
                 } else {
+                    //TODO: this will break the d3 graph since no seres is passed in as []
                     console.log( 'No data found for the metric expression: ', JSON.stringify(metricItem.expression) );
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 }
@@ -143,6 +146,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }
 
             }, function (error) {
+                //TODO: this will break the d3 graph since no seres is passed in as []
                 // growl.error(data.message);
                 console.log( 'no data found', data.message );
 
