@@ -16,10 +16,12 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.chartId = newChartId;
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
-        // give each series an unique ID
-        for (var i = 0; i < series.length; i++) {
-            // use graphClassName to bind all the graph element of a metric together
-            lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
+        // give each series an unique ID if it has data
+        if (series[0].constructor !== String) {
+            for (var i = 0; i < series.length; i++) {
+                // use graphClassName to bind all the graph element of a metric together
+                lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
+            }
         }
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
@@ -40,6 +42,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                         flagSeries.linkedTo = forName;
 
                         // add flagSeries if any data exists
+                        //TODO: handle undefined flagSeries situation
                         series[0].flagSeries = (flagSeries) ? flagSeries: null;
                     }
 
@@ -64,7 +67,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         element.empty();
         // generate a new chart ID, set css options for main chart container
         var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
-        var smallChart = attributes.smallchart ? true : false;
+        var smallChart = !!attributes.smallchart;
         var chartType = attributes.type ? attributes.type : 'LINE';
         var cssOpts = ( smallChart ) ? 'smallChart' : '';
 
@@ -98,6 +101,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
 
         // re-assign each list for: metrics, annotations, options
+        // TODO: updatedMetricList is not defined sometimes
         var updatedMetricList = processedData.updatedMetricList;
         var updatedAnnotationList = processedData.updatedAnnotationList;
         var updatedOptionList = processedData.updatedOptionList;
@@ -108,9 +112,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
         for (var i=0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
-
             // make api call to get data for each metric item
             Metrics.query({expression: metricItem.expression}, function (data) {
+                var tempSeries;
                 if (data && data.length > 0) {
 
                     // check to update statusIndicator with correct status color
@@ -123,17 +127,19 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     }
 
                     // metric item attributes are assigned to the data (i.e. name, color, etc.)
-                    var seriesWithOptions = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+                    tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
 
                     // add each metric item & data to series list
-                    Array.prototype.push.apply(series, seriesWithOptions);
+
 
                 } else {
-                    //TODO: this will break the d3 graph since no seres is passed in as []
-                    console.log( 'No data found for the metric expression: ', JSON.stringify(metricItem.expression) );
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
+                    console.log( 'No data found for the metric expression: ', JSON.stringify(metricItem.expression) );
+                    tempSeries = ['No data found for the metric expression: ' +
+                                            JSON.stringify(metricItem.expression)];
                 }
 
+                Array.prototype.push.apply(series, tempSeries);
                 // decrement metric count each time an expression is added to the series.
                 metricCount = metricCount - 1;
 
@@ -145,16 +151,18 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }
 
             }, function (error) {
-                //TODO: this will break the d3 graph since no seres is passed in as []
                 // growl.error(data.message);
-                console.log( 'no data found', data.message );
+                console.log( 'no data found: ');
+                var emptyDataSeries = error.statusText + '(' + error.status + ') - ' +
+                                        error.data.message.substring(0, 31) + ': "' +
+                                        error.config.params.expression + '"';
+                Array.prototype.push.apply(series, [emptyDataSeries]);
 
                 metricCount = metricCount - 1;
 
                 if (metricCount === 0) {
                     // display chart with series data and populate annotations
                     // bindDataToChart(newChartId, series, updatedAnnotationList);
-
                     setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
             });
