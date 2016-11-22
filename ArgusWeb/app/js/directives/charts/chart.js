@@ -59,6 +59,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         //tell the sub charts the setupChart event, in order to reset variables like resizeJobs
+        //TODO this solution does not work when click menu to navigate back and in, will work
         scope.$broadcast('setupChart');
         // remove/clear any previous chart rendering from DOM
         element.empty();

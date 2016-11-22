@@ -5,16 +5,17 @@ angular.module('argus.directives.charts.lineChart', [])
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
-    function resize(){
+
+    function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
         timer = $timeout(function () {
-            resizeJobs.forEach(function (resize) { //resize all the charts
-                resize();
+            resizeJobs.forEach(function (resizeJob) { //resize all the charts
+                resizeJob();
             });
         }, resizeTimeout); //only execute resize after a timeout
     }
 
-    d3.select(window).on('resize', resize);
+    d3.select(window).on('resize', resizeHelper);
 
     return {
         restrict: 'E',
@@ -273,6 +274,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 //Brush, zoom, pan
                 //clip path
                 clip = svg.append("defs").append("clipPath")
+                    .attr('name','clip')
                     .attr("id", "clip")
                     .append("rect")
                     .attr("width", width)
@@ -710,6 +712,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
+
             //updateGraph, update the graph with new data
             function updateGraph(series){
                 if (!series || series.length === 0) return;
@@ -756,7 +759,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     // TODO: do any dashboards have flag data for multiple series?
                     return;
                 }
-
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
                     .data(flagSeries)
