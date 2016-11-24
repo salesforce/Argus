@@ -206,7 +206,7 @@ public class Alert extends Entity {
     /**
 	 * @return the shared
 	 */
-	public boolean isShared() {
+	public boolean getShared() {
 		return shared;
 	}
 

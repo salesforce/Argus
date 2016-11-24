@@ -326,6 +326,7 @@ public class AlertServiceTest extends AbstractTest {
         alert.setMissingDataNotificationEnabled(false);
         alert.setName("TestAlert");
         alert.setOwnerName("admin");
+        alert.setShared(false);
         return alert;
     }
 
@@ -358,6 +359,7 @@ public class AlertServiceTest extends AbstractTest {
         notification.setNotifierName("EmailNotifier");
         notification.setSRActionable(false);
         notification.setSubscriptions(Arrays.asList(new String[] { "you@yourcompany.com" }));
+        notification.setCustomText("custom_text");
         return notification;
     }
 
