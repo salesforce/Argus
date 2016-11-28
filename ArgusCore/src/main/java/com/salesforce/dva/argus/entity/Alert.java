@@ -157,6 +157,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		setCronEntry(cronEntry);
 		setEnabled(false);
 		setMissingDataNotificationEnabled(false);
+		setShared(false); 
 	}
 
 	/** Creates a new Alert object. */
