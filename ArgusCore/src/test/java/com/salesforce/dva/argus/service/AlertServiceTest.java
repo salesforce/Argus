@@ -573,5 +573,49 @@ public class AlertServiceTest extends AbstractTest {
 		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
 		assertNull(actualValue);
 	}
+	
+	@Test
+	public void testSharedAlertWhenOneSharedAlert(){
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		
+		alertService.updateAlert(new Alert(user1, user1, "alert-name1", expression, "* * * * *"));
+		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", expression, "* * * * *"));
+		
+		alertShared.setShared(true);
+		alertService.updateAlert(alertShared);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertShared);
+		List<Alert> actualResult=alertService.findSharedAlerts();
+		assertEquals(expectedSharedResult, actualResult);
+	}
+	
+	@Test
+	public void testSharedAlertWhenTwoSharedAlert(){
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser("test2", "test2@salesforce.com"));
+		
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", expression, "* * * * *"));
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", expression, "* * * * *"));
+		
+		alertSharedUser1.setShared(true);
+		alertService.updateAlert(alertSharedUser1);
+		alertSharedUser2.setShared(true);
+		alertService.updateAlert(alertSharedUser2);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertSharedUser1);
+		expectedSharedResult.add(alertSharedUser2);
+		
+		
+		assertEquals(expectedSharedResult, alertService.findSharedAlerts());
+		
+		
+		
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
