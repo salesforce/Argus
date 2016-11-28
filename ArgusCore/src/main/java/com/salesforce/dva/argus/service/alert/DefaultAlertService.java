@@ -332,6 +332,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertIdWithTimestamp.alertEnqueueTime);
 
 				if (metrics == null || metrics.isEmpty()) {
+					// Based on timestamp of query for a metric  which exists, we get different 
+					// results from TSDB - either empty metric list, or datapoints being empty.
+					if (alert.isMissingDataNotificationEnabled()) {
+						_sendNotificationForMissingData(alert);
+					}
+					
 					logMessage = "The metric expression associated with the alert did not return any metric data.";
 					_logger.info(logMessage);
 					appendMessageNUpdateHistory(history, logMessage, null, 0);
