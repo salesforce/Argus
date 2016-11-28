@@ -275,7 +275,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 //clip path
                 clip = svg.append("defs").append("clipPath")
                     .attr('name','clip')
-                    .attr("id", "clip")
+                    .attr("id", "clip_" + chartId)
                     .append("rect")
                     .attr("width", width)
                     .attr("height", height);
@@ -354,7 +354,8 @@ angular.module('argus.directives.charts.lineChart', [])
                     // main graphs
                     mainChart.append('path')
                       .attr('class', 'line ' + metric.graphClassName)
-                      .style('stroke', tempColor);
+                      .style('stroke', tempColor)
+                        .style('clip-path', "url('#clip_" + chartId + "')");
                     // graphs in the brush
                     context.append('path')
                       .attr('class', 'brushLine ' + metric.graphClassName + '_brushline')
