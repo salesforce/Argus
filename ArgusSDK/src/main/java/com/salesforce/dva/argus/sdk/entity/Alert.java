@@ -55,7 +55,7 @@ public class Alert extends Entity {
     private final List<BigInteger> notificationsIds = new ArrayList<>(0);
     private final List<BigInteger> triggersIds = new ArrayList<>(0);
     private String ownerName;
-    private boolean shared;
+    private boolean shared=false;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -230,6 +230,7 @@ public class Alert extends Entity {
         hash = 37 * hash + Objects.hashCode(this.notificationsIds);
         hash = 37 * hash + Objects.hashCode(this.triggersIds);
         hash = 37 * hash + Objects.hashCode(this.ownerName);
+        hash = 37 * hash + (this.shared ? 1 : 0);
         return hash;
     }
 
@@ -272,6 +273,9 @@ public class Alert extends Entity {
             return false;
         }
         if (!Objects.equals(this.triggersIds, other.triggersIds)) {
+            return false;
+        }
+        if (this.shared != other.shared) {
             return false;
         }
         return true;
