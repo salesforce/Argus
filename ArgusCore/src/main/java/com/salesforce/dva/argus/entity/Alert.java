@@ -594,7 +594,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	public String toString() {
 		return "Alert{" + "name=" + name + ", expression=" + expression + ", cronEntry=" + cronEntry + ", enabled=" + enabled +
 				", missingDataNotificationEnabled=" + missingDataNotificationEnabled + ", notifications=" + notifications + ", triggers=" + triggers +
-				", owner=" + owner + '}';
+				", owner=" + owner + ", shared=" + shared + '}';
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

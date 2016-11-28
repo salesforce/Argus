@@ -164,7 +164,9 @@ public class EmailNotifier extends AuditNotifier {
         sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
         sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
-        sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+        }
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             sb.append("<a href='");
