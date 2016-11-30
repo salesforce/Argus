@@ -179,8 +179,10 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if(alert != null){
 			return AlertDto.transformToDto(alert);
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
