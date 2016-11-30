@@ -281,7 +281,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 //clip path
                 clip = svg.append("defs").append("clipPath")
                     .attr('name','clip')
-                    .attr("id", "clip")
+                    .attr("id", "clip_" + chartId)
                     .append("rect")
                     .attr("width", width)
                     .attr("height", height);
@@ -362,8 +362,9 @@ angular.module('argus.directives.charts.lineChart', [])
                     var tempColor = metric.color === null ? z(metric.name) : metric.color;
                     // main graphs
                     mainChart.append('path')
-                        .attr('class', 'line ' + metric.graphClassName)
-                        .style('stroke', tempColor);
+                      .attr('class', 'line ' + metric.graphClassName)
+                      .style('stroke', tempColor)
+                      .style('clip-path', "url('#clip_" + chartId + "')");
                     // graphs in the brush
                     context.append('path')
                         .attr('class', 'brushLine ' + metric.graphClassName + '_brushline')
@@ -678,7 +679,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var diff = extent[1] - extent[0];
                 var buffer = diff * bufferRatio;
                 var yMin = extent[0] - buffer;
-                if (yMin < 0) yMin = 0;
                 var yMax = extent[1] + buffer;
                 y.domain([yMin, yMax]);
 
@@ -980,26 +980,7 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             //TODO improve the resize efficiency if performance becomes an issue
-            // call resize when browser size changes
-            // var parent = scope.$parent.$parent.$parent;
-            //It is weird that the parent scope directive descending from is scope.$parent.$parent.$parent
-
-            // if(!parent.resize){
-            //     parent.resizeJobs = [];
-            //     var timer;
-            //     parent.resize = function() {
-            //         $timeout.cancel(timer); //clear to improve performance
-            //         timer = $timeout(function () {
-            //             parent.resizeJobs.forEach(function (resize) { //resize all the charts
-            //                 resize();
-            //             });
-            //         }, resizeTimeout); //only execute resize after a timeout
-            //     };
-            //
-            //     d3.select(window).on('resize', parent.resize);
-            // }
-            // parent.resizeJobs.push(resize);
-            scope.$on('setupChart', function () {
+            element.on('$destroy', function(){
                 resizeJobs = [];
             });
             resizeJobs.push(resize);
