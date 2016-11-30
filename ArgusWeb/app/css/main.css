@@ -244,7 +244,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
-.line {fill:none; stroke:steelblue; stroke-width:1.5; clip-path: url('#clip');}
+.line {fill:none; stroke:steelblue; stroke-width:1.5; } /*clip-path: url('#clip');*/
 
 .brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
 
