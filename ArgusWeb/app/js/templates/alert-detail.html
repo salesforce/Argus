@@ -132,6 +132,7 @@
             <table class="table table-striped table-bordered">
                 <tr>
                     <th>ID</th>
+                    <th>Is SR Actionable</th>
                     <th>Name</th>
                     <th>Type</th>
                     <th>Subscriptions</th>
@@ -146,6 +147,7 @@
                 </tr>
                 <tr ng-repeat="notification in notifications| filter:notificationSearchText |orderBy:'name'">
                     <td>{{notification.id}}</td>
+                    <td><input type="checkbox" ng-model="notification.sractionable" /></td>
                     <td><input class="form-control" type="text" ng-model="notification.name" /></td>
                     <td>
                         <select class="form-control" ng-model="notification.notifierName">
@@ -200,11 +202,15 @@
                     <th>Date</th>
                     <th>Host</th>
                     <th>Detail</th>
+                    <th>Execution Time (in ms)</th>
+                    <th>Status</th>
                 </tr>
-                <tr ng-repeat="entry in jobExecutionDetails | orderBy:'-createdDate'">
-                    <td>{{entry.createdDate|date:'short'}}</td>
+                <tr ng-repeat="entry in jobExecutionDetails | orderBy:'-creationTime'">
+                    <td>{{entry.creationTime|date:'short'}}</td>
                     <td>{{entry.hostName}}</td>
                     <td><span ng-bind-html="entry.message | newline | trustedhtml"></span></td>
+                    <td>{{entry.executionTime}}</td>
+                    <td>{{entry.jobStatus}}</td>
                 </tr>
             </table>
         </div>

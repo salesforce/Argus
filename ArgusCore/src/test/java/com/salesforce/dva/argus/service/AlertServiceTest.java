@@ -31,7 +31,6 @@
 
 package com.salesforce.dva.argus.service;
 
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -45,22 +44,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public class AlertServiceTest extends AbstractTest {
 
@@ -227,16 +223,17 @@ public class AlertServiceTest extends AbstractTest {
 		assertNull(alertService.findAlertByNameAndOwner(alertName, user));
 	}
 
+	@Ignore
 	@Test
 	public void testAlertDeletePerformance() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		AuditService auditService = system.getServiceFactory().getAuditService();
-		HistoryService historyService = system.getServiceFactory().getHistoryService();
+		//HistoryService historyService = system.getServiceFactory().getHistoryService();
 		PrincipalUser user = userService.findAdminUser();
 		int alertCount = 10;
 		int auditCount = 5000;
-		int historyCount = 5000;
+		//int historyCount = 5000;
 		Alert[] alerts = new Alert[alertCount];
 
 		for (int i = 0; i < alerts.length; i++) {
@@ -248,11 +245,14 @@ public class AlertServiceTest extends AbstractTest {
 
 				auditService.createAudit(audit);
 			}
+			
+			/*
 			for (int j = 0; j < historyCount; j++) {
-				History history = new History("message", "localhost", alerts[i], JobStatus.DEQUEUED);
-
+				History history = new History("message", "localhost", alerts[i].getId(), JobStatus.DEQUEUED);
 				historyService.updateHistory(history);
+				historyService.createHistory("message", alerts[i], JobStatus.DEQUEUED, 0);
 			}
+			*/
 			LoggerFactory.getLogger(getClass()).info("Created alert " + i);
 		}
 
@@ -572,6 +572,50 @@ public class AlertServiceTest extends AbstractTest {
 		metric.setDatapoints(datapoints);
 		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
 		assertNull(actualValue);
+	}
+	
+	@Test
+	public void testSharedAlertWhenOneSharedAlert(){
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		
+		alertService.updateAlert(new Alert(user1, user1, "alert-name1", expression, "* * * * *"));
+		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", expression, "* * * * *"));
+		
+		alertShared.setShared(true);
+		alertService.updateAlert(alertShared);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertShared);
+		List<Alert> actualResult=alertService.findSharedAlerts();
+		assertEquals(expectedSharedResult, actualResult);
+	}
+	
+	@Test
+	public void testSharedAlertWhenTwoSharedAlert(){
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser("test2", "test2@salesforce.com"));
+		
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", expression, "* * * * *"));
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", expression, "* * * * *"));
+		
+		alertSharedUser1.setShared(true);
+		alertService.updateAlert(alertSharedUser1);
+		alertSharedUser2.setShared(true);
+		alertService.updateAlert(alertSharedUser2);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertSharedUser1);
+		expectedSharedResult.add(alertSharedUser2);
+		
+		
+		assertEquals(expectedSharedResult, alertService.findSharedAlerts());
+		
+		
+		
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
