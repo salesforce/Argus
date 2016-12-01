@@ -28,6 +28,7 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
             $scope.sources = [];
+            // can be used for future modal window
             $scope.noDataSeries = [];
             $scope.invalidSeries = [];
 
@@ -1061,13 +1062,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 //this should never happen
                 console.log("Empty data from chart data processing");
             } else {
+                // set up legend
                 names = series.map(function(metric) { return metric.name; });
                 colors = series.map(function(metric) { return metric.color; });
                 graphClassNames = series.map(function(metric) { return metric.graphClassName; });
                 legendCreator(names, colors, graphClassNames);
-
+                // check if there is anything to graph
                 var hasNoData, emptyReturn, invalidExpression, haveThingsToGraph;
-
                 for (var i = 0; i < series.length; i++) {
                     if (series[i].invalidMetric) {
                         scope.invalidSeries.push(series[i]);
@@ -1093,6 +1094,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     enableBrushTime();
                     reset();    //to remove the brush cover first for user the drag
                 } else {
+                    // generate content for no graph message
                     var messageToDisplay = ['No graph available'];
                     if (invalidExpression) {
                         messageToDisplay.push('Metric expressions do not exist in TSDB');
