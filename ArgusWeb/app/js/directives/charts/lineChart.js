@@ -145,7 +145,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
                 line, line2, area, area2,
                 brush, brushMain, zoom,
-                svg, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
+                svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                 focus, context, clip, brushG, brushMainG, chartRect, flags,//g
                 tip, tipBox, tipItems,
                 crossLine
@@ -247,12 +247,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg = d3.select(container).append('svg')
                     .attr('width', width + margin.left + margin.right)
                     .attr('height', height + margin.top + margin.bottom)
-                    .attr('id', 'svg')
+
+                svg_g = svg
                     .append('g')
                     .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
                 ;
 
-                mainChart = svg.append("g");
+                mainChart = svg_g.append("g");
 
                 xAxisG = mainChart.append('g')
                     .attr('class', 'x axis')
@@ -279,7 +280,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 //Brush, zoom, pan
                 //clip path
-                clip = svg.append("defs").append("clipPath")
+                clip = svg_g.append("defs").append("clipPath")
                     .attr('name','clip')
                     .attr("id", "clip_" + chartId)
                     .append("rect")
@@ -287,13 +288,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr("height", height);
 
                 //brush area
-                context = svg.append("g")
+                context = svg_g.append("g")
                     .attr("class", "context")
                     // .attr("transform", "translate(0," + (height + margin.top + 10) + ")");
                     .attr("transform", "translate(0," + margin2.top + ")");
 
                 // flags (annotations)
-                flags = svg.append("g").attr("class", "flags");
+                flags = svg_g.append("g").attr("class", "flags");
 
                 //set brush area axis
                 xAxisG2 = context.append("g")
@@ -306,7 +307,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus = mainChart.append('g')
                     .attr('class', 'focus')
                     .style('display', 'none');
-                tip = svg.append('g')
+                tip = svg_g.append('g')
                     .attr('class', 'tooltip')
                     .style('opacity', 1)
                     .style('display', 'none');
@@ -547,21 +548,21 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //reset the brush area
             function reset() {
-                svg.selectAll(".brush").call(brush.move, null);
-                svg.selectAll(".brushMain").call(brush.move, null);
+                svg_g.selectAll(".brush").call(brush.move, null);
+                svg_g.selectAll(".brushMain").call(brush.move, null);
             }
 
             //redraw the lines Axises grids
             function redraw() {
                 //redraw
-                svg.selectAll(".line").attr("d", line);//redraw the line
-                svg.select(".x.axis").call(xAxis);  //redraw xAxis
-                svg.select(".y.axis").call(yAxis);  //redraw yAxis
-                svg.select(".y.axis:nth-child(3)").call(yAxisR); //redraw yAxis right
-                svg.select(".x.grid").call(xGrid);
-                svg.select(".y.grid").call(yGrid);
+                svg_g.selectAll(".line").attr("d", line);//redraw the line
+                xAxisG.call(xAxis);  //redraw xAxis
+                yAxisG.call(yAxis);  //redraw yAxis
+                yAxisRG.call(yAxisR); //redraw yAxis right
+                xGridG.call(xGrid);
+                yGridG.call(yGrid);
                 if (!isBrushOn) {
-                    svg.select(".context").attr("display", "none");
+                    context.attr("display", "none");
                 }
                 updateDateRange();
             }
@@ -684,9 +685,55 @@ angular.module('argus.directives.charts.lineChart', [])
 
             }
 
-            //resize
-            function resize() {
-                //calculate new size for chart
+            // //resize
+            // function resize_() {
+            //     //calculate new size for chart
+            //     containerWidth = $(container).width();
+            //     width = containerWidth - marginLeft - marginRight;
+            //     margin = {
+            //         top: marginTop,
+            //         right: marginRight,
+            //         bottom: containerHeight - marginTop - height,
+            //         left: marginLeft
+            //     };
+            //     margin2 = {
+            //         top: containerHeight - height2 - marginBottom,
+            //         right: marginRight,
+            //         bottom: marginBottom,
+            //         left: marginLeft
+            //     };
+            //
+            //     //clear every chart
+            //     d3.select(container).select('svg').remove();
+            //
+            //     if (typeof x === "undefined") {
+            //         // when resizing a graph with empty series
+            //         displayEmptyGraph(container, width, height, margin, series[0])
+            //     } else {
+            //         var tempX = x.domain(); //remember that when resize
+            //         setGraph(); //set up the chart
+            //         //TODO: should not need to call this function
+            //         setGraphTools(currSeries);
+            //         updateGraph(currSeries); //refill the data draw the line
+            //         addOverlay();
+            //
+            //         if (tempX[0].getTime() == x2.domain()[0].getTime() &&
+            //             tempX[1].getTime() == x2.domain()[1].getTime()) {
+            //             reset();
+            //         } else {
+            //             //restore the zoom&brush
+            //             context.select(".brush").call
+            //             (brush.move, [x2(tempX[0]), x2(tempX[1])]);
+            //         }
+            //     }
+            // }
+
+            //precise resize without removing and recreating everything
+            function resize(){
+                if (series === "series" || !series) {
+                    return;
+                }
+
                 containerWidth = $(container).width();
                 width = containerWidth - marginLeft - marginRight;
                 margin = {
@@ -702,31 +749,57 @@ angular.module('argus.directives.charts.lineChart', [])
                     left: marginLeft
                 };
 
-                //clear every chart
-                //TODO: bug-resize causes charts to re-attach in wrong DOM position
-                d3.select(container).select('svg').remove();
+                if (series[0].constructor === String) {
+                    displayEmptyGraph(container, width, height, margin, series[0]);
+                    return;
+                }
 
-                if (typeof x === "undefined") {
-                    // when resizing a graph with empty series
-                    displayEmptyGraph(container, width, height, margin, series[0])
+                var tempX = x.domain(); //remember that when resize
+
+                clip.attr('width', width)
+                    .attr('height', height);
+                chartRect.attr('width', width);
+                //update range
+                x.range([0, width]);
+                x2.range([0, width]);
+
+                //update brush & zoom
+                brush.extent([[0, 0], [width, height2]]);
+                brushMain.extent([[0, 0], [width, height]]);
+                zoom.translateExtent([[0, 0], [width, height]])
+                    .extent([[0, 0], [width, height]]);
+                brushG.call(brush);
+                brushMainG.call(brushMain);
+
+                //width related svg element
+                svg.attr('width', width + margin.left + margin.right)
+                svg_g.attr('width', width)
+                     .attr('transform', 'translate(' + margin.left + ','+ margin.top + ')');
+
+                yGrid.tickSizeInner(-width);
+                yGridG.call(yGrid);
+
+                yAxisRG.attr('transform', 'translate(' + width+ ')')
+                    .call(yAxisR);
+
+                svg_g.selectAll(".line").attr("d", line);//redraw the line
+                svg_g.selectAll(".brushLine").attr("d", line2);//redraw brush line
+
+                xAxisG.call(xAxis);  //redraw xAxis
+                yAxisG.call(yAxis);  //redraw yAxis
+                xGridG.call(xGrid);
+                xAxisG2.call(xAxis2);
+
+                if (tempX[0].getTime() == x2.domain()[0].getTime() &&
+                    tempX[1].getTime() == x2.domain()[1].getTime()) {
+                    reset();
                 } else {
-                    var tempX = x.domain(); //remember that when resize
-                    setGraph(); //set up the chart
-                    //TODO: should not need to call this function
-                    setGraphTools(currSeries);
-                    updateGraph(currSeries); //refill the data draw the line
-                    addOverlay();
-
-                    if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-                        tempX[1].getTime() == x2.domain()[1].getTime()) {
-                        reset();
-                    } else {
-                        //restore the zoom&brush
-                        context.select(".brush").call
-                        (brush.move, [x2(tempX[0]), x2(tempX[1])]);
-                    }
+                    //restore the zoom&brush
+                    context.select(".brush").call
+                    (brush.move, [x2(tempX[0]), x2(tempX[1])]);
                 }
             }
+
 
             function updateGraph(series) {
                 var allDatapoints = [];
@@ -764,10 +837,11 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // when there is no data for series, display a message
             function displayEmptyGraph(containerName, width, height, margin, errorMessage) {
-                d3.select(containerName).append('svg')
-                    .attr('width', width + margin.left + margin.right)
-                    .attr('height', height + margin.top + margin.bottom)
-                    .append("text")
+                if(svg) svg.remove();
+                svg = d3.select(containerName).append('svg')
+                        .attr('width', width + margin.left + margin.right)
+                        .attr('height', height + margin.top + margin.bottom);
+                svg.append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", margin.top + height/2)
                     .style("text-anchor", "middle")
@@ -871,11 +945,11 @@ angular.module('argus.directives.charts.lineChart', [])
             function toggleBrush() {
                 if (isBrushOn) {
                     //disable the brush
-                    svg.select('.context').attr('display', 'none');
+                    svg_g.select('.context').attr('display', 'none');
                     isBrushOn = false;
                 } else {
                     //enable the brush
-                    svg.select('.context').attr('display', null);
+                    svg_g.select('.context').attr('display', null);
                     isBrushOn = true;
                 }
             }
@@ -884,11 +958,11 @@ angular.module('argus.directives.charts.lineChart', [])
             function toggleBrushMain() {
                 //enable main chart brush
                 if (scope.isBrushMainOn) {
-                    svg.select('.brushMain').attr('display', null);
+                    brushMainG.attr('display', null);
                     //isBrushMainOn = false;   ---------ng-model is auto changed.
                 } else {
                     //disable main chart brush
-                    svg.select('.brushMain').attr('display', 'none');
+                    brushMainG.attr('display', 'none');
                     //isBrushMainOn = true;
                 }
             }
@@ -910,10 +984,10 @@ angular.module('argus.directives.charts.lineChart', [])
             //toggle tooltip
             function toggleTooltip() {
                 if (isTooltipOn) {
-                    svg.select(".tooltip").attr("display", 'none');
+                    svg_g.select(".tooltip").attr("display", 'none');
                     isTooltipOn = false;
                 } else {
-                    svg.select(".tooltip").attr("display", null);
+                    svg_g.select(".tooltip").attr("display", null);
                     isTooltipOn = true;
                 }
             }
