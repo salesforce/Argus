@@ -17,11 +17,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
         // give each series an unique ID if it has data
-        if (series[0].constructor !== String) {
-            for (var i = 0; i < series.length; i++) {
-                // use graphClassName to bind all the graph element of a metric together
-                lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
-            }
+        for (var i = 0; i < series.length; i++) {
+            // use graphClassName to bind all the graph element of a metric together
+            lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
         }
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
@@ -131,11 +129,14 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
                 } else {
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
-                    console.log( 'No data found for the metric expression');
-                    tempSeries = ['No data found for the metric expression: ' +
-                                            JSON.stringify(metricItem.expression)];
+                    console.log('Empty result returned for the metric expression');
+                    tempSeries = [{
+                        noData: true,
+                        errorMessage: 'Empty result returned for the metric expression',
+                        name: JSON.stringify(metricItem.expression).slice(1, -1),
+                        color: 'Maroon'
+                    }];
                 }
-
                 Array.prototype.push.apply(series, tempSeries);
                 // decrement metric count each time an expression is added to the series.
                 metricCount = metricCount - 1;
@@ -149,11 +150,14 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
             }, function (error) {
                 // growl.error(data.message);
-                console.log( 'Metric expression does not exist in database');
-                var emptyDataSeries = error.statusText + '(' + error.status + ') - ' +
-                                        error.data.message.substring(0, 31) + ': "' +
-                                        error.config.params.expression + '"';
-                Array.prototype.push.apply(series, [emptyDataSeries]);
+                console.log('Metric expression does not exist in database');
+                var tempSeries = [{
+                    invalidMetric: true,
+                    errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+                    name: error.config.params.expression,
+                    color: 'Black'
+                }];
+                Array.prototype.push.apply(series, tempSeries);
 
                 metricCount = metricCount - 1;
 
