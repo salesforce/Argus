@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.ws.resources;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.MetricDto;
@@ -43,11 +44,13 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -157,10 +160,15 @@ public class MetricResources extends AbstractResource {
         List<Metric> metrics = new ArrayList<Metric>();
 
         for (String expression : expressions) {
-            List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
-
-            metrics.addAll(metricsForThisExpression);
+        	try {
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		metrics.addAll(metricsForThisExpression);
+        	} catch(WildcardExpansionLimitExceededException e) {
+        		metricService.dispose();
+        		throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+        	}
         }
+        
         metricService.dispose();
         return metrics;
     }

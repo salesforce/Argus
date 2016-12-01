@@ -133,7 +133,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     tempSeries = [{
                         noData: true,
                         errorMessage: 'Empty result returned for the metric expression',
-                        name: JSON.stringify(metricItem.expression),
+                        name: JSON.stringify(metricItem.expression).slice(1, -1),
                         color: 'Maroon'
                     }];
                 }

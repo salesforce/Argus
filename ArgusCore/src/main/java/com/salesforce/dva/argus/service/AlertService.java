@@ -245,6 +245,13 @@ public interface AlertService extends Service {
     List<String> getSupportedNotifiers();
 
     /**
+     * Returns a list of shared alerts.
+     *
+     * @return  The list of all alerts. Will never be null, but may be empty.
+     */
+    List<Alert> findSharedAlerts();
+    
+    /**
      * Returns the notifier instance corresponding to the supported notifier type.
      *
      * @param   notifier  The supported notifier type.

@@ -41,10 +41,8 @@ import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
 import java.math.BigInteger;
-import java.text.MessageFormat;
 import java.util.List;
 import javax.persistence.EntityManager;
 
@@ -91,9 +89,9 @@ public class DefaultHistoryService extends DefaultJPAService implements HistoryS
         }
     }
 
-    @Override
+    
     @Transactional
-    public History updateHistory(History history) {
+    private History _updateHistory(History history) {
         requireNotDisposed();
         requireArgument(history != null, "Null history cannot be Updated.");
 
@@ -105,92 +103,77 @@ public class DefaultHistoryService extends DefaultJPAService implements HistoryS
 
     @Override
     @Transactional
-    public History createHistory(String message, JPAEntity entity, JobStatus jobStatus, long waitTime, long executionTime, Object... params) {
-        History history = new History(MessageFormat.format(message, params), SystemConfiguration.getHostname(), entity, jobStatus, waitTime,
-            executionTime);
+    public History createHistory(JPAEntity entity, String message, JobStatus jobStatus, long executionTime) {
+        History history = new History(message, SystemConfiguration.getHostname(), entity.getId(), jobStatus, executionTime);
 
-        return updateHistory(history);
+        return _updateHistory(history);
     }
 
-    @Override
-    @Transactional
-    public History findHistoryByPrimaryKey(BigInteger id) {
-        requireNotDisposed();
-        requireArgument(id != null && id.compareTo(ZERO) > 0, "Id must be a positive non-zero value.");
-
-        History result = findEntity(emf.get(), id, History.class);
-
-        _logger.debug("Query for job history having id {} resulted in : {}", id, result);
-        return result;
-    }
-
+//    @Override
+//    @Transactional
+//    public History findHistoryByPrimaryKey(BigInteger id) {
+//        requireNotDisposed();
+//        requireArgument(id != null && id.compareTo(ZERO) > 0, "Id must be a positive non-zero value.");
+//
+//        History result = findEntity(emf.get(), id, History.class);
+//
+//        _logger.debug("Query for job history having id {} resulted in : {}", id, result);
+//        return result;
+//    }
+//
     @Override
     public List<History> findByJob(BigInteger entityId) {
-        return findByJob(entityId, null);
+        return findByJob(entityId, Integer.MAX_VALUE);
     }
 
     @Override
     @Transactional
-    public List<History> findByJob(BigInteger entityId, BigInteger limit) {
+    public List<History> findByJob(BigInteger entityId, int limit) {
         requireNotDisposed();
         requireArgument(entityId != null && entityId.compareTo(ZERO) > 0, "Id must be a positive non-zero value.");
 
-        EntityManager em = emf.get();
-        JPAEntity entity = findEntity(em, entityId, JPAEntity.class);
+        List<History> result = History.findHistoryByJob(emf.get(), entityId, limit);
 
-        if (entity == null) {
-            throw new IllegalArgumentException(MessageFormat.format("The job with Id {0} does not exist.", entityId));
-        }
-
-        List<History> result = History.findHistoryByJob(em, entity, limit);
-
-        _logger.debug("Query for job history with job Id {} returned {} records", entity.getId(), result.size());
+        _logger.debug("Query for job history with job Id {} returned {} records", entityId, result.size());
         return result;
     }
 
     @Override
     @Transactional
-    public List<History> findByJobAndStatus(BigInteger entityId, BigInteger limit, JobStatus jobStatus) {
+    public List<History> findByJobAndStatus(BigInteger entityId, int limit, JobStatus jobStatus) {
         requireNotDisposed();
         requireArgument(entityId != null && entityId.compareTo(ZERO) > 0, "Id must be a positive non-zero value.");
         requireArgument(jobStatus != null, "Job status cannot be null.");
 
-        EntityManager em = emf.get();
-        JPAEntity entity = findEntity(em, entityId, JPAEntity.class);
+        List<History> result = History.findHistoryByJobAndStatus(emf.get(), entityId, limit, jobStatus);
 
-        if (entity == null) {
-            throw new IllegalArgumentException(MessageFormat.format("The job with Id {0} does not exist.", entityId));
-        }
-
-        List<History> result = History.findHistoryByJobAndStatus(em, entity, limit, jobStatus);
-
-        _logger.debug("Query for job history with job Id {} and status {} returned {} records", entity.getId(), jobStatus, result.size());
+        _logger.debug("Query for job history with job Id {} and status {} returned {} records", entityId, jobStatus, result.size());
         return result;
     }
 
-    @Override
-    @Transactional
-    public History appendMessageAndUpdate(BigInteger id, String message, JobStatus jobStatus, long waitTime, long executionTime) {
-        requireNotDisposed();
-
-        History history = findHistoryByPrimaryKey(id);
-
-        if (history == null) {
-            throw new SystemException("Job History object does not exist so can not be updated.");
-        }
-        if (message != null && message.length() > 0) {
-            history.setMessage(history.getMessage() + message);
-        }
-        if (jobStatus != null) {
-            history.setJobStatus(jobStatus);
-        }
-        if (waitTime > 0) {
-            history.setWaitTime(waitTime);
-        }
-        if (executionTime > 0) {
-            history.setExecutionTime(executionTime);
-        }
-        return updateHistory(history);
-    }
+//    @Override
+//    @Transactional
+//    public History appendMessageAndUpdate(BigInteger id, String message, JobStatus jobStatus, long waitTime, long executionTime) {
+//        requireNotDisposed();
+//
+//        History history = findHistoryByPrimaryKey(id);
+//
+//        if (history == null) {
+//            throw new SystemException("Job History object does not exist so can not be updated.");
+//        }
+//        if (message != null && message.length() > 0) {
+//            history.setMessage(history.getMessage() + message);
+//        }
+//        if (jobStatus != null) {
+//            history.setJobStatus(jobStatus);
+//        }
+//        if (waitTime > 0) {
+//            history.setWaitTime(waitTime);
+//        }
+//        if (executionTime > 0) {
+//            history.setExecutionTime(executionTime);
+//        }
+//        return updateHistory(history);
+//    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

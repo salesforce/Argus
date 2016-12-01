@@ -326,23 +326,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				continue;
 			}
 
-			History history = _historyService.createHistory(addDateToMessage(JobStatus.STARTED.getDescription()), alert, JobStatus.STARTED, 0, 0);
-
+			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertIdWithTimestamp.alertEnqueueTime);
 
 				if (metrics == null || metrics.isEmpty()) {
 					logMessage = "The metric expression associated with the alert did not return any metric data.";
 					_logger.info(logMessage);
-					appendMessageNUpdateHistory(history.getId(), logMessage, null, 0, 0);
+					appendMessageNUpdateHistory(history, logMessage, null, 0);
 					continue;
 				}
 				for (Metric metric : metrics) {
-					if (!shouldEvaluateMetric(metric, alert, history.getId())) {
+					if (!shouldEvaluateMetric(metric, alert, history)) {
 						continue;
 					}
 					for (Notification notification : alert.getNotifications()) {
-						boolean successfullyProcessed = processNotification(notification, history.getId(), metric, alert, em);
+						boolean successfullyProcessed = processNotification(notification, history, metric, alert, em);
 
 						if (!successfullyProcessed) {
 							failedNotificationsCount++;
@@ -353,21 +353,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (failedNotificationsCount > 0) {
 					logMessage = MessageFormat.format("No.of notifications failed: {0}", failedNotificationsCount);
 					_logger.info(logMessage);
-					appendMessageNUpdateHistory(history.getId(), logMessage, null, 0, 0);
+					appendMessageNUpdateHistory(history, logMessage, null, 0);
 				}
-				appendMessageNUpdateHistory(history.getId(), "Alert was evaluated successfully.", JobStatus.SUCCESS, 0, jobEndTime - jobStartTime);
+				appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, jobEndTime - jobStartTime);
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate an alert : {0}. Reason: {1}", alert.getName(), mde.getMessage());
 				_logger.warn(logMessage);
-				appendMessageNUpdateHistory(history.getId(), mde.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
+				appendMessageNUpdateHistory(history, mde.toString(), JobStatus.FAILURE, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				try {
-					appendMessageNUpdateHistory(history.getId(), ex.toString(), JobStatus.FAILURE, 0, jobEndTime - jobStartTime);
+					appendMessageNUpdateHistory(history, ex.toString(), JobStatus.FAILURE, jobEndTime - jobStartTime);
 					_logger.warn("Failed to evaluate alert : {}. Reason: {}", alert, ex.getMessage());
 				} finally {
 					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
@@ -376,6 +376,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			} finally {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
+				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 				historyList.add(history);
 			}
 		} // end for
@@ -393,8 +394,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 *
 	 * @return  Returns true if the notification is successfully evaluated.
 	 */
-	private boolean processNotification(Notification notification, BigInteger historyId, Metric metric, Alert alert, EntityManager em) {
-		if (!shouldEvaluateNotification(notification, historyId)) {
+	private boolean processNotification(Notification notification, History history, Metric metric, Alert alert, EntityManager em) {
+		if (!shouldEvaluateNotification(notification, history)) {
 			return true;
 		}
 
@@ -404,13 +405,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Long triggerFiredTime = getTriggerFiredDatapointTime(notification.getFiredTrigger(), metric);
 
 			if (triggerFiredTime == null) {
-				clearNotification(notification.getFiredTrigger(), metric, historyId, notification, em, alert);
+				clearNotification(notification.getFiredTrigger(), metric, history, notification, em, alert);
 			}
 		}
 		try {
 			if (!notification.onCooldown()) {
 				for (Trigger trigger : notification.getTriggers()) {
-					boolean triggerFired = evaluateTrigger(trigger, metric, historyId, notification, em, alert);
+					boolean triggerFired = evaluateTrigger(trigger, metric, history, notification, em, alert);
 
 					if (triggerFired) {
 						break;
@@ -420,13 +421,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(),
 						getDateMMDDYYYY(notification.getCooldownExpiration()));
 				_logger.info(logMessage);
-				appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+				appendMessageNUpdateHistory(history, logMessage, null, 0);
 			}
 		} catch (Exception ex) {
 			logMessage = MessageFormat.format("Exception occured while processing the notification: {0}. Reason: {1}", notification.getName(),
 					ex.toString());
 			_logger.warn("Exception occured while processing the notification: {}. Reason: {}", notification, ex.toString());
-			appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+			appendMessageNUpdateHistory(history, logMessage, null, 0);
 			return false;
 		}
 		return true;
@@ -444,29 +445,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 *
 	 * @return  Returns true if the trigger is fired and notification is sent otherwise false.
 	 */
-	private boolean evaluateTrigger(Trigger trigger, Metric metric, BigInteger historyId, Notification notification, EntityManager em, Alert alert) {
+	private boolean evaluateTrigger(Trigger trigger, Metric metric, History history, Notification notification, EntityManager em, Alert alert) {
 		Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric);
 
 		if (triggerFiredTime != null) {
-			sendNotification(trigger, metric, historyId, notification, em, alert, triggerFiredTime);
+			sendNotification(trigger, metric, history, notification, em, alert, triggerFiredTime);
 			return true;
 		} else {
 			String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired for the notification {2}.",
 					trigger.getName(), getMetricExpression(metric), notification.getName());
 
 			_logger.info(logMessage);
-			_historyService.appendMessageAndUpdate(historyId, logMessage, null, 0, 0);
+			appendMessageNUpdateHistory(history, logMessage, null, 0);
 		}
 		return false;
 	}
 
-	private void sendNotification(Trigger trigger, Metric metric, BigInteger historyId, Notification notification, EntityManager em, Alert alert,
+	private void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, EntityManager em, Alert alert,
 			Long triggerFiredTime) {
 		String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired for the notification {2}.",
 				trigger.getName(), getMetricExpression(metric), notification.getName());
 
 		_logger.info(logMessage);
-		appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+		appendMessageNUpdateHistory(history, logMessage, null, 0);
 
 		String value = metric.getDatapoints().get(triggerFiredTime);
 
@@ -482,10 +483,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpiration()));
 		_logger.info(logMessage);
-		appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+		appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private void clearNotification(Trigger trigger, Metric metric, BigInteger historyId, Notification notification, EntityManager em, Alert alert) {
+	private void clearNotification(Trigger trigger, Metric metric, History history, Notification notification, EntityManager em, Alert alert) {
 		String logMessage = null;
 		String value = "0";
 
@@ -499,10 +500,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notifier.clearNotification(context);
 		logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
-		appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+		appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private boolean shouldEvaluateMetric(Metric metric, Alert alert, BigInteger historyId) {
+	private boolean shouldEvaluateMetric(Metric metric, Alert alert, History history) {
 		String logMessage = null;
 
 		if (metric.getDatapoints().isEmpty()) {
@@ -511,28 +512,33 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				logMessage = MessageFormat.format("Metric data does not exit for metric: {0}. Sent notification for missing data.",
 						getMetricExpression(metric));
 				_logger.info(logMessage);
-				appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+				appendMessageNUpdateHistory(history, logMessage, null, 0);
 			} else {
 				logMessage = MessageFormat.format("Metric data does not exit for metric: {0}. Missing data notification was not enabled.",
 						getMetricExpression(metric));
 				_logger.info(logMessage);
-				appendMessageNUpdateHistory(historyId, logMessage, JobStatus.SUCCESS, 0, 0);
+				appendMessageNUpdateHistory(history, logMessage, null, 0);
 			}
 			return false;
 		}
 		return true;
 	}
 
-	private History appendMessageNUpdateHistory(BigInteger historyId, String message, JobStatus jobStatus, long waitTime, long executionTime) {
-		return _historyService.appendMessageAndUpdate(historyId, addDateToMessage(message), jobStatus, waitTime, executionTime);
+	private void appendMessageNUpdateHistory(History history, String message, JobStatus jobStatus, long executionTime) {
+		String oldMessage = history.getMessage();
+		history.setMessage(oldMessage + addDateToMessage(message));
+		if(jobStatus != null) {
+			history.setJobStatus(jobStatus);
+		}
+		history.setExecutionTime(executionTime);
 	}
 
-	private boolean shouldEvaluateNotification(Notification notification, BigInteger historyId) {
+	private boolean shouldEvaluateNotification(Notification notification, History history) {
 		if (notification.getTriggers().isEmpty()) {
 			String logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
 
 			_logger.info(logMessage);
-			appendMessageNUpdateHistory(historyId, logMessage, null, 0, 0);
+			appendMessageNUpdateHistory(history, logMessage, null, 0);
 			return false;
 		}
 		return true;
@@ -681,6 +687,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			result.add(notifier.toString());
 		}
 		return result;
+	}
+	
+	@Override
+	@Transactional
+	public List<Alert> findSharedAlerts() {
+		requireNotDisposed();
+		return Alert.findSharedAlerts(emf.get());
 	}
 
 	/**

@@ -46,6 +46,7 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
+import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -85,7 +86,10 @@ public class Notification extends JPAEntity implements Serializable {
     )
     List<Trigger> triggers = new ArrayList<>(0);
     boolean active = false;
+    boolean isSRActionable = false;
     Trigger firedTrigger;
+    @Lob
+    private String customText;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -106,6 +110,7 @@ public class Notification extends JPAEntity implements Serializable {
         setSubscriptions(subscriptions);
         setCooldownPeriod(cooldownPeriod);
         setActive(false);
+        setSRActionable(false);
     }
 
     /** Creates a new Notification object. */
@@ -341,6 +346,25 @@ public class Notification extends JPAEntity implements Serializable {
         this.active = active;
     }
 
+    
+    /**
+     * Indicates whether the notification is monitored by SR
+     *
+     * @return  True if notification is monitored by SR
+     */
+    public boolean getSRActionable() {
+        return isSRActionable;
+    }
+
+    /**
+     * Specifies whether the notification should be monitored by SR (actionable by SR)
+     *
+     * @param  isSRActionable  True if  SR should monitor the notification
+     */
+    public void setSRActionable(boolean isSRActionable) {
+        this.isSRActionable = isSRActionable;
+    }
+
     /**
      * Indicates the trigger which caused the notification to last be sent.
      *
@@ -359,7 +383,24 @@ public class Notification extends JPAEntity implements Serializable {
         this.firedTrigger = firedTrigger;
     }
 
-    @Override
+    
+    /**
+     * Return the custom text in order to include in the notification
+	 * @return the customText is optional
+	 */
+	public String getCustomText() {
+		return customText;
+	}
+
+	/**
+	 * Sets the custom text to the notification
+	 * @param customText customText is optional
+	 */
+	public void setCustomText(String customText) {
+		this.customText = customText;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 5;
 
@@ -391,7 +432,8 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", cooldownExpiration=" + cooldownExpiration + ", triggers=" + triggers + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", cooldownExpiration=" + cooldownExpiration + ","
+            		+ ", triggers=" + triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
