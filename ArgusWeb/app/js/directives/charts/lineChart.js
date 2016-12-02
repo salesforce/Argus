@@ -21,7 +21,7 @@ angular.module('argus.directives.charts.lineChart', [])
         restrict: 'E',
         replace: true,
         scope: {
-            chartId: '=chartid',
+            chartConfig: '=chartconfig',
             series: '=series',
             dateConfig: '=dateconfig'
         },
@@ -72,7 +72,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var topToolbar = $(element); //jquery selection
             var container = topToolbar.parent()[0];//real DOM
 
-            var chartId = scope.chartId;
+            var chartId = scope.chartConfig.chartId;
             var series = scope.series;
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;

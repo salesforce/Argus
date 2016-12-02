@@ -12,17 +12,22 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // create a new scope to pass to compiled line-chart directive
         var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
-        // assign chartId, series data, time domain to new $scope
-        lineChartScope.chartId = newChartId;
+        // assign items to new $scope
+        lineChartScope.chartConfig = {
+            chartId: newChartId,
+            chartTitle: scope.options.title || ''   // title is an attribute of <option>, and could be undefined
+        };
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
+
         // give each series an unique ID if it has data
         for (var i = 0; i < series.length; i++) {
             // use graphClassName to bind all the graph element of a metric together
             lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
         }
+
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartid="chartId" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
 
     function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig) {
@@ -119,13 +124,13 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
                         // update status indicator
                         ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+
+                        // add 'smallChart' flag to scope
+                        scope.chartOptions = {smallChart: smallChart};
                     }
 
                     // metric item attributes are assigned to the data (i.e. name, color, etc.)
                     tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
-
-                    // add each metric item & data to series list
-
 
                 } else {
                     // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
@@ -142,9 +147,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 metricCount = metricCount - 1;
 
                 if (metricCount === 0) {
-                    // display chart with series data and populate annotations
-                    // bindDataToChart(newChartId, series, updatedAnnotationList);
-
+                    // check for Annotations
                     setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
                 }
 
