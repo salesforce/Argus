@@ -127,7 +127,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
-            var numericalDate = '%-m/%-d/%y';   // %x = %m/%d/%Y  11/5/2016
+            var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
