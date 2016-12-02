@@ -41,19 +41,19 @@
 				<a class="glyphicon glyphicon-option-vertical"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li>
-					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartId}}" class="pointer" ng-model="isBrushOn" />
+					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartId}}" class="pointer" ng-model="menuOption.isBrushOn" />
 					<label for="toggle-brush-{{chartId}}" title="Toggle display of timeline graph">Display timeline</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartId}}" ng-model="isTooltipOn" />
+					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartId}}" ng-model="menuOption.isTooltipOn" />
 					<label for="toggle-tooltip-{{chartId}}" title="Toggle tooltip on mouseover">Display tooltips</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartId}}" ng-model="isBrushMainOn" />
+					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartId}}" ng-model="menuOption.isBrushMainOn" />
 					<label for="toggle-brush-main-{{chartId}}" title="Enable brush selection on main chart">Enable brushing</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartId}}" class="pointer" ng-model="isWheelOn" />
+					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartId}}" class="pointer" ng-model="menuOption.isWheelOn" />
 					<label for="toggle-wheel-{{chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
 				</li>
 				</ul>
