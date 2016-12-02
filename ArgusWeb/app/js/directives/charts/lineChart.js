@@ -30,6 +30,10 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
             $scope.sources = [];
+            // can be used for future modal window
+            $scope.noDataSeries = [];
+            $scope.invalidSeries = [];
+
             $scope.toggleSource = function(source) {
                 toggleGraphOnOff(source);
             };
@@ -54,8 +58,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 var displayProperty = source.displaying? 'none' : null;
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
-                    // .transition().duration(100)
-                    // .style('opacity', newOpacity);
                     .style('display', displayProperty);
             }
         }],
@@ -153,7 +155,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var formatValue = d3.format(',');
 
             //graph setup variables
-            var x, x2, y, y2, z,
+            var x, x2, y, y2,
                 nGridX = 7, nGridY = 5,
                 xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
                 line, line2, area, area2,
@@ -161,8 +163,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
                 focus, context, clip, brushG, brushMainG, chartRect, flags,//g
                 tip, tipBox, tipItems,
-                crossLine
-                ;
+                crossLine,
+                names, colors, graphClassNames;
+
+            // color scheme
+            var z = d3.scaleOrdinal(d3.schemeCategory20);
 
             // Base graph setup, initialize all the graph variables
             function setGraph() {
@@ -177,7 +182,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y = d3.scaleLinear().range([height, 0]);
                 y2 = d3.scaleLinear().range([height2, 0]);
-                z = d3.scaleOrdinal(d3.schemeCategory20);
 
                 //Axis
                 xAxis = d3.axisBottom()
@@ -259,7 +263,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 //Add elements to SVG
                 svg = d3.select(container).append('svg')
                     .attr('width', width + margin.left + margin.right)
-                    .attr('height', height + margin.top + margin.bottom)
+                    .attr('height', height + margin.top + margin.bottom);
 
                 svg_g = svg
                     .append('g')
@@ -358,18 +362,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // Graph tools that only needs to be created once in theory; all of these are data independent
             function setGraphTools(series) {
-                var names = series.map(function (metric) {
-                    return metric.name;
-                });
-                var colors = series.map(function (metric) {
-                    return metric.color;
-                });
-                var graphClassNames = series.map(function (metric) {
-                    return metric.graphClassName;
-                });
                 // set z to metric names and set legend content
                 z.domain(names);
-                legendCreator(names, colors, graphClassNames);
                 // create mouse over circle, tooltip items, lines and brush lines
                 series.forEach(function (metric) {
                     if (metric.data.length === 0) return;
@@ -769,7 +763,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     displayEmptyGraph(container, width, height, margin, series[0]);
                     return;
                 }
-
+                //TODO: x will not be defined when there is no graph
                 var tempX = x.domain(); //remember that when resize
 
                 clip.attr('width', width)
@@ -852,16 +846,21 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             // when there is no data for series, display a message
-            function displayEmptyGraph(containerName, width, height, margin, errorMessage) {
-                if(svg) svg.remove();
+            function displayEmptyGraph(containerName, width, height, margin, messageToDisplay) {
+                if (svg) svg.remove();
                 svg = d3.select(containerName).append('svg')
-                        .attr('width', width + margin.left + margin.right)
-                        .attr('height', height + margin.top + margin.bottom);
-                svg.append("text")
+                    .attr('width', width + margin.left + margin.right)
+                    .attr('height', height + margin.top + margin.bottom);
+                svg.selectAll('text')
+                    .data(messageToDisplay)
+                    .enter()
+                    .append("text")
                     .attr("x", margin.left + width/2)
-                    .attr("y", margin.top + height/2)
+                    .attr("y", function (d, i) {
+                        return 20*i + margin.top + height/2;
+                    })
                     .style("text-anchor", "middle")
-                    .text(errorMessage);
+                    .text(function(d){return d;});
             }
 
             function updateAnnotations() {
@@ -874,7 +873,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     // TODO: do any dashboards have flag data for multiple series?
                     return;
                 }
-                
+
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 var label = flagsG.selectAll("flagItem")
                     .data(flagSeries)
@@ -1067,22 +1066,57 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // create graph only when there is data
             if (!series || series.length === 0) {
+                //this should never happen
                 console.log("Empty data from chart data processing");
-                return;
-            } else if (series[0].constructor === String) {
-                // chart data processing return a message for empty data
-                displayEmptyGraph(container, width, height, margin, series[0]);
             } else {
-                // Update graph on new metric results
-                setGraph();
-                setGraphTools(series);
-                updateGraph(series);
+                // set up legend
+                names = series.map(function(metric) { return metric.name; });
+                colors = series.map(function(metric) { return metric.color; });
+                graphClassNames = series.map(function(metric) { return metric.graphClassName; });
+                legendCreator(names, colors, graphClassNames);
+                // check if there is anything to graph
+                var hasNoData, emptyReturn, invalidExpression, haveThingsToGraph;
+                for (var i = 0; i < series.length; i++) {
+                    if (series[i].invalidMetric) {
+                        scope.invalidSeries.push(series[i]);
+                        invalidExpression = true;
+                    } else if (series[i].noData) {
+                        scope.noDataSeries.push(series[i]);
+                        emptyReturn = true;
+                    } else if (series[i].data.length === 0) {
+                        hasNoData = true;
+                    } else {
+                        haveThingsToGraph = true;
+                    }
+                }
 
-                // initialize starting point for graph settings & info
-                addOverlay();
-                updateDateRange();
-                enableBrushTime();
-                reset();    //to remove the brush cover first for user the drag
+                if (haveThingsToGraph) {
+                    // Update graph on new metric results
+                    setGraph();
+                    setGraphTools(series);
+                    updateGraph(series);
+                    // initialize starting point for graph settings & info
+                    addOverlay();
+                    updateDateRange();
+                    enableBrushTime();
+                    reset();    //to remove the brush cover first for user the drag
+                } else {
+                    // generate content for no graph message
+                    var messageToDisplay = ['No graph available'];
+                    if (invalidExpression) {
+                        messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        messageToDisplay.push('(Failed metrics are labeled black in the legend)');
+                    }
+                    if (emptyReturn) {
+                        messageToDisplay.push('Metric expressions have no return value from TSDB');
+                        messageToDisplay.push('(Empty returned metrics are labeled maroon in the legend)');
+                    }
+                    if (hasNoData) {
+                        messageToDisplay.push('No data found for metric expressions');
+                        messageToDisplay.push('(Series names are shown with normal colors in the legend)');
+                    }
+                    displayEmptyGraph(container, width, height, margin, messageToDisplay);
+                }
             }
 
 
