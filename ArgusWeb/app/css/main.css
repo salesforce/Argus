@@ -207,6 +207,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 }
 
 /* chart styles */
+.chartTitle {margin-top:0; margin-bottom:0; text-align:center;}
 
 /* main elements */
 .chartContainer {margin-top:2em; padding-top:1em; border:solid 1px #CCC; border-radius:5px; background:#FBFBFB;}

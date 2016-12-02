@@ -21,7 +21,7 @@ angular.module('argus.directives.charts.lineChart', [])
         restrict: 'E',
         replace: true,
         scope: {
-            chartId: '=chartid',
+            chartConfig: '=chartconfig',
             series: '=series',
             dateConfig: '=dateconfig'
         },
@@ -72,7 +72,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var topToolbar = $(element); //jquery selection
             var container = topToolbar.parent()[0];//real DOM
 
-            var chartId = scope.chartId;
+            var chartId = scope.chartConfig.chartId;
             var series = scope.series;
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
@@ -127,13 +127,13 @@ angular.module('argus.directives.charts.lineChart', [])
             // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
-            var numericalDate = '%x';   // output same as %m/%d/%Y
+            var numericalDate = '%-m/%-d/%y';   // %x = %m/%d/%Y  11/5/2016
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
             var formatDate = d3.timeFormat(shortDate);
-            var GMTformatDate = d3.utcFormat(shortDate);
+            var GMTformatDate = d3.utcFormat(numericalDate);
 
             var formatValue = d3.format(',');
 
@@ -424,22 +424,30 @@ angular.module('argus.directives.charts.lineChart', [])
                 var OffsetMultiplier = -1;
                 var itemsPerCol = 8;
                 var circleLen = circleRadius * 2;
+
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
                     if (i % itemsPerCol === 0) {
                         OffsetMultiplier++;
                         YOffset = OffsetMultiplier * itemsPerCol;
                     }
-                    var tempData = formatValue(datapoints[i].data[1]);
+
+                    // Y data point - metric specific
+                    var tempData = d3.format('.2s')(datapoints[i].data[1]);
+
+                    // X data point - time
                     var tempDate = new Date(datapoints[i].data[0]);
                     tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
+
                     var circle = group.select("circle." + datapoints[i].graphClassName);
                     var textLine = group.select("text." + datapoints[i].graphClassName);
+
                     circle.attr('cy', 20 * (0.75 + i - YOffset) + Y)
                         .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset * OffsetMultiplier);
                     textLine.attr('dy', 20 * (1 + i - YOffset) + Y)
                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset * OffsetMultiplier)
                         .text(tempDate + " - " + tempData);
+
                     /*
                      // keep this just in case different styles are needed for time and value
                      textLine.append('tspan')
@@ -450,15 +458,18 @@ angular.module('argus.directives.charts.lineChart', [])
                      .text(formatValue(datapoints[i][1]));
                      textLine.append('tspan').attr('dx', 8).text(names[i]);
                      */
+
                     // update XOffset if existing offset is smaller than texLine
                     var tempXOffset = textLine.node().getBBox().width + circleLen + 8;
                     if (tempXOffset > XOffset) {
                         XOffset = tempXOffset;
                     }
                 }
+
                 var tipBounds = group.node().getBBox();
                 tipBox.attr('x', X + tipOffset);
                 tipBox.attr('y', Y + tipOffset);
+
                 if (tipBounds.width === 0 || tipBounds.height === 0) {
                     // when there is no graph, make the tipBox 0 size
                     tipBox.attr('width', 0);
@@ -467,6 +478,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     tipBox.attr('width', tipBounds.width + 4 * tipPadding);
                     tipBox.attr('height', tipBounds.height + 2 * tipPadding);
                 }
+
                 // move tooltip on the right if there is not enough to display it on the right
                 var transformAttr;
                 if (X + Number(tipBox.attr('width')) > (width + marginRight) &&
