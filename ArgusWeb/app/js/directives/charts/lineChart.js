@@ -1,10 +1,12 @@
 'use strict';
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', function($timeout) {
+.directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
+    var lineChartIdIndex = 0;
+    var lineChartIdName = 'linechart_'; // in case there are other kind of ag-chart on the page
 
     function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
@@ -59,22 +61,37 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-
-            // set $scope values
-            scope.isWheelOn = false;
-            scope.isBrushOn = true;
-            scope.isBrushMainOn = false;
-            scope.isTooltipOn = true;
-
-            // ---------
-            var topToolbar = $(element); //jquery selection
-            var container = topToolbar.parent()[0];//real DOM
+            scope.lineChartId = ++lineChartIdIndex;
+            /**
+             * not using chartId because when reload the chart by 'sumbit' button
+             * or other single page app navigate button the chartId is not reset
+             * to 1, only by refreshing the page would the chartId be reset to 0
+             */
 
             var chartId = scope.chartId;
             var series = scope.series;
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
+
+            // set $scope values, get them from the local storage
+            scope.menuOption = {
+                isWheelOn : false,
+                isBrushOn : true,
+                isBrushMainOn : false,
+                isTooltipOn : true
+            };
+
+            scope.dashboardId = $routeParams.dashboardId;
+            
+            var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
+            if(menuOption){
+                    scope.menuOption = menuOption;
+            }
+
+            // ---------
+            var topToolbar = $(element); //jquery selection
+            var container = topToolbar.parent()[0];//real DOM
 
             var maxScaleExtent = 100; //zoom in extent
             var currSeries = series;
@@ -134,10 +151,6 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTformatDate = d3.utcFormat(shortDate);
 
             var formatValue = d3.format(',');
-
-            var isWheelOn = false;
-            var isBrushOn = true;
-            var isTooltipOn = true;
 
             //graph setup variables
             var x, x2, y, y2, z,
@@ -561,7 +574,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxisRG.call(yAxisR); //redraw yAxis right
                 xGridG.call(xGrid);
                 yGridG.call(yGrid);
-                if (!isBrushOn) {
+                if (!scope.menuOption.isBrushOn) {
                     context.attr("display", "none");
                 }
                 updateDateRange();
@@ -736,6 +749,9 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 containerWidth = $(container).width();
                 width = containerWidth - marginLeft - marginRight;
+
+                if(width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
+
                 margin = {
                     top: marginTop,
                     right: marginRight,
@@ -772,7 +788,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 brushMainG.call(brushMain);
 
                 //width related svg element
-                svg.attr('width', width + margin.left + margin.right)
+                svg.attr('width', width + margin.left + margin.right);
                 svg_g.attr('width', width)
                      .attr('transform', 'translate(' + margin.left + ','+ margin.top + ')');
 
@@ -898,11 +914,11 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('height', height)
                     .on('mouseover', function () {
                         focus.style('display', null);
-                        if (isTooltipOn) tip.style('display', null);
+                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
-                        if (isTooltipOn) tip.style('display', 'none');
+                        if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
                     })
                     .on('mousemove', mouseMove)
                     .call(zoom)
@@ -921,21 +937,21 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brushMain)
                     .on('mouseover', function () {
                         focus.style('display', null);
-                        if (isTooltipOn) tip.style('display', null);
+                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
-                        if (isTooltipOn) tip.style('display', 'none');
+                        if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
                     })
                     .on('mousemove', mouseMove);
 
-                if (scope.isBrushMainOn) {
+                if (scope.menuOption.isBrushMainOn) {
                     brushMainG.attr('display', null);
                 } else {
                     brushMainG.attr('display', 'none');
                 }
                 // no wheel zoom on page load
-                if (!isWheelOn) {
+                if (!scope.menuOption.isWheelOn) {
                     chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
                     brushMainG.on("wheel.zoom", null);
                 }
@@ -943,53 +959,49 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //toggle time brush
             function toggleBrush() {
-                if (isBrushOn) {
+                if (scope.menuOption.isBrushOn) {
                     //disable the brush
-                    svg_g.select('.context').attr('display', 'none');
-                    isBrushOn = false;
+                    svg_g.select('.context').attr('display', null);
                 } else {
                     //enable the brush
-                    svg_g.select('.context').attr('display', null);
-                    isBrushOn = true;
+                    svg_g.select('.context').attr('display', 'none');
                 }
+                updateStorage();
             }
 
             //toggle time brush
             function toggleBrushMain() {
                 //enable main chart brush
-                if (scope.isBrushMainOn) {
+                if (scope.menuOption.isBrushMainOn) {
                     brushMainG.attr('display', null);
-                    //isBrushMainOn = false;   ---------ng-model is auto changed.
                 } else {
                     //disable main chart brush
                     brushMainG.attr('display', 'none');
-                    //isBrushMainOn = true;
                 }
+                updateStorage();
             }
 
             //toggle the mouse wheel for zoom
             function toggleWheel() {
-                if (isWheelOn) {
+                if (scope.menuOption.isWheelOn) {
                     chartRect.on("wheel.zoom", null);
                     brushMainG.on("wheel.zoom", null);
-                    isWheelOn = false;
                 } else {
                     chartRect.call(zoom);
                     brushMainG.call(zoom)
                         .on("mousedown.zoom", null);
-                    isWheelOn = true;
                 }
+                updateStorage();
             }
 
             //toggle tooltip
             function toggleTooltip() {
-                if (isTooltipOn) {
+                if (scope.menuOption.isTooltipOn) {
                     svg_g.select(".tooltip").attr("display", 'none');
-                    isTooltipOn = false;
                 } else {
                     svg_g.select(".tooltip").attr("display", null);
-                    isTooltipOn = true;
                 }
+                updateStorage();
             }
 
             //date range
@@ -1053,11 +1065,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-            //TODO improve the resize efficiency if performance becomes an issue
-            element.on('$destroy', function(){
-                resizeJobs = [];
-            });
-            resizeJobs.push(resize);
             // create graph only when there is data
             if (!series || series.length === 0) {
                 console.log("Empty data from chart data processing");
@@ -1078,6 +1085,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 reset();    //to remove the brush cover first for user the drag
             }
 
+
+            function updateStorage(){
+                Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
+            }
             //button set up
             $('[name=reset]', topToolbar).click(reset);
             $('[name=oneHour]', topToolbar).click(brushMinute(60));
@@ -1091,6 +1102,15 @@ angular.module('argus.directives.charts.lineChart', [])
             $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
             $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
             $('[name=toggle-tooltip]', topToolbar).change(toggleTooltip);
+
+            //TODO improve the resize efficiency if performance becomes an issue
+            element.on('$destroy', function(){
+                if(lineChartIdIndex){
+                    resizeJobs = [];
+                    lineChartIdIndex = 0;
+                }
+            });
+            resizeJobs.push(resize);
         }
     };
 }]);
