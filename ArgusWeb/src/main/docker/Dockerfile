@@ -7,7 +7,7 @@ RUN npm install -g grunt
 COPY argusWeb /usr/argus/argusWeb
 WORKDIR /usr/argus/argusWeb
 
-RUN npm install && bower --allow-root install
+RUN npm install --quiet && bower --quiet --allow-root install
 RUN grunt replace:local && grunt
 
 EXPOSE 8000
