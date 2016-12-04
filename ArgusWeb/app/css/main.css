@@ -210,7 +210,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .chartTitle {margin-top:0; margin-bottom:0; text-align:center;}
 
 /* main elements */
-.chartContainer {margin-top:2em; padding-top:1em; border:solid 1px #CCC; border-radius:5px; background:#FBFBFB;}
+.chartContainer {margin-top:2em; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FBFBFB;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
@@ -267,6 +267,11 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .grid text {visibility:hidden;}
 .grid path {stroke:#FFF;}
 
+/* timeline graph */
+g.brush rect.selection {stroke:#666;}
+g.brush rect.overlay {stroke:#CCC;}
+g.brush rect.handle {fill:#999; stroke:#333;}
+
 /* flags (annotations) */
 .flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
 
@@ -278,7 +283,4 @@ g.tooltip-items text .timestamp {font-variant: small-caps;}
 g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
 
 /* for charts in table */
-ag-dashboard table{
-  width: 100%;
-  table-layout:fixed;
-}
+ag-dashboard table {width: 100%; table-layout:fixed;}
