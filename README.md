@@ -1,11 +1,11 @@
-Argus  [![Build Status](https://travis-ci.org/SalesforceEng/Argus.svg?branch=master)](https://travis-ci.org/SalesforceEng/Argus)  [![Static Analysis](https://scan.coverity.com/projects/8155/badge.svg)](https://scan.coverity.com/projects/salesforceeng-argus)
+Argus  [![Build Status](https://travis-ci.org/salesforce/Argus.svg?branch=master)](https://travis-ci.org/salesforce/Argus)  [![Static Analysis](https://scan.coverity.com/projects/8155/badge.svg)](https://scan.coverity.com/projects/salesforceeng-argus)
 =====
 
 Argus is a time-series monitoring and alerting platform. It consists of discrete services to configure alerts, ingest and transform metrics & events, send notifications, create namespaces, and to both establish and enforce policies and quotas for usage.
 
 Its architecture allows any and all of these services to be retargeted to new technology as it becomes available, with little to no impact on the users.
 
-To find out more [see the wiki.](https://github.com/SalesforceEng/Argus/wiki)
+To find out more [see the wiki.](https://github.com/salesforce/Argus/wiki)
 
 ![Argus UI](https://cloud.githubusercontent.com/assets/15337203/12775758/53f98b02-ca05-11e5-88b0-1fd11afe335f.png)
 
@@ -72,4 +72,4 @@ Coverage reports are generated in the `target/site/jacoco` directory.
 
 ### Deploying & Running Argus
 
-Please [see the wiki](https://github.com/SalesforceEng/Argus/wiki) for information on how to deploy, configure and run Argus.
+Please [see the wiki](https://github.com/salesforce/Argus/wiki) for information on how to deploy, configure and run Argus.
