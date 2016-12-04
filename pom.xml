@@ -259,7 +259,7 @@
                     <version>0.4.11</version>
                     <configuration>
                         <imageName>${dockerImages.base.name}/${project.artifactId}</imageName>
-                        <dockerDirectory>src/main/docker</dockerDirectory>
+                        <dockerDirectory>${project.basedir}/src/main/docker</dockerDirectory>
                         <forceTags>true</forceTags>
                         <imageTags>
                             <imageTag>${project.version}</imageTag>
@@ -366,6 +366,7 @@
     </profiles>
     <modules>
         <module>ArgusCore</module>
+        <module>ArgusWeb</module>
         <module>ArgusWebServices</module>
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
