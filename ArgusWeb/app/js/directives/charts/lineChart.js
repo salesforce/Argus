@@ -995,12 +995,12 @@ angular.module('argus.directives.charts.lineChart', [])
             //toggle the mouse wheel for zoom
             function toggleWheel() {
                 if (scope.menuOption.isWheelOn) {
-                    chartRect.on("wheel.zoom", null);
-                    brushMainG.on("wheel.zoom", null);
-                } else {
                     chartRect.call(zoom);
                     brushMainG.call(zoom)
                         .on("mousedown.zoom", null);
+                } else {
+                    chartRect.on("wheel.zoom", null);
+                    brushMainG.on("wheel.zoom", null);
                 }
                 updateStorage();
             }
