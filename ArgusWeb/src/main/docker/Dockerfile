@@ -1,6 +1,7 @@
-FROM node:7.2.0
+FROM node:7.2.0-alpine
 
-RUN apt-get -qq update -y && apt-get -qq install -y telnet net-tools less vim
+RUN apk add -q --update vim bash git
+
 RUN npm --quiet install -g bower
 RUN npm --quiet install -g grunt
 
