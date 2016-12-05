@@ -1,6 +1,6 @@
 <div class="topToolbar">
 	<h3 class="chartTitle">{{chartConfig.chartTitle}}</h3>
-	<div id="topTb-{{chartId}}" style="height:30px;">
+	<div id="topTb-{{chartConfig.chartId}}" style="height:30px;">
 		<div class="toolbarItem legend floatPanel" ng-if="!(sources | isEmpty)"
 			ng-class="{open: hover}"
 			ng-mouseover="hover = true"
@@ -41,20 +41,20 @@
 				<a class="glyphicon glyphicon-option-vertical"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li>
-					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartId}}" class="pointer" ng-model="menuOption.isBrushOn" />
-					<label for="toggle-brush-{{chartId}}" title="Toggle display of timeline graph">Display timeline</label>
+					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isBrushOn" />
+					<label for="toggle-brush-{{chartConfig.chartId}}" title="Toggle display of timeline graph">Display timeline</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartId}}" ng-model="menuOption.isTooltipOn" />
-					<label for="toggle-tooltip-{{chartId}}" title="Toggle tooltip on mouseover">Display tooltips</label>
+					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartConfig.chartId}}" ng-model="menuOption.isTooltipOn" />
+					<label for="toggle-tooltip-{{chartConfig.chartId}}" title="Toggle tooltip on mouseover">Display tooltips</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartId}}" ng-model="menuOption.isBrushMainOn" />
-					<label for="toggle-brush-main-{{chartId}}" title="Enable brush selection on main chart">Enable brushing</label>
+					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartConfig.chartId}}" ng-model="menuOption.isBrushMainOn" />
+					<label for="toggle-brush-main-{{chartConfig.chartId}}" title="Enable brush selection on main chart">Enable brushing</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartId}}" class="pointer" ng-model="menuOption.isWheelOn" />
-					<label for="toggle-wheel-{{chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
+					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isWheelOn" />
+					<label for="toggle-wheel-{{chartConfig.chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
 				</li>
 				</ul>
 			</div>
