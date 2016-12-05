@@ -37,6 +37,10 @@
                         <resource>
                             <targetPath>/argusWeb</targetPath>
                             <directory>${project.basedir}</directory>
+                            <excludes>
+                                <exclude>node_modules/**</exclude>
+                                <exclude>target/**</exclude>
+                            </excludes>
                         </resource>
                     </resources>
                 </configuration>
