@@ -405,16 +405,17 @@ angular.module('argus.directives.charts.lineChart', [])
                     if (metric.data.length === 0) {
                         return;
                     }
-                    //TODO: improve this logic
                     var data = metric.data;
                     var i = bisectDate(data, mouseX, 1);
                     var d0 = data[i - 1];
                     var d1 = data[i];
                     var d;
-                    if (!d0) {
+                    // snap the datapoint that lives in the x domain
+                    if (!d0 || d0[0] < x.domain()[0]) {
                         d = d1;
-                    } else if (!d1) {
+                    } else if (!d1 || d1[0] > x.domain()[1]) {
                         d = d0;
+                    // if both data points lives in the domain, choose the closer one to the mouse position
                     } else {
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
@@ -1087,7 +1088,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 graphClassNames = series.map(function(metric) { return metric.graphClassName; });
                 legendCreator(names, colors, graphClassNames);
                 // check if there is anything to graph
-                var hasNoData, emptyReturn, invalidExpression, haveThingsToGraph;
+                var hasNoData, emptyReturn, invalidExpression;
                 var tempSeries = [];
                 for (var i = 0; i < series.length; i++) {
                     if (series[i].invalidMetric) {
