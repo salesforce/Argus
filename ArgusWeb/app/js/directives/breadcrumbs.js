@@ -1,6 +1,7 @@
+'use strict';
+
 angular.module('argus.directives.breadcrumbs', [])
 .directive('breadcrumbsHtml', function() {
-    "use strict";
     return {
         restrict: 'E',
         templateUrl: 'js/templates/breadcrumbs.html',
@@ -10,5 +11,5 @@ angular.module('argus.directives.breadcrumbs', [])
         }],
         link: function(scope, element, attribute) {
         }
-    }
+    };
 });

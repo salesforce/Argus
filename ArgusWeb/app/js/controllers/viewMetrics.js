@@ -1,11 +1,13 @@
+'use strict';
+
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls',
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
-        
+
         $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
 
-        // sub-views: (1) single chart, (2) metric discovery 
+        // sub-views: (1) single chart, (2) metric discovery
         $scope.checkMetricExpression = function() {
             if ($scope.expression) {
                 $scope.showMetricDiscovery = false;
@@ -54,7 +56,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             };
 
             var newParams = JSON.parse(JSON.stringify(defaultParams));
-            
+
             // update params with values in $scope if they exist
             newParams['scope'] = ($scope.scope) ? $scope.scope : '*';
             newParams['metric'] = ($scope.metric) ? $scope.metric : '*';
@@ -122,7 +124,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             $scope.tagv = '';
             $scope.namespace = '';
             $scope.search_metrics.$setPristine();
-        }
+        };
 
         // construct full search string from search fields
         function constructSearchStr(addDefaultValues) {
@@ -135,7 +137,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             var start_Str = '';
             var scope_Str = (s && s.length > 1) ? s + ':' : '';
             var metric_Str = (m && m.length > 1) ? m : '';
-            
+
             var tag_Str = '';
             if (tagk && tagv) {
                 tag_Str = '{' + tagk + '=' + tagv + "}";
@@ -145,7 +147,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 $scope.enterTagsErr = true;
                 return null;
             }
-            
+
             var agg_Str = '';
             var namespace_Str = (n && n.length > 1) ? ':' + n : '';
 
@@ -173,7 +175,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         $scope.updateChart = function (config, data) {
             var options = config ? angular.copy(config) : {};
             var series = $scope.copySeries(data);
-            options.credits = {enabled: false},
+            options.credits = {enabled: false};
             options.rangeSelector = {selected: 1, inputEnabled: false};
             options.xAxis = {
             	type: 'datetime',
@@ -206,11 +208,11 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             		gapSize:1.5
             	}
             };
-            
+
             options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
-            
+
             $('#container').highcharts('StockChart', options);
-            
+
             $scope.series = series;
             $scope.addAlertFlags(data);
         };
@@ -300,7 +302,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 	var series = [];
                 	for(var key in data[i].datapoints) {
                 		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !=null){
+                		if(data[i].datapoints[key] !== null){
                 			var value = parseFloat(data[i].datapoints[key]);
                 			series.push([timestamp, value]);
                 		}
