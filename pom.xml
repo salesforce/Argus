@@ -10,7 +10,7 @@
     <name>Argus</name>
     <description>A pom for all Argus projects. It provides standards for plugin versions, configuration and a number of other things.</description>
     <inceptionYear>2016</inceptionYear>
-    <url>https://www.github.com/salesforceeng/argus</url>
+    <url>https://www.github.com/salesforce/argus</url>
     <organization>
         <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
@@ -104,9 +104,9 @@
         </developer>
     </developers>
     <scm>
-        <connection>scm:git:git://github.com/SalesforceEng/Argus.git</connection>
-        <developerConnection>scm:git:ssh://github.com:SalesforceEng/Argus.git</developerConnection>
-        <url>https://github.com/SalesforceEng/Argus/tree/master</url>
+        <connection>scm:git:git://github.com/salesforce/Argus.git</connection>
+        <developerConnection>scm:git:ssh://github.com:salesforce/Argus.git</developerConnection>
+        <url>https://github.com/salesforce/Argus/tree/master</url>
         <tag>argus-2.2.0</tag>
     </scm>
 

@@ -26,4 +26,4 @@ It handles loading Argus system configuration, binding service implementations a
   }
 ```
 
-To find out more [see the wiki.](https://github.com/SalesforceEng/Argus/wiki)
+To find out more [see the wiki.](https://github.com/salesforce/Argus/wiki)
