@@ -29,20 +29,6 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
-
-            // set $scope values, get them from the local storage
-            $scope.menuOption = {
-                isWheelOn : false,
-                isBrushOn : true,
-                isBrushMainOn : false,
-                isTooltipOn : true,
-                isTooltipSortOn: false,
-                isTooltipDetailOn: false
-            };
-            $scope.dashboardId = $routeParams.dashboardId;
-            var menuOption = Storage.get('menuOption_' + $scope.dashboardId +'_' + lineChartIdName + $scope.lineChartId);
-            if(menuOption) $scope.menuOption = menuOption;
-
             $scope.sources = [];
             // can be used for future modal window
             $scope.noDataSeries = [];
@@ -89,6 +75,25 @@ angular.module('argus.directives.charts.lineChart', [])
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
+
+            // set $scope values, get them from the local storage
+
+
+            scope.dashboardId = $routeParams.dashboardId;
+
+            var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
+            if (menuOption){
+                scope.menuOption = menuOption;
+            } else {
+                scope.menuOption = {
+                    isWheelOn : false,
+                    isBrushOn : true,
+                    isBrushMainOn : false,
+                    isTooltipOn : true,
+                    isTooltipSortOn: false,
+                    isTooltipDetailOn: false
+                };
+            }
 
 
             // ---------
