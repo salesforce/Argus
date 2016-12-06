@@ -29,6 +29,19 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
+
+            // set $scope values, get them from the local storage
+            $scope.menuOption = {
+                isWheelOn : false,
+                isBrushOn : true,
+                isBrushMainOn : false,
+                isTooltipOn : true,
+                isTooltipSortOn: false
+            };
+            $scope.dashboardId = $routeParams.dashboardId;
+            var menuOption = Storage.get('menuOption_' + $scope.dashboardId +'_' + lineChartIdName + $scope.lineChartId);
+            if(menuOption) $scope.menuOption = menuOption;
+
             $scope.sources = [];
             // can be used for future modal window
             $scope.noDataSeries = [];
@@ -76,20 +89,6 @@ angular.module('argus.directives.charts.lineChart', [])
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
 
-            // set $scope values, get them from the local storage
-            scope.menuOption = {
-                isWheelOn : false,
-                isBrushOn : true,
-                isBrushMainOn : false,
-                isTooltipOn : true
-            };
-
-            scope.dashboardId = $routeParams.dashboardId;
-
-            var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
-            if(menuOption){
-                    scope.menuOption = menuOption;
-            }
 
             // ---------
             var topToolbar = $(element); //jquery selection
@@ -423,13 +422,25 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.select('.' + metric.graphClassName)
                         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
-                    //TODO: have a better implementation of this later
-                    if (d3.select("." + metric.graphClassName).style("display") !== 'none') {
-                        datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
+                    // check if the source is displaying based on the legend
+                    var sourceInLegend = scope.sources.find(function(source) {
+                        return source.graphClassName === metric.graphClassName;
+                    });
+                    if (sourceInLegend.displaying){
+                        datapoints.push({
+                            data: d,
+                            graphClassName: metric.graphClassName,
+                            name: metric.name
+                        });
                     }
                 });
-                // TODO: sort items in tooltip
-                datapoints = datapoints.sort(function(a,b){return a.data[1] - b.data[1]});
+                // sort items in tooltip if needed
+                if (scope.menuOption.isTooltipSortOn) {
+                    datapoints = datapoints.sort(function (a, b) {
+                        return b.data[1] - a.data[1]
+                    });
+                }
+
                 toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
@@ -439,8 +450,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 var YOffset = 0;
                 var newXOffset = 0;
                 var OffsetMultiplier = -1;
-                var itemsPerCol = 8;
                 var circleLen = circleRadius * 2;
+                var itemsPerCol = 8;
+                if (datapoints.length < 2*itemsPerCol)
+                    itemsPerCol = Math.ceil(datapoints.length/2);
 
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
@@ -452,7 +465,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     }
 
                     // Y data point - metric specific
-                    var tempData = d3.format('0,.6')(datapoints[i].data[1]);
+                    var tempData = d3.format('0,.7')(datapoints[i].data[1]);
                         // d3.format('.2s')(datapoints[i].data[1]);
 
                     // X data point - time
