@@ -77,22 +77,20 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTon = scope.dateConfig.gmt;
 
             // set $scope values, get them from the local storage
-
+            scope.menuOption = {
+                isWheelOn : false,
+                isBrushOn : true,
+                isBrushMainOn : false,
+                isTooltipOn : true,
+                isTooltipSortOn: false,
+                isTooltipDetailOn: false
+            };
 
             scope.dashboardId = $routeParams.dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
             if (menuOption){
                 scope.menuOption = menuOption;
-            } else {
-                scope.menuOption = {
-                    isWheelOn : false,
-                    isBrushOn : true,
-                    isBrushMainOn : false,
-                    isTooltipOn : true,
-                    isTooltipSortOn: false,
-                    isTooltipDetailOn: false
-                };
             }
 
 
@@ -418,7 +416,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     // snap the datapoint that lives in the x domain
                     if (!d0 || d0[0] < x.domain()[0]) {
                         d = d1;
-                    } else if (!d1 || d1[0] > x.domain()[1]) {
+                    } else if (!d1 || d1[0] > x.domain()[0]) {
                         d = d0;
                     // if both data points lives in the domain, choose the closer one to the mouse position
                     } else {
@@ -456,10 +454,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 var YOffset = 0;
                 var newXOffset = 0;
                 var OffsetMultiplier = -1;
-                var circleLen = circleRadius * 2;
                 var itemsPerCol = 8;
-                if (datapoints.length < 2*itemsPerCol || scope.menuOption.isTooltipDetailOn)
-                    itemsPerCol = Math.ceil(datapoints.length/2);
+                var circleLen = circleRadius * 2;
+                if (scope.menuOption.isTooltipDetailOn) {
+                    itemsPerCol = 14;
+                } else if (datapoints.length < 2*itemsPerCol) {
+                    itemsPerCol = Math.ceil(datapoints.length / 2);
+                }
 
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
