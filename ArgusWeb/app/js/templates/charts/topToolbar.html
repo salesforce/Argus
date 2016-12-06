@@ -60,6 +60,10 @@
 					<input type="checkbox" name="tooltip-sort" id="tooltip-sort-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn"/>
 					<label for="tooltip-sort-{{chartConfig.chartId}}" title="Sort tooltip items by value">Tooltip Sort</label>
 				</li>
+				<li>
+					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
+				</li>
 				</ul>
 			</div>
 

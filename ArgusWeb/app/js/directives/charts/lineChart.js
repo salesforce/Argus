@@ -36,7 +36,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 isBrushOn : true,
                 isBrushMainOn : false,
                 isTooltipOn : true,
-                isTooltipSortOn: false
+                isTooltipSortOn: false,
+                isTooltipDetailOn: false
             };
             $scope.dashboardId = $routeParams.dashboardId;
             var menuOption = Storage.get('menuOption_' + $scope.dashboardId +'_' + lineChartIdName + $scope.lineChartId);
@@ -452,7 +453,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var OffsetMultiplier = -1;
                 var circleLen = circleRadius * 2;
                 var itemsPerCol = 8;
-                if (datapoints.length < 2*itemsPerCol)
+                if (datapoints.length < 2*itemsPerCol || scope.menuOption.isTooltipDetailOn)
                     itemsPerCol = Math.ceil(datapoints.length/2);
 
                 for (var i = 0; i < datapoints.length; i++) {
@@ -463,23 +464,31 @@ angular.module('argus.directives.charts.lineChart', [])
                         XOffset += newXOffset;
                         newXOffset = 0;
                     }
-
                     // Y data point - metric specific
-                    var tempData = d3.format('0,.7')(datapoints[i].data[1]);
-                        // d3.format('.2s')(datapoints[i].data[1]);
+                    var tempData = datapoints[i].data[1];
 
                     // X data point - time
-                    var tempDate = new Date(datapoints[i].data[0]);
-                    tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
+                    // var tempDate = new Date(datapoints[i].data[0]);
+                    // tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
 
-                    var circle = group.select("circle." + datapoints[i].graphClassName);
-                    var textLine = group.select("text." + datapoints[i].graphClassName);
+                    var circle = group.select("circle." + datapoints[i].graphClassName)
+                                        .attr('cy', 20 * (0.75 + i - YOffset) + Y)
+                                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset);
+                    var textLine = group.select("text." + datapoints[i].graphClassName)
+                                        .attr('dy', 20 * (1 + i - YOffset) + Y)
+                                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
-                    circle.attr('cy', 20 * (0.75 + i - YOffset) + Y)
-                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset);
-                    textLine.attr('dy', 20 * (1 + i - YOffset) + Y)
-                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset)
-                        .text(/*tempDate + " - " +*/tempData);
+                    if (scope.menuOption.isTooltipDetailOn) {
+                        textLine.text(datapoints[i].name + "   " + d3.format('0,.7')(tempData));
+                    } else {
+                        textLine.text(d3.format('.2s')(tempData));
+                    }
+
+                    // update XOffset if existing offset is smaller than texLine
+                    var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+                    if (tempXOffset > newXOffset) {
+                        newXOffset = tempXOffset;
+                    }
 
                     /*
                      // keep this just in case different styles are needed for time and value
@@ -492,11 +501,7 @@ angular.module('argus.directives.charts.lineChart', [])
                      textLine.append('tspan').attr('dx', 8).text(names[i]);
                      */
 
-                    // update XOffset if existing offset is smaller than texLine
-                    var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
-                    if (tempXOffset > newXOffset) {
-                        newXOffset = tempXOffset;
-                    }
+
                 }
 
                 var tipBounds = group.node().getBBox();
