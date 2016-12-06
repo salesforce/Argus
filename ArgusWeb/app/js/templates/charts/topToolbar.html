@@ -7,7 +7,7 @@
 			ng-mouseleave="hover = false">
 
 			<ul style="padding-left:0;">
-			<li ng-repeat="source in sources track by $index">
+			<li ng-repeat="source in sources | orderBy:'name' track by $index">
 				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
 				<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
 				<a class="eyeIcon open" ng-click="hideOtherSources(source)" title="Hide all other(s)" ng-show="source.displaying"></a>

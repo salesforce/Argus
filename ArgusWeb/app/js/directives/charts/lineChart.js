@@ -428,6 +428,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
                     }
                 });
+                // TODO: sort items in tooltip
+                datapoints = datapoints.sort(function(a,b){return a.data[1] - b.data[1]});
                 toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
@@ -435,6 +437,7 @@ angular.module('argus.directives.charts.lineChart', [])
             function toolTipUpdate(group, datapoints, X, Y) {
                 var XOffset = 0;
                 var YOffset = 0;
+                var newXOffset = 0;
                 var OffsetMultiplier = -1;
                 var itemsPerCol = 8;
                 var circleLen = circleRadius * 2;
@@ -444,10 +447,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     if (i % itemsPerCol === 0) {
                         OffsetMultiplier++;
                         YOffset = OffsetMultiplier * itemsPerCol;
+                        XOffset += newXOffset;
+                        newXOffset = 0;
                     }
 
                     // Y data point - metric specific
-                    var tempData = d3.format('.2s')(datapoints[i].data[1]);
+                    var tempData = d3.format('0,.6')(datapoints[i].data[1]);
+                        // d3.format('.2s')(datapoints[i].data[1]);
 
                     // X data point - time
                     var tempDate = new Date(datapoints[i].data[0]);
@@ -457,10 +463,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     var textLine = group.select("text." + datapoints[i].graphClassName);
 
                     circle.attr('cy', 20 * (0.75 + i - YOffset) + Y)
-                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset * OffsetMultiplier);
+                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset);
                     textLine.attr('dy', 20 * (1 + i - YOffset) + Y)
-                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset * OffsetMultiplier)
-                        .text(tempDate + " - " + tempData);
+                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset)
+                        .text(/*tempDate + " - " +*/tempData);
 
                     /*
                      // keep this just in case different styles are needed for time and value
@@ -474,9 +480,9 @@ angular.module('argus.directives.charts.lineChart', [])
                      */
 
                     // update XOffset if existing offset is smaller than texLine
-                    var tempXOffset = textLine.node().getBBox().width + circleLen + 8;
-                    if (tempXOffset > XOffset) {
-                        XOffset = tempXOffset;
+                    var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+                    if (tempXOffset > newXOffset) {
+                        newXOffset = tempXOffset;
                     }
                 }
 
@@ -552,7 +558,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
                 focus.select('[name=crossLineTipX]')
                     .attr('x', X)
-                    .attr('y', height)
+                    .attr('y', 0)
                     .attr('dy', crossLineTipHeight)
                     .text(date);
 
