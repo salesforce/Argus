@@ -85,7 +85,7 @@ angular.module('argus.directives.charts.lineChart', [])
             };
 
             scope.dashboardId = $routeParams.dashboardId;
-            
+
             var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
             if(menuOption){
                     scope.menuOption = menuOption;
@@ -1090,6 +1090,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 legendCreator(names, colors, graphClassNames);
                 // check if there is anything to graph
                 var hasNoData, emptyReturn, invalidExpression, haveThingsToGraph;
+                var tempSeries = [];
                 for (var i = 0; i < series.length; i++) {
                     if (series[i].invalidMetric) {
                         scope.invalidSeries.push(series[i]);
@@ -1100,11 +1101,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     } else if (series[i].data.length === 0) {
                         hasNoData = true;
                     } else {
-                        haveThingsToGraph = true;
+                        // only keep the metric that's graphable
+                        tempSeries.push(series[i]);
                     }
                 }
+                series = tempSeries;
 
-                if (haveThingsToGraph) {
+                if (series.length > 0) {
                     // Update graph on new metric results
                     setGraph();
                     setGraphTools(series);
