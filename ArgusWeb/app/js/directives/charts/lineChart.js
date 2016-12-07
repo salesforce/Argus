@@ -81,15 +81,18 @@ angular.module('argus.directives.charts.lineChart', [])
                 isWheelOn : false,
                 isBrushOn : true,
                 isBrushMainOn : false,
-                isTooltipOn : true
+                isTooltipOn : true,
+                isTooltipSortOn: false,
+                isTooltipDetailOn: false
             };
 
             scope.dashboardId = $routeParams.dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
-            if(menuOption){
-                    scope.menuOption = menuOption;
+            if (menuOption){
+                scope.menuOption = menuOption;
             }
+
 
             // ---------
             var topToolbar = $(element); //jquery selection
@@ -405,16 +408,17 @@ angular.module('argus.directives.charts.lineChart', [])
                     if (metric.data.length === 0) {
                         return;
                     }
-                    //TODO: improve this logic
                     var data = metric.data;
                     var i = bisectDate(data, mouseX, 1);
                     var d0 = data[i - 1];
                     var d1 = data[i];
                     var d;
-                    if (!d0) {
+                    // snap the datapoint that lives in the x domain
+                    if (!d0 || d0[0] < x.domain()[0]) {
                         d = d1;
-                    } else if (!d1) {
+                    } else if (!d1 || d1[0] > x.domain()[0]) {
                         d = d0;
+                    // if both data points lives in the domain, choose the closer one to the mouse position
                     } else {
                         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                     }
@@ -422,11 +426,25 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.select('.' + metric.graphClassName)
                         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
-                    //TODO: have a better implementation of this later
-                    if (d3.select("." + metric.graphClassName).style("display") !== 'none') {
-                        datapoints.push({data: d, graphClassName: metric.graphClassName, name: metric.name});
+                    // check if the source is displaying based on the legend
+                    var sourceInLegend = scope.sources.find(function(source) {
+                        return source.graphClassName === metric.graphClassName;
+                    });
+                    if (sourceInLegend.displaying){
+                        datapoints.push({
+                            data: d,
+                            graphClassName: metric.graphClassName,
+                            name: metric.name
+                        });
                     }
                 });
+                // sort items in tooltip if needed
+                if (scope.menuOption.isTooltipSortOn) {
+                    datapoints = datapoints.sort(function (a, b) {
+                        return b.data[1] - a.data[1]
+                    });
+                }
+
                 toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
@@ -434,32 +452,49 @@ angular.module('argus.directives.charts.lineChart', [])
             function toolTipUpdate(group, datapoints, X, Y) {
                 var XOffset = 0;
                 var YOffset = 0;
+                var newXOffset = 0;
                 var OffsetMultiplier = -1;
                 var itemsPerCol = 8;
                 var circleLen = circleRadius * 2;
+                if (scope.menuOption.isTooltipDetailOn) {
+                    itemsPerCol = 14;
+                } else if (datapoints.length < 2*itemsPerCol) {
+                    itemsPerCol = Math.ceil(datapoints.length / 2);
+                }
 
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
                     if (i % itemsPerCol === 0) {
                         OffsetMultiplier++;
                         YOffset = OffsetMultiplier * itemsPerCol;
+                        XOffset += newXOffset;
+                        newXOffset = 0;
                     }
-
                     // Y data point - metric specific
-                    var tempData = d3.format('.2s')(datapoints[i].data[1]);
+                    var tempData = datapoints[i].data[1];
 
                     // X data point - time
-                    var tempDate = new Date(datapoints[i].data[0]);
-                    tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
+                    // var tempDate = new Date(datapoints[i].data[0]);
+                    // tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
 
-                    var circle = group.select("circle." + datapoints[i].graphClassName);
-                    var textLine = group.select("text." + datapoints[i].graphClassName);
+                    var circle = group.select("circle." + datapoints[i].graphClassName)
+                                        .attr('cy', 20 * (0.75 + i - YOffset) + Y)
+                                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset);
+                    var textLine = group.select("text." + datapoints[i].graphClassName)
+                                        .attr('dy', 20 * (1 + i - YOffset) + Y)
+                                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
-                    circle.attr('cy', 20 * (0.75 + i - YOffset) + Y)
-                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset * OffsetMultiplier);
-                    textLine.attr('dy', 20 * (1 + i - YOffset) + Y)
-                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset * OffsetMultiplier)
-                        .text(tempDate + " - " + tempData);
+                    if (scope.menuOption.isTooltipDetailOn) {
+                        textLine.text(datapoints[i].name + "   " + d3.format('0,.7')(tempData));
+                    } else {
+                        textLine.text(d3.format('.2s')(tempData));
+                    }
+
+                    // update XOffset if existing offset is smaller than texLine
+                    var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+                    if (tempXOffset > newXOffset) {
+                        newXOffset = tempXOffset;
+                    }
 
                     /*
                      // keep this just in case different styles are needed for time and value
@@ -472,11 +507,7 @@ angular.module('argus.directives.charts.lineChart', [])
                      textLine.append('tspan').attr('dx', 8).text(names[i]);
                      */
 
-                    // update XOffset if existing offset is smaller than texLine
-                    var tempXOffset = textLine.node().getBBox().width + circleLen + 8;
-                    if (tempXOffset > XOffset) {
-                        XOffset = tempXOffset;
-                    }
+
                 }
 
                 var tipBounds = group.node().getBBox();
@@ -551,7 +582,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
                 focus.select('[name=crossLineTipX]')
                     .attr('x', X)
-                    .attr('y', height)
+                    .attr('y', 0)
                     .attr('dy', crossLineTipHeight)
                     .text(date);
 
@@ -824,6 +855,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 
             function updateGraph(series) {
+                scope.graphRendered = false;
                 var allDatapoints = [];
                 currSeries = series;
 
@@ -855,6 +887,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 // draw flag(s) to denote annotation mark
                 updateAnnotations();
+                scope.graphRendered = true;
             }
 
             // when there is no data for series, display a message
@@ -1087,7 +1120,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 graphClassNames = series.map(function(metric) { return metric.graphClassName; });
                 legendCreator(names, colors, graphClassNames);
                 // check if there is anything to graph
-                var hasNoData, emptyReturn, invalidExpression, haveThingsToGraph;
+                var hasNoData, emptyReturn, invalidExpression;
                 var tempSeries = [];
                 for (var i = 0; i < series.length; i++) {
                     if (series[i].invalidMetric) {

@@ -45,16 +45,24 @@
 					<label for="toggle-brush-{{chartConfig.chartId}}" title="Toggle display of timeline graph">Display timeline</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartConfig.chartId}}" ng-model="menuOption.isTooltipOn" />
+					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipOn" />
 					<label for="toggle-tooltip-{{chartConfig.chartId}}" title="Toggle tooltip on mouseover">Display tooltips</label>
 				</li>
 				<li>
-					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartConfig.chartId}}" ng-model="menuOption.isBrushMainOn" />
+					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isBrushMainOn" />
 					<label for="toggle-brush-main-{{chartConfig.chartId}}" title="Enable brush selection on main chart">Enable brushing</label>
 				</li>
 				<li>
 					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isWheelOn" />
 					<label for="toggle-wheel-{{chartConfig.chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
+				</li>
+				<li>
+					<input type="checkbox" name="tooltip-sort" id="tooltip-sort-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<label for="tooltip-sort-{{chartConfig.chartId}}" title="Sort tooltip items by value">Tooltip Sort</label>
+				</li>
+				<li>
+					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
 				</li>
 				</ul>
 			</div>
@@ -66,4 +74,6 @@
 
 		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}">{{dateRange}}</div>
 	</div>
+	<div ng-loading="graphRendered"></div>
 </div>
+
