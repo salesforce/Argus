@@ -51,10 +51,34 @@ services:
     hostname: argus-metrics-client
     container_name: argus-metrics-client
     ports:
-      - "5006:5006"
+      - "5006:5000"
     volumes:
       - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
     environment:
-      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
       - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
     command: [COMMIT_METRICS]
+  argus-alert-client:
+    image: rmelick/argus-client
+    hostname: argus-alert-client
+    container_name: argus-alert-client
+    ports:
+      - "5007:5000"
+    volumes:
+      - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [ALERT]
+  argus-annotations-client:
+    image: rmelick/argus-client
+    hostname: argus-annotations-client
+    container_name: argus-annotations-client
+    ports:
+      - "5008:5000"
+    volumes:
+      - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [COMMIT_ANNOTATIONS]

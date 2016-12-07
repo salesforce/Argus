@@ -36,3 +36,6 @@ The simple deployment contains approximately the minimum services required for a
    * An instance of the argus-client configured to process metrics.  The argus-web-services adds the
    metrics to kafka, and the argus-metrics-client consumes them from kafka and stores them into
    opentsdb.
+
+The simple deployment will use the images you have built locally with `mvn install`, or use images from
+docker hub if you have not built anything locally.
