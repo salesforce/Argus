@@ -35,6 +35,7 @@ services:
       - "5005:5005"
     volumes:
       - ./argus.properties:/usr/argus/argus.properties:ro
+      - ./argus-web-services/web.xml:/usr/local/tomcat/conf/web.xml:ro
     environment:
       - "CATALINA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dargus.config.public.location=/usr/argus/argus.properties"
   argus-web:
