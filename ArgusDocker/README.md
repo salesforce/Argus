@@ -18,15 +18,20 @@ More information about docker can be found at
 The simple deployment contains approximately the minimum services required for a full argus deployment:
  * opentsdb
    * The image chosen also includes HBase
+   * Available after deployment at http://localhost:4242/
  * grafana
    * not actually required, but useful for troubleshooting the data in opentsdb
+   * Available after deployment at http://localhost:3000/
  * redis
  * kafka
    * The image chosen also includes zookeeper
  * argus-web-services
-   * The REST api for argus
+   * The REST api for argus, running inside a tomcat container
+   * Available after deployment at http://localhost:8081/argus/
+   * The top level tomcat web.xml is overriden to include a CORS filter
  * argus-web
    * The web ui / frontend for argus
+   * Available after deployment at http://localhost:8082/app/
  * argus-metrics-client
    * An instance of the argus-client configured to process metrics.  The argus-web-services adds the
    metrics to kafka, and the argus-metrics-client consumes them from kafka and stores them into
