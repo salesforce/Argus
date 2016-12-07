@@ -26,6 +26,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             lineChartScope.series[i].graphClassName = newChartId + "_graph" + (i + 1);
         }
 
+        scope.seriesDataLoaded = true; //
+
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
@@ -109,6 +111,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // define series first, then build list for each metric expression
         var series = [];
         var metricCount = updatedMetricList.length;
+
+        scope.seriesDataLoaded = false; //used for load spinner
+        angular.element("#" + newChartId).append( $compile('<div ng-loading="seriesDataLoaded"></div>')(scope) );
 
         for (var i = 0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
