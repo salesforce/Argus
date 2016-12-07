@@ -61,15 +61,77 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         }
     }
 
+    function queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes) {
+        if (!metricItem) return;
+
+        var smallChart = !!attributes.smallchart;
+
+        Metrics.query({expression: metricItem.expression}).$promise.then(function(data) {
+            var tempSeries;
+
+            if (data && data.length > 0) {
+                // check to update statusIndicator with correct status color
+                if (smallChart) {
+                    // get the last data point
+                    var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
+
+                    // update status indicator
+                    ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+
+                    // add 'smallChart' flag to scope
+                    scope.chartOptions = {smallChart: smallChart};
+                }
+
+                // metric item attributes are assigned to the data (i.e. name, color, etc.)
+                tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+
+                Array.prototype.push.apply(series, tempSeries);
+            } else {
+                // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
+                console.log('Empty result returned for the metric expression');
+                tempSeries = [{
+                    noData: true,
+                    errorMessage: 'Empty result returned for the metric expression',
+                    name: JSON.stringify(metricItem.expression).slice(1, -1),
+                    color: 'Maroon'
+                }];
+            }
+
+            // decrement metric count each time an expression is added to the series.
+            metricCount = metricCount - 1;
+
+            if (metricCount === 0) {
+                // check for Annotations
+                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
+            }
+        }, function (error) {
+            // growl.error(error.message);
+            console.log('Metric expression does not exist in database');
+            var tempSeries = [{
+                invalidMetric: true,
+                errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+                name: error.config.params.expression,
+                color: 'Black'
+            }];
+            Array.prototype.push.apply(series, tempSeries);
+
+            metricCount = metricCount - 1;
+
+            if (metricCount === 0) {
+                // display chart with series data and populate annotations
+                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
+            }
+        });
+    }
+
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         // remove/clear any previous chart rendering from DOM
         element.empty();
         // generate a new chart ID, set css options for main chart container
         var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
-        var smallChart = !!attributes.smallchart;
         var chartType = attributes.type ? attributes.type : 'LINE';
-        var cssOpts = ( smallChart ) ? 'smallChart' : '';
+        var cssOpts = ( attributes.smallChart ) ? 'smallChart' : '';
 
         // set the charts container for rendering
         ChartRenderingService.setChartContainer(element, newChartId, cssOpts);
@@ -112,64 +174,10 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
         for (var i = 0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
-            // make api call to get data for each metric item
-            Metrics.query({expression: metricItem.expression}, function (data) {
-                var tempSeries;
-                if (data && data.length > 0) {
 
-                    // check to update statusIndicator with correct status color
-                    if (smallChart) {
-                        // get the last data point
-                        var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
-
-                        // update status indicator
-                        ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
-
-                        // add 'smallChart' flag to scope
-                        scope.chartOptions = {smallChart: smallChart};
-                    }
-
-                    // metric item attributes are assigned to the data (i.e. name, color, etc.)
-                    tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
-
-                } else {
-                    // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
-                    console.log('Empty result returned for the metric expression');
-                    tempSeries = [{
-                        noData: true,
-                        errorMessage: 'Empty result returned for the metric expression',
-                        name: JSON.stringify(metricItem.expression).slice(1, -1),
-                        color: 'Maroon'
-                    }];
-                }
-                Array.prototype.push.apply(series, tempSeries);
-                // decrement metric count each time an expression is added to the series.
-                metricCount = metricCount - 1;
-
-                if (metricCount === 0) {
-                    // check for Annotations
-                    setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
-                }
-
-            }, function (error) {
-                // growl.error(data.message);
-                console.log('Metric expression does not exist in database');
-                var tempSeries = [{
-                    invalidMetric: true,
-                    errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
-                    name: error.config.params.expression,
-                    color: 'Black'
-                }];
-                Array.prototype.push.apply(series, tempSeries);
-
-                metricCount = metricCount - 1;
-
-                if (metricCount === 0) {
-                    // display chart with series data and populate annotations
-                    // bindDataToChart(newChartId, series, updatedAnnotationList);
-                    setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
-                }
-            });
+            // get data for each metric item, bind optional data with metric data
+            metricCount = metricCount-[i];
+            queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes);
         }
     }
 
