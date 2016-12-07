@@ -169,6 +169,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine,
                 names, colors, graphClassNames;
 
+            var messageToDisplay = ['No graph available'];
+
             // color scheme
             var z = d3.scaleOrdinal(d3.schemeCategory20);
 
@@ -802,54 +804,64 @@ angular.module('argus.directives.charts.lineChart', [])
                     left: marginLeft
                 };
 
-                if (series[0].constructor === String) {
-                    displayEmptyGraph(container, width, height, margin, series[0]);
-                    return;
-                }
-                //TODO: x will not be defined when there is no graph
-                var tempX = x.domain(); //remember that when resize
+                if (series.length > 0) {
+                    var tempX = x.domain(); //remember that when resize
 
-                clip.attr('width', width)
-                    .attr('height', height);
-                chartRect.attr('width', width);
-                //update range
-                x.range([0, width]);
-                x2.range([0, width]);
+                    clip.attr('width', width)
+                        .attr('height', height);
+                    chartRect.attr('width', width);
+                    //update range
+                    x.range([0, width]);
+                    x2.range([0, width]);
 
-                //update brush & zoom
-                brush.extent([[0, 0], [width, height2]]);
-                brushMain.extent([[0, 0], [width, height]]);
-                zoom.translateExtent([[0, 0], [width, height]])
-                    .extent([[0, 0], [width, height]]);
-                brushG.call(brush);
-                brushMainG.call(brushMain);
+                    //update brush & zoom
+                    brush.extent([
+                        [0, 0],
+                        [width, height2]
+                    ]);
+                    brushMain.extent([
+                        [0, 0],
+                        [width, height]
+                    ]);
+                    zoom.translateExtent([
+                            [0, 0],
+                            [width, height]
+                        ])
+                        .extent([
+                            [0, 0],
+                            [width, height]
+                        ]);
+                    brushG.call(brush);
+                    brushMainG.call(brushMain);
 
-                //width related svg element
-                svg.attr('width', width + margin.left + margin.right);
-                svg_g.attr('width', width)
-                     .attr('transform', 'translate(' + margin.left + ','+ margin.top + ')');
+                    //width related svg element
+                    svg.attr('width', width + margin.left + margin.right);
+                    svg_g.attr('width', width)
+                        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-                yGrid.tickSizeInner(-width);
-                yGridG.call(yGrid);
+                    yGrid.tickSizeInner(-width);
+                    yGridG.call(yGrid);
 
-                yAxisRG.attr('transform', 'translate(' + width+ ')')
-                    .call(yAxisR);
+                    yAxisRG.attr('transform', 'translate(' + width + ')')
+                        .call(yAxisR);
 
-                svg_g.selectAll(".line").attr("d", line);//redraw the line
-                svg_g.selectAll(".brushLine").attr("d", line2);//redraw brush line
+                    svg_g.selectAll(".line").attr("d", line); //redraw the line
+                    svg_g.selectAll(".brushLine").attr("d", line2); //redraw brush line
 
-                xAxisG.call(xAxis);  //redraw xAxis
-                yAxisG.call(yAxis);  //redraw yAxis
-                xGridG.call(xGrid);
-                xAxisG2.call(xAxis2);
+                    xAxisG.call(xAxis); //redraw xAxis
+                    yAxisG.call(yAxis); //redraw yAxis
+                    xGridG.call(xGrid);
+                    xAxisG2.call(xAxis2);
 
-                if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-                    tempX[1].getTime() == x2.domain()[1].getTime()) {
-                    reset();
+                    if (tempX[0].getTime() == x2.domain()[0].getTime() &&
+                        tempX[1].getTime() == x2.domain()[1].getTime()) {
+                        reset();
+                    } else {
+                        //restore the zoom&brush
+                        context.select(".brush").call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
+                    }
                 } else {
-                    //restore the zoom&brush
-                    context.select(".brush").call
-                    (brush.move, [x2(tempX[0]), x2(tempX[1])]);
+                    displayEmptyGraph(container, width, height, margin, messageToDisplay);
                 }
             }
 
@@ -1107,6 +1119,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
+            scope.graphRendered = false;
             // create graph only when there is data
             if (!series || series.length === 0) {
                 //this should never happen
@@ -1148,7 +1161,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     reset();    //to remove the brush cover first for user the drag
                 } else {
                     // generate content for no graph message
-                    var messageToDisplay = ['No graph available'];
                     if (invalidExpression) {
                         messageToDisplay.push('Metric expressions do not exist in TSDB');
                         messageToDisplay.push('(Failed metrics are labeled black in the legend)');
@@ -1164,7 +1176,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                 }
             }
-
+            scope.graphRendered = true;
 
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
