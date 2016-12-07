@@ -71,7 +71,7 @@ public class HoltWintersTransformTest {
         Map<Long, String> forecastedDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
             .getForecastedDatapoints();
 
-        assertTrue(forecastedDatapoints.equals(expected));
+        assertEquals(expected, forecastedDatapoints);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class HoltWintersTransformTest {
         Map<Long, String> deviationDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
             .getDeviationDatapoints();
 
-        assertTrue(deviationDatapoints.equals(expected));
+        assertEquals(expected, deviationDatapoints);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
