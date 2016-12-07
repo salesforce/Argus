@@ -42,7 +42,7 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/generated-resources</outputDirectory>
-                            <includeArtifacIds>argus</includeArtifacIds>
+                            <includeArtifactIds>argus</includeArtifactIds>
                             <includeGroupIds>${project.groupId}</includeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
                             <type>zip</type>
@@ -57,7 +57,7 @@
                         <phase>generate-test-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/generated-test-resources</outputDirectory>
-                            <includeArtifacIds>argus</includeArtifacIds>
+                            <includeArtifactIds>argus</includeArtifactIds>
                             <includeGroupIds>${project.groupId}</includeGroupIds>
                             <excludeTransitive>true</excludeTransitive>
                             <type>zip</type>
