@@ -1119,7 +1119,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-            scope.graphRendered = false;
             // create graph only when there is data
             if (!series || series.length === 0) {
                 //this should never happen
@@ -1176,7 +1175,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                 }
             }
-            scope.graphRendered = true;
 
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
