@@ -96,3 +96,15 @@ services:
       - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
       - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
     command: [COMMIT_ANNOTATIONS]
+  argus-processor-client:
+    image: rmelick/argus-client
+    hostname: argus-processor-client
+    container_name: argus-processor-client
+    ports:
+      - "5009:5000"
+    volumes:
+      - ./conf/argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [PROCESS_QUERIES]
