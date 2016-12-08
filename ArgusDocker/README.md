@@ -39,3 +39,6 @@ The simple deployment contains approximately the minimum services required for a
 
 The simple deployment will use the images you have built locally with `mvn install`, or use images from
 docker hub if you have not built anything locally.
+
+## persistent
+This uses a postgres database and has persistent volumes for opentsdb, etc.
