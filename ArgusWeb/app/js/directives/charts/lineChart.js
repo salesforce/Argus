@@ -855,7 +855,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
 
             function updateGraph(series) {
-                scope.graphRendered = false;
                 var allDatapoints = [];
                 currSeries = series;
 
@@ -887,7 +886,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 // draw flag(s) to denote annotation mark
                 updateAnnotations();
-                scope.graphRendered = true;
             }
 
             // when there is no data for series, display a message
