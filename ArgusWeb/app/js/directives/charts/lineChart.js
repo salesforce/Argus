@@ -874,9 +874,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     allDatapoints = allDatapoints.concat(metric.data);
                 });
 
-                x.domain(d3.extent(allDatapoints, function (d) {
-                    return d[0];
-                }));
+                //x domain was set according to dateConfig previously
+                //this shows exactly the date range defined by user instread of actual data
+                // x.domain(d3.extent(allDatapoints, function (d) {
+                //     return d[0];
+                // }));
+
                 y.domain(d3.extent(allDatapoints, function (d) {
                     return d[1];
                 }));
