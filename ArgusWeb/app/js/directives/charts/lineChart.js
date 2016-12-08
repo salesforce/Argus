@@ -416,18 +416,31 @@ angular.module('argus.directives.charts.lineChart', [])
                         var d1 = data[i];
                         var d;
                         // snap the datapoint that lives in the x domain
-                        if (!d0 || d0[0] < x.domain()[0]) {
+                        if (!d0) {
+                            //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
+                            //we could still render d0 but make it invisible.
                             d = d1;
-                        } else if (!d1 || d1[0] > x.domain()[0]) {
+                        } else if (!d1) {
                             d = d0;
                             // if both data points lives in the domain, choose the closer one to the mouse position
                         } else {
                             d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                         }
+
+                        var circle = focus.select('.' + metric.graphClassName);
+
+                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime()){
+                            //outside domain
+                            circle.attr('display', 'none');
+                        }else{
+                            circle.attr('display', null);
+                        }
+
                         // update circle's position on each graph
-                        focus.select('.' + metric.graphClassName)
+                        circle
                             .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                             .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+
                         // check if the source is displaying based on the legend
                         var sourceInLegend = scope.sources.find(function (source) {
                             return source.graphClassName === metric.graphClassName;
