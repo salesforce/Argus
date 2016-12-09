@@ -15,7 +15,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // assign items to new $scope
         lineChartScope.chartConfig = {
             chartId: newChartId,
-            chartTitle: scope.options.title || ''   // title is an attribute of <option>, and could be undefined
+            chartTitle: scope.options['title.text'] || ''   // title is an attribute of <option>, and could be undefined
         };
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
