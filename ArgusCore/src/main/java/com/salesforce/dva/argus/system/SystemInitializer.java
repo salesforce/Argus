@@ -66,7 +66,6 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Properties;
 
 /**
@@ -75,6 +74,7 @@ import java.util.Properties;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 final class SystemInitializer extends AbstractModule {
+    private static final String JPA_PROPERTY_PREFIX = "system.property.jpa";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -177,8 +177,21 @@ final class SystemInitializer extends AbstractModule {
 
     private void configurePersistence() {
         JpaPersistModule jpaPersistModule = new JpaPersistModule("argus-pu");
-        jpaPersistModule.properties(_systemConfiguration);
+        jpaPersistModule.properties(getJpaProperties(_systemConfiguration));
         binder().install(jpaPersistModule);
+    }
+
+    private Properties getJpaProperties(Properties properties) {
+        Properties jpaProperties = new Properties();
+        for (Object rawPropertyNameWithPrefix : properties.keySet()) {
+            String propertyNameWithPrefix = (String) rawPropertyNameWithPrefix;
+            if (propertyNameWithPrefix.startsWith(JPA_PROPERTY_PREFIX)) {
+                String propertyName = propertyNameWithPrefix.substring(JPA_PROPERTY_PREFIX.length());
+                Object propertyValue = properties.get(rawPropertyNameWithPrefix);
+                jpaProperties.put(propertyName, propertyValue);
+            }
+        }
+        return jpaProperties;
     }
 
     private void configureLogging() {
