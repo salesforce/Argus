@@ -281,8 +281,8 @@ public class MetricQuery extends AnnotationQuery {
         AVG("avg"),
         DEV("dev"),
         ZIMSUM("zimsum"),
-        MINMIN("minmin"),
-        MINMAX("minmax");
+        MINMIN("mimmin"),
+        MINMAX("mimmax");
 
         private final String _description;
 

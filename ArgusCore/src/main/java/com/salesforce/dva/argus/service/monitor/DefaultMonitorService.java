@@ -334,7 +334,6 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
         _dashboardService.dispose();
         _alertService.dispose();
         _serviceManagementService.dispose();
-        // _tsdbService.dispose();
     }
 
     private void _setServiceEnabled(boolean enabled) {
