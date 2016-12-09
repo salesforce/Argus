@@ -38,6 +38,28 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
 
+    function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig) {
+        Annotations.query({expression: annotationItem}).$promise.then(function(data) {
+            if (data && data.length > 0) {
+                var forName = ChartDataProcessingService.createSeriesName(data[0]);
+                var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
+                flagSeries.linkedTo = forName;
+
+                // add flagSeries if any data exists
+                //TODO: handle undefined flagSeries situation
+                series[0].flagSeries = (flagSeries) ? flagSeries: null;
+            }
+
+            // append, compile, & attach new scope to line-chart directive
+            compileLineChart(scope, newChartId, series, dateConfig);
+
+        }, function (error) {
+            console.log( 'no data found', error.data.message );
+            // append, compile, & attach new scope to line-chart directive
+            compileLineChart(scope, newChartId, series, dateConfig);
+        });
+    }
+
     function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig) {
 
         if (updatedAnnotationList.length === 0) {
@@ -46,25 +68,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         } else {
             // check annotations & add to series data for line-chart
             for (var i=0; i < updatedAnnotationList.length; i++) {
-                Annotations.query({expression: updatedAnnotationList[i]}, function (data) {
-                    if (data && data.length > 0) {
-                        var forName = ChartDataProcessingService.createSeriesName(data[0]);
-                        var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
-                        flagSeries.linkedTo = forName;
-
-                        // add flagSeries if any data exists
-                        //TODO: handle undefined flagSeries situation
-                        series[0].flagSeries = (flagSeries) ? flagSeries: null;
-                    }
-
-                    // append, compile, & attach new scope to line-chart directive
-                    compileLineChart(scope, newChartId, series, dateConfig);
-
-                }, function (error) {
-                    console.log( 'no data found', error.data.message );
-                    // append, compile, & attach new scope to line-chart directive
-                    compileLineChart(scope, newChartId, series, dateConfig);
-                });
+                var annotationItem = updatedAnnotationList[i];
+                queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig);
             }
         }
     }
@@ -165,6 +170,11 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
         // process data for: metrics, annotations, options
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
+
+        if (!processedData) {
+            console.log('no processed data returned: ' + newChartId);
+            return;
+        }
 
         // re-assign each list for: metrics, annotations, options
         // TODO: updatedMetricList is not defined sometimes

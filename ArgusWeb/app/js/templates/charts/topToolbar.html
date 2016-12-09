@@ -1,17 +1,30 @@
 <div class="topToolbar">
 	<h3 class="chartTitle">{{chartConfig.chartTitle}}</h3>
-	<div id="topTb-{{chartConfig.chartId}}" style="height:30px;">
-		<div class="toolbarItem legend floatPanel" ng-if="!(sources | isEmpty)"
-			ng-class="{open: hover}"
-			ng-mouseover="hover = true"
-			ng-mouseleave="hover = false">
+	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
 
-			<ul style="padding-left:0;">
-			<li ng-repeat="source in sources track by $index">
-				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
-				<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
-				<a class="eyeIcon open" ng-click="hideOtherSources(source)" title="Hide all other(s)" ng-show="source.displaying"></a>
-			</li>
+		<div style="display:inline-block;">
+
+			<ul style="padding-left:0;"
+				ng-mouseover="hover = true"
+				ng-mouseleave="hover = false">
+
+				<li ng-repeat="source in sources track by $index" ng-show="$index < 1">
+					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
+					<a>{{source.name}}</a>
+				</li>
+
+				<li class="toolbarItem legend floatPanel"
+					ng-if="!(sources | isEmpty)"
+					ng-class="{open: hover}">
+
+					<ul style="padding-left:0;">
+					<li ng-repeat="source in sources track by $index">
+						<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
+						<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
+						<a class="eyeIcon open" ng-click="hideOtherSources(source)" title="Hide all other(s)" ng-show="source.displaying"></a>
+					</li>
+					</ul>
+				</li>
 			</ul>
 		</div>
 
@@ -68,7 +81,7 @@
 			</div>
 
 			<div class="toolbarMenu topMenu">
-				<a name="reset" class="glyphicon glyphicon-repeat" title="Reset graph settings" style="cursor:pointer;"></a>
+				<a name="reset" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
 			</div>
 		</div>
 
