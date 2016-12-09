@@ -618,11 +618,50 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg_g.selectAll(".brushMain").call(brush.move, null);
             }
 
-            //redraw the lines Axises grids
-            function redraw() {
+            // //redraw the lines Axises grids
+            // function redraw() {
+            //     //redraw
+            //     if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
+            //         svg_g.selectAll(".line").attr("d", line);//redraw the line
+            //     }
+            //     xAxisG.call(xAxis);  //redraw xAxis
+            //     yAxisG.call(yAxis);  //redraw yAxis
+            //     yAxisRG.call(yAxisR); //redraw yAxis right
+            //     xGridG.call(xGrid);
+            //     yGridG.call(yGrid);
+            //     if (!scope.menuOption.isBrushOn) {
+            //         context.attr("display", "none");
+            //     }
+            //     updateDateRange();
+            // }
+
+            //redraw the line with restrict
+            function redraw(){
+                var domainStart = x.domain()[0].getTime();
+                var domainEnd = x.domain()[1].getTime();
                 //redraw
-                if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
-                    svg_g.selectAll(".line").attr("d", line);//redraw the line
+                if(domainStart <= dateExtent[1] &&  domainEnd >= dateExtent[0]) {
+                    //update the dataum and redraw the line
+                    currSeries.forEach(function (metric) {
+                        if (metric === null || metric.data.length === 0) return;
+                        var len = metric.data.length;
+                        if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
+                            mainChart.select('path.line.' + metric.graphClassName)
+                                .datum([])
+                                .attr('d', line);
+                            return;
+                        }
+                        //if this metric time range is within the x domain
+                        var start = bisectDate(metric.data, x.domain()[0]);
+                        var end = bisectDate(metric.data, x.domain()[1], start);
+                        var data = metric.data.slice(start, end + 1);
+
+                        //only render the data within the domain
+                        mainChart.select('path.line.' + metric.graphClassName)
+                            .datum(data)
+                            .attr('d', line); //change the datum will call d3 to redraw
+                    });
+                    //svg_g.selectAll(".line").attr("d", line);//redraw the line
                 }
                 xAxisG.call(xAxis);  //redraw xAxis
                 yAxisG.call(yAxis);  //redraw yAxis
