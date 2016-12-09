@@ -15,7 +15,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // assign items to new $scope
         lineChartScope.chartConfig = {
             chartId: newChartId,
-            chartTitle: scope.options.title || ''   // title is an attribute of <option>, and could be undefined
+            chartTitle: scope.options['title.text'] || ''   // title is an attribute of <option>, and could be undefined
         };
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
@@ -111,9 +111,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             }
 
             // decrement metric count each time an expression is added to the series.
-            metricCount = metricCount - 1;
-
-            if (metricCount === 0) {
+            metricCount.tot -= 1;
+            if (metricCount.tot === 0) {
                 // check for Annotations
                 setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
             }
@@ -128,9 +127,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             }];
             Array.prototype.push.apply(series, tempSeries);
 
-            metricCount = metricCount - 1;
-
-            if (metricCount === 0) {
+            metricCount.tot -= 1;
+            if (metricCount.tot === 0) {
                 // display chart with series data and populate annotations
                 setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
             }
@@ -188,7 +186,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
         // define series first, then build list for each metric expression
         var series = [];
-        var metricCount = updatedMetricList.length;
+        var metricCount = {};
+        metricCount.tot = updatedMetricList.length;
 
         scope.seriesDataLoaded = false; //used for load spinner
         angular.element("#" + newChartId).append( $compile('<div ng-loading="seriesDataLoaded"></div>')(scope) );
@@ -197,7 +196,6 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             var metricItem = updatedMetricList[i];
 
             // get data for each metric item, bind optional data with metric data
-            metricCount = metricCount-[i];
             queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes);
         }
     }
