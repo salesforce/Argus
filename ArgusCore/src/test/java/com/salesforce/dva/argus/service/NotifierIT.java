@@ -75,7 +75,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo", new Metric("scope", "metric"));
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, "foo", new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
         notifier.sendNotification(context);
@@ -110,7 +110,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo", new Metric("scope", "metric"));
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1447248611000L, "foo", new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
         notifier.sendNotification(context);
@@ -132,7 +132,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo", new Metric("scope", "metric"));
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, System.currentTimeMillis(), "foo", new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
         notifier.sendNotification(context);
