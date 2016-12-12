@@ -1,6 +1,6 @@
-FROM openjdk:8u111-jdk-alpine
+FROM openjdk:8u111-jre
 
-RUN apk add -q --update vim bash
+RUN apt-get -qq update -y && apt-get -qq install -y telnet net-tools less vim
 
 ENV APP_DIR /usr/argus/argusClient
 
