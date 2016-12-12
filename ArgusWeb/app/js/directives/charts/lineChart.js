@@ -407,7 +407,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY);
 
-                if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
+                if(isBrushInNonEmptyRange()) {
                     currSeries.forEach(function (metric) {
                         if (metric.data.length === 0) {
                             return;
@@ -642,7 +642,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var domainStart = x.domain()[0].getTime();
                 var domainEnd = x.domain()[1].getTime();
                 //redraw
-                if(domainStart <= dateExtent[1] &&  domainEnd >= dateExtent[0]) {
+                if(isBrushInNonEmptyRange()) {
                     mainChart.selectAll('path.line').attr('display', null);
                     //update the dataum and redraw the line
                     currSeries.forEach(function (metric) {
@@ -738,12 +738,17 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionY = position[1];
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY); //domain value
-                focus.selectAll('circle').each(function (d, i) {
-                    var circle = d3.select(this);
-                    var dataX = circle.attr('dataX');
-                    var dataY = circle.attr('dataY');
-                    circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
-                });
+                if(isBrushInNonEmptyRange()) {
+                    focus.selectAll('circle').attr('display', null)
+                        .each(function (d, i) {
+                        var circle = d3.select(this);
+                        var dataX = circle.attr('dataX');
+                        var dataY = circle.attr('dataY');
+                        circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
+                    });
+                }else{
+                    focus.selectAll('circle').attr('display', 'none');
+                }
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
@@ -1183,6 +1188,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     //enable 1y button
                     $('[name=oneYear]', topToolbar).prop('disabled', false);
                 }
+            }
+
+            function isBrushInNonEmptyRange(){
+                return x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0];
             }
 
             // create graph only when there is data
