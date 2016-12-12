@@ -643,6 +643,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var domainEnd = x.domain()[1].getTime();
                 //redraw
                 if(domainStart <= dateExtent[1] &&  domainEnd >= dateExtent[0]) {
+                    mainChart.selectAll('path.line').attr('display', null);
                     //update the dataum and redraw the line
                     currSeries.forEach(function (metric) {
                         if (metric === null || metric.data.length === 0) return;
@@ -664,6 +665,8 @@ angular.module('argus.directives.charts.lineChart', [])
                             .attr('d', line); //change the datum will call d3 to redraw
                     });
                     //svg_g.selectAll(".line").attr("d", line);//redraw the line
+                }else{
+                    mainChart.selectAll('path.line').attr('display', 'none');
                 }
                 xAxisG.call(xAxis);  //redraw xAxis
                 yAxisG.call(yAxis);  //redraw yAxis
