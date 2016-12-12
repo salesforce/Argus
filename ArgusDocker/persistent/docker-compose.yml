@@ -9,7 +9,7 @@ services:
     volumes:
       - ./storage/opentsdb/data/hbase:/data/hbase
       - ./storage/opentsdb/tmp:/tmp
-      - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh:ro
+      - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh
       - ./conf/opentsdb/opentsdb.conf:/opt/opentsdb/config/opentsdb.conf:ro
   postgres:
     image: postgres:9.6.1
