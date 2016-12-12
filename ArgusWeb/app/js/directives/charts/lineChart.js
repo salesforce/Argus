@@ -418,18 +418,31 @@ angular.module('argus.directives.charts.lineChart', [])
                         var d1 = data[i];
                         var d;
                         // snap the datapoint that lives in the x domain
-                        if (!d0 || d0[0] < x.domain()[0]) {
+                        if (!d0) {
+                            //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
+                            //we could still render d0 but make it invisible.
                             d = d1;
-                        } else if (!d1 || d1[0] > x.domain()[0]) {
+                        } else if (!d1) {
                             d = d0;
                             // if both data points lives in the domain, choose the closer one to the mouse position
                         } else {
                             d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
                         }
+
+                        var circle = focus.select('.' + metric.graphClassName);
+
+                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime()){
+                            //outside domain
+                            circle.attr('display', 'none');
+                        }else{
+                            circle.attr('display', null);
+                        }
+
                         // update circle's position on each graph
-                        focus.select('.' + metric.graphClassName)
+                        circle
                             .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
                             .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+
                         // check if the source is displaying based on the legend
                         var sourceInLegend = scope.sources.find(function (source) {
                             return source.graphClassName === metric.graphClassName;
@@ -607,11 +620,50 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg_g.selectAll(".brushMain").call(brush.move, null);
             }
 
-            //redraw the lines Axises grids
-            function redraw() {
+            // //redraw the lines Axises grids
+            // function redraw() {
+            //     //redraw
+            //     if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
+            //         svg_g.selectAll(".line").attr("d", line);//redraw the line
+            //     }
+            //     xAxisG.call(xAxis);  //redraw xAxis
+            //     yAxisG.call(yAxis);  //redraw yAxis
+            //     yAxisRG.call(yAxisR); //redraw yAxis right
+            //     xGridG.call(xGrid);
+            //     yGridG.call(yGrid);
+            //     if (!scope.menuOption.isBrushOn) {
+            //         context.attr("display", "none");
+            //     }
+            //     updateDateRange();
+            // }
+
+            //redraw the line with restrict
+            function redraw(){
+                var domainStart = x.domain()[0].getTime();
+                var domainEnd = x.domain()[1].getTime();
                 //redraw
-                if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
-                    svg_g.selectAll(".line").attr("d", line);//redraw the line
+                if(domainStart <= dateExtent[1] &&  domainEnd >= dateExtent[0]) {
+                    //update the dataum and redraw the line
+                    currSeries.forEach(function (metric) {
+                        if (metric === null || metric.data.length === 0) return;
+                        var len = metric.data.length;
+                        if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
+                            mainChart.select('path.line.' + metric.graphClassName)
+                                .datum([])
+                                .attr('d', line);
+                            return;
+                        }
+                        //if this metric time range is within the x domain
+                        var start = bisectDate(metric.data, x.domain()[0]);
+                        var end = bisectDate(metric.data, x.domain()[1], start);
+                        var data = metric.data.slice(start, end + 1);
+
+                        //only render the data within the domain
+                        mainChart.select('path.line.' + metric.graphClassName)
+                            .datum(data)
+                            .attr('d', line); //change the datum will call d3 to redraw
+                    });
+                    //svg_g.selectAll(".line").attr("d", line);//redraw the line
                 }
                 xAxisG.call(xAxis);  //redraw xAxis
                 yAxisG.call(yAxis);  //redraw yAxis
