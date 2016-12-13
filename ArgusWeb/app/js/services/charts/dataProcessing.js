@@ -121,7 +121,6 @@ angular.module('argus.services.charts.dataProcessing', [])
             var updatedMetricList = [];
             var updatedAnnotationList = [];
             var updatedOptionList = JsonFlattenService.unflatten(data.options);
-
             for (var key in data.metrics) {
                 if (data.metrics.hasOwnProperty(key)) {
 
@@ -152,12 +151,6 @@ angular.module('argus.services.charts.dataProcessing', [])
                     }
                 }
             }
-
-            // for (var key in data.options) {
-            //     if (data.options.hasOwnProperty(key)) {
-            //         updatedOptionList.push({name: key, value: data.options[key]});
-            //     }
-            // }
 
             if (updatedMetricList.length > 0) {
         		processedData = {

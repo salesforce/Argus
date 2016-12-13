@@ -75,6 +75,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
+            var chartOptions = scope.chartConfig;
 
             // set $scope values, get them from the local storage
             scope.menuOption = {
@@ -105,6 +106,12 @@ angular.module('argus.directives.charts.lineChart', [])
             // Layout parameters
             var containerHeight = 320;
             var containerWidth = $("#" + chartId).width();
+
+            if (chartOptions.chart !== undefined) {
+                containerHeight = chartOptions.chart.height === undefined ? containerHeight: chartOptions.chart.height;
+                containerWidth = chartOptions.chart.width === undefined ? containerWidth: chartOptions.chart.width;
+            }
+
             var brushHeightFactor = 10;
             var mainChartRatio = 0.8, //ratio of height
                 tipBoxRatio = 0.2,
@@ -938,7 +945,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 // }));
                 dateExtent = d3.extent(allDatapoints, function (d) {
                         return d[0];
-                })
+                });
 
                 y.domain(d3.extent(allDatapoints, function (d) {
                     return d[1];
