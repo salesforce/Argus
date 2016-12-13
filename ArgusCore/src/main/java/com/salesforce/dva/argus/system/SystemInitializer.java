@@ -74,7 +74,7 @@ import java.util.Properties;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 final class SystemInitializer extends AbstractModule {
-    private static final String JPA_PROPERTY_PREFIX = "system.property.jpa";
+    private static final String JPA_PROPERTY_PREFIX = "system.property.jpa.";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -177,7 +177,8 @@ final class SystemInitializer extends AbstractModule {
 
     private void configurePersistence() {
         JpaPersistModule jpaPersistModule = new JpaPersistModule("argus-pu");
-        jpaPersistModule.properties(getJpaProperties(_systemConfiguration));
+        Properties jpaProperties = getJpaProperties(_systemConfiguration);
+        jpaPersistModule.properties(jpaProperties);
         binder().install(jpaPersistModule);
     }
 
