@@ -1038,8 +1038,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('width', width)
                     .attr('height', height)
                     .on('mouseover', function () {
-                        focus.style('display', null);
-                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                       mouseOverChart();
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
@@ -1061,8 +1060,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .on("mousedown.zoom", null)
                     .call(brushMain)
                     .on('mouseover', function () {
-                        focus.style('display', null);
-                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                       mouseOverChart();
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
@@ -1192,6 +1190,17 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function isBrushInNonEmptyRange(){
                 return x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0];
+            }
+
+            function mouseOverChart(){
+                focus.style('display', null);
+                if(isBrushInNonEmptyRange()) {
+                    if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                }else{
+                    //no need to show the circle to tip
+                    focus.selectAll('circle').attr('display', 'none');
+                    tip.attr('display', 'none');
+                }
             }
 
             // create graph only when there is data
