@@ -94,11 +94,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     // add 'smallChart' flag to scope
                     scope.chartOptions = {smallChart: smallChart};
                 }
-
                 // metric item attributes are assigned to the data (i.e. name, color, etc.)
                 tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
-
-                Array.prototype.push.apply(series, tempSeries);
             } else {
                 // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 console.log('Empty result returned for the metric expression');
@@ -110,6 +107,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }];
             }
 
+            Array.prototype.push.apply(series, tempSeries);
             // decrement metric count each time an expression is added to the series.
             metricCount.tot -= 1;
             if (metricCount.tot === 0) {
