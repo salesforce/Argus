@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', function(ChartOptionService, Annotations) {
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, jsonFlattenService) {
     'use strict';
 
     // Private methods
@@ -120,7 +120,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 			var processedData = [];
             var updatedMetricList = [];
             var updatedAnnotationList = [];
-            var updatedOptionList = [];
+            var updatedOptionList = {};
 
             for (var key in data.metrics) {
                 if (data.metrics.hasOwnProperty(key)) {
@@ -153,11 +153,12 @@ angular.module('argus.services.charts.dataProcessing', [])
                 }
             }
 
-            for (var key in data.options) {
-                if (data.options.hasOwnProperty(key)) {
-                    updatedOptionList.push({name: key, value: data.options[key]});
-                }
-            }
+            // for (var key in data.options) {
+            //     if (data.options.hasOwnProperty(key)) {
+            //         updatedOptionList.push({name: key, value: data.options[key]});
+            //     }
+            // }
+            updatedOptionList = JsonFlattenService.unflatten(data.options);
 
             if (updatedMetricList.length > 0) {
         		processedData = {

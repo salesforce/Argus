@@ -4,7 +4,7 @@ angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
 function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
-
+    var updatedOptionList = {};
     function compileLineChart(scope, newChartId, series, dateConfig) {
         // empty any previous content
         $("#" + newChartId).empty();
@@ -15,7 +15,16 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // assign items to new $scope
         lineChartScope.chartConfig = {
             chartId: newChartId,
-            chartTitle: scope.options['title.text'] || ''   // title is an attribute of <option>, and could be undefined
+            chartHeight: updatedOptionList.chart.height,
+            chartWidth: updatedOptionList.chart.width,
+            chartTitle: updatedOptionList.title.text,
+            chartTitleStyle: updatedOptionList.title.style,
+            chartSubtitle: updatedOptionList.subtitle.text,
+            chartSubtitleStyle: updatedOptionList.subtitle.style,
+            xAxisTitle: updatedOptionList.xAxis.title.text,
+            yAxisTitle: updatedOptionList.yAxis.title.text,
+            yAxisMax: updatedOptionList.yAxis.max,
+            yAxisMin: updatedOptionList.yAxis.min
         };
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
@@ -177,10 +186,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         }
 
         // re-assign each list for: metrics, annotations, options
-        // TODO: updatedMetricList is not defined sometimes
         var updatedMetricList = processedData.updatedMetricList;
         var updatedAnnotationList = processedData.updatedAnnotationList;
-        var updatedOptionList = processedData.updatedOptionList;
+        updatedOptionList = processedData.updatedOptionList;
 
         // define series first, then build list for each metric expression
         var series = [];
