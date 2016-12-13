@@ -1,6 +1,6 @@
 <div class="topToolbar">
-	<h3 class="chartTitle">{{chartConfig.chartTitle}}</h3>
-	<h4 class="chartTitle">{{chartConfig.chartSubtitle}}</h4>
+	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
+	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
 	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
 
 			<ul style="padding-left:0;"

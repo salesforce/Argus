@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, jsonFlattenService) {
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, JsonFlattenService) {
     'use strict';
 
     // Private methods
@@ -106,7 +106,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                         controlValue = controlValue.replace('GMT','');
                     }
                 }
-                controlValue = controlValue == undefined ? "" : controlValue;
+                controlValue = controlValue === undefined ? "" : controlValue;
                 result = result.replace(new RegExp(controlName, "g"), controlValue);
             }
 
@@ -120,7 +120,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 			var processedData = [];
             var updatedMetricList = [];
             var updatedAnnotationList = [];
-            var updatedOptionList = {};
+            var updatedOptionList = JsonFlattenService.unflatten(data.options);
 
             for (var key in data.metrics) {
                 if (data.metrics.hasOwnProperty(key)) {
@@ -158,7 +158,6 @@ angular.module('argus.services.charts.dataProcessing', [])
             //         updatedOptionList.push({name: key, value: data.options[key]});
             //     }
             // }
-            updatedOptionList = JsonFlattenService.unflatten(data.options);
 
             if (updatedMetricList.length > 0) {
         		processedData = {

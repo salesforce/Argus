@@ -13,19 +13,21 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
         // assign items to new $scope
-        lineChartScope.chartConfig = {
-            chartId: newChartId,
-            chartHeight: updatedOptionList.chart.height,
-            chartWidth: updatedOptionList.chart.width,
-            chartTitle: updatedOptionList.title.text,
-            chartTitleStyle: updatedOptionList.title.style,
-            chartSubtitle: updatedOptionList.subtitle.text,
-            chartSubtitleStyle: updatedOptionList.subtitle.style,
-            xAxisTitle: updatedOptionList.xAxis.title.text,
-            yAxisTitle: updatedOptionList.yAxis.title.text,
-            yAxisMax: updatedOptionList.yAxis.max,
-            yAxisMin: updatedOptionList.yAxis.min
-        };
+        // lineChartScope.chartConfig = {
+        //     chartId: newChartId,
+        //     chartHeight: updatedOptionList.chart.height || 320,
+        //     chartWidth: updatedOptionList.chart.width || 0,
+        //     chartTitle: updatedOptionList.title.text || "",
+        //     chartTitleStyle: updatedOptionList.title.style || {},
+        //     chartSubtitle: updatedOptionList.subtitle.text || "",
+        //     chartSubtitleStyle: updatedOptionList.subtitle.style || {},
+        //     xAxisTitle: updatedOptionList.xAxis.title.text || "",
+        //     yAxisTitle: updatedOptionList.yAxis.title.text || "",
+        //     yAxisMax: updatedOptionList.yAxis.max || 0,
+        //     yAxisMin: updatedOptionList.yAxis.min || 0
+        // };
+        lineChartScope.chartConfig = updatedOptionList;
+        lineChartScope.chartConfig.chartId = newChartId;
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
 
