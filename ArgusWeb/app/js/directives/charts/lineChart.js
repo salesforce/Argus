@@ -76,8 +76,18 @@ angular.module('argus.directives.charts.lineChart', [])
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
             var chartOptions = scope.chartConfig;
-            var agYMin = chartOptions.yAxis.min || chartOptions.yaxis.min;
-            var agYMax = chartOptions.yAxis.max || chartOptions.yaxis.max;
+
+            var agYMin = undefined, agYMax = undefined;
+            //provide support for yaxis lower case situation.
+            if(chartOptions.yAxis){
+                agYMin = chartOptions.yAxis.min;
+                agYMax = chartOptions.yAxis.max;
+            }
+            if(chartOptions.yaxis){
+                agYMin = agYMin || chartOptions.yaxis.min;
+                agYMax = agYMax || chartOptions.yaxis.max;
+            }
+
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
