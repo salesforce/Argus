@@ -407,7 +407,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY);
 
-                if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
+                if(isBrushInNonEmptyRange()) {
                     currSeries.forEach(function (metric) {
                         if (metric.data.length === 0) {
                             return;
@@ -642,7 +642,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var domainStart = x.domain()[0].getTime();
                 var domainEnd = x.domain()[1].getTime();
                 //redraw
-                if(domainStart <= dateExtent[1] &&  domainEnd >= dateExtent[0]) {
+                if(isBrushInNonEmptyRange()) {
+                    mainChart.selectAll('path.line').attr('display', null);
                     //update the dataum and redraw the line
                     currSeries.forEach(function (metric) {
                         if (metric === null || metric.data.length === 0) return;
@@ -664,6 +665,8 @@ angular.module('argus.directives.charts.lineChart', [])
                             .attr('d', line); //change the datum will call d3 to redraw
                     });
                     //svg_g.selectAll(".line").attr("d", line);//redraw the line
+                }else{
+                    mainChart.selectAll('path.line').attr('display', 'none');
                 }
                 xAxisG.call(xAxis);  //redraw xAxis
                 yAxisG.call(yAxis);  //redraw yAxis
@@ -735,12 +738,17 @@ angular.module('argus.directives.charts.lineChart', [])
                 var positionY = position[1];
                 var mouseX = x.invert(positionX);
                 var mouseY = y.invert(positionY); //domain value
-                focus.selectAll('circle').each(function (d, i) {
-                    var circle = d3.select(this);
-                    var dataX = circle.attr('dataX');
-                    var dataY = circle.attr('dataY');
-                    circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
-                });
+                if(isBrushInNonEmptyRange()) {
+                    focus.selectAll('circle').attr('display', null)
+                        .each(function (d, i) {
+                        var circle = d3.select(this);
+                        var dataX = circle.attr('dataX');
+                        var dataY = circle.attr('dataY');
+                        circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
+                    });
+                }else{
+                    focus.selectAll('circle').attr('display', 'none');
+                }
                 generateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
@@ -1030,8 +1038,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('width', width)
                     .attr('height', height)
                     .on('mouseover', function () {
-                        focus.style('display', null);
-                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                       mouseOverChart();
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
@@ -1053,8 +1060,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .on("mousedown.zoom", null)
                     .call(brushMain)
                     .on('mouseover', function () {
-                        focus.style('display', null);
-                        if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                       mouseOverChart();
                     })
                     .on('mouseout', function () {
                         focus.style('display', 'none');
@@ -1179,6 +1185,21 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (range > 3600000 * 24 * 365) {
                     //enable 1y button
                     $('[name=oneYear]', topToolbar).prop('disabled', false);
+                }
+            }
+
+            function isBrushInNonEmptyRange(){
+                return x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0];
+            }
+
+            function mouseOverChart(){
+                focus.style('display', null);
+                if(isBrushInNonEmptyRange()) {
+                    if (scope.menuOption.isTooltipOn) tip.style('display', null);
+                }else{
+                    //no need to show the circle to tip
+                    focus.selectAll('circle').attr('display', 'none');
+                    tip.attr('display', 'none');
                 }
             }
 
