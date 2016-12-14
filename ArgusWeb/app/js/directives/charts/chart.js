@@ -4,20 +4,18 @@ angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
 function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
     var chartNameIndex = 1;
-
-    function compileLineChart(scope, newChartId, series, dateConfig) {
+    function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
         // empty any previous content
         $("#" + newChartId).empty();
 
         // create a new scope to pass to compiled line-chart directive
         var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
-        // assign items to new $scope
-        lineChartScope.chartConfig = {
-            chartId: newChartId,
-            chartTitle: scope.options['title.text'] || '' ,  // title is an attribute of <option>, and could be undefined
-            options: scope.options
-        };
+        lineChartScope.chartConfig = updatedOptionList;
+        // add chartId in addition to ag options
+        lineChartScope.chartConfig.chartId = newChartId;
+        lineChartScope.chartConfig.options = scope.options;
+
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
 
@@ -39,7 +37,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
     }
 
-    function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig) {
+    function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
         Annotations.query({expression: annotationItem}).$promise.then(function(data) {
             if (data && data.length > 0) {
                 var forName = ChartDataProcessingService.createSeriesName(data[0]);
@@ -52,30 +50,29 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             }
 
             // append, compile, & attach new scope to line-chart directive
-            compileLineChart(scope, newChartId, series, dateConfig);
+            compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
 
         }, function (error) {
             console.log( 'no data found', error.data.message );
             // append, compile, & attach new scope to line-chart directive
-            compileLineChart(scope, newChartId, series, dateConfig);
+            compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
         });
     }
 
-    function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig) {
-
+    function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList) {
         if (updatedAnnotationList.length === 0) {
             // no annotations list, continue to render chart as normal
-            compileLineChart(scope, newChartId, series, dateConfig);
+            compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
         } else {
             // check annotations & add to series data for line-chart
             for (var i=0; i < updatedAnnotationList.length; i++) {
                 var annotationItem = updatedAnnotationList[i];
-                queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig);
+                queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList);
             }
         }
     }
 
-    function queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes) {
+    function queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes, updatedOptionList) {
         if (!metricItem) return;
 
         var smallChart = !!attributes.smallchart;
@@ -95,11 +92,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     // add 'smallChart' flag to scope
                     scope.chartOptions = {smallChart: smallChart};
                 }
-
                 // metric item attributes are assigned to the data (i.e. name, color, etc.)
                 tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
-
-                Array.prototype.push.apply(series, tempSeries);
             } else {
                 // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 console.log('Empty result returned for the metric expression');
@@ -111,11 +105,12 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }];
             }
 
+            Array.prototype.push.apply(series, tempSeries);
             // decrement metric count each time an expression is added to the series.
             metricCount.tot -= 1;
             if (metricCount.tot === 0) {
                 // check for Annotations
-                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
+                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList);
             }
         }, function (error) {
             // growl.error(error.message);
@@ -131,7 +126,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             metricCount.tot -= 1;
             if (metricCount.tot === 0) {
                 // display chart with series data and populate annotations
-                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig);
+                setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList);
             }
         });
     }
@@ -170,7 +165,6 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             }
         }
         dateConfig.gmt = GMTon;
-
         // process data for: metrics, annotations, options
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
 
@@ -180,11 +174,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         }
 
         // re-assign each list for: metrics, annotations, options
-        // TODO: updatedMetricList is not defined sometimes
         var updatedMetricList = processedData.updatedMetricList;
         var updatedAnnotationList = processedData.updatedAnnotationList;
         var updatedOptionList = processedData.updatedOptionList;
-
         // define series first, then build list for each metric expression
         var series = [];
         var metricCount = {};
@@ -197,7 +189,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             var metricItem = updatedMetricList[i];
 
             // get data for each metric item, bind optional data with metric data
-            queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes);
+            queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes, updatedOptionList);
         }
     }
 

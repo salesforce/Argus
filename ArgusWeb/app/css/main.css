@@ -222,6 +222,11 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .topToolbar .toolbar {position:relative; height:30px;}
 
 .toolbarItem {display:inline-block;}
+.toolbarItemPreview {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .toolbarMenu {display:inline-block; white-space:nowrap;}
 .toolbarMenu a.glyphicon {font-size:18px; color:#999;}

@@ -1,16 +1,15 @@
 <div class="topToolbar">
-	<h3 class="chartTitle">{{chartConfig.chartTitle}}</h3>
+	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
+	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
 	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
-
-		<div style="display:inline-block;">
 
 			<ul style="padding-left:0;"
 				ng-mouseover="hover = true"
 				ng-mouseleave="hover = false">
 
-				<li ng-repeat="source in sources track by $index" ng-show="$index < 1">
-					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
-					<a>{{source.name}}</a>
+				<li class="toolbarItemPreview">
+					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(sources[0])}"></span>
+					<a>{{sources[0].name}}</a>
 				</li>
 
 				<li class="toolbarItem legend floatPanel"
@@ -26,7 +25,6 @@
 					</ul>
 				</li>
 			</ul>
-		</div>
 
 		<div class="toolbarItem graphControls floatR">
 			<div class="toolbarMenu topMenu">
@@ -88,4 +86,3 @@
 		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}">{{dateRange}}</div>
 	</div>
 </div>
-
