@@ -617,7 +617,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			idsWithTimestamp.add(obj);
 		}
 		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alerts.size(), null);
-		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
+ 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
@@ -712,6 +712,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Override
 	public Notifier getNotifier(SupportedNotifier notifier) {
 		switch (notifier) {
+		case CALLBACK:
+			return _notifierFactory.getCallbackNotifier();
 		case EMAIL:
 			return _notifierFactory.getEmailNotifier();
 		case GOC:

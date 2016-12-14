@@ -235,6 +235,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         ];
 
         $scope.notificationTypes = [
+            {label: 'Callback', value: 'com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier'},
             {label: 'Audit', value: 'com.salesforce.dva.argus.service.alert.notifier.AuditNotifier'},
             {label: 'Mail', value: 'com.salesforce.dva.argus.service.alert.notifier.EmailNotifier'},
             {label: 'GOC++', value: 'com.salesforce.dva.argus.service.alert.notifier.GOCNotifier'},

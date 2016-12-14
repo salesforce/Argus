@@ -72,7 +72,8 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static final long GLOBAL_LOCK_EXPIRATION_PERIOD_MS = 1000L * 60L * 15L;
-    private static final long GLOBAL_LOCK_REFRESH_PERIOD_MS = 1000L * 60L * 14L;
+    private static final long GLOBAL_LOCK_REFRESH_PERIOD_MS = 1000L * 60L * 1L;
+//    private static final long GLOBAL_LOCK_REFRESH_PERIOD_MS = 1000L * 60L * 14L;
     private static final long GLOBAL_LOCK_ACQUISITION_PERIOD_MS = 1000L * 60L * 1L;
     private static final String GLOBAL_LOCK_NOTE_TEMPLATE = "Last refresh of {0} lock {1}, expires {2}.";
 
