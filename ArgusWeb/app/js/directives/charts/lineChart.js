@@ -75,6 +75,12 @@ angular.module('argus.directives.charts.lineChart', [])
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
+            var agOptions = scope.chartConfig.options;
+
+            var agYMin = agOptions['yAxis.min'];
+            var agYMax = agOptions['yAxis.max'];
+            if (isNaN(agYMin)) agYMin = undefined;
+            if (isNaN(agYMax)) agYMax = undefined;
 
             // set $scope values, get them from the local storage
             scope.menuOption = {
@@ -778,6 +784,8 @@ angular.module('argus.directives.charts.lineChart', [])
             //rescale YAxis based on XAxis Domain
             function reScaleY() {
                 if (currSeries === "series" || !currSeries) return;
+                if(agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
+
                 var xDomain = x.domain();
                 var datapoints = [];
 
@@ -796,8 +804,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
                 var diff = extent[1] - extent[0];
                 var buffer = diff * bufferRatio;
-                var yMin = extent[0] - buffer;
-                var yMax = extent[1] + buffer;
+                var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
+                var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
+
                 y.domain([yMin, yMax]);
 
             }
@@ -946,13 +955,22 @@ angular.module('argus.directives.charts.lineChart', [])
                 // }));
                 dateExtent = d3.extent(allDatapoints, function (d) {
                         return d[0];
-                })
+                });
 
-                y.domain(d3.extent(allDatapoints, function (d) {
+                var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
-                }));
+                });
+
+                if(agYMin !== undefined && agYMax !== undefined){
+                    y.domain([agYMin, agYMax]);
+                }else{
+                    y.domain(d3.extent(allDatapoints, function (d) {
+                        return d[1];
+                    }));
+                }
+
                 x2.domain(x.domain());
-                y2.domain(y.domain());
+                y2.domain(yDomain);
 
                 series.forEach(function (metric) {
                     if (metric.data.length === 0) return;
