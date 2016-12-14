@@ -662,7 +662,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         }
                         //if this metric time range is within the x domain
                         var start = bisectDate(metric.data, x.domain()[0]);
-                        var end = bisectDate(metric.data, x.domain()[1], start);
+                        if(start > 0) start-=1; //to avoid cut off issue on the edge
+                        var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
                         var data = metric.data.slice(start, end + 1);
 
                         //only render the data within the domain
