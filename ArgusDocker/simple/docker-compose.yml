@@ -6,7 +6,7 @@ services:
     container_name: opentsdb
     ports:
      - "4242:4242"
-      - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh:ro
+      - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh
       - ./conf/opentsdb/opentsdb.conf:/opt/opentsdb/config/opentsdb.conf:ro
   grafana:
     image: grafana/grafana:4.0.0
