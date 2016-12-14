@@ -437,7 +437,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                         var circle = focus.select('.' + metric.graphClassName);
 
-                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime()){
+                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
                             //outside domain
                             circle.attr('display', 'none');
                         }else{
