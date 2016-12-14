@@ -75,6 +75,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var startTime = scope.dateConfig.startTime;
             var endTime = scope.dateConfig.endTime;
             var GMTon = scope.dateConfig.gmt;
+            var chartOptions = scope.chartConfig;
 
             // set $scope values, get them from the local storage
             scope.menuOption = {
@@ -103,9 +104,15 @@ angular.module('argus.directives.charts.lineChart', [])
             var currSeries = series;
 
             // Layout parameters
-            var containerHeight = 320;
+            var containerHeight = 330;
             var containerWidth = $("#" + chartId).width();
-            var brushHeightFactor = 10;
+
+            if (chartOptions.chart !== undefined) {
+                containerHeight = chartOptions.chart.height === undefined ? containerHeight: chartOptions.chart.height;
+                containerWidth = chartOptions.chart.width === undefined ? containerWidth: chartOptions.chart.width;
+            }
+            var xAxisLabelHeightFactor = 15;
+            var brushHeightFactor = 20;
             var mainChartRatio = 0.8, //ratio of height
                 tipBoxRatio = 0.2,
                 brushChartRatio = 0.2
@@ -286,6 +293,27 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxisG = mainChart.append('g')
                     .attr('class', 'y axis')
                     .call(yAxis);
+
+                // add axis label if they are in ag options
+                if (chartOptions.xAxis!== undefined && chartOptions.xAxis.title !== undefined) {
+                    mainChart.append("text")
+                              .attr("class", "xAxisLabel")
+                              .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")")
+                              .style("text-anchor", "middle")
+                              .style("font-size", 12)
+                              .text(chartOptions.xAxis.title.text);
+                }
+                if (chartOptions.yAxis!== undefined && chartOptions.yAxis.title !== undefined) {
+                    mainChart.append("text")
+                              .attr("class", "yAxisLabel")
+                              .attr("transform", "rotate(-90)")
+                              .attr("y", 0 - margin.left)
+                              .attr("x",0 - (height / 2))
+                              .attr("dy", "1em")
+                              .style("text-anchor", "middle")
+                              .style("font-size", 12)
+                              .text(chartOptions.yAxis.title.text);
+                }
 
                 yAxisRG = mainChart.append('g')
                     .attr('class', 'y axis')
@@ -918,6 +946,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     xGridG.call(xGrid);
                     xAxisG2.call(xAxis2);
 
+                    // update x axis label if it's in ag options
+                    if (chartOptions.xAxis!== undefined && chartOptions.xAxis.title !== undefined) {
+                        mainChart.select(".xAxisLabel")
+                                  .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")");
+                    }
+
                     if (tempX[0].getTime() == x2.domain()[0].getTime() &&
                         tempX[1].getTime() == x2.domain()[1].getTime()) {
                         reset();
@@ -946,7 +980,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 // }));
                 dateExtent = d3.extent(allDatapoints, function (d) {
                         return d[0];
-                })
+                });
 
                 y.domain(d3.extent(allDatapoints, function (d) {
                     return d[1];
