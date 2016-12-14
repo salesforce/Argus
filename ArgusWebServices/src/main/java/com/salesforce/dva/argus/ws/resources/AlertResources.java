@@ -210,9 +210,11 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (alert != null) {
+		
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			return NotificationDto.transformToDto(alert.getNotifications());
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
@@ -241,8 +243,10 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			return TriggerDto.transformToDto(alert.getTriggers());
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
@@ -275,9 +279,10 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					return NotificationDto.transformToDto(notification);
@@ -315,8 +320,10 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					return TriggerDto.transformToDto(notification.getTriggers());
@@ -354,8 +361,10 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			for (Trigger trigger : alert.getTriggers()) {
 				if (trigger.getId().equals(triggerId)) {
 					return TriggerDto.transformToDto(trigger);
@@ -397,9 +406,10 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (alert != null) {
+		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
+		}
+		if (alert != null) {
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					for (Trigger trigger : notification.getTriggers()) {
