@@ -627,11 +627,18 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('x2', width).attr('y2', Y);
                 //add some information around the axis
 
+                var textY;
+                if(mouseY){
+                    textY = d3.format('.2s')(mouseY);
+                }else{
+                    textY = "No Data";
+                }
+
                 focus.select('[name=crossLineTipY')
                     .attr('x', 0)
                     .attr('y', Y)
                     .attr('dx', -crossLineTipWidth)
-                    .text(d3.format('.2s')(mouseY));
+                    .text(textY);
 
                 //add a background to it
                 var boxY = focus.select('[name=crossLineTipY]').node().getBBox();
