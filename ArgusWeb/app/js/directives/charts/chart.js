@@ -14,7 +14,6 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.chartConfig = updatedOptionList;
         // add chartId in addition to ag options
         lineChartScope.chartConfig.chartId = newChartId;
-        lineChartScope.chartConfig.options = scope.options;
 
         lineChartScope.series = series;
         lineChartScope.dateConfig = dateConfig;
