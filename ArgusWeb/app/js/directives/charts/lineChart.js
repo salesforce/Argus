@@ -508,7 +508,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 }
-                generateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             function toolTipUpdate(group, datapoints, X, Y) {
@@ -616,7 +616,7 @@ angular.module('argus.directives.charts.lineChart', [])
              mouseX,mouseY are actual values
              X,Y are coordinates value
              */
-            function generateCrossLine(mouseX, mouseY, X, Y) {
+            function updateCrossLine(mouseX, mouseY, X, Y) {
                 //if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
 
                 focus.select('[name=crossLineX]')
@@ -797,11 +797,15 @@ angular.module('argus.directives.charts.lineChart', [])
                         var dataX = circle.attr('dataX');
                         var dataY = circle.attr('dataY');
                         circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
+
+                        if(dataX < x.domain()[0] || dataX > x.domain()[1]){
+                            circle.attr('display', 'none');
+                        }
                     });
                 }else{
                     focus.selectAll('circle').attr('display', 'none');
                 }
-                generateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             //change brush focus range, k is the number of minutes
