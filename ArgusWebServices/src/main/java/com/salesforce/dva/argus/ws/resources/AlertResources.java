@@ -210,7 +210,6 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-		
 		if (alert != null && !alert.isShared()) {
 			validateResourceAuthorization(req, alert.getOwner(), owner);
 		}
