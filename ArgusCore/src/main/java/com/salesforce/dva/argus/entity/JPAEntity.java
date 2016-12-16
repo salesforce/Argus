@@ -132,8 +132,6 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     protected Date modifiedDate;
     @OneToMany(mappedBy = "entity", orphanRemoval = false)
     List<Audit> audits;
-    @OneToMany(mappedBy = "entity", orphanRemoval = false)
-    List<History> history;
     protected boolean deleted = false;
 
     //~ Constructors *********************************************************************************************************************************

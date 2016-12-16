@@ -50,36 +50,16 @@ public interface HistoryService extends Service {
     void deleteExpiredHistory();
 
     /**
-     * Creates or updates job history.
-     *
-     * @param   history  The job history record to create or update. Cannot be null.
-     *
-     * @return  Updated job history object.
-     */
-    History updateHistory(History history);
-
-    /**
      * Creates a new job history record.
      *
-     * @param   message        The message pattern.
      * @param   entity         The entity to which the job history will be attached.
+     * @param   message        The message.
      * @param   jobStatus      The status of the job.
-     * @param   waitTime       Job waiting time in MS.
      * @param   executionTime  Total job execution time in MS.
-     * @param   params         The message parameters.
      *
      * @return  Created audit object.
      */
-    History createHistory(String message, JPAEntity entity, JobStatus jobStatus, long waitTime, long executionTime, Object... params);
-
-    /**
-     * Finds the history object by Id.
-     *
-     * @param   id  Id of the job. Cannot be null and must be a positive non-zero number.
-     *
-     * @return  The job history record.
-     */
-    History findHistoryByPrimaryKey(BigInteger id);
+    History createHistory(JPAEntity entity, String message, JobStatus jobStatus, long executionTime);
 
     /**
      * Finds Job history for a given job.
@@ -93,35 +73,22 @@ public interface HistoryService extends Service {
     /**
      * Finds Job history for a given job.
      *
-     * @param   entityId  jobId The job Id for which the history requested. Cannot be null.
-     * @param   limit     result set size
+     * @param   entityId  		The entity for which the history is requested. Cannot be null and must be greater than 0.
+     * @param   limit    		Maximum number of history objects to retrieve. 
      *
-     * @return  History for a given entity.
+     * @return  List of History objects for a given entity.
      */
-    List<History> findByJob(BigInteger entityId, BigInteger limit);
+    List<History> findByJob(BigInteger entityId, int limit);
 
     /**
      * Finds Job history for a given job.
      *
-     * @param   entityId   jobId The job Id for which the history requested. Cannot be null.
-     * @param   limit      result set size.
-     * @param   jobStatus  The status of the job.
+     * @param   entityId  		The entity for which the history is requested. Cannot be null and must be greater than 0.
+     * @param   limit    		Maximum number of history objects to retrieve.
+     * @param   jobStatus  		The status of the job.
      *
      * @return  History for a given entity.
      */
-    List<History> findByJobAndStatus(BigInteger entityId, BigInteger limit, JobStatus jobStatus);
-
-    /**
-     * Appends the message to the existing job history. Properties with default values are ignored.
-     *
-     * @param   id             Job history Id. Cannot be null.
-     * @param   message        Message to be appended.
-     * @param   jobStatus      The status of the job.
-     * @param   waitTime       Job waiting time in MS.
-     * @param   executionTime  Total job execution time in MS.
-     *
-     * @return  updated job history object.
-     */
-    History appendMessageAndUpdate(BigInteger id, String message, JobStatus jobStatus, long waitTime, long executionTime);
+    List<History> findByJobAndStatus(BigInteger entityId, int limit, JobStatus jobStatus);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

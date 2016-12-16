@@ -134,6 +134,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 subscriptions: [],
                 metricsToAnnotate: [],
                 cooldownPeriod: 0,
+                sractionable:false,
                 alertId: $scope.alert.id
             };
 
