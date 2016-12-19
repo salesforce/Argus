@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', '$compile',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, $compile) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', '$compile',
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, $compile) {
 
         $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
@@ -46,7 +46,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             color: 'Maroon'
                         }];
                     }
-                    $scope.updateChart({}, tempSeries);
+                    $scope.updateChart(tempSeries);
                     $scope.showLoaded = true;
                 }, function (error) {
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
@@ -56,13 +56,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                         name: error.config.params.expression,
                         color: 'Black'
                     }];
-                    $scope.updateChart({}, tempSeries);
+                    $scope.updateChart(tempSeries);
                     $scope.showLoaded = true;
                 });
             } else {
                 // TODO: handle empty input on graph
                 $scope.checkMetricExpression();
-                $scope.updateChart({}, $scope.expression);
+                $scope.updateChart($scope.expression);
                 $scope.showLoaded = true;
             }
         };
@@ -197,7 +197,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (config, series) {
+        $scope.updateChart = function (series) {
             // var options = config ? angular.copy(config) : {};
             // var series = $scope.copySeries(data);
             // options.credits = {enabled: false};
@@ -257,14 +257,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 });
 
                 // get start and end time info based on data range
-                var getAllTimestamps = function(item) {
-                    return item.data.map(function(datapoint) {
-                        return datapoint[0]
-                    });
-                };
-                if (series[0].data) {
-                    chartScope.dateConfig.startTime = Math.min.apply(Math, series.map(getAllTimestamps)[0]);
-                    chartScope.dateConfig.endTime = Math.max.apply(Math, series.map(getAllTimestamps)[0]);
+                if (series[0].data && series[0].data.length > 0) {
+                    chartScope.dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
+                    chartScope.dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
                 }
                 chartScope.dateConfig.gmt = true;
 
@@ -354,26 +349,26 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             return result;
         };
 
-        $scope.copySeries = function (data) {
-            var result = [];
-            if (data) {
-                for (var i = 0; i < data.length; i++) {
-                	var series = [];
-                	for(var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !== null){
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
-                    var id = $scope.createSeriesName(data[i]);
-                    result.push({name: id, id: id, data: series,marker : {enabled : true, radius: 1}});
-                }
-            } else {
-                result.push({name: 'result', data: []});
-            }
-            return result;
-        };
+        // $scope.copySeries = function (data) {
+        //     var result = [];
+        //     if (data) {
+        //         for (var i = 0; i < data.length; i++) {
+        //         	var series = [];
+        //         	for(var key in data[i].datapoints) {
+        //         		var timestamp = parseInt(key);
+        //         		if(data[i].datapoints[key] !== null){
+        //         			var value = parseFloat(data[i].datapoints[key]);
+        //         			series.push([timestamp, value]);
+        //         		}
+        //         	}
+        //             var id = $scope.createSeriesName(data[i]);
+        //             result.push({name: id, id: id, data: series,marker : {enabled : true, radius: 1}});
+        //         }
+        //     } else {
+        //         result.push({name: 'result', data: []});
+        //     }
+        //     return result;
+        // };
 
         $scope.createSeriesName = function (metric) {
             var scope = metric.scope;
