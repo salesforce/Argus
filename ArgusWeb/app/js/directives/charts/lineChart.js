@@ -628,10 +628,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 //add some information around the axis
 
                 var textY;
-                if(mouseY){
-                    textY = d3.format('.2s')(mouseY);
-                }else{
+                if(isNaN(mouseY)){ //mouseY can be 0
                     textY = "No Data";
+                }else{
+                    textY = d3.format('.2s')(mouseY);
                 }
 
                 focus.select('[name=crossLineTipY')
@@ -1005,13 +1005,16 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
 
                 //x domain was set according to dateConfig previously
-                //this shows exactly the date range defined by user instread of actual data
-                // x.domain(d3.extent(allDatapoints, function (d) {
-                //     return d[0];
-                // }));
+                //this shows exactly the date range defined by user instead of actual data
+
                 dateExtent = d3.extent(allDatapoints, function (d) {
                         return d[0];
                 });
+
+                if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
+                if(!endTime) endTime = dateExtent[1];
+
+                x.domain([startTime, endTime]);
 
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
