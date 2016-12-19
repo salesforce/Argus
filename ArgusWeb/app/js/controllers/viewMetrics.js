@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', '$compile',
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, $compile) {
 
         $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
@@ -27,18 +27,43 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         });
 
         $scope.getMetricData = function () {
+            var tempSeries;
             if ($scope.expression !== null && $scope.expression.length) {
+                // clear old chart
+                $("#" + "container").empty();
                 $scope.checkMetricExpression();
+                // show loading spinner
+                $scope.showLoaded = false;
+
                 Metrics.query({expression: $scope.expression}, function (data) {
-                    $scope.showLoading = true;
-                    $scope.updateChart({}, data);
+                    if (data && data.length > 0) {
+                        tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, {})
+                    } else {
+                        tempSeries = [{
+                            noData: true,
+                            errorMessage: 'Empty result returned for the metric expression',
+                            name: JSON.stringify($scope.expression).slice(1, -1),
+                            color: 'Maroon'
+                        }];
+                    }
+                    $scope.updateChart({}, tempSeries);
+                    $scope.showLoaded = true;
                 }, function (error) {
-                    $scope.updateChart({}, null);
                     growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    tempSeries = [{
+                        invalidMetric: true,
+                        errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+                        name: error.config.params.expression,
+                        color: 'Black'
+                    }];
+                    $scope.updateChart({}, tempSeries);
+                    $scope.showLoaded = true;
                 });
             } else {
+                // TODO: handle empty input on graph
                 $scope.checkMetricExpression();
                 $scope.updateChart({}, $scope.expression);
+                $scope.showLoaded = true;
             }
         };
 
@@ -172,49 +197,83 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (config, data) {
-            var options = config ? angular.copy(config) : {};
-            var series = $scope.copySeries(data);
-            options.credits = {enabled: false};
-            options.rangeSelector = {selected: 1, inputEnabled: false};
-            options.xAxis = {
-            	type: 'datetime',
-            	ordinal: false
-            };
+        $scope.updateChart = function (config, series) {
+            // var options = config ? angular.copy(config) : {};
+            // var series = $scope.copySeries(data);
+            // options.credits = {enabled: false};
+            // options.rangeSelector = {selected: 1, inputEnabled: false};
+            // options.xAxis = {
+            // 	type: 'datetime',
+            // 	ordinal: false
+            // };
+            //
+            // //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
+            // options.lang = {noData: 'No Data to Display'};
+            // options.legend = {
+            //     enabled: true,
+            //     maxHeight: 62,
+            //     itemStyle: {
+            //         fontWeight: 'normal',
+            //         fontSize: '10px'
+            //     },
+            //     navigation : {
+            //         style : {
+            //             fontWeight: 'normal',
+            //             fontSize: '10px'
+            //         }
+            //     }
+            // };
+            // options.series = series;
+            // options.plotOptions = {
+            // 	series: {
+            // 		animation: false,
+            // 		connectNulls: true
+            // 	},
+            // 	line : {
+            // 		gapSize:1.5
+            // 	}
+            // };
+            //
+            // options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
 
-            //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
-            options.lang = {noData: 'No Data to Display'};
-            options.legend = {
-                enabled: true,
-                maxHeight: 62,
-                itemStyle: {
-                    fontWeight: 'normal',
-                    fontSize: '10px'
-                },
-                navigation : {
-                    style : {
-                        fontWeight: 'normal',
-                        fontSize: '10px'
-                    }
+            // $('#container').highcharts('StockChart', options);
+
+
+            // if the metric expression is no empty
+            if (series) {
+                var chartScope = $scope.$new(false);
+                chartScope.chartConfig = {chartId: 'container'};
+                chartScope.dateConfig = {};
+                chartScope.series = series;
+
+                // all graph class name and sort sources alphabetically
+                for (var i = 0; i < series.length; i++) {
+                    chartScope.series[i].graphClassName = chartScope.chartConfig.chartId + "_graph" + (i + 1);
                 }
-            };
-            options.series = series;
-            options.plotOptions = {
-            	series: {
-            		animation: false,
-            		connectNulls: true
-            	},
-            	line : {
-            		gapSize:1.5
-            	}
-            };
+                chartScope.series.sort(function(a, b) {
+                    var textA = a.name.toUpperCase();
+                    var textB = b.name.toUpperCase();
+                    return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+                });
 
-            options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
+                // get start and end time info based on data range
+                var getAllTimestamps = function(item) {
+                    return item.data.map(function(datapoint) {
+                        return datapoint[0]
+                    });
+                };
+                if (series[0].data) {
+                    chartScope.dateConfig.startTime = Math.min.apply(Math, series.map(getAllTimestamps)[0]);
+                    chartScope.dateConfig.endTime = Math.max.apply(Math, series.map(getAllTimestamps)[0]);
+                }
+                chartScope.dateConfig.gmt = true;
 
-            $('#container').highcharts('StockChart', options);
+                // draw new chart
+                angular.element("#" + "container").append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope) );
+            }
 
             $scope.series = series;
-            $scope.addAlertFlags(data);
+            // $scope.addAlertFlags(data);
         };
 
         // TODO: move all below scope functions to a public Scope service
