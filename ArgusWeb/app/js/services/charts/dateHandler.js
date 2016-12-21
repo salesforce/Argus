@@ -38,4 +38,19 @@ angular.module('argus.services.charts.dateHandler', [])
         // true if offset and string with GMT are used for input
         return (timeValue.indexOf('-') !== -1) || (timeValue.indexOf('GMT') !== -1);
     };
+
+    // assuming series' data is sorted already
+    this.getStartTimestamp = function(series) {
+        var allStartTimestamp = series.map(function(item) {
+            return item.data[0][0];
+        });
+        return Math.min.apply(null, allStartTimestamp);
+    };
+
+    this.getEndTimestamp = function(series) {
+        var allStartTimestamp = series.map(function(item) {
+            return item.data[item.data.length - 1][0];
+        });
+        return Math.max.apply(null, allStartTimestamp);
+    };
 });

@@ -1064,6 +1064,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .text(function(d){return d;});
             }
 
+            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!scope || !scope.series) return;
 
@@ -1321,6 +1322,9 @@ angular.module('argus.directives.charts.lineChart', [])
                     // generate content for no graph message
                     if (invalidExpression) {
                         messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        for (var i = 0; i < scope.invalidSeries.length; i ++) {
+                            messageToDisplay.push(scope.invalidSeries[i].errorMessage);
+                        }
                         messageToDisplay.push('(Failed metrics are labeled black in the legend)');
                     }
                     if (emptyReturn) {
