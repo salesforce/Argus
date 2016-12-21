@@ -1061,6 +1061,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .text(function(d){return d;});
             }
 
+            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!scope || !scope.series) return;
 
