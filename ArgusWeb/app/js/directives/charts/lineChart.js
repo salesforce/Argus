@@ -729,6 +729,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     context.attr("display", "none");
                 }
                 updateDateRange();
+                updateAnnotations();
             }
 
             //brushed
@@ -1077,13 +1078,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
 
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                var label = flagsG.selectAll("flagItem")
+                //clear previous graph element
+                flagsG.selectAll(".flagItem").remove();
+                var label = flagsG.selectAll(".flagItem")
                     .data(flagSeries)
                     .enter().append("g")
                     .attr("class", "flagItem")
                     .attr("transform", function (d) {
                         // x, xAxis, xAxisG
-                        var x_Val = 200;   // x(d.x); // d.x is timestamp of X axis
+                        var x_Val = x(d.x); // d.x is timestamp of X axis
                         var y_Val = height - 35;
                         return "translate(" + x_Val + ", " + y_Val + ")";
                     });
