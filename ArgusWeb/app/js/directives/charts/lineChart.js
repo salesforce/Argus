@@ -77,6 +77,22 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTon = scope.dateConfig.gmt;
             var chartOptions = scope.chartConfig;
 
+            var agYMin, agYMax;
+            //provide support for yaxis lower case situation.
+            if(chartOptions.yAxis){
+                agYMin = chartOptions.yAxis.min;
+                agYMax = chartOptions.yAxis.max;
+            }
+            if(chartOptions.yaxis){
+                agYMin = agYMin || chartOptions.yaxis.min;
+                agYMax = agYMax || chartOptions.yaxis.max;
+            }
+
+            if (isNaN(agYMin)) agYMin = undefined;
+            if (isNaN(agYMax)) agYMax = undefined;
+
+
+
             // set $scope values, get them from the local storage
             scope.menuOption = {
                 isWheelOn : false,
@@ -459,7 +475,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                         var circle = focus.select('.' + metric.graphClassName);
 
-                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime()){
+                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
                             //outside domain
                             circle.attr('display', 'none');
                         }else{
@@ -492,7 +508,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 }
-                generateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             function toolTipUpdate(group, datapoints, X, Y) {
@@ -600,7 +616,7 @@ angular.module('argus.directives.charts.lineChart', [])
              mouseX,mouseY are actual values
              X,Y are coordinates value
              */
-            function generateCrossLine(mouseX, mouseY, X, Y) {
+            function updateCrossLine(mouseX, mouseY, X, Y) {
                 //if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
 
                 focus.select('[name=crossLineX]')
@@ -611,11 +627,18 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('x2', width).attr('y2', Y);
                 //add some information around the axis
 
+                var textY;
+                if(isNaN(mouseY)){ //mouseY can be 0
+                    textY = "No Data";
+                }else{
+                    textY = d3.format('.2s')(mouseY);
+                }
+
                 focus.select('[name=crossLineTipY')
                     .attr('x', 0)
                     .attr('y', Y)
                     .attr('dx', -crossLineTipWidth)
-                    .text(d3.format('.2s')(mouseY));
+                    .text(textY);
 
                 //add a background to it
                 var boxY = focus.select('[name=crossLineTipY]').node().getBBox();
@@ -684,7 +707,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         }
                         //if this metric time range is within the x domain
                         var start = bisectDate(metric.data, x.domain()[0]);
-                        var end = bisectDate(metric.data, x.domain()[1], start);
+                        if(start > 0) start-=1; //to avoid cut off issue on the edge
+                        var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
                         var data = metric.data.slice(start, end + 1);
 
                         //only render the data within the domain
@@ -705,6 +729,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     context.attr("display", "none");
                 }
                 updateDateRange();
+                updateAnnotations();
             }
 
             //brushed
@@ -773,11 +798,15 @@ angular.module('argus.directives.charts.lineChart', [])
                         var dataX = circle.attr('dataX');
                         var dataY = circle.attr('dataY');
                         circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')');
+
+                        if(dataX < x.domain()[0] || dataX > x.domain()[1]){
+                            circle.attr('display', 'none');
+                        }
                     });
                 }else{
                     focus.selectAll('circle').attr('display', 'none');
                 }
-                generateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, mouseY, positionX, positionY);
             }
 
             //change brush focus range, k is the number of minutes
@@ -806,6 +835,8 @@ angular.module('argus.directives.charts.lineChart', [])
             //rescale YAxis based on XAxis Domain
             function reScaleY() {
                 if (currSeries === "series" || !currSeries) return;
+                if(agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
+
                 var xDomain = x.domain();
                 var datapoints = [];
 
@@ -824,8 +855,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
                 var diff = extent[1] - extent[0];
                 var buffer = diff * bufferRatio;
-                var yMin = extent[0] - buffer;
-                var yMax = extent[1] + buffer;
+                var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
+                var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
+
                 y.domain([yMin, yMax]);
 
             }
@@ -974,19 +1006,29 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
 
                 //x domain was set according to dateConfig previously
-                //this shows exactly the date range defined by user instread of actual data
-                // x.domain(d3.extent(allDatapoints, function (d) {
-                //     return d[0];
-                // }));
+                //this shows exactly the date range defined by user instead of actual data
+
                 dateExtent = d3.extent(allDatapoints, function (d) {
                         return d[0];
                 });
 
-                y.domain(d3.extent(allDatapoints, function (d) {
+                if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
+                if(!endTime) endTime = dateExtent[1];
+
+                x.domain([startTime, endTime]);
+
+                var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
-                }));
+                });
+
+                if(agYMin !== undefined && agYMax !== undefined){
+                    y.domain([agYMin, agYMax]);
+                }else{
+                    y.domain(yDomain);
+                }
+
                 x2.domain(x.domain());
-                y2.domain(y.domain());
+                y2.domain(yDomain);
 
                 series.forEach(function (metric) {
                     if (metric.data.length === 0) return;
@@ -1023,6 +1065,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .text(function(d){return d;});
             }
 
+            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!scope || !scope.series) return;
 
@@ -1035,13 +1078,15 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
 
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                var label = flagsG.selectAll("flagItem")
+                //clear previous graph element
+                flagsG.selectAll(".flagItem").remove();
+                var label = flagsG.selectAll(".flagItem")
                     .data(flagSeries)
                     .enter().append("g")
                     .attr("class", "flagItem")
                     .attr("transform", function (d) {
                         // x, xAxis, xAxisG
-                        var x_Val = 200;   // x(d.x); // d.x is timestamp of X axis
+                        var x_Val = x(d.x); // d.x is timestamp of X axis
                         var y_Val = height - 35;
                         return "translate(" + x_Val + ", " + y_Val + ")";
                     });
@@ -1280,6 +1325,9 @@ angular.module('argus.directives.charts.lineChart', [])
                     // generate content for no graph message
                     if (invalidExpression) {
                         messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        for (var i = 0; i < scope.invalidSeries.length; i ++) {
+                            messageToDisplay.push(scope.invalidSeries[i].errorMessage);
+                        }
                         messageToDisplay.push('(Failed metrics are labeled black in the legend)');
                     }
                     if (emptyReturn) {

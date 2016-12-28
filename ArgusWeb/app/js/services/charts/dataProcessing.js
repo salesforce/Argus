@@ -215,13 +215,45 @@ angular.module('argus.services.charts.dataProcessing', [])
                             break;
                         }
                     }
-
+                    //TODO: addSeries is a highchart function; it wont work with d3
                     chart.addSeries(series);
                 }
             }, function (error) {
                 console.log( 'no data found', error.data.message );
             });
         },
+
+        getDatapointRange: function (datapoints) {
+            var result = {start: Number.MAX_VALUE, end: Number.MIN_VALUE};
+            for (var key in datapoints) {
+                if (datapoints.hasOwnProperty(key)) {
+                    if (key < result.start) {
+                        result.start = key;
+                    }
+                    if (key > result.end) {
+                        result.end = key;
+                    }
+                }
+            }
+            return result;
+        },
+
+        getAlertFlagExpression: function (metric) {
+            if (metric && metric.datapoints) {
+                var range = this.getDatapointRange(metric.datapoints);
+                var scopeName = metric.scope;
+                var metricName = metric.metric;
+                var tagData = metric.tags;
+                var result = range.start + ":" + range.end + ":" + scopeName + ":" + metricName;
+                result += createTagString(tagData);
+                result += ":ALERT";
+                return result;
+            } else {
+                return null;
+            }
+        },
+
+        copySeries: copySeries,
 
         createSeriesName: createSeriesName,
 

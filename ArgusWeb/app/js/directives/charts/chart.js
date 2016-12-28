@@ -14,7 +14,15 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         lineChartScope.chartConfig = updatedOptionList;
         // add chartId in addition to ag options
         lineChartScope.chartConfig.chartId = newChartId;
+
         lineChartScope.series = series;
+        // when there is no agDate
+        if (dateConfig.startTime == undefined || dateConfig.endTime == undefined) {
+            if (series[0].data && series[0].data.length > 0) {
+                dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
+                dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
+            }
+        }
         lineChartScope.dateConfig = dateConfig;
 
         // give each series an unique ID if it has data
@@ -43,7 +51,6 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 flagSeries.linkedTo = forName;
 
                 // add flagSeries if any data exists
-                //TODO: handle undefined flagSeries situation
                 series[0].flagSeries = (flagSeries) ? flagSeries: null;
             }
 
