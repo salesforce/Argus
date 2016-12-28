@@ -645,9 +645,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
             Map<Metric, Double> counters = new HashMap<>();
             
             _updateJVMStatsCounters();
-            sizeJVMMetrics = _metrics.size();
 
             synchronized (_metrics) {
+                sizeJVMMetrics = _metrics.size();
                 counters.putAll(_metrics);
                 _metrics.clear();
             }
