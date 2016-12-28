@@ -37,7 +37,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
         });
 
-        scope.seriesDataLoaded = true; //
+        scope.seriesDataLoaded = true;
 
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
@@ -65,6 +65,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
     }
 
     function setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList) {
+
         if (updatedAnnotationList.length === 0) {
             // no annotations list, continue to render chart as normal
             compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
@@ -143,7 +144,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // generate a new chart ID, set css options for main chart container
         var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
         var chartType = attributes.type ? attributes.type : 'LINE';
-        var cssOpts = ( attributes.smallChart ) ? 'smallChart' : '';
+        var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
         // set the charts container for rendering
         ChartRenderingService.setChartContainer(element, newChartId, cssOpts);
@@ -170,6 +171,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             }
         }
         dateConfig.gmt = GMTon;
+
         // process data for: metrics, annotations, options
         var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
 
@@ -182,6 +184,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var updatedMetricList = processedData.updatedMetricList;
         var updatedAnnotationList = processedData.updatedAnnotationList;
         var updatedOptionList = processedData.updatedOptionList;
+
         // define series first, then build list for each metric expression
         var series = [];
         var metricCount = {};

@@ -91,14 +91,14 @@ h3.bcTitle {margin:11px 0 0 35px; font-size:18px;}
 h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .rowIndicator {position:relative; margin-bottom:.5em;}
-.serviceItem {position:absolute; top:9px; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
+.serviceItem {position:absolute; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
 .rowIndicator.largeLabel .serviceItem {padding:.5em 1em;}
+
 .serviceItem .serviceName {margin-bottom:.5em; font-size:14px; font-weight:bold;}
 .serviceItem .statusIndicator {display:inline-block; width:15px; height:15px; border:solid 1px; border-radius:10px;}
 .serviceItem .statusIndicator.red {background-color:red; border-color:red;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
-.smallChart {padding-left:9em; width:100%;}
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
@@ -214,6 +214,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 /* main elements */
 .chartContainer {margin:0 .5em .5em 0; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
+.smallChart {padding-left:9em; width:100%; border:none;}
 .lineChartToolbar {margin-left:3em;}
 
 /** Toolbars */
