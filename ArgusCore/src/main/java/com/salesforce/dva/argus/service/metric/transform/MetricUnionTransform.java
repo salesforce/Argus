@@ -102,7 +102,6 @@ public class MetricUnionTransform implements Transform {
             return metrics;
         }
 
-        List<Metric> newMetricsList = new ArrayList<Metric>();
         Metric newMetric = reduce(metrics);
         Map<Long, String> reducedDatapoints = newMetric.getDatapoints();
         Set<Long> sharedTimestamps = reducedDatapoints.keySet();
@@ -115,10 +114,9 @@ public class MetricUnionTransform implements Transform {
                 }
             }
         }
-        unionDatapoints.putAll(reduce(metrics).getDatapoints());
-        newMetric.setDatapoints(unionDatapoints);
-        newMetricsList.add(newMetric);
-        return newMetricsList;
+        
+        newMetric.addDatapoints(unionDatapoints);
+        return Arrays.asList(newMetric);
     }
 
     /**

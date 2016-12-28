@@ -1,6 +1,6 @@
 angular.module('argus.controllers.alerts.detail', ['ngResource'])
-.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails',
-    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails) {
+.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage',
+    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage) {
 
         $scope.isAlertDirty = function () {
             return !angular.equals($scope.alert, $scope.unmodifiedAlert);
@@ -17,12 +17,14 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         $scope.updateAlert = function () {
             if ($scope.isAlertDirty()) {
                 var alert = $scope.alert;
-                
+
                 Alerts.update({alertId: alert.id}, alert, function (result) {
                     $scope.unmodifiedAlert = angular.copy(alert);
                     growl.success(('Updated "') + alert.name + '"');
                     $scope.fetchHistory();
                     $scope.fetchJobExecutionDetails();
+                    // remove existing session storage for update
+                    delete $sessionStorage.cachedAlerts;
                 }, function (error) {
                     growl.error('Failed to update "' + alert.name + '"');
                 });
@@ -113,7 +115,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 inertia: 0,
                 alertId: $scope.alert.id
             };
-            
+
             Triggers.save({alertId: $scope.alert.id}, trigger, function (result) {
                 angular.copy(result, $scope.triggers);
                 $scope.unmodifiedTriggers = angular.copy($scope.triggers);
@@ -132,9 +134,10 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 subscriptions: [],
                 metricsToAnnotate: [],
                 cooldownPeriod: 0,
+                sractionable:false,
                 alertId: $scope.alert.id
             };
-            
+
             Notifications.save({alertId: $scope.alert.id}, notification, function (result) {
                 angular.copy(result, $scope.notifications);
                 $scope.unmodifiedNotifications = angular.copy($scope.notifications);
@@ -252,7 +255,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         $scope.notifications = [];
         $scope.unmodifiedTriggers = [];
         $scope.unmodifiedNotifications = [];
-        
+
         if ($scope.alertId > 0) {
             Alerts.get({alertId: $scope.alertId}, function (alert) {
                 $scope.alert = alert;
@@ -261,14 +264,14 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 growl.error('Failed to get alert "' + $scope.alertId + '"');
                 $location.path('/alerts');
             });
-            
+
             Triggers.query({alertId: $scope.alertId}, function (triggers) {
                 $scope.triggers = triggers;
                 $scope.unmodifiedTriggers = angular.copy(triggers);
             }, function (error) {
                 growl.error('Failed to get triggers for alert "' + $scope.alertId + '"');
             });
-            
+
             Notifications.query({alertId: $scope.alertId}, function (notifications) {
                 $scope.notifications = notifications;
                 $scope.unmodifiedNotifications = angular.copy(notifications);

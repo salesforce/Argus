@@ -12,4 +12,4 @@ More details about commandline arguments can be found on the
 
 ## More information about this project
 
-To find out more [see the wiki.](https://github.com/SalesforceEng/Argus/wiki)
+To find out more [see the wiki.](https://github.com/salesforce/Argus/wiki)

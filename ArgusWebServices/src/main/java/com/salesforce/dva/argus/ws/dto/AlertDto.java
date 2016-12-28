@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.ws.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -61,6 +61,7 @@ public class AlertDto extends EntityDTO {
     private List<BigInteger> notificationsIds = new ArrayList<>(0);
     private List<BigInteger> triggersIds = new ArrayList<>(0);
     private String ownerName;
+    private boolean shared;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -108,6 +109,49 @@ public class AlertDto extends EntityDTO {
 
         for (Alert alert : alerts) {
             result.add(transformToDto(alert));
+        }
+        return result;
+    }
+
+    /**
+     * Converts alert entity to alertDto.
+     *
+     * @param   alert  The alert object. Cannot be null.
+     *
+     * @return  AlertDto object.
+     *
+     * @throws  WebApplicationException  If an error occurs.
+     */
+    public static AlertDto transformToDtoNoContent(Alert alert) {
+        if (alert == null) {
+            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
+        }
+
+        AlertDto result = createDtoObject(AlertDto.class, alert);
+        result.setOwnerName(alert.getOwner().getUserName());
+        // set expression to be empty; notification and triggers are empty by default
+        result.setExpression("");
+        return result;
+    }
+
+    /**
+     * Converts list of alert entity objects to list of alertDto objects without the content.
+     *
+     * @param   alerts  List of alert entities. Cannot be null.
+     *
+     * @return  List of alertDto objects without their content.
+     *
+     * @throws  WebApplicationException  If an error occurs.
+     */
+    public static List<AlertDto> transformToDtoNoContent(List<Alert> alerts) {
+        if (alerts == null) {
+            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
+        }
+
+        List<AlertDto> result = new ArrayList<AlertDto>();
+
+        for (Alert alert : alerts) {
+            result.add(transformToDtoNoContent(alert));
         }
         return result;
     }
@@ -214,6 +258,15 @@ public class AlertDto extends EntityDTO {
     }
 
     /**
+     * Sets the list of notification Ids.
+     *
+     * @param  notificationIds list of notifications.
+     */
+    public void setNotificationsIds(List<BigInteger> notificationIds) {
+        this.notificationsIds = notificationIds;
+    }
+
+    /**
      * Adds the notification.
      *
      * @param  notification  The notification.
@@ -229,6 +282,15 @@ public class AlertDto extends EntityDTO {
      */
     public List<BigInteger> getTriggersIds() {
         return triggersIds;
+    }
+
+    /**
+     * Sets the list of notification Ids.
+     *
+     * @param  triggersIds list of notifications.
+     */
+    public void setTriggersIds(List<BigInteger> triggersIds) {
+        this.triggersIds = triggersIds;
     }
 
     /**
@@ -257,8 +319,26 @@ public class AlertDto extends EntityDTO {
     public void setOwnerName(String ownerName) {
         this.ownerName = ownerName;
     }
+    
+    /**
+     * Indicates if the alert is shared.
+     *
+     * @return  True if the alert is shared.
+     */
+    public boolean isShared() {
+		return shared;
+	}
 
-    @Override
+    /**
+     * Indicates whether or not the alert is shared.
+     *
+     * @param  shared  True if the alert is shared.
+     **/
+	public void setShared(boolean shared) {
+		this.shared = shared;
+	}
+
+	@Override
     public Object createExample() {
         AlertDto result = new AlertDto();
 
@@ -273,6 +353,7 @@ public class AlertDto extends EntityDTO {
         result.setModifiedDate(new Date());
         result.setName("example-alert");
         result.setOwnerName("admin");
+        result.setShared(false);
         return result;
     }
 }

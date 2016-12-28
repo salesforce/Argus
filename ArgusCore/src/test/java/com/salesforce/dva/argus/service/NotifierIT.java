@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.service;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,7 +73,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
         notifier.sendNotification(context);
@@ -109,7 +108,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
         notifier.sendNotification(context);
@@ -131,7 +130,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo");
+        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo", "scope:metric");
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
         notifier.sendNotification(context);

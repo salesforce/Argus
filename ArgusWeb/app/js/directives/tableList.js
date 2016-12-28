@@ -31,11 +31,12 @@ angular.module('argus.directives')
                 properties: '=',
                 colName: '=',
                 dataSet: '=data',
-                allData: '=tot',
+                loaded: '=',
                 addItem: '&',
                 delete: '&',
                 disabled: '&',
-                enable: '&'
+                enable: '&',
+                refreshData: '&'
             },
             controller: ['$scope', 'InputTracker', function($scope, InputTracker) {
                 // TODO: move this to a service

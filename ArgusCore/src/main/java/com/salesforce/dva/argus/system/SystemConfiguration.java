@@ -218,6 +218,7 @@ public final class SystemConfiguration extends Properties {
         ADMIN_EMAIL("system.property.admin.email", "someone@mycompany.com"),
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
+        EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
@@ -235,6 +236,9 @@ public final class SystemConfiguration extends Properties {
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.HbaseSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
+        HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
+        HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
+        ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties");
 

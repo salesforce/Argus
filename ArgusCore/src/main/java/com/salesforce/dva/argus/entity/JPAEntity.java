@@ -132,8 +132,6 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     protected Date modifiedDate;
     @OneToMany(mappedBy = "entity", orphanRemoval = false)
     List<Audit> audits;
-    @OneToMany(mappedBy = "entity", orphanRemoval = false)
-    List<History> history;
     protected boolean deleted = false;
 
     //~ Constructors *********************************************************************************************************************************
@@ -215,20 +213,25 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     /**
      * Finds all entities that have been marked for deletion.
      *
-     * @param   <E>   The JPA entity type.
-     * @param   em    The entity manager to use.  Cannot be null.
-     * @param   type  The runtime type to cast the result value to.
+     * @param   <E>    The JPA entity type.
+     * @param   em     The entity manager to use.  Cannot be null.
+     * @param   type   The runtime type to cast the result value to.
+     * @param   limit  The number of entities to find. If -1, finds all such entities.
      *
      * @return  The list of matching entities. Will never be null, but may be empty.
      */
-    public static <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type) {
+    public static <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type, final int limit) {
         requireArgument(em != null, "Entity Manager cannot be null");
+        requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
 
         TypedQuery<E> query = em.createNamedQuery("JPAEntity.findByDeleteMarker", type);
 
         query.setHint("javax.persistence.cache.storeMode", "REFRESH");
         try {
             query.setParameter("deleted", true);
+            if(limit > 0) {
+            	query.setMaxResults(limit);
+            }
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);

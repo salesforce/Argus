@@ -35,8 +35,8 @@ public class AsyncMetricService extends DefaultMetricService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String getAsyncMetrics(List<String> expressions, long offset, int ttl, String ownerName) {
-        BatchMetricQuery batch= new BatchMetricQuery(expressions, offset, ttl, ownerName);
+    public String getAsyncMetrics(List<String> expressions, long relativeTo, int ttl, String ownerName) {
+        BatchMetricQuery batch= new BatchMetricQuery(expressions, relativeTo, ttl, ownerName);
         _batchService.enqueueBatch(batch);
         return batch.getBatchId();
     }

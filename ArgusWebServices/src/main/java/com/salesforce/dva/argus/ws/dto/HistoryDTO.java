@@ -31,18 +31,19 @@
 	 
 package com.salesforce.dva.argus.ws.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.entity.History.JobStatus;
-import com.salesforce.dva.argus.entity.JPAEntity;
-import org.apache.commons.beanutils.BeanUtils;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
+
+import org.apache.commons.beanutils.BeanUtils;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.History.JobStatus;
 
 /**
  * The history DTO.
@@ -54,18 +55,16 @@ import javax.ws.rs.core.Response.Status;
 public class HistoryDTO extends BaseDto implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
-
-    private BigInteger id;
-    private Date createdDate;
+	
+    private long creationTime;
     private String message;
     private String hostName;
     private BigInteger entityId;
     private JobStatus jobStatus;
-    private long waitTime;
     private long executionTime;
 
     //~ Methods **************************************************************************************************************************************
-
+    
     /**
      * Converts a history object to DTO.
      *
@@ -84,7 +83,6 @@ public class HistoryDTO extends BaseDto implements Serializable {
 
         try {
             BeanUtils.copyProperties(historyDto, history);
-            historyDto.setEntityId(history.getEntity());
         } catch (Exception ex) {
             throw new WebApplicationException("DTO transformation failed.", Status.INTERNAL_SERVER_ERROR);
         }
@@ -119,49 +117,30 @@ public class HistoryDTO extends BaseDto implements Serializable {
     public Object createExample() {
         HistoryDTO history = new HistoryDTO();
 
-        history.setCreatedDate(new Date());
+        history.setCreationTime(System.currentTimeMillis());
         history.setHostName("localhost");
-        history.setId(BigInteger.ONE);
-        history.setEntityId(null);
+        history.setEntityId(BigInteger.TEN);
         history.setMessage("A description of the change or operation.");
         history.setJobStatus(JobStatus.SUCCESS);
         return history;
     }
 
     /**
-     * Returns the entity ID.
+     * Returns the created time.
      *
-     * @return  The entity ID.
+     * @return  The created time.
      */
-    public BigInteger getId() {
-        return id;
+    public long getCreationTime() {
+        return creationTime;
     }
 
     /**
-     * Specifies the entity ID.
+     * Specifies the creation time.
      *
-     * @param  id  The entity ID.
+     * @param  creationTime  The created time.
      */
-    public void setId(BigInteger id) {
-        this.id = id;
-    }
-
-    /**
-     * Returns the created date.
-     *
-     * @return  The created date.
-     */
-    public Date getCreatedDate() {
-        return createdDate;
-    }
-
-    /**
-     * Specifies the created date.
-     *
-     * @param  createdDate  The created date.
-     */
-    public void setCreatedDate(Date createdDate) {
-        this.createdDate = createdDate;
+    public void setCreationTime(long creationTime) {
+        this.creationTime = creationTime;
     }
 
     /**
@@ -214,8 +193,8 @@ public class HistoryDTO extends BaseDto implements Serializable {
      *
      * @param  jpaEntity  The entity object.
      */
-    public void setEntityId(JPAEntity jpaEntity) {
-        this.entityId = jpaEntity.getId();
+    public void setEntityId(BigInteger entityId) {
+        this.entityId = entityId;
     }
 
     /**
@@ -234,24 +213,6 @@ public class HistoryDTO extends BaseDto implements Serializable {
      */
     public void setJobStatus(JobStatus jobStatus) {
         this.jobStatus = jobStatus;
-    }
-
-    /**
-     * Returns the wait time in milliseconds.
-     *
-     * @return  The wait time in milliseconds.
-     */
-    public long getWaitTime() {
-        return waitTime;
-    }
-
-    /**
-     * Specifies the wait time in milliseconds.
-     *
-     * @param  waitTime  The wait time in milliseconds.
-     */
-    public void setWaitTime(long waitTime) {
-        this.waitTime = waitTime;
     }
 
     /**

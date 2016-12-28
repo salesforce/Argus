@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service.jpa;
 
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Identifiable;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.service.AuditService;
@@ -116,7 +115,6 @@ public abstract class DefaultJPAService extends DefaultService {
     private <E extends Identifiable> void _deleteGlobalRecords(E entity, EntityManager em) {
         if (JPAEntity.class.isAssignableFrom(entity.getClass())) {
             _deleteGlobalRecordsForType(entity, em, Audit.class);
-            _deleteGlobalRecordsForType(entity, em, History.class);
         }
     }
 
@@ -151,17 +149,20 @@ public abstract class DefaultJPAService extends DefaultService {
     /**
      * Returns a list of entities of the given type that are marked for deletion, but have not yet been physically deleted.
      *
-     * @param   <E>   The entity type.
-     * @param   em    The entity manager to use.  Cannot be null.
-     * @param   type  The runtime type of the values to return.
+     * @param   <E>   	The entity type.
+     * @param   em    	The entity manager to use.  Cannot be null.
+     * @param   type  	The runtime type of the values to return.
+     * @param	limit	The number of entities to find. If -1, finds all such entities.
      *
      * @return  The list of entities marked for deletion.  Will never return null, but may be empty.
      */
-    protected <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type) {
+    protected <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type, final int limit) {
         requireArgument(em != null, "The entity manager cannot be null.");
         requireArgument(type != null, "The entity cannot be null.");
+        requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
+        
         em.getEntityManagerFactory().getCache().evictAll();
-        return JPAEntity.findEntitiesMarkedForDeletion(em, type);
+        return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

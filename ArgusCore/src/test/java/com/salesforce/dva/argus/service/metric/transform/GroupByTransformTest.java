@@ -150,7 +150,7 @@ public class GroupByTransformTest extends AbstractTest {
         metrics.add(metric8);
 		
 		List<String> constants = new ArrayList<>();
-		constants.add("system\\.([A-Z]+)\\.SP.\\.[a-z][a-z][0-9]:([a-z0-9]+).");
+		constants.add("system\\.([A-Z]+)\\.SP.\\.[a-z][a-z]([0-9])");
 		constants.add("SUM");
 		
 		List<Metric> result = transform.transform(metrics, constants);
