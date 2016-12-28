@@ -98,7 +98,7 @@ class ClientServiceFactory {
                     return new Thread(r, MessageFormat.format("annotationcommitclient-{0}", id.getAndIncrement()));
                 }
             });
-        
+        system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
             service.submit(new AnnotationCommitter(system.getServiceFactory().getCollectionService(),system.getServiceFactory().getMonitorService(), jobCounter));
         }
@@ -136,6 +136,7 @@ class ClientServiceFactory {
                     return new Thread(r, MessageFormat.format("schemacommitclient-{0}", id.getAndIncrement()));
                 }
             });
+	system.getServiceFactory().getMonitorService().startRecordingCounters();
         for (int i = 0; i < threadPoolCount; i++) {
             service.submit(new SchemaCommitter(system.getServiceFactory().getCollectionService(),system.getServiceFactory().getMonitorService(), jobCounter));
         }
