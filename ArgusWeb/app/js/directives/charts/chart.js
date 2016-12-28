@@ -137,7 +137,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // generate a new chart ID, set css options for main chart container
         var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
         var chartType = attributes.type ? attributes.type : 'LINE';
-        var cssOpts = ( attributes.smallChart ) ? 'smallChart' : '';
+        var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
         // set the charts container for rendering
         ChartRenderingService.setChartContainer(element, newChartId, cssOpts);
