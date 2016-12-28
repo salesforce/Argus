@@ -608,5 +608,57 @@ public class SortTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
+    
+    @Test
+    public void testSortTransform() {
+        Transform sortTransform = new SortTransformWrapAboveAndBelow();
+        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+
+        datapoints_1.put(0L, "20");
+        datapoints_1.put(60000L, "10");
+        datapoints_1.put(120000L, "30");
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+
+        datapoints_2.put(0L, "3");
+        datapoints_2.put(60000L, "6");
+        datapoints_2.put(120000L, "9");
+
+        Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("maxima");
+        constants.add("ascending");
+
+        Map<Long, String> expected_1 = new HashMap<Long, String>();
+
+        expected_1.put(0L, "3");
+        expected_1.put(60000L, "6");
+        expected_1.put(120000L, "9");
+
+        Map<Long, String> expected_2 = new HashMap<Long, String>();
+
+        expected_2.put(0L, "20");
+        expected_2.put(60000L, "10");
+        expected_2.put(120000L, "30");
+
+        List<Metric> result = sortTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 2);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+        assertEquals(expected_2, result.get(1).getDatapoints());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
