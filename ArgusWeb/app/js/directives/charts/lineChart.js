@@ -1067,45 +1067,68 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //TODO: this doesnt work
             function updateAnnotations() {
-                if (!scope || !scope.series) return;
+                if (!series) return;
 
-                var flagSeries;
-                if (scope.series.length === 1 && scope.series[0].flagSeries) {
-                    flagSeries = scope.series[0].flagSeries.data;
-                } else {
-                    // TODO: do any dashboards have flag data for multiple series?
-                    return;
-                }
+                //var flagSeries;
+                // if (scope.series.length === 1 && scope.series[0].flagSeries) {
+                //     flagSeries = scope.series[0].flagSeries.data;
+                // } else {
+                //     // TODO: do any dashboards have flag data for multiple series?
+                //     return;
+                // }
+
 
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 //clear previous graph element
                 flagsG.selectAll(".flagItem").remove();
-                var label = flagsG.selectAll(".flagItem")
-                    .data(flagSeries)
-                    .enter().append("g")
-                    .attr("class", "flagItem")
-                    .attr("transform", function (d) {
-                        // x, xAxis, xAxisG
-                        var x_Val = x(d.x); // d.x is timestamp of X axis
-                        var y_Val = height - 35;
-                        return "translate(" + x_Val + ", " + y_Val + ")";
+
+                //Todo: test this with annotation for multiple series
+                //multiple series
+                series.forEach(function (metric) {
+                    if(!metric.flagSeries) return;
+                    var flagSeries = metric.flagSeries.data;
+                    /**
+                     * The commented code does not work in multiseries because data function needs a key function to append new dataset
+                     * but for different series, the key can be the same timestamp so annotation of each series might overwrite.
+                     * So, use the forEach to do the same thing
+                     **/
+                    // var label = flagsG.selectAll(".flagItem")
+                    //     .data(flagSeries)
+                    //     .enter().append("g")
+                    //     .attr("class", "flagItem")
+                    //     .attr("transform", function (d) {
+                    //         // x, xAxis, xAxisG
+                    //         var x_Val = x(d.x); // d.x is timestamp of X axis
+                    //         var y_Val = height - 35;
+                    //         return "translate(" + x_Val + ", " + y_Val + ")";
+                    //     });
+
+                    flagSeries.forEach(function(d){
+                       var x_Val = x(d.x); // d.x is timestamp of X axis
+                       var y_Val = height - 35;
+                       var label = flagsG.append('g')
+                            .attr("class", "flagItem")
+                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
+
+                       label.append("line")
+                            .attr("y2", 35)
+                            .attr("stroke-width", 2)
+                            .attr("stroke", "steelblue");
+
+                       label.append("circle")
+                            .attr("r", 5)
+                            .attr("class", "flag");
+
+                        // TODO: add mouseover for short text description when it comes available
+                        // label.append("text")
+                        //     .attr("x", 10)
+                        // text is currently too large and unreadable.
+                        // TODO: need separate panel to satisfy use case for user to select text
+                        // .text(function(d) { return d.text; });
                     });
 
-                label.append("line")
-                    .attr("y2", 35)
-                    .attr("stroke-width", 2)
-                    .attr("stroke", "steelblue");
+                });
 
-                label.append("circle")
-                    .attr("r", 5)
-                    .attr("class", "flag");
-
-                // TODO: add mouseover for short text description when it comes available
-                // label.append("text")
-                //     .attr("x", 10)
-                // text is currently too large and unreadable.
-                // TODO: need separate panel to satisfy use case for user to select text
-                // .text(function(d) { return d.text; });
             }
 
             //this function add the overlay element to the graph when mouse interaction takes place
