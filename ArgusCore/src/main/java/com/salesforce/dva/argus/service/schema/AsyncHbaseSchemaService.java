@@ -458,12 +458,11 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		return null;
 	}
 
+	//TSDB allowed characteers are: [A-Za-z0-9./-_]. The lowest ASCII value (45) out of these is for hyphen (-). 
 	private String _plusOne(String prefix) {
-		char newChar = (char) (prefix.charAt(prefix.length() - 1) + 1);
-    	String end = prefix.substring(0, prefix.length() - 1) + newChar;
-		return end;
+		char newChar = 45;
+		return prefix + newChar;
 	}
-	
 	
 	/**
 	 * Check if we can perform a faster scan. We can only perform a faster scan when we are trying to discover scopes or metrics
