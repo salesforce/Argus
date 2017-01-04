@@ -36,6 +36,7 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -157,15 +158,23 @@ public abstract class TSDBEntity implements Serializable {
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
                 String key = entry.getKey();
+                String value = entry.getValue();
 
                 requireArgument(!Metric.ReservedField.isReservedField(key), MessageFormat.format("Tag {0} is a reserved tag name.", key));
-                updatedTags.put(key, entry.getValue());
+                _validateTag(entry.getKey(), entry.getValue());
+                updatedTags.put(key, value);
             }
             _tags.putAll(updatedTags);
         }
     }
 
-    /**
+    private void _validateTag(String key, String value) {
+    	requireArgument(key != null && !key.isEmpty(), "Tag key cannot be null or empty");
+        requireArgument(value != null && !value.isEmpty(), "Tag value cannot be null or empty");
+        //TODO: In future, we may want to validate that the tags contain only permissible characters.
+	}
+
+	/**
      * Sets a single tag. The tag may not use any of the reserved tag names.
      *
      * @param  key    The name of the tag. May not be null or empty.
