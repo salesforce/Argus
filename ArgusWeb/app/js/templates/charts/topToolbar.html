@@ -1,0 +1,89 @@
+<div class="topToolbar">
+	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
+	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
+	
+	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
+
+		<ul style="padding-left:0;"
+			ng-mouseover="hover = true"
+			ng-mouseleave="hover = false">
+
+			<li class="toolbarItemPreview">
+				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(sources[0])}"></span>
+				<a>{{sources[0].name}}</a>
+			</li>
+
+			<li class="toolbarItem legend floatPanel"
+				ng-if="!(sources | isEmpty)"
+				ng-class="{open: hover}">
+
+				<ul style="padding-left:0;">
+				<li ng-repeat="source in sources track by $index">
+					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
+					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
+					<a class="eyeIcon open" ng-click="hideOtherSources(source)" title="Hide all other(s)" ng-show="source.displaying"></a>
+				</li>
+				</ul>
+			</li>
+		</ul>
+
+		<div class="toolbarItem graphControls floatR">
+			<div class="toolbarMenu topMenu">
+				<a class="glyphicon glyphicon-time"></a>
+				<ul class="subMenu menuPanel list-group">
+				<li>
+					<button name="oneHour" disabled="disabled">1h</button>
+				</li>
+				<li>
+					<button name="oneDay" disabled="disabled">1d</button>
+				</li>
+				<li>
+					<button name="oneWeek" disabled="disabled">1w</button>
+				</li>
+				<li>
+					<button name="oneMonth" disabled="disabled">1m</button>
+				</li>
+				<li>
+					<button name="oneYear" disabled="disabled">1y</button>
+				</li>
+				</ul>
+			</div>
+
+			<div class="toolbarMenu topMenu">
+				<a class="glyphicon glyphicon-option-vertical"></a>
+				<ul class="subMenu menuPanel list-group">
+				<li style="display:none;">
+					<input type="checkbox" name="toggle-brush" id="toggle-brush-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isBrushOn" />
+					<label for="toggle-brush-{{chartConfig.chartId}}" title="Toggle display of timeline graph">Display timeline</label>
+				</li>
+				<li style="display:none;">
+					<input type="checkbox" name="toggle-tooltip" id="toggle-tooltip-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipOn" />
+					<label for="toggle-tooltip-{{chartConfig.chartId}}" title="Toggle tooltip on mouseover">Display tooltips</label>
+				</li>
+				<li>
+					<input type="checkbox" name="toggle-brush-main" id="toggle-brush-main-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isBrushMainOn" />
+					<label for="toggle-brush-main-{{chartConfig.chartId}}" title="Enable brush selection on main chart">Enable brushing</label>
+				</li>
+				<li>
+					<input type="checkbox" name="toggle-wheel" id="toggle-wheel-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isWheelOn" />
+					<label for="toggle-wheel-{{chartConfig.chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
+				</li>
+				<li>
+					<input type="checkbox" name="tooltip-sort" id="tooltip-sort-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<label for="tooltip-sort-{{chartConfig.chartId}}" title="Sort tooltip items by value">Tooltip Sort</label>
+				</li>
+				<li>
+					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
+				</li>
+				</ul>
+			</div>
+
+			<div class="toolbarMenu topMenu">
+				<a name="reset" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
+			</div>
+		</div>
+
+		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}">{{dateRange}}</div>
+	</div>
+</div>
