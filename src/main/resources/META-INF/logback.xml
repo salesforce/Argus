@@ -13,6 +13,7 @@
     	<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                                                                                                                                                
 	      	<!-- Daily rollover -->                                                                                                                                                                                                                 
 	      	<fileNamePattern>${argus.logdir:-.}/logs/argus.%d{yyyy-MM-dd}.log</fileNamePattern>
+		<maxHistory>7</maxHistory>
 	    </rollingPolicy> 
         <file>${argus.logdir:-.}/argus.log</file>
         <append>true</append>
