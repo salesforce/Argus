@@ -34,10 +34,10 @@ angular.module('argus.directives.controls.date', [])
         },
         require: '^agDashboard',
         template: // TODO: move to external template
-            '<strong>{{labelName}} : </strong>' +
+            '<strong>{{labelName}} </strong>' +
             '<div class="dropdown" style="display: inline;">' +
                 '<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
-                    '<input type="text" class="input-medium" style="color:black;" ng-model="ctrlVal">' +
+                    '<input type="text" class="input-medium" style="color:#000;" ng-model="ctrlVal">' +
                 '</a>' +
                 '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' +
                     '<datetimepicker ng-model="data.date" on-set-time="onSetTime(newDate, oldDate)" data-datetimepicker-config="datetimepickerConfig"></datetimepicker>' +

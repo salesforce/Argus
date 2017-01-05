@@ -1,13 +1,13 @@
 angular.module('argus.constants', [])
 .constant('VIEWELEMENT', {
-		chart: 'chart',
-		heatmap: 'heatmap',
-		table: 'table'
+	chart: 'chart',
+	heatmap: 'heatmap',
+	table: 'table'
 })
 
 .constant('CHARTTYPE', {
-		line: 'line',
-		area: 'area'
+	line: 'line',
+	area: 'area'
 })
 
 .constant('BATCH_CHART_OPTIONS', {
