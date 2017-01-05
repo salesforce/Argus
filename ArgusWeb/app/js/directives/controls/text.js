@@ -17,7 +17,7 @@ angular.module('argus.directives.controls.text', [])
             }
         },
         require:'^agDashboard',
-        template:'<B>{{labelName}} : </B> <input type="text" ng-model="ctrlVal">',
+        template:'<strong>{{labelName}} </strong> <input type="text" ng-model="ctrlVal">',
         link: function(scope, element, attributes, dashboardCtrl) {
             dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agText");
             scope.$watch('ctrlVal', function(newValue, oldValue){

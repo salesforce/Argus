@@ -26,35 +26,52 @@ label {
 
 a:hover {text-decoration:none; color:inherit;}
 
+ul {margin-bottom:0;}
+ul li {list-style:none;}
+
+button[disabled] {color:#CCC;}
+
 .floatL {float:left;}
 .floatR {float:right;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
+.pointer {cursor:pointer;}
 
 .glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
+
+.eyeIcon {display:inline-block; width:14px; height:14px; vertical-align:middle;}
+.eyeIcon.open {background:url(../img/glyphicons-halflings.png) -96px -121px no-repeat;}
+.eyeIcon.closed {}
+
+.resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}
+.resetIcon:hover {background-position:0 -37px;}
 
 /* loading spinner small, eg input field */
 .loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
-#navbar li.topMenu {position:relative;}
-#navbar li.topMenu ul.subMenu {
-  display:none;
-  position:absolute;
-  top:40px;
-  right:4px;
-  padding:0;
+#navbar li a.glyphicon {font-size:20px; color:#777;}
+
+/* Common drop down menu */
+.topMenu {position:relative; margin-right:.5em;}
+.topMenu ul.subMenu {display:none; position:absolute;}
+.topMenu ul.subMenu li {margin:5px 0; padding:2px 7px;}
+.topMenu ul.subMenu li:hover {background-color:#EEE;}
+.topMenu ul.subMenu a:hover {text-decoration:none;}
+.topMenu:hover ul.subMenu {display:block;}
+
+#navbar ul.subMenu {top:40px; right:4px; padding:0;}
+#navbar ul.subMenu li {text-align:right;}
+
+/* drop down common panel */
+.menuPanel {
+  border-radius:5px;
   box-shadow:2px 2px 3px 0px #EEE;
   list-style:none;
   border:solid 1px #CCC;
   background:#FFF;
   z-index:9;
 }
-#navbar li a.glyphicon {font-size:20px; color:#777;}
-#navbar .topMenu ul.subMenu li {margin:5px 0; padding:2px 7px; text-align:right;}
-#navbar .topMenu ul.subMenu li:hover {background-color:#EEE;}
-#navbar .topMenu ul.subMenu a:hover {text-decoration:none;}
-#navbar .topMenu:hover ul.subMenu {display:block;}
 
 .breadcrumb {
   position:absolute;
@@ -74,14 +91,16 @@ h3.bcTitle {margin:11px 0 0 35px; font-size:18px;}
 h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .rowIndicator {position:relative; margin-bottom:.5em;}
-.serviceItem {position:absolute; top:9px; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
+.serviceItem {position:absolute; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
 .rowIndicator.largeLabel .serviceItem {padding:.5em 1em;}
+
 .serviceItem .serviceName {margin-bottom:.5em; font-size:14px; font-weight:bold;}
 .serviceItem .statusIndicator {display:inline-block; width:15px; height:15px; border:solid 1px; border-radius:10px;}
 .serviceItem .statusIndicator.red {background-color:red; border-color:red;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
-.smallChart {padding-left:8em; width:100%;}
+
+.loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
 /* metrics & discovery lookup */
 .metricFields {width:35%; margin-top:.5em;}
@@ -100,32 +119,29 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     border-bottom-left-radius: 0;
 }
 
+/* checkbox for date control */
+.GMT-select {padding: 3px;}
+
 /* Growl settings */
 .growl-container.growl-fixed.top-center {
-    top : 2em!important;
-    width: 25%!important;
-    max-width: 50%!important;
+    top : 2em !important;
+    width: 25% !important;
+    max-width: 50% !important;
     text-align: center;
 }
 
-.growl-container > .growl-item {
-    padding-right:0!important;
-}
+.growl-container > .growl-item {padding-right:0 !important;}
 
-.pagination {
-    margin:0!important;
-}
+.pagination {margin:0 !important;}
 
-.table-header-rotated th.row-header{
-  width: auto;
-}
+.table-header-rotated th.row-header {width:auto;}
 
 .table-header-rotated td{
   width: 40px;
-  border-top: 1px solid #dddddd;
-  border-left: 1px solid #dddddd;
-  border-right: 1px solid #dddddd;
-  border-bottom: 1px solid #dddddd;
+  border-top: 1px solid #ddd;
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
   vertical-align: middle;
   text-align: center;
 }
@@ -183,9 +199,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .table > tbody > tr > td,
 .table > tfoot > tr > td {vertical-align: middle;}
 
-.table th:hover{
-    cursor: pointer;
-}
+.table th:hover {cursor:pointer;}
 
 .search-bar .dropdown-menu {
     margin: 0 0 0 0;
@@ -195,56 +209,87 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     overflow: scroll;
 }
 
-/* D3 styles */
+/* chart styles */
+.chartTitle {margin-top:0; margin-bottom:.55em; text-align:center;}
+
+/* main elements */
+.chartContainer {margin:0 .5em .5em 0; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
+.smallChart {padding-left:9em; width:100%; border:none;}
+.lineChartToolbar {margin-left:3em;}
+
+/** Toolbars */
+.topToolbar {padding:0 3.5em;}
+.topToolbar a {cursor:pointer;}
+.topToolbar .toolbar {position:relative; height:30px;}
+
+.toolbarItem {display:inline-block;}
+.toolbarItemPreview {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolbarMenu {display:inline-block; white-space:nowrap;}
+.toolbarMenu a.glyphicon {font-size:18px; color:#999;}
+.toolbarMenu a.glyphicon:hover {color:inherit;}
+
+.chartMenu li label {font-weight:400; font-size:13px;}
+
+/* legend & other graph menus */
+.toolbarItem.legend {padding:5px 5px 5px 8px; height:28px;}
+.legend.floatPanel {display:none; overflow:hidden; width:95%;}
+.legend.floatPanel.open {
+  display:block; overflow:auto; position:absolute; top:0; padding-left:.5em; width:auto; height:300px; z-index:9;
+  border:solid 1px #CCC; border-radius:5px; background-color:#FFF; box-shadow:1px 1px 2px 0px #CCC;
+}
+
+.toolbarItem .graphControls {margin:4px 10px 0 0;}
+.graphControls .subMenu {right:-1em;}
+
+.dateRange {float:right; margin:7px 2em 0 0; font-size:12px; color:#999;}
+
 .axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-.x.axis path {
-  display: none;
-}
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
-.overlay {
-  fill: none;
-  pointer-events: all;
-}
-.focus circle {
-  opacity: 0.5;
-}
-g.legend-items text {
-  color: #444;
-  font-size: 12px;
-}
-g.legend-items circle {
-  opacity: 0.5;
-}
-g.legend-items text .timestamp {
-  font-variant: small-caps;
-}
-g.legend-items text .value {
-  font-weight: 600;
-  font-size: 14px;
-}
-.legend rect {
-  fill: #eee;
-  stroke: steelblue;
-  opacity: 0.9;
-}
+.axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
 
-div.loadingSpinner {
-  width: 80px;
-  height: 80px;
-  margin: 100px auto;
-  position: relative;
-  content:url(../img/ajax-loader.gif);
-}
+.x.axis path {display:none;}
+.xBrush.axis path {display:none;}
 
-.GMT-select {
-  padding: 3px;
-}
+.line {fill:none; stroke:steelblue; stroke-width:1.5; } /*clip-path: url('#clip');*/
+
+.brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
+
+.chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
+
+.focus circle {opacity:0.5;}
+
+/* dotted line on main line graph */
+.crossLine {fill:none; stroke:#066EEA; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
+.crossLineTip {font-size:12px;}
+
+.tick line {stroke: lightgrey;}
+.tick text {fill:#606060;}
+
+/* grid line */
+.grid line {stroke:lightgrey; opacity:0.7;}
+
+.grid text {visibility:hidden;}
+.grid path {stroke:#FFF;}
+
+/* timeline graph */
+g.brush rect.selection {stroke:#666;}
+g.brush rect.overlay {stroke:#CCC;}
+g.brush rect.handle {fill:#999; stroke:#333;}
+
+/* flags (annotations) */
+.flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
+
+/* tooltip stuff */
+.tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
+g.tooltip-items text {color: #444; font-size: 12px;}
+g.tooltip-items circle {opacity: 0.7;}
+g.tooltip-items text .timestamp {font-variant: small-caps;}
+g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
+
+/* for charts in table */
+ag-dashboard table {width: 100%; table-layout:fixed;}
