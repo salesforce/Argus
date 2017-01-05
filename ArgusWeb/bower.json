@@ -19,17 +19,11 @@
     "ngstorage": "~0.3.0",
     "at-table": "~1.0.4",
     "angulartics": "~0.17.2",
-<<<<<<< HEAD
     "angular-bootstrap": "~2.0.0",
     "angular-bootstrap-datetimepicker": "~0.3.12",
     "angular-selectize2": "~3.0.1",
     "q": "1.0.1",
     "d3": "^4.2.1"
-=======
-    "angular-bootstrap": "~0.12.1",
-    "angular-bootstrap-datetimepicker": "~0.3.12",
-    "angular-selectize2": "~3.0.1"
->>>>>>> d7c2a7935bc48cd9f8d4416149c2b3b5729c84d2
   },
   "resolutions": {
     "codemirror": "~4.8",
