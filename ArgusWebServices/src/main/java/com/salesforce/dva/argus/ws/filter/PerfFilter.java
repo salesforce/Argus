@@ -34,10 +34,14 @@ package com.salesforce.dva.argus.ws.filter;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
+
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -68,6 +72,7 @@ public class PerfFilter implements Filter {
     private final String DATA_WRITE_RESP_BYTES = "perf.ws.write.txbytes";
     private final String TAGS_METHOD_KEY = "method";
     private final String TAGS_ENDPOINT_KEY = "endpoint";
+    private final String TAGS_USER_KEY = "user";
 
     //~ Methods **************************************************************************************************************************************
 
@@ -104,19 +109,21 @@ public class PerfFilter implements Filter {
     public void init(FilterConfig filterConfig) throws ServletException { }
 
     private void updateCounters(HttpServletRequest req, HttpServletResponse resp, long delta) {
-        String method = req.getMethod();
-        String endPoint = null;
-
         try {
+        	Map<String, String> tags = new HashMap<>();
+        	
+        	String method = req.getMethod();
+        	tags.put(TAGS_METHOD_KEY, method);
+        	
             String pathInfo = req.getPathInfo().replaceFirst("/", "");
-
-            endPoint = pathInfo.replaceAll("[0-9]+", "-");
-
-            Map<String, String> tags = new HashMap<>();
-
-            tags.put(TAGS_METHOD_KEY, method);
-            if (endPoint != null) {
+            String endPoint = pathInfo.replaceAll("[0-9]+", "-");
+            if (endPoint != null && !endPoint.isEmpty()) {
                 tags.put(TAGS_ENDPOINT_KEY, endPoint);
+            }
+            
+            String username = MDC.get(AuthFilter.USER_ATTRIBUTE_NAME);
+            if(username != null && !username.isEmpty()) {
+            	tags.put(TAGS_USER_KEY, username);
             }
 
             String contentLength = resp.getHeader("Content-Length");
