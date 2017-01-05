@@ -297,12 +297,6 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
                     }
                 }
                 
-                if(scheduler != null) {
-                	_logger.info("Machine is no longer master disposing current scheduler instance");
-                	_disposeScheduler(scheduler);
-                	scheduler = null;
-                }
-
                 boolean interrupted = interrupted();
 
                 _releaseLock(key);
