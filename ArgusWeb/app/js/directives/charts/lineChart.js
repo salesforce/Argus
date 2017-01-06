@@ -1305,10 +1305,38 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
+
+            function setupMenu(){
+                //button set up
+                $('[name=reset]', topToolbar).click(reset);
+                $('[name=oneHour]', topToolbar).click(brushMinute(60));
+                $('[name=oneDay]', topToolbar).click(brushMinute(60*24));
+                $('[name=oneWeek]', topToolbar).click(brushMinute(60*24*7));
+                $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
+                $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
+
+                //toggle
+                $('[name=toggle-brush]', topToolbar).change(toggleBrush);
+                $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
+                $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
+                $('[name=toggle-tooltip]', topToolbar).change(toggleTooltip);
+            }
+
+            function hideMenu(){
+               $('.toolbarItem').hide();
+            }
+
+            function updateStorage(){
+                Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
+            }
+
+
+
             // create graph only when there is data
             if (!series || series.length === 0) {
                 //this should never happen
                 console.log("Empty data from chart data processing");
+                hideMenu();
             } else {
                 // set up legend
                 names = series.map(function(metric) { return metric.name; });
@@ -1344,6 +1372,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     updateDateRange();
                     enableBrushTime();
                     reset();    //to remove the brush cover first for user the drag
+                    setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
@@ -1362,25 +1391,9 @@ angular.module('argus.directives.charts.lineChart', [])
                         messageToDisplay.push('(Series names are shown with normal colors in the legend)');
                     }
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
+                    hideMenu();
                 }
             }
-
-            function updateStorage(){
-                Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
-            }
-            //button set up
-            $('[name=reset]', topToolbar).click(reset);
-            $('[name=oneHour]', topToolbar).click(brushMinute(60));
-            $('[name=oneDay]', topToolbar).click(brushMinute(60*24));
-            $('[name=oneWeek]', topToolbar).click(brushMinute(60*24*7));
-            $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
-            $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
-
-            //toggle
-            $('[name=toggle-brush]', topToolbar).change(toggleBrush);
-            $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
-            $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
-            $('[name=toggle-tooltip]', topToolbar).change(toggleTooltip);
 
             //TODO improve the resize efficiency if performance becomes an issue
             element.on('$destroy', function(){
