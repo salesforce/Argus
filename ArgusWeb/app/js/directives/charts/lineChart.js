@@ -30,6 +30,7 @@ angular.module('argus.directives.charts.lineChart', [])
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', function($scope) {
             $scope.sources = [];
+            $scope.otherSourcesHidden = false;
             // can be used for future modal window
             $scope.noDataSeries = [];
             $scope.invalidSeries = [];
@@ -46,10 +47,11 @@ angular.module('argus.directives.charts.lineChart', [])
                         toggleGraphOnOff(sources[i]);
                     }
                 }
+                $scope.otherSourcesHidden = !$scope.otherSourcesHidden;
             };
 
             $scope.labelTextColor = function(source) {
-                return source.displaying? source.color: 'white';
+                return source.displaying? source.color: '#FFF';
             };
 
             function toggleGraphOnOff(source) {
