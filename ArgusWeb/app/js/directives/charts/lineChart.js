@@ -49,7 +49,11 @@ angular.module('argus.directives.charts.lineChart', [])
             };
 
             $scope.labelTextColor = function(source) {
-                return source.displaying? source.color: 'white';
+                if (source === undefined || source.displaying === undefined) {
+                    return 'white';
+                } else {
+                    return source.color;
+                }
             };
 
             function toggleGraphOnOff(source) {

@@ -36,17 +36,18 @@ angular.module('argus.directives')
                 delete: '&',
                 disabled: '&',
                 enable: '&',
-                refreshData: '&'
+                refreshList: '&'
             },
-            controller: ['$scope', 'InputTracker', function($scope, InputTracker) {
+            controller: ['$scope', 'InputTracker', 'growl', '$sessionStorage',
+                function($scope, InputTracker, growl, $sessionStorage) {
                 // TODO: move this to a service
                 // itemsPerPage setting
                 $scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
                 var itemsPerPageFromStorage = $scope.properties.type + '-itemsPerPage';
                 $scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1]);
                 $scope.$watch('itemsPerPage', function(newValue) {
-                    InputTracker.updateDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1], newValue)
-                    $scope.update();
+                    InputTracker.updateDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1], newValue);
+                    update();
                 });
 
                 // searchText setting
@@ -61,7 +62,7 @@ angular.module('argus.directives')
                 $scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
                 $scope.$watch('currentPage', function (newValue) {
                     InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
-                    $scope.update();
+                    update();
                 });
 
                 // sort setting
@@ -79,6 +80,11 @@ angular.module('argus.directives')
                     }
                 };
 
+                // total number setting
+                $scope.$watch('dataSet.length', function () {
+                    update();
+                });
+
                 //enableAlert, isDisabled & delete setting
                 $scope.deleteItem = function(item) {
                     $scope.delete()(item);
@@ -93,17 +99,19 @@ angular.module('argus.directives')
                     $scope.enable()(item, enabled);
                 };
 
-                // total number setting
-                $scope.$watch('dataSet.length', function () {
-                    $scope.update();
-                });
-                $scope.update = function(){
+                function update(){
                     $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
                     var end = $scope.start + $scope.itemsPerPage - 1;
                     if ($scope.dataSet) {
                         $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
                     }
-                };
+                }
+
+                function deleteDashboardFromList(dashboardList, dashboardToDelete) {
+                    return dashboardList.filter(function (element) {
+                        return element.id != dashboardToDelete.id;
+                    });
+                }
             }]
         };
     });
