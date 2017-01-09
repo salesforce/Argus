@@ -1,8 +1,8 @@
 <div class="topToolbar">
 	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
 	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
-	
-	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
+
+	<div id="topTb-{{chartConfig.chartId}}" class="toolbar" ng-if="!chartConfig.smallChart">
 
 		<ul class="legendPanel"
 			ng-mouseover="hover = true"
@@ -24,7 +24,7 @@
 					<a class="eyeIcon" title="Hide all other(s)"
 						ng-show="source.displaying"
 						ng-click="hideOtherSources(source)"
-						ng-class="!otherSourcesHidden ? 'open' : 'closed'"></a>
+						ng-class="!otherSourcesHidden ? 'visible' : 'hidden'"></a>
 				</li>
 				</ul>
 			</li>
