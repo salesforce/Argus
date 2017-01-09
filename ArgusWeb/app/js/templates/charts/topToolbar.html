@@ -21,7 +21,10 @@
 				<li ng-repeat="source in sources track by $index">
 					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
 					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
-					<a class="eyeIcon open" ng-click="hideOtherSources(source)" title="Hide all other(s)" ng-show="source.displaying"></a>
+					<a class="eyeIcon" title="Hide all other(s)"
+						ng-show="source.displaying"
+						ng-click="hideOtherSources(source)"
+						ng-class="!otherSourcesHidden ? 'open' : 'closed'"></a>
 				</li>
 				</ul>
 			</li>
