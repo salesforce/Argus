@@ -30,7 +30,7 @@
 			</li>
 		</ul>
 
-		<div class="toolbarItem graphControls floatR">
+		<div class="toolbarItem graphControls floatR" ng-if="!hideMenu">
 			<div class="toolbarMenu topMenu">
 				<a class="glyphicon glyphicon-time"></a>
 				<ul class="subMenu menuPanel list-group">
@@ -87,6 +87,6 @@
 			</div>
 		</div>
 
-		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}">{{dateRange}}</div>
+		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}" ng-if="!hideMenu">{{dateRange}}</div>
 	</div>
 </div>
