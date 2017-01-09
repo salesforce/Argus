@@ -36,7 +36,9 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.invalidSeries = [];
 
             $scope.toggleSource = function(source) {
-                toggleGraphOnOff(source);
+                if (!otherSourcesHidden) {
+                    toggleGraphOnOff(source);
+                }
             };
 
             // show ONLY this 1 source, hide all others
@@ -79,6 +81,13 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTon = scope.dateConfig.gmt;
             var chartOptions = scope.chartConfig;
 
+            /** 'smallChart' settings: 
+                height: 250
+                no timeline, date range, option menu
+                only left-side Y axis
+                fewer x-axis tick labels
+            */
+
             var agYMin, agYMax;
             //provide support for yaxis lower case situation.
             if(chartOptions.yAxis){
@@ -93,12 +102,10 @@ angular.module('argus.directives.charts.lineChart', [])
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
-
-
             // set $scope values, get them from the local storage
             scope.menuOption = {
                 isWheelOn : false,
-                isBrushOn : true,
+                isBrushOn : !chartOptions.smallChart,
                 isBrushMainOn : false,
                 isTooltipOn : true,
                 isTooltipSortOn: false,
@@ -112,7 +119,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 scope.menuOption = menuOption;
             }
 
-
             var dateExtent; //extent of non empty data date range
             // ---------
             var topToolbar = $(element); //jquery selection
@@ -122,7 +128,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var currSeries = series;
 
             // Layout parameters
-            var containerHeight = 330;
+            var containerHeight = chartOptions.smallChart ? 150 : 330;
             var containerWidth = $("#" + chartId).width();
 
             if (chartOptions.chart !== undefined) {
@@ -135,10 +141,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 tipBoxRatio = 0.2,
                 brushChartRatio = 0.2
                 ;
-            var marginTop = 15,
+            var marginTop = chartOptions.smallChart ? 5 : 15,
                 marginBottom = 35,
                 marginLeft = 50,
-                marginRight = 60;
+                marginRight = chartOptions.smallChart ? 5 : 60;
 
             var width = containerWidth - marginLeft - marginRight;
             var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
@@ -185,8 +191,9 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //graph setup variables
             var x, x2, y, y2,
-                nGridX = 7, nGridY = 5,
-                xAxis, xAxis2, yAxis, yAxisR, yAxis2, xGrid, yGrid,
+                nGridX = chartOptions.smallChart ? 3 : 7,
+                nGridY = chartOptions.smallChart ? 3 : 5,
+                xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
                 line, line2, area, area2,
                 brush, brushMain, zoom,
                 svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
@@ -298,8 +305,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 svg_g = svg
                     .append('g')
-                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-                ;
+                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
                 mainChart = svg_g.append("g");
 
@@ -673,23 +679,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg_g.selectAll(".brushMain").call(brush.move, null);
             }
 
-            // //redraw the lines Axises grids
-            // function redraw() {
-            //     //redraw
-            //     if(x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0]) {
-            //         svg_g.selectAll(".line").attr("d", line);//redraw the line
-            //     }
-            //     xAxisG.call(xAxis);  //redraw xAxis
-            //     yAxisG.call(yAxis);  //redraw yAxis
-            //     yAxisRG.call(yAxisR); //redraw yAxis right
-            //     xGridG.call(xGrid);
-            //     yGridG.call(yGrid);
-            //     if (!scope.menuOption.isBrushOn) {
-            //         context.attr("display", "none");
-            //     }
-            //     updateDateRange();
-            // }
-
             //redraw the line with restrict
             function redraw(){
                 var domainStart = x.domain()[0].getTime();
@@ -861,51 +850,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
 
                 y.domain([yMin, yMax]);
-
             }
-
-            // //resize
-            // function resize_() {
-            //     //calculate new size for chart
-            //     containerWidth = $(container).width();
-            //     width = containerWidth - marginLeft - marginRight;
-            //     margin = {
-            //         top: marginTop,
-            //         right: marginRight,
-            //         bottom: containerHeight - marginTop - height,
-            //         left: marginLeft
-            //     };
-            //     margin2 = {
-            //         top: containerHeight - height2 - marginBottom,
-            //         right: marginRight,
-            //         bottom: marginBottom,
-            //         left: marginLeft
-            //     };
-            //
-            //     //clear every chart
-            //     d3.select(container).select('svg').remove();
-            //
-            //     if (typeof x === "undefined") {
-            //         // when resizing a graph with empty series
-            //         displayEmptyGraph(container, width, height, margin, series[0])
-            //     } else {
-            //         var tempX = x.domain(); //remember that when resize
-            //         setGraph(); //set up the chart
-            //         //TODO: should not need to call this function
-            //         setGraphTools(currSeries);
-            //         updateGraph(currSeries); //refill the data draw the line
-            //         addOverlay();
-            //
-            //         if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-            //             tempX[1].getTime() == x2.domain()[1].getTime()) {
-            //             reset();
-            //         } else {
-            //             //restore the zoom&brush
-            //             context.select(".brush").call
-            //             (brush.move, [x2(tempX[0]), x2(tempX[1])]);
-            //         }
-            //     }
-            // }
 
             //precise resize without removing and recreating everything
             function resize(){
@@ -997,7 +942,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                 }
             }
-
 
             function updateGraph(series) {
                 var allDatapoints = [];
@@ -1130,7 +1074,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     });
 
                 });
-
             }
 
             //this function add the overlay element to the graph when mouse interaction takes place
@@ -1307,7 +1250,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-
             function setupMenu(){
                 //button set up
                 $('[name=reset]', topToolbar).click(reset);
@@ -1331,7 +1273,6 @@ angular.module('argus.directives.charts.lineChart', [])
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
             }
-
 
 
             // create graph only when there is data
@@ -1371,10 +1312,16 @@ angular.module('argus.directives.charts.lineChart', [])
                     updateGraph(series);
                     // initialize starting point for graph settings & info
                     addOverlay();
-                    updateDateRange();
-                    enableBrushTime();
-                    reset();    //to remove the brush cover first for user the drag
-                    setupMenu();
+                    
+                    // dont need to setup everything for a small chart
+                    if (!chartOptions.smallChart) {
+                        updateDateRange();
+                        enableBrushTime();
+                        reset();    //to remove the brush cover first for user the drag
+                        setupMenu();
+                    } else {
+                        hideMenu();
+                    }
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
