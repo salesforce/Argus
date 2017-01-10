@@ -5,7 +5,8 @@ services:
     hostname: opentsdb
     container_name: opentsdb
     ports:
-     - "4242:4242"
+      - "4242:4242"
+    volumes:
       - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh
       - ./conf/opentsdb/opentsdb.conf:/opt/opentsdb/config/opentsdb.conf:ro
   grafana:
@@ -13,7 +14,7 @@ services:
     hostname: grafana
     container_name: grafana
     ports:
-     - "3000:3000"
+      - "3000:3000"
   redis:
     image: redis:3.2.5
     hostname: redis
@@ -23,8 +24,8 @@ services:
     hostname: kafka
     container_name: kafka
     ports:
-     - "2181:2181"
-     - "9092:9092"
+      - "2181:2181"
+      - "9092:9092"
     environment:
       - ADVERTISED_HOST=kafka
       - ADVERTISED_PORT=9092

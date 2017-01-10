@@ -135,14 +135,20 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      *
      * @return  The sorted metrics.
      */
-    public static Map<Metric, String> sortByValue(Map<Metric, String> map) {
+    public static Map<Metric, String> sortByValue(Map<Metric, String> map, final String reducerType) {
         List<Map.Entry<Metric, String>> list = new LinkedList<>(map.entrySet());
 
         Collections.sort(list, new Comparator<Map.Entry<Metric, String>>() {
 
                 @Override
                 public int compare(Map.Entry<Metric, String> o1, Map.Entry<Metric, String> o2) {
-                    return (o1.getValue()).compareTo(o2.getValue());
+                	if(reducerType.equals("name")) {
+                		return o1.getValue().compareTo(o2.getValue());
+                	}
+                	
+                	Double d1 = Double.parseDouble(o1.getValue());
+                	Double d2 = Double.parseDouble(o2.getValue());
+                    return (d1.compareTo(d2));
                 }
             });
 
@@ -193,7 +199,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
             extendedSortedMap.put(metric, extendedEvaluation);
         }
-        return sortByValue(extendedSortedMap);
+        return sortByValue(extendedSortedMap, type);
     }
 
     @Override
