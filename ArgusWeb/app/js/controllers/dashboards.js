@@ -36,7 +36,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     };
     $scope.tabNames = {
         firstTab: Auth.getUsername() + "'s Dashboards",
-        secondTab: 'Shared'
+        secondTab: 'Shared Dashboards'
     };
     $scope.dashboards = [];
     $scope.dashboardsLoaded = false;
@@ -46,23 +46,28 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         sharedList: [],
         usersList: []
     };
-    // var sharedDashboards = [];
-    // var usersDashboards = [];
     var remoteUser = Auth.remoteUser();
 
     // TODO: refactor to DashboardService
-    $scope.getDashboards = function(shared) {
+    $scope.getDashboards = function (shared) {
         if ($scope.dashboardsLoaded) {
             $scope.dashboards = shared? dashboardLists.sharedList: dashboardLists.usersList;
         }
         $sessionStorage.dashboards.shared = shared;
     };
 
-    function setDashboardsAfterLoading(dashboards, shared) {
+    function setDashboardsAfterLoading (dashboards, shared) {
       dashboardLists.sharedList = TableListService.getListUnderTab(dashboards, true, remoteUser.userName);
       dashboardLists.usersList = TableListService.getListUnderTab(dashboards, false, remoteUser.userName);
       $scope.dashboardsLoaded = true;
       $scope.getDashboards(shared);
+    }
+
+    function getNewDashboards () {
+        Dashboards.getMeta().$promise.then(function(dashboards) {
+            setDashboardsAfterLoading(dashboards, $scope.shared);
+            $sessionStorage.dashboards.cachedData = dashboards;
+        });
     }
 
     // TODO: refactor to DashboardService
@@ -70,10 +75,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         delete $sessionStorage.dashboards.cachedData;
         delete $scope.dashboards;
         $scope.dashboardsLoaded = false;
-        Dashboards.getMeta().$promise.then(function(dashboards) {
-            setDashboardsAfterLoading(dashboards, $scope.shared);
-            $sessionStorage.dashboards.cachedData = dashboards;
-        });
+        getNewDashboards();
     };
 
     // TODO: refactor to DashboardService
@@ -146,13 +148,12 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 
     if ($sessionStorage.dashboards === undefined) $sessionStorage.dashboards = {};
     if ($sessionStorage.dashboards.cachedData !== undefined && $sessionStorage.dashboards.shared !== undefined) {
+        // get data from cache if it exists initially
         var dashboards = $sessionStorage.dashboards.cachedData;
         setDashboardsAfterLoading(dashboards, $sessionStorage.dashboards.shared);
     } else {
-        Dashboards.getMeta().$promise.then(function(dashboards) {
-            setDashboardsAfterLoading(dashboards, false);
-            $sessionStorage.dashboards.cachedData = dashboards;
-        });
+        // trigger API call if there is no data in cache
+        getNewDashboards();
     }
 
 }]);
