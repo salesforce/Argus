@@ -11,9 +11,10 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         // create a new scope to pass to compiled line-chart directive
         var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
 
+        // add more options in addition to 'ag-options'
         lineChartScope.chartConfig = updatedOptionList;
-        // add chartId in addition to ag options
         lineChartScope.chartConfig.chartId = newChartId;
+        lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
         lineChartScope.series = series;
         // when there is no agDate

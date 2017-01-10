@@ -87,12 +87,6 @@ angular.module('argus.config', [])
                 label: 'Namespace',
                 activeTab: 'namespace'
             }).
-            when('/d3test', {
-                templateUrl: 'js/templates/d3test.html',
-                controller: 'D3test',
-                label:'d3test',
-                activeTab: 'd3test'
-            }).
             otherwise({
                 redirectTo: '/dashboards'
             });
