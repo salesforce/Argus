@@ -36,9 +36,7 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.invalidSeries = [];
 
             $scope.toggleSource = function(source) {
-                if (!otherSourcesHidden) {
-                    toggleGraphOnOff(source);
-                }
+                toggleGraphOnOff(source);
             };
 
             // show ONLY this 1 source, hide all others

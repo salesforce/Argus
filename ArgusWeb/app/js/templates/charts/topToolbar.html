@@ -22,9 +22,9 @@
 					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
 					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
 					<a class="eyeIcon" title="Hide all other(s)"
-						ng-show="source.displaying"
+						ng-show="source.displaying && sources.length > 1"
 						ng-click="hideOtherSources(source)"
-						ng-class="!otherSourcesHidden ? 'visible' : 'hidden'"></a>
+						ng-class="(source.displaying && otherSourcesHidden) ? 'eyeOpen' : 'eyeClosed'"></a>
 				</li>
 				</ul>
 			</li>
