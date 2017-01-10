@@ -14,7 +14,6 @@ angular.module('argus.directives')
                 loaded: '=',
                 shared: '=',
                 getList: '&'
-
             },
             controller: ['$scope', '$sessionStorage', function ($scope, $sessionStorage) {
                 if ($sessionStorage[$scope.properties.type] !== undefined &&

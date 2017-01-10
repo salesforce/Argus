@@ -46,7 +46,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         sharedList: [],
         usersList: []
     };
-    var remoteUser = Auth.remoteUser();
+    var remoteUsername = Auth.getUsername();
 
 
     $scope.getAlerts = function (shared ) {
@@ -57,8 +57,8 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     };
 
     function setAlertsAfterLoading (alerts, shared) {
-        alertLists.sharedList = TableListService.getListUnderTab(alerts, true, remoteUser.userName);
-        alertLists.usersList = TableListService.getListUnderTab(alerts, false, remoteUser.userName);
+        alertLists.sharedList = TableListService.getListUnderTab(alerts, true, remoteUsername);
+        alertLists.usersList = TableListService.getListUnderTab(alerts, false, remoteUsername);
         $scope.alertsLoaded = true;
         $scope.getAlerts(shared);
     }
@@ -71,7 +71,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     }
 
 	$scope.refreshAlerts = function () {
-		delete $sessionStorage.alerts.cachedData;
+        delete $sessionStorage.alerts.cachedData;
         delete $scope.alerts;
         $scope.alertsLoaded = false;
         getNewAlerts();
@@ -86,7 +86,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         Alerts.save(alert, function (result) {
             // update both scope and session alerts
             result.expression = "";
-            alertLists = TableListService.addItemToTableList(alertLists, 'alerts', result, remoteUser.userName);
+            alertLists = TableListService.addItemToTableList(alertLists, 'alerts', result, remoteUsername);
             $scope.getAlerts($scope.shared);
             growl.success('Created "' + alert.name + '"');
         }, function (error) {
@@ -96,7 +96,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 
     $scope.removeAlert = function (alert) {
         Alerts.delete({alertId: alert.id}, function (result) {
-            alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUser.userName);
+            alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUsername);
             $scope.getAlerts($scope.shared);
             growl.success('Deleted "' + alert.name + '"');
         }, function (error) {
