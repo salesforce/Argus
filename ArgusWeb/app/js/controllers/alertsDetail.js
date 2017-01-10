@@ -1,9 +1,9 @@
 'use strict';
 
 angular.module('argus.controllers.alerts.detail', ['ngResource'])
-.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage',
-    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage) {
-
+.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage', 'Auth',
+    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage, Auth) {
+        $scope.alertNotEditable = true;
         $scope.isAlertDirty = function () {
             return !angular.equals($scope.alert, $scope.unmodifiedAlert);
         };
@@ -261,6 +261,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         if ($scope.alertId > 0) {
             Alerts.get({alertId: $scope.alertId}, function (alert) {
                 $scope.alert = alert;
+                $scope.alertNotEditable = Auth.isDisabled(alert);
                 $scope.unmodifiedAlert = angular.copy(alert);
             }, function (error) {
                 growl.error('Failed to get alert "' + $scope.alertId + '"');

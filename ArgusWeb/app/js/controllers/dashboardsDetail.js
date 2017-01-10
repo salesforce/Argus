@@ -3,9 +3,7 @@
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
 .controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
     function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage, Auth) {
-        $http.pendingRequests = []; //This line should be deleted.
         $scope.dashboardNotEditable = true;
-
         $scope.isDashboardDirty = function () {
             return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
         };
@@ -72,7 +70,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
         if ($scope.dashboardId > 0) {
             Dashboards.get({dashboardId: $scope.dashboardId}, function (dashboard) {
                 $scope.dashboard = dashboard;
-                $scope.dashboardNotEditable = Auth.isDisabled($scope.dashboard);
+                $scope.dashboardNotEditable = Auth.isDisabled(dashboard);
                 $scope.unmodifiedDashboard = angular.copy(dashboard);
             }, function (error) {
                 growl.error('Failed to get dashboard "' + $scope.dashboardId + '"');

@@ -48,7 +48,7 @@
         </div>
         <br/>
         <input class="btn btn-default" ng-show='isAlertDirty()' type="button" ng-click="resetAlert()" value="Revert"/>
-        <input class="btn btn-primary" ng-disabled='!isAlertDirty()' type="submit" ng-click="updateAlert()" value="Save" />
+        <input class="btn btn-primary" ng-disabled='!isAlertDirty() || alertNotEditable' type="submit" ng-click="updateAlert()" value="Save" />
     </form>
     <br/>
     </div>
@@ -83,7 +83,8 @@
                     <th>Secondary Threshold</th>
                     <th>Inertia Millis</th>
                     <th>
-                        <button class="btn btn-success btn-sm" type="button" ng-click="addTrigger()">
+                        <button class="btn btn-success btn-sm" type="button"
+                                ng-click="addTrigger()" ng-disabled="alertNotEditable">
                             <i class="glyphicon glyphicon-plus"></i>
                         </button>
                     </th>
@@ -101,7 +102,7 @@
                     <td><input class="form-control" type="text" ng-model="trigger.secondaryThreshold" /></td>
                     <td><input class="form-control" type="text" ng-model="trigger.inertia" /></td>
                     <td>
-                        <button class="btn btn-warning btn-sm" type="button"
+                        <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
                                 ng-confirm='Delete "{{trigger.name}}"?' ng-confirm-action='removeTrigger(trigger)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
@@ -109,7 +110,8 @@
                 </tr>
             </table>
             <input class="btn btn-default" ng-show='isTriggerDirty()' type="button" ng-click="resetTriggers()" value="Revert" />
-            <input class="btn btn-primary" ng-disabled='!isTriggerDirty()' type="submit" ng-click="updateTriggers(triggers)" value="Save" />
+            <input class="btn btn-primary" ng-disabled='!isTriggerDirty() || alertNotEditable'
+                   type="submit" ng-click="updateTriggers(triggers)" value="Save" />
         </form>
         <br/>
     </div>
@@ -124,7 +126,8 @@
                     <span class="pull-right input-group">
                         <input type="text" class="form-control" placeholder="Search..." ng-model="notificationSearchText">
                         <span class="input-group-btn">
-                            <button class="btn btn-default dropdown-toggle" ng-show="notificationSearchText" ng-click="notificationSearchText = null">
+                            <button class="btn btn-default dropdown-toggle"
+                                    ng-show="notificationSearchText" ng-click="notificationSearchText = null">
                                 <span class="glyphicon glyphicon-ban-circle"></span>
                             </button>
                             <button class="btn btn-default active" ng-show="!notificationSearchText">
@@ -145,7 +148,8 @@
                     <th>Cooldown Millis</th>
                     <th>Triggers</th>
                     <th>
-                        <button class="btn btn-success btn-sm" type="button" ng-click="addNotification()">
+                        <button class="btn btn-success btn-sm" type="button"
+                                ng-click="addNotification()" ng-disabled="alertNotEditable">
                             <i class="glyphicon glyphicon-plus"></i>
                         </button>
                     </th>
@@ -163,17 +167,21 @@
                     <td><input class="form-control" type="text" ng-list ng-model="notification.subscriptions" /></td>
                     <td><input class="form-control" type="text" ng-list ng-model="notification.metricsToAnnotate" /></td>
                     <td><input class="form-control" type="text" ng-model="notification.cooldownPeriod" /></td>
-                    <td><select class="form-control" multiple="multiple" ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()"></select></td>
+                    <td><select class="form-control" multiple="multiple"
+                                ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()">
+                    </select></td>
                     <td>
-                        <button class="btn btn-warning btn-sm" type="button"
-                                ng-confirm='Delete "{{notification.name}}"?' ng-confirm-action='removeNotification(notification)'>
+                        <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
+                                ng-confirm='Delete "{{notification.name}}"?'
+                                ng-confirm-action='removeNotification(notification)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
                     </td>
                 </tr>
             </table>
             <input class="btn btn-default" ng-show='isNotificationDirty()' type="button" ng-click="resetNotifications()" value="Revert" />
-            <input class="btn btn-primary" ng-disabled='!isNotificationDirty()'  type="submit" ng-click="updateNotifications(notifications)" value="Save" />
+            <input class="btn btn-primary" ng-disabled='!isNotificationDirty() || alertNotEditable'
+                   type="submit" ng-click="updateNotifications(notifications)" value="Save" />
         </form>
         <br/>
     </div>
