@@ -12,7 +12,7 @@ angular.module('argus.directives.controls.submit', [])
         require: '^agDashboard',
         template: '',
         link: function(scope, element, attributes, dashboardCtrl) {
-            var buttonName = '';
+            var buttonName = 'Submit';
             if (element.text() && element.text().length > 0) {
                 buttonName = element.text();
             }
