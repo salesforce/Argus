@@ -28,10 +28,10 @@ angular.module('argus.directives')
             restrict: "E",
             templateUrl: 'js/templates/tableList.html',
             scope: {
-                properties: '=',
                 colName: '=',
-                dataSet: '=data',
+                properties: '=',
                 loaded: '=',
+                dataSet: '=data',
                 addItem: '&',
                 delete: '&',
                 disabled: '&',
@@ -105,12 +105,6 @@ angular.module('argus.directives')
                     if ($scope.dataSet) {
                         $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
                     }
-                }
-
-                function deleteDashboardFromList(dashboardList, dashboardToDelete) {
-                    return dashboardList.filter(function (element) {
-                        return element.id != dashboardToDelete.id;
-                    });
                 }
             }]
         };

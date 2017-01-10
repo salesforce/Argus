@@ -20,7 +20,7 @@
 'use strict';
 
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
-.controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', function (Auth, $scope, growl, Dashboards, $sessionStorage) {
+.controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', 'TableListService', function (Auth, $scope, growl, Dashboards, $sessionStorage, TableListService) {
     // scope variables
     $scope.colName = {
         id:'ID',
@@ -32,9 +32,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     };
     $scope.properties = {
         title: "Dashboard",
-        type: "dashboards",
-        remoteUser: Auth.remoteUser().userName,
-        queryCaller: Dashboards
+        type: "dashboards"
     };
     $scope.tabNames = {
         firstTab: Auth.getUsername() + "'s Dashboards",
@@ -44,41 +42,26 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.dashboardsLoaded = false;
 
     // private variables
-    var sharedDashboards = [];
-    var usersDashboards = [];
+    var dashboardLists = {
+        sharedList: [],
+        usersList: []
+    };
+    // var sharedDashboards = [];
+    // var usersDashboards = [];
     var remoteUser = Auth.remoteUser();
 
     // TODO: refactor to DashboardService
     $scope.getDashboards = function(shared) {
         if ($scope.dashboardsLoaded) {
-            $scope.dashboards = shared? sharedDashboards: usersDashboards;
+            $scope.dashboards = shared? dashboardLists.sharedList: dashboardLists.usersList;
         }
         $sessionStorage.dashboards.shared = shared;
     };
 
-    function getDashboardsUnderTab (allDashboards, shared) {
-        var i, result = [];
-        var totNum = allDashboards.length;
-        if(shared) {
-            for(i = 0; i < totNum; i++) {
-                if(allDashboards[i].shared) {
-                    result.push(allDashboards[i]);
-                }
-            }
-        } else {
-            for(i = 0; i < totNum; i++) {
-                if (allDashboards[i].ownerName === remoteUser.userName) {
-                    result.push(allDashboards[i]);
-                }
-            }
-        }
-        return result;
-    }
-
     function setDashboardsAfterLoading(dashboards, shared) {
+      dashboardLists.sharedList = TableListService.getListUnderTab(dashboards, true, remoteUser.userName);
+      dashboardLists.usersList = TableListService.getListUnderTab(dashboards, false, remoteUser.userName);
       $scope.dashboardsLoaded = true;
-      sharedDashboards = getDashboardsUnderTab(dashboards, true);
-      usersDashboards = getDashboardsUnderTab(dashboards, false);
       $scope.getDashboards(shared);
     }
 
@@ -99,19 +82,12 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             name: 'new-dashboard-' + Date.now(),
             description: 'A new dashboard',
             shared: $scope.shared,
-            content: $scope.getContentTemplate()
+            content: getContentTemplate()
         };
         Dashboards.save(dashboard, function (result) {
             // update all dashboards
             result.content = "";
-            $sessionStorage.dashboards.cachedData.push(result);
-            // update individual tab's dashboards if needed
-            if(result.shared) {
-                sharedDashboards.push(result);
-            }
-            if (result.ownerName === remoteUser.userName) {
-                usersDashboards.push(result);
-            }
+            dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUser.userName);
             // update dashboards to be seen
             $scope.getDashboards($scope.shared);
             growl.success('Created "' + dashboard.name + '"');
@@ -124,14 +100,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.deleteDashboard = function (dashboard) {
         Dashboards.delete({dashboardId: dashboard.id}, function (result) {
             // update all dashboards
-            $sessionStorage.dashboards.cachedData = deleteDashboardFromList($sessionStorage.dashboards.cachedData, dashboard);
-            // update individual tab's dashboards if needed
-            if(dashboard.shared) {
-                sharedDashboards = deleteDashboardFromList(sharedDashboards, dashboard);
-            }
-            if (dashboard.ownerName === remoteUser.userName) {
-                usersDashboards = deleteDashboardFromList(usersDashboards, dashboard);
-            }
+            dashboardLists = TableListService.deleteItemFromTableList(dashboardLists, 'dashboards', dashboard, remoteUser.userName);
             // update dashboards to be seen
             $scope.getDashboards($scope.shared);
             growl.success('Deleted "' + dashboard.name + '"');
@@ -140,14 +109,12 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         });
     };
 
-    function deleteDashboardFromList(dashboardList, dashboardToDelete) {
-        return dashboardList.filter(function (element) {
-            return element.id != dashboardToDelete.id;
-        });
-    }
+    $scope.isDisabled = function(dashboard) {
+        return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
+    };
 
     // factor html template to /templates
-    $scope.getContentTemplate = function () {
+    function getContentTemplate() {
         var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
 
         template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
@@ -175,11 +142,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         template += "</ag-dashboard>";
 
         return template;
-    };
-
-    $scope.isDisabled = function(dashboard) {
-        return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
-    };
+    }
 
     if ($sessionStorage.dashboards === undefined) $sessionStorage.dashboards = {};
     if ($sessionStorage.dashboards.cachedData !== undefined && $sessionStorage.dashboards.shared !== undefined) {
