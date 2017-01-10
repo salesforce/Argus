@@ -36,9 +36,7 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.invalidSeries = [];
 
             $scope.toggleSource = function(source) {
-                if (!otherSourcesHidden) {
-                    toggleGraphOnOff(source);
-                }
+                toggleGraphOnOff(source);
             };
 
             // show ONLY this 1 source, hide all others
@@ -82,7 +80,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var chartOptions = scope.chartConfig;
 
             /** 'smallChart' settings: 
-                height: 250
+                height: 150
                 no timeline, date range, option menu
                 only left-side Y axis
                 fewer x-axis tick labels
@@ -111,6 +109,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 isTooltipSortOn: false,
                 isTooltipDetailOn: false
             };
+            scope.hideMenu = false;
 
             scope.dashboardId = $routeParams.dashboardId;
 
@@ -576,8 +575,6 @@ angular.module('argus.directives.charts.lineChart', [])
                      .text(formatValue(datapoints[i][1]));
                      textLine.append('tspan').attr('dx', 8).text(names[i]);
                      */
-
-
                 }
 
                 var tipBounds = group.node().getBBox();
@@ -1129,13 +1126,9 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //toggle time brush
             function toggleBrush() {
-                if (scope.menuOption.isBrushOn) {
-                    //disable the brush
-                    svg_g.select('.context').attr('display', null);
-                } else {
-                    //enable the brush
-                    svg_g.select('.context').attr('display', 'none');
-                }
+                var display = !scope.menuOption.isBrushOn ? 'none' : null;
+                svg_g.select('.context').attr('display', display);
+
                 updateStorage();
             }
 
@@ -1267,13 +1260,12 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function hideMenu(){
-               $('.toolbarItem').hide();
+                scope.hideMenu = true;
             }
 
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
             }
-
 
             // create graph only when there is data
             if (!series || series.length === 0) {
