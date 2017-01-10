@@ -25,11 +25,11 @@
 angular.module('argus.services.inputTracker', [])
 .service('InputTracker', ['Storage', function (Storage) {
     this.getDefaultValue = function(fieldName, defaultVal) {
-        return Storage.get(fieldName) == null ? defaultVal : Storage.get(fieldName);
+        return Storage.get(fieldName) === null ? defaultVal : Storage.get(fieldName);
     };
 
     this.updateDefaultValue = function(fieldName, defaultVal, val) {
-        var result = val == null ? defaultVal : val;
+        var result = val === null ? defaultVal : val;
         Storage.set(fieldName, result);
     };
 }]);
