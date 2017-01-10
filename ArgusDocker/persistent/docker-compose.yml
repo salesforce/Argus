@@ -5,7 +5,7 @@ services:
     hostname: opentsdb
     container_name: opentsdb
     ports:
-     - "4242:4242"
+      - "4242:4242"
     volumes:
       - ./storage/opentsdb/data/hbase:/data/hbase
       - ./storage/opentsdb/tmp:/tmp
@@ -27,7 +27,7 @@ services:
     hostname: grafana
     container_name: grafana
     ports:
-     - "3000:3000"
+      - "3000:3000"
     volumes:
       - ./storage/grafana/var/lib/grafana:/var/lib/grafana
   redis:
@@ -39,8 +39,8 @@ services:
     hostname: kafka
     container_name: kafka
     ports:
-     - "2181:2181"
-     - "9092:9092"
+      - "2181:2181"
+      - "9092:9092"
     environment:
       - ADVERTISED_HOST=kafka
       - ADVERTISED_PORT=9092
