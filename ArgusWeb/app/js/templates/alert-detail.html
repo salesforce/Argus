@@ -9,7 +9,7 @@
         <li ng-class="{active:isTabSelected(4)}"><a href ng-click='selectTab(4)'>History</a></li>
         <li ng-class="{active:isTabSelected(5)}"><a href ng-click='selectTab(5)'>Alert Evaluation Logs</a></li>
     </ul>
-    
+
     <!--Alert information tab -->
     <div ng-show='isTabSelected(1)'>
     <form novalidate class="form-horizontal">
@@ -35,10 +35,15 @@
                 <span ng-show='alert.missingDataNotificationEnabled'>Yes</span>
                 <span ng-show='!alert.missingDataNotificationEnabled'>No</span>
             </button>
-            <label for='alertOnMissingData'>&nbsp; Enabled?</label>
-            <button id="alertOnMissingData" class="btn btn-default" ng-click="alert.enabled = !alert.enabled">
+            <label for='alertEnableing'>&nbsp; Enabled?</label>
+            <button id="alertEnableing" class="btn btn-default" ng-click="alert.enabled = !alert.enabled">
                 <span ng-show='alert.enabled'>Yes</span>
                 <span ng-show='!alert.enabled'>No</span>
+            </button>
+            <label for="alertSharging">&nbsp; Shared?</label>
+            <button id="alertSharging" class="btn btn-default" ng-click="alert.shared = !alert.shared">
+                <span ng-show="alert.shared">Yes</span>
+                <span ng-show="!alert.shared">No</span>
             </button>
         </div>
         <br/>
@@ -108,7 +113,7 @@
         </form>
         <br/>
     </div>
-    
+
     <!-- Notifications tab -->
     <div ng-show='isTabSelected(3)'>
         <form novalidate class="form-horizontal">

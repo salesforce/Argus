@@ -1,3 +1,5 @@
+'use strict';
+
 angular.module('argus.controllers.alerts.detail', ['ngResource'])
 .controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage',
     function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage) {
@@ -24,7 +26,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                     $scope.fetchHistory();
                     $scope.fetchJobExecutionDetails();
                     // remove existing session storage for update
-                    delete $sessionStorage.cachedAlerts;
+                    if ($sessionStorage.alerts !== undefined)delete $sessionStorage.alerts.cachedData;
                 }, function (error) {
                     growl.error('Failed to update "' + alert.name + '"');
                 });

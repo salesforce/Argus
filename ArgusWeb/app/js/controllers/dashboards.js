@@ -46,7 +46,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         sharedList: [],
         usersList: []
     };
-    var remoteUser = Auth.remoteUser();
+    var remoteUsername = Auth.getUsername();
 
     // TODO: refactor to DashboardService
     $scope.getDashboards = function (shared) {
@@ -57,8 +57,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     };
 
     function setDashboardsAfterLoading (dashboards, shared) {
-      dashboardLists.sharedList = TableListService.getListUnderTab(dashboards, true, remoteUser.userName);
-      dashboardLists.usersList = TableListService.getListUnderTab(dashboards, false, remoteUser.userName);
+      dashboardLists.sharedList = TableListService.getListUnderTab(dashboards, true, remoteUsername);
+      dashboardLists.usersList = TableListService.getListUnderTab(dashboards, false, remoteUsername);
       $scope.dashboardsLoaded = true;
       $scope.getDashboards(shared);
     }
@@ -89,7 +89,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         Dashboards.save(dashboard, function (result) {
             // update all dashboards
             result.content = "";
-            dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUser.userName);
+            dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUsername);
             // update dashboards to be seen
             $scope.getDashboards($scope.shared);
             growl.success('Created "' + dashboard.name + '"');
@@ -102,17 +102,13 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.deleteDashboard = function (dashboard) {
         Dashboards.delete({dashboardId: dashboard.id}, function (result) {
             // update all dashboards
-            dashboardLists = TableListService.deleteItemFromTableList(dashboardLists, 'dashboards', dashboard, remoteUser.userName);
+            dashboardLists = TableListService.deleteItemFromTableList(dashboardLists, 'dashboards', dashboard, remoteUsername);
             // update dashboards to be seen
             $scope.getDashboards($scope.shared);
             growl.success('Deleted "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + dashboard.name + '"');
         });
-    };
-
-    $scope.isDisabled = function(dashboard) {
-        return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
     };
 
     // factor html template to /templates

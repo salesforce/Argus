@@ -34,12 +34,11 @@ angular.module('argus.directives')
                 dataSet: '=data',
                 addItem: '&',
                 delete: '&',
-                disabled: '&',
                 enable: '&',
                 refreshList: '&'
             },
-            controller: ['$scope', 'InputTracker', 'growl', '$sessionStorage',
-                function($scope, InputTracker, growl, $sessionStorage) {
+            controller: ['$scope', 'InputTracker', 'Auth',
+                function($scope, InputTracker, Auth) {
                 // TODO: move this to a service
                 // itemsPerPage setting
                 $scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
@@ -89,12 +88,7 @@ angular.module('argus.directives')
                 $scope.deleteItem = function(item) {
                     $scope.delete()(item);
                 };
-                $scope.isDisabled = function(item) {
-                    if ($scope.properties.type == 'dashboards') {
-                        $scope.disabled()(item);
-                    }
-                    // do nothing if its alert
-                };
+                $scope.isDisabled = Auth.isDisabled;
                 $scope.enableItem = function(item, enabled) {
                     $scope.enable()(item, enabled);
                 };

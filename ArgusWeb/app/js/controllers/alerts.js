@@ -104,11 +104,6 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         });
     };
 
-    //TODO: findout how this will be applied to alerts
-    $scope.isDisabled = function(dashboard) {
-        return !(remoteUser && (remoteUser.privileged || remoteUser.userName === dashboard.ownerName));
-    };
-
     $scope.enableAlert = function (alert, enabled) {
         if (alert.enabled !== enabled) {
             Alerts.get({alertId: alert.id}, function(updated) {
