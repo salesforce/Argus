@@ -1323,7 +1323,7 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function hideMenu(){
-               $('.toolbarItem').hide();
+               $('.toolbarItem', topToolbar).hide();
             }
 
             function updateStorage(){
