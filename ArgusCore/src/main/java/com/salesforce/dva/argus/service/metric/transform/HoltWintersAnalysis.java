@@ -33,8 +33,10 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -48,14 +50,19 @@ public class HoltWintersAnalysis {
     //~ Static fields/initializers *******************************************************************************************************************
 
     protected static final long ONE_WEEK_IN_MILLIS = 7 * 24 * 60 * 60 * 100;
+    protected static final NumberFormat DECIMAL_FORMAT = getDecimalFormat();
+
+    private static NumberFormat getDecimalFormat() {
+        DecimalFormat df = (DecimalFormat) NumberFormat.getInstance(Locale.US);
+        df.applyPattern("#.#####");
+        df.setRoundingMode(RoundingMode.CEILING);
+        return df;
+    }
 
     //~ Methods **************************************************************************************************************************************
 
     HoltWintersData _performHoltWintersAnalysis(Map<Long, String> bootstrappedDps, double alpha, double beta, double gamma, int seasonLength,
         long startTimestamp) {
-        DecimalFormat df = new DecimalFormat("#.#####");
-
-        df.setRoundingMode(RoundingMode.CEILING);
 
         List<Double> intercepts = new ArrayList<Double>();
         List<Double> slopes = new ArrayList<Double>();
@@ -103,10 +110,8 @@ public class HoltWintersAnalysis {
             seasonals.add(seasonal);
             deviations.add(deviation);
             if (timestamp >= startTimestamp) {
-                // forecastedDatapoints.put(timestamp, String.format("%.6g", prediction));
-                // deviationDatapoints.put(timestamp, String.format("%.6g", deviation));
-                forecastedDatapoints.put(timestamp, df.format(prediction));
-                deviationDatapoints.put(timestamp, df.format(deviation));
+                forecastedDatapoints.put(timestamp, DECIMAL_FORMAT.format(prediction));
+                deviationDatapoints.put(timestamp, DECIMAL_FORMAT.format(deviation));
             }
             i++;
         }
