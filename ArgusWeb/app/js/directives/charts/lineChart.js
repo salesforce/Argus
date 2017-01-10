@@ -79,7 +79,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTon = scope.dateConfig.gmt;
             var chartOptions = scope.chartConfig;
 
-            /** 'smallChart' settings: 
+            /** 'smallChart' settings:
                 height: 150
                 no timeline, date range, option menu
                 only left-side Y axis

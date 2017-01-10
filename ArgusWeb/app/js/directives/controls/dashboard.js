@@ -9,6 +9,7 @@ angular.module('argus.directives.controls.dashboard', [])
         template: '<div ng-transclude=""></div>',
         controller: function($scope) {
             $scope.controls = [];
+            
             this.updateControl = function(controlName, controlValue, controlType, localSubmit) {
             	var controlExists = false;
 
@@ -51,6 +52,7 @@ angular.module('argus.directives.controls.dashboard', [])
             this.getAllControls = function(){
             	return $scope.controls;
             };
+            
             this.getSubmitBtnEventName = function(){
                 return 'submitButtonEvent';
             };
@@ -60,7 +62,7 @@ angular.module('argus.directives.controls.dashboard', [])
             	$scope.$broadcast(eventName, data);
             };
         },
-        link:function(scope,element,attributes){
+        link:function(scope, element, attributes){
             if (!attributes.onload || attributes.onload == true) {
                 scope.$broadcast('submitButtonEvent', scope.controls);
             }

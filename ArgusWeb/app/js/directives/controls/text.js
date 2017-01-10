@@ -5,7 +5,11 @@ angular.module('argus.directives.controls.text', [])
         scope: {
             controlName: '@name',
             labelName: '@label',
-            controlValue: '@default'
+            controlValue: '@default',
+            elemId: '@id',
+            cssName: '@class',
+            style: '@style',
+            size: '@size'
         },
         controller: function($scope) {
             $scope.ctrlVal = $scope.controlValue;
@@ -17,7 +21,7 @@ angular.module('argus.directives.controls.text', [])
             }
         },
         require:'^agDashboard',
-        template:'<strong>{{labelName}} </strong> <input type="text" ng-model="ctrlVal">',
+        template:'<strong>{{labelName}} </strong><input id="{{elemId}}" type="text" class="{{cssName}}" size="{{size}}" style="{{style}}" ng-model="ctrlVal">',
         link: function(scope, element, attributes, dashboardCtrl) {
             dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, "agText");
             scope.$watch('ctrlVal', function(newValue, oldValue){
