@@ -71,17 +71,11 @@ public class AliasTransform implements Transform {
         SystemAssert.requireArgument(constants != null && (constants.size() == 2 || constants.size() == 4), "Alias Transform must provide either 2 or 4 constants.");
         
         String aliasTypeForMetric = constants.get(1);
-        String aliasTypeForScope = constants.get(3);
         
-        SystemAssert.requireArgument((REGRE.equals(aliasTypeForMetric) || LITERAL.equals(aliasTypeForMetric)) && (REGRE.equals(aliasTypeForScope) || LITERAL.equals(aliasTypeForScope)),
-            "Alias Transform can only performed for a regurlar expression or a string literal.");
-        
+        SystemAssert.requireArgument(REGRE.equals(aliasTypeForMetric) || LITERAL.equals(aliasTypeForMetric), 
+        		"Alias Transform can only performed for a regurlar expression or a string literal.");
         if (REGRE.equals(aliasTypeForMetric)) {
             SystemAssert.requireArgument(constants.get(0).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
-        }
-        
-        if (REGRE.equals(aliasTypeForScope)) {
-            SystemAssert.requireArgument(constants.get(2).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
         }
 
         String metricSearchRegex = "";
@@ -96,20 +90,32 @@ public class AliasTransform implements Transform {
             metricReplaceText = constants.get(0);
         }
 
-        if (REGRE.equals(aliasTypeForScope)) {
-        	scopeSearchRegex = constants.get(2).split("/")[1];
-        	scopeReplaceText = constants.get(2).split("/")[2];
-        } else if (LITERAL.equals(aliasTypeForScope)) {
-        	scopeSearchRegex = ".+";
-        	scopeReplaceText = constants.get(2);
+        if(constants.size() == 4) {
+        	String aliasTypeForScope = constants.get(3);
+        	SystemAssert.requireArgument(REGRE.equals(aliasTypeForScope) || LITERAL.equals(aliasTypeForScope), 
+        			"Alias Transform can only performed for a regurlar expression or a string literal.");
+        	if (REGRE.equals(aliasTypeForScope)) {
+                SystemAssert.requireArgument(constants.get(2).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
+            }
+        	
+        	
+            if (REGRE.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = constants.get(2).split("/")[1];
+            	scopeReplaceText = constants.get(2).split("/")[2];
+            } else if (LITERAL.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = ".+";
+            	scopeReplaceText = constants.get(2);
+            }
         }
         
         for (Metric metric : metrics) {
             String newMetricName = metric.getMetric().replaceAll(metricSearchRegex, metricReplaceText);
-            String newScopeName = metric.getScope().replaceAll(scopeSearchRegex, scopeReplaceText);
-
             metric.setMetric(newMetricName);
-            metric.setScope(newScopeName);
+            
+            if(constants.size() == 4) {
+            	String newScopeName = metric.getScope().replaceAll(scopeSearchRegex, scopeReplaceText);
+            	metric.setScope(newScopeName);
+            }
         }
         
         return metrics;
