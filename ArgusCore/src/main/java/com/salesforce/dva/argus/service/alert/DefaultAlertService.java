@@ -300,7 +300,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			alertIds.add(alertIdWithTimestamp.alertId);
 		}
 
-		List<Alert> alerts = findAlertsByPrimaryKeys(alertIds);
+		List<Alert> alerts = alertIds.isEmpty() ? Collections.emptyList() : findAlertsByPrimaryKeys(alertIds);
 		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
 		for(Alert alert : alerts) {
 			alertsByIds.put(alert.getId(), alert);
