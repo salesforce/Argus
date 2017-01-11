@@ -22,15 +22,15 @@
 					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
 					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
 					<a class="eyeIcon" title="Hide all other(s)"
-						ng-show="source.displaying"
+						ng-show="source.displaying && sources.length > 1"
 						ng-click="hideOtherSources(source)"
-						ng-class="!otherSourcesHidden ? 'visible' : 'hidden'"></a>
+						ng-class="(source.displaying && otherSourcesHidden) ? 'eyeOpen' : 'eyeClosed'"></a>
 				</li>
 				</ul>
 			</li>
 		</ul>
 
-		<div class="toolbarItem graphControls floatR">
+		<div class="toolbarItem graphControls floatR" ng-if="!hideMenu">
 			<div class="toolbarMenu topMenu">
 				<a class="glyphicon glyphicon-time"></a>
 				<ul class="subMenu menuPanel list-group">
@@ -87,6 +87,6 @@
 			</div>
 		</div>
 
-		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}">{{dateRange}}</div>
+		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}" ng-if="!hideMenu">{{dateRange}}</div>
 	</div>
 </div>
