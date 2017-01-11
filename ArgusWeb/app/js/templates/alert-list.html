@@ -1,6 +1,5 @@
 <section>
-    <!-- alert list -->
-    <table-list properties = "properties" col-name="colName" data="alerts" loaded="alerts" add-item="addAlert()" delete="removeAlert" disabled="isDisabled" enable="enableAlert" refresh-data="refreshAlerts()"></table-list>
-    <!--loading spinner-->
-    <div ng-loading="alerts"></div>
+    <table-tabs tab-names="tabNames" properties="properties" loaded="alertsLoaded" shared="shared" get-list="getAlerts"></table-tabs>
+    <table-list col-name="colName" properties = "properties" loaded="alertsLoaded" data="alerts" add-item="addAlert()" delete="removeAlert" enable="enableAlert" refresh-list="refreshAlerts()"></table-list>
+    <div ng-loading="alertsLoaded"></div>
 </section>

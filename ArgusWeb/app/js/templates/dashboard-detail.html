@@ -7,7 +7,7 @@
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click="selectTab(2)">Edit</a></li>
         <li ng-class="{active:isTabSelected(3)}"><a href ng-click="selectTab(3)">History</a></li>
     </ul>
-    
+
     <div ng-show="isTabSelected(1)">
         <ag-dashboard-resource></ag-dashboard-resource>
     </div>
@@ -34,7 +34,7 @@
                         </div>
                         <br/>
                         <input class="btn btn-default" ng-show="isDashboardDirty()" type="button" ng-click="resetDashboard()" value="Revert"/>
-                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || !dashboardEditable" type="submit" ng-click="updateDashboard()" value="Save" />
+                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || dashboardNotEditable" type="submit" ng-click="updateDashboard()" value="Save" />
                     </div>
                     <div class="col-md-8">
                         <label>Markup</label>
