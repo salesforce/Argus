@@ -615,7 +615,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
     private class MonitorThread extends Thread {
 
         /**
-         * Creates a new SchedulingThread object.
+         * Creates a new MonitorThread object.
          *
          * @param  name  The thread name.
          */
@@ -638,15 +638,25 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
         }
 
         private void _pushCounters() {
+        	int sizeJVMMetrics = 0;
             _logger.debug("Pushing monitor service counters for {}.", HOSTNAME);
 
             Map<Metric, Double> counters = new HashMap<>();
-
+            
             _updateJVMStatsCounters();
+
             synchronized (_metrics) {
+                sizeJVMMetrics = _metrics.size();
                 counters.putAll(_metrics);
                 _metrics.clear();
             }
+            
+            if(counters.size() != sizeJVMMetrics){
+            	_logger.warn("Monitoring Service JVM Metrics and counters size are not equal");
+            	_logger.warn("JVM Metrics size = {}", sizeJVMMetrics);
+            	_logger.warn("counters size = {}", counters.size());
+            }
+            
 
             long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
 
@@ -657,6 +667,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
                 entry.getKey().setDatapoints(dataPoints);
             }
             if (!isDisposed()) {
+            	_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());
                 _tsdbService.putMetrics(new ArrayList<>(counters.keySet()));
             }
         }
