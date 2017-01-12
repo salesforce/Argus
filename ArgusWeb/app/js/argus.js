@@ -152,7 +152,6 @@ require('./controllers/metricElements');
 require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
-require('./controllers/d3test');
 
 //services
 require('./services/auth');
@@ -197,7 +196,6 @@ require('./directives/controls/submit');
 require('./directives/controls/text');
 require('./directives/charts/chart');
 require('./directives/charts/lineChart');
-require('./directives/charts/d3LineChartTest');
 require('./directives/charts/flags');
 require('./directives/charts/heatmap');
 require('./directives/charts/metric');
