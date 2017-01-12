@@ -179,12 +179,13 @@ angular.module('argus.directives.charts.lineChart', [])
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
             var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
+            var smallChartDate = '%x';
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            var formatDate = d3.timeFormat(shortDate);
-            var GMTformatDate = d3.utcFormat(numericalDate);
+            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
+            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
 
             var formatValue = d3.format(',');
 
@@ -1306,14 +1307,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     addOverlay();
                     
                     // dont need to setup everything for a small chart
-                    if (!chartOptions.smallChart) {
-                        updateDateRange();
-                        enableBrushTime();
-                        reset();    //to remove the brush cover first for user the drag
-                        setupMenu();
-                    } else {
-                        hideMenu();
-                    }
+                    updateDateRange();
+                    enableBrushTime();
+                    reset();    //to remove the brush cover first for user the drag
+                    setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
