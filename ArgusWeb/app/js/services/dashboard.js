@@ -41,23 +41,97 @@ angular.module('argus.services.dashboard', [])
             var result = expression;
 
             for (var controlIndex in controls) {
-                var controlName = '\\$' + controls[controlIndex].name + '\\$';
+                var controlName = controls[controlIndex].name;
                 var controlValue = controls[controlIndex].value;
                 var controlType = controls[controlIndex].type;
+                var regularReplace = true;
                 if ( controlType === "agDate" ) {
                     controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
                     // remove GMT from offset input from
                     if( typeof (controlValue) === "string" && controlValue.indexOf('GMT') >= 0){
                         controlValue = controlValue.replace('GMT','').trim();
                     }
+                    
+                    if(result.match(new RegExp('\\$' + controlName + '\\$', "g")) !== null) {
+                    	result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
+                    } 
+                    
+                    
+                    var match = null;
+                    //Check if it either matches something like $start-7h$ or $start-$diff$$
+                    if((match = result.match(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"))) != null) {
+                    	controlValue = modifyControlValue(controlValue, match[0]);
+                    	result = result.replace(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"), controlValue);
+                    } else if((match = result.match(new RegExp('\\$' + controlName + '\\-\\$.*\\$\\$', "g"))) != null) {
+                    	match = match[0].substring(1, match[0].length - 1);
+                    	var subtractControlName = match.match(/\$.*\$/)[0];
+                    	subtractControlName = subtractControlName.substring(1, subtractControlName.length - 1);
+                    	var value = getControlValueFromName(controls, subtractControlName);
+                    	
+                    	controlValue = modifyControlValue(controlValue, "-" + value);
+                    	result = result.replace(new RegExp('\\$' + controlName + '\\-\\$.*\\$\\$', "g"), controlValue);
+                    }
+                    
+                } else {
+                	controlValue = controlValue == undefined ? "" : controlValue;
+                    result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
                 }
-                controlValue = controlValue == undefined ? "" : controlValue;
-                result = result.replace(new RegExp(controlName, "g"), controlValue);
             }
 
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
         };
+        
+        
+        function getControlValueFromName(controls, controlName) {
+        	for(var index in controls) {
+        		if(controlName === controls[index].name) {
+        			return controls[index].value;
+        		}
+        	}
+        	
+        	return null;
+        }
+        
+        function modifyControlValue(controlValue, controlName) {
+        	var millisToSubtract = 0;
+        	var match = controlName.match(/\-\d+[smdh]/)[0];
+        	var subtract = getValue(match);
+        	
+        	if(isNaN(controlValue)) {
+        		controlValue = getValue(controlValue);
+        		return "-" + (controlValue + subtract) + "s";
+        	}
+        	
+        	return controlValue - (subtract * 1000);  
+        }
+        
+        function getValue(timeStr) {
+        	timeStr = timeStr.substring(1);
+        	var digits = timeStr.substring(0, timeStr.length - 1);
+        	var unit = timeStr.substring(timeStr.length - 1);
+        	
+        	var secs = "invalid";
+        	switch(unit) {
+        		case "s":
+        			secs = parseFloat(digits);
+        			break;
+        		case "m":
+        			secs = parseFloat(digits) * 60;
+        			break;
+        		case "h":
+        			secs = parseFloat(digits) * 3600;
+        			break;
+        		case "d":
+        			secs = parseFloat(digits) * 24 * 3600;
+        			break;
+        		default:
+        			console.log("Invalid time unit used.");
+        	}
+        	
+        	return secs;
+        }
+        
 
         this.buildViewElement = function(scope, element, attributes, dashboardCtrl, elementType, index, DashboardService, growl) {
             var elementId = 'element_' + elementType + index;

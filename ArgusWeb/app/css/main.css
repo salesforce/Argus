@@ -40,8 +40,8 @@ button[disabled] {color:#CCC;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
 
 .eyeIcon {display:inline-block; width:14px; height:14px; vertical-align:middle; background:url(../img/glyphicons-halflings.png) no-repeat;}
-.eyeIcon.visible {background-position:-96px -121px;}
-.eyeIcon.hidden {background-position:-120px -121px;}
+.eyeIcon.eyeOpen {background-position:-96px -121px;}
+.eyeIcon.eyeClosed {background-position:-120px -121px;}
 
 .resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}
 .resetIcon:hover {background-position:0 -37px;}

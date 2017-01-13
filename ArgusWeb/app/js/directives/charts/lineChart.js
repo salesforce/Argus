@@ -36,9 +36,7 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.invalidSeries = [];
 
             $scope.toggleSource = function(source) {
-                if (!otherSourcesHidden) {
-                    toggleGraphOnOff(source);
-                }
+                toggleGraphOnOff(source);
             };
 
             // show ONLY this 1 source, hide all others
@@ -81,8 +79,8 @@ angular.module('argus.directives.charts.lineChart', [])
             var GMTon = scope.dateConfig.gmt;
             var chartOptions = scope.chartConfig;
 
-            /** 'smallChart' settings: 
-                height: 250
+            /** 'smallChart' settings:
+                height: 150
                 no timeline, date range, option menu
                 only left-side Y axis
                 fewer x-axis tick labels
@@ -111,6 +109,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 isTooltipSortOn: false,
                 isTooltipDetailOn: false
             };
+            scope.hideMenu = false;
 
             scope.dashboardId = $routeParams.dashboardId;
 
@@ -180,12 +179,13 @@ angular.module('argus.directives.charts.lineChart', [])
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
             var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
+            var smallChartDate = '%x';
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            var formatDate = d3.timeFormat(shortDate);
-            var GMTformatDate = d3.utcFormat(numericalDate);
+            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
+            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
 
             var formatValue = d3.format(',');
 
@@ -576,8 +576,6 @@ angular.module('argus.directives.charts.lineChart', [])
                      .text(formatValue(datapoints[i][1]));
                      textLine.append('tspan').attr('dx', 8).text(names[i]);
                      */
-
-
                 }
 
                 var tipBounds = group.node().getBBox();
@@ -1129,13 +1127,9 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //toggle time brush
             function toggleBrush() {
-                if (scope.menuOption.isBrushOn) {
-                    //disable the brush
-                    svg_g.select('.context').attr('display', null);
-                } else {
-                    //enable the brush
-                    svg_g.select('.context').attr('display', 'none');
-                }
+                var display = !scope.menuOption.isBrushOn ? 'none' : null;
+                svg_g.select('.context').attr('display', display);
+
                 updateStorage();
             }
 
@@ -1267,13 +1261,12 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             function hideMenu(){
-               $('.toolbarItem').hide();
+                scope.hideMenu = true;
             }
 
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
             }
-
 
             // create graph only when there is data
             if (!series || series.length === 0) {
@@ -1314,14 +1307,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     addOverlay();
                     
                     // dont need to setup everything for a small chart
-                    if (!chartOptions.smallChart) {
-                        updateDateRange();
-                        enableBrushTime();
-                        reset();    //to remove the brush cover first for user the drag
-                        setupMenu();
-                    } else {
-                        hideMenu();
-                    }
+                    updateDateRange();
+                    enableBrushTime();
+                    reset();    //to remove the brush cover first for user the drag
+                    setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
