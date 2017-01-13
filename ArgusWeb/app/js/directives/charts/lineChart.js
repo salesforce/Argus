@@ -1003,9 +1003,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     .append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", function (d, i) {
-                        return 20*i + margin.top + height/2;
+                        return 20*i + margin.top;
                     })
                     .style("text-anchor", "middle")
+                    .style("font-size", "12px")
                     .text(function(d){return d;});
             }
 
@@ -1314,19 +1315,19 @@ angular.module('argus.directives.charts.lineChart', [])
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
-                        messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        messageToDisplay.push('Metric does not exist in TSDB');
                         for (var i = 0; i < scope.invalidSeries.length; i ++) {
                             messageToDisplay.push(scope.invalidSeries[i].errorMessage);
                         }
-                        messageToDisplay.push('(Failed metrics are labeled black in the legend)');
+                        messageToDisplay.push('(Failed metrics are black in the legend)');
                     }
                     if (emptyReturn) {
-                        messageToDisplay.push('Metric expressions have no return value from TSDB');
-                        messageToDisplay.push('(Empty returned metrics are labeled maroon in the legend)');
+                        messageToDisplay.push('No data returned from TSDB');
+                        messageToDisplay.push('(Empty metrics are labeled maroon)');
                     }
                     if (hasNoData) {
                         messageToDisplay.push('No data found for metric expressions');
-                        messageToDisplay.push('(Series names are shown with normal colors in the legend)');
+                        messageToDisplay.push('(Valid sources have normal colors)');
                     }
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                     hideMenu();
