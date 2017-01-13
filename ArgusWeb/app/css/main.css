@@ -282,7 +282,7 @@ g.brush rect.overlay {stroke:#CCC;}
 g.brush rect.handle {fill:#999; stroke:#333;}
 
 /* flags (annotations) */
-.flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
+.flagItem .flag {fill:white; stroke-width:2px;}
 
 /* tooltip stuff */
 .tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}

@@ -1008,7 +1008,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .text(function(d){return d;});
             }
 
-            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!series) return;
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
@@ -1017,18 +1016,19 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 series.forEach(function (metric) {
                     if(!metric.flagSeries) return;
+                    var tempColor = metric.color === null ? z(metric.name) : metric.color;
                     var flagSeries = metric.flagSeries.data;
                     flagSeries.forEach(function(d){
                        var x_Val = x(d.x); // d.x is timestamp of X axis
                        var y_Val = height - 35;
                        var label = flagsG.append('g')
-                            .attr("class", "flagItem")
-                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
+                            .attr("class", "flagItem " + metric.graphClassName)
+                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")")
+                            .style("stroke", tempColor);
                         // annotation flag
                        label.append("line")
                             .attr("y2", 35)
-                            .attr("stroke-width", 2)
-                            .attr("stroke", "steelblue");
+                            .attr("stroke-width", 2);
                        label.append("circle")
                             .attr("r", 8)
                             .attr("class", "flag");
@@ -1036,6 +1036,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         label.append("text")
                             .attr('dy', 4)
                             .style("text-anchor", "middle")
+                            .style("stroke", "black")
                             .text(d.title);
 
                         // TODO: add mouseover for short text description when it comes available
