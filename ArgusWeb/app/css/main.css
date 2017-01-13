@@ -283,6 +283,11 @@ g.brush rect.handle {fill:#999; stroke:#333;}
 
 /* flags (annotations) */
 .flagItem .flag {fill:white; stroke-width:2px;}
+.d3-tip {
+  padding: 2px;
+  border: 2px solid;
+  border-radius: 5px;
+}
 
 /* tooltip stuff */
 .tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}

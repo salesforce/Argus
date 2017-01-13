@@ -1013,6 +1013,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
                 //clear previous graph element
                 flagsG.selectAll(".flagItem").remove();
+                //TODO: should not delete and redraw annotation label every time
+                d3.selectAll(".d3-tip").remove();
+                //create new annotation label
+                var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
+                d3.select('#' + chartId).select('svg').call(labelTip);
 
                 series.forEach(function (metric) {
                     if(!metric.flagSeries) return;
@@ -1024,7 +1029,12 @@ angular.module('argus.directives.charts.lineChart', [])
                        var label = flagsG.append('g')
                             .attr("class", "flagItem " + metric.graphClassName)
                             .attr("transform", "translate(" + x_Val + ", " + y_Val + ")")
-                            .style("stroke", tempColor);
+                            .style("stroke", tempColor)
+                            .on('mouseover', function(){
+                               labelTip.style("border-color", tempColor).html(d.text);
+                               labelTip.show();
+                            })
+                            .on('mouseout', labelTip.hide);
                         // annotation flag
                        label.append("line")
                             .attr("y2", 35)
@@ -1038,13 +1048,6 @@ angular.module('argus.directives.charts.lineChart', [])
                             .style("text-anchor", "middle")
                             .style("stroke", "black")
                             .text(d.title);
-
-                        // TODO: add mouseover for short text description when it comes available
-                        // label.append("text")
-                        //     .attr("x", 10).html(d.text);
-                        // text is currently too large and unreadable.
-                        // TODO: need separate panel to satisfy use case for user to select text
-
                     });
 
                 });
