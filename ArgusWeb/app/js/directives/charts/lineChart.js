@@ -959,7 +959,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
                 if(!endTime) endTime = dateExtent[1];
 
-                x.domain([startTime, endTime]);
+                //x.domain([startTime, endTime]);
+                x.domain(dateExtent); //doing this cause some date range are defined in metric queries and regardless of ag-date
 
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
