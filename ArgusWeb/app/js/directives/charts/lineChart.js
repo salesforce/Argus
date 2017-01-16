@@ -953,7 +953,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 //this shows exactly the date range defined by user instead of actual data
 
                 dateExtent = d3.extent(allDatapoints, function (d) {
-                        return d[0];
+                    return d[0];
                 });
 
                 if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
