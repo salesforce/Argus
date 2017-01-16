@@ -1,21 +1,22 @@
 language: java
 jdk: oraclejdk8
+
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
-   - secure: "fnj9R9EOWNKwtMOqikrKF96AsA9J0uyFH4b7NxvuDkLiTHbTcpeF6aPNdQAfkjW7PQCVsnzYUJmpvG/Tc+VJK+oeBO7ncIagGVTFEpQNH0mllZDvCOCn6c0FKRmC23U51lWYi5KuRe/iCARS97s7vHpuM1kgggB7VpkJRt3fnjbU2YQIR+d0Kare3+3nvKZl9xGNYEgxjw2hFEm1WplyLlCDCuYdrIoXtuwgiVqA4bnUm8YV5cDHmh8LvpBNzdUukYiKDyC6k28QVm52mFTJxT5QkWD3sgbkQTrJl3ItL8DhkubDCtOCPXNabfOYFyQv2/H6EVtYOYe/qXZQjcmI0BrEpSw4WnUuvEHx5YDhukWDp6KrJUsyI0tTsW9UT85z8RZQkbGLv4kk4x4BrrJmsLoMQnn5ScxzIhaDoCEVr9iZKowUvKt4MkPUR5eMckqDsZ53uOkSVyATgcvy2F5O6jvrc37YGb4+WnjXZycKExmX9DbJdXkZFR4DkBHJLAE/VWl9CW6Y5grBaX7Ni32yOiUuwxZJExr7rv0Q3VykREKA1bueOK3kBNlx5QPeP5/j6FpPw5YURWr5ARW4NO/diysGD7FZ+0nOw7PMEdNapQavftE4r+DpG6xMzBt0x0XEUxy89DwgS0I8wg+n8LtCXmnChF7/nYCMCejU15MOPr8="
+   - secure: "SGslLgueJ0xrEfR+Clsx5ubKQcVCYaWRIxrKIvyOeHGTyNdFPrxz6AQ1grkLao3gA7m+Kw9x4Fi/a6a89EV0apaOGDj+n8gLU8rHmZZd65vmET4htwQVZN25HqXk9H17zApV95D8BC4FQJZVMJ7Y8RGYmTvEh2DFu9XFPg3njlBzrrb74CybYw4a5Gs31E18a7khQ1zk+lodMx0aH6T69Osye1Y11aa0u2xtRw9CyEwJWXPeZ0md+UaM+AfTXpxjQSWZeScFO5b7LVT1NP0RYDBCmUwaV6VlDYKq7D978ItxvQ5MTyqu6iGROQAWsAykSS4rGeuR0rjraiMciosc9WHQAhj0uXD67QcrYbswUz0FeZe3jy+fU11PSZpO5pFLTnC38TVdfnr0STaGrSGndqCYrrtAbFdKJGhlcAc2tU2zysjw4GRFesHfhRBSmR8UJyqgYeGSwZVc67j5jdHMTO1bkluCwc5dhTZGvwMDRhJGM15T9ZxvaD0AaLBZOGYYVUBZzT5PBVEH9iuvBY0zMQjXLSD+wq0uS4OWtgPFkatiBvLVIZuGY4HGnSwFRzM9hd55proBQ9dfSw6hGQ8vEXchgRndrR54eC/k4Y7VN+fUPUFD8qHBr/M4sUFQSgaJzJ6DkrGHadyJ2fr1r3do7hrnfJlQAPAjKRFJTlwSRP0="
 
 addons:
   coverity_scan:
     project:
-      name: "SalesforceEng/Argus"
+      name: "jbhatt-salesforce/Warden-Service"
       description: "Build submitted via Travis CI"
-    notification_email: tvaline@salesforce.com
+    notification_email: jbhatt@salesforce.com
     build_command_prepend: "mvn clean"
-    build_command:   "mvn -DskipTests=true install"
-    branch_pattern: master
-    
+    build_command:   "mvn -DskipTests=true compile"
+    branch_pattern: coverity_scan
+
 before_script:
   - pip install --user codecov
 

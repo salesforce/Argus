@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import java.math.BigInteger;
+import java.util.List;
 
 /**
  * Provides methods relevant to system users.
@@ -98,5 +99,7 @@ public interface UserService extends Service {
      * @return  The unique user count.
      */
     long getUniqueUserCount();
+
+	List<PrincipalUser> getPrincipalUsers();
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
