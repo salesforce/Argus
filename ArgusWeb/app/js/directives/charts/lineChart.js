@@ -179,12 +179,13 @@ angular.module('argus.directives.charts.lineChart', [])
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
             var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
+            var smallChartDate = '%x';
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            var formatDate = d3.timeFormat(shortDate);
-            var GMTformatDate = d3.utcFormat(numericalDate);
+            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
+            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
 
             var formatValue = d3.format(',');
 
@@ -952,13 +953,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 //this shows exactly the date range defined by user instead of actual data
 
                 dateExtent = d3.extent(allDatapoints, function (d) {
-                        return d[0];
+                    return d[0];
                 });
 
                 if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
                 if(!endTime) endTime = dateExtent[1];
 
-                x.domain([startTime, endTime]);
+                //x.domain([startTime, endTime]);
+                x.domain(dateExtent); //doing this cause some date range are defined in metric queries and regardless of ag-date
 
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
@@ -1002,9 +1004,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     .append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", function (d, i) {
-                        return 20*i + margin.top + height/2;
+                        return 20*i + margin.top;
                     })
                     .style("text-anchor", "middle")
+                    .style("font-size", "12px")
                     .text(function(d){return d;});
             }
 
@@ -1306,30 +1309,26 @@ angular.module('argus.directives.charts.lineChart', [])
                     addOverlay();
 
                     // dont need to setup everything for a small chart
-                    if (!chartOptions.smallChart) {
-                        updateDateRange();
-                        enableBrushTime();
-                        reset();    //to remove the brush cover first for user the drag
-                        setupMenu();
-                    } else {
-                        hideMenu();
-                    }
+                    updateDateRange();
+                    enableBrushTime();
+                    reset();    //to remove the brush cover first for user the drag
+                    setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
-                        messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        messageToDisplay.push('Metric does not exist in TSDB');
                         for (var i = 0; i < scope.invalidSeries.length; i ++) {
                             messageToDisplay.push(scope.invalidSeries[i].errorMessage);
                         }
-                        messageToDisplay.push('(Failed metrics are labeled black in the legend)');
+                        messageToDisplay.push('(Failed metrics are black in the legend)');
                     }
                     if (emptyReturn) {
-                        messageToDisplay.push('Metric expressions have no return value from TSDB');
-                        messageToDisplay.push('(Empty returned metrics are labeled maroon in the legend)');
+                        messageToDisplay.push('No data returned from TSDB');
+                        messageToDisplay.push('(Empty metrics are labeled maroon)');
                     }
                     if (hasNoData) {
                         messageToDisplay.push('No data found for metric expressions');
-                        messageToDisplay.push('(Series names are shown with normal colors in the legend)');
+                        messageToDisplay.push('(Valid sources have normal colors)');
                     }
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                     hideMenu();
