@@ -61,6 +61,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
                     .style('display', displayProperty);
+                $scope.reScaleY();
+                $scope.redraw();
             }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
@@ -460,8 +462,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
-                    currSeries.forEach(function (metric) {
-                        if (metric.data.length === 0) {
+                    currSeries.forEach(function (metric, index) {
+                        if (metric.data.length === 0 || !scope.sources[index].displaying) {
                             return;
                         }
                         var data = metric.data;
@@ -685,8 +687,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isBrushInNonEmptyRange()) {
                     mainChart.selectAll('path.line').attr('display', null);
                     //update the dataum and redraw the line
-                    currSeries.forEach(function (metric) {
-                        if (metric === null || metric.data.length === 0) return;
+                    currSeries.forEach(function (metric, index) {
+                        if (metric === null || metric.data.length === 0 || //empty
+                            !scope.sources[index].displaying) return; //hided
                         var len = metric.data.length;
                         if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
                             mainChart.select('path.line.' + metric.graphClassName)
@@ -720,6 +723,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateDateRange();
                 updateAnnotations();
             }
+
+            scope.redraw = redraw; //have to register this as scope function cause toggleGraphOnOff is outside link function
 
             //brushed
             function brushed() {
@@ -829,8 +834,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 var xDomain = x.domain();
                 var datapoints = [];
 
-                currSeries.forEach(function (metric) {
-                    if (metric === null || metric.data.length === 0) return;
+                currSeries.forEach(function (metric, index) {
+                    if (metric === null || metric.data.length === 0 || //empty
+                        !scope.sources[index].displaying) return; //hided
+
                     var len = metric.data.length;
                     if (metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime()) return;
                     //if this metric time range is within the xDomain
@@ -849,6 +856,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y.domain([yMin, yMax]);
             }
+            scope.reScaleY = reScaleY; //have to register this as scope function cause toggleGraphOnOff is outside link function
 
             //precise resize without removing and recreating everything
             function resize(){
@@ -953,13 +961,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 //this shows exactly the date range defined by user instead of actual data
 
                 dateExtent = d3.extent(allDatapoints, function (d) {
-                        return d[0];
+                    return d[0];
                 });
 
                 if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
                 if(!endTime) endTime = dateExtent[1];
 
-                x.domain([startTime, endTime]);
+                //x.domain([startTime, endTime]);
+                x.domain(dateExtent); //doing this cause some date range are defined in metric queries and regardless of ag-date
 
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
@@ -1003,9 +1012,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     .append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", function (d, i) {
-                        return 20*i + margin.top + height/2;
+                        return 20*i + margin.top;
                     })
                     .style("text-anchor", "middle")
+                    .style("font-size", "12px")
                     .text(function(d){return d;});
             }
 
@@ -1314,19 +1324,19 @@ angular.module('argus.directives.charts.lineChart', [])
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
-                        messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        messageToDisplay.push('Metric does not exist in TSDB');
                         for (var i = 0; i < scope.invalidSeries.length; i ++) {
                             messageToDisplay.push(scope.invalidSeries[i].errorMessage);
                         }
-                        messageToDisplay.push('(Failed metrics are labeled black in the legend)');
+                        messageToDisplay.push('(Failed metrics are black in the legend)');
                     }
                     if (emptyReturn) {
-                        messageToDisplay.push('Metric expressions have no return value from TSDB');
-                        messageToDisplay.push('(Empty returned metrics are labeled maroon in the legend)');
+                        messageToDisplay.push('No data returned from TSDB');
+                        messageToDisplay.push('(Empty metrics are labeled maroon)');
                     }
                     if (hasNoData) {
                         messageToDisplay.push('No data found for metric expressions');
-                        messageToDisplay.push('(Series names are shown with normal colors in the legend)');
+                        messageToDisplay.push('(Valid sources have normal colors)');
                     }
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                     hideMenu();

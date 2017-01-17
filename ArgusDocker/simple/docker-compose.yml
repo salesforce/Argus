@@ -1,0 +1,87 @@
+version: '2'
+services:
+  opentsdb:
+    image: petergrace/opentsdb-docker:latest
+    hostname: opentsdb
+    container_name: opentsdb
+    ports:
+      - "4242:4242"
+    volumes:
+      - ./conf/opentsdb/start_opentsdb.sh:/opt/bin/start_opentsdb.sh
+      - ./conf/opentsdb/opentsdb.conf:/opt/opentsdb/config/opentsdb.conf:ro
+  grafana:
+    image: grafana/grafana:4.0.0
+    hostname: grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+  redis:
+    image: redis:3.2.5
+    hostname: redis
+    container_name: redis
+  kafka:
+    image: spotify/kafka:latest
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "2181:2181"
+      - "9092:9092"
+    environment:
+      - ADVERTISED_HOST=kafka
+      - ADVERTISED_PORT=9092
+  argus-web-services:
+    image: rmelick/argus-webservices
+    hostname: argus-web-services
+    container_name: argus-web-services
+    ports:
+      - "8081:8080"
+      - "5005:5005"
+    volumes:
+      - ./argus.properties:/usr/argus/argus.properties:ro
+      - ./argus-web-services/web.xml:/usr/local/tomcat/conf/web.xml:ro
+    environment:
+      - "CATALINA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dargus.config.public.location=/usr/argus/argus.properties"
+  argus-web:
+    image: rmelick/argus-web
+    hostname: argus-web
+    container_name: argus-web
+    ports:
+      - "8082:8000"
+    volumes:
+      - ./config.js:/usr/argus/argusWeb/app/js/config.js:ro
+  argus-metrics-client:
+    image: rmelick/argus-client
+    hostname: argus-metrics-client
+    container_name: argus-metrics-client
+    ports:
+      - "5006:5000"
+    volumes:
+      - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [COMMIT_METRICS]
+  argus-alert-client:
+    image: rmelick/argus-client
+    hostname: argus-alert-client
+    container_name: argus-alert-client
+    ports:
+      - "5007:5000"
+    volumes:
+      - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [ALERT]
+  argus-annotations-client:
+    image: rmelick/argus-client
+    hostname: argus-annotations-client
+    container_name: argus-annotations-client
+    ports:
+      - "5008:5000"
+    volumes:
+      - ./argus.properties:/usr/argus/argusClient/argus.properties:ro
+    environment:
+      - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
+      - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    command: [COMMIT_ANNOTATIONS]
