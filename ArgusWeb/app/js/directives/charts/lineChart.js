@@ -1019,37 +1019,41 @@ angular.module('argus.directives.charts.lineChart', [])
                 var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
                 d3.select('#' + chartId).select('svg').call(labelTip);
 
-                series.forEach(function (metric) {
-                    if(!metric.flagSeries) return;
+                series.forEach(function(metric) {
+                    if (!metric.flagSeries) return;
                     var tempColor = metric.color === null ? z(metric.name) : metric.color;
                     var flagSeries = metric.flagSeries.data;
-                    flagSeries.forEach(function(d){
-                       var x_Val = x(d.x); // d.x is timestamp of X axis
-                       var y_Val = height - 35;
-                       var label = flagsG.append('g')
+                    flagSeries.forEach(function(d) {
+                        var x_Val = x(d.x); // d.x is timestamp of X axis
+                        // dont render flag if it's outside of the range; similar to focus circle
+                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) return;
+                        var y_Val = height - 35;
+                        var label = flagsG.append('g')
                             .attr("class", "flagItem " + metric.graphClassName)
                             .attr("transform", "translate(" + x_Val + ", " + y_Val + ")")
                             .style("stroke", tempColor)
-                            .on('mouseover', function(){
-                               labelTip.style("border-color", tempColor).html(d.text);
-                               labelTip.show();
+                            .on("mouseover", function() {
+                                labelTip.style("border-color", tempColor).html(d.text);
+                                labelTip.show();
+                                // prevent annotation label goes outside of the view on the  side
+                                if (parseInt(labelTip.style("left")) < 15) {
+                                    labelTip.style("left", "15px");
+                                }
                             })
-                            .on('mouseout', labelTip.hide);
-                        // annotation flag
-                       label.append("line")
+                            .on("mouseout", labelTip.hide);
+                        // annotation flag with title
+                        label.append("line")
                             .attr("y2", 35)
                             .attr("stroke-width", 2);
-                       label.append("circle")
+                        label.append("circle")
                             .attr("r", 8)
                             .attr("class", "flag");
-                        // annotation title
                         label.append("text")
                             .attr('dy', 4)
                             .style("text-anchor", "middle")
                             .style("stroke", "black")
                             .text(d.title);
                     });
-
                 });
             }
 
