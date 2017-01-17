@@ -154,5 +154,36 @@ public class AliasTransformTest {
         assertEquals(TEST_ALIAS_LITERAL, result.get(1).getMetric());
         assertEquals(TEST_ALIAS_LITERAL, result.get(2).getMetric());
     }
+    
+    @Test
+    public void testAliasTransformLiteralScope() {
+        Transform aliasTransform = new AliasTransform();
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_1);
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_2);
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_3);
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+        metrics.add(metric_3);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("m");
+        constants.add(TEST_TYPE_LITERAL);
+        constants.add("s");
+        constants.add(TEST_TYPE_LITERAL);
+
+        List<Metric> result = aliasTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 3);
+        assertEquals("m", result.get(0).getMetric());
+        assertEquals("m", result.get(1).getMetric());
+        assertEquals("m", result.get(2).getMetric());
+        
+        assertEquals("s", result.get(0).getScope());
+        assertEquals("s", result.get(1).getScope());
+        assertEquals("s", result.get(2).getScope());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

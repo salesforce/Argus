@@ -36,7 +36,6 @@ import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -154,6 +153,7 @@ public abstract class TSDBEntity implements Serializable {
     public void setTags(Map<String, String> tags) {
         _tags.clear();
         if (tags != null) {
+        	requireArgument(tags.size() <= 7, "No. of tags = " + tags.size() + ". Too many tags!!!");
             Map<String, String> updatedTags = new TreeMap<>();
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
@@ -170,7 +170,7 @@ public abstract class TSDBEntity implements Serializable {
 
     private void _validateTag(String key, String value) {
     	requireArgument(key != null && !key.isEmpty(), "Tag key cannot be null or empty");
-        requireArgument(value != null && !value.isEmpty(), "Tag value cannot be null or empty");
+        requireArgument(value != null && !value.isEmpty(), "Tag value null or empty for tag key: " + key);
         //TODO: In future, we may want to validate that the tags contain only permissible characters.
 	}
 
@@ -246,6 +246,7 @@ public abstract class TSDBEntity implements Serializable {
         if (value == null || value.isEmpty()) {
             _tags.remove(key);
         } else {
+        	requireArgument(_tags.size() < 7 || _tags.containsKey(key), "No. of tags = " + _tags.size() + ". Cannot add more tags!!!");
             _tags.put(key, value);
         }
     }

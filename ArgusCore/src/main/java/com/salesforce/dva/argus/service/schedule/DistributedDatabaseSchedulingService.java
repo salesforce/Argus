@@ -304,7 +304,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 					while(jobsFromIndex < distributedSchedulingLock.getJobCount()){
 						if(currentScheduleEndTime < distributedSchedulingLock.getNextScheduleStartTime()){
-							_disposeScheduler(scheduler);
 							scheduler = _createScheduler();
 							_logger.info("Creating a new scheduler with name {}", _getSchedulerName(scheduler));
 							currentScheduleEndTime=distributedSchedulingLock.getNextScheduleStartTime();
@@ -324,6 +323,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					_logger.info("All jobs are scheduled. Scheduler {} is sleeping for {} millis", _getSchedulerName(scheduler), distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
 					_logger.info("Next schedule time is {}", distributedSchedulingLock.getNextScheduleStartTime()); 
 					_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
+					
+					/* Dispose the scheduler for current run, once you have slept until the start of next run */
+					_disposeScheduler(scheduler);
 				}
 			}
 			_disposeScheduler(scheduler);
