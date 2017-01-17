@@ -107,7 +107,7 @@ public class Metric extends TSDBEntity implements Serializable {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void setScope(String scope) {
+    public void setScope(String scope) {
         requireArgument(scope != null && !scope.trim().isEmpty(), "Scope cannot be null or empty.");
         super.setScope(scope);
     }
