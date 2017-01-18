@@ -462,10 +462,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
-                    currSeries.forEach(function (metric, index) {
-                        if (metric.data.length === 0 || !scope.sources[index].displaying) {
-                            return;
-                        }
+                    currSeries.forEach(function (metric) {
+                        if (metric.data.length === 0) return;
                         var data = metric.data;
                         var i = bisectDate(data, mouseX, 1);
                         var d0 = data[i - 1];

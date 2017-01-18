@@ -232,13 +232,16 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                     annotationCount.tot = annotationInfo.length;
                     for (var i = 0; i < annotationInfo.length; i++) {
                         Annotations.query({expression: annotationInfo[i]}).$promise.then(function (data) {
-                            var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
-                            if (flagSeries === null || flagSeries === undefined ) return;
-                            flagSeries.linkedTo = ChartDataProcessingService.createSeriesName(data[0]);
-                            chartScope.series = chartScope.series.map(function(item) {
-                                if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
-                                return item;
-                            });
+                            //prevent empty annotation returns
+                            if (data !== undefined && data.length !== 0) {
+                                var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
+                                if (flagSeries === null || flagSeries === undefined) return;
+                                flagSeries.linkedTo = ChartDataProcessingService.createSeriesName(data[0]);
+                                chartScope.series = chartScope.series.map(function (item) {
+                                    if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+                                    return item;
+                                });
+                            }
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
                                 angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
