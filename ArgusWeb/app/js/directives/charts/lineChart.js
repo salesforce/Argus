@@ -202,7 +202,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus, context, clip, brushG, brushMainG, chartRect, flags,//g
                 tip, tipBox, tipItems,
                 crossLine,
-                names, colors, graphClassNames;
+                names, colors, graphClassNames,
+                flagsG, labelTip, label;
 
             var messageToDisplay = ['No graph available'];
 
@@ -418,6 +419,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine.append('text')
                     .attr('name', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
+
+                //annotations
+                flagsG = d3.select('#' + chartId).select('svg').select('.flags');
+                labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
+                d3.select('#' + chartId).select('svg').call(labelTip);
             }
 
             // Graph tools that only needs to be created once in theory; all of these are data independent
@@ -449,6 +455,36 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('class', metric.graphClassName);
                     tipItems.append('text')
                         .attr('class', metric.graphClassName);
+                    // annotations
+                    if (!metric.flagSeries) return;
+                    var flagSeries = metric.flagSeries.data;
+                    flagSeries.forEach(function (d) {
+                        var label = flagsG.append('g')
+                            .attr("class", "flagItem " + metric.graphClassName)
+                            .attr("id", metric.graphClassName + d.flagID)
+                            .style("stroke", tempColor)
+                            .on("mouseover", function() {
+                                // add timestamp to the annotation label
+                                var tempTimestamp = GMTon ? GMTformatDate(d.x) : formatDate(d.x);
+                                tempTimestamp = d.text + "<strong>Timestamp: " + tempTimestamp + "</strong><br/>";
+                                labelTip.style("border-color", tempColor).html(tempTimestamp);
+                                labelTip.show();
+                                // prevent annotation label goes outside of the view on the  side
+                                if (parseInt(labelTip.style("left")) < 15) labelTip.style("left", "15px");
+                            })
+                            .on("mouseout", labelTip.hide);
+                        label.append("line")
+                            .attr("y2", 35)
+                            .attr("stroke-width", 2);
+                        label.append("circle")
+                            .attr("r", 8)
+                            .attr("class", "flag");
+                        label.append("text")
+                            .attr('dy', 4)
+                            .style("text-anchor", "middle")
+                            .style("stroke", "black")
+                            .text(d.title);
+                    })
                 });
             }
 
@@ -1019,49 +1055,20 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateAnnotations() {
                 if (!series) return;
-                var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                //clear previous graph element
-                flagsG.selectAll(".flagItem").remove();
-                //TODO: should not delete and redraw annotation label every time
-                d3.selectAll(".d3-tip").remove();
-                //create new annotation label
-                var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
-                d3.select('#' + chartId).select('svg').call(labelTip);
-
                 series.forEach(function(metric) {
                     if (!metric.flagSeries) return;
-                    var tempColor = metric.color === null ? z(metric.name) : metric.color;
                     var flagSeries = metric.flagSeries.data;
                     flagSeries.forEach(function(d) {
+                        var label = flagsG.select('#' + metric.graphClassName + d.flagID);
                         var x_Val = x(d.x); // d.x is timestamp of X axis
-                        // dont render flag if it's outside of the range; similar to focus circle
-                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) return;
                         var y_Val = height - 35;
-                        var label = flagsG.append('g')
-                            .attr("class", "flagItem " + metric.graphClassName)
-                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")")
-                            .style("stroke", tempColor)
-                            .on("mouseover", function() {
-                                labelTip.style("border-color", tempColor).html(d.text);
-                                labelTip.show();
-                                // prevent annotation label goes outside of the view on the  side
-                                if (parseInt(labelTip.style("left")) < 15) {
-                                    labelTip.style("left", "15px");
-                                }
-                            })
-                            .on("mouseout", labelTip.hide);
-                        // annotation flag with title
-                        label.append("line")
-                            .attr("y2", 35)
-                            .attr("stroke-width", 2);
-                        label.append("circle")
-                            .attr("r", 8)
-                            .attr("class", "flag");
-                        label.append("text")
-                            .attr('dy', 4)
-                            .style("text-anchor", "middle")
-                            .style("stroke", "black")
-                            .text(d.title);
+                        // dont render flag if it's outside of the range; similar to focus circle
+                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) {
+                            label.attr("display", 'none');
+                        } else {
+                            label.attr("display", null);
+                            label.attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
+                        }
                     });
                 });
             }

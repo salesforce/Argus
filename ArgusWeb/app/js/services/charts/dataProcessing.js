@@ -51,11 +51,18 @@ angular.module('argus.services.charts.dataProcessing', [])
     function copyFlagSeries(data) {
         var result;
         if (data) {
-            result = {type: 'flags', shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2};
+            result = {type: 'flags'/*, shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2*/};
             result.data = [];
+            var tempID = 0;
             for (var i = 0; i < data.length; i++) {
                 var flagData = data[i];
-                result.data.push({x: flagData.timestamp, title: 'A', text: formatFlagText(flagData.fields)});
+                result.data.push({
+                    x: flagData.timestamp,
+                    title: 'A',
+                    text: formatFlagText(flagData.fields),
+                    flagID: '_Flag'+tempID
+                });
+                tempID++;
             }
         } else {
             result = null;
