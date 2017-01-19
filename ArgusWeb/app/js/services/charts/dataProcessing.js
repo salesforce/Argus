@@ -92,7 +92,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             return options;
         },
 
-        augmentExpressionWithControlsData: function(event, expression, controls) {
+        augmentExpressionWithControlsData: function(expression, controls) {
 			var result = expression;
 
             for (var controlIndex in controls) {
@@ -114,7 +114,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             return result;
         },
 
-        processMetricData: function(data, event, controls) {
+        processMetricData: function(data, controls) {
 			if (!data) return;
 
 			var processedData = [];
@@ -128,7 +128,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                     var metrics = data.metrics[key];
                     var metricExpression = metrics.expression;
                     var metricSpecificOptions = metrics.metricSpecificOptions;
-                    var processedExpression = this.augmentExpressionWithControlsData(event, metricExpression, controls);
+                    var processedExpression = this.augmentExpressionWithControlsData(metricExpression, controls);
 
                     if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                         var processedMetric = {};
@@ -145,7 +145,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 
             for (var key in data.annotations) {
                 if (data.annotations.hasOwnProperty(key)) {
-                    var processedExpression = this.augmentExpressionWithControlsData(event, data.annotations[key],controls);
+                    var processedExpression = this.augmentExpressionWithControlsData(data.annotations[key], controls);
                     if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                         updatedAnnotationList.push(processedExpression);
                     }
