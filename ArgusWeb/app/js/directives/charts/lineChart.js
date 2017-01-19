@@ -1313,7 +1313,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     updateGraph(series);
                     // initialize starting point for graph settings & info
                     addOverlay();
-                    
+
                     // dont need to setup everything for a small chart
                     updateDateRange();
                     enableBrushTime();
