@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>argus</artifactId>
+        <groupId>com.salesforce.argus</groupId>
+        <version>2.2.1-SNAPSHOT</version>
+        <relativePath>..</relativePath>
+    </parent>
+    <artifactId>argus-web</artifactId>
+    <packaging>pom</packaging>
+    <name>ArgusWeb</name>
+    <description>Web frontend for the Argus Production Monitoring Tool.</description>
+    <properties>
+        <top>${project.basedir}/${project.parent.relativePath}</top>
+    </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-shared-resources</id>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>make-shared-test-resources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <resources>
+                        <resource>
+                            <targetPath>/argusWeb</targetPath>
+                            <directory>${project.basedir}</directory>
+                            <excludes>
+                                <exclude>node_modules/**</exclude>
+                                <exclude>target/**</exclude>
+                            </excludes>
+                        </resource>
+                    </resources>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
