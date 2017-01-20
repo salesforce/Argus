@@ -174,7 +174,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         dateConfig.gmt = GMTon;
 
         // process data for: metrics, annotations, options
-        var processedData = ChartDataProcessingService.processMetricData(data, event, controls);
+        var processedData = ChartDataProcessingService.processMetricData(data, controls);
 
         if (!processedData) {
             console.log('no processed data returned: ' + newChartId);
