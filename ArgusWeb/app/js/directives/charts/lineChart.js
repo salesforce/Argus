@@ -466,7 +466,7 @@ angular.module('argus.directives.charts.lineChart', [])
                             .on("mouseover", function() {
                                 // add timestamp to the annotation label
                                 var tempTimestamp = GMTon ? GMTformatDate(d.x) : formatDate(d.x);
-                                tempTimestamp = d.text + "<strong>Timestamp: " + tempTimestamp + "</strong><br/>";
+                                tempTimestamp =  "<strong>" + tempTimestamp + "</strong><br/>" + d.text;
                                 labelTip.style("border-color", tempColor).html(tempTimestamp);
                                 labelTip.show();
                                 // prevent annotation label goes outside of the view on the  side
