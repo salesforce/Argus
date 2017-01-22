@@ -230,7 +230,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 if (annotationInfo.length > 0) {
                     var annotationCount = {};
                     annotationCount.tot = annotationInfo.length;
-                    //TODO: annotation does not work in the directive
                     for (var i = 0; i < annotationInfo.length; i++) {
                         Annotations.query({expression: annotationInfo[i]}).$promise.then(function (data) {
                             //prevent empty annotation returns
