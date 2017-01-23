@@ -14,7 +14,7 @@
     <organization>
         <name>Salesforce</name>
         <url>http://www.salesforce.com</url>
-    </organization>    
+    </organization>
     <licenses>
         <license>
             <name>BSD 3-Clause</name>
@@ -305,7 +305,7 @@
                     <failOnError>false</failOnError>
                     <links>
                         <link>http://docs.oracle.com/javase/8/docs/api/</link>
-                    </links>                    
+                    </links>
                     <windowtitle>API Documentation</windowtitle>
                 </configuration>
             </plugin>
