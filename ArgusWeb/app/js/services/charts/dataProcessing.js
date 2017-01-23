@@ -2,8 +2,6 @@
 
 angular.module('argus.services.charts.dataProcessing', [])
 .service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, JsonFlattenService) {
-    'use strict';
-
     // Private methods
     function copySeries(data) {
         var result = [];
@@ -12,7 +10,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                 var series = [];
                 for (var key in data[i].datapoints) {
                     var timestamp = parseInt(key);
-                    if (data[i].datapoints[key] != null) {
+                    if (data[i].datapoints[key] !== null) {
                         var value = parseFloat(data[i].datapoints[key]);
                         series.push([timestamp, value]);
                     }
@@ -98,7 +96,7 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
             return options;
         },
-        
+
         augmentExpressionWithControlsData: function(expression, controls) {
 			var result = expression;
 
@@ -113,29 +111,29 @@ angular.module('argus.services.charts.dataProcessing', [])
                     if( typeof (controlValue) === "string" && controlValue.indexOf('GMT') >= 0){
                         controlValue = controlValue.replace('GMT','').trim();
                     }
-                    
+
                     if(result.match(new RegExp('\\$' + controlName + '\\$', "g")) !== null) {
                         result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
-                    } 
-                    
-                    
+                    }
+
+
                     var match = null;
                     //Check if it either matches something like $start-7h$ or $start-$diff$$
-                    if((match = result.match(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"))) != null) {
+                    if((match = result.match(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"))) !== null) {
                         controlValue = this.modifyControlValue(controlValue, match[0]);
                         result = result.replace(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"), controlValue);
-                    } else if((match = result.match(new RegExp('\\$' + controlName + '\\-\\$[^\\$]*\\$\\$', "g"))) != null) {
+                    } else if((match = result.match(new RegExp('\\$' + controlName + '\\-\\$[^\\$]*\\$\\$', "g"))) !== null) {
                         match = match[0].substring(1, match[0].length - 1);
                         var subtractControlName = match.match(/\$.*\$/)[0];
                         subtractControlName = subtractControlName.substring(1, subtractControlName.length - 1);
                         var value = this.getControlValueFromName(controls, subtractControlName);
-                        
+
                         controlValue = this.modifyControlValue(controlValue, "-" + value);
                         result = result.replace(new RegExp('\\$' + controlName + '\\-\\$[^\\$]*\\$\\$', "g"), controlValue);
                     }
-                    
+
                 } else {
-                    controlValue = controlValue == undefined ? "" : controlValue;
+                    controlValue = controlValue === undefined ? "" : controlValue;
                     result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
                 }
             }
@@ -150,28 +148,28 @@ angular.module('argus.services.charts.dataProcessing', [])
                     return controls[index].value;
                 }
             }
-            
+
             return null;
         },
-        
+
         modifyControlValue: function(controlValue, controlName) {
             var millisToSubtract = 0;
             var match = controlName.match(/\-\d+[smdh]/)[0];
             var subtract = this.getValue(match);
-            
+
             if(isNaN(controlValue)) {
                 controlValue = this.getValue(controlValue);
                 return "-" + (controlValue + subtract) + "s";
             }
-            
-            return controlValue - (subtract * 1000);  
+
+            return controlValue - (subtract * 1000);
         },
-        
+
         getValue: function (timeStr) {
             timeStr = timeStr.substring(1);
             var digits = timeStr.substring(0, timeStr.length - 1);
             var unit = timeStr.substring(timeStr.length - 1);
-            
+
             var secs = "invalid";
             switch(unit) {
                 case "s":
@@ -189,7 +187,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                 default:
                     console.log("Invalid time unit used.");
             }
-            
+
             return secs;
         },
 
@@ -250,7 +248,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 
                     for (var key in data[i].datapoints) {
                         var timestamp = parseInt(key);
-                        if (data[i].datapoints[key] != null) {
+                        if (data[i].datapoints[key] !== null) {
                             var value = parseFloat(data[i].datapoints[key]);
                             series.push([timestamp, value]);
                         }
