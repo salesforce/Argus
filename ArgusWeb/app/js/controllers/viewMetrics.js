@@ -53,7 +53,12 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                     $scope.updateChart(tempSeries, annotationInfo);
                     $scope.chartLoaded = true;
                 }, function (error) {
-                    growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    // prevent error.data.message being null breaks the message
+                    if (error.data.message === null) {
+                        error.data.message = "";
+                    } else {
+                       growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    }
                     tempSeries = [{
                         invalidMetric: true,
                         errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
