@@ -96,10 +96,12 @@ public class MetricReducerOrMappingTransform implements Transform {
         if (constants == null || constants.isEmpty()) {
             return transform(metrics);
         }
-        if (constants.size()==1 && constants.get(0).toUpperCase().equals(FULLJOIN)){
+        
+        if (constants.size() == 1 && constants.get(0).toUpperCase().equals(FULLJOIN)){
         	fulljoinIndicator=true;
         	return transform(metrics);
         }
+        
         return mapping(metrics, constants);
     }
 
@@ -112,7 +114,8 @@ public class MetricReducerOrMappingTransform implements Transform {
      * @return  A list of metrics after mapping.
      */
     protected List<Metric> mapping(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
+        
         if (metrics.isEmpty()) {
             return metrics;
         }
@@ -134,11 +137,11 @@ public class MetricReducerOrMappingTransform implements Transform {
      * @return  The reduced metric.
      */
     protected Metric reduce(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
-
-        /*
-         * if (metrics.isEmpty()) { return new Metric(defaultScope, defaultMetricName); }
-         */
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
+        if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
+    		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
+    	}
+        
         MetricDistiller distiller = new MetricDistiller();
 
         distiller.distill(metrics);

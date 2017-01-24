@@ -94,32 +94,18 @@ public class HistoryResources extends AbstractResource {
             throw new WebApplicationException("Job ID cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
         }
 
-        PrincipalUser jobOwner = _getJobOwner(jobId);
+        Alert alert= _alertService.findAlertByPrimaryKey(jobId);
 
-        if (jobOwner == null) {
+        if (alert == null) {
             throw new WebApplicationException(MessageFormat.format("The job with id {0} does not exist.", jobId), Response.Status.NOT_FOUND);
         }
-        validateResourceAuthorization(req, jobOwner, getRemoteUser(req));
-
+        
+        if(!alert.isShared()){
+        	validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
+        }
         List<History> historyList = status != null ? _historyService.findByJobAndStatus(jobId, limit, status)
                                                    : _historyService.findByJob(jobId, limit);
         return HistoryDTO.transformToDto(historyList);
-    }
-
-    /**
-     * Return the owner of the job.
-     *
-     * @param   jobId  : The job Id. Cannot be null.
-     *
-     * @return  The owner of the job.
-     */
-    private PrincipalUser _getJobOwner(BigInteger jobId) {
-        Alert alert = null;
-
-        try {
-            alert = _alertService.findAlertByPrimaryKey(jobId);
-        } catch (Exception ex) { }
-        return alert != null ? alert.getOwner() : null;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

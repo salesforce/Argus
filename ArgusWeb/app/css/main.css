@@ -210,7 +210,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 }
 
 /* chart styles */
-.chartTitle {margin-top:0; margin-bottom:.55em; text-align:center;}
+.chartTitle {margin-top:0; margin-bottom:.55em; text-align:center; font-size:16px;}
 
 /* main elements */
 .chartContainer {margin:0 .5em .5em 0; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
@@ -282,7 +282,12 @@ g.brush rect.overlay {stroke:#CCC;}
 g.brush rect.handle {fill:#999; stroke:#333;}
 
 /* flags (annotations) */
-.flagItem .flag {fill:lightblue; stroke:steelblue; stroke-width:2px;}
+.flagItem .flag {fill:white; stroke-width:2px;}
+.d3-tip {
+  padding: 2px;
+  border: 2px solid;
+  border-radius: 5px;
+}
 
 /* tooltip stuff */
 .tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
