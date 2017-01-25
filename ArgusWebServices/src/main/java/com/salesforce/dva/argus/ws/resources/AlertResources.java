@@ -42,8 +42,11 @@ import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -84,23 +87,21 @@ public class AlertResources extends AbstractResource {
 	 * @return  The list of filtered alerts in alert object.
 	 */
 	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner) {
-		List<Alert> result = null;
+		Set<Alert> result = new HashSet<>();
 		if (alertname != null && !alertname.isEmpty()) {
 			Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
-
-			result = new ArrayList<Alert>();
 			if (alert != null) {
 				result.add(alert);
 			}
 		} else {
 			if(owner.isPrivileged()){
-				result = alertService.findAllAlerts();
+				result.addAll(alertService.findAllAlerts());
 			}else{
-				result = alertService.findAlertsByOwner(owner);
+				result.addAll(alertService.findAlertsByOwner(owner));
 				result.addAll(alertService.findSharedAlerts());
 			}
 		}
-		return result;
+		return new ArrayList<>(result);
 	}
 
 	/**
