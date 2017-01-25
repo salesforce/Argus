@@ -1,7 +1,14 @@
 angular.module('argus.directives.controls.submit', [])
-.directive('agSubmit', ['$rootScope','$http', function($rootScope, $http) {
+.directive('agSubmit', ['$http', function($http) {
     return {
         restrict: 'E',
+        scope: {
+            controlName: '@name',
+            elemId: '@id',
+            cssName: '@class',
+            style: '@style',
+            size: '@size'
+        },
         require: '^agDashboard',
         template: '',
         link: function(scope, element, attributes, dashboardCtrl) {
@@ -9,7 +16,8 @@ angular.module('argus.directives.controls.submit', [])
             if (element.text() && element.text().length > 0) {
                 buttonName = element.text();
             }
-            element.html('<button class="btn btn-primary btn-md">' +  buttonName + '</button>');
+
+            element.html('<button id='+ scope.elemId +' class="btn btn-primary btn-md '+ scope.cssName +'" size='+ scope.size +' style='+ scope.style +'>' + buttonName + '</button>');
 
             element.on('click', function() {
                 $http.pendingRequests = []; //This line should be deleted.
