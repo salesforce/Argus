@@ -643,7 +643,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 				clearCount.incrementAndGet();
 				return null;
 			}
-		}).when(spyAlertService)._clearNotification(any(Trigger.class), 
+		}).when(spyAlertService)._sendClearNotification(any(Trigger.class), 
 															any(Metric.class), 
 															any(History.class), 
 															any(Notification.class), 

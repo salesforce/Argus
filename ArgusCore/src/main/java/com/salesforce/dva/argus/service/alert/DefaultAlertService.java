@@ -384,14 +384,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						_sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m));
 					} else {
-						//TODO: Think if this case needs to be handled.
+						//This is the case where the trigger fired but the notification was on cooldown for this trigger,metric combination. Do nothing. 
+						;
 					}
 				} else {
 					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
-						_clearNotification(trigger, m, history, notification, alert);
+						_sendClearNotification(trigger, m, history, notification, alert);
 					} else {
 						// This is case when the notification is not active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation.
@@ -434,6 +435,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
+					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, null);
 				} else {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.",
 							trigger.getName(), metric.getIdentifier());
@@ -455,8 +457,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 		notifier.sendNotification(context);
 		
+		Map<String, String> tags = new HashMap<>();
+		tags.put("status", "active");
+		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+		
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
+		_logger.info(logMessage);
+		_appendMessageNUpdateHistory(history, logMessage, null, 0);
+	}
+	
+	public void _sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "0", metric);
+		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
+
+		notifier.clearNotification(context);
+		
+		Map<String, String> tags = new HashMap<>();
+		tags.put("status", "clear");
+		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
+		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+		
+		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
@@ -471,16 +494,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notification.setCooldownExpirationByTriggerAndMetric(trigger, metric, System.currentTimeMillis() + notification.getCooldownPeriod());
 		notification.setActiveForTriggerAndMetric(trigger, metric, true);
 		notification = mergeEntity(_emProvider.get(), notification);
-	}
-	
-	public void _clearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "0", metric);
-		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
-
-		notifier.clearNotification(context);
-		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
-		_logger.info(logMessage);
-		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
 	private void _updateNotificationClearActiveStatus(Trigger trigger, Metric metric, Notification notification) {
@@ -534,6 +547,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		message.append(MessageFormat.format("<br> No data found for the following metric expression: ", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
+		
+		Map<String, String> tags = new HashMap<>();
+		tags.put("status", "missingdata");
+		tags.put("type", SupportedNotifier.EMAIL.name());
+		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
 	
 
