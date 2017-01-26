@@ -386,7 +386,52 @@ public class DivideTransformTest {
         expected.put(300L,"1000.0");
         expected.put(3000L,"3.0");
         List<Metric> result = divideTransform.transform(metrics, constants);
-        System.out.println(result);
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testDivideTransformWithOneTimeseries() {
+    	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+        
+    	Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        datapoints_1.put(1000L, "1");
+        datapoints_1.put(2000L, "2");
+        datapoints_1.put(3000L, "3");
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+        
+        divideTransform.transform(metrics);
+    }
+    
+    @Test
+    public void testDivideTransformWithOneTimeseriesWithConstant() {
+    	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+        
+    	Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        datapoints_1.put(1000L, "10");
+        datapoints_1.put(2000L, "20");
+        datapoints_1.put(3000L, "30");
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+        metric_1.setDatapoints(datapoints_1);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("2");
+        
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+        
+        Map<Long, String> expected = new HashMap<Long, String>();
+        expected.put(1000L,"5.0");
+        expected.put(2000L,"10.0");
+        expected.put(3000L,"15.0");
+        
+        List<Metric> result = divideTransform.transform(metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }

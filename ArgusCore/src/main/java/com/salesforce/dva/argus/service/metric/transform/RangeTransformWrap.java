@@ -60,7 +60,6 @@ public class RangeTransformWrap implements Transform {
             return rangeOfOneMetric(metrics.get(0));
         } else {
             return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(metrics);
-                // return transformFactory.createMetricReducerOrMappingTransform(TransformFactory.Function.RANGE).transform(metrics);
         }
     }
 

@@ -32,9 +32,7 @@
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.UserService;
-import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.dto.EndpointHelpDto;
 import com.salesforce.dva.argus.ws.dto.MethodHelpDto;
@@ -45,7 +43,6 @@ import org.apache.commons.beanutils.BeanUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;

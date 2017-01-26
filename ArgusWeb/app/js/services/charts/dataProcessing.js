@@ -51,11 +51,18 @@ angular.module('argus.services.charts.dataProcessing', [])
     function copyFlagSeries(data) {
         var result;
         if (data) {
-            result = {type: 'flags', shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2};
+            result = {type: 'flags'/*, shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2*/};
             result.data = [];
+            var tempID = 0;
             for (var i = 0; i < data.length; i++) {
                 var flagData = data[i];
-                result.data.push({x: flagData.timestamp, title: 'A', text: formatFlagText(flagData.fields)});
+                result.data.push({
+                    x: flagData.timestamp,
+                    title: 'A',
+                    text: formatFlagText(flagData.fields),
+                    flagID: '_Flag'+tempID
+                });
+                tempID++;
             }
         } else {
             result = null;
@@ -91,33 +98,105 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
             return options;
         },
-
-        augmentExpressionWithControlsData: function(event, expression, controls) {
+        
+        augmentExpressionWithControlsData: function(expression, controls) {
 			var result = expression;
 
             for (var controlIndex in controls) {
-                var controlName = '\\$' + controls[controlIndex].name + '\\$';
+                var controlName = controls[controlIndex].name;
                 var controlValue = controls[controlIndex].value;
                 var controlType = controls[controlIndex].type;
+                var regularReplace = true;
                 if ( controlType === "agDate" ) {
                     controlValue = isNaN(Date.parse(controlValue)) ? controlValue : Date.parse(controlValue);
                     // remove GMT from offset input from
                     if( typeof (controlValue) === "string" && controlValue.indexOf('GMT') >= 0){
-                        controlValue = controlValue.replace('GMT','');
+                        controlValue = controlValue.replace('GMT','').trim();
                     }
+                    
+                    if(result.match(new RegExp('\\$' + controlName + '\\$', "g")) !== null) {
+                        result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
+                    } 
+                    
+                    
+                    var match = null;
+                    //Check if it either matches something like $start-7h$ or $start-$diff$$
+                    if((match = result.match(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"))) != null) {
+                        controlValue = this.modifyControlValue(controlValue, match[0]);
+                        result = result.replace(new RegExp('\\$' + controlName + '\\-\\d+[smhd]\\$', "g"), controlValue);
+                    } else if((match = result.match(new RegExp('\\$' + controlName + '\\-\\$[^\\$]*\\$\\$', "g"))) != null) {
+                        match = match[0].substring(1, match[0].length - 1);
+                        var subtractControlName = match.match(/\$.*\$/)[0];
+                        subtractControlName = subtractControlName.substring(1, subtractControlName.length - 1);
+                        var value = this.getControlValueFromName(controls, subtractControlName);
+                        
+                        controlValue = this.modifyControlValue(controlValue, "-" + value);
+                        result = result.replace(new RegExp('\\$' + controlName + '\\-\\$[^\\$]*\\$\\$', "g"), controlValue);
+                    }
+                    
+                } else {
+                    controlValue = controlValue == undefined ? "" : controlValue;
+                    result = result.replace(new RegExp('\\$' + controlName + '\\$', "g"), controlValue);
                 }
-                controlValue = controlValue === undefined ? "" : controlValue;
-                result = result.replace(new RegExp(controlName, "g"), controlValue);
             }
 
             result = result.replace(/(\r\n|\n|\r|\s+)/gm, "");
             return result;
         },
 
-        processMetricData: function(data, event, controls) {
-			if (!data) return;
+        getControlValueFromName: function(controls, controlName) {
+            for(var index in controls) {
+                if(controlName === controls[index].name) {
+                    return controls[index].value;
+                }
+            }
+            
+            return null;
+        },
+        
+        modifyControlValue: function(controlValue, controlName) {
+            var millisToSubtract = 0;
+            var match = controlName.match(/\-\d+[smdh]/)[0];
+            var subtract = this.getValue(match);
+            
+            if(isNaN(controlValue)) {
+                controlValue = this.getValue(controlValue);
+                return "-" + (controlValue + subtract) + "s";
+            }
+            
+            return controlValue - (subtract * 1000);  
+        },
+        
+        getValue: function (timeStr) {
+            timeStr = timeStr.substring(1);
+            var digits = timeStr.substring(0, timeStr.length - 1);
+            var unit = timeStr.substring(timeStr.length - 1);
+            
+            var secs = "invalid";
+            switch(unit) {
+                case "s":
+                    secs = parseFloat(digits);
+                    break;
+                case "m":
+                    secs = parseFloat(digits) * 60;
+                    break;
+                case "h":
+                    secs = parseFloat(digits) * 3600;
+                    break;
+                case "d":
+                    secs = parseFloat(digits) * 24 * 3600;
+                    break;
+                default:
+                    console.log("Invalid time unit used.");
+            }
+            
+            return secs;
+        },
 
-			var processedData = [];
+        processMetricData: function(data, controls) {
+            if (!data) return;
+
+            var processedData = [];
             var updatedMetricList = [];
             var updatedAnnotationList = [];
             var updatedOptionList = JsonFlattenService.unflatten(data.options);
@@ -128,7 +207,7 @@ angular.module('argus.services.charts.dataProcessing', [])
                     var metrics = data.metrics[key];
                     var metricExpression = metrics.expression;
                     var metricSpecificOptions = metrics.metricSpecificOptions;
-                    var processedExpression = this.augmentExpressionWithControlsData(event, metricExpression, controls);
+                    var processedExpression = this.augmentExpressionWithControlsData(metricExpression, controls);
 
                     if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                         var processedMetric = {};
@@ -145,7 +224,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 
             for (var key in data.annotations) {
                 if (data.annotations.hasOwnProperty(key)) {
-                    var processedExpression = this.augmentExpressionWithControlsData(event, data.annotations[key],controls);
+                    var processedExpression = this.augmentExpressionWithControlsData(data.annotations[key], controls);
                     if (processedExpression.length > 0 /* && (/\$/.test(processedExpression)==false) */) {
                         updatedAnnotationList.push(processedExpression);
                     }
@@ -153,13 +232,13 @@ angular.module('argus.services.charts.dataProcessing', [])
             }
 
             if (updatedMetricList.length > 0) {
-        		processedData = {
-            		updatedMetricList: updatedMetricList,
-            		updatedAnnotationList: updatedAnnotationList,
-            		updatedOptionList: updatedOptionList
-        		};
+                processedData = {
+                    updatedMetricList: updatedMetricList,
+                    updatedAnnotationList: updatedAnnotationList,
+                    updatedOptionList: updatedOptionList
+                };
 
-				return processedData;
+                return processedData;
             }
         },
 
@@ -197,13 +276,13 @@ angular.module('argus.services.charts.dataProcessing', [])
         populateAnnotations: function(annotationsList, chart) {
             if (annotationsList && annotationsList.length > 0 && chart) {
                 for (var i=0; i < annotationsList.length; i++) {
-					this.addAlertFlag(annotationsList[i], chart);
+                    this.addAlertFlag(annotationsList[i], chart);
                 }
             }
         },
 
         addAlertFlag: function(annotationExpression, chart) {
-			Annotations.query({expression: annotationExpression}, function (data) {
+            Annotations.query({expression: annotationExpression}, function (data) {
                 if (data && data.length > 0) {
                     var forName = createSeriesName(data[0]);
                     var series = copyFlagSeries(data);
