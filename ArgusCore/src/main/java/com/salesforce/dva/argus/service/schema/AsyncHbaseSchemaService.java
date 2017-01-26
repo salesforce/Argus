@@ -263,7 +263,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
         _logger.debug("Using table: " + metadata.type.getTableName());
         _logger.debug("Rowkey: " + rowKeyRegex);
@@ -396,7 +396,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
     	
     	List<ScanFilter> filters = new ArrayList<ScanFilter>();
     	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
@@ -511,7 +511,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
         _logger.debug("Using table: " + metadata.type.getTableName());
         _logger.debug("Rowkey: " + rowKeyRegex);
