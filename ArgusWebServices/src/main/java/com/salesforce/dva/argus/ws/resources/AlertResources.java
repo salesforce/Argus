@@ -86,21 +86,37 @@ public class AlertResources extends AbstractResource {
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
-	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner) {
-		Set<Alert> result = new HashSet<>();
+	private List<Alert> _getAlertsByOwner(String alertname, PrincipalUser owner) {
+		List<Alert> result;
 		if (alertname != null && !alertname.isEmpty()) {
+			result = new ArrayList<>();
 			Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
 			if (alert != null) {
 				result.add(alert);
 			}
 		} else {
 			if(owner.isPrivileged()){
-				result.addAll(alertService.findAllAlerts());
+				result=alertService.findAllAlerts();
 			}else{
-				result.addAll(alertService.findAlertsByOwner(owner));
-				result.addAll(alertService.findSharedAlerts());
+				result=alertService.findAlertsByOwner(owner);
 			}
 		}
+		return result;
+	}
+
+	/**
+	 * Return both owners and shared alerts (if the shared flag is true).
+	 * @return  The list of shared alerts.
+	 */
+	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared) {
+		
+		Set<Alert> result = new HashSet<>();
+		
+		result.addAll(_getAlertsByOwner(alertname, owner));
+		if(shared){
+			result.addAll(alertService.findSharedAlerts());
+		}
+		
 		return new ArrayList<>(result);
 	}
 
@@ -119,9 +135,10 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts' metadata.")
 	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req,
 			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName) {
+			@QueryParam(OWNER_NAME) String ownerName,
+			@QueryParam("shared") boolean shared) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner);
+		List<Alert> result = getAlertsObj(alertname, owner, shared);
 		return AlertDto.transformToDtoNoContent(result);
 	}
 
@@ -139,21 +156,10 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts.")
 	public List<AlertDto> getAlerts(@Context HttpServletRequest req,
 			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName) {
-		// List<Alert> result = null;
+			@QueryParam(OWNER_NAME) String ownerName,
+			@QueryParam("shared") boolean shared) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-
-		// if (alertname != null && !alertname.isEmpty()) {
-		//     Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
-
-		//     result = new ArrayList<Alert>();
-		//     if (alert != null) {
-		//         result.add(alert);
-		//     }
-		// } else {
-		//     result = owner.isPrivileged() ? alertService.findAllAlerts() : alertService.findAlertsByOwner(owner);
-		// }
-		List<Alert> result = getAlertsObj(alertname, owner);
+		List<Alert> result = getAlertsObj(alertname, owner, shared);
 		return AlertDto.transformToDto(result);
 	}
 
