@@ -99,11 +99,11 @@ public class MetricZipperTransform implements Transform {
         SystemAssert.requireArgument(baseMetric != null, "Zipper transform requires base metric as second param!");
 
         List<Metric> zippedMetrics = new ArrayList<Metric>();
-        Map<Long, String> baseDatapoints = baseMetric.getDatapoints();
+        Map<Long, Double> baseDatapoints = baseMetric.getDatapoints();
 
         for (Metric metric : metrics) {
-            Map<Long, String> originalDatapoints = metric.getDatapoints();
-            Map<Long, String> zippedDatadpoints = this.zip(originalDatapoints, baseDatapoints);
+            Map<Long, Double> originalDatapoints = metric.getDatapoints();
+            Map<Long, Double> zippedDatadpoints = this.zip(originalDatapoints, baseDatapoints);
 
             metric.setDatapoints(zippedDatadpoints);
             zippedMetrics.add(metric);
@@ -119,20 +119,20 @@ public class MetricZipperTransform implements Transform {
      *
      * @return  The merged data points.
      */
-    public Map<Long, String> zip(Map<Long, String> originalDatapoints, Map<Long, String> baseDatapoints) {
+    public Map<Long, Double> zip(Map<Long, Double> originalDatapoints, Map<Long, Double> baseDatapoints) {
         SystemAssert.requireArgument(baseDatapoints != null && !baseDatapoints.isEmpty(),
             "Zipper transform requires valid baseDatapoints from base metric!");
 
-        Map<Long, String> zippedDP = new HashMap<Long, String>();
+        Map<Long, Double> zippedDP = new HashMap<>();
 
-        for (Map.Entry<Long, String> originalDP : originalDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> originalDP : originalDatapoints.entrySet()) {
             Long originalKey = originalDP.getKey();
-            String originalDpStr = originalDP.getValue();
+            Double originalVal = originalDP.getValue();
 
             // if base datapoints doesn't have the key, give it null
-            String baseDpStr = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
+            Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
 
-            zippedDP.put(originalKey, this.valueZipper.zip(originalDpStr, baseDpStr));
+            zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
         }
         return zippedDP;
     }

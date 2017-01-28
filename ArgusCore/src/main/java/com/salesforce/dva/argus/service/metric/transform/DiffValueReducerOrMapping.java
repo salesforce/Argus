@@ -48,39 +48,39 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
-        Double difference = Double.parseDouble(values.get(0));
+    public Double reduce(List<Double> values) {
+        Double difference = values.get(0);
 
         for (int i = 1; i < values.size(); i++) {
-            String value = values.get(i);
+            Double value = values.get(i);
 
             if (value == null) {
                 continue;
             }
-            difference -= Double.parseDouble(value);
+            difference -= value;
         }
-        return String.valueOf(difference);
+        return difference;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for diff transform, only exactly one constant allowed.");
 
-        Map<Long, String> diffDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> diffDatapoints = new HashMap<>();
 
         try {
             double subtrahend = Double.parseDouble(constants.get(0));
 
-            for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-                String differnceValue = String.valueOf(Double.parseDouble(entry.getValue()) - subtrahend);
+            for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+                double differnceValue = entry.getValue() - subtrahend;
 
-                diffDatapoints.put(entry.getKey(), String.valueOf(differnceValue));
+                diffDatapoints.put(entry.getKey(), differnceValue);
             }
         } catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to diff transform", nfe);
@@ -89,7 +89,7 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");
     }
 

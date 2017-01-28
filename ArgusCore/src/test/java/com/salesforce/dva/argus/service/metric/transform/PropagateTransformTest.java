@@ -76,11 +76,11 @@ public class PropagateTransformTest {
     @Test(expected = SystemException.class)
     public void testWithIllegalTimeunit() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -99,12 +99,12 @@ public class PropagateTransformTest {
     @Test
     public void testWithWindowLessThanPropagateRange() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -118,14 +118,14 @@ public class PropagateTransformTest {
 
         constants.add("1s");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "1");
-        expected.put(3000L, "1");
-        expected.put(4000L, "4");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 1.0);
+        expected.put(3000L, 1.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -136,12 +136,12 @@ public class PropagateTransformTest {
     @Test
     public void testWithWindowEqualsToPropagateRange() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -155,12 +155,12 @@ public class PropagateTransformTest {
 
         constants.add("3s");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(4000L, "4");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -171,12 +171,12 @@ public class PropagateTransformTest {
     @Test
     public void testWithWindowGreaterThanPropagateRange() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -190,12 +190,12 @@ public class PropagateTransformTest {
 
         constants.add("4s");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(4000L, "4");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -206,11 +206,11 @@ public class PropagateTransformTest {
     @Test
     public void testWithMultipePropagateRange() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(3000L, "3");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(3000L, 3.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -224,14 +224,14 @@ public class PropagateTransformTest {
 
         constants.add("1s");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "1");
-        expected.put(3000L, "3");
-        expected.put(4000L, "3");
-        expected.put(5000L, "3");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 1.0);
+        expected.put(3000L, 3.0);
+        expected.put(4000L, 3.0);
+        expected.put(5000L, 3.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -242,21 +242,21 @@ public class PropagateTransformTest {
     @Test
     public void testMetricListWithMultipePropagateRange() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(3000L, "3");
-        datapoints_1.put(6000L, "6");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(6000L, 6.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "21");
-        datapoints_2.put(3000L, "23");
-        datapoints_2.put(6000L, "26");
+        datapoints_2.put(1000L, 21.0);
+        datapoints_2.put(3000L, 23.0);
+        datapoints_2.put(6000L, 26.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -271,23 +271,23 @@ public class PropagateTransformTest {
 
         constants.add("1s");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "1");
-        expected_1.put(2000L, "1");
-        expected_1.put(3000L, "3");
-        expected_1.put(4000L, "3");
-        expected_1.put(5000L, "3");
-        expected_1.put(6000L, "6");
+        expected_1.put(1000L, 1.0);
+        expected_1.put(2000L, 1.0);
+        expected_1.put(3000L, 3.0);
+        expected_1.put(4000L, 3.0);
+        expected_1.put(5000L, 3.0);
+        expected_1.put(6000L, 6.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "21");
-        expected_2.put(2000L, "21");
-        expected_2.put(3000L, "23");
-        expected_2.put(4000L, "23");
-        expected_2.put(5000L, "23");
-        expected_2.put(6000L, "26");
+        expected_2.put(1000L, 21.0);
+        expected_2.put(2000L, 21.0);
+        expected_2.put(3000L, 23.0);
+        expected_2.put(4000L, 23.0);
+        expected_2.put(5000L, 23.0);
+        expected_2.put(6000L, 26.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -300,9 +300,9 @@ public class PropagateTransformTest {
     @Test
     public void testWithOnlyOneDP() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -316,9 +316,9 @@ public class PropagateTransformTest {
 
         constants.add("100s");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
+        expected.put(1000L, 1.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -329,11 +329,11 @@ public class PropagateTransformTest {
     @Test
     public void testNoMetricWithMissingPointAndOtherTimeUnit() {
         Transform propagateTransform = new PropagateTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -347,11 +347,11 @@ public class PropagateTransformTest {
 
         constants.add("5m");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = propagateTransform.transform(metrics, constants);
 
@@ -365,7 +365,7 @@ public class PropagateTransformTest {
     	Transform propagateTransform = new PropagateTransform();
     	
     	Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
-        metric.setDatapoints(Collections.<Long, String> emptyMap());
+        metric.setDatapoints(Collections.<Long, Double> emptyMap());
 
         List<Metric> metrics = Arrays.asList(metric);
         List<String> constants = Arrays.asList("1m");

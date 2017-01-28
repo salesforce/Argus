@@ -98,7 +98,7 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
                 }
             }
 
-            Map<Long, String> bootstrappedDps = new TreeMap<Long, String>(metric.getDatapoints());
+            Map<Long, Double> bootstrappedDps = new TreeMap<>(metric.getDatapoints());
 
             if (oneWeekBeforeMetric != null) {
                 bootstrappedDps.putAll(oneWeekBeforeMetric.getDatapoints());

@@ -63,45 +63,48 @@ public class ConsecutiveValueMapping implements ValueMapping {
      * @return	resultMetric	A new time series that has been transformed.
      */
 	@Override
-	public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
 		SystemAssert.requireArgument(constants != null, "This transform needs constants");
         SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");    
+        
         this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
         this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
               
-        Map<Long, String> resultMetric = new TreeMap<Long, String>();
-        this.keyList=new ArrayList<Long>();
-        this.resultKeyList=new ArrayList<Long>();
+        Map<Long, Double> resultMetric = new TreeMap<>();
+        this.keyList = new ArrayList<Long>();
+        this.resultKeyList = new ArrayList<Long>();
 		keyList.addAll(originalDatapoints.keySet());
 		Collections.sort(keyList);
 		
-		if (keyList.size()>0){
-			connect(0,new ArrayList<>(Arrays.asList(keyList.get(0))));
+		if (keyList.size() > 0){
+			connect(0, new ArrayList<>(Arrays.asList(keyList.get(0))));
 		}
-		for(Long resultKey:resultKeyList){
+		
+		for(Long resultKey : resultKeyList){
 			resultMetric.put(resultKey, originalDatapoints.get(resultKey));
 		}
 		return resultMetric;
 	}
 	
-	private Object connect(int current,ArrayList<Long> carryList){		
-		if (current+2==keyList.size()){
-			if (keyList.get(current+1)-keyList.get(current)<=connectDistance){
-				carryList.add(keyList.get(current+1));
+	private Object connect(int current, ArrayList<Long> carryList){		
+		if (current + 2 == keyList.size()){
+			if (keyList.get(current + 1) - keyList.get(current) <= connectDistance){
+				carryList.add(keyList.get(current + 1));
 			}
-			if (carryList.size()>0 && Collections.max(carryList)-Collections.min(carryList)>=threshold){
+			if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold){
 				resultKeyList.addAll(carryList);
 			}
 			return null;
 		}
-		if (keyList.get(current+1)-keyList.get(current)<=connectDistance){
-			carryList.add(keyList.get(current+1));
-			return connect(current+1,carryList);
+		
+		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance){
+			carryList.add(keyList.get(current + 1));
+			return connect(current + 1 ,carryList);
 		}
-		if (carryList.size()>0 && Collections.max(carryList)-Collections.min(carryList)>=threshold){
+		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold){
 			resultKeyList.addAll(carryList);
 		}
-		return connect(current+1,new ArrayList<>(Arrays.asList(keyList.get(current+1)))); 
+		return connect(current+1, new ArrayList<>(Arrays.asList(keyList.get(current+1)))); 
 	}
 	
 	private long getOffsetInSeconds(String offset) {
@@ -124,7 +127,7 @@ public class ConsecutiveValueMapping implements ValueMapping {
     }
 
 	@Override
-	public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
 		throw new UnsupportedOperationException("Consective Transform needs a threshold and type.");
 	}
 	

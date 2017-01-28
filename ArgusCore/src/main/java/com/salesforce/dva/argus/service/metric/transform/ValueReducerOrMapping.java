@@ -50,7 +50,7 @@ public interface ValueReducerOrMapping {
      *
      * @return  The value after mapping.
      */
-    Map<Long, String> mapping(Map<Long, String> originalDatapoints);
+    Map<Long, Double> mapping(Map<Long, Double> originalDatapoints);
 
     /**
      * Apply function to every datapoint of a datapoint map and return a new datapoint.
@@ -60,7 +60,7 @@ public interface ValueReducerOrMapping {
      *
      * @return  The value after mapping.
      */
-    Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants);
+    Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants);
 
     /**
      * Reduce a set of values to a single value.
@@ -69,7 +69,7 @@ public interface ValueReducerOrMapping {
      *
      * @return  The reduced value.
      */
-    String reduce(List<String> values);
+    Double reduce(List<Double> values);
 
     /**
      * Reduce a set of values to a single value.
@@ -79,7 +79,7 @@ public interface ValueReducerOrMapping {
      *
      * @return  The reduced value.
      */
-    String reduce(List<String> values, List<String> constants);
+    Double reduce(List<Double> values, List<String> constants);
 
     /**
      * Returns the name of the value mapping/reducer.

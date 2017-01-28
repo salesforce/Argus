@@ -56,8 +56,8 @@ public class PropagateTransform implements Transform {
     		return;
     	}
     	
-        Map<Long, String> propagateDatapoints = new TreeMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(metric.getDatapoints());
+        Map<Long, Double> propagateDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
         sortedDatapoints.keySet().toArray(sortedTimestamps);
 
@@ -82,14 +82,14 @@ public class PropagateTransform implements Transform {
 
         int newLength = propagateDatapoints.size();
         List<Long> newTimestamps = new ArrayList<Long>();
-        List<String> newValues = new ArrayList<String>();
+        List<Double> newValues = new ArrayList<>();
 
-        for (Map.Entry<Long, String> entry : propagateDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : propagateDatapoints.entrySet()) {
             newTimestamps.add(entry.getKey());
             newValues.add(entry.getValue());
         }
 
-        String prev = "";
+        Double prev = null;
 
         for (int i = 0; i < newLength; i++) {
             if (newValues.get(i) != null) {
