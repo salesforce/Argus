@@ -67,9 +67,9 @@ public class GroupTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testGroupTransformWithoutConstant() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -95,11 +95,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformLiteralInclusiveWithAllSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -107,11 +107,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -119,11 +119,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -141,11 +141,11 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_LITERAL);
         constants.add(TEST_METRIC_TYPE_INCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -156,11 +156,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformRegexExclusiveWithAllSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -168,11 +168,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -180,11 +180,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -202,11 +202,11 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_REGEX);
         constants.add(TEST_METRIC_TYPE_EXCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "9");
-        expected.put(2000L, "99");
-        expected.put(3000L, "999");
+        expected.put(1000L, 9.0);
+        expected.put(2000L, 99.0);
+        expected.put(3000L, 999.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -217,11 +217,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformLiteralInclusiveWithoutSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -229,11 +229,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -241,11 +241,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -263,14 +263,14 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_LITERAL);
         constants.add(TEST_METRIC_TYPE_INCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
-        expected.put(100L, "10");
-        expected.put(200L, "100");
-        expected.put(300L, "1000");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
+        expected.put(100L, 10.0);
+        expected.put(200L, 100.0);
+        expected.put(300L, 1000.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -281,11 +281,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformRegexExclusiveWithoutSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
@@ -293,11 +293,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
@@ -305,11 +305,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -327,11 +327,11 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_REGEX);
         constants.add(TEST_METRIC_TYPE_EXCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "9");
-        expected.put(2000L, "99");
-        expected.put(3000L, "999");
+        expected.put(1000L, 9.0);
+        expected.put(2000L, 99.0);
+        expected.put(3000L, 999.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -342,11 +342,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformLiteralInclusiveWithSomeSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -354,11 +354,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -366,11 +366,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -388,13 +388,13 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_LITERAL);
         constants.add(TEST_METRIC_TYPE_INCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
-        expected.put(200L, "100");
-        expected.put(300L, "1000");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
+        expected.put(200L, 100.0);
+        expected.put(300L, 1000.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -405,11 +405,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformRegexExclusiveWithSomeSharedTimestampsHavingAndCullName() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
@@ -417,11 +417,11 @@ public class GroupTransformTest {
         metric_1.setTags(TEST_TAGS);
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
@@ -429,11 +429,11 @@ public class GroupTransformTest {
         metric_2.setTags(TEST_TAGS);
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
-        datapoints_3.put(2000L, "99");
-        datapoints_3.put(3000L, "999");
+        datapoints_3.put(1000L, 9.0);
+        datapoints_3.put(2000L, 99.0);
+        datapoints_3.put(3000L, 999.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_BAD);
 
@@ -451,11 +451,11 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_REGEX);
         constants.add(TEST_METRIC_TYPE_EXCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "9");
-        expected.put(2000L, "99");
-        expected.put(3000L, "999");
+        expected.put(1000L, 9.0);
+        expected.put(2000L, 99.0);
+        expected.put(3000L, 999.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -466,11 +466,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformLiteralInclusiveWithOnlyOneMetric() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -487,11 +487,11 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_LITERAL);
         constants.add(TEST_METRIC_TYPE_INCLUSIVE);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = groupTransform.transform(metrics, constants);
 
@@ -502,11 +502,11 @@ public class GroupTransformTest {
     @Test
     public void testGroupTransformRegexExclusiveWithOnlyOneMetric() {
         Transform groupTransform = new GroupTransformWrapUnion();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC_NAME_LITERAL);
 
