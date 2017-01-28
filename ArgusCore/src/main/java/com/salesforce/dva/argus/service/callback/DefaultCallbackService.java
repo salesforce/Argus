@@ -157,7 +157,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		POOL_REFRESH_TIME("service.callback.pool.refresh_time", "1"),
 		POOL_REFRESH_UNIT("service.callback.pool.refresh_unit", TimeUnit.SECONDS.name()),
 		ST4_DELIMITER_START("service.callback.ST4.del_start", "«"),
-		ST4_DELIMITER_END("service.callback.ST4.del_start", "»");
+		ST4_DELIMITER_END("service.callback.ST4.del_end", "»");
 
 		private final String _name;
 		private final String _defaultValue;
