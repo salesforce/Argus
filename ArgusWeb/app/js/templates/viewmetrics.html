@@ -28,7 +28,7 @@
         <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
         ng-class="{'loading': (loadingScope) ? true : false, 'cancel': (noScopeResults) ? true : false}"
-        typeahead-min-length="3"
+        typeahead-min-length="1"
         typeahead-wait-ms="500"
         typeahead-no-results="noScopeResults"
         typeahead-loading="loadingScope"
@@ -46,7 +46,7 @@
         <label>Metric</label><span ng-if="noMetricResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
         ng-class="{'loading': (loadingMetric) ? true : false, 'cancel': (noMetricResults) ? true : false}"
-        typeahead-min-length="3"
+        typeahead-min-length="1"
         typeahead-wait-ms="500"
         typeahead-no-results="noMetricResults"
         typeahead-loading="loadingMetric"

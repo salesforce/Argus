@@ -101,14 +101,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
             if(category) {
                 if(category === 'scope') {
-                    if(newParams['metric'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['scope'] = newParams['scope'] + '*';
                 } else if(category === 'metric') {
-                    if(newParams['scope'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['metric'] = newParams['metric'] + '*';
                 } else if(category === 'tagk') {
                     newParams['limit'] = 10;

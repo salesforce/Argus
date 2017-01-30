@@ -77,7 +77,6 @@ public class Notification extends JPAEntity implements Serializable {
     @ElementCollection
     List<String> metricsToAnnotate = new ArrayList<>(0);
     long cooldownPeriod;
-    //long cooldownExpiration;
     @ManyToOne(optional = false)
     @JoinColumn(name = "alert_id")
     private Alert alert;
@@ -236,28 +235,9 @@ public class Notification extends JPAEntity implements Serializable {
         requireArgument(cooldownPeriod >= 0, "Cool down period cannot be negative.");
         this.cooldownPeriod = cooldownPeriod;
     }
-
-//    /**
-//     * Returns the cool down expiration time of the notification.
-//     *
-//     * @return  cool down expiration time in milliseconds
-//     */
-//    public long getCooldownExpiration() {
-//        return cooldownExpiration;
-//    }
-//
-//    /**
-//     * Sets the cool down expiration time of the notification.
-//     *
-//     * @param  cooldownExpiration  cool down expiration time in milliseconds
-//     */
-//    public void setCooldownExpiration(long cooldownExpiration) {
-//        requireArgument(cooldownExpiration >= 0, "Cool down expiration time cannot be negative.");
-//        this.cooldownExpiration = cooldownExpiration;
-//    }
     
     /**
-     * Returns the cool down expiration time of the notification.
+     * Returns the cool down expiration time of the notification given a metric,trigger combination.
      *
      * @return  cool down expiration time in milliseconds
      */
@@ -267,7 +247,7 @@ public class Notification extends JPAEntity implements Serializable {
     }
 
     /**
-     * Sets the cool down expiration time of the notification.
+     * Sets the cool down expiration time of the notification given a metric,trigger combination.
      *
      * @param  cooldownExpiration  cool down expiration time in milliseconds
      */
@@ -305,15 +285,6 @@ public class Notification extends JPAEntity implements Serializable {
             }
         }
     }
-
-//    /**
-//     * Finds out if the notification is on cool down period.
-//     *
-//     * @return  true if the notification is on cool down period otherwise false
-//     */
-//    public boolean onCooldown() {
-//        return getCooldownExpiration() >= System.currentTimeMillis();
-//    }
     
     public boolean onCooldown(Trigger trigger, Metric metric) {
         return getCooldownExpirationByTriggerAndMetric(trigger, metric) >= System.currentTimeMillis();
@@ -358,11 +329,25 @@ public class Notification extends JPAEntity implements Serializable {
         }
     }
     
+    /**
+     * Given a metric,notification combination, indicates whether a triggering condition associated with this notification is still in a triggering state.
+     * 
+     * @param trigger	The Trigger that caused this notification
+     * @param metric	The metric that caused this notification
+     * 
+     * @return	True if the triggering condition is still in a triggering state.
+     */
     public boolean isActiveForTriggerAndMetric(Trigger trigger, Metric metric) {
     	String key = _hashTriggerAndMetric(trigger, metric);
     	return this.activeStatusByTriggerAndMetric.containsKey(key) ? activeStatusByTriggerAndMetric.get(key) : false;
     }
     
+    /**
+     * When a notification is sent out when a metric violates the trigger threshold, set this notification active for that trigger,metric combination 
+     * 
+     * @param trigger	The Trigger that caused this notification
+     * @param metric	The metric that caused this notification
+     */
     public void setActiveForTriggerAndMetric(Trigger trigger, Metric metric, boolean active) {
     	String key = _hashTriggerAndMetric(trigger, metric);
 		this.activeStatusByTriggerAndMetric.put(key, active);
@@ -389,45 +374,6 @@ public class Notification extends JPAEntity implements Serializable {
 	public Map<String, Boolean> getActiveStatusMap() {
 		return activeStatusByTriggerAndMetric;
 	}
-
-//    /**
-//     * Indicates whether a triggering condition associated with this notification is still in a triggering state.
-//     *
-//     * @return  True if a triggering condition associated with this notification is still in a triggering state.
-//     * @todo Use 'firedTrigger != null' and remove the 'active' field.
-//     */
-//    public boolean isActive() {
-//        return active;
-//    }
-//
-//    /**
-//     * Specifies whether a triggering condition associated with this notification is still in a triggering state.
-//     *
-//     * @param  active  True if  a triggering condition associated with this notification is still in a triggering state.
-//     * @todo Determine if this can be removed since you can just use 'firedTrigger != null' to determine if the notification is active.
-//     */
-//    public void setActive(boolean active) {
-//        this.active = active;
-//    }
-
-//    /**
-//     * Indicates the trigger which caused the notification to last be sent.
-//     *
-//     * @return  The trigger or null if the notification has not been triggered or the triggering condition has been cleared.
-//     */
-//    public Trigger getFiredTrigger() {
-//        return firedTrigger;
-//    }
-//
-//    /**
-//     * Specifies the trigger which caused the notification to last be sent.
-//     *
-//     * @param  firedTrigger  The trigger or null if the notification has not been triggered or the triggering condition has been cleared.
-//     */
-//    public void setFiredTrigger(Trigger firedTrigger) {
-//        this.firedTrigger = firedTrigger;
-//    }
-
     
     /**
      * Return the custom text in order to include in the notification
@@ -485,17 +431,6 @@ public class Notification extends JPAEntity implements Serializable {
 		requireArgument(trigger != null, "Trigger cannot be null.");
         requireArgument(metric != null, "Metric cannot be null");
         
-        /*
-		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			md.update(trigger.toString().getBytes());
-			md.update(metric.toString().getBytes());
-			String key = new String(md.digest());
-			return key;
-		} catch (NoSuchAlgorithmException e) {
-			throw new SystemException("Failed to create MD5 hash.", e);
-		}
-		*/
         return trigger.getId().toString() + "$$" + metric.getIdentifier();
 	}
 	
