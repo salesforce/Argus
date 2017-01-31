@@ -72,7 +72,18 @@ public class AlertService extends EndpointService {
      * @throws  IOException  If the server cannot be reached.
      */
     public List<Alert> getAlerts() throws IOException {
-        String requestUrl = RESOURCE;
+       return getAlerts(true);
+    }
+    
+    /**
+     * Returns all alerts created by owner.
+     *
+     * @return  The list of alerts. Will never be null, but may be empty.
+     *
+     * @throws  IOException  If the server cannot be reached.
+     */
+    public List<Alert> getAlerts(boolean includeSharedAlerts) throws IOException {
+    	String requestUrl = RESOURCE+"?shared=" + includeSharedAlerts;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);

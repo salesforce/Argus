@@ -4,7 +4,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-client</artifactId>
@@ -82,6 +82,33 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <resources>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}-jar-with-dependencies.jar</include>
+                        </resource>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.basedir}</directory>
+                            <include>client.sh</include>
+                            <include>README.md</include>
+                        </resource>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.basedir}/src/main/resources/com/salesforce/dva/argus/client/</directory>
+                            <include>usage.txt</include>
+                        </resource>
+                    </resources>
+                    <buildArgs>
+                        <JAR_WITH_DEPS>${project.build.finalName}-jar-with-dependencies.jar</JAR_WITH_DEPS>
+                    </buildArgs>
+                </configuration>
             </plugin>
         </plugins>
         <resources>

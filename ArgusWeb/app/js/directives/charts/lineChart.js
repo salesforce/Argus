@@ -61,6 +61,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 source.displaying = !source.displaying;
                 d3.selectAll("." + source.graphClassName)
                     .style('display', displayProperty);
+                $scope.reScaleY();
+                $scope.redraw();
             }
         }],
         // compile: function (iElement, iAttrs, transclude) {},
@@ -179,12 +181,13 @@ angular.module('argus.directives.charts.lineChart', [])
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
             var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
+            var smallChartDate = '%x';
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            var formatDate = d3.timeFormat(shortDate);
-            var GMTformatDate = d3.utcFormat(numericalDate);
+            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
+            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
 
             var formatValue = d3.format(',');
 
@@ -199,7 +202,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus, context, clip, brushG, brushMainG, chartRect, flags,//g
                 tip, tipBox, tipItems,
                 crossLine,
-                names, colors, graphClassNames;
+                names, colors, graphClassNames,
+                flagsG, labelTip, label;
 
             var messageToDisplay = ['No graph available'];
 
@@ -415,6 +419,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine.append('text')
                     .attr('name', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
+
+                //annotations
+                flagsG = d3.select('#' + chartId).select('svg').select('.flags');
+                labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
+                d3.select('#' + chartId).select('svg').call(labelTip);
             }
 
             // Graph tools that only needs to be created once in theory; all of these are data independent
@@ -446,6 +455,36 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('class', metric.graphClassName);
                     tipItems.append('text')
                         .attr('class', metric.graphClassName);
+                    // annotations
+                    if (!metric.flagSeries) return;
+                    var flagSeries = metric.flagSeries.data;
+                    flagSeries.forEach(function (d) {
+                        var label = flagsG.append('g')
+                            .attr("class", "flagItem " + metric.graphClassName)
+                            .attr("id", metric.graphClassName + d.flagID)
+                            .style("stroke", tempColor)
+                            .on("mouseover", function() {
+                                // add timestamp to the annotation label
+                                var tempTimestamp = GMTon ? GMTformatDate(d.x) : formatDate(d.x);
+                                tempTimestamp =  "<strong>" + tempTimestamp + "</strong><br/>" + d.text;
+                                labelTip.style("border-color", tempColor).html(tempTimestamp);
+                                labelTip.show();
+                                // prevent annotation label goes outside of the view on the  side
+                                if (parseInt(labelTip.style("left")) < 15) labelTip.style("left", "15px");
+                            })
+                            .on("mouseout", labelTip.hide);
+                        label.append("line")
+                            .attr("y2", 35)
+                            .attr("stroke-width", 2);
+                        label.append("circle")
+                            .attr("r", 8)
+                            .attr("class", "flag");
+                        label.append("text")
+                            .attr('dy', 4)
+                            .style("text-anchor", "middle")
+                            .style("stroke", "black")
+                            .text(d.title);
+                    })
                 });
             }
 
@@ -460,9 +499,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 if(isBrushInNonEmptyRange()) {
                     currSeries.forEach(function (metric) {
-                        if (metric.data.length === 0) {
-                            return;
-                        }
+                        if (metric.data.length === 0) return;
                         var data = metric.data;
                         var i = bisectDate(data, mouseX, 1);
                         var d0 = data[i - 1];
@@ -684,8 +721,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isBrushInNonEmptyRange()) {
                     mainChart.selectAll('path.line').attr('display', null);
                     //update the dataum and redraw the line
-                    currSeries.forEach(function (metric) {
-                        if (metric === null || metric.data.length === 0) return;
+                    currSeries.forEach(function (metric, index) {
+                        if (metric === null || metric.data.length === 0 || //empty
+                            !scope.sources[index].displaying) return; //hided
                         var len = metric.data.length;
                         if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
                             mainChart.select('path.line.' + metric.graphClassName)
@@ -719,6 +757,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateDateRange();
                 updateAnnotations();
             }
+
+            scope.redraw = redraw; //have to register this as scope function cause toggleGraphOnOff is outside link function
 
             //brushed
             function brushed() {
@@ -828,8 +868,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 var xDomain = x.domain();
                 var datapoints = [];
 
-                currSeries.forEach(function (metric) {
-                    if (metric === null || metric.data.length === 0) return;
+                currSeries.forEach(function (metric, index) {
+                    if (metric === null || metric.data.length === 0 || //empty
+                        !scope.sources[index].displaying) return; //hided
+
                     var len = metric.data.length;
                     if (metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime()) return;
                     //if this metric time range is within the xDomain
@@ -848,6 +890,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 y.domain([yMin, yMax]);
             }
+            scope.reScaleY = reScaleY; //have to register this as scope function cause toggleGraphOnOff is outside link function
 
             //precise resize without removing and recreating everything
             function resize(){
@@ -952,13 +995,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 //this shows exactly the date range defined by user instead of actual data
 
                 dateExtent = d3.extent(allDatapoints, function (d) {
-                        return d[0];
+                    return d[0];
                 });
 
                 if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
                 if(!endTime) endTime = dateExtent[1];
 
-                x.domain([startTime, endTime]);
+                //x.domain([startTime, endTime]);
+                x.domain(dateExtent); //doing this cause some date range are defined in metric queries and regardless of ag-date
 
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
@@ -1002,74 +1046,30 @@ angular.module('argus.directives.charts.lineChart', [])
                     .append("text")
                     .attr("x", margin.left + width/2)
                     .attr("y", function (d, i) {
-                        return 20*i + margin.top + height/2;
+                        return 20*i + margin.top;
                     })
                     .style("text-anchor", "middle")
+                    .style("font-size", "12px")
                     .text(function(d){return d;});
             }
 
-            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!series) return;
-
-                //var flagSeries;
-                // if (scope.series.length === 1 && scope.series[0].flagSeries) {
-                //     flagSeries = scope.series[0].flagSeries.data;
-                // } else {
-                //     // TODO: do any dashboards have flag data for multiple series?
-                //     return;
-                // }
-
-
-                var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                //clear previous graph element
-                flagsG.selectAll(".flagItem").remove();
-
-                //Todo: test this with annotation for multiple series
-                //multiple series
-                series.forEach(function (metric) {
-                    if(!metric.flagSeries) return;
+                series.forEach(function(metric) {
+                    if (!metric.flagSeries) return;
                     var flagSeries = metric.flagSeries.data;
-                    /**
-                     * The commented code does not work in multiseries because data function needs a key function to append new dataset
-                     * but for different series, the key can be the same timestamp so annotation of each series might overwrite.
-                     * So, use the forEach to do the same thing
-                     **/
-                    // var label = flagsG.selectAll(".flagItem")
-                    //     .data(flagSeries)
-                    //     .enter().append("g")
-                    //     .attr("class", "flagItem")
-                    //     .attr("transform", function (d) {
-                    //         // x, xAxis, xAxisG
-                    //         var x_Val = x(d.x); // d.x is timestamp of X axis
-                    //         var y_Val = height - 35;
-                    //         return "translate(" + x_Val + ", " + y_Val + ")";
-                    //     });
-
-                    flagSeries.forEach(function(d){
-                       var x_Val = x(d.x); // d.x is timestamp of X axis
-                       var y_Val = height - 35;
-                       var label = flagsG.append('g')
-                            .attr("class", "flagItem")
-                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
-
-                       label.append("line")
-                            .attr("y2", 35)
-                            .attr("stroke-width", 2)
-                            .attr("stroke", "steelblue");
-
-                       label.append("circle")
-                            .attr("r", 5)
-                            .attr("class", "flag");
-
-                        // TODO: add mouseover for short text description when it comes available
-                        // label.append("text")
-                        //     .attr("x", 10)
-                        // text is currently too large and unreadable.
-                        // TODO: need separate panel to satisfy use case for user to select text
-                        // .text(function(d) { return d.text; });
+                    flagSeries.forEach(function(d) {
+                        var label = flagsG.select('#' + metric.graphClassName + d.flagID);
+                        var x_Val = x(d.x); // d.x is timestamp of X axis
+                        var y_Val = height - 35;
+                        // dont render flag if it's outside of the range; similar to focus circle
+                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) {
+                            label.attr("display", 'none');
+                        } else {
+                            label.attr("display", null);
+                            label.attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
+                        }
                     });
-
                 });
             }
 
@@ -1304,32 +1304,28 @@ angular.module('argus.directives.charts.lineChart', [])
                     updateGraph(series);
                     // initialize starting point for graph settings & info
                     addOverlay();
-                    
+
                     // dont need to setup everything for a small chart
-                    if (!chartOptions.smallChart) {
-                        updateDateRange();
-                        enableBrushTime();
-                        reset();    //to remove the brush cover first for user the drag
-                        setupMenu();
-                    } else {
-                        hideMenu();
-                    }
+                    updateDateRange();
+                    enableBrushTime();
+                    reset();    //to remove the brush cover first for user the drag
+                    setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
-                        messageToDisplay.push('Metric expressions do not exist in TSDB');
+                        messageToDisplay.push('Metric does not exist in TSDB');
                         for (var i = 0; i < scope.invalidSeries.length; i ++) {
                             messageToDisplay.push(scope.invalidSeries[i].errorMessage);
                         }
-                        messageToDisplay.push('(Failed metrics are labeled black in the legend)');
+                        messageToDisplay.push('(Failed metrics are black in the legend)');
                     }
                     if (emptyReturn) {
-                        messageToDisplay.push('Metric expressions have no return value from TSDB');
-                        messageToDisplay.push('(Empty returned metrics are labeled maroon in the legend)');
+                        messageToDisplay.push('No data returned from TSDB');
+                        messageToDisplay.push('(Empty metrics are labeled maroon)');
                     }
                     if (hasNoData) {
                         messageToDisplay.push('No data found for metric expressions');
-                        messageToDisplay.push('(Series names are shown with normal colors in the legend)');
+                        messageToDisplay.push('(Valid sources have normal colors)');
                     }
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                     hideMenu();
