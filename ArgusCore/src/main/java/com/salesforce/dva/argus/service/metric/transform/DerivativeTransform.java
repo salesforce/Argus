@@ -56,20 +56,20 @@ public class DerivativeTransform implements Transform {
         List<Metric> result = new ArrayList<>(metrics.size());
 
         for (Metric metric : metrics) {
-            Map<Long, String> sortedDatapoints = new TreeMap<>();
+            Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
             sortedDatapoints.putAll(metric.getDatapoints());
 
-            Map<Long, String> derivativeDatapoints = new HashMap<Long, String>();
+            Map<Long, Double> derivativeDatapoints = new HashMap<>();
             Double prev = null;
 
-            for (Entry<Long, String> entry : sortedDatapoints.entrySet()) {
-                Double curr = Double.valueOf(entry.getValue());
+            for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
+                Double curr = entry.getValue();
 
                 if (prev == null) {
                     derivativeDatapoints.put(entry.getKey(), null);
                 } else {
-                    derivativeDatapoints.put(entry.getKey(), String.valueOf(curr - prev));
+                    derivativeDatapoints.put(entry.getKey(), curr - prev);
                 }
                 prev = curr;
             }

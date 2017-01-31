@@ -46,19 +46,19 @@ public class AbsoluteValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
-        Map<Long, String> absDatapoints = new HashMap<Long, String>();
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        Map<Long, Double> absDatapoints = new HashMap<>();
 
-        for (Entry<Long, String> entry : originalDatapoints.entrySet()) {
-            Double absValue = Math.abs(Double.parseDouble(entry.getValue()));
+        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+            Double absValue = Math.abs(entry.getValue());
 
-            absDatapoints.put(entry.getKey(), String.valueOf(absValue));
+            absDatapoints.put(entry.getKey(), absValue);
         }
         return absDatapoints;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
     }
 

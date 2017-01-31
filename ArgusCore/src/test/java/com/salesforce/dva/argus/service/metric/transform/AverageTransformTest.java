@@ -68,21 +68,21 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -93,11 +93,11 @@ public class AverageTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "5.5");
-        expected.put(2000L, "51.0");
-        expected.put(3000L, "501.5");
+        expected.put(1000L, 5.5);
+        expected.put(2000L, 51.0);
+        expected.put(3000L, 501.5);
 
         List<Metric> result = averageTransform.transform(metrics);
 
@@ -108,21 +108,21 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithNoCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10.0");
-        datapoints_2.put(200L, "100.0");
-        datapoints_2.put(300L, "1000.0");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -133,7 +133,7 @@ public class AverageTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = averageTransform.transform(metrics);
 
         assertEquals(6, result.get(0).getDatapoints().size());
@@ -145,21 +145,21 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithSomeCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10.0");
-        datapoints_2.put(200L, "100.0");
-        datapoints_2.put(3000L, "1000.0");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -170,11 +170,11 @@ public class AverageTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
-        expected.put(3000L, "501.5");
+        expected.put(3000L, 501.5);
 
         List<Metric> result = averageTransform.transform(metrics);
 
