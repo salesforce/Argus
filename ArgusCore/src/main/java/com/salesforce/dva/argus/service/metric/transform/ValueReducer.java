@@ -49,7 +49,7 @@ public interface ValueReducer {
      *
      * @return  The reduced value.
      */
-    String reduce(List<String> values);
+	Double reduce(List<Double> values);
 
     /**
      * Returns the name of the reducer.

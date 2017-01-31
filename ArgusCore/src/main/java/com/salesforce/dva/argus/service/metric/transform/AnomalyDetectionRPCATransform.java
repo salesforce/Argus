@@ -68,7 +68,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
                 "one constant for the length of a season");
 
         //Create a sorted array of the metric's timestamps
-        Map<Long, String> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Double> completeDatapoints = metrics.get(0).getDatapoints();
         SystemAssert.requireState(completeDatapoints.size() != 0, "Cannot transform metric with no data points.");
         timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
@@ -80,8 +80,8 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         //Array of the metric's standardized values ordered by time
         metricValues = new double[completeDatapoints.size()];
         for (int i = 0; i < metricValues.length; i++) {
-            String value = completeDatapoints.get(timestamps[i]);
-            metricValues[i] = Double.parseDouble(value);
+            Double value = completeDatapoints.get(timestamps[i]);
+            metricValues[i] = value;
         }
         standardize(metricValues);
 
@@ -136,7 +136,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
      */
     private Metric predictAnomalies() {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, String> predictionDatapoints = new HashMap<>();
+        Map<Long, Double> predictionDatapoints = new HashMap<>();
 
         double[][] noiseMatrix = rpca.getE().getData();
         double[] noiseVector = matrixToVector(noiseMatrix);
@@ -145,7 +145,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
             Long timestamp = timestamps[i];
             double noiseValue = noiseVector[i];
             double anomalyScore = calculateAnomalyScore(noiseValue);
-            predictionDatapoints.put(timestamp, String.valueOf(anomalyScore));
+            predictionDatapoints.put(timestamp, anomalyScore);
         }
 
         predictions.setDatapoints(predictionDatapoints);

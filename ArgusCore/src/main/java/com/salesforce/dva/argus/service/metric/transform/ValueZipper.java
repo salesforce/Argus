@@ -48,7 +48,7 @@ public interface ValueZipper {
      *
      * @return  The merged data point.
      */
-    String zip(String originalDatapoints, String baseDatapoints);
+	Double zip(Double originalDatapoint, Double baseDatapoint);
 
     /**
      * Returns the name of the value zipper.

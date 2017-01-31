@@ -43,7 +43,7 @@ public class UnionValueUnionReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         return values.get(0);
     }
 

@@ -61,12 +61,12 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         throw new UnsupportedOperationException("Deviation Transform with reducer is not supposed to be used without a tolerance!");
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         parseConstants(constants);
         return calculateDeviation(values, tolerance);
     }
@@ -86,7 +86,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         }
     }
 
-    private String calculateDeviation(List<String> values, Double tolerance) {
+    private Double calculateDeviation(List<Double> values, Double tolerance) {
         if (!isUnderTolerance(values, tolerance)) {
             return null;
         }
@@ -94,21 +94,21 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         double[] elements = new double[values.size()];
         int k = 0;
 
-        for (String value : values) {
-            elements[k] = Double.parseDouble(value);
+        for (Double value : values) {
+            elements[k] = value;
             k++;
         }
 
         double result = new StandardDeviation().evaluate(elements);
 
-        return String.valueOf(result);
+        return result;
     }
 
-    private boolean isUnderTolerance(List<String> values, Double tolearnce) {
+    private boolean isUnderTolerance(List<Double> values, Double tolearnce) {
         double missingPointNumber = 0;
 
-        for (String value : values) {
-            if (value == null || value.equals("")) {
+        for (Double value : values) {
+            if (value == null) {
                 missingPointNumber++;
             }
         }
@@ -116,41 +116,40 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         parseConstants(constants);
         return calculateNDeviationForOneMetric(originalDatapoints, tolerance, pointNum);
     }
 
-    private Map<Long, String> calculateNDeviationForOneMetric(Map<Long, String> originalDatapoints, Double tolerance, Long pointNum) {
+    private Map<Long, Double> calculateNDeviationForOneMetric(Map<Long, Double> originalDatapoints, Double tolerance, Long pointNum) {
         if (pointNum > originalDatapoints.size()) {
             pointNum = (long) originalDatapoints.size();
         }
 
         // construct list of values
         Long count = 0L;
-        List<String> values = new ArrayList<String>();
-        TreeMap<Long, String> sortedDatapoints = new TreeMap<>(originalDatapoints);
+        List<Double> values = new ArrayList<>();
+        TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
         Long lastTimestamp = sortedDatapoints.lastKey();
-        String devStr = "";
 
         while (count < pointNum) {
-            Map.Entry<Long, String> lastEntry = sortedDatapoints.pollLastEntry();
+            Map.Entry<Long, Double> lastEntry = sortedDatapoints.pollLastEntry();
 
             values.add(lastEntry.getValue());
             count++;
         }
 
         // calculate the deviation against string list
-        devStr = calculateDeviation(values, tolerance);
+        Double dev = calculateDeviation(values, tolerance);
 
-        Map<Long, String> deviationDatapoints = new TreeMap<>();
+        Map<Long, Double> deviationDatapoints = new TreeMap<>();
 
-        deviationDatapoints.put(lastTimestamp, devStr);
+        deviationDatapoints.put(lastTimestamp, dev);
         return deviationDatapoints;
     }
 
