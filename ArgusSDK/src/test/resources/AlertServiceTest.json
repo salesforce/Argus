@@ -14,7 +14,7 @@
     "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestAlert\",\"expression\":\"-1d:argus.jvm:open.file.descriptors:sum\",\"cronEntry\":\"* * * * *\",\"enabled\":false,\"missingDataNotificationEnabled\":false,\"notificationsIds\":[],\"triggersIds\":[],\"ownerName\":\"admin\",\"shared\":false}"
 },{
     "type": "GET",
-    "endpoint": "/alerts",
+    "endpoint": "/alerts?shared=false",
     "jsonInput" :null,
     "status": 200,
     "message": "get alerts",

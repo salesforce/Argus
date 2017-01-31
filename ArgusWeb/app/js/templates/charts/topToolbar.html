@@ -1,12 +1,14 @@
-<div class="topToolbar">
+
+<div class="topToolbar" ng-style="chartConfig.smallChart ? {'padding':'0'} : ''">
 	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
 	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
 
-	<div id="topTb-{{chartConfig.chartId}}" class="toolbar" ng-if="!chartConfig.smallChart">
+	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
 
 		<ul class="legendPanel"
 			ng-mouseover="hover = true"
-			ng-mouseleave="hover = false">
+			ng-mouseleave="hover = false"
+			ng-show="!chartConfig.smallChart">
 
 			<li class="toolbarItemPreview">
 				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(sources[0])}"></span>
@@ -30,8 +32,8 @@
 			</li>
 		</ul>
 
-		<div class="toolbarItem graphControls floatR" ng-if="!hideMenu">
-			<div class="toolbarMenu topMenu">
+		<div class="toolbarItem graphControls floatR" ng-show="!hideMenu">
+			<div class="toolbarMenu topMenu" ng-show="!chartConfig.smallChart">
 				<a class="glyphicon glyphicon-time"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li>
@@ -87,6 +89,6 @@
 			</div>
 		</div>
 
-		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}" ng-if="!hideMenu">{{dateRange}}</div>
+		<div class="toolbarItem right dateRange" id="date-range-{{chartConfig.chartId}}" ng-show="!hideMenu">{{dateRange}}</div>
 	</div>
 </div>
