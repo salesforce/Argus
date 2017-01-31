@@ -55,7 +55,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 }, function (error) {
                     // prevent error.data.message being null breaks the message
                     if (error.data.message === null) {
-                        error.data.message = "";
+                        error.data.message = "Something was wrong. No info.";
                     } else {
                        growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                     }

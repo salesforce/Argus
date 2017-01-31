@@ -49,11 +49,17 @@ angular.module('argus.controllers.alerts', ['ngResource'])
     var remoteUsername = Auth.getUsername();
 
 
-    $scope.getAlerts = function (shared ) {
-        if ($scope.alertsLoaded) {
-            $scope.alerts = shared? alertLists.sharedList: alertLists.usersList;
-        }
+    $scope.getAlerts = function (shared) {
         $sessionStorage.alerts.shared = shared;
+        if ($scope.alertsLoaded) {
+            // when only user's alerts are loaded but shared tab is chosen: need to start a new API call
+            if (shared && !$sessionStorage.alerts.loadedEverything) {
+                $scope.alertsLoaded = false;
+                getAllAlerts();
+            } else {
+                $scope.alerts = shared ? alertLists.sharedList : alertLists.usersList;
+            }
+        }
     };
 
     function setAlertsAfterLoading (alerts, shared) {
@@ -63,10 +69,19 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         $scope.getAlerts(shared);
     }
 
-    function getNewAlerts () {
+    function getAllAlerts () {
         Alerts.getMeta().$promise.then(function(alerts) {
-            setAlertsAfterLoading(alerts, $scope.shared);
             $sessionStorage.alerts.cachedData = alerts;
+            $sessionStorage.alerts.loadedEverything = true;
+            setAlertsAfterLoading(alerts, $scope.shared);
+        });
+    }
+
+    function getUsersAlerts () {
+        Alerts.getUsers().$promise.then(function(alerts) {
+            $sessionStorage.alerts.cachedData = alerts;
+            $sessionStorage.alerts.loadedEverything = false;
+            setAlertsAfterLoading(alerts, false);
         });
     }
 
@@ -74,7 +89,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         delete $sessionStorage.alerts.cachedData;
         delete $scope.alerts;
         $scope.alertsLoaded = false;
-        getNewAlerts();
+        $scope.shared? getAllAlerts(): getUsersAlerts();
 	};
 
     $scope.addAlert = function () {
@@ -124,7 +139,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         var alerts = $sessionStorage.alerts.cachedData;
         setAlertsAfterLoading(alerts, $sessionStorage.alerts.shared);
     } else {
-        getNewAlerts();
+        $scope.shared? getAllAlerts(): getUsersAlerts();
     }
 
 
