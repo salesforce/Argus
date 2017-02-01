@@ -37,10 +37,10 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 import org.junit.Test;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -118,19 +118,59 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
 
-        MetricQuery query = new MetricQuery("scope", "metric*", tags, 1L, 2L);
+        MetricQuery query = new MetricQuery("scope", "metric*", null, System.currentTimeMillis() - (100 * 24 * 60 * 60 * 1000L), System.currentTimeMillis());
         List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
+        assertEquals(30, queries.size());
+    }
+    
+    @Test
+    public void testWildcardQueriesMatchWithDownsampling() {
+    	
+    	SchemaService schemaServiceMock = mock(SchemaService.class);
+        List<MetricSchemaRecord> records = new ArrayList<>();
+        records.add(new MetricSchemaRecord(null, "scope", "metric0", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric1", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric2", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric3", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric4", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric5", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric6", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric7", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric8", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric9", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric10", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric11", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric12", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric13", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric14", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric15", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric16", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric17", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric18", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric19", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric20", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric21", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric22", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric23", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric24", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric25", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric26", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric27", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric28", "source", "unittest"));
+        records.add(new MetricSchemaRecord(null, "scope", "metric29", "source", "unittest"));
         
-        int hardLimit = 0;
-        try {
-			Field field = DefaultDiscoveryService.class.getDeclaredField("HARD_LIMIT");
-			field.setAccessible(true);
-			hardLimit = (int) field.get(null);
-		} catch (IllegalArgumentException | IllegalAccessException
-				| NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
-		}
-        assertEquals(hardLimit, queries.size());
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(1))).thenReturn(records);
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
+        
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("source", "unittest");
+
+        MetricQuery query = new MetricQuery("scope", "metric*", null, System.currentTimeMillis() - (100 * 24 * 60 * 60 * 1000L), System.currentTimeMillis());
+        query.setDownsampler(Aggregator.AVG);
+        query.setDownsamplingPeriod(5 * 60 * 1000L);
+        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
+        assertEquals(30, queries.size());
     }
 
     @Test

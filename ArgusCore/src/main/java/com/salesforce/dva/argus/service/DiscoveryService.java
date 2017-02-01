@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+
+import java.text.MessageFormat;
 import java.util.List;
 
 /**
@@ -42,6 +44,12 @@ import java.util.List;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public interface DiscoveryService extends Service {
+	
+	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
+	static final int MAX_DATAPOINTS_PER_RESPONSE = 2000000; //2M
+    static final long DATAPOINT_SAMPLING_FREQ_IN_MILLIS = 60 * 1000; //1min
+    static final String EXCEPTION_MESSAGE = MessageFormat.format("Your query may return more than {0} datapoints in all. Please modify your query. "
+    		+ "You may either reduce the time window or narrow your wildcard search or use downsampling.", MAX_DATAPOINTS_PER_RESPONSE);
 
     //~ Methods **************************************************************************************************************************************
 
@@ -92,6 +100,65 @@ public interface DiscoveryService extends Service {
      *
      * @return  True if the query is a wildcard query.
      */
-    boolean isWildcardQuery(MetricQuery query);
+    static boolean isWildcardQuery(MetricQuery query) {
+    	if (_containsWildcard(query.getScope()) || _containsWildcard(query.getMetric())) {
+            return true;
+        }
+        if (_containsWildcard(query.getNamespace())) {
+            return true;
+        }
+        if (query.getTags() != null) {
+            for (String tagKey : query.getTags().keySet()) {
+                if (_containsWildcard(tagKey) || (!"*".equals(query.getTag(tagKey)) && _containsWildcard(query.getTag(tagKey)))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    static boolean _containsWildcard(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+
+        char[] arr = str.toCharArray();
+        for (char ch : arr) {
+            if (_isWildcard(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean _isWildcard(char ch) {
+        for (char c : WILDCARD_CHARSET) {
+            if (c == ch) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    static int getNumTimeseries(MetricQuery query) {
+    	
+    	long timeWindowInMillis = query.getEndTimestamp() - query.getStartTimestamp();
+    	long downsamplingDivisor = (query.getDownsamplingPeriod() == null || query.getDownsamplingPeriod() <= 0) ? 1 : query.getDownsamplingPeriod(); 
+    	long numDatapointsPerTimeSeries = timeWindowInMillis / DATAPOINT_SAMPLING_FREQ_IN_MILLIS / downsamplingDivisor;
+    	
+    	numDatapointsPerTimeSeries = numDatapointsPerTimeSeries <= 0 ? 1 : numDatapointsPerTimeSeries; 
+    	
+    	return (int) (MAX_DATAPOINTS_PER_RESPONSE / numDatapointsPerTimeSeries);
+    }
+    
+    static int numTimeseriesForQuery(MetricQuery mq) {
+		int count = 1;
+		for(String tagValue : mq.getTags().values()) {
+			String splits[] = tagValue.split("\\|");
+			count *= splits.length;
+		}
+		
+		return count;
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
