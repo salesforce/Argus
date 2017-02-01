@@ -87,20 +87,21 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
      */
     public static String internalReducer(Metric metric, String reducerType) {
-        Map<Long, String> sortedDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> sortedDatapoints = new HashMap<>();
 
         sortedDatapoints.putAll(metric.getDatapoints());
 
         List<Double> operands = new ArrayList<Double>();
 
-        for (String str : sortedDatapoints.values()) {
+        for (Double value : sortedDatapoints.values()) {
             if (reducerType.equals("name")) {
                 break;
             }
-            if (str == null || str.equals("")) {
+            
+            if (value == null) {
                 operands.add(0.0);
             } else {
-                operands.add(Double.parseDouble(str));
+                operands.add(value);
             }
         }
 

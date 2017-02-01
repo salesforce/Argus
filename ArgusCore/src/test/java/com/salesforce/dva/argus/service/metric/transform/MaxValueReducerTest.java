@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.metric.transform;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -46,42 +45,29 @@ public class MaxValueReducerTest {
     public void reduce_shouldReturnNullWhenZeroValues() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(new ArrayList<String>()), is(nullValue()));
+        assertThat(r.reduce(new ArrayList<Double>()), is(nullValue()));
     }
 
     @Test
     public void reduce_shouldReturnMaxWhenSingleValue() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(Arrays.asList("1")), equalTo("1"));
-    }
-
-    @Test(expected = NumberFormatException.class)
-    public void reduce_shouldReturnExceptionWhenValueNotDouble() {
-        new MaxValueReducer().reduce(Arrays.asList("a", "1"));
+        assertThat(r.reduce(Arrays.asList(1.0)), equalTo(1.0));
     }
 
     @Test
     public void reduce_shouldReturnMaxWithMultipleDoubles() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(Arrays.asList("5", "1", "4")), equalTo("5"));
+        assertThat(r.reduce(Arrays.asList(5.0, 1.0, 4.0)), equalTo(5.0));
     }
 
     @Test
     public void reduce_shouldReturnMaxWithNullValue() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(null, "5", "1", "4")), equalTo("5"));
+        assertThat(r.reduce(Arrays.asList(null, 5.0, 1.0, 4.0)), equalTo(5.0));
     }
 
-    @Test
-    public void reduce_shouldReturnMaxWithOnlyNullValue() {
-        MaxValueReducer r = new MaxValueReducer();
-        List<String> nullList = new ArrayList<String>();
-
-        nullList.add(null);
-        assertThat(r.reduce(nullList), equalTo(null));
-    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

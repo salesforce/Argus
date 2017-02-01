@@ -44,16 +44,16 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
 
-        for (String value : values) {
+        for (Double value : values) {
             if (value == null) {
-                value = "0.0";
+                value = 0.0;
             }
 
-            double candidate = Double.parseDouble(value);
+            double candidate = (value);
 
             if (candidate < min) {
                 min = candidate;
@@ -62,21 +62,21 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
                 max = candidate;
             }
         }
-        return String.valueOf(max - min);
+        return max - min;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport reduce with constant");
     }
 
