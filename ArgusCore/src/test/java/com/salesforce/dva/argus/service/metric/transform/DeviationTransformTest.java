@@ -73,11 +73,11 @@ public class DeviationTransformTest {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
         List<Metric> metrics = new ArrayList<Metric>();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
@@ -120,10 +120,10 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformOneMetricWithNumLessThanRangeUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "6");
-        datapoints.put(2000L, "6");
+        datapoints.put(1000L, 6.0);
+        datapoints.put(2000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -138,9 +138,9 @@ public class DeviationTransformTest {
         constants.add("0.99");
         constants.add("3");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(2000L, "0.0");
+        expected.put(2000L, 0.0);
 
         List<Metric> result = devTransform.transform(metrics, constants);
 
@@ -151,11 +151,11 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformOneMetricWithNumEqualToRangeBeyondTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "2");
-        datapoints.put(2000L, "4");
-        datapoints.put(3000L, "6");
+        datapoints.put(1000L, 2.0);
+        datapoints.put(2000L, 4.0);
+        datapoints.put(3000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -170,9 +170,9 @@ public class DeviationTransformTest {
         constants.add("0.99");
         constants.add("3");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(3000L, "2.0");
+        expected.put(3000L, 2.0);
 
         List<Metric> result = devTransform.transform(metrics, constants);
 
@@ -183,12 +183,12 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformOneMetricWithNumGreateThanRaneUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "3");
-        datapoints.put(2000L, "6");
-        datapoints.put(3000L, "9");
-        datapoints.put(4000L, "12");
+        datapoints.put(1000L, 3.0);
+        datapoints.put(2000L, 6.0);
+        datapoints.put(3000L, 9.0);
+        datapoints.put(4000L, 12.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -203,9 +203,9 @@ public class DeviationTransformTest {
         constants.add("0.99");
         constants.add("3");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(4000L, "3.0");
+        expected.put(4000L, 3.0);
 
         List<Metric> result = devTransform.transform(metrics, constants);
 
@@ -216,31 +216,31 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformMetricListWithNumLessGreateEqualRangeUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "6");
-        datapoints_1.put(2000L, "6");
+        datapoints_1.put(1000L, 6.0);
+        datapoints_1.put(2000L, 6.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "4");
-        datapoints_2.put(3000L, "6");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 4.0);
+        datapoints_2.put(3000L, 6.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "6");
-        datapoints_3.put(3000L, "9");
-        datapoints_3.put(4000L, "12");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 6.0);
+        datapoints_3.put(3000L, 9.0);
+        datapoints_3.put(4000L, 12.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -257,17 +257,17 @@ public class DeviationTransformTest {
         constants.add("0.99");
         constants.add("3");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(2000L, "0.0");
+        expected_1.put(2000L, 0.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(3000L, "2.0");
+        expected_2.put(3000L, 2.0);
 
-        Map<Long, String> expected_3 = new HashMap<Long, String>();
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
 
-        expected_3.put(4000L, "3.0");
+        expected_3.put(4000L, 3.0);
 
         List<Metric> result = devTransform.transform(metrics, constants);
 
@@ -280,30 +280,30 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformMetricListWithNumLessGreateEqualRangeBeyondTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "6");
+        datapoints_1.put(1000L, 6.0);
         datapoints_1.put(2000L, null);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "4");
-        datapoints_2.put(3000L, "");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 4.0);
+        datapoints_2.put(3000L, null);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "6");
-        datapoints_3.put(3000L, "9");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 6.0);
+        datapoints_3.put(3000L, 9.0);
         datapoints_3.put(4000L, null);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -321,15 +321,15 @@ public class DeviationTransformTest {
         constants.add("0.00001");
         constants.add("3");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
         expected_1.put(2000L, null);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
         expected_2.put(3000L, null);
 
-        Map<Long, String> expected_3 = new HashMap<Long, String>();
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
 
         expected_3.put(4000L, null);
 
@@ -344,31 +344,31 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformWithNoNumShareCommonDPsUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "4");
-        datapoints_2.put(3000L, "6");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 4.0);
+        datapoints_2.put(3000L, 6.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "6");
-        datapoints_3.put(3000L, "9");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 6.0);
+        datapoints_3.put(3000L, 9.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -384,11 +384,11 @@ public class DeviationTransformTest {
 
         constants.add("0.99");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1.0");
-        expected.put(2000L, "2.0");
-        expected.put(3000L, "3.0");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = devTransform.transform(metrics, constants);
 
@@ -399,31 +399,31 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformWithNoNumShareCommonDPsBeyondTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, null);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "4");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 4.0);
         datapoints_2.put(3000L, null);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "6");
-        datapoints_3.put(3000L, "9");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 6.0);
+        datapoints_3.put(3000L, 9.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -439,10 +439,10 @@ public class DeviationTransformTest {
 
         constants.add("0.01");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1.0");
-        expected.put(2000L, "2.0");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
         expected.put(3000L, null);
 
         List<Metric> result = devTransform.transform(metrics, constants);
@@ -454,21 +454,21 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformWithNoNumShareNoCommonDPsUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -483,7 +483,7 @@ public class DeviationTransformTest {
 
         constants.add("0.1");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = devTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -493,22 +493,22 @@ public class DeviationTransformTest {
     @Test
     public void testDevTransformWithNoConstantShareSomeCommonDPsBeyondTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "2");
-        datapoints_1.put(4000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 2.0);
+        datapoints_1.put(4000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "1");
-        datapoints_2.put(200L, "2");
-        datapoints_2.put(3000L, "2");
+        datapoints_2.put(100L, 1.0);
+        datapoints_2.put(200L, 2.0);
+        datapoints_2.put(3000L, 2.0);
         datapoints_2.put(4000L, null);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -524,9 +524,9 @@ public class DeviationTransformTest {
 
         constants.add("0.4");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(3000L, "0.0");
+        expected.put(3000L, 0.0);
         expected.put(4000L, null);
 
         List<Metric> result = devTransform.transform(metrics, constants);

@@ -85,7 +85,7 @@ public abstract class DefaultJPAService extends DefaultService {
      *
      * @return  The persisted entity having all updates applied.
      */
-    protected <E extends Identifiable> E mergeEntity(EntityManager em, E entity) {
+    public <E extends Identifiable> E mergeEntity(EntityManager em, E entity) {
         requireArgument(em != null, "The entity manager cannot be null.");
         requireArgument(entity != null, "The entity cannot be null.");
         return em.merge(entity);

@@ -88,7 +88,7 @@ public class AnomalySTLTransform implements Transform {
         int season = Integer.parseInt(constants.get(0));
 
         Metric metric = metrics.get(0);
-        Map<Long, String> datapoints = metric.getDatapoints();
+        Map<Long, Double> datapoints = metric.getDatapoints();
 
         double[] values = new double[datapoints.size()];
         List<Long> time_list = new ArrayList<>(datapoints.keySet());
@@ -96,7 +96,7 @@ public class AnomalySTLTransform implements Transform {
         double[] times = new double[datapoints.size()];
 
         for (int i = 0; time_list.size() > i; i++) {
-            values[i] = Double.parseDouble(datapoints.get(time_list.get(i)));
+            values[i] = datapoints.get(time_list.get(i));
             times[i] = (double) time_list.get(i);
         }
 
@@ -110,19 +110,19 @@ public class AnomalySTLTransform implements Transform {
         double mean = calcMean(remainder);
         double sd = calcSD(remainder, mean);
 
-        HashMap<Long, String> remainder_map = new HashMap<>();
+        HashMap<Long, Double> remainder_map = new HashMap<>();
 
         if (constants.size() == 2 && constants.get(1).equals("resid")) {
             for (int i = 0; i < time_list.size(); i++) {
-                remainder_map.put((long) times[i], Double.toString(remainder[i]));
+                remainder_map.put((long) times[i], remainder[i]);
             }
         } else if (constants.size() == 2 && constants.get(1).equals("anomalyScore")) {
             for (int i = 0; i < time_list.size(); i++) {
-                remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+                remainder_map.put((long) times[i], anomalyScore(remainder[i], mean, sd));
             }
         } else {
             for (int i = 0; i < time_list.size(); i++) {
-                remainder_map.put((long) times[i], Double.toString(anomalyScore(remainder[i], mean, sd)));
+                remainder_map.put((long) times[i], anomalyScore(remainder[i], mean, sd));
             }
         }
 

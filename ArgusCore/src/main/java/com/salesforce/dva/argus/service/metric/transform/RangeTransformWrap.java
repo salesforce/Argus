@@ -60,7 +60,6 @@ public class RangeTransformWrap implements Transform {
             return rangeOfOneMetric(metrics.get(0));
         } else {
             return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(metrics);
-                // return transformFactory.createMetricReducerOrMappingTransform(TransformFactory.Function.RANGE).transform(metrics);
         }
     }
 
@@ -75,11 +74,11 @@ public class RangeTransformWrap implements Transform {
     }
 
     private List<Metric> rangeOfOneMetric(Metric metric) {
-        Map<Long, String> cleanDPs = new HashMap<Long, String>();
+        Map<Long, Double> cleanDPs = new HashMap<>();
 
-        for (Map.Entry<Long, String> entry : metric.getDatapoints().entrySet()) {
-            if (entry.getValue() == null || entry.getValue().equals("")) {
-                cleanDPs.put(entry.getKey(), Double.toString(0));
+        for (Map.Entry<Long, Double> entry : metric.getDatapoints().entrySet()) {
+            if (entry.getValue() == null) {
+                cleanDPs.put(entry.getKey(), 0.0);
             } else {
                 cleanDPs.put(entry.getKey(), entry.getValue());
             }
@@ -88,8 +87,8 @@ public class RangeTransformWrap implements Transform {
         List<Metric> result = new ArrayList<Metric>();
         final List<Double> dpNum = new ArrayList<Double>();
 
-        for (String str : cleanDPs.values()) {
-            dpNum.add(Double.parseDouble(str));
+        for (Double value : cleanDPs.values()) {
+            dpNum.add(value);
         }
         Collections.sort(dpNum);
 
@@ -102,15 +101,15 @@ public class RangeTransformWrap implements Transform {
                 }
             };
 
-        Predicate<Map.Entry<Long, String>> isMinMax = new Predicate<Map.Entry<Long, String>>() {
+        Predicate<Map.Entry<Long, Double>> isMinMax = new Predicate<Map.Entry<Long, Double>>() {
 
                 @Override
-                public boolean apply(Map.Entry<Long, String> datapoint) {
-                    return minMaxSet.contains(Double.parseDouble(datapoint.getValue()));
+                public boolean apply(Map.Entry<Long, Double> datapoint) {
+                    return minMaxSet.contains(datapoint.getValue());
                 }
             };
 
-        Map<Long, String> resultDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> resultDatapoints = new HashMap<>();
 
         resultDatapoints.putAll(Maps.filterEntries(cleanDPs, isMinMax));
         metric.setDatapoints(resultDatapoints);

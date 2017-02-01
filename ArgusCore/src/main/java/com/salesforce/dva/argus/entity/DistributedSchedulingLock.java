@@ -46,9 +46,6 @@ import javax.persistence.OptimisticLockException;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 
 /**
@@ -61,10 +58,6 @@ import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 @Table(name = "DISTRIBUTED_SCHEDULING_LOCK")
 
 public class DistributedSchedulingLock { 
-	
-	 //~ Static fields/initializers *******************************************************************************************************************
-	
-	 private static final Logger LOGGER = LoggerFactory.getLogger(GlobalInterlock.class);
 	
 	 //~ Instance fields ******************************************************************************************************************************
 	 

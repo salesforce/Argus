@@ -53,7 +53,12 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                     $scope.updateChart(tempSeries, annotationInfo);
                     $scope.chartLoaded = true;
                 }, function (error) {
-                    growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    // prevent error.data.message being null breaks the message
+                    if (error.data.message === null) {
+                        error.data.message = "Something was wrong. No info.";
+                    } else {
+                       growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    }
                     tempSeries = [{
                         invalidMetric: true,
                         errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
@@ -96,14 +101,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
             if(category) {
                 if(category === 'scope') {
-                    if(newParams['metric'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['scope'] = newParams['scope'] + '*';
                 } else if(category === 'metric') {
-                    if(newParams['scope'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['metric'] = newParams['metric'] + '*';
                 } else if(category === 'tagk') {
                     newParams['limit'] = 10;
@@ -230,13 +229,18 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 if (annotationInfo.length > 0) {
                     var annotationCount = {};
                     annotationCount.tot = annotationInfo.length;
-                    //TODO: annotation does not work in the directive
                     for (var i = 0; i < annotationInfo.length; i++) {
                         Annotations.query({expression: annotationInfo[i]}).$promise.then(function (data) {
-                            var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
-                            flagSeries.linkedTo = ChartDataProcessingService.createSeriesName(data[0]);
-                            //TODO: need to handle multiple annotations instead of passing it into 0th index. Look at queryAnnotationData function in js/directive/charts/chart.js
-                            chartScope.series[0].flagSeries = (flagSeries) ? flagSeries : null;
+                            //prevent empty annotation returns
+                            if (data !== undefined && data.length !== 0) {
+                                var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
+                                if (flagSeries === null || flagSeries === undefined) return;
+                                flagSeries.linkedTo = ChartDataProcessingService.createSeriesName(data[0]);
+                                chartScope.series = chartScope.series.map(function (item) {
+                                    if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+                                    return item;
+                                });
+                            }
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
                                 angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));

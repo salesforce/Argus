@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -51,6 +52,7 @@ import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AlertService.SupportedNotifier;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+
 import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
@@ -73,7 +75,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1418319600000L, "foo", "scope:metric");
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(supportedNotifier);
 
         notifier.sendNotification(context);
@@ -108,7 +110,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, 1447248611000L, "foo", "scope:metric");
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1447248611000L, 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GUS);
 
         notifier.sendNotification(context);
@@ -130,7 +132,7 @@ public class NotifierIT extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "foo", "scope:metric");
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, System.currentTimeMillis(), 0.0, new Metric("scope", "metric"));
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.WARDENPOSTING);
 
         notifier.sendNotification(context);
