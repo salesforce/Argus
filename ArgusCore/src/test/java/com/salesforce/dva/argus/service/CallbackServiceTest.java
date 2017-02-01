@@ -44,18 +44,19 @@ public class CallbackServiceTest extends AbstractTest {
 		alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
 		NotificationContext context = new NotificationContext(alert,
-				trigger,
+				alert.getTriggers().get(0),
 				notification,
-				1418319600000L,
-				"foo",
-				"scope:metric");
-
+				System.currentTimeMillis(),
+				0.0,
+				new Metric("scope", "metric"));
 		// Test
 		CallbackNotifier notifier = (CallbackNotifier) system.getServiceFactory()
 				.getAlertService()
 				.getNotifier(AlertService.SupportedNotifier.CALLBACK);
 		int notificationCounter = 3;
 		IntStream.range(0, notificationCounter).forEach(i -> notifier.sendNotification(context));
-		assertThat("Unexpected number of triggered alerts.", notifier.getAllNotifications(alert).size(), is(notificationCounter));
+		assertThat("Unexpected number of triggered alerts.",
+				notifier.getAllNotifications(alert).size(),
+				is(notificationCounter));
 	}
 }
