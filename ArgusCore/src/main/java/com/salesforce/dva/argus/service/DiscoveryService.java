@@ -46,8 +46,20 @@ import java.util.List;
 public interface DiscoveryService extends Service {
 	
 	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
-	static final int MAX_DATAPOINTS_PER_RESPONSE = 2000000; //2M
-    static final long DATAPOINT_SAMPLING_FREQ_IN_MILLIS = 60 * 1000; //1min
+	
+	/** This should be a configuration. This is how we reached on a value of 2M for now. 
+	 *  A datapoint in Argus is a tuple containing a Long timestamp (8 bytes with some additional Java Wrapper Class bytes) and a Double value (8 bytes with some additional Java Wrapper Class bytes).
+	 *  We would then consider a datapoint to take up around 40 bytes of memory.
+	 *  
+	 *  Fixing the max QPM (Queries Per Minute) for Argus to around 500, and avg. query latency to around 3 secs (both are conservative estimates), we would be serving 25 queries concurrently. Again these are just ball park
+	 *  estimates to fix the maximum number of datapoints that should be returned in a response.
+	 *  
+	 *  Let's assume we reserve 2GB of memory for concurrently executing these 25 queries. That would mean around 80MB per request. Roughly translating to around (80M bytes/40 bytes =) 2M datapoints. 
+	 *  
+	 *  Please configure this no. according to the above calculation for your environment. 
+	 **/
+	static final int MAX_DATAPOINTS_PER_RESPONSE = 2000000;
+    static final long DATAPOINT_SAMPLING_FREQ_IN_MILLIS = 60 * 1000L;
     static final String EXCEPTION_MESSAGE = MessageFormat.format("Your query may return more than {0} datapoints in all. Please modify your query. "
     		+ "You may either reduce the time window or narrow your wildcard search or use downsampling.", MAX_DATAPOINTS_PER_RESPONSE);
 
