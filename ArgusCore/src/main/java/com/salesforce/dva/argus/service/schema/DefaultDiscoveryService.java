@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.schema;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -44,6 +43,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -65,9 +65,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 
     //~ Instance fields ******************************************************************************************************************************
-
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    
+    private final Logger _logger = LoggerFactory.getLogger(DefaultDiscoveryService.class);
     private final SchemaService _schemaService;
 
     //~ Constructors *********************************************************************************************************************************

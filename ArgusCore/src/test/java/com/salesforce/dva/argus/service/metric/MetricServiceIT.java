@@ -58,13 +58,13 @@ public class MetricServiceIT extends AbstractTest {
 
         try {
             Long currentTime = System.currentTimeMillis();
-            Map<Long, String> datapoints = new TreeMap<Long, String>();
+            Map<Long, Double> datapoints = new TreeMap<>();
 
-            datapoints.put(currentTime - 15000000, "1");
-            datapoints.put(currentTime - 14000000, "2");
-            datapoints.put(currentTime - 13000000, "3");
-            datapoints.put(currentTime - 12000000, "4");
-            datapoints.put(currentTime - 11000000, "5");
+            datapoints.put(currentTime - 15000000, 1.0);
+            datapoints.put(currentTime - 14000000, 2.0);
+            datapoints.put(currentTime - 13000000, 3.0);
+            datapoints.put(currentTime - 12000000, 4.0);
+            datapoints.put(currentTime - 11000000, 5.0);
 
             Metric m = new Metric("scope-test-offset", "metric-test-offset");
 
@@ -106,7 +106,7 @@ public class MetricServiceIT extends AbstractTest {
         assertEquals(2, queries.size());
     }
 
-    private boolean _datapointsBetween(Map<Long, String> datapoints, long low, long high) {
+    private boolean _datapointsBetween(Map<Long, Double> datapoints, long low, long high) {
         for (Long timestamp : datapoints.keySet()) {
             if (timestamp < low || timestamp > high) {
                 return false;

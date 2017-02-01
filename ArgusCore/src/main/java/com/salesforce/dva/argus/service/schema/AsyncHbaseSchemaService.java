@@ -81,8 +81,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-	private static final String METRIC_SCHEMA_TABLENAME = "metric-schema";
-	private static final String SCOPE_SCHEMA_TABLENAME = "scope-schema";
+	private static String METRIC_SCHEMA_TABLENAME;
+	private static String SCOPE_SCHEMA_TABLENAME ;
     private static final byte[] COLUMN_FAMILY = "f".getBytes(Charset.forName("UTF-8"));
     private static final byte[] COLUMN_QUALIFIER = "c".getBytes(Charset.forName("UTF-8"));
     private static final byte[] CELL_VALUE = "1".getBytes(Charset.forName("UTF-8"));
@@ -106,6 +106,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	super(systemConfig);
         
     	_syncPut = Boolean.getBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
+    	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(), 
+    													Property.HBASE_METRICSCHEMA_TABLE.getDefaultValue());
+    	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(), 
+    												   Property.HBASE_SCOPESCHEMA_TABLE.getDefaultValue());
     	
     	_client = factory.getClient();
     }
@@ -263,7 +267,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
         _logger.debug("Using table: " + metadata.type.getTableName());
         _logger.debug("Rowkey: " + rowKeyRegex);
@@ -396,7 +400,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, tableType) + "$";
     	
     	List<ScanFilter> filters = new ArrayList<ScanFilter>();
     	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
@@ -511,7 +515,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String metric = _convertToRegex(query.getMetric());
         String tagKey = _convertToRegex(query.getTagKey());
         String tagValue = _convertToRegex(query.getTagValue());
-        String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
+        String rowKeyRegex = "^(?i)" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.type) + "$";
 
         _logger.debug("Using table: " + metadata.type.getTableName());
         _logger.debug("Rowkey: " + rowKeyRegex);
@@ -831,7 +835,9 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      */
     public enum Property {
         
-        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false");
+        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false"),
+        HBASE_METRICSCHEMA_TABLE("service.property.schema.hbase.metricschema.table", "metric-schema"),
+    	HBASE_SCOPESCHEMA_TABLE("service.property.schema.hbase.scopeschema.table", "scope-schema");
 
         private final String _name;
         private final String _defaultValue;

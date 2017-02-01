@@ -202,7 +202,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus, context, clip, brushG, brushMainG, chartRect, flags,//g
                 tip, tipBox, tipItems,
                 crossLine,
-                names, colors, graphClassNames;
+                names, colors, graphClassNames,
+                flagsG, labelTip, label,
+                yAxisPadding = 1;
 
             var messageToDisplay = ['No graph available'];
 
@@ -418,6 +420,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine.append('text')
                     .attr('name', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
+
+                //annotations
+                flagsG = d3.select('#' + chartId).select('svg').select('.flags');
+                labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
+                d3.select('#' + chartId).select('svg').call(labelTip);
             }
 
             // Graph tools that only needs to be created once in theory; all of these are data independent
@@ -449,6 +456,36 @@ angular.module('argus.directives.charts.lineChart', [])
                         .attr('class', metric.graphClassName);
                     tipItems.append('text')
                         .attr('class', metric.graphClassName);
+                    // annotations
+                    if (!metric.flagSeries) return;
+                    var flagSeries = metric.flagSeries.data;
+                    flagSeries.forEach(function (d) {
+                        var label = flagsG.append('g')
+                            .attr("class", "flagItem " + metric.graphClassName)
+                            .attr("id", metric.graphClassName + d.flagID)
+                            .style("stroke", tempColor)
+                            .on("mouseover", function() {
+                                // add timestamp to the annotation label
+                                var tempTimestamp = GMTon ? GMTformatDate(d.x) : formatDate(d.x);
+                                tempTimestamp =  "<strong>" + tempTimestamp + "</strong><br/>" + d.text;
+                                labelTip.style("border-color", tempColor).html(tempTimestamp);
+                                labelTip.show();
+                                // prevent annotation label goes outside of the view on the  side
+                                if (parseInt(labelTip.style("left")) < 15) labelTip.style("left", "15px");
+                            })
+                            .on("mouseout", labelTip.hide);
+                        label.append("line")
+                            .attr("y2", 35)
+                            .attr("stroke-width", 2);
+                        label.append("circle")
+                            .attr("r", 8)
+                            .attr("class", "flag");
+                        label.append("text")
+                            .attr('dy', 4)
+                            .style("text-anchor", "middle")
+                            .style("stroke", "black")
+                            .text(d.title);
+                    })
                 });
             }
 
@@ -462,10 +499,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
-                    currSeries.forEach(function (metric, index) {
-                        if (metric.data.length === 0 || !scope.sources[index].displaying) {
-                            return;
-                        }
+                    currSeries.forEach(function (metric) {
+                        if (metric.data.length === 0) return;
                         var data = metric.data;
                         var i = bisectDate(data, mouseX, 1);
                         var d0 = data[i - 1];
@@ -850,9 +885,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     return d[1];
                 });
                 var diff = extent[1] - extent[0];
+                if (diff === 0) diff = yAxisPadding;
                 var buffer = diff * bufferRatio;
                 var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
-                var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
+                var yMax = (agYMax === undefined) ? extent[1] + 3 * buffer : agYMax;
 
                 y.domain([yMin, yMax]);
             }
@@ -974,6 +1010,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     return d[1];
                 });
 
+                // if only a straight line
+                if (yDomain[0] === yDomain[1]) {
+                    yDomain[0] -= yAxisPadding;
+                    yDomain[1] += 3 * yAxisPadding;
+                }
+
                 if(agYMin !== undefined && agYMax !== undefined){
                     y.domain([agYMin, agYMax]);
                 }else{
@@ -1019,68 +1061,23 @@ angular.module('argus.directives.charts.lineChart', [])
                     .text(function(d){return d;});
             }
 
-            //TODO: this doesnt work
             function updateAnnotations() {
                 if (!series) return;
-
-                //var flagSeries;
-                // if (scope.series.length === 1 && scope.series[0].flagSeries) {
-                //     flagSeries = scope.series[0].flagSeries.data;
-                // } else {
-                //     // TODO: do any dashboards have flag data for multiple series?
-                //     return;
-                // }
-
-
-                var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                //clear previous graph element
-                flagsG.selectAll(".flagItem").remove();
-
-                //Todo: test this with annotation for multiple series
-                //multiple series
-                series.forEach(function (metric) {
-                    if(!metric.flagSeries) return;
+                series.forEach(function(metric) {
+                    if (!metric.flagSeries) return;
                     var flagSeries = metric.flagSeries.data;
-                    /**
-                     * The commented code does not work in multiseries because data function needs a key function to append new dataset
-                     * but for different series, the key can be the same timestamp so annotation of each series might overwrite.
-                     * So, use the forEach to do the same thing
-                     **/
-                    // var label = flagsG.selectAll(".flagItem")
-                    //     .data(flagSeries)
-                    //     .enter().append("g")
-                    //     .attr("class", "flagItem")
-                    //     .attr("transform", function (d) {
-                    //         // x, xAxis, xAxisG
-                    //         var x_Val = x(d.x); // d.x is timestamp of X axis
-                    //         var y_Val = height - 35;
-                    //         return "translate(" + x_Val + ", " + y_Val + ")";
-                    //     });
-
-                    flagSeries.forEach(function(d){
-                       var x_Val = x(d.x); // d.x is timestamp of X axis
-                       var y_Val = height - 35;
-                       var label = flagsG.append('g')
-                            .attr("class", "flagItem")
-                            .attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
-
-                       label.append("line")
-                            .attr("y2", 35)
-                            .attr("stroke-width", 2)
-                            .attr("stroke", "steelblue");
-
-                       label.append("circle")
-                            .attr("r", 5)
-                            .attr("class", "flag");
-
-                        // TODO: add mouseover for short text description when it comes available
-                        // label.append("text")
-                        //     .attr("x", 10)
-                        // text is currently too large and unreadable.
-                        // TODO: need separate panel to satisfy use case for user to select text
-                        // .text(function(d) { return d.text; });
+                    flagSeries.forEach(function(d) {
+                        var label = flagsG.select('#' + metric.graphClassName + d.flagID);
+                        var x_Val = x(d.x); // d.x is timestamp of X axis
+                        var y_Val = height - 35;
+                        // dont render flag if it's outside of the range; similar to focus circle
+                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) {
+                            label.attr("display", 'none');
+                        } else {
+                            label.attr("display", null);
+                            label.attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
+                        }
                     });
-
                 });
             }
 
@@ -1315,7 +1312,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     updateGraph(series);
                     // initialize starting point for graph settings & info
                     addOverlay();
-                    
+
                     // dont need to setup everything for a small chart
                     updateDateRange();
                     enableBrushTime();
