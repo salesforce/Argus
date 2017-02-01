@@ -13,7 +13,6 @@
  */
 package com.salesforce.dva.argus.service.alert.notifier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -73,7 +72,7 @@ public class CallbackNotifier extends AuditNotifier {
 		HttpResponse response = _callbackService.sendNotification(context);
 		int code = response.getStatusLine().getStatusCode();
 		if (!(code >= 200 && code <= 300)) {
-			_logger.error("notification send response: {}", code);
+			_logger.error("notification send response: {}", response.toString());
 		}
 	}
 }

@@ -135,8 +135,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 		try {
 			return httpClient.execute(request);
 		} catch (Throwable t) {
-			_logger.error("error executing request " + request, t);
-			return errorResponse("invocation error", t);
+			return errorResponse("error executing request " + request.toString(), t);
 		} finally {
 			httpClientPool.returnObject(httpClient);
 		}
