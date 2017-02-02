@@ -12,5 +12,5 @@ angular.module('argus.services.downloadHelper', [])
         a.download = filename;
         a.target = '_blank';
         a.click();
-    }
+    };
 });
