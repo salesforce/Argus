@@ -33,8 +33,8 @@ public class PhoenixTSDBEngine {
 
 		String viewName = getPhoenixViewName(metric.getScope(), metric.getMetric());
 		
-		String createViewSql = MessageFormat.format("CREATE VIEW {0} ({1}) AS SELECT * "
-				+ "FROM ARGUS.METRICS WHERE METRIC_ID = MD5(''{0}'')", viewName, generateCols(metric.getTags()));
+		String createViewSql = MessageFormat.format("CREATE VIEW IF NOT EXISTS {0} ({1}) AS SELECT * "
+				+ "FROM ARGUS.METRICS APPEND_ONLY_SCHEMA = true, UPDATE_CACHE_FREQUENCY=900000)", viewName, generateCols(metric.getTags()));
 		_logger.info("Craete View query: " + createViewSql);
 		
 		Statement stmt = null;
