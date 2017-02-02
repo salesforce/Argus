@@ -137,10 +137,10 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private void _checkIfExceedsLimits(MetricQuery query, List<MetricQuery> matchedQueries) {
 		
-		int noOfTimeseriesAllowed = DiscoveryService.getNumTimeseries(query);
+		int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
 		int numOfExpandedTimeseries = 1;
 		for(MetricQuery mq : matchedQueries) {
-			numOfExpandedTimeseries += DiscoveryService.numTimeseriesForQuery(mq);
+			numOfExpandedTimeseries += DiscoveryService.numApproxTimeseriesForQuery(mq);
 		}
 		
 		if(numOfExpandedTimeseries > noOfTimeseriesAllowed) {

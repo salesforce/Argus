@@ -125,6 +125,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
+        int limit = 500;
+        
         Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
         
@@ -132,7 +134,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         if (DiscoveryService.isWildcardQuery(query)) {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             
-            int noOfTimeseriesAllowed = DiscoveryService.getNumTimeseries(query);
+            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
             if(noOfTimeseriesAllowed == 0) {
             	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
             }
@@ -143,7 +145,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                 int page = 1;
 
                 while (true) {
-                    List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, 500, page++);
+                    List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
 
                     if (records.isEmpty()) {
                         break;
@@ -172,7 +174,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     int page = 1;
 
                     while (true) {
-                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, 500, page++);
+                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
 
                         if (records.isEmpty()) {
                             break;
@@ -195,7 +197,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 } else {
                                     mq.setTag(record.getTagKey(), record.getTagValue());
                                 }
-                                timeseriesCount.put(identifier, DiscoveryService.numTimeseriesForQuery(mq));
+                                timeseriesCount.put(identifier, DiscoveryService.numApproxTimeseriesForQuery(mq));
                             } else {
                                 Map<String, String> tags = new HashMap<String, String>();
 
