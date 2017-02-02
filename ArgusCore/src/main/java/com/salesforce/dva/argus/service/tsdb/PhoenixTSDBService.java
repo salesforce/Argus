@@ -110,25 +110,6 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 		return null;
 	}
 
-	@Override
-	public String constructTSDBMetricName(String scope, String namespace) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getScopeFromTSDBMetric(String tsdbMetricName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	
 	//~ Enums ****************************************************************************************************************************************
 
     /**
