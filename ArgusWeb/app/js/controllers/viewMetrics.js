@@ -50,7 +50,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             color: 'Maroon'
                         }];
                     }
-                    $scope.updateChart(tempSeries, annotationInfo);
+                    $scope.updateChart(tempSeries, annotationInfo, [$scope.expression]);
                     $scope.chartLoaded = true;
                 }, function (error) {
                     // prevent error.data.message being null breaks the message
@@ -65,13 +65,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                         name: error.config.params.expression,
                         color: 'Black'
                     }];
-                    $scope.updateChart(tempSeries, annotationInfo);
+                    $scope.updateChart(tempSeries, annotationInfo, []);
                     $scope.chartLoaded = true;
                 });
             } else {
                 // empty expression
                 $scope.checkMetricExpression();
-                $scope.updateChart(tempSeries, annotationInfo);
+                $scope.updateChart(tempSeries, annotationInfo, []);
                 $scope.chartLoaded = true;
             }
         };
@@ -200,11 +200,14 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (series, annotationInfo) {
+        $scope.updateChart = function (series, annotationInfo, expression) {
             // if the metric expression is not empty
             if (series && series.length > 0) {
                 var chartScope = $scope.$new(false);
-                chartScope.chartConfig = {chartId: 'container'};
+                chartScope.chartConfig = {
+                    chartId: 'container',
+                    expression: expression
+                };
                 chartScope.dateConfig = {};
                 chartScope.series = series;
 
