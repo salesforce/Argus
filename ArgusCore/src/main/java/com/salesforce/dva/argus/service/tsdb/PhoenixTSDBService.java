@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.phoenix.query.QueryServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,9 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 		_phoenixJDBCUrl = config.getValue(Property.PHOENIX_JDBC_URL.getName(), Property.PHOENIX_JDBC_URL.getDefaultValue());
 		
 		try {
-			_connection = DriverManager.getConnection(_phoenixJDBCUrl);
+			Properties props = new Properties();
+			props.setProperty(QueryServices.CLIENT_CACHE_ENCODING, "PROTOBUF");
+			_connection = DriverManager.getConnection(_phoenixJDBCUrl, props);
 		} catch (SQLException e) {
 			throw new SystemException("Failed to craete connection to phoenix using jdbc url: " + _phoenixJDBCUrl, e);
 		}
