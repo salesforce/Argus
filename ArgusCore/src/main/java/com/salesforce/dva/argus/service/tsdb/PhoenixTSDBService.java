@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.phoenix.query.QueryServices;
+import org.apache.phoenix.schema.TableAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +50,26 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 		_phoenixJDBCUrl = config.getValue(Property.PHOENIX_JDBC_URL.getName(), Property.PHOENIX_JDBC_URL.getDefaultValue());
 		
 		try {
-			_connection = DriverManager.getConnection(_phoenixJDBCUrl);
+			Properties props = new Properties();
+			props.setProperty(QueryServices.CLIENT_CACHE_ENCODING, "PROTOBUF");
+			_connection = DriverManager.getConnection(_phoenixJDBCUrl, props);
 		} catch (SQLException e) {
-			throw new SystemException("Failed to craete connection to phoenix using jdbc url: " + _phoenixJDBCUrl, e);
+			throw new SystemException("Failed to create connection to phoenix using jdbc url: " + _phoenixJDBCUrl, e);
+		}
+		
+		try {
+			_connection.createStatement().execute("CREATE SEQUENCE IF NOT EXISTS METRIC_ID_SEQ");
+		} catch (SQLException e) {
+			throw new SystemException("Failed to create sequence : " + _phoenixJDBCUrl, e);
+		}
+		
+		try {
+			_connection.createStatement().execute("CREATE TABLE ARGUS.METRICS (id INTEGER NOT NULL, ts DATE NOT NULL, val DOUBLE, display_name varchar, units varchar CONSTRAINT PK PRIMARY KEY(id,ts)) APPEND_ONLY_SCHEMA = true, UPDATE_CACHE_FREQUENCY = 900000, AUTO_PARTITION_SEQ=METRIC_ID_SEQ");
+			// TODO change the create table ddl to IF NOT EXISTS PHOENIX-3660 is fixed
+		} catch (TableAlreadyExistsException e) {
+			System.out.println();
+		} catch (SQLException e) {
+			throw new SystemException("Failed to create base table: " + _phoenixJDBCUrl, e);
 		}
 	}
 
@@ -97,35 +116,14 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 
 	@Override
 	public void putAnnotations(List<Annotation> annotations) {
-		// TODO Auto-generated method stub
-
+		throw new UnsupportedOperationException("PhoenixTSDBService does not support annotations");
 	}
 
 	@Override
 	public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
-		// TODO Auto-generated method stub
-		return null;
+		throw new UnsupportedOperationException("PhoenixTSDBService does not support annotations");
 	}
 
-	@Override
-	public String constructTSDBMetricName(String scope, String namespace) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getScopeFromTSDBMetric(String tsdbMetricName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getNamespaceFromTSDBMetric(String tsdbMetricName) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	
 	//~ Enums ****************************************************************************************************************************************
 
     /**
@@ -136,7 +134,7 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
     public enum Property {
 
         /** The TSDB read endpoint. */
-        PHOENIX_JDBC_URL("service.property.tsdb.phoenix.jdbc.url", "jdbc:phoenix:vampire8.internal.salesforce.com"),
+        PHOENIX_JDBC_URL("service.property.tsdb.phoenix.jdbc.url", "jdbc:phoenix:localhost:2181:/hbase"),
         PHOENIX_CONNECTIONS("service.property.tsdb.phoenix.connections", "10");
 
         private final String _name;
