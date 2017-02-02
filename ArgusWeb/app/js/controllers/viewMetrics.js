@@ -200,13 +200,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (series, annotationInfo, expression) {
+        $scope.updateChart = function (series, annotationInfo, expressions) {
             // if the metric expression is not empty
             if (series && series.length > 0) {
                 var chartScope = $scope.$new(false);
                 chartScope.chartConfig = {
                     chartId: 'container',
-                    expression: expression
+                    expressions: expressions
                 };
                 chartScope.dateConfig = {};
                 chartScope.series = series;
