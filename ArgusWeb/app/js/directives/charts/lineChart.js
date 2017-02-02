@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'Metrics', function($timeout, Storage, $routeParams, Metrics) {
+.directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
@@ -28,19 +28,17 @@ angular.module('argus.directives.charts.lineChart', [])
             dateConfig: '=dateconfig'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
-        controller: ['$scope', 'Metrics', function($scope, Metrics) {
+        controller: ['$scope', 'Metrics', 'DownloadHelper', 'growl', function($scope, Metrics, DownloadHelper, growl) {
             $scope.downloadDataCSV = function () {
                 $scope.chartConfig.expressions.map(function (expression) {
+                    growl.info("Downloading data...");
                     Metrics.downloadCSV({expression: expression}).$promise.then(function (data) {
-                        var url = window.URL.createObjectURL(new Blob([data[0]]));
-                        var a = document.createElement('a');
-                        a.href = url;
                         //TODO: need to have a better naming for download files
-                        a.download = "data.csv";
-                        a.target = '_blank';
-                        a.click()
+                        var filename = "data.csv";
+                        DownloadHelper.downloadFile(data[0], filename);
                     }, function (error) {
-                        console.log("Data cannot be downloaded", error);
+                        growl.error("Data cannot be download this time");
+                        console.log(error);
                     });
                 });
             };
