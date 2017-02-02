@@ -203,7 +203,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 tip, tipBox, tipItems,
                 crossLine,
                 names, colors, graphClassNames,
-                flagsG, labelTip, label;
+                flagsG, labelTip, label,
+                yAxisPadding = 1;
 
             var messageToDisplay = ['No graph available'];
 
@@ -884,9 +885,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     return d[1];
                 });
                 var diff = extent[1] - extent[0];
+                if (diff === 0) diff = yAxisPadding;
                 var buffer = diff * bufferRatio;
                 var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
-                var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
+                var yMax = (agYMax === undefined) ? extent[1] + 3 * buffer : agYMax;
 
                 y.domain([yMin, yMax]);
             }
@@ -1007,6 +1009,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
                 });
+
+                // if only a straight line
+                if (yDomain[0] === yDomain[1]) {
+                    yDomain[0] -= yAxisPadding;
+                    yDomain[1] += 3 * yAxisPadding;
+                }
 
                 if(agYMin !== undefined && agYMax !== undefined){
                     y.domain([agYMin, agYMax]);

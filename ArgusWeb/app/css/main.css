@@ -287,6 +287,7 @@ g.brush rect.handle {fill:#999; stroke:#333;}
   padding: 2px;
   border: 2px solid;
   border-radius: 5px;
+  background: #fff;
 }
 
 /* tooltip stuff */
