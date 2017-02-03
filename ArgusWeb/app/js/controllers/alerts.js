@@ -54,6 +54,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         if ($scope.alertsLoaded) {
             // when only user's alerts are loaded but shared tab is chosen: need to start a new API call
             if (shared && !$sessionStorage.alerts.loadedEverything) {
+                delete $scope.alerts;
                 $scope.alertsLoaded = false;
                 getAllAlerts();
             } else {
