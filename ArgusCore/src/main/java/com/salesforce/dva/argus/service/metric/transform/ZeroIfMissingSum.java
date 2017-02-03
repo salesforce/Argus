@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
-import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,13 +66,13 @@ public class ZeroIfMissingSum implements Transform {
         }
 
         Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
-        Map<Long, String> resultDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> resultDatapoints = new HashMap<>();
 
         for (Metric metric : metrics) {
-            Iterator<Entry<Long, String>> it = metric.getDatapoints().entrySet().iterator();
+            Iterator<Entry<Long, Double>> it = metric.getDatapoints().entrySet().iterator();
 
             while (it.hasNext()) {
-                Entry<Long, String> entry = it.next();
+                Entry<Long, Double> entry = it.next();
 
                 if (resultDatapoints.containsKey(entry.getKey())) {
                     resultDatapoints.put(entry.getKey(), performOperation(resultDatapoints.get(entry.getKey()), entry.getValue()));
@@ -98,18 +97,16 @@ public class ZeroIfMissingSum implements Transform {
         return TransformFactory.Function.ZEROIFMISSINGSUM.name();
     }
 
-    private String performOperation(String operand1, String operand2) {
-        Double sum = 0.0;
-
-        if (StringUtils.isEmpty(operand1) || StringUtils.isEmpty(operand2)) {
-            return null;
+    private Double performOperation(Double operand1, Double operand2) {
+        if(operand1 == null) {
+        	return operand2;
+        }
+        
+        if(operand2 == null) {
+        	return operand1;
         }
 
-        Double operandValue1 = Double.parseDouble(operand1);
-        Double operandValue2 = Double.parseDouble(operand2);
-
-        sum = operandValue1 + operandValue2;
-        return String.valueOf(sum);
+        return operand1 + operand2;
     }
 
     @Override

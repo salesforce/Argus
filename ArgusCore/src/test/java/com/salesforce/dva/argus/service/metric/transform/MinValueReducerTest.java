@@ -34,7 +34,6 @@ package com.salesforce.dva.argus.service.metric.transform;
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -45,42 +44,28 @@ public class MinValueReducerTest {
     public void reduce_shouldReturnNullWhenZeroValues() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(new ArrayList<String>()), is(nullValue()));
+        assertThat(r.reduce(new ArrayList<Double>()), is(nullValue()));
     }
 
     @Test
     public void reduce_shouldReturnMinWhenSingleValue() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList("1")), equalTo("1"));
-    }
-
-    @Test(expected = NumberFormatException.class)
-    public void reduce_shouldThrowErrorWhenValueNotDouble() {
-        new MinValueReducer().reduce(Arrays.asList("a", "1"));
+        assertThat(r.reduce(Arrays.asList(1.0)), equalTo(1.0));
     }
 
     @Test
     public void reduce_shouldReturnMinWithMultipleDoubles() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList("5", "1", "4")), equalTo("1"));
+        assertThat(r.reduce(Arrays.asList(5.0, 1.0, 4.0)), equalTo(1.0));
     }
 
     @Test
     public void reduce_shouldReturnMinWithNullValue() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(null, "5", "1", "4")), equalTo("1"));
-    }
-
-    @Test
-    public void reduce_shouldReturnMinWithOnlyNullValue() {
-        MinValueReducer r = new MinValueReducer();
-        List<String> nullList = new ArrayList<String>();
-
-        nullList.add(null);
-        assertThat(r.reduce(nullList), equalTo(null));
+        assertThat(r.reduce(Arrays.asList(null, 5.0, 1.0, 4.0)), equalTo(1.0));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

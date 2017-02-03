@@ -100,7 +100,8 @@ angular.module('argus.services', [
   'argus.services.triggersmap',
   'argus.services.utils',
   'argus.services.jsonFlatten',
-  'argus.services.tableListService'
+  'argus.services.tableListService',
+  'argus.services.downloadHelper'
 ]);
 
 // Controllers

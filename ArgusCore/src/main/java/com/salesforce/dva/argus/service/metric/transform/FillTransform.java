@@ -59,9 +59,9 @@ public class FillTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, String> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, String value) {
-        Map<Long, String> filledDatapoints = new TreeMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(metric.getDatapoints());
+    private static Map<Long, Double> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, double value) {
+        Map<Long, Double> filledDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
 
         sortedDatapoints.keySet().toArray(sortedTimestamps);
@@ -88,9 +88,9 @@ public class FillTransform implements Transform {
 
         int newLength = filledDatapoints.size();
         List<Long> newTimestamps = new ArrayList<Long>();
-        List<String> newValues = new ArrayList<String>();
+        List<Double> newValues = new ArrayList<>();
 
-        for (Map.Entry<Long, String> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
             newTimestamps.add(entry.getKey());
             newValues.add(entry.getValue());
         }
@@ -102,9 +102,9 @@ public class FillTransform implements Transform {
             }
         }
 
-        Map<Long, String> cleanFilledDatapoints = new TreeMap<Long, String>();
+        Map<Long, Double> cleanFilledDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, String> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
             if (entry.getValue() != null) {
                 cleanFilledDatapoints.put(entry.getKey(), entry.getValue());
             }
@@ -139,7 +139,7 @@ public class FillTransform implements Transform {
         long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
-        String value = constants.get(4);
+        double value = Double.parseDouble(constants.get(4));
 
         SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
@@ -151,7 +151,7 @@ public class FillTransform implements Transform {
         endTimestamp = endTimestamp - endSnapping;
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
-        Map<Long, String> filledDatapoints = new TreeMap<Long, String>();
+        Map<Long, Double> filledDatapoints = new TreeMap<>();
 
         while (startTimestamp < endTimestamp) {
             filledDatapoints.put(startTimestamp, value);
@@ -159,9 +159,9 @@ public class FillTransform implements Transform {
         }
         filledDatapoints.put(endTimestamp, value);
 
-        Map<Long, String> newFilledDatapoints = new TreeMap<Long, String>();
+        Map<Long, Double> newFilledDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, String> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
             newFilledDatapoints.put(entry.getKey() + offsetInSeconds * 1000, entry.getValue());
         }
         metric.setDatapoints(newFilledDatapoints);
@@ -217,7 +217,7 @@ public class FillTransform implements Transform {
 
         String offset = constants.get(1);
         long offsetInSeconds = _parseTimeIntervalInSeconds(offset);
-        String value = constants.get(2);
+        double value = Double.parseDouble(constants.get(2));
 
         List<Metric> fillMetricList = new ArrayList<Metric>();
         for (Metric metric : metrics) {
