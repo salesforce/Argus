@@ -93,13 +93,13 @@ public class PhoenixTSDBEngine {
 		PreparedStatement preparedStmt = null;
 		try {
 			preparedStmt = connection.prepareStatement(upsertMetricSql);
-			for(Map.Entry<Long, String> datapointEntry : metric.getDatapoints().entrySet()) {
+			for(Map.Entry<Long, Double> datapointEntry : metric.getDatapoints().entrySet()) {
 				
 				Long timestamp = datapointEntry.getKey();
-				String value = datapointEntry.getValue();
+				Double value = datapointEntry.getValue();
 				
 				preparedStmt.setDate(1, new Date(timestamp));
-				preparedStmt.setDouble(2, Double.parseDouble(value));
+				preparedStmt.setDouble(2, value);
 				preparedStmt.execute();
 			}
 			
@@ -140,7 +140,7 @@ public class PhoenixTSDBEngine {
 				
 				Map<String, String> tags = new HashMap<>();
 				
-				String value = Double.toString(rs.getDouble(1));
+				Double value = rs.getDouble(1);
 				long timestamp = rs.getDate(2).getTime();
 				String displayName = rs.getString(3);
 				String units = rs.getString(4);
@@ -149,7 +149,7 @@ public class PhoenixTSDBEngine {
 					tags.put(metaData.getColumnName(i), rs.getString(i));
 				}
 				
-				Map<Long, String> datapoints = new HashMap<>();
+				Map<Long, Double> datapoints = new HashMap<>();
 				datapoints.put(timestamp, value);
 				String identifier = tags.toString();
 				if(metrics.containsKey(identifier)) {
