@@ -265,13 +265,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxis = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'))
+                    .tickFormat(d3.format('.3s'))
                 ;
 
                 yAxisR = d3.axisRight()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'))
+                    .tickFormat(d3.format('.3s'))
                 ;
 
                 //grid
@@ -618,9 +618,9 @@ angular.module('argus.directives.charts.lineChart', [])
                                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
                     if (scope.menuOption.isTooltipDetailOn) {
-                        textLine.text(datapoints[i].name + "   " + d3.format('0,.7')(tempData));
+                        textLine.text(datapoints[i].name + "   " + d3.format('0,.8')(tempData));
                     } else {
-                        textLine.text(d3.format('.2s')(tempData));
+                        textLine.text(d3.format('.3s')(tempData));
                     }
 
                     // update XOffset if existing offset is smaller than texLine
@@ -700,7 +700,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isNaN(mouseY)){ //mouseY can be 0
                     textY = "No Data";
                 }else{
-                    textY = d3.format('.2s')(mouseY);
+                    textY = d3.format('.3s')(mouseY);
                 }
 
                 focus.select('[name=crossLineTipY')
