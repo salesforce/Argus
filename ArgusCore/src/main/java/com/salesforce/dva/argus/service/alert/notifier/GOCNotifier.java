@@ -268,7 +268,7 @@ public class GOCNotifier extends AuditNotifier {
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
-		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric()));
+		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
 		sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		sb.append("\n");
