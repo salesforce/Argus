@@ -31,9 +31,8 @@
 
 package com.salesforce.dva.argus.service.metric.transform;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of basic reducers with necessary types transformation:
@@ -45,23 +44,12 @@ public class Reducers {
     // All reducers are static methods
     private Reducers() { }
 
-    private static double parseDouble(String s) {
-        try {
-            return Double.parseDouble(s);
-        }
-        catch (NumberFormatException ignore) {
-            return 0.0;
-        }
-    }
-
-    public static String sumReducer(List<String> values) {
+    public static Double sumReducer(List<Double> values) {
         double result = values.stream()
-                .filter(StringUtils::isNotEmpty)
-                .filter(StringUtils::isNotBlank)
-                .mapToDouble(Reducers::parseDouble)
+        		.filter(Objects::nonNull)
                 .reduce(0.0, (a, b) -> a + b);
 
-        return String.valueOf(result);
+        return result;
     }
 
 }

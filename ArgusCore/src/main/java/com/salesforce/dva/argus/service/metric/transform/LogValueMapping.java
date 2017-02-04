@@ -52,7 +52,7 @@ public class LogValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         List<String> constants = new ArrayList<String>();
 
         constants.add("10");
@@ -60,19 +60,19 @@ public class LogValueMapping implements ValueMapping {
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         if (constants == null || constants.isEmpty()) {
             return mapping(originalDatapoints);
         }
         SystemAssert.requireArgument(constants.size() == 1, "Log Transform requires exactly one constant!");
 
         Double base = Double.parseDouble(constants.get(0));
-        Map<Long, String> logDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> logDatapoints = new HashMap<>();
 
-        for (Entry<Long, String> entry : originalDatapoints.entrySet()) {
-            Double logValue = Math.log(Double.parseDouble(entry.getValue())) / Math.log(base);
+        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+            Double logValue = Math.log(entry.getValue()) / Math.log(base);
 
-            logDatapoints.put(entry.getKey(), String.valueOf(logValue));
+            logDatapoints.put(entry.getKey(), logValue);
         }
         return logDatapoints;
     }

@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 /**
  * Takes a list of doubles represents as Strings and returns the minimum value as a String. Values that do not convert to doubles are ignored.
@@ -43,23 +44,23 @@ public class MinValueReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
+    	if(values == null || values.isEmpty() || StreamSupport.stream(values.spliterator(), true).allMatch(o -> o == null)) {
+    		return null;
+    	}
+    	
         double min = Double.MAX_VALUE;
-        String minAsString = null;
-
-        for (String value : values) {
-            if (value == null) {
-                continue;
-            }
-
-            double candidate = Double.parseDouble(value);
-
-            if (minAsString == null || candidate < min) {
+        for (Double value : values) {
+        	if(value == null) {
+        		continue;
+        	}
+        	
+            double candidate = value;
+            if (candidate < min) {
                 min = candidate;
-                minAsString = value;
             }
         }
-        return minAsString;
+        return min;
     }
 
     @Override

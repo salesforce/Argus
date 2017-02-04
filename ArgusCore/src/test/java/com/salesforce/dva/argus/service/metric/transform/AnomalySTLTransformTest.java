@@ -7,7 +7,6 @@ import org.junit.Test;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by vmuruganantham on 7/26/16.
@@ -20,7 +19,7 @@ public class AnomalySTLTransformTest {
     private Metric metric;
     private List<String> constants;
     private String constant;
-    private Map<Long, String> datapoints;
+    private Map<Long, Double> datapoints;
     private Map<Long, Double> expected;
 
     @Before
@@ -29,7 +28,7 @@ public class AnomalySTLTransformTest {
         metrics = new ArrayList<Metric>();
         metric = new Metric("test-scope", "test-metric");
         constants = new ArrayList<String>();
-        datapoints = new HashMap<Long, String>();
+        datapoints = new HashMap<Long, Double>();
         expected = new HashMap<Long, Double>();
     }
 
@@ -58,9 +57,9 @@ public class AnomalySTLTransformTest {
         constant = "2";
         constants.add(constant);
 
-        datapoints.put(1000L, "1000");
-        datapoints.put(2000L, "1000");
-        datapoints.put(3000L, "1000");
+        datapoints.put(1000L, 1000.0);
+        datapoints.put(2000L, 1000.0);
+        datapoints.put(3000L, 1000.0);
 
         metric.setDatapoints(datapoints);
         metrics.add(metric);
@@ -73,21 +72,21 @@ public class AnomalySTLTransformTest {
         constant = "2";
         constants.add(constant);
 
-        datapoints.put(1000L, "1000");
-        datapoints.put(2000L, "1000");
-        datapoints.put(3000L, "1000");
-        datapoints.put(4000L, "1000");
-        datapoints.put(5000L, "1000");
-        datapoints.put(6000L, "1000");
-        datapoints.put(7000L, "1000");
-        datapoints.put(8000L, "1000");
+        datapoints.put(1000L, 1000.0);
+        datapoints.put(2000L, 1000.0);
+        datapoints.put(3000L, 1000.0);
+        datapoints.put(4000L, 1000.0);
+        datapoints.put(5000L, 1000.0);
+        datapoints.put(6000L, 1000.0);
+        datapoints.put(7000L, 1000.0);
+        datapoints.put(8000L, 1000.0);
 
 
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, String> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 29.6493052);
         expected.put(2000L, 4.49420750);
@@ -101,7 +100,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), Double.parseDouble(anomalyScores.get(time)), 0.01);
+            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
         }
     }
 
@@ -110,24 +109,24 @@ public class AnomalySTLTransformTest {
         constant = "2";
         constants.add(constant);
 
-        datapoints.put(1000L, "10000");
-        datapoints.put(2000L, "11000");
-        datapoints.put(3000L, "12000");
-        datapoints.put(4000L, "13000");
-        datapoints.put(5000L, "14000");
-        datapoints.put(6000L, "15000");
-        datapoints.put(7000L, "16000");
-        datapoints.put(8000L, "17000");
-        datapoints.put(9000L, "15000");
-        datapoints.put(10000L, "16000");
-        datapoints.put(11000L, "17000");
+        datapoints.put(1000L, 10000.0);
+        datapoints.put(2000L, 11000.0);
+        datapoints.put(3000L, 12000.0);
+        datapoints.put(4000L, 13000.0);
+        datapoints.put(5000L, 14000.0);
+        datapoints.put(6000L, 15000.0);
+        datapoints.put(7000L, 16000.0);
+        datapoints.put(8000L, 17000.0);
+        datapoints.put(9000L, 15000.0);
+        datapoints.put(10000L, 16000.0);
+        datapoints.put(11000L, 17000.0);
 
 
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, String> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 12.83596);
         expected.put(2000L, 3.116556);
@@ -144,7 +143,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), Double.parseDouble(anomalyScores.get(time)), 0.01);
+            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
         }
     }
 
@@ -153,24 +152,24 @@ public class AnomalySTLTransformTest {
         constant = "2";
         constants.add(constant);
 
-        datapoints.put(1000L, "10000");
-        datapoints.put(2000L, "11000");
-        datapoints.put(3000L, "12000");
-        datapoints.put(4000L, "13000");
-        datapoints.put(5000L, "14000");
-        datapoints.put(6000L, "15000");
-        datapoints.put(7000L, "16000");
-        datapoints.put(8000L, "17000");
-        datapoints.put(9000L, "18000");
-        datapoints.put(10000L, "19000");
-        datapoints.put(11000L, "40000");
+        datapoints.put(1000L, 10000.0);
+        datapoints.put(2000L, 11000.0);
+        datapoints.put(3000L, 12000.0);
+        datapoints.put(4000L, 13000.0);
+        datapoints.put(5000L, 14000.0);
+        datapoints.put(6000L, 15000.0);
+        datapoints.put(7000L, 16000.0);
+        datapoints.put(8000L, 17000.0);
+        datapoints.put(9000L, 18000.0);
+        datapoints.put(10000L, 19000.0);
+        datapoints.put(11000L, 40000.0);
 
 
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, String> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 0.932050);
         expected.put(2000L, 0.013450);
@@ -187,7 +186,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), Double.parseDouble(anomalyScores.get(time)), 0.01);
+            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
         }
     }
 }

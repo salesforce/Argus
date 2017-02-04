@@ -34,8 +34,6 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +44,6 @@ import java.util.Map;
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class AverageBelowTransform implements Transform {
-
-    //~ Instance fields ******************************************************************************************************************************
-
-    private final Logger _logger = LoggerFactory.getLogger(AverageBelowTransform.class);
 
     //~ Methods **************************************************************************************************************************************
 
@@ -84,25 +78,18 @@ public class AverageBelowTransform implements Transform {
         return result;
     }
 
-    private Double calculateAverage(Map<Long, String> datapoints) {
+    private Double calculateAverage(Map<Long, Double> datapoints) {
         Double sum = 0.0;
 
-        for (String strValue : datapoints.values()) {
-            try {
-                Double value = Double.parseDouble(strValue);
-
-                sum += value;
-            } catch (NumberFormatException | NullPointerException e) {
-                _logger.warn("Failed to parse datapoint: " + strValue + "Skipping this one.");
-            }
+        for (Double value : datapoints.values()) {
+        	sum += value;
         }
         return sum / datapoints.size();
     }
 
     @Override
     public String getResultScopeName() {
-        // TODO Auto-generated method stub
-        return null;
+        return TransformFactory.Function.AVERAGEBELOW.name();
     }
 
     @Override
