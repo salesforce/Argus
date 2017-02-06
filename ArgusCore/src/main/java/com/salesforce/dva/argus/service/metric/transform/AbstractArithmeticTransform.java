@@ -64,12 +64,12 @@ public abstract class AbstractArithmeticTransform implements Transform {
         }
 
         Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
-        Map<Long, String> resultDatapoints = new HashMap<Long, String>();
-        Iterator<Entry<Long, String>> it = metrics.get(0).getDatapoints().entrySet().iterator();
+        Map<Long, Double> resultDatapoints = new HashMap<>();
+        Iterator<Entry<Long, Double>> it = metrics.get(0).getDatapoints().entrySet().iterator();
 
         while (it.hasNext()) {
-            Entry<Long, String> entry = it.next();
-            List<String> operands = null;
+            Entry<Long, Double> entry = it.next();
+            List<Double> operands = null;
 
             try {
                 operands = getOperands(entry.getKey(), metrics);
@@ -87,13 +87,13 @@ public abstract class AbstractArithmeticTransform implements Transform {
         return resultMetrics;
     }
 
-    private List<String> getOperands(Long timestamp, List<Metric> metrics) {
-        List<String> operands = new ArrayList<String>();
+    private List<Double> getOperands(Long timestamp, List<Metric> metrics) {
+        List<Double> operands = new ArrayList<>();
 
         for (Metric metric : metrics) {
-            String operand = metric.getDatapoints().get(timestamp);
+            Double operand = metric.getDatapoints().get(timestamp);
 
-            if (operand == null || operand.isEmpty()) {
+            if (operand == null) {
                 throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", timestamp,
                         metric));
             }
@@ -109,6 +109,6 @@ public abstract class AbstractArithmeticTransform implements Transform {
      *
      * @return  The result of arithmetic operation between first parameter and second parameter.
      */
-    protected abstract String performOperation(List<String> operands);
+    protected abstract Double performOperation(List<Double> operands);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

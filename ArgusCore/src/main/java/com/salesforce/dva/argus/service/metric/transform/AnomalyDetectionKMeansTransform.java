@@ -37,8 +37,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import weka.clusterers.SimpleKMeans;
 import weka.core.*;
 
@@ -68,8 +66,8 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
                                             "k constant.");
 
-        Map<Long, String> metricData = metrics.get(0).getDatapoints();
-        metricDataValues = metricData.values().stream().map(Double::parseDouble).collect(Collectors.toList());
+        Map<Long, Double> metricData = metrics.get(0).getDatapoints();
+        metricDataValues = metricData.values().stream().collect(Collectors.toList());
         if (metricData.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
 
         try {
@@ -104,15 +102,15 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         return transform(metrics);
     }
 
-    private void trainModel(Map<Long, String> metricData) throws Exception {
+    private void trainModel(Map<Long, Double> metricData) throws Exception {
         //Model has a single metric_value attribute
         Attribute value = new Attribute("metric_value");
         FastVector attributes = new FastVector();
         attributes.addElement(value);
 
         trainingData = new Instances("metric_value_data", attributes, 0);
-        for (String val : metricData.values()) {
-            double[] valArray = new double[] { Double.parseDouble(val) };
+        for (Double val : metricData.values()) {
+            double[] valArray = new double[] { val };
             Instance instance = new Instance(1.0, valArray);
             trainingData.add(instance);
         }
@@ -158,16 +156,16 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
      * Assigns an anomaly score to each data point, indicating how likely it is
      * to be an anomaly relative to other points.
      */
-    private Metric predictAnomalies(Map<Long, String> metricData) {
+    private Metric predictAnomalies(Map<Long, Double> metricData) {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, String> predictionDatapoints = new HashMap<>();
+        Map<Long, Double> predictionDatapoints = new HashMap<>();
 
-        for (Map.Entry<Long, String> entry : metricData.entrySet()) {
+        for (Map.Entry<Long, Double> entry : metricData.entrySet()) {
             Long timestamp = entry.getKey();
-            double value = Double.parseDouble(entry.getValue());
+            double value = entry.getValue();
             try {
                 double anomalyScore = calculateAnomalyScore(value);
-                predictionDatapoints.put(timestamp, String.valueOf(anomalyScore));
+                predictionDatapoints.put(timestamp, anomalyScore);
             } catch (ArithmeticException e) {
                 continue;
             }

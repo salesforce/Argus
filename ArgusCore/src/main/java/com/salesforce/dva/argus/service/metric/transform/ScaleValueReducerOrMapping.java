@@ -48,37 +48,37 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         Double product = 1.0;
 
-        for (String value : values) {
+        for (Double value : values) {
             if (value == null) {
                 continue;
             }
-            product *= Double.parseDouble(value);
+            product *= value;
         }
-        return String.valueOf(product);
+        return product;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for scale transform, only exactly one constant allowed.");
 
-        Map<Long, String> scaleDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> scaleDatapoints = new HashMap<>();
 
         try {
             double multiplicand = Double.parseDouble(constants.get(0));
 
-            for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-                String productValue = String.valueOf(Double.parseDouble(entry.getValue()) * multiplicand);
+            for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+                double productValue = entry.getValue() * multiplicand;
 
-                scaleDatapoints.put(entry.getKey(), String.valueOf(productValue));
+                scaleDatapoints.put(entry.getKey(), productValue);
             }
         } catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to scale transform", nfe);
@@ -87,7 +87,7 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
     }
 

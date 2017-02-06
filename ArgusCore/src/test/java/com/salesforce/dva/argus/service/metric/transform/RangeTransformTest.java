@@ -58,11 +58,11 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformWithOneMetric() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -72,10 +72,10 @@ public class RangeTransformTest {
 
         metrics.add(metric);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(3000L, "3");
+        expected.put(1000L, 1.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = rangeTransform.transform(metrics);
 
@@ -100,21 +100,21 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformShareCommonDPs() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -125,11 +125,11 @@ public class RangeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "9.0");
-        expected.put(2000L, "98.0");
-        expected.put(3000L, "997.0");
+        expected.put(1000L, 9.0);
+        expected.put(2000L, 98.0);
+        expected.put(3000L, 997.0);
 
         List<Metric> result = rangeTransform.transform(metrics);
 
@@ -140,21 +140,21 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformShareNoCommonDPs() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -165,7 +165,7 @@ public class RangeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = rangeTransform.transform(metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -175,21 +175,21 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformShareSomeCommonDPs() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -200,9 +200,9 @@ public class RangeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(3000L, "997.0");
+        expected.put(3000L, 997.0);
 
         List<Metric> result = rangeTransform.transform(metrics);
 
@@ -213,11 +213,11 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformWithOneMetricHavingNull() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
         datapoints.put(1000L, null);
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -227,10 +227,10 @@ public class RangeTransformTest {
 
         metrics.add(metric);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "0.0");
-        expected.put(3000L, "3");
+        expected.put(1000L, 0.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = rangeTransform.transform(metrics);
 
@@ -241,7 +241,7 @@ public class RangeTransformTest {
     @Test
     public void testRangeTransformShareCommonDPsHavingNull() {
         Transform rangeTransform = new RangeTransformWrap();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, null);
@@ -251,11 +251,11 @@ public class RangeTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -266,11 +266,11 @@ public class RangeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "10.0");
-        expected.put(2000L, "100.0");
-        expected.put(3000L, "1000.0");
+        expected.put(1000L, 10.0);
+        expected.put(2000L, 100.0);
+        expected.put(3000L, 1000.0);
 
         List<Metric> result = rangeTransform.transform(metrics);
 

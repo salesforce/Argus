@@ -52,7 +52,7 @@ public class MetricDto extends TSDBEntityDto {
     private String namespace;
     private String displayName;
     private String units;
-    private Map<Long, String> datapoints;
+    private Map<Long, Double> datapoints;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -102,9 +102,9 @@ public class MetricDto extends TSDBEntityDto {
     @Override
     public Object createExample() {
         MetricDto result = new MetricDto();
-        Map<Long, String> dps = new TreeMap<>();
+        Map<Long, Double> dps = new TreeMap<>();
 
-        dps.put(System.currentTimeMillis(), "1.2");
+        dps.put(System.currentTimeMillis(), 1.2);
         result.setDatapoints(dps);
         result.setDisplayName("A description of the metric");
         result.setMetric("metric");
@@ -177,7 +177,7 @@ public class MetricDto extends TSDBEntityDto {
      *
      * @return  The metric data points.
      */
-    public Map<Long, String> getDatapoints() {
+    public Map<Long, Double> getDatapoints() {
         return datapoints;
     }
 
@@ -186,7 +186,7 @@ public class MetricDto extends TSDBEntityDto {
      *
      * @param  datapoints  The metric data points.
      */
-    public void setDatapoints(Map<Long, String> datapoints) {
+    public void setDatapoints(Map<Long, Double> datapoints) {
         this.datapoints = datapoints;
     }
 }

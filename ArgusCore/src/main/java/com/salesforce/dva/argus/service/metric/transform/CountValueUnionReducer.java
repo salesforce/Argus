@@ -44,16 +44,18 @@ public class CountValueUnionReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         Double sum = 0.0;
 
-        for (String value : values) {
-            if (value == null || value.equals("")) {
-                value = String.valueOf(0.0);
+        for (Double value : values) {
+            if (value == null) {
+                value = 0.0;
             }
-            sum += Double.parseDouble(value);
+            
+            sum += value;
         }
-        return String.valueOf(sum);
+        
+        return sum;
     }
 
     @Override
