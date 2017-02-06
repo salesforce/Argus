@@ -58,7 +58,6 @@ public class NotificationDto extends EntityDTO {
     private List<String> subscriptions;
     private List<String> metricsToAnnotate;
     private long cooldownPeriod;
-    private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private String customText;
@@ -204,24 +203,6 @@ public class NotificationDto extends EntityDTO {
     }
 
     /**
-     * Returns the cool down expiration time in milliseconds.
-     *
-     * @return  The cool down expiration time
-     */
-    public long getCooldownExpiration() {
-        return cooldownExpiration;
-    }
-
-    /**
-     * Sets the cool down expiration time.
-     *
-     * @param  cooldownExpiration  The cool down expiration time
-     */
-    public void setCooldownExpiration(long cooldownExpiration) {
-        this.cooldownExpiration = cooldownExpiration;
-    }
-
-    /**
      * Returns the list of trigger Ids.
      *
      * @return  The list of trigger Ids.
@@ -297,7 +278,6 @@ public class NotificationDto extends EntityDTO {
         NotificationDto result = new NotificationDto();
 
         result.setAlertId(BigInteger.ONE);
-        result.setCooldownExpiration(System.currentTimeMillis() + 300000);
         result.setCooldownPeriod(300000);
         result.setCreatedById(BigInteger.TEN);
         result.setCreatedDate(new Date());

@@ -45,23 +45,23 @@ public class AverageBelowTransformTest {
     @Test
     public void testAverageBelowTransform() {
         Transform averageBelowTransform = new AverageBelowTransform();
-        Map<Long, String> datapoints1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints1 = new HashMap<Long, Double>();
 
-        datapoints1.put(1L, "1");
-        datapoints1.put(2L, "2");
-        datapoints1.put(3L, "3");
-        datapoints1.put(4L, "4");
+        datapoints1.put(1L, 1.0);
+        datapoints1.put(2L, 2.0);
+        datapoints1.put(3L, 3.0);
+        datapoints1.put(4L, 4.0);
 
         Metric below = new Metric("below-scope", "below-metric");
 
         below.setDatapoints(datapoints1);
 
-        Map<Long, String> datapoints2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints2 = new HashMap<Long, Double>();
 
-        datapoints2.put(1L, "10");
-        datapoints2.put(2L, "2");
-        datapoints2.put(3L, "3");
-        datapoints2.put(4L, "15");
+        datapoints2.put(1L, 10.0);
+        datapoints2.put(2L, 2.0);
+        datapoints2.put(3L, 3.0);
+        datapoints2.put(4L, 15.0);
 
         Metric above = new Metric("above-scope", "above-metric");
 

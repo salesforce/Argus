@@ -47,6 +47,10 @@ angular.module('argus.services.auth', [])
         isPrivileged: function () {
             var user = this.remoteUser();
             return (user) ? user.privileged : null;
+        },
+        isDisabled: function (item) {
+            var user = Storage.get('user');
+            return !(user && (user.privileged || user.userName === item.ownerName));
         }
     };
 }]);

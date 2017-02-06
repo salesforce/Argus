@@ -334,7 +334,6 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
         _dashboardService.dispose();
         _alertService.dispose();
         _serviceManagementService.dispose();
-        // _tsdbService.dispose();
     }
 
     private void _setServiceEnabled(boolean enabled) {
@@ -662,9 +661,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
             long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
 
             for (Entry<Metric, Double> entry : counters.entrySet()) {
-                Map<Long, String> dataPoints = new HashMap<>(1);
+                Map<Long, Double> dataPoints = new HashMap<>(1);
 
-                dataPoints.put(timestamp, String.valueOf(entry.getValue()));
+                dataPoints.put(timestamp, entry.getValue());
                 entry.getKey().setDatapoints(dataPoints);
             }
             if (!isDisposed()) {

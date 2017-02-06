@@ -43,16 +43,16 @@ public class AverageValueReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         Double sum = 0.0;
 
-        for (String value : values) {
+        for (Double value : values) {
             if (value == null) {
                 continue;
             }
-            sum += Double.parseDouble(value);
+            sum += value;
         }
-        return String.valueOf(sum / values.size());
+        return (sum / values.size());
     }
 
     @Override

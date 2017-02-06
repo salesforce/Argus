@@ -99,7 +99,9 @@ angular.module('argus.services', [
   'argus.services.triggers',
   'argus.services.triggersmap',
   'argus.services.utils',
-  'argus.services.jsonFlatten'
+  'argus.services.jsonFlatten',
+  'argus.services.tableListService',
+  'argus.services.downloadHelper'
 ]);
 
 // Controllers
@@ -158,18 +160,22 @@ require('./services/auth');
 require('./services/breadcrumbs');
 require('./services/controls');
 require('./services/dashboard');
+require('./services/downloadHelper');
 require('./services/inputTracker');
 require('./services/search');
 require('./services/storage');
+require('./services/tableListService');
 require('./services/tags');
 require('./services/unauthorizedInterceptor');
 require('./services/utilService');
 require('./services/jsonUnflatten');
+
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
 require('./services/charts/chartTools');
 require('./services/charts/dataProcessing');
 require('./services/charts/dateHandler');
+
 require('./services/factories/alerts');
 require('./services/factories/asyncMetrics');
 require('./services/factories/annotations');
@@ -189,11 +195,13 @@ require('./directives/headerMenu');
 require('./directives/tableList');
 require('./directives/breadcrumbs');
 require('./directives/dashboardResource');
+
 require('./directives/controls/dashboard');
 require('./directives/controls/date');
 require('./directives/controls/dropdown');
 require('./directives/controls/submit');
 require('./directives/controls/text');
+
 require('./directives/charts/chart');
 require('./directives/charts/lineChart');
 require('./directives/charts/flags');
@@ -202,6 +210,7 @@ require('./directives/charts/metric');
 require('./directives/charts/option');
 require('./directives/charts/statusIndicator');
 require('./directives/charts/table');
+
 require('./directives/UItools/autoFocus');
 require('./directives/UItools/stopEvent');
 require('./directives/UItools/ngConfirm');
