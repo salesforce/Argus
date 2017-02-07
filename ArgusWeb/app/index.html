@@ -22,6 +22,30 @@
 <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
 <script src="bower_components/q/q.js"></script>
 
+<title>Argus</title>
+
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+</head>
+
+<body ng-controller="Main">
+
+<div growl limit-messages="3"></div>
+
+<header-menu></header-menu>
+
+<div class="container" style="width: 93%;">
+    <!-- breadcrumb navigation -->
+    <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
+
+    <div ng-view></div>
+</div>
+
+</body>
+
 <!-- Bootstrap -->
 <script src="bower_components/bootstrap/js/dropdown.js"></script>
 <script src="bower_components/bootstrap/js/affix.js"></script>
@@ -54,27 +78,88 @@
 <script src="bower_components/moment/moment.js"></script>
 <script src="bower_components/angular-bootstrap-datetimepicker/src/js/datetimepicker.js"></script>
 
-<title>Argus</title>
+<!-- Argus module -->
+<script src="js/argus.js"></script>
+<script src="js/config.js"></script>
+<script src="js/argusConfig.js"></script>
 
-<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-<!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
-</head>
+<!-- utils -->
+<script src="js/utils/constants.js"></script>
+<script src="js/utils/filters.js"></script>
 
-<body ng-controller="Main">
+<!-- controllers -->
+<script src="js/controllers/about.js"></script>
+<script src="js/controllers/admin.js"></script>
+<script src="js/controllers/alerts.js"></script>
+<script src="js/controllers/alertsDetail.js"></script>
+<script src="js/controllers/batches.js"></script>
+<script src="js/controllers/dashboards.js"></script>
+<script src="js/controllers/dashboardsDetail.js"></script>
+<script src="js/controllers/login.js"></script>
+<script src="js/controllers/main.js"></script>
+<script src="js/controllers/metricElements.js"></script>
+<script src="js/controllers/namespace.js"></script>
+<script src="js/controllers/viewElements.js"></script>
+<script src="js/controllers/viewMetrics.js"></script>
 
-<div growl limit-messages="3"></div>
+<!-- services -->
+<script src="js/services/auth.js"></script>
+<script src="js/services/breadcrumbs.js"></script>
+<script src="js/services/controls.js"></script>
+<script src="js/services/dashboard.js"></script>
+<script src="js/services/inputTracker.js"></script>
+<script src="js/services/search.js"></script>
+<script src="js/services/storage.js"></script>
+<script src="js/services/tags.js"></script>
+<script src="js/services/unauthorizedInterceptor.js"></script>
+<script src="js/services/utilService.js"></script>
+<script src="js/services/jsonUnflatten.js"></script>
+<script src="js/services/tableListService.js"></script>
+<script src="js/services/downloadHelper.js"></script>
 
-<header-menu></header-menu>
+<script src="js/services/charts/chartOptions.js"></script>
+<script src="js/services/charts/chartRendering.js"></script>
+<script src="js/services/charts/chartTools.js"></script>
+<script src="js/services/charts/dataProcessing.js"></script>
+<script src="js/services/charts/dateHandler.js"></script>
 
-<div class="container" style="width: 93%;">
-    <!-- breadcrumb navigation -->
-    <breadcrumbs-html ng-show="isLoggedIn()"></breadcrumbs-html>
+<script src="js/services/factories/alerts.js"></script>
+<script src="js/services/factories/asyncMetrics.js"></script>
+<script src="js/services/factories/annotations.js"></script>
+<script src="js/services/factories/batches.js"></script>
+<script src="js/services/factories/dashboards.js"></script>
+<script src="js/services/factories/history.js"></script>
+<script src="js/services/factories/jobExecutionDetails.js"></script>
+<script src="js/services/factories/metrics.js"></script>
+<script src="js/services/factories/namespace.js"></script>
+<script src="js/services/factories/notifications.js"></script>
+<script src="js/services/factories/reinstateUser.js"></script>
+<script src="js/services/factories/triggers.js"></script>
+<script src="js/services/factories/triggersMap.js"></script>
 
-    <div ng-view></div>
-</div>
+<!-- directives -->
+<script src="js/directives/headerMenu.js"></script>
+<script src="js/directives/tableList.js"></script>
+<script src="js/directives/tableTabs.js"></script>
+<script src="js/directives/breadcrumbs.js"></script>
+<script src="js/directives/dashboardResource.js"></script>
+<script src="js/directives/controls/dashboard.js"></script>
+<script src="js/directives/controls/date.js"></script>
+<script src="js/directives/controls/dropdown.js"></script>
+<script src="js/directives/controls/submit.js"></script>
+<script src="js/directives/controls/text.js"></script>
+<script src="js/directives/charts/chart.js"></script>
+<script src="js/directives/charts/lineChart.js"></script>
+<script src="js/directives/charts/flags.js"></script>
+<script src="js/directives/charts/heatmap.js"></script>
+<script src="js/directives/charts/metric.js"></script>
+<script src="js/directives/charts/option.js"></script>
+<script src="js/directives/charts/statusIndicator.js"></script>
+<script src="js/directives/charts/table.js"></script>
+<script src="js/directives/UItools/autoFocus.js"></script>
+<script src="js/directives/UItools/stopEvent.js"></script>
+<script src="js/directives/UItools/ngConfirm.js"></script>
+<script src="js/directives/UItools/ngLoading.js"></script>
+<script src="js/directives/UItools/ngEnter.js"></script>
 
-</body>
 </html>
