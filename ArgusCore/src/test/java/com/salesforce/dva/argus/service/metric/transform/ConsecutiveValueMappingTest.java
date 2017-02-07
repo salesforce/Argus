@@ -93,14 +93,14 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingSingleBaseCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "0.0");
-        datapoints_1.put(3000L, "1.0");
-        datapoints_1.put(4000L, "1.0");
-        datapoints_1.put(5000L, "1.0");
-        datapoints_1.put(7000L, "1.0");
-        datapoints_1.put(8000L, "1.0");
+        datapoints_1.put(1000L, 0.0);
+        datapoints_1.put(3000L, 1.0);
+        datapoints_1.put(4000L, 1.0);
+        datapoints_1.put(5000L, 1.0);
+        datapoints_1.put(7000L, 1.0);
+        datapoints_1.put(8000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
@@ -111,12 +111,12 @@ public class ConsecutiveValueMappingTest {
         constants.add("1s");
         constants.add("1s");
         
-        Map<Long, String> expected = new HashMap<Long, String>();
-        expected.put(3000L, "1.0");
-        expected.put(4000L, "1.0");
-        expected.put(5000L, "1.0");
-        expected.put(7000L, "1.0");
-        expected.put(8000L, "1.0");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(3000L, 1.0);
+        expected.put(4000L, 1.0);
+        expected.put(5000L, 1.0);
+        expected.put(7000L, 1.0);
+        expected.put(8000L, 1.0);
         List<Metric> result = transform.transform(metrics,constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
@@ -126,14 +126,14 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingSingleEdgeCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "0.0");
-        datapoints_1.put(3000L, "1.0");
-        datapoints_1.put(5000L, "1.0");
-        datapoints_1.put(6000L, "1.0");
-        datapoints_1.put(7000L, "1.0");
-        datapoints_1.put(8000L, "1.0");
+        datapoints_1.put(1000L, 0.0);
+        datapoints_1.put(3000L, 1.0);
+        datapoints_1.put(5000L, 1.0);
+        datapoints_1.put(6000L, 1.0);
+        datapoints_1.put(7000L, 1.0);
+        datapoints_1.put(8000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
@@ -144,11 +144,11 @@ public class ConsecutiveValueMappingTest {
         constants.add("3s");
         constants.add("1s");
         
-        Map<Long, String> expected = new HashMap<Long, String>();
-        expected.put(5000L, "1.0");
-        expected.put(6000L, "1.0");
-        expected.put(7000L, "1.0");
-        expected.put(8000L, "1.0");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(5000L, 1.0);
+        expected.put(6000L, 1.0);
+        expected.put(7000L, 1.0);
+        expected.put(8000L, 1.0);
         List<Metric> result = transform.transform(metrics,constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
@@ -158,14 +158,14 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingSingleIntervalCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000000L, "0.0");
-        datapoints_1.put(3000000L, "1.0");
-        datapoints_1.put(5000000L, "1.0");
-        datapoints_1.put(5500000L, "1.0");
-        datapoints_1.put(6000000L, "1.0");
-        datapoints_1.put(9000000L, "1.0");
+        datapoints_1.put(1000000L, 0.0);
+        datapoints_1.put(3000000L, 1.0);
+        datapoints_1.put(5000000L, 1.0);
+        datapoints_1.put(5500000L, 1.0);
+        datapoints_1.put(6000000L, 1.0);
+        datapoints_1.put(9000000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
@@ -176,10 +176,10 @@ public class ConsecutiveValueMappingTest {
         constants.add("10m");
         constants.add("10m");
         
-        Map<Long, String> expected = new HashMap<Long, String>();
-        expected.put(5000000L, "1.0");
-        expected.put(5500000L, "1.0");
-        expected.put(6000000L, "1.0");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(5000000L, 1.0);
+        expected.put(5500000L, 1.0);
+        expected.put(6000000L, 1.0);
         List<Metric> result = transform.transform(metrics,constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
@@ -189,11 +189,11 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingSingleZeroCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "0.0");
-        datapoints_1.put(2000L, "1.0");
-        datapoints_1.put(3000L, "1.0");
+        datapoints_1.put(1000L, 0.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
@@ -204,7 +204,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("4s");
         constants.add("1s");
         
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = transform.transform(metrics,constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
@@ -214,7 +214,7 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingEmptySeriesCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
         List<Metric> metrics = new ArrayList<Metric>();
@@ -224,7 +224,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("4s");
         constants.add("1s");
         
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = transform.transform(metrics,constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
@@ -234,18 +234,18 @@ public class ConsecutiveValueMappingTest {
     @Test
     public void testconsecutiveValueMappingMultipleSeriesCases() {
     	Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
-        datapoints_1.put(1000L, "0.0");
-        datapoints_1.put(3000L, "1.0");
-        datapoints_1.put(5000L, "1.0");
-        datapoints_1.put(6000L, "1.0");
-        datapoints_1.put(7000L, "1.0");
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        datapoints_1.put(1000L, 0.0);
+        datapoints_1.put(3000L, 1.0);
+        datapoints_1.put(5000L, 1.0);
+        datapoints_1.put(6000L, 1.0);
+        datapoints_1.put(7000L, 1.0);
         
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
-        datapoints_2.put(4000L, "0.0");
-        datapoints_2.put(5000L, "1.0");
-        datapoints_2.put(6000L, "1.0");
-        datapoints_2.put(11000L, "1.0");
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        datapoints_2.put(4000L, 0.0);
+        datapoints_2.put(5000L, 1.0);
+        datapoints_2.put(6000L, 1.0);
+        datapoints_2.put(11000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);
@@ -258,15 +258,15 @@ public class ConsecutiveValueMappingTest {
         List<String> constants = new ArrayList<String>();
         constants.add("2s");
         constants.add("1s");
-        Map<Long, String> expected_1 = new TreeMap<Long, String>();
-        expected_1.put(5000L, "1.0");
-        expected_1.put(6000L, "1.0");
-        expected_1.put(7000L, "1.0");
+        Map<Long, Double> expected_1 = new TreeMap<Long, Double>();
+        expected_1.put(5000L, 1.0);
+        expected_1.put(6000L, 1.0);
+        expected_1.put(7000L, 1.0);
         
-        Map<Long, String> expected_2 = new TreeMap<Long, String>();
-        expected_2.put(4000L, "0.0");
-        expected_2.put(5000L, "1.0");
-        expected_2.put(6000L, "1.0");
+        Map<Long, Double> expected_2 = new TreeMap<Long, Double>();
+        expected_2.put(4000L, 0.0);
+        expected_2.put(5000L, 1.0);
+        expected_2.put(6000L, 1.0);
         List<Metric> result = transform.transform(metrics,constants);
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected_1.size());
         assertEquals("Result value should match",expected_1, result.get(0).getDatapoints());

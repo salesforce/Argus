@@ -48,9 +48,9 @@ public class AboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testAboveTransformWithIllegalLimit() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -70,9 +70,9 @@ public class AboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testAboveTransformWithIllegalType() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -92,9 +92,9 @@ public class AboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testAboveTransformWithoutLimit() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -124,31 +124,31 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitEqualMidDPsEvalDefault() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "2");
-        datapoints_2.put(3000L, "2");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 2.0);
+        datapoints_2.put(3000L, 2.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "3");
-        datapoints_3.put(3000L, "3");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 3.0);
+        datapoints_3.put(3000L, 3.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -164,11 +164,11 @@ public class AboveTransformTest {
 
         constants.add("2");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "3");
-        expected_1.put(3000L, "3");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(3000L, 3.0);
 
         List<Metric> result = aboveTransform.transform(metrics, constants);
 
@@ -179,31 +179,31 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitNotEqualMidDPsEvalAvg() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "3");
-        datapoints_2.put(2000L, "3");
-        datapoints_2.put(3000L, "3");
+        datapoints_2.put(1000L, 3.0);
+        datapoints_2.put(2000L, 3.0);
+        datapoints_2.put(3000L, 3.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "4");
-        datapoints_3.put(2000L, "4");
-        datapoints_3.put(3000L, "4");
+        datapoints_3.put(1000L, 4.0);
+        datapoints_3.put(2000L, 4.0);
+        datapoints_3.put(3000L, 4.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -220,17 +220,17 @@ public class AboveTransformTest {
         constants.add("2");
         constants.add("avg");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "3");
-        expected_1.put(3000L, "3");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(3000L, 3.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "4");
-        expected_2.put(2000L, "4");
-        expected_2.put(3000L, "4");
+        expected_2.put(1000L, 4.0);
+        expected_2.put(2000L, 4.0);
+        expected_2.put(3000L, 4.0);
 
         List<Metric> result = aboveTransform.transform(metrics, constants);
 
@@ -242,31 +242,31 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitEqualToLowerBorderDPsEvalMin() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "100");
-        datapoints_1.put(3000L, "100");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 100.0);
+        datapoints_1.put(3000L, 100.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "200");
-        datapoints_2.put(3000L, "200");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 200.0);
+        datapoints_2.put(3000L, 200.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "300");
-        datapoints_3.put(3000L, "300");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 300.0);
+        datapoints_3.put(3000L, 300.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -283,17 +283,17 @@ public class AboveTransformTest {
         constants.add("1");
         constants.add("min");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "2");
-        expected_1.put(2000L, "200");
-        expected_1.put(3000L, "200");
+        expected_1.put(1000L, 2.0);
+        expected_1.put(2000L, 200.0);
+        expected_1.put(3000L, 200.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "3");
-        expected_2.put(2000L, "300");
-        expected_2.put(3000L, "300");
+        expected_2.put(1000L, 3.0);
+        expected_2.put(2000L, 300.0);
+        expected_2.put(3000L, 300.0);
 
         List<Metric> result = aboveTransform.transform(metrics, constants);
 
@@ -305,31 +305,31 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitGreatThanUpperBoarderDPsEvalMax() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "100");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 100.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "2");
-        datapoints_2.put(3000L, "200");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 2.0);
+        datapoints_2.put(3000L, 200.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "3");
-        datapoints_3.put(3000L, "300");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 3.0);
+        datapoints_3.put(3000L, 300.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -354,31 +354,31 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitEqualToMidDPsEvalRecent() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "300");
-        datapoints_1.put(2000L, "300");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 300.0);
+        datapoints_1.put(2000L, 300.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "200");
-        datapoints_2.put(2000L, "200");
-        datapoints_2.put(3000L, "2");
+        datapoints_2.put(1000L, 200.0);
+        datapoints_2.put(2000L, 200.0);
+        datapoints_2.put(3000L, 2.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "100");
-        datapoints_3.put(2000L, "100");
-        datapoints_3.put(3000L, "3");
+        datapoints_3.put(1000L, 100.0);
+        datapoints_3.put(2000L, 100.0);
+        datapoints_3.put(3000L, 3.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -395,11 +395,11 @@ public class AboveTransformTest {
         constants.add("2");
         constants.add("recent");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "100");
-        expected_1.put(2000L, "100");
-        expected_1.put(3000L, "3");
+        expected_1.put(1000L, 100.0);
+        expected_1.put(2000L, 100.0);
+        expected_1.put(3000L, 3.0);
 
         List<Metric> result = aboveTransform.transform(metrics, constants);
 
@@ -410,9 +410,9 @@ public class AboveTransformTest {
     @Test
     public void testAboveTransformWithLimitEqualMidDPsEvalDefaultHavingNull() {
         Transform aboveTransform = new MetricFilterWithInteralReducerTransform(new AboveValueFilter());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
+        datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, null);
         datapoints_1.put(3000L, null);
 
@@ -420,9 +420,9 @@ public class AboveTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "6");
+        datapoints_2.put(1000L, 6.0);
         datapoints_2.put(2000L, null);
         datapoints_2.put(3000L, null);
 
@@ -430,9 +430,9 @@ public class AboveTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "9");
+        datapoints_3.put(1000L, 9.0);
         datapoints_3.put(2000L, null);
         datapoints_3.put(3000L, null);
 
@@ -450,9 +450,9 @@ public class AboveTransformTest {
 
         constants.add("2");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "9");
+        expected_1.put(1000L, 9.0);
         expected_1.put(2000L, null);
         expected_1.put(3000L, null);
 

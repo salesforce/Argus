@@ -48,44 +48,44 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
-        Double quotient = Double.parseDouble(values.get(0));
+    public Double reduce(List<Double> values) {
+        Double quotient = values.get(0);
 
         for (int i = 1; i < values.size(); i++) {
-            String value = values.get(i);
+            Double value = values.get(i);
 
             if (value == null) {
                 continue;
             }
-            if (Double.parseDouble(value) == 0.0) { // Sys Require argument
+            if (value == 0.0) { // Sys Require argument
                 throw new ArithmeticException("this datapoints sets have a value of zero!");
             }
-            quotient /= Double.parseDouble(value);
+            quotient /= value;
         }
-        return String.valueOf(quotient);
+        return quotient;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Divide Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for divide transform, only exactly one constant allowed.");
 
-        Map<Long, String> divideDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> divideDatapoints = new HashMap<>();
 
         try {
             double divisor = Double.parseDouble(constants.get(0));
 
             SystemAssert.requireArgument(divisor != 0, "The constant divisor cannot be zero.");
-            for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-                Double dividend = Double.parseDouble(entry.getValue());
-                String quotientValue = String.valueOf(dividend / divisor);
+            for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+                Double dividend = entry.getValue();
+                double quotientValue = dividend / divisor;
 
-                divideDatapoints.put(entry.getKey(), String.valueOf(quotientValue));
+                divideDatapoints.put(entry.getKey(), quotientValue);
             }
         } catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to divide transform", nfe);
@@ -94,7 +94,7 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used without a constant");
     }
 
