@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.entity;
 
 import java.io.Serializable;
@@ -72,11 +72,12 @@ public class Notification extends JPAEntity implements Serializable {
     @Column(name = "name", nullable = false)
     String name;
     String notifierName;
-    @ElementCollection
+	@ElementCollection
+	@Column(length = 2048)
     List<String> subscriptions = new ArrayList<>(0);
-    @ElementCollection
-    List<String> metricsToAnnotate = new ArrayList<>(0);
-    long cooldownPeriod;
+	@ElementCollection
+	List<String> metricsToAnnotate = new ArrayList<>(0);
+	long cooldownPeriod;
     @ManyToOne(optional = false)
     @JoinColumn(name = "alert_id")
     private Alert alert;
@@ -235,7 +236,7 @@ public class Notification extends JPAEntity implements Serializable {
         requireArgument(cooldownPeriod >= 0, "Cool down period cannot be negative.");
         this.cooldownPeriod = cooldownPeriod;
     }
-    
+
     /**
      * Returns the cool down expiration time of the notification given a metric,trigger combination.
      *
@@ -253,11 +254,11 @@ public class Notification extends JPAEntity implements Serializable {
      */
     public void setCooldownExpirationByTriggerAndMetric(Trigger trigger, Metric metric, long cooldownExpiration) {
         requireArgument(cooldownExpiration >= 0, "Cool down expiration time cannot be negative.");
-        
+
 		String key = _hashTriggerAndMetric(trigger, metric);
 		this.cooldownExpirationByTriggerAndMetric.put(key, cooldownExpiration);
     }
-    
+
     public Map<String, Long> getCooldownExpirationMap() {
 		return cooldownExpirationByTriggerAndMetric;
 	}
@@ -285,7 +286,7 @@ public class Notification extends JPAEntity implements Serializable {
             }
         }
     }
-    
+
     public boolean onCooldown(Trigger trigger, Metric metric) {
         return getCooldownExpirationByTriggerAndMetric(trigger, metric) >= System.currentTimeMillis();
     }
@@ -298,7 +299,7 @@ public class Notification extends JPAEntity implements Serializable {
     public String getName() {
         return name;
     }
-    
+
     /**
      * Sets the notification name.
      *
@@ -328,23 +329,23 @@ public class Notification extends JPAEntity implements Serializable {
             this.triggers.addAll(triggers);
         }
     }
-    
+
     /**
      * Given a metric,notification combination, indicates whether a triggering condition associated with this notification is still in a triggering state.
-     * 
+     *
      * @param trigger	The Trigger that caused this notification
      * @param metric	The metric that caused this notification
-     * 
+     *
      * @return	True if the triggering condition is still in a triggering state.
      */
     public boolean isActiveForTriggerAndMetric(Trigger trigger, Metric metric) {
     	String key = _hashTriggerAndMetric(trigger, metric);
     	return this.activeStatusByTriggerAndMetric.containsKey(key) ? activeStatusByTriggerAndMetric.get(key) : false;
     }
-    
+
     /**
-     * When a notification is sent out when a metric violates the trigger threshold, set this notification active for that trigger,metric combination 
-     * 
+     * When a notification is sent out when a metric violates the trigger threshold, set this notification active for that trigger,metric combination
+     *
      * @param trigger	The Trigger that caused this notification
      * @param metric	The metric that caused this notification
      */
@@ -352,7 +353,7 @@ public class Notification extends JPAEntity implements Serializable {
     	String key = _hashTriggerAndMetric(trigger, metric);
 		this.activeStatusByTriggerAndMetric.put(key, active);
     }
-    
+
     /**
      * Indicates whether the notification is monitored by SR
      *
@@ -370,11 +371,11 @@ public class Notification extends JPAEntity implements Serializable {
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
     }
-    
+
 	public Map<String, Boolean> getActiveStatusMap() {
 		return activeStatusByTriggerAndMetric;
 	}
-    
+
     /**
      * Return the custom text in order to include in the notification
 	 * @return the customText is optional
@@ -425,14 +426,14 @@ public class Notification extends JPAEntity implements Serializable {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
             metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
-    
+
 
 	private String _hashTriggerAndMetric(Trigger trigger, Metric metric) {
 		requireArgument(trigger != null, "Trigger cannot be null.");
         requireArgument(metric != null, "Metric cannot be null");
-        
+
         return trigger.getId().toString() + "$$" + metric.getIdentifier();
 	}
-	
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
