@@ -31,19 +31,23 @@ angular.module('argus.directives.charts.lineChart', [])
         controller: ['$scope', 'Metrics', 'DownloadHelper', 'growl', function($scope, Metrics, DownloadHelper, growl) {
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
+                var dataHandler, filename, chartTitle;
+                if ($scope.chartConfig.title !== undefined && $scope.chartConfig.title.text !== undefined) {
+                    chartTitle = $scope.chartConfig.title.text;
+                } else {
+                    chartTitle = "data";
+                }
+                switch (queryFunction) {
+                    case "query":
+                        dataHandler = function (data) { return JSON.stringify(data.slice(0, data.length)); };
+                        filename = chartTitle + ".json";
+                        break;
+                    case "downloadCSV":
+                        dataHandler = function (data) { return data[0]; };
+                        filename = chartTitle + ".csv";
+                        break;
+                }
                 $scope.chartConfig.expressions.map(function (expression) {
-                    //TODO: need to have better way to name the downloaded file instead just "data.*"
-                    var dataHandler, filename;
-                    switch (queryFunction) {
-                        case "query":
-                            dataHandler = function (data) { return JSON.stringify(data.slice(0, data.length)); };
-                            filename = "data.json";
-                            break;
-                        case "downloadCSV":
-                            dataHandler = function (data) { return data[0]; };
-                            filename = "data.csv";
-                            break;
-                    }
                     growl.info("Downloading data...");
                     Metrics[queryFunction]({expression: expression}).$promise.then(function (data) {
                         DownloadHelper.downloadFile(dataHandler(data), filename);
