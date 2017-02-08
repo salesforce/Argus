@@ -212,3 +212,7 @@ require("./directives/UItools/stopEvent");
 require("./directives/UItools/ngConfirm");
 require("./directives/UItools/ngLoading");
 require("./directives/UItools/ngEnter");
+
+// css
+require("../css/main.css");
+
