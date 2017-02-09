@@ -42,8 +42,11 @@ import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -83,24 +86,38 @@ public class AlertResources extends AbstractResource {
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
-	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner) {
-		List<Alert> result = null;
+	private List<Alert> _getAlertsByOwner(String alertname, PrincipalUser owner) {
+		List<Alert> result;
 		if (alertname != null && !alertname.isEmpty()) {
+			result = new ArrayList<>();
 			Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
-
-			result = new ArrayList<Alert>();
 			if (alert != null) {
 				result.add(alert);
 			}
 		} else {
 			if(owner.isPrivileged()){
-				result = alertService.findAllAlerts();
+				result=alertService.findAllAlerts();
 			}else{
-				result = alertService.findAlertsByOwner(owner);
-				result.addAll(alertService.findSharedAlerts());
+				result=alertService.findAlertsByOwner(owner);
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Return both owners and shared alerts (if the shared flag is true).
+	 * @return  The list of shared alerts.
+	 */
+	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared) {
+		
+		Set<Alert> result = new HashSet<>();
+		
+		result.addAll(_getAlertsByOwner(alertname, owner));
+		if(shared){
+			result.addAll(alertService.findSharedAlerts());
+		}
+		
+		return new ArrayList<>(result);
 	}
 
 	/**
@@ -118,9 +135,10 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts' metadata.")
 	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req,
 			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName) {
+			@QueryParam(OWNER_NAME) String ownerName,
+			@QueryParam("shared") boolean shared) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner);
+		List<Alert> result = getAlertsObj(alertname, owner, shared);
 		return AlertDto.transformToDtoNoContent(result);
 	}
 
@@ -138,21 +156,10 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts.")
 	public List<AlertDto> getAlerts(@Context HttpServletRequest req,
 			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName) {
-		// List<Alert> result = null;
+			@QueryParam(OWNER_NAME) String ownerName,
+			@QueryParam("shared") boolean shared) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-
-		// if (alertname != null && !alertname.isEmpty()) {
-		//     Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
-
-		//     result = new ArrayList<Alert>();
-		//     if (alert != null) {
-		//         result.add(alert);
-		//     }
-		// } else {
-		//     result = owner.isPrivileged() ? alertService.findAllAlerts() : alertService.findAlertsByOwner(owner);
-		// }
-		List<Alert> result = getAlertsObj(alertname, owner);
+		List<Alert> result = getAlertsObj(alertname, owner, shared);
 		return AlertDto.transformToDto(result);
 	}
 

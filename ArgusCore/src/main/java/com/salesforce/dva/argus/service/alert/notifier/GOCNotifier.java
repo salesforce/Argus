@@ -35,6 +35,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -125,7 +126,7 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  lastNotified  The last message time. (typically current time)
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-			boolean srActionable,long lastNotified) {
+			boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -155,7 +156,7 @@ public class GOCNotifier extends AuditNotifier {
 					PostMethod post = null;
 
 					try {
-						post=getRequestMethod(refresh, gocData.getsm_Alert_Id__c());
+						post=getRequestMethod(refresh, triggeredOnMetric.hashCode() + " " + gocData.getsm_Alert_Id__c());
 						post.setRequestEntity(new StringRequestEntity(gocData.toJSON(), "application/json", null));
 
 						int respCode = httpclient.executeMethod(post);
@@ -245,7 +246,7 @@ public class GOCNotifier extends AuditNotifier {
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
 		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
-				context.getNotification().getSRActionable(), context.getTriggerFiredTime());
+				context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
 	/**
@@ -267,6 +268,7 @@ public class GOCNotifier extends AuditNotifier {
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
 		sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		sb.append("\n");

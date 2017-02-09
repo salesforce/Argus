@@ -59,7 +59,7 @@ public class AlertServiceTest extends AbstractTest {
     public void testGetAlerts() throws IOException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
-            List<Alert> result = alertService.getAlerts();
+            List<Alert> result = alertService.getAlerts(false);
             List<Alert> expected = Arrays.asList(new Alert[] { _constructPersistedAlert() });
 
             assertEquals(expected, result);

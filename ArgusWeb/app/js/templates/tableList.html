@@ -21,7 +21,7 @@
         </span>
     </div>
     <div class="col-md-1 text-right">
-        <a class="btn btn-primary btn-sm" ng-click="refreshData()">
+        <a class="btn btn-primary btn-sm" ng-click="refreshList()">
           <span class="glyphicon glyphicon-refresh"></span>
         </a>
     </div>
@@ -48,11 +48,11 @@
     <td ng-if="colName.ownerName">{{item.ownerName}}</td>
     <td ng-if="colName.state" class="text-center">
         <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled'
-                ng-click='enableItem(item, true)'>
+                ng-click='enableItem(item, true)' ng-disabled="isDisabled(item)">
             <i class="glyphicon glyphicon-play"></i>
         </button>
         <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' ng-show='item.enabled'
-                ng-click='enableItem(item, false)'>
+                ng-click='enableItem(item, false)' ng-disabled="isDisabled(item)">
             <i class="glyphicon glyphicon-pause"></i>
         </button>
     </td>
