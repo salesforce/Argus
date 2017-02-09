@@ -153,19 +153,28 @@ public abstract class TSDBEntity implements Serializable {
     public void setTags(Map<String, String> tags) {
         _tags.clear();
         if (tags != null) {
+        	requireArgument(tags.size() <= 7, "No. of tags = " + tags.size() + ". Too many tags!!!");
             Map<String, String> updatedTags = new TreeMap<>();
 
             for (Map.Entry<String, String> entry : tags.entrySet()) {
                 String key = entry.getKey();
+                String value = entry.getValue();
 
                 requireArgument(!Metric.ReservedField.isReservedField(key), MessageFormat.format("Tag {0} is a reserved tag name.", key));
-                updatedTags.put(key, entry.getValue());
+                _validateTag(entry.getKey(), entry.getValue());
+                updatedTags.put(key, value);
             }
             _tags.putAll(updatedTags);
         }
     }
 
-    /**
+    private void _validateTag(String key, String value) {
+    	requireArgument(key != null && !key.isEmpty(), "Tag key cannot be null or empty");
+        requireArgument(value != null && !value.isEmpty(), "Tag value null or empty for tag key: " + key);
+        //TODO: In future, we may want to validate that the tags contain only permissible characters.
+	}
+
+	/**
      * Sets a single tag. The tag may not use any of the reserved tag names.
      *
      * @param  key    The name of the tag. May not be null or empty.
@@ -237,6 +246,7 @@ public abstract class TSDBEntity implements Serializable {
         if (value == null || value.isEmpty()) {
             _tags.remove(key);
         } else {
+        	requireArgument(_tags.size() < 7 || _tags.containsKey(key), "No. of tags = " + _tags.size() + ". Cannot add more tags!!!");
             _tags.put(key, value);
         }
     }

@@ -42,6 +42,32 @@ module.exports = function(grunt) {
 					src: ['./config/config.js'],
 					dest: './app/js/'
 				}]
+			},
+			qa: {
+				options: {
+					patterns: [{
+						json: grunt.file.readJSON('./config/qa.json')
+					}]
+				},
+				files: [{
+					expand: true,
+					flatten: true,
+					src: ['./config/config.js'],
+					dest: './app/js/'
+				}]
+			},
+			integration: {
+				options: {
+					patterns: [{
+						json: grunt.file.readJSON('./config/integration.json')
+					}]
+				},
+				files: [{
+					expand: true,
+					flatten: true,
+					src: ['./config/config.js'],
+					dest: './app/js/'
+				}]
 			}
 		}
 	});

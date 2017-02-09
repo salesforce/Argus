@@ -1,9 +1,9 @@
-angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
-.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage',
-    function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage) {
-        $http.pendingRequests = []; //This line should be deleted.
-		$scope.dashboardEditable = false;
+'use strict';
 
+angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
+.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
+    function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage, Auth) {
+        $scope.dashboardNotEditable = true;
         $scope.isDashboardDirty = function () {
             return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
         };
@@ -16,8 +16,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
                     growl.success(('Updated "') + dashboard.name + '"');
                     $scope.fetchHistory();
                     // remove existing session storage for update
-                    delete $sessionStorage.cachedDashboards;
-                    console.log("delete session storage");
+                    if ($sessionStorage.dashboards !== undefined) delete $sessionStorage.dashboards.cachedData;
                 }, function (error) {
                     growl.error('Failed to update "' + dashboard.name + '"');
                 });
@@ -71,7 +70,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
         if ($scope.dashboardId > 0) {
             Dashboards.get({dashboardId: $scope.dashboardId}, function (dashboard) {
                 $scope.dashboard = dashboard;
-                $scope.dashboardEditable = isDashboardEditable();
+                $scope.dashboardNotEditable = Auth.isDisabled(dashboard);
                 $scope.unmodifiedDashboard = angular.copy(dashboard);
             }, function (error) {
                 growl.error('Failed to get dashboard "' + $scope.dashboardId + '"');
@@ -84,11 +83,4 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
         }
 
         $scope.resetDashboard();
-
-        function isDashboardEditable() {
-        	var remoteUser = Storage.get('user');
-        	if(remoteUser.privileged || remoteUser.userName === $scope.dashboard.ownerName)
-        		return true;
-        	return false;
-        }
     }]);

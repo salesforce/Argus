@@ -43,7 +43,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 	
 	//~ Static fields/initializers *******************************************************************************************************************
 	
-	private static final byte[] TABLENAME = "history".getBytes(Charset.forName("UTF-8"));
+	private static byte[] tablename;
     private static final byte[] COLUMN_FAMILY = "f".getBytes(Charset.forName("UTF-8"));
     private static final byte[] COLUMN_QUALIFIER = "c".getBytes(Charset.forName("UTF-8"));
     private static final char ROWKEY_SEPARATOR = ':';
@@ -70,8 +70,9 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		super(systemConfig);
         _client = factory.getClient();
         _mapper = new ObjectMapper();
-        _syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), 
-        		Property.HBASE_SYNC_PUT.getDefaultValue()));
+        _syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
+        tablename = systemConfig.getValue(Property.HBASE_TABLE.getName(), Property.HBASE_TABLE.getDefaultValue())
+        			.getBytes(Charset.forName("UTF-8"));
 	}
     
     
@@ -105,7 +106,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		
 		try {
 			byte[] value = _mapper.writeValueAsBytes(Arrays.asList(history));
-			final PutRequest put = new PutRequest(TABLENAME, Bytes.toBytes(rowKey), COLUMN_FAMILY, 
+			final PutRequest put = new PutRequest(tablename, Bytes.toBytes(rowKey), COLUMN_FAMILY, 
 					COLUMN_QUALIFIER, value);
 			
 			Deferred<Object> deferred = _client.put(put);
@@ -114,7 +115,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			deferred.addCallback(new Callback<Object, Object>() {
 				@Override
 				public Object call(Object arg) throws Exception {
-					_logger.trace(MessageFormat.format("Put to {0} successful.", TABLENAME));
+					_logger.trace(MessageFormat.format("Put to {0} successful.", tablename));
 					return null;
 				}
 			});
@@ -218,7 +219,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 	
 	private List<History> _scanRecords(BigInteger entityId, int limit, ScanFilter filter) {
 		
-		final Scanner scanner = _client.newScanner(TABLENAME);
+		final Scanner scanner = _client.newScanner(tablename);
 
 		String startRow = entityId.toString();
         String stopRow = _plusOne(startRow);
@@ -329,7 +330,8 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
      */
     public enum Property {
     	
-        HBASE_SYNC_PUT("service.property.history.hbase.sync.put", "true");
+        HBASE_SYNC_PUT("service.property.history.hbase.sync.put", "true"),
+    	HBASE_TABLE("service.property.history.hbase.table", "history");
 
         private final String _name;
         private final String _defaultValue;

@@ -3,7 +3,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-webservices</artifactId>
@@ -100,6 +100,22 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <resources>
+                        <resource>
+                            <targetPath>/</targetPath>
+                            <directory>${project.build.directory}</directory>
+                            <include>${project.build.finalName}.war</include>
+                        </resource>
+                    </resources>
+                    <buildArgs>
+                        <WAR>${project.build.finalName}.war</WAR>
+                    </buildArgs>
+                </configuration>
             </plugin>
         </plugins>
         <resources>

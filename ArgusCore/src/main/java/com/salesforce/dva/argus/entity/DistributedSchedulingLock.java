@@ -46,9 +46,6 @@ import javax.persistence.OptimisticLockException;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 
 /**
@@ -61,10 +58,6 @@ import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 @Table(name = "DISTRIBUTED_SCHEDULING_LOCK")
 
 public class DistributedSchedulingLock { 
-	
-	 //~ Static fields/initializers *******************************************************************************************************************
-	
-	 private static final Logger LOGGER = LoggerFactory.getLogger(GlobalInterlock.class);
 	
 	 //~ Instance fields ******************************************************************************************************************************
 	 
@@ -143,13 +136,13 @@ public class DistributedSchedulingLock {
 			        	 distributedSchedulingLock = new DistributedSchedulingLock(id);
 			        	 distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, type)); 
-			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMinutes(System.currentTimeMillis()+schedulingRefreshInterval)); 
+			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMiddleOfMinute(System.currentTimeMillis()+schedulingRefreshInterval)); 
 			        	 distributedSchedulingLock = em.merge(distributedSchedulingLock);
 			        	 em.flush();
 			         }else if(System.currentTimeMillis() > distributedSchedulingLock.getNextScheduleStartTime()){
 			        	 distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 			        	 distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em,type)); 
-			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMinutes(System.currentTimeMillis()+schedulingRefreshInterval));
+			        	 distributedSchedulingLock.setNextScheduleStartTime(_toMiddleOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
 			        	 distributedSchedulingLock = em.merge(distributedSchedulingLock);
 			        	 em.flush();
 			         }else{
@@ -181,8 +174,10 @@ public class DistributedSchedulingLock {
 			 }
 	    }
 
-		 private static long _toMinutes(long millis){
-			 return millis-(millis % (60*1000));
+		 private static long _toMiddleOfMinute(long millis){
+			 /* Next schedule refresh time is middle of minute so jobs coinciding with minute boundary are still picked up 
+			 when old scheduler instance is deleted and new scheduler instance created at middle of minute */
+			 return millis-(millis % (60*1000)) + 30*1000;
 		 }
 	    
 		public Long getId() {

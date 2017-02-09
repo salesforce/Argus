@@ -37,10 +37,8 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import com.salesforce.dva.argus.system.SystemException;
 
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -64,14 +62,6 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(1))).thenReturn(records);
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
-        
-        try {
-			Field loggerField = discoveryService.getClass().getDeclaredField("_logger");
-			loggerField.setAccessible(true);
-			loggerField.set(discoveryService, LoggerFactory.getLogger(DefaultDiscoveryService.class));
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -125,14 +115,6 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
         
-        try {
-			Field loggerField = discoveryService.getClass().getDeclaredField("_logger");
-			loggerField.setAccessible(true);
-			loggerField.set(discoveryService, LoggerFactory.getLogger(DefaultDiscoveryService.class));
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
 
@@ -158,7 +140,6 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         List<MetricSchemaRecord> records = new ArrayList<>();
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), anyInt())).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
-        _setLogger(discoveryService);
 
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
@@ -176,7 +157,6 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         List<MetricSchemaRecord> records = new ArrayList<>();
         when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), anyInt())).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
-        _setLogger(discoveryService);
     	
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("recordType", "A");
@@ -187,16 +167,6 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         assertEquals(1, queries.size());
         assertEquals(query, queries.get(0));
     }
-    
-    private void _setLogger(DefaultDiscoveryService discoveryService) {
-		try {
-			Field loggerField = discoveryService.getClass().getDeclaredField("_logger");
-			loggerField.setAccessible(true);
-			loggerField.set(discoveryService, LoggerFactory.getLogger(DefaultDiscoveryService.class));
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
-			e.printStackTrace();
-		}
-	}
     
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
