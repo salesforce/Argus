@@ -34,7 +34,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
 
                             // process mertricExpression from controls if present
                             if ( controls ) {
-                                metricExpression = ChartDataProcessingService.augmentExpressionWithControlsData(event, metricExpression, controls);
+                                metricExpression = ChartDataProcessingService.augmentExpressionWithControlsData(metricExpression, controls);
                             }
                         }
                     }
