@@ -344,22 +344,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate an alert : {0}. Reason: {1}", alert.getName(), mde.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), mde.getMessage());
 				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, mde.toString(), JobStatus.FAILURE, jobEndTime - jobStartTime);
+				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
-				try {
-					_appendMessageNUpdateHistory(history, ex.toString(), JobStatus.FAILURE, jobEndTime - jobStartTime);
-					_logger.warn("Failed to evaluate alert : {}. Reason: {}", alert, ex.getMessage());
-				} finally {
-					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-						_sendEmailToAdmin(alert, alertId, ex);
-					}
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), ex.getMessage());
+				_logger.warn(logMessage);
+				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+				
+				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+					_sendEmailToAdmin(alert, alertId, ex);
 				}
+				
 			} finally {
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
 				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
@@ -380,14 +380,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
 			for(Metric m : metrics) {
 				if(triggerFiredTimesForMetrics.containsKey(m)) {
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired.", trigger.getName(), m.getIdentifier());
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						_sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m));
 					} else {
-						//This is the case where the trigger fired but the notification was on cooldown for this trigger,metric combination. Do nothing. 
-						;
+						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
+						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					}
 				} else {
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.", trigger.getName(), m.getIdentifier());
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
@@ -432,15 +436,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Map<Metric, Long> triggerFiredTimesForMetrics = new HashMap<>(metrics.size());
 			for(Metric metric : metrics) {
 				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric);
-
+				
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
 					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, null);
-				} else {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.",
-							trigger.getName(), metric.getIdentifier());
-					_logger.info(logMessage);
-					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 				}
 			}
 			triggerFiredTimesAndMetricsByTrigger.put(trigger.getId(), triggerFiredTimesForMetrics);
@@ -485,12 +484,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void _updateNotificationSetActiveStatus(Trigger trigger, Metric metric, History history, Notification notification) {
-		String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired for the notification {2}.",
-				trigger.getName(), getMetricExpression(metric), notification.getName());
-
-		_logger.info(logMessage);
-		_appendMessageNUpdateHistory(history, logMessage, null, 0);
-
 		notification.setCooldownExpirationByTriggerAndMetric(trigger, metric, System.currentTimeMillis() + notification.getCooldownPeriod());
 		notification.setActiveForTriggerAndMetric(trigger, metric, true);
 		notification = mergeEntity(_emProvider.get(), notification);
@@ -783,21 +776,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			result = String.valueOf(dateInSeconds);
 		}
 		return result;
-	}
-
-	private String getMetricExpression(Metric metric) {
-		StringBuilder result = new StringBuilder();
-
-		result.append("{Scope=");
-		result.append(metric.getScope());
-		result.append(", Metric=");
-		result.append(metric.getMetric());
-		if (!metric.getTags().isEmpty()) {
-			result.append(", Tags:");
-			result.append(metric.getTags().entrySet());
-		}
-		result.append("}");
-		return result.toString();
 	}
 
 
