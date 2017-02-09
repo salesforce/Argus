@@ -50,12 +50,12 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             color: 'Maroon'
                         }];
                     }
-                    $scope.updateChart(tempSeries, annotationInfo);
+                    $scope.updateChart(tempSeries, annotationInfo, [$scope.expression]);
                     $scope.chartLoaded = true;
                 }, function (error) {
                     // prevent error.data.message being null breaks the message
                     if (error.data.message === null) {
-                        error.data.message = "";
+                        error.data.message = "Something was wrong. No info.";
                     } else {
                        growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
                     }
@@ -65,13 +65,13 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                         name: error.config.params.expression,
                         color: 'Black'
                     }];
-                    $scope.updateChart(tempSeries, annotationInfo);
+                    $scope.updateChart(tempSeries, annotationInfo, []);
                     $scope.chartLoaded = true;
                 });
             } else {
                 // empty expression
                 $scope.checkMetricExpression();
-                $scope.updateChart(tempSeries, annotationInfo);
+                $scope.updateChart(tempSeries, annotationInfo, []);
                 $scope.chartLoaded = true;
             }
         };
@@ -200,11 +200,14 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (series, annotationInfo) {
+        $scope.updateChart = function (series, annotationInfo, expressions) {
             // if the metric expression is not empty
             if (series && series.length > 0) {
                 var chartScope = $scope.$new(false);
-                chartScope.chartConfig = {chartId: 'container'};
+                chartScope.chartConfig = {
+                    chartId: 'container',
+                    expressions: expressions
+                };
                 chartScope.dateConfig = {};
                 chartScope.series = series;
 

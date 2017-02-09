@@ -451,7 +451,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void _sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime) {
 		
-		String value = metric.getDatapoints().get(triggerFiredTime);
+		double value = metric.getDatapoints().get(triggerFiredTime);
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 		notifier.sendNotification(context);
@@ -468,7 +468,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	public void _sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
-		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), "0", metric);
+		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		notifier.clearNotification(context);
@@ -576,9 +576,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
-			Map<Long, String> datapoints = new HashMap<>();
+			Map<Long, Double> datapoints = new HashMap<>();
 			// convert timestamp to nearest minute since cron is Least scale resolution of minute
-			datapoints.put(1000*60 * (System.currentTimeMillis()/(1000 *60)), "1");
+			datapoints.put(1000*60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
 			metric.setTag("host",SystemConfiguration.getHostname());
 			metric.addDatapoints(datapoints);
@@ -697,13 +697,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * @return  The time stamp of the last data point in metric at which the trigger was decided to be fired.
 	 */
 	public Long getTriggerFiredDatapointTime(Trigger trigger, Metric metric) {
-		List<Map.Entry<Long, String>> sortedDatapoints = new ArrayList<>(metric.getDatapoints().entrySet());
+		List<Map.Entry<Long, Double>> sortedDatapoints = new ArrayList<>(metric.getDatapoints().entrySet());
 
 		if (metric.getDatapoints().isEmpty()) {
 			return null;
 		} else if (metric.getDatapoints().size() == 1) {
 			if (trigger.getInertia().compareTo(0L) <= 0) {
-				if (Trigger.evaluateTrigger(trigger, new Double(sortedDatapoints.get(0).getValue()))) {
+				if (Trigger.evaluateTrigger(trigger, sortedDatapoints.get(0).getValue())) {
 					return sortedDatapoints.get(0).getKey();
 				} else {
 					return null;
@@ -713,18 +713,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
-		Collections.sort(sortedDatapoints, new Comparator<Map.Entry<Long, String>>() {
+		Collections.sort(sortedDatapoints, new Comparator<Map.Entry<Long, Double>>() {
 
 			@Override
-			public int compare(Entry<Long, String> e1, Entry<Long, String> e2) {
+			public int compare(Entry<Long, Double> e1, Entry<Long, Double> e2) {
 				return e1.getKey().compareTo(e2.getKey());
 			}
 		});
 
-		int endIndex=sortedDatapoints.size();
+		int endIndex = sortedDatapoints.size();
 
-		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0;startIndex--){
-			if(Trigger.evaluateTrigger(trigger, new Double(sortedDatapoints.get(startIndex).getValue()))){
+		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
+			if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
 				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
 				if(interval>=trigger.getInertia())
 					return sortedDatapoints.get(endIndex-1).getKey();
@@ -856,7 +856,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private long coolDownExpiration;
 		private Notification notification;
 		private long triggerFiredTime;
-		private String triggerEventValue;
+		private double triggerEventValue;
 		private Metric triggeredMetric;
 
 		/**
@@ -868,7 +868,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  triggerFiredTime   The time stamp of the last data point in metric at which the trigger was decided to be fired.
 		 * @param  triggerEventValue  The value of the metric at the event trigger time.
 		 */
-		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, String triggerEventValue, Metric triggeredMetric) {
+		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, double triggerEventValue, Metric triggeredMetric) {
 			this.alert = alert;
 			this.trigger = trigger;
 			this.coolDownExpiration = notification.getCooldownExpirationByTriggerAndMetric(trigger, triggeredMetric);
@@ -976,7 +976,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @return  The event trigger value.
 		 */
-		public String getTriggerEventValue() {
+		public double getTriggerEventValue() {
 			return triggerEventValue;
 		}
 
@@ -985,7 +985,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *
 		 * @param  triggerEventValue  The event trigger value.
 		 */
-		public void setTriggerEventValue(String triggerEventValue) {
+		public void setTriggerEventValue(double triggerEventValue) {
 			this.triggerEventValue = triggerEventValue;
 		}
 

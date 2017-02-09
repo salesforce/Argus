@@ -63,50 +63,24 @@ public class MaxTransformTest {
         maxTransform.transform(metrics);
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void testMaxTransformWithNotDoubleValue() {
-        Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
-
-        datapoints_1.put(1000L, "a");
-
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
-
-        metric_1.setDatapoints(datapoints_1);
-
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
-
-        datapoints_2.put(1000L, "10.0");
-
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
-
-        metric_2.setDatapoints(datapoints_2);
-
-        List<Metric> metrics = new ArrayList<Metric>();
-
-        metrics.add(metric_1);
-        metrics.add(metric_2);
-        maxTransform.transform(metrics);
-    }
-
     @Test
     public void testMaxTransformWithCommonDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10.0");
-        datapoints_2.put(2000L, "100.0");
-        datapoints_2.put(3000L, "1000.0");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -117,11 +91,11 @@ public class MaxTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "10.0");
-        expected.put(2000L, "100.0");
-        expected.put(3000L, "1000.0");
+        expected.put(1000L, 10.0);
+        expected.put(2000L, 100.0);
+        expected.put(3000L, 1000.0);
 
         List<Metric> result = maxTransform.transform(metrics);
 
@@ -132,21 +106,21 @@ public class MaxTransformTest {
     @Test
     public void testMaxTransformWithNoCommonDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10.0");
-        datapoints_2.put(200L, "100.0");
-        datapoints_2.put(300L, "1000.0");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -157,7 +131,7 @@ public class MaxTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<>();
+        Map<Long, Double> expected = new HashMap<>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
@@ -171,21 +145,21 @@ public class MaxTransformTest {
     @Test
     public void testMaxTransformWithSomeCommonDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10.0");
-        datapoints_2.put(200L, "100.0");
-        datapoints_2.put(3000L, "1000.0");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -196,11 +170,11 @@ public class MaxTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
-        expected.put(3000L, "1000.0");
+        expected.put(3000L, 1000.0);
 
         List<Metric> result = maxTransform.transform(metrics);
 
@@ -211,20 +185,20 @@ public class MaxTransformTest {
     @Test
     public void testMaxTransformWithNullDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
-        datapoints_1.put(3000L, "3.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10.0");
-        datapoints_2.put(200L, "100.0");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
         datapoints_2.put(3000L, null);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -236,11 +210,11 @@ public class MaxTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
-        expected.put(3000L, "3.0");
+        expected.put(3000L, 3.0);
 
         List<Metric> result = maxTransform.transform(metrics);
 
@@ -251,20 +225,20 @@ public class MaxTransformTest {
     @Test
     public void testMaxTransformWithAllMissingDPsAtTimestamp() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1.0");
-        datapoints_1.put(2000L, "2.0");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, null);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10.0");
-        datapoints_2.put(2000L, "100.0");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
         datapoints_2.put(3000L, null);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -276,10 +250,10 @@ public class MaxTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "10.0");
-        expected.put(2000L, "100.0");
+        expected.put(1000L, 10.0);
+        expected.put(2000L, 100.0);
         expected.put(3000L, null);
 
         List<Metric> result = maxTransform.transform(metrics);

@@ -63,12 +63,12 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         parseConstants(constants);
         return _calculateNthPercentile(values, percentile);
     }
@@ -103,12 +103,12 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         parseConstants(constants);
         return _calculateNthPercentileForOneMetric(originalDatapoints, percentile, getWindowInSeconds(windowSize));
     }
@@ -118,13 +118,13 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         return TransformFactory.Function.PERCENTILE.name();
     }
 
-    private Map<Long, String> _calculateNthPercentileForOneMetric(Map<Long, String> originalDatapoints, Double percentileValue,
+    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue,
         long windowInSeconds) {
-        Map<Long, String> percentileDatapoints = new TreeMap<>();
+        Map<Long, Double> percentileDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-            if (entry.getValue() == null || entry.getValue().equals("")) {
-                entry.setValue(String.valueOf(0.0));
+        for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+            if (entry.getValue() == null) {
+                entry.setValue(0.0);
             }
         }
 
@@ -133,11 +133,11 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         originalDatapoints.keySet().toArray(timestamps);
 
         // TreeSet allowing duplicate elements.
-        TreeMultiset<String> values = TreeMultiset.create(new Comparator<String>() {
+        TreeMultiset<Double> values = TreeMultiset.create(new Comparator<Double>() {
 
                 @Override
-                public int compare(String s1, String s2) {
-                    return Double.compare(Double.parseDouble(s1), Double.parseDouble(s2));
+                public int compare(Double d1, Double d2) {
+                    return d1.compareTo(d2);
                 }
             });
 
@@ -180,15 +180,12 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         return percentileDatapoints;
     }
 
-    private String _calculateNthPercentile(List<String> values, Double percentileValue) {
-        Collections.sort(values, new Comparator<String>() {
+    private Double _calculateNthPercentile(List<Double> values, Double percentileValue) {
+        Collections.sort(values, new Comparator<Double>() {
 
                 @Override
-                public int compare(String s1, String s2) {
-                    double d1 = Double.parseDouble(s1);
-                    double d2 = Double.parseDouble(s2);
-
-                    return Double.compare(d1, d2);
+                public int compare(Double d1, Double d2) {
+                    return d1.compareTo(d2);
                 }
             });
 
@@ -198,11 +195,11 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     // O(n) operation to return percentile value from a sorted list.
-    private String _calculateNthPercentile(TreeMultiset<String> values, Double percentileValue) {
+    private Double _calculateNthPercentile(TreeMultiset<Double> values, Double percentileValue) {
         int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
         int index = 1;
 
-        for (String value : values) {
+        for (Double value : values) {
             if (index++ == ordinalRank) {
                 return value;
             }
