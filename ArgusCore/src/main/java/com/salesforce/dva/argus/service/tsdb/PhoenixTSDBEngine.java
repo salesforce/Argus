@@ -9,14 +9,21 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.phoenix.schema.TableAlreadyExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemException;
@@ -26,7 +33,6 @@ public class PhoenixTSDBEngine {
 	protected Logger _logger = LoggerFactory.getLogger(getClass());
 	
 	public PhoenixTSDBEngine() {
-		
 	}
 	
 	void createOrUpdateView(Connection connection, Metric metric) {
@@ -34,24 +40,13 @@ public class PhoenixTSDBEngine {
 		String viewName = getPhoenixViewName(metric.getScope(), metric.getMetric());
 		
 		String createViewSql = MessageFormat.format("CREATE VIEW IF NOT EXISTS {0} ({1}) AS SELECT * "
-				+ "FROM ARGUS.METRICS APPEND_ONLY_SCHEMA = true, UPDATE_CACHE_FREQUENCY=900000)", viewName, generateCols(metric.getTags()));
-		_logger.info("Craete View query: " + createViewSql);
+				+ "FROM ARGUS.METRICS APPEND_ONLY_SCHEMA = true, UPDATE_CACHE_FREQUENCY=900000", viewName, generateCols(metric.getTags()));
+		_logger.info("Create View query: " + createViewSql);
 		
 		Statement stmt = null;
 		try {
 			stmt = connection.createStatement();
 			stmt.executeUpdate(createViewSql);
-		} catch(TableAlreadyExistsException taee) {
-			//View exists
-			for(String tagKey : metric.getTags().keySet()) {
-				String addColIfNotExistsSql = MessageFormat.format("ALTER VIEW {0} ADD IF NOT EXISTS {1} VARCHAR PRIMARY KEY", viewName, tagKey);
-				_logger.info("Alter view add column query: " + addColIfNotExistsSql);
-				try {
-					stmt.executeUpdate(addColIfNotExistsSql);
-				} catch (SQLException e) {
-					throw new SystemException(e);
-				}
-			}
 		} catch(SQLException sqle) {
 			 throw new SystemException("Database access error occured or "
 			 		+ "createStatement() was called on a closed connection.", sqle);
@@ -160,7 +155,6 @@ public class PhoenixTSDBEngine {
 					metric.setDatapoints(datapoints);
 					metric.setDisplayName(displayName);
 					metric.setUnits(units);
-					
 					metrics.put(identifier, metric);
 				}
 			}
@@ -196,11 +190,22 @@ public class PhoenixTSDBEngine {
 		for(Map.Entry<String, String> tagEntry : query.getTags().entrySet()) {
 			tagkeys += ", \"" + tagEntry.getKey() + "\"";
 			//TODO: Add support for tagKey=* and tagKey=a|b
-			tagWhereClaue += " AND \"" + tagEntry.getKey() + "\" IN ('" + tagEntry.getValue() + "')";
+			String tagValue = tagEntry.getValue();
+			if (tagValue.equals("*")) {
+				// no need to filter on tagkey
+			} else if (tagValue.contains("|")) {
+				List<String> tagList = Arrays.asList(tagValue.split("\\|"));
+				String tagValues = tagList.stream()
+				  .map((s) -> "'" + s + "'")
+				  .collect(Collectors.joining(", "));
+				tagWhereClaue += " AND \"" + tagEntry.getKey() + "\" IN (" + tagValues + ")";
+			} else {
+				tagWhereClaue += " AND \"" + tagEntry.getKey() + "\" IN ('" + tagValue + "')";
+			}
 		}
 		
 		String selectSql = MessageFormat.format("SELECT {0}(val) val, ts epoch_time, display_name, units {1} FROM {2}"
-				+ " WHERE ts < ? AND ts >= ? {3}"
+				+ " WHERE ts <= ? AND ts >= ? {3}"
 				+ " GROUP BY epoch_time, display_name, units {1}", agg, tagkeys, viewName, tagWhereClaue);
 		
 		if(query.getDownsampler() != null) {
