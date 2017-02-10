@@ -127,7 +127,7 @@ public class AliasTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
 }
