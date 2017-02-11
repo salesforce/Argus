@@ -1,5 +1,5 @@
 #
-# Argus web services
+# Argus web services 
 #
 BuildArch:     noarch
 Name:          argusws
