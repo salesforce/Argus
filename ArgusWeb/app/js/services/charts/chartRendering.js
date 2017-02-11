@@ -54,6 +54,10 @@ angular.module('argus.services.charts.rendering', [])
                     var lowValNum = Number(attributes.lo);
                     var highValNum = Number(attributes.hi);
 
+                    var errorMsg = 'value in ag-status-indicator is not defined correctly';
+                    if (isNaN(lowValNum)) console.log('lo ' + errorMsg);
+                    if (isNaN(highValNum)) console.log('hi ' + errorMsg);
+
 					if (lastStatusValNum < lowValNum) {
 							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
 					} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
