@@ -5,7 +5,7 @@ BuildArch:     noarch
 Name:          argusws
 Version:       4.3
 Release:       1 
-License:       GPL+
+License:       BSD-3-Clause
 Group:         Applications/System
 Summary:       Argus web services
 Distribution:  Salesforce.com, Inc.
