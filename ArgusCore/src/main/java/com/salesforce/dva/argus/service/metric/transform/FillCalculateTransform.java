@@ -61,14 +61,14 @@ public class FillCalculateTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, String> fillCalculateMetricTransform(Metric metric, String calculationType) {
+    private static Map<Long, Double> fillCalculateMetricTransform(Metric metric, String calculationType) {
         // Calculate min, max, avg, dev, or a percentile value
-        String result = calculateResult(metric, calculationType);
+        Double result = calculateResult(metric, calculationType);
 
         // return a new time series with the constant values for each time stamp
-        Map<Long, String> resultMap = new TreeMap<>();
+        Map<Long, Double> resultMap = new TreeMap<>();
 
-        for (Map.Entry<Long, String> entry : metric.getDatapoints().entrySet()) {
+        for (Map.Entry<Long, Double> entry : metric.getDatapoints().entrySet()) {
             Long timestamp = entry.getKey();
 
             resultMap.put(timestamp, result);
@@ -76,10 +76,10 @@ public class FillCalculateTransform implements Transform {
         return resultMap;
     }
 
-    private static String calculateResult(Metric metric, String calculationType) {
+    private static Double calculateResult(Metric metric, String calculationType) {
         // Find the values from metric
-        List<String> valueList = new ArrayList<>(metric.getDatapoints().values());
-        String result = null;
+        List<Double> valueList = new ArrayList<>(metric.getDatapoints().values());
+        Double result = null;
 
         // if percentile transform requested, parse the string p0...p100.
         String rex = "^[pP](100|[0-9]{1,2})$";
@@ -149,14 +149,14 @@ public class FillCalculateTransform implements Transform {
 
             for (Metric metric : fillCalculateMetricList) {
                 Transform fillTransform = new FillTransform();
-                String calculateResult = calculateResult(metric, calculationType);
+                Double calculateResult = calculateResult(metric, calculationType);
 
                 // replace the 3rd value of constants with results.
                 List<String> newConstants = new ArrayList<String>();
 
                 newConstants.add(constants.get(1));
                 newConstants.add(constants.get(2));
-                newConstants.add(calculateResult);
+                newConstants.add(String.valueOf(calculateResult));
 
                 List<Metric> singleMetric = new ArrayList<>();
 

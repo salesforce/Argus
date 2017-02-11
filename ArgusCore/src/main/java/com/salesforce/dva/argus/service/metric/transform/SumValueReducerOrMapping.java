@@ -49,17 +49,17 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String reduce(List<String> values) {
+    public Double reduce(List<Double> values) {
         return Reducers.sumReducer(values);
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for sum transform, only exactly one constant allowed.");
 
@@ -69,7 +69,7 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
             return originalDatapoints.entrySet().stream()
                     .collect(Collectors.toMap(
                             Map.Entry::getKey,
-                            e -> String.valueOf(Double.parseDouble(e.getValue()) + addend)
+                            e -> e.getValue() + addend
                     ));
         } catch (NullPointerException|NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to sum transform", nfe);
@@ -77,7 +77,7 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public String reduce(List<String> values, List<String> constants) {
+    public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Sum Transform with reducer is not supposed to be used without a constant");
     }
 

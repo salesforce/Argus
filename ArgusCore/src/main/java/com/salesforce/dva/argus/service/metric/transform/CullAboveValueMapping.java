@@ -55,12 +55,12 @@ public class CullAboveValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Cull Above Transform needs a limit and a type.");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
         SystemAssert.requireArgument(constants.size() == 2, "Cull Above Transform must provide exactly 2 constants which are limit and type.");
 
@@ -73,15 +73,15 @@ public class CullAboveValueMapping implements ValueMapping {
         }
 
         final Double pivot = type.equals(PERCENTILE) ? findPivot(originalDatapoints, limit) : limit;
-        Predicate<Map.Entry<Long, String>> isAbove = new Predicate<Map.Entry<Long, String>>() {
+        Predicate<Map.Entry<Long, Double>> isAbove = new Predicate<Map.Entry<Long, Double>>() {
 
                 @Override
-                public boolean apply(Map.Entry<Long, String> datapoint) {
-                    return Double.parseDouble(datapoint.getValue()) <= pivot;
+                public boolean apply(Map.Entry<Long, Double> datapoint) {
+                    return datapoint.getValue() <= pivot;
                 }
             };
 
-        Map<Long, String> result = new HashMap<Long, String>();
+        Map<Long, Double> result = new HashMap<>();
 
         result.putAll(Maps.filterEntries(originalDatapoints, isAbove));
         return result;
@@ -96,12 +96,12 @@ public class CullAboveValueMapping implements ValueMapping {
      * If type is percentile, find out the estimate of the limit(th) percentile in the datapoint sorted values. Then execute the same as type is
      * value. That means to cull the elements greater than value or pivotValue prerequisite: array must be sorted
      */
-    private Double findPivot(Map<Long, String> datapoints, Double limit) {
+    private Double findPivot(Map<Long, Double> datapoints, Double limit) {
         double[] doubleValues = new double[datapoints.size()];
         int k = 0;
 
-        for (Map.Entry<Long, String> entry : datapoints.entrySet()) {
-            doubleValues[k] = Double.parseDouble(entry.getValue());
+        for (Map.Entry<Long, Double> entry : datapoints.entrySet()) {
+            doubleValues[k] = entry.getValue();
             k++;
         }
         Arrays.sort(doubleValues);

@@ -148,11 +148,11 @@ public abstract class WardenNotifier extends DefaultNotifier {
         PrincipalUser wardenUser = getWardenUser(alert.getName());
         Metric metric = null;
 
-        Map<Long, String> datapoints = new HashMap<>();
+        Map<Long, Double> datapoints = new HashMap<>();
 
         metric = new Metric(Counter.WARDEN_TRIGGERS.getScope(), Counter.WARDEN_TRIGGERS.getMetric());
         metric.setTag("user", wardenUser.getUserName());
-        datapoints.put(context.getTriggerFiredTime(), "1");
+        datapoints.put(context.getTriggerFiredTime(), 1.0);
         metric.setDatapoints(datapoints);
         _tsdbService.putMetrics(Arrays.asList(new Metric[] { metric }));
 
