@@ -42,14 +42,20 @@ angular.module('argus.services.charts.dateHandler', [])
     // assuming series' data is sorted already
     this.getStartTimestamp = function(series) {
         var allStartTimestamp = series.map(function(item) {
-            return item.data[0][0];
+            // error checking: data field can be empty
+            if (item.data && item.data.length > 0) {
+                return item.data[0][0];
+            }
         });
         return Math.min.apply(null, allStartTimestamp);
     };
 
     this.getEndTimestamp = function(series) {
         var allStartTimestamp = series.map(function(item) {
-            return item.data[item.data.length - 1][0];
+            // error checking: data field can be empty
+            if (item.data && item.data.length > 0) {
+                return item.data[item.data.length - 1][0];
+            }
         });
         return Math.max.apply(null, allStartTimestamp);
     };
