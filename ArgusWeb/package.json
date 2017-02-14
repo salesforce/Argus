@@ -18,7 +18,7 @@
     "shelljs": "^0.2.6"
   },
   "scripts": {
-    "postinstall": "bower install",
+    "postinstall": "bower install; mkdir app/node_modules/; cp -r node_modules/d3fc* app/node_modules/;",
     "prestart": "npm install",
     "start": "http-server -a 0.0.0.0 -p 8000",
     "pretest": "npm install",
