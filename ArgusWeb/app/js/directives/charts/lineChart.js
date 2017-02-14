@@ -28,7 +28,37 @@ angular.module('argus.directives.charts.lineChart', [])
             dateConfig: '=dateconfig'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
-        controller: ['$scope', function($scope) {
+        controller: ['$scope', 'Metrics', 'DownloadHelper', 'growl', function($scope, Metrics, DownloadHelper, growl) {
+            $scope.downloadData = function (queryFunction) {
+                // each metric expression will be a separate file
+                var dataHandler, filename, chartTitle;
+                if ($scope.chartConfig.title !== undefined && $scope.chartConfig.title.text !== undefined) {
+                    chartTitle = $scope.chartConfig.title.text;
+                } else {
+                    chartTitle = "data";
+                }
+                switch (queryFunction) {
+                    case "query":
+                        dataHandler = function (data) { return JSON.stringify(data.slice(0, data.length)); };
+                        filename = chartTitle + ".json";
+                        break;
+                    case "downloadCSV":
+                        dataHandler = function (data) { return data[0]; };
+                        filename = chartTitle + ".csv";
+                        break;
+                }
+                $scope.chartConfig.expressions.map(function (expression) {
+                    growl.info("Downloading data...");
+                    Metrics[queryFunction]({expression: expression}).$promise.then(function (data) {
+                        DownloadHelper.downloadFile(dataHandler(data), filename);
+                    }, function (error) {
+                        growl.error("Data cannot be download this time");
+                        console.log(error);
+                    });
+                });
+
+            };
+
             $scope.sources = [];
             $scope.otherSourcesHidden = false;
             // can be used for future modal window
@@ -205,7 +235,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 tip, tipBox, tipItems,
                 crossLine,
                 names, colors, graphClassNames,
-                flagsG, labelTip, label;
+                flagsG, labelTip, label,
+                yAxisPadding = 1;
 
             var messageToDisplay = ['No graph available'];
 
@@ -243,13 +274,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxis = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'))
+                    .tickFormat(d3.format('.3s'))
                 ;
 
                 yAxisR = d3.axisRight()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.2s'))
+                    .tickFormat(d3.format('.3s'))
                 ;
 
                 //grid
@@ -596,9 +627,9 @@ angular.module('argus.directives.charts.lineChart', [])
                                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
                     if (scope.menuOption.isTooltipDetailOn) {
-                        textLine.text(datapoints[i].name + "   " + d3.format('0,.7')(tempData));
+                        textLine.text(datapoints[i].name + "   " + d3.format('0,.8')(tempData));
                     } else {
-                        textLine.text(d3.format('.2s')(tempData));
+                        textLine.text(d3.format('.3s')(tempData));
                     }
 
                     // update XOffset if existing offset is smaller than texLine
@@ -678,7 +709,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isNaN(mouseY)){ //mouseY can be 0
                     textY = "No Data";
                 }else{
-                    textY = d3.format('.2s')(mouseY);
+                    textY = d3.format('.3s')(mouseY);
                 }
 
                 focus.select('[name=crossLineTipY')
@@ -917,9 +948,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     return d[1];
                 });
                 var diff = extent[1] - extent[0];
+                if (diff === 0) diff = yAxisPadding;
                 var buffer = diff * bufferRatio;
                 var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
-                var yMax = (agYMax === undefined) ? extent[1] + buffer : agYMax;
+                var yMax = (agYMax === undefined) ? extent[1] + 3 * buffer : agYMax;
 
                 y.domain([yMin, yMax]);
             }
@@ -1041,6 +1073,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 var yDomain = d3.extent(allDatapoints, function (d) {
                     return d[1];
                 });
+
+                // if only a straight line
+                if (yDomain[0] === yDomain[1]) {
+                    yDomain[0] -= yAxisPadding;
+                    yDomain[1] += 3 * yAxisPadding;
+                }
 
                 if(agYMin !== undefined && agYMax !== undefined){
                     y.domain([agYMin, agYMax]);

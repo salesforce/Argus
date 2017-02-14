@@ -68,30 +68,31 @@ public class DownsampleTransform implements Transform {
      *
      * @throws  UnsupportedOperationException  If an unknown down sampling type is specified.
      */
-    public static String downsamplerReducer(List<String> values, String reducerType) {
+    public static Double downsamplerReducer(List<Double> values, String reducerType) {
         List<Double> operands = new ArrayList<Double>();
-        for (String str : values) {
-            if (str == null || str.equals("")) {
+        
+        for (Double value : values) {
+            if (value == null) {
                 operands.add(0.0);
             } else {
-                operands.add(Double.parseDouble(str));
+                operands.add(value);
             }
         }
         InternalReducerType type = InternalReducerType.fromString(reducerType);
         switch (type) {
             case AVG:
-                return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
+                return new Mean().evaluate(Doubles.toArray(operands));
             case MIN:
-                return String.valueOf(Collections.min(operands));
+                return Collections.min(operands);
             case MAX:
-                return String.valueOf(Collections.max(operands));
+                return Collections.max(operands);
             case SUM:
-                return String.valueOf((new Sum()).evaluate(Doubles.toArray(operands), 0, operands.size()));
+                return new Sum().evaluate(Doubles.toArray(operands), 0, operands.size());
             case DEVIATION:
-                return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+                return new StandardDeviation().evaluate(Doubles.toArray(operands));
             case COUNT:
             	values.removeAll(Collections.singleton(null));
-            	return String.valueOf((float)values.size());
+            	return (double) values.size();
             default:
                 throw new UnsupportedOperationException(reducerType);
         }
@@ -152,24 +153,26 @@ public class DownsampleTransform implements Transform {
         return metrics;
     }
 
-    private Map<Long, String> createDownsampleDatapoints(Map<Long, String> originalDatapoints, long windowSize, String type, String windowUnit) {
-        Map<Long, String> downsampleDatapoints = new HashMap<Long, String>();
-        TreeMap<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
-        List<String> values = new ArrayList<>();
+    private Map<Long, Double> createDownsampleDatapoints(Map<Long, Double> originalDatapoints, long windowSize, String type, String windowUnit) {
+        Map<Long, Double> downsampleDatapoints = new HashMap<>();
+        TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
+        
         if (sortedDatapoints.isEmpty()){
         	return downsampleDatapoints;
         }
+        
         Long windowStart = downsamplerTimestamp(sortedDatapoints.firstKey(),windowSize);
 
-        for (Map.Entry<Long, String> entry : sortedDatapoints.entrySet()) {
+        List<Double> values = new ArrayList<>();
+        for (Map.Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
             Long timestamp = entry.getKey();
-            String value = entry.getValue();
+            Double value = entry.getValue();
 
             if (values.isEmpty()) {
                 values.add(value);
             } else {
                 if (timestamp >= windowStart + windowSize) {
-                    String fillingValue = downsamplerReducer(values, type);
+                    Double fillingValue = downsamplerReducer(values, type);
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
                     windowStart = downsamplerTimestamp(timestamp, windowSize);
@@ -178,7 +181,7 @@ public class DownsampleTransform implements Transform {
             }
         }
         if (!values.isEmpty()) {
-            String fillingValue = downsamplerReducer(values, type);
+            Double fillingValue = downsamplerReducer(values, type);
             downsampleDatapoints.put(windowStart, fillingValue);
         }
         return downsampleDatapoints;

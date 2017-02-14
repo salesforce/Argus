@@ -46,13 +46,14 @@ public class DivideValueZipper implements ValueZipper {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public String zip(String originalDpStr, String baseDpStr) {
+    public Double zip(Double originalDp, Double baseDp) {
         try {
-            Double original = (originalDpStr == null || originalDpStr.equals("")) ? 0.0 : Double.parseDouble(originalDpStr);
-            Double base = (baseDpStr == null || baseDpStr.equals("")) ? 1.0 : Double.parseDouble(baseDpStr);
+            Double original = (originalDp == null) ? 0.0 : originalDp;
+            Double base = (baseDp == null) ? 1.0 : baseDp;
 
-            SystemAssert.requireArgument(base != 0.0, "Points in base metric shouldn't contain zero as their point values!");
-            return String.valueOf(original / base);
+            SystemAssert.requireArgument(base != 0.0, "Datapoints in base metric shouldn't contain zero!");
+            
+            return (original / base);
         } catch (Exception e) {
             throw new SystemException("Fail to parse the double value of original Datapoint or base Datapoint!", e);
         }

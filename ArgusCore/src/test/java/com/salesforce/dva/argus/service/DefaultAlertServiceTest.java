@@ -108,7 +108,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps.put(1000L, "11");
 		dps.put(2000L, "21");
 		dps.put(3000L, "31");
-		metric.setDatapoints(dps);
+		metric.setDatapoints(_convertDatapoints(dps));
 		
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
@@ -145,14 +145,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps.put(1000L, "11");
 		dps.put(2000L, "21");
 		dps.put(3000L, "31");
-		metric.setDatapoints(dps);
+		metric.setDatapoints(_convertDatapoints(dps));
 		
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
-				60000);
+				600000);
 		_setNotificationId(notification, "100003");
 
 		alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
@@ -183,14 +183,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps1.put(1000L, "1");
 		dps1.put(2000L, "2");
 		dps1.put(3000L, "3");
-		metric1.setDatapoints(dps1);
+		metric1.setDatapoints(_convertDatapoints(dps1));
 
 		Metric metric2 = new Metric("scope2", "metric");
 		Map<Long, String> dps2 = new HashMap<Long, String>();
 		dps2.put(4000L, "11");
 		dps2.put(5000L, "20");
 		dps2.put(6000L, "30");
-		metric2.setDatapoints(dps2);
+		metric2.setDatapoints(_convertDatapoints(dps2));
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
@@ -223,7 +223,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps.put(4000L, "11");
 		dps.put(5000L, "20");
 		dps.put(6000L, "30");
-		metric.setDatapoints(dps);
+		metric.setDatapoints(_convertDatapoints(dps));
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
@@ -251,7 +251,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps.put(4000L, "1");
 		dps.put(5000L, "2");
 		dps.put(6000L, "3");
-		metric.setDatapoints(dps);
+		metric.setDatapoints(_convertDatapoints(dps));
 		
 		spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric), 
 				alert, notification);
@@ -274,14 +274,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps1.put(1000L, "11");
 		dps1.put(2000L, "20");
 		dps1.put(3000L, "30");
-		metric1.setDatapoints(dps1);
+		metric1.setDatapoints(_convertDatapoints(dps1));
 
 		Metric metric2 = new Metric("scope2", "metric");
 		Map<Long, String> dps2 = new HashMap<Long, String>();
 		dps2.put(4000L, "11");
 		dps2.put(5000L, "20");
 		dps2.put(6000L, "30");
-		metric2.setDatapoints(dps2);
+		metric2.setDatapoints(_convertDatapoints(dps2));
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
@@ -326,14 +326,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps1.put(1000L, "11");
 		dps1.put(2000L, "20");
 		dps1.put(3000L, "30");
-		metric1.setDatapoints(dps1);
+		metric1.setDatapoints(_convertDatapoints(dps1));
 
 		Metric metric2 = new Metric("scope2", "metric");
 		Map<Long, String> dps2 = new HashMap<Long, String>();
 		dps2.put(4000L, "1");
 		dps2.put(5000L, "2");
 		dps2.put(6000L, "3");
-		metric2.setDatapoints(dps2);
+		metric2.setDatapoints(_convertDatapoints(dps2));
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
@@ -363,14 +363,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		dps1.put(1000L, "1");
 		dps1.put(2000L, "2");
 		dps1.put(3000L, "3");
-		metric1.setDatapoints(dps1);
+		metric1.setDatapoints(_convertDatapoints(dps1));
 
 		metric2 = new Metric("scope2", "metric");
 		dps2 = new HashMap<Long, String>();
 		dps2.put(4000L, "11");
 		dps2.put(5000L, "21");
 		dps2.put(6000L, "31");
-		metric2.setDatapoints(dps2);
+		metric2.setDatapoints(_convertDatapoints(dps2));
 		
 		spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric1, metric2), 
 				alert, notification);
@@ -405,7 +405,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(inertia + 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = datapoints.size();
 
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
@@ -413,23 +413,23 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia - 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia + 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		expectedTriggerTime = datapoints.size();
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -447,7 +447,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = startTime;
 
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
@@ -467,7 +467,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 
 		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 
@@ -486,7 +486,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(0, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 
 		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 
@@ -504,7 +504,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 		datapoints.put(0L, "1");
 		datapoints.put(inertia, "1");
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
@@ -522,7 +522,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(0L, "1");
 		datapoints.put(3*60*1000L, "1");
 		datapoints.put(inertia, "1");
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
@@ -539,12 +539,20 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 		datapoints.put(0L, "1");
 		datapoints.put(9*60*1000L, "1");
-		metric.setDatapoints(datapoints);
+		metric.setDatapoints(_convertDatapoints(datapoints));
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		long expectedTriggerTime=9*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
 
+	private Map<Long, Double> _convertDatapoints(Map<Long, String> datapoints) {
+		Map<Long, Double> newDps = new HashMap<>();
+		for(Map.Entry<Long, String> dp : datapoints.entrySet()) {
+			newDps.put(dp.getKey(), Double.parseDouble(dp.getValue()));
+		}
+		return newDps;
+	}
+	
 	@Test
 	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps4() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -553,12 +561,12 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "2");
-		datapoints.put(3*60*1000L, "2");
-		datapoints.put(6*60*1000L, "2");
-		datapoints.put(7*60*1000L, "0");
-		datapoints.put(9*60*1000L, "2");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		datapoints.put(0L, 2.0);
+		datapoints.put(3*60*1000L, 2.0);
+		datapoints.put(6*60*1000L, 2.0);
+		datapoints.put(7*60*1000L, 0.0);
+		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
 		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		long expectedTriggerTime = 6 * 60 * 1000;
@@ -573,12 +581,12 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "2");
-		datapoints.put(3*60*1000L, "0");
-		datapoints.put(6*60*1000L, "2");
-		datapoints.put(7*60*1000L, "0");
-		datapoints.put(9*60*1000L, "2");
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(0L, 2.0);
+		datapoints.put(3*60*1000L, 0.0);
+		datapoints.put(6*60*1000L, 2.0);
+		datapoints.put(7*60*1000L, 0.0);
+		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
 		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertNull(actualValue);
@@ -592,10 +600,10 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "1");
-		datapoints.put(2*60*1000L, "0");
-		datapoints.put(inertia, "1");
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(0L, 1.0);
+		datapoints.put(2*60*1000L, 0.0);
+		datapoints.put(inertia, 1.0);
 		metric.setDatapoints(datapoints);
 		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertNull(actualValue);
@@ -658,17 +666,17 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		inertiaPeriod = inertiaPeriod / (1000 * 60);
 
 		Metric result = new Metric(scope, metricName);
-		Map<Long, String> datapoints = new HashMap<>();
+		Map<Long, Double> datapoints = new HashMap<>();
 		int index = 0;
 
 		for (int j = 0; j <= random.nextInt(10); j++) {
-			datapoints.put(startTime + (++index * 60000L), String.valueOf(random.nextInt(triggerMinValue)));
+			datapoints.put(startTime + (++index * 60000L), (double)(random.nextInt(triggerMinValue)));
 		}
 		for (int j = 0; j <= inertiaPeriod; j++) {
-			datapoints.put(startTime + (++index * 60000L), String.valueOf(triggerMinValue + random.nextInt(10)));
+			datapoints.put(startTime + (++index * 60000L), (double)(triggerMinValue + random.nextInt(10)));
 		}
 		for (int j = 0; j <= random.nextInt(10); j++) {
-			datapoints.put(startTime + (++index * 60000L), String.valueOf(random.nextInt(triggerMinValue)));
+			datapoints.put(startTime + (++index * 60000L), (double)(random.nextInt(triggerMinValue)));
 		}
 		result.setDatapoints(datapoints);
 		result.setDisplayName(createRandomName());

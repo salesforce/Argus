@@ -48,18 +48,18 @@ public class ShiftValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Shift transform requires an offset input!");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants.size() == 1, "Shift Transform can only have one constant which is offset.");
 
         Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
-        Map<Long, String> shiftDatapoints = new TreeMap<Long, String>();
+        Map<Long, Double> shiftDatapoints = new TreeMap<>();
 
-        for (Entry<Long, String> entry : originalDatapoints.entrySet()) {
+        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
             Long newTimestamp = entry.getKey() + offset;
 
             SystemAssert.requireArgument((newTimestamp <= Long.MAX_VALUE && newTimestamp >= Long.MIN_VALUE),

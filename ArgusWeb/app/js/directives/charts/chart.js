@@ -101,6 +101,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }
                 // metric item attributes are assigned to the data (i.e. name, color, etc.)
                 tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+                // keep metric expression info if the query succeeded
+                metricCount.expressions.push(metricItem.expression);
             } else {
                 // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 console.log('Empty result returned for the metric expression');
@@ -116,6 +118,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             // decrement metric count each time an expression is added to the series.
             metricCount.tot -= 1;
             if (metricCount.tot === 0) {
+                // pass in metric expression in as chartConfig
+                updatedOptionList.expressions = metricCount.expressions;
                 // check for Annotations
                 setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList);
             }
@@ -190,13 +194,13 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var series = [];
         var metricCount = {};
         metricCount.tot = updatedMetricList.length;
+        metricCount.expressions = [];
 
         scope.seriesDataLoaded = false; //used for load spinner
         angular.element("#" + newChartId).append( $compile('<div ng-loading="seriesDataLoaded"></div>')(scope) );
 
         for (var i = 0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
-
             // get data for each metric item, bind optional data with metric data
             queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes, updatedOptionList);
         }

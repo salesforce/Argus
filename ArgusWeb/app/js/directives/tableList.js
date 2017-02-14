@@ -34,6 +34,7 @@ angular.module('argus.directives')
                 dataSet: '=data',
                 addItem: '&',
                 delete: '&',
+                clone: '&',
                 enable: '&',
                 refreshList: '&'
             },
@@ -91,6 +92,9 @@ angular.module('argus.directives')
                 $scope.isDisabled = Auth.isDisabled;
                 $scope.enableItem = function(item, enabled) {
                     $scope.enable()(item, enabled);
+                };
+                $scope.cloneItem = function (item) {
+                    $scope.clone()(item);
                 };
 
                 function update(){

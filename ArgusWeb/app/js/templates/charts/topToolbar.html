@@ -103,6 +103,18 @@
 					<li>
 						<input type="radio" name="down-sample-method" value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
 						<label for="every-nth-point-{{chartConfig.chartId}}" title="Sample every nth point (n is calculated based on the container width and #datapoints)" ng-click="updateDownSample()">Every nth point </label>
+				    </li>
+				</ul>
+			</div>
+
+			<div class="toolbarMenu topMenu">
+				<a name="download" class="glyphicon glyphicon-download" title="Download graph data"></a>
+				<ul class="subMenu menuPanel list-group">
+					<li>
+						<a ng-click="downloadData('downloadCSV')" title="CSV format">CSV</a>
+					</li>
+					<li>
+						<a ng-click="downloadData('query')" title="JSON format">JSON</a>
 					</li>
 				</ul>
 			</div>
