@@ -53,19 +53,19 @@ public class DerivativeValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
-        Map<Long, String> sortedDatapoints = new TreeMap<>();
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(originalDatapoints);
 
-        Map<Long, String> derivativeDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> derivativeDatapoints = new HashMap<>();
         Double prev = null;
 
-        for (Entry<Long, String> entry : sortedDatapoints.entrySet()) {
-            Double curr = Double.valueOf(entry.getValue());
+        for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
+            Double curr = entry.getValue();
 
             if (prev != null) {
-                derivativeDatapoints.put(entry.getKey(), String.valueOf(curr - prev));
+                derivativeDatapoints.put(entry.getKey(), curr - prev);
             }
             prev = curr;
         }
@@ -73,7 +73,7 @@ public class DerivativeValueMapping implements ValueMapping {
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
 

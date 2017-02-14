@@ -129,23 +129,23 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, String> dps = new HashMap<Long, String>();
+        Map<Long, Double> dps = new HashMap<Long, Double>();
 
-        dps.put(1L, "1");
-        dps.put(2L, "2");
+        dps.put(1L, 1.0);
+        dps.put(2L, 2.0);
         m.setDatapoints(dps);
 
         List<Metric> expected = Arrays.asList(m);
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
 
         assertThat(results, equalTo(expected));
-        verify(mockValueReducer).reduce(Arrays.asList("1"));
-        verify(mockValueReducer).reduce(Arrays.asList("2"));
+        verify(mockValueReducer).reduce(Arrays.asList(1.0));
+        verify(mockValueReducer).reduce(Arrays.asList(2.0));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(1L, null);
-        expectedDps.put(2L, null);
+        expectedDps.put(1L, 0.0);
+        expectedDps.put(2L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
 
@@ -154,10 +154,10 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, String> dps = new HashMap<Long, String>();
+        Map<Long, Double> dps = new HashMap<Long, Double>();
 
         dps.put(1L, null);
-        dps.put(2L, "2");
+        dps.put(2L, 2.0);
         m.setDatapoints(dps);
 
         List<Metric> expected = Arrays.asList(m);
@@ -165,16 +165,16 @@ public class MetricReduceTransformTest {
 
         assertThat(results, equalTo(expected));
 
-        List<String> nullList = new ArrayList<String>();
+        List<Double> nullList = new ArrayList<>();
 
         nullList.add(null);
         verify(mockValueReducer).reduce(nullList);
-        verify(mockValueReducer).reduce(Arrays.asList("2"));
+        verify(mockValueReducer).reduce(Arrays.asList(2.0));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(1L, null);
-        expectedDps.put(2L, null);
+        expectedDps.put(1L, 0.0);
+        expectedDps.put(2L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
 
@@ -183,29 +183,29 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, String> dps = new HashMap<Long, String>();
+        Map<Long, Double> dps = new HashMap<Long, Double>();
 
-        dps.put(1L, "1");
-        dps.put(2L, "2");
+        dps.put(1L, 1.0);
+        dps.put(2L, 2.0);
         m.setDatapoints(dps);
 
         Metric m2 = new Metric("s", "m");
 
-        dps = new HashMap<Long, String>();
-        dps.put(1L, "3");
-        dps.put(2L, "4");
+        dps = new HashMap<>();
+        dps.put(1L, 3.0);
+        dps.put(2L, 4.0);
         m2.setDatapoints(dps);
 
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
-        verify(mockValueReducer).reduce(Arrays.asList("1", "3"));
-        verify(mockValueReducer).reduce(Arrays.asList("2", "4"));
+        verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
+        verify(mockValueReducer).reduce(Arrays.asList(2.0, 4.0));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(1L, null);
-        expectedDps.put(2L, null);
+        expectedDps.put(1L, 0.0);
+        expectedDps.put(2L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
 
@@ -214,34 +214,34 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, String> dps = new HashMap<Long, String>();
+        Map<Long, Double> dps = new HashMap<Long, Double>();
 
-        dps.put(1L, "1");
-        dps.put(3L, "2");
+        dps.put(1L, 1.0);
+        dps.put(3L, 2.0);
         m.setDatapoints(dps);
 
         Metric m2 = new Metric("s", "m");
 
-        dps = new HashMap<Long, String>();
-        dps.put(1L, "3");
-        dps.put(2L, "4");
-        dps.put(4L, "5");
+        dps = new HashMap<>();
+        dps.put(1L, 3.0);
+        dps.put(2L, 4.0);
+        dps.put(4L, 5.0);
         m2.setDatapoints(dps);
 
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
-        verify(mockValueReducer).reduce(Arrays.asList("1", "3"));
-        verify(mockValueReducer).reduce(Arrays.asList("4"));
-        verify(mockValueReducer).reduce(Arrays.asList("2"));
-        verify(mockValueReducer).reduce(Arrays.asList("5"));
+        verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
+        verify(mockValueReducer).reduce(Arrays.asList(4.0));
+        verify(mockValueReducer).reduce(Arrays.asList(2.0));
+        verify(mockValueReducer).reduce(Arrays.asList(5.0));
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1L, null);
-        expected.put(2L, null);
-        expected.put(3L, null);
-        expected.put(4L, null);
+        expected.put(1L, 0.0);
+        expected.put(2L, 0.0);
+        expected.put(3L, 0.0);
+        expected.put(4L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expected));
     }
 

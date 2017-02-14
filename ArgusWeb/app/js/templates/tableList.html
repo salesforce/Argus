@@ -28,12 +28,15 @@
 </div>
 <table class="table table-striped table-bordered">
     <tr>
-        <th ng-repeat="(key, value) in colName" ng-click="(key=='state')||sort(key)">
+        <th ng-repeat="(key, value) in colName" ng-click="(key==='state' || key==='cloneItem')||sort(key)">
             {{value}}
-            <span class="glyphicon sort-icon" ng-show="sortKey==key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}" ng-if="key!='state'"></span>
+            <span class="glyphicon sort-icon" ng-show="sortKey===key"
+                  ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"
+                  ng-if="key!=='state' || key!=='cloneItem'"></span>
         </th>
         <th class="col-centered text-center">
-            <button class="btn btn-success btn-sm" type="button" ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
+            <button class="btn btn-success btn-sm" type="button"
+                    ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
                 <i class="glyphicon glyphicon-plus"></i>
             </button>
         </th>
@@ -56,6 +59,13 @@
             <i class="glyphicon glyphicon-pause"></i>
         </button>
     </td>
+    <td ng-if="colName.cloneItem" class="text-center">
+        <button class="btn btn-info btn-sm" type="button"
+                ng-confirm="Clone '{{item.name}}'?"
+                ng-confirm-action="cloneItem(item)">
+            <i class="glyphicon glyphicon-copy"></i>
+        </button>
+    </td>
     <td class="text-center">
         <button class="btn btn-warning btn-sm" type="button"
                 ng-disabled="isDisabled(item)"
@@ -68,7 +78,7 @@
 </table>
 
 <div ng-if="loaded">
-  <div class="row text-center" ng-show="searchText.length == 0">
+  <div class="row text-center" ng-show="searchText.length === 0">
       <ng-pluralize count="dataSet.length"
                     when="{'0': 'No {{properties.type}} to show.',
                           'one': 'Showing 1 of 1 {{properties.type.slice(0,-1)}}.',

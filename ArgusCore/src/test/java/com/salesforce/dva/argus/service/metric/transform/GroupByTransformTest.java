@@ -19,8 +19,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -48,7 +48,7 @@ public class GroupByTransformTest extends AbstractTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 2);
 		for(Metric r : result) {
-			assertEquals("2.0", r.getDatapoints().get(1000L));
+			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
 		}
 	}
 	
@@ -57,8 +57,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -102,7 +102,7 @@ public class GroupByTransformTest extends AbstractTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 4);
 		for(Metric r : result) {
-			assertEquals("1.0", r.getDatapoints().get(1000L));
+			assertEquals(new Double(1.0), r.getDatapoints().get(1000L));
 		}
 	}
 	
@@ -111,8 +111,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -163,8 +163,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -223,8 +223,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -268,7 +268,7 @@ public class GroupByTransformTest extends AbstractTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 3);
 		for(Metric r : result) {
-			assertEquals("2.0", r.getDatapoints().get(1000L));
+			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
 		}
 	}
 	
@@ -277,8 +277,8 @@ public class GroupByTransformTest extends AbstractTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -323,7 +323,7 @@ public class GroupByTransformTest extends AbstractTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 3);
 		for(Metric r : result) {
-			assertEquals("1", r.getDatapoints().get(1000L));
+			assertEquals(new Double(1.0), r.getDatapoints().get(1000L));
 		}
 	}
 

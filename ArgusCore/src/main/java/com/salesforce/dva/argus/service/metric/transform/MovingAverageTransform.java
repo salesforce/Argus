@@ -72,18 +72,11 @@ public class MovingAverageTransform implements Transform {
         String window = constants.get(0);
         MetricReader.TimeUnit timeunit = null;
 
+        long windowSizeInSeconds = 0;
         try {
-            long windowSizeInSeconds = 0;
-
             timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
-
             long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
-
             windowSizeInSeconds = timeDigits * timeunit.getValue() / 1000;
-            for (Metric metric : metrics) {
-                metric.setDatapoints(_calculateMovingAverageUsingTimeInterval(metric.getDatapoints(), windowSizeInSeconds));
-            }
-            return metrics;
         } catch (Exception t) {
             long windowSize = Long.parseLong(window);
 
@@ -92,25 +85,23 @@ public class MovingAverageTransform implements Transform {
             }
             return metrics;
         }
+        
+        for (Metric metric : metrics) {
+            metric.setDatapoints(_calculateMovingAverageUsingTimeInterval(metric.getDatapoints(), windowSizeInSeconds));
+        }
+        return metrics;
     }
 
-    private Map<Long, String> _calculateMovingAverageUsingTimeInterval(Map<Long, String> originalDatapoints, long windowSizeInSeconds) {
+    private Map<Long, Double> _calculateMovingAverageUsingTimeInterval(Map<Long, Double> originalDatapoints, long windowSizeInSeconds) {
         SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
 
-        Map<Long, String> transformedDatapoints = new TreeMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
+        Map<Long, Double> transformedDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
         Long[] timestamps = new Long[sortedDatapoints.size()];
 
         sortedDatapoints.keySet().toArray(timestamps);
 
-        double sum = 0.0;
-
-        try {
-            sum = Double.parseDouble(sortedDatapoints.get(timestamps[0]));
-        } catch (NumberFormatException | NullPointerException e) {
-            _logger.warn("Failed to parse datapointL: " + sortedDatapoints.get(timestamps[0]));
-        }
-
+        double sum = sortedDatapoints.get(timestamps[0]);
         Long firstTimestamp = timestamps[0];
         int count = 1;
 
@@ -118,7 +109,7 @@ public class MovingAverageTransform implements Transform {
             if (j == 0) {
                 while (timestamps[i] - windowSizeInSeconds * 1000 < firstTimestamp) {
                     try {
-                        sum += Double.parseDouble(sortedDatapoints.get(timestamps[i]));
+                        sum += sortedDatapoints.get(timestamps[i]);
                     } catch (NumberFormatException | NullPointerException e) {
                         _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[i]));
                     }
@@ -126,10 +117,10 @@ public class MovingAverageTransform implements Transform {
                     i++;
                     count++;
                 }
-                transformedDatapoints.put(timestamps[i - 1], String.valueOf(sum / count));
+                transformedDatapoints.put(timestamps[i - 1], (sum / count));
             }
             try {
-                sum += Double.parseDouble(sortedDatapoints.get(timestamps[i]));
+                sum += sortedDatapoints.get(timestamps[i]);
                 while (timestamps[j] <= timestamps[i] - windowSizeInSeconds * 1000) {
                     sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps[j], timestamps[i]);
                     count--;
@@ -139,25 +130,21 @@ public class MovingAverageTransform implements Transform {
                 _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[i]));
             }
             count++;
-            transformedDatapoints.put(timestamps[i], String.valueOf(sum / count));
+            transformedDatapoints.put(timestamps[i], (sum / count));
         }
         return transformedDatapoints;
     }
 
-    private double _subtractWithinWindow(double sum, Map<Long, String> sortedDatapoints, long end, long start) {
-        try {
-            sum -= Double.parseDouble(sortedDatapoints.get(end));
-        } catch (NumberFormatException | NullPointerException e) {
-            _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(start));
-        }
+    private double _subtractWithinWindow(double sum, Map<Long, Double> sortedDatapoints, long end, long start) {
+        sum -= sortedDatapoints.get(end);
         return sum;
     }
 
-    private Map<Long, String> _calculateMovingAverageUsingFixedNoOfPastPoints(Map<Long, String> originalDatapoints, long window) {
+    private Map<Long, Double> _calculateMovingAverageUsingFixedNoOfPastPoints(Map<Long, Double> originalDatapoints, long window) {
         SystemAssert.requireArgument(window != 0, "Window cannot be 0 for Moving Average Transform");
 
-        Map<Long, String> transformedDatapoints = new TreeMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
+        Map<Long, Double> transformedDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
         double sum = 0.0, firstValueInInterval = 0.0;
         Long[] timestamps = new Long[sortedDatapoints.size()];
 
@@ -165,20 +152,20 @@ public class MovingAverageTransform implements Transform {
         for (int i = 0, j = 0; i < timestamps.length; i++) {
             if (i + 1 < window) {
                 try {
-                    sum += Double.parseDouble(sortedDatapoints.get(timestamps[i]));
+                    sum += sortedDatapoints.get(timestamps[i]);
                 } catch (NumberFormatException | NullPointerException e) {
                     _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[i]) + "Skipping this one.");
                 }
                 transformedDatapoints.put(timestamps[i], null);
             } else {
                 try {
-                    sum += Double.parseDouble(sortedDatapoints.get(timestamps[i]));
+                    sum += sortedDatapoints.get(timestamps[i]);
                     sum -= firstValueInInterval;
-                    firstValueInInterval = Double.parseDouble(sortedDatapoints.get(timestamps[j]));
+                    firstValueInInterval = sortedDatapoints.get(timestamps[j]);
                 } catch (NumberFormatException | NullPointerException e) {
                     _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[i]) + "Skipping this one.");
                 }
-                transformedDatapoints.put(timestamps[i], String.valueOf(sum / window));
+                transformedDatapoints.put(timestamps[i], (sum / window));
                 j++;
             }
         }

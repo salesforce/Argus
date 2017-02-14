@@ -48,9 +48,9 @@ public class CullAboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullAboveTransformWithIllegalType() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -70,9 +70,9 @@ public class CullAboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullAboveTransformWithIllegalPercentileNumber() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -92,9 +92,9 @@ public class CullAboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullAboveTransformWithoutLimit() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -113,9 +113,9 @@ public class CullAboveTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullAboveTransformWithoutType() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -145,11 +145,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitMidInDPsTypePercentile() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -164,9 +164,9 @@ public class CullAboveTransformTest {
         constants.add("25");
         constants.add("percentile");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(3000L, "1");
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -177,11 +177,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitMidNotInDPsTypeValue() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -196,9 +196,9 @@ public class CullAboveTransformTest {
         constants.add("1.5");
         constants.add("value");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(3000L, "1");
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -209,11 +209,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitLowerBorderDPsTypePercentile() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -228,9 +228,9 @@ public class CullAboveTransformTest {
         constants.add("0.00000001");
         constants.add("percentile");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(3000L, "1");
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -241,11 +241,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitLessThanLowerBorderDPsTypeValue() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -260,7 +260,7 @@ public class CullAboveTransformTest {
         constants.add("0");
         constants.add("value");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);
@@ -270,11 +270,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitUpperBorderDPsTypePercentile() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -289,11 +289,11 @@ public class CullAboveTransformTest {
         constants.add("100");
         constants.add("percentile");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "2");
-        expected_1.put(3000L, "1");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 2.0);
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -304,11 +304,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitGreaterThanUpperBorderDPsTypeValue() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "3");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -323,11 +323,11 @@ public class CullAboveTransformTest {
         constants.add("200");
         constants.add("value");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "2");
-        expected_1.put(3000L, "1");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 2.0);
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -338,21 +338,21 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformMultipleMetricLimitMidInDPsTypeValue() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "300");
-        datapoints_2.put(2000L, "2");
-        datapoints_2.put(3000L, "100");
+        datapoints_2.put(1000L, 300.0);
+        datapoints_2.put(2000L, 2.0);
+        datapoints_2.put(3000L, 100.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
@@ -368,14 +368,14 @@ public class CullAboveTransformTest {
         constants.add("2");
         constants.add("value");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "1");
-        expected_1.put(2000L, "2");
+        expected_1.put(1000L, 1.0);
+        expected_1.put(2000L, 2.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(2000L, "2");
+        expected_2.put(2000L, 2.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
@@ -387,11 +387,11 @@ public class CullAboveTransformTest {
     @Test
     public void testCullAboveTransformLimitMidNotInDPsTypeValueHavingNull() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, null);
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -406,11 +406,11 @@ public class CullAboveTransformTest {
         constants.add("1.5");
         constants.add("value");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "0.0");
-        expected_1.put(2000L, "0.0");
-        expected_1.put(3000L, "1");
+        expected_1.put(1000L, 0.0);
+        expected_1.put(2000L, 0.0);
+        expected_1.put(3000L, 1.0);
 
         List<Metric> result = cullAboveTransform.transform(metrics, constants);
 
