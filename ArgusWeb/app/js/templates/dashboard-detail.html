@@ -35,9 +35,7 @@
                         <br/>
                         <input class="btn btn-default" ng-show="isDashboardDirty()" type="button" ng-click="resetDashboard()" value="Revert"/>
                         <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || dashboardNotEditable" type="submit" ng-click="updateDashboard()" value="Save" />
-
-                        <button type="button" class="btn btn-info" ng-click="cloneDashboard(dashboard)">Clone this dashboard</button>
-
+                        <button type="button" class="btn btn-info floatR" ng-click="cloneDashboard(dashboard)">Clone</button>
                     </div>
                     <div class="col-md-8">
                         <label>Markup</label>
@@ -71,19 +69,4 @@
             </table>
         </div>
     </div>
-
-<db-dashboard name="EPT dashboard">
-    <db-controls>
-        <db-control name="scope" labelname="Scope: "></db-control>
-        <db-control name="metric" labelname="Metric: "></db-control>
-        <db-control name="startdate" labelname="Start Date: "></db-control>
-        <db-control name="enddate" labelname="End Date: "></db-control>
-        <db-submit-button></db-submit-button>
-    </db-controls>
-
-    <db-views>
-        <db-view name="CPU"></db-view>
-        <db-view name="Free Memory"></db-view>
-        <db-view name="Used Memory"></db-view>
-    </db-views>
-</db-dashboard>
+</section>
