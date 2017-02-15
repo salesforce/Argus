@@ -94,6 +94,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 $scope.reScaleY();
                 $scope.redraw();
             }
+
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
@@ -139,7 +140,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 isBrushMainOn : false,
                 isTooltipOn : true,
                 isTooltipSortOn: false,
-                isTooltipDetailOn: false
+                isTooltipDetailOn: false,
+                downSampleMethod: 'largest-triangle-one-bucket'
             };
             scope.hideMenu = false;
 
@@ -241,6 +243,9 @@ angular.module('argus.directives.charts.lineChart', [])
             // color scheme
             var z = d3.scaleOrdinal(d3.schemeCategory20);
 
+
+            //downsample threshold
+            var downsampleThreshold = 1/2;// datapoints per pixel
             // Base graph setup, initialize all the graph variables
             function setGraph() {
                 // use different x axis scale based on timezone
@@ -532,7 +537,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     currSeries.forEach(function (metric) {
                         if (metric.data.length === 0) return;
                         var data = metric.data;
-                        var i = bisectDate(data, mouseX, 1);
+                        var i = bisectDate(metric.data, mouseX, 1);
                         var d0 = data[i - 1];
                         var d1 = data[i];
                         var d;
@@ -744,6 +749,27 @@ angular.module('argus.directives.charts.lineChart', [])
                 svg_g.selectAll(".brushMain").call(brush.move, null);
             }
 
+            //adjust the series when zoom in/out
+            function adjustSeries(){
+                var domainStart = x.domain()[0].getTime();
+                var domainEnd = x.domain()[1].getTime();
+                currSeries = JSON.parse(JSON.stringify(series));
+                series.forEach(function (metric, index) {
+                    if (metric === null || metric.data.length === 0) return; //hided
+                    var len = metric.data.length;
+                    if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
+                        currSeries[index].data = [];
+                        return;
+                    }
+                    //if this metric time range is within the x domain
+                    var start = bisectDate(metric.data, x.domain()[0]);
+                    if(start > 0) start-=1; //to avoid cut off issue on the edge
+                    var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
+                    currSeries[index].data = metric.data.slice(start, end + 1);
+                });
+                currSeries = downSample(currSeries);
+            }
+
             //redraw the line with restrict
             function redraw(){
                 var domainStart = x.domain()[0].getTime();
@@ -755,22 +781,23 @@ angular.module('argus.directives.charts.lineChart', [])
                     currSeries.forEach(function (metric, index) {
                         if (metric === null || metric.data.length === 0 || //empty
                             !scope.sources[index].displaying) return; //hided
-                        var len = metric.data.length;
-                        if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
-                            mainChart.select('path.line.' + metric.graphClassName)
-                                .datum([])
-                                .attr('d', line);
-                            return;
-                        }
+                        //the commented part are done in adjustSeries
+                        // var len = metric.data.length;
+                        // if (metric.data[0][0] > domainEnd || metric.data[len - 1][0] < domainStart){
+                        //     mainChart.select('path.line.' + metric.graphClassName)
+                        //         .datum([])
+                        //         .attr('d', line);
+                        //     return;
+                        // }
                         //if this metric time range is within the x domain
-                        var start = bisectDate(metric.data, x.domain()[0]);
-                        if(start > 0) start-=1; //to avoid cut off issue on the edge
-                        var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
-                        var data = metric.data.slice(start, end + 1);
+                        // var start = bisectDate(metric.data, x.domain()[0]);
+                        // if(start > 0) start-=1; //to avoid cut off issue on the edge
+                        // var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
+                        // var data = metric.data.slice(start, end + 1);
 
                         //only render the data within the domain
                         mainChart.select('path.line.' + metric.graphClassName)
-                            .datum(data)
+                            .datum(metric.data)
                             .attr('d', line); //change the datum will call d3 to redraw
                     });
                     //svg_g.selectAll(".line").attr("d", line);//redraw the line
@@ -799,6 +826,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
                                                     //invert the x value in brush axis range to the
                                                     //value in domain
+
+                //ajust currSeries to the brushed period
+                adjustSeries();
 
                 reScaleY(); //rescale domain of y axis
                 //redraw
@@ -836,6 +866,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
                                                     //invert the x value in brush axis range to the
                                                     //value in domain
+
+                //ajust currSeries to the brushed period
+                adjustSeries();
 
                 reScaleY(); //rescale domain of y axis
                 //redraw
@@ -1010,6 +1043,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         //restore the zoom&brush
                         context.select(".brush").call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
                     }
+                    adjustSeries();
                 } else {
                     displayEmptyGraph(container, width, height, margin, messageToDisplay);
                 }
@@ -1055,7 +1089,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 x2.domain(x.domain());
                 y2.domain(yDomain);
 
-                series.forEach(function (metric) {
+                currSeries = downSample(series);
+                currSeries.forEach(function (metric) {
                     if (metric.data.length === 0) return;
                     mainChart.select('path.line.' + metric.graphClassName)
                         .datum(metric.data)
@@ -1064,6 +1099,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         .datum(metric.data)
                         .attr('d', line2);
                 });
+
                 //draw the brush xAxis
                 xAxisG2.call(xAxis2);
                 setZoomExtent(3);
@@ -1229,11 +1265,11 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //extent, k is the least number of points in one line you want to see on the main chart view
             function setZoomExtent(k) {
-                var numOfPoints = currSeries[0].data.length;
+                var numOfPoints = series[0].data.length;
                 //choose the max among all the series
-                for (var i = 1; i < currSeries.length; i++) {
-                    if (numOfPoints < currSeries[i].data.length) {
-                        numOfPoints = currSeries[i].data.length;
+                for (var i = 1; i < series.length; i++) {
+                    if (numOfPoints < series[i].data.length) {
+                        numOfPoints = series[i].data.length;
                     }
                 }
                 if (!k || k > numOfPoints) k = 3;
@@ -1303,6 +1339,81 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
+            }
+
+            scope.updateDownSample = function(){
+                adjustSeries();
+                reScaleY()
+                redraw();
+            }
+
+            function downSample(series){
+                // Create the sampler
+                var temp = JSON.parse(JSON.stringify(series));
+
+                var sampler;
+                switch (scope.menuOption.downSampleMethod){
+                    case 'largest-triangle-one-bucket':
+                        sampler = fc.largestTriangleOneBucket();
+                        // Configure the x / y value accessors
+                        sampler.x(function(d) {
+                            return d[0];
+                        })
+                            .y(function(d){
+                                return d[1];
+                            });
+                        break;
+                    case 'largest-triangle-three-bucket':
+                        sampler = fc.largestTriangleThreeBucket();
+                        // Configure the x / y value accessors
+                        sampler.x(function(d) {
+                            return d[0];
+                        })
+                            .y(function(d){
+                                return d[1];
+                            });
+                        break;
+                    case 'mode-median':
+                        sampler = fc.modeMedian();
+                        sampler.value(function(d){
+                            return d[1];
+                        });
+                        break;
+                    case 'every-nth-point':
+                        sampler = everyNthPoint();
+                    default:
+                        break;
+                }
+
+                function everyNthPoint(){
+                    var bucketSize = 1;
+                    var everyNthPoint = function(data){
+                        var temp = [];
+                        for(var i = 0; i < data.length; i+=bucketSize){
+                            temp.push(data[i])
+                        }
+                        return temp;
+                    };
+                    everyNthPoint.bucketSize = function(size){
+                        bucketSize = size;
+                    };
+                    return everyNthPoint;
+                }
+
+                // Run the sampler
+                series.forEach(function(metric, index){
+                    //determine whether to downsample or not
+                    //downsample if there are too many datapoints per pixel
+                    if(metric.data.length / containerWidth > downsampleThreshold){
+                        //determine bucket size
+                        var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
+                        // Configure the size of the buckets used to downsample the data.
+                        sampler.bucketSize(bucketSize);
+                        temp[index].data  = sampler(metric.data);
+                    }
+                });
+
+                return temp;
             }
 
             // create graph only when there is data

@@ -85,7 +85,30 @@
 			</div>
 
 			<div class="toolbarMenu topMenu">
-				<a name="reset" class="glyphicon glyphicon-download" title="Download graph data"></a>
+				<a class="glyphicon glyphicon-collapse-down"></a>
+				<ul class="subMenu menuPanel list-group">
+					<lable> &nbsp&nbsp Down Sampling Methods:</lable>
+					<li>
+						<input type="radio" name="down-sample-method" value="largest-triangle-one-bucket" id="largest-triangle-one-bucket-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
+						<label for="largest-triangle-one-bucket-{{chartConfig.chartId}}" title="Use the largest triangle one bucket algorithm"> Largest Triangle One Bucket </label>
+					</li>
+					<li>
+						<input type="radio" name="down-sample-method" value="largest-triangle-three-bucket" id="largest-triangle-three-bucket-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
+						<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}" title="Use the largest triangle three bucket algorithm"> Largest Triangle One Bucket </label>
+					</li>
+					<li>
+						<input type="radio" name="down-sample-method" value="mode-median" id="mode-median-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
+						<label for="mode-median-{{chartConfig.chartId}}" title="Use the mode median algorithm">Mode Median</label>
+					</li>
+					<li>
+						<input type="radio" name="down-sample-method" value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
+						<label for="every-nth-point-{{chartConfig.chartId}}" title="Sample every nth point (n is calculated based on the container width and #datapoints)" ng-click="updateDownSample()">Every nth point </label>
+				    </li>
+				</ul>
+			</div>
+
+			<div class="toolbarMenu topMenu">
+				<a name="download" class="glyphicon glyphicon-download" title="Download graph data"></a>
 				<ul class="subMenu menuPanel list-group">
 					<li>
 						<a ng-click="downloadData('downloadCSV')" title="CSV format">CSV</a>
