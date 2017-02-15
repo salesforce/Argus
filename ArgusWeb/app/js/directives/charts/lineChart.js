@@ -1337,6 +1337,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 scope.hideMenu = true;
             }
 
+            scope.updateStorage = updateStorage;
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
             }
