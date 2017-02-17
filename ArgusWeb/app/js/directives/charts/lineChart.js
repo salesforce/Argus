@@ -5,8 +5,6 @@ angular.module('argus.directives.charts.lineChart', [])
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
-    var lineChartIdIndex = 0;
-    var lineChartIdName = 'linechart_'; // in case there are other kind of ag-chart on the page
 
     function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
@@ -98,7 +96,6 @@ angular.module('argus.directives.charts.lineChart', [])
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
-            scope.lineChartId = ++lineChartIdIndex;
             /**
              * not using chartId because when reload the chart by 'sumbit' button
              * or other single page app navigate button the chartId is not reset
@@ -147,7 +144,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             scope.dashboardId = $routeParams.dashboardId;
 
-            var menuOption = Storage.get('menuOption_' + scope.dashboardId +'_' + lineChartIdName + scope.lineChartId);
+            var menuOption = Storage.get('menuOption_' + scope.dashboardId + '_' + chartId);
             if (menuOption){
                 scope.menuOption = menuOption;
             }
@@ -1337,8 +1334,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 scope.hideMenu = true;
             }
 
+            scope.updateStorage = updateStorage;
             function updateStorage(){
-                Storage.set('menuOption_' + scope.dashboardId + '_' + lineChartIdName + scope.lineChartId, scope.menuOption);
+                Storage.set('menuOption_' + scope.dashboardId + '_' + chartId, scope.menuOption);
             }
 
             scope.updateDownSample = function(){
@@ -1483,9 +1481,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //TODO improve the resize efficiency if performance becomes an issue
             element.on('$destroy', function(){
-                if(lineChartIdIndex){
+                if(resizeJobs.length){
                     resizeJobs = [];
-                    lineChartIdIndex = 0;
                 }
             });
             resizeJobs.push(resize);

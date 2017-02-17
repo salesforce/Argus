@@ -2,9 +2,7 @@
 <div class="topToolbar" ng-style="chartConfig.smallChart ? {'padding':'0'} : ''">
 	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
 	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
-
 	<div id="topTb-{{chartConfig.chartId}}" class="toolbar">
-
 		<ul class="legendPanel"
 			ng-mouseover="hover = true"
 			ng-mouseleave="hover = false"
@@ -74,11 +72,11 @@
 					<label for="toggle-wheel-{{chartConfig.chartId}}" title="Toggle mouse wheel to zoom">Mouse zooming</label>
 				</li>
 				<li>
-					<input type="checkbox" name="tooltip-sort" id="tooltip-sort-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<input type="checkbox" name="tooltip-sort" id="tooltip-sort-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" ng-click="updateStorage()"/>
 					<label for="tooltip-sort-{{chartConfig.chartId}}" title="Sort tooltip items by value">Tooltip Sort</label>
 				</li>
 				<li>
-					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn"/>
+					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn" ng-click="updateStorage()"/>
 					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
 				</li>
 				</ul>
@@ -94,7 +92,7 @@
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method" value="largest-triangle-three-bucket" id="largest-triangle-three-bucket-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
-						<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}" title="Use the largest triangle three bucket algorithm"> Largest Triangle One Bucket </label>
+						<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}" title="Use the largest triangle three bucket algorithm"> Largest Triangle Three Bucket </label>
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method" value="mode-median" id="mode-median-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.downSampleMethod" ng-click="updateDownSample()"/>
