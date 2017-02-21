@@ -50,27 +50,34 @@
     <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
     <td ng-if="colName.ownerName">{{item.ownerName}}</td>
     <td ng-if="colName.state" class="text-center">
-        <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled'
-                ng-click='enableItem(item, true)' ng-disabled="isDisabled(item)">
-            <i class="glyphicon glyphicon-play"></i>
+        <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' 
+            ng-show='!item.enabled'
+            ng-click='enableItem(item, true)'
+            ng-disabled="isDisabled(item)"
+            title="Enable {{properties.title}}">
+                <i class="glyphicon glyphicon-play"></i>
         </button>
-        <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' ng-show='item.enabled'
-                ng-click='enableItem(item, false)' ng-disabled="isDisabled(item)">
-            <i class="glyphicon glyphicon-pause"></i>
+        <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' 
+            ng-show='item.enabled'
+            ng-click='enableItem(item, false)'
+            ng-disabled="isDisabled(item)">
+                <i class="glyphicon glyphicon-pause"></i>
         </button>
     </td>
     <td ng-if="colName.cloneItem" class="text-center">
         <button class="btn btn-info btn-sm" type="button"
                 ng-confirm="Clone '{{item.name}}'?"
-                ng-confirm-action="cloneItem(item)">
-            <i class="glyphicon glyphicon-copy"></i>
+                ng-confirm-action="cloneItem(item)"
+                title="Clone '{{item.name}}'">
+            <i class="glyphicon glyphicon-duplicate"></i>
         </button>
     </td>
     <td class="text-center">
         <button class="btn btn-warning btn-sm" type="button"
                 ng-disabled="isDisabled(item)"
                 ng-confirm="Delete '{{item.name}}'?"
-                ng-confirm-action="deleteItem(item)">
+                ng-confirm-action="deleteItem(item)"
+                title="Delete '{{item.name}}'">
             <i class="glyphicon glyphicon-trash"></i>
         </button>
     </td>

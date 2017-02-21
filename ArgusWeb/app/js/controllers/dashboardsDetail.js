@@ -59,7 +59,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 
         $scope.cloneDashboard = function (dashboard) {
             var tempDashboard = {
-                name: dashboard.name + "-" + Auth.getUsername() + "'s copy-"+ Date.now(),
+                name: dashboard.name + "-" + Auth.getUsername() + "'s copy",
                 description: "A copy of " + dashboard.name,
                 shared: false,
                 content: dashboard.content

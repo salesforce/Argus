@@ -116,7 +116,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     $scope.cloneDashboard = function (dashboard) {
         Dashboards.get({dashboardId: dashboard.id}, function (result) {
             var tempDashboard = {
-                name: result.name + "-" + remoteUsername + "'s copy-"+ Date.now(),
+                name: result.name + "-" + remoteUsername + "'s copy",
                 description: "A copy of " + result.name,
                 shared: false,
                 content: result.content
@@ -135,7 +135,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         }, function (error) {
             growl.error('Failed to clone ' + dashboard.name + '"');
             console.log(error);
-        })
+        });
     };
 
     // factor html template to /templates
