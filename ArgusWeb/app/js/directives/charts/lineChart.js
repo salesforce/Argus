@@ -17,6 +17,17 @@ angular.module('argus.directives.charts.lineChart', [])
 
     d3.select(window).on('resize', resizeHelper);
 
+    var syncChartJobs = [];
+
+    var syncChartMouseOut = false;
+
+    function syncChartHelper(mouseX, focusChartId){
+        syncChartJobs.forEach(function(syncChartJob){
+            if (focusChartId === syncChartJob.chartId) return;
+            syncChartJob.syncChart(mouseX);
+        })
+    }
+
     return {
         restrict: 'E',
         replace: true,
@@ -436,7 +447,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'crossLine');
                 crossLine.append('line')
                     .attr('name', 'crossLineY')
-                    .attr('class', 'crossLine');
+                    .attr('class', 'crossLine crossLineY');
 
                 //tooltip label on axis background rect
                 crossLine.append('rect')
@@ -444,14 +455,14 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'crossLineTipRect');
                 crossLine.append('rect')
                     .attr('name', 'crossLineTipRectY')
-                    .attr('class', 'crossLineTipRect');
+                    .attr('class', 'crossLineTipRect crossLineY');
                 //tooltip label on axis text
-                crossLine.append('text')
-                    .attr('name', 'crossLineTipY')
-                    .attr('class', 'crossLineTip');
                 crossLine.append('text')
                     .attr('name', 'crossLineTipX')
                     .attr('class', 'crossLineTip');
+                crossLine.append('text')
+                    .attr('name', 'crossLineTipY')
+                    .attr('class', 'crossLineTip crossLineY');
 
                 //annotations
                 flagsG = d3.select('#' + chartId).select('svg').select('.flags');
@@ -521,6 +532,29 @@ angular.module('argus.directives.charts.lineChart', [])
                 });
             }
 
+            //sync vertical focus line across charts, mouseX is the timestamp
+            function syncChart(mouseX){
+                if(mouseX < x.domain()[0] || mouseX > x.domain()[1]) return;
+                focus.style("display", null);
+                tip.style("display", null);
+                crossLine.selectAll('.crossLineY').style("display", "none");
+                var positionX = x(mouseX);
+                var positionY = focus.select('[name=crossLineTipX]').node().getBBox().height +  crossLineTipPadding;;
+                var datapoints = [];
+
+                if(isBrushInNonEmptyRange()){
+                    updateCircles(mouseX, datapoints);
+                    if (scope.menuOption.isTooltipSortOn) {
+                        datapoints = datapoints.sort(function (a, b) {
+                            return b.data[1] - a.data[1]
+                        });
+                    }
+                    toolTipUpdate(tipItems, datapoints, positionX, positionY);
+                }
+                updateCrossLine(mouseX, positionX);
+            }
+
+
             function mouseMove() {
                 if (!currSeries || currSeries.length === 0) return;
                 var datapoints = [];
@@ -531,51 +565,52 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
-                    currSeries.forEach(function (metric) {
-                        if (metric.data.length === 0) return;
-                        var data = metric.data;
-                        var i = bisectDate(metric.data, mouseX, 1);
-                        var d0 = data[i - 1];
-                        var d1 = data[i];
-                        var d;
-                        // snap the datapoint that lives in the x domain
-                        if (!d0) {
-                            //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
-                            //we could still render d0 but make it invisible.
-                            d = d1;
-                        } else if (!d1) {
-                            d = d0;
-                            // if both data points lives in the domain, choose the closer one to the mouse position
-                        } else {
-                            d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
-                        }
-
-                        var circle = focus.select('.' + metric.graphClassName);
-
-                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
-                            //outside domain
-                            circle.attr('display', 'none');
-                        }else{
-                            circle.attr('display', null);
-                        }
-
-                        // update circle's position on each graph
-                        circle
-                            .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
-                            .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
-
-                        // check if the source is displaying based on the legend
-                        var sourceInLegend = scope.sources.find(function (source) {
-                            return source.graphClassName === metric.graphClassName;
-                        });
-                        if (sourceInLegend.displaying) {
-                            datapoints.push({
-                                data: d,
-                                graphClassName: metric.graphClassName,
-                                name: metric.name
-                            });
-                        }
-                    });
+                    updateCircles(mouseX, datapoints);
+                    // currSeries.forEach(function (metric) {
+                    //     if (metric.data.length === 0) return;
+                    //     var data = metric.data;
+                    //     var i = bisectDate(metric.data, mouseX, 1);
+                    //     var d0 = data[i - 1];
+                    //     var d1 = data[i];
+                    //     var d;
+                    //     // snap the datapoint that lives in the x domain
+                    //     if (!d0) {
+                    //         //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
+                    //         //we could still render d0 but make it invisible.
+                    //         d = d1;
+                    //     } else if (!d1) {
+                    //         d = d0;
+                    //         // if both data points lives in the domain, choose the closer one to the mouse position
+                    //     } else {
+                    //         d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
+                    //     }
+                    //
+                    //     var circle = focus.select('.' + metric.graphClassName);
+                    //
+                    //     if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
+                    //         //outside domain
+                    //         circle.attr('display', 'none');
+                    //     }else{
+                    //         circle.attr('display', null);
+                    //     }
+                    //
+                    //     // update circle's position on each graph
+                    //     circle
+                    //         .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
+                    //         .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+                    //
+                    //     // check if the source is displaying based on the legend
+                    //     var sourceInLegend = scope.sources.find(function (source) {
+                    //         return source.graphClassName === metric.graphClassName;
+                    //     });
+                    //     if (sourceInLegend.displaying) {
+                    //         datapoints.push({
+                    //             data: d,
+                    //             graphClassName: metric.graphClassName,
+                    //             name: metric.name
+                    //         });
+                    //     }
+                    // });
                     // sort items in tooltip if needed
                     if (scope.menuOption.isTooltipSortOn) {
                         datapoints = datapoints.sort(function (a, b) {
@@ -585,7 +620,58 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     toolTipUpdate(tipItems, datapoints, positionX, positionY);
                 }
-                updateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, positionX, mouseY, positionY);
+
+                syncChartHelper(mouseX, chartId);
+            }
+
+
+            function updateCircles(mouseX, datapoints){
+                currSeries.forEach(function (metric) {
+                    if (metric.data.length === 0) return;
+                    var data = metric.data;
+                    var i = bisectDate(metric.data, mouseX, 1);
+                    var d0 = data[i - 1];
+                    var d1 = data[i];
+                    var d;
+                    // snap the datapoint that lives in the x domain
+                    if (!d0) {
+                        //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
+                        //we could still render d0 but make it invisible.
+                        d = d1;
+                    } else if (!d1) {
+                        d = d0;
+                        // if both data points lives in the domain, choose the closer one to the mouse position
+                    } else {
+                        d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
+                    }
+
+                    var circle = focus.select('.' + metric.graphClassName);
+
+                    if(d[0] < x.domain()[0] || d[0] > x.domain()[1] ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
+                        //outside domain
+                        circle.attr('display', 'none');
+                    }else{
+                        circle.attr('display', null);
+                    }
+
+                    // update circle's position on each graph
+                    circle
+                        .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
+                        .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+
+                    // check if the source is displaying based on the legend
+                    var sourceInLegend = scope.sources.find(function (source) {
+                        return source.graphClassName === metric.graphClassName;
+                    });
+                    if (sourceInLegend.displaying) {
+                        datapoints.push({
+                            data: d,
+                            graphClassName: metric.graphClassName,
+                            name: metric.name
+                        });
+                    }
+                });
             }
 
             function toolTipUpdate(group, datapoints, X, Y) {
@@ -691,12 +777,31 @@ angular.module('argus.directives.charts.lineChart', [])
              mouseX,mouseY are actual values
              X,Y are coordinates value
              */
-            function updateCrossLine(mouseX, mouseY, X, Y) {
+            function updateCrossLine(mouseX, X, mouseY, Y) {
                 //if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
 
                 focus.select('[name=crossLineX]')
                     .attr('x1', X).attr('y1', 0)
                     .attr('x2', X).attr('y2', height);
+
+                var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
+                focus.select('[name=crossLineTipX]')
+                    .attr('x', X)
+                    .attr('y', 0)
+                    .attr('dy', crossLineTipHeight)
+                    .text(date);
+
+                //add a background to it
+                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
+                focus.select('[name=crossLineTipRectX]')
+                    .attr('x', boxX.x - crossLineTipPadding)
+                    .attr('y', boxX.y - crossLineTipPadding)
+                    .attr('width', boxX.width + 2 * crossLineTipPadding)
+                    .attr('height', boxX.height + 2 * crossLineTipPadding);
+
+                if(mouseY ===  undefined || Y === undefined) return;
+
+                //------------------Y
                 focus.select('[name=crossLineY]')
                     .attr('x1', 0).attr('y1', Y)
                     .attr('x2', width).attr('y2', Y);
@@ -722,22 +827,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('y', boxY.y - crossLineTipPadding)
                     .attr('width', boxY.width + 2 * crossLineTipPadding)
                     .attr('height', boxY.height + 2 * crossLineTipPadding);
-
-                var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
-                focus.select('[name=crossLineTipX]')
-                    .attr('x', X)
-                    .attr('y', 0)
-                    .attr('dy', crossLineTipHeight)
-                    .text(date);
-
-                //add a background to it
-                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
-                focus.select('[name=crossLineTipRectX]')
-                    .attr('x', boxX.x - crossLineTipPadding)
-                    .attr('y', boxX.y - crossLineTipPadding)
-                    .attr('width', boxX.width + 2 * crossLineTipPadding)
-                    .attr('height', boxX.height + 2 * crossLineTipPadding);
-
             }
 
             //reset the brush area
@@ -895,7 +984,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }else{
                     focus.selectAll('circle').attr('display', 'none');
                 }
-                updateCrossLine(mouseX, mouseY, positionX, positionY);
+                updateCrossLine(mouseX, positionX, mouseY, positionY);
             }
 
             //change brush focus range, k is the number of minutes
@@ -1048,14 +1137,15 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateGraph(series) {
                 var allDatapoints = [];
-                currSeries = series;
 
-                series.forEach(function (metric) {
+                currSeries = downSample(series);
+
+                currSeries.forEach(function (metric) {
                     allDatapoints = allDatapoints.concat(metric.data);
                 });
 
                 //x domain was set according to dateConfig previously
-                //this shows exactly the date range defined by user instead of actual data
+                //this shows exactly the date range of actual data
 
                 dateExtent = d3.extent(allDatapoints, function (d) {
                     return d[0];
@@ -1086,7 +1176,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 x2.domain(x.domain());
                 y2.domain(yDomain);
 
-                currSeries = downSample(series);
                 currSeries.forEach(function (metric) {
                     if (metric.data.length === 0) return;
                     mainChart.select('path.line.' + metric.graphClassName)
@@ -1152,13 +1241,8 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('class', 'chartOverlay')
                     .attr('width', width)
                     .attr('height', height)
-                    .on('mouseover', function () {
-                       mouseOverChart();
-                    })
-                    .on('mouseout', function () {
-                        focus.style('display', 'none');
-                        if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
-                    })
+                    .on('mouseover', mouseOverChart)
+                    .on('mouseout', mouseOutChart)
                     .on('mousemove', mouseMove)
                     .call(zoom)
                 ;
@@ -1174,13 +1258,8 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(zoom)
                     .on("mousedown.zoom", null)
                     .call(brushMain)
-                    .on('mouseover', function () {
-                       mouseOverChart();
-                    })
-                    .on('mouseout', function () {
-                        focus.style('display', 'none');
-                        if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
-                    })
+                    .on('mouseover', mouseOverChart)
+                    .on('mouseout', mouseOutChart)
                     .on('mousemove', mouseMove);
 
                 if (scope.menuOption.isBrushMainOn) {
@@ -1305,6 +1384,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function mouseOverChart(){
                 focus.style('display', null);
+                crossLine.selectAll('.crossLineY').style('display', null);
                 if(isBrushInNonEmptyRange()) {
                     if (scope.menuOption.isTooltipOn) tip.style('display', null);
                 }else{
@@ -1312,6 +1392,13 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.selectAll('circle').attr('display', 'none');
                     tip.attr('display', 'none');
                 }
+                syncChartMouseOut = false;
+            }
+
+            function mouseOutChart(){
+                focus.style('display', 'none');
+                if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
+                syncChartMouseOut = true;
             }
 
             function setupMenu(){
@@ -1486,6 +1573,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             });
             resizeJobs.push(resize);
+            syncChartJobs.push({
+                chartId: chartId,
+                syncChart : syncChart,
+
+            });
+
         }
     };
 }]);
