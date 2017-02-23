@@ -2,6 +2,9 @@
 
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
+
+
+    //--------------------resize all charts-------------------
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
@@ -17,15 +20,20 @@ angular.module('argus.directives.charts.lineChart', [])
 
     d3.select(window).on('resize', resizeHelper);
 
-    var syncChartJobs = [];
+    //---------------------sync all charts-----------------------
+    var syncChartJobs = {};
+    function syncChartMouseMoveAll(mouseX, focusChartId){
+        for(var key in syncChartJobs){
+            if(!syncChartJobs.hasOwnProperty(key) || key === focusChartId) continue;
+            syncChartJobs[key].syncChartMouseMove(mouseX);
+        }
+    }
 
-    var syncChartMouseOut = false;
-
-    function syncChartHelper(mouseX, focusChartId){
-        syncChartJobs.forEach(function(syncChartJob){
-            if (focusChartId === syncChartJob.chartId) return;
-            syncChartJob.syncChart(mouseX);
-        })
+    function syncChartMouseOutAll(focusChartId){
+        for(var key in syncChartJobs){
+            if(!syncChartJobs.hasOwnProperty(key) || key === focusChartId) continue;
+            syncChartJobs[key].syncChartMouseOut();
+        }
     }
 
     return {
@@ -149,6 +157,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 isTooltipOn : true,
                 isTooltipSortOn: false,
                 isTooltipDetailOn: false,
+                isSyncChart: false,
                 downSampleMethod: 'largest-triangle-one-bucket'
             };
             scope.hideMenu = false;
@@ -533,10 +542,12 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             //sync vertical focus line across charts, mouseX is the timestamp
-            function syncChart(mouseX){
-                if(mouseX < x.domain()[0] || mouseX > x.domain()[1]) return;
-                focus.style("display", null);
-                tip.style("display", null);
+            function syncChartMouseMove(mouseX){
+                if(mouseX < x.domain()[0] || mouseX > x.domain()[1]){
+                    syncChartMouseOut();
+                    return;
+                }
+                mouseOverChart();
                 crossLine.selectAll('.crossLineY').style("display", "none");
                 var positionX = x(mouseX);
                 var positionY = focus.select('[name=crossLineTipX]').node().getBBox().height +  crossLineTipPadding;;
@@ -554,6 +565,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateCrossLine(mouseX, positionX);
             }
 
+            //clear vertical lines and tooltip when move mouse off the focus chart
+            function syncChartMouseOut(){
+                focus.style('display', 'none');
+                if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
+            }
 
             function mouseMove() {
                 if (!currSeries || currSeries.length === 0) return;
@@ -622,7 +638,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
                 updateCrossLine(mouseX, positionX, mouseY, positionY);
 
-                syncChartHelper(mouseX, chartId);
+                if(chartId in syncChartJobs) syncChartMouseMoveAll(mouseX, chartId);
             }
 
 
@@ -1392,13 +1408,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     focus.selectAll('circle').attr('display', 'none');
                     tip.attr('display', 'none');
                 }
-                syncChartMouseOut = false;
             }
 
             function mouseOutChart(){
                 focus.style('display', 'none');
                 if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
-                syncChartMouseOut = true;
+                syncChartMouseOutAll();
             }
 
             function setupMenu(){
@@ -1570,15 +1585,30 @@ angular.module('argus.directives.charts.lineChart', [])
             element.on('$destroy', function(){
                 if(resizeJobs.length){
                     resizeJobs = [];
+                    syncChartJobs = {};//this get cleared too
                 }
             });
+
             resizeJobs.push(resize);
-            syncChartJobs.push({
-                chartId: chartId,
-                syncChart : syncChart,
 
-            });
+            function addToSyncCharts(){
+                syncChartJobs[chartId] = {
+                    syncChartMouseMove : syncChartMouseMove,
+                    syncChartMouseOut: syncChartMouseOut
+                };
+            }
 
+            function removeFromSyncCharts(){
+                delete syncChartJobs[chartId];
+            }
+
+            scope.toggleSyncChart = function(){
+                if (scope.menuOption.isSyncChart){
+                    addToSyncCharts();
+                }else{
+                    removeFromSyncCharts();
+                }
+            }
         }
     };
 }]);
