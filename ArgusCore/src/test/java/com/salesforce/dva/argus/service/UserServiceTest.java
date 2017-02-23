@@ -34,7 +34,10 @@ package com.salesforce.dva.argus.service;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
+import com.salesforce.dva.argus.service.UserService;
+
 import org.junit.Test;
+
 import java.math.BigInteger;
 import java.util.Map;
 

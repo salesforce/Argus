@@ -54,6 +54,9 @@ import static java.math.BigInteger.ZERO;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public class DefaultUserService extends DefaultJPAService implements UserService {
+	
+	static PrincipalUser _adminUser = null;
+	static PrincipalUser _defaultUser = null;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -133,44 +136,48 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     @Transactional
     public synchronized PrincipalUser findAdminUser() {
         requireNotDisposed();
+        
+        //Can surround this within a synchronized(_adminUser) block. But not really necessary.
+        if(_adminUser == null) {
+        	_logger.debug("Retrieving the administrative user.");
+            if ((_adminUser = findUserByPrimaryKey(BigInteger.ONE)) == null) {
+                try {
+                    Method method = PrincipalUser.class.getDeclaredMethod("createAdminUser", new Class<?>[0]);
 
-        PrincipalUser result;
-
-        _logger.debug("Retrieving the administrative user.");
-        if ((result = findUserByPrimaryKey(BigInteger.ONE)) == null) {
-            try {
-                Method method = PrincipalUser.class.getDeclaredMethod("createAdminUser", new Class<?>[0]);
-
-                method.setAccessible(true);
-                result = updateUser(PrincipalUser.class.cast(method.invoke(null, new Object[0])));
-                method.setAccessible(false);
-            } catch (Exception ex) {
-                throw new SystemException(ex);
+                    method.setAccessible(true);
+                    _adminUser = updateUser(PrincipalUser.class.cast(method.invoke(null, new Object[0])));
+                    method.setAccessible(false);
+                } catch (Exception ex) {
+                    throw new SystemException(ex);
+                }
             }
         }
-        return result;
+        
+        return _adminUser;
     }
     
     @Override
     @Transactional
     public synchronized PrincipalUser findDefaultUser() {
         requireNotDisposed();
+        
+        //Can surround this within a synchronized(_adminUser) block. But not really necessary.
+        if(_defaultUser == null) {
+        	_logger.debug("Retrieving the default user.");
+            if ((_defaultUser = findUserByPrimaryKey(BigInteger.valueOf(2))) == null) {
+                try {
+                    Method method = PrincipalUser.class.getDeclaredMethod("createDefaultUser", new Class<?>[0]);
 
-        PrincipalUser result;
-
-        _logger.debug("Retrieving the default user.");
-        if ((result = findUserByPrimaryKey(BigInteger.valueOf(2))) == null) {
-            try {
-                Method method = PrincipalUser.class.getDeclaredMethod("createDefaultUser", new Class<?>[0]);
-
-                method.setAccessible(true);
-                result = updateUser(PrincipalUser.class.cast(method.invoke(null, new Object[0])));
-                method.setAccessible(false);
-            } catch (Exception ex) {
-                throw new SystemException(ex);
+                    method.setAccessible(true);
+                    _defaultUser = updateUser(PrincipalUser.class.cast(method.invoke(null, new Object[0])));
+                    method.setAccessible(false);
+                } catch (Exception ex) {
+                    throw new SystemException(ex);
+                }
             }
         }
-        return result;
+        
+        return _defaultUser;
     }
 
     @Override
