@@ -145,9 +145,11 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         // remove/clear any previous chart rendering from DOM
+        var lastEl = element.context.querySelector('[id^=element_chart]');
+        var lastId = lastEl? lastEl.id: null;
         element.empty();
         // generate a new chart ID, set css options for main chart container
-        var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
+        var newChartId = lastId || 'element_' + VIEWELEMENT.chart + chartNameIndex++;
         var chartType = attributes.type ? attributes.type : 'LINE';
         var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 

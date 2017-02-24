@@ -28,7 +28,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         description:'Description',
         createdDate:'Created',
         modifiedDate:'Last Modified',
-        ownerName:'Owner'
+        ownerName:'Owner',
+        cloneItem: 'Clone'
     };
     $scope.properties = {
         title: "Dashboard",
@@ -109,6 +110,31 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             growl.success('Deleted "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + dashboard.name + '"');
+        });
+    };
+    
+    $scope.cloneDashboard = function (dashboard) {
+        Dashboards.get({dashboardId: dashboard.id}, function (result) {
+            var tempDashboard = {
+                name: result.name + "-" + remoteUsername + "'s copy",
+                description: "A copy of " + result.name,
+                shared: false,
+                content: result.content
+            };
+            Dashboards.save(tempDashboard, function (result) {
+                // update all dashboards
+                result.content = "";
+                dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUsername, userPrivileged);
+                // update dashboards to be seen
+                $scope.getDashboards($scope.shared);
+                growl.success('Cloned "' + dashboard.name + '"');
+            }, function (error) {
+                growl.error('Failed to clone ' + dashboard.name + '"');
+                console.log(error);
+            });
+        }, function (error) {
+            growl.error('Failed to clone ' + dashboard.name + '"');
+            console.log(error);
         });
     };
 
