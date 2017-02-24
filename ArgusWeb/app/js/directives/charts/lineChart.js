@@ -1608,6 +1608,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 }else{
                     removeFromSyncCharts();
                 }
+                updateStorage();
+            }
+
+            if(scope.menuOption.isSyncChart){
+                addToSyncCharts();
             }
         }
     };
