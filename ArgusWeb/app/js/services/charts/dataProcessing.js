@@ -24,6 +24,10 @@ angular.module('argus.services.charts.dataProcessing', [])
     }
 
     function createSeriesName(metric) {
+    	if(metric.displayName != null) {
+    		return metric.displayName;
+    	}
+    	
         var scope = metric.scope;
         var name = metric.metric;
         var tags = createTagString(metric.tags);

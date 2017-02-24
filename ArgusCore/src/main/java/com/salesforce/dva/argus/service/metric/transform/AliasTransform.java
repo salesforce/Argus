@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2017, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -73,7 +73,7 @@ public class AliasTransform implements Transform {
         String aliasTypeForMetric = constants.get(1);
         
         SystemAssert.requireArgument(REGRE.equals(aliasTypeForMetric) || LITERAL.equals(aliasTypeForMetric), 
-        		"Alias Transform can only performed for a regurlar expression or a string literal.");
+        		"Alias Transform can only performed for a regular expression or a string literal.");
         if (REGRE.equals(aliasTypeForMetric)) {
             SystemAssert.requireArgument(constants.get(0).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
         }
@@ -93,7 +93,7 @@ public class AliasTransform implements Transform {
         if(constants.size() == 4) {
         	String aliasTypeForScope = constants.get(3);
         	SystemAssert.requireArgument(REGRE.equals(aliasTypeForScope) || LITERAL.equals(aliasTypeForScope), 
-        			"Alias Transform can only performed for a regurlar expression or a string literal.");
+        			"Alias Transform can only performed for a regular expression or a string literal.");
         	if (REGRE.equals(aliasTypeForScope)) {
                 SystemAssert.requireArgument(constants.get(2).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
             }
@@ -127,7 +127,7 @@ public class AliasTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
 }

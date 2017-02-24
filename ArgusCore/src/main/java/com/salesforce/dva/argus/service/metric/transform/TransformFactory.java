@@ -126,6 +126,8 @@ public class TransformFactory {
                 return new FillCalculateTransform();
             case ALIAS:
                 return new AliasTransform();
+            case ALIASBYTAG:
+                return new AliasByTagTransform();
             case INCLUDE:
                 return new IncludeTransform();
             case EXCLUDE:
@@ -222,7 +224,8 @@ public class TransformFactory {
         ABSOLUTE("ABSOLUTE", " Converts the data point values to their corresponding absolute value."),
         MOVING("MOVING", "Evaluates input metrics using a moving window."),
         PROPAGATE("PROPAGATE", "Forward fills gaps with the last known value at the start (earliest occurring time) of the gap.."),
-        ALIAS("ALIAS", "Transforms the name of one or more metrics."),
+        ALIAS("ALIAS", "Transforms the name of one or more metrics/scopes."),
+        ALIASBYTAG("ALIASBYTAG", "Sets the display name for the metric. It uses the provided tag key to get the value for that tag and uses that to set the display name."),
         NORMALIZE("NORMALIZE", "Normalizes the data point values of time series"),
         RANGE("RANGE", "Calculate the union of unique values in the input."),
         UNION("UNION", "Performs the union of all data points for the given time series."),
