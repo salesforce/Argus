@@ -202,7 +202,7 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" > }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" | "last" | "first" | "count" | "none" | "ep50r3" | "ep50r7" | "ep75r3" | "ep75r7" | "ep90r3" | "ep90r7" | "ep95r3" | "ep95r7" | "ep99r3" | "ep99r7" | "ep999r3" | "ep999r7" | "p50" | "p75" | "p90" | "p95" | "p99" | "p999" > }
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
@@ -480,7 +480,8 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
 	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	      	constants.add(String.valueOf(relativeTo));
+	  	  	    }
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
