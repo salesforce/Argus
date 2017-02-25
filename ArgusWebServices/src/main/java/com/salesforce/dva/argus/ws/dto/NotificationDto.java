@@ -287,8 +287,12 @@ public class NotificationDto extends EntityDTO {
      * Sets the severity level of notification
      *
      * @param  severityLevel  The severity level
+     * @throws  IllegalArgumentException  If an error occurs.
      */
     public void setSeverityLevel(int severityLevel) {
+        if (severityLevel < 1 || severityLevel > 5) {
+            throw new IllegalArgumentException("The severty level should be between 1-5");
+        }    	
         this.severityLevel = severityLevel;
     }    
     
