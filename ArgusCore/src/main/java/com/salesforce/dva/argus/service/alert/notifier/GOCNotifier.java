@@ -491,7 +491,7 @@ public class GOCNotifier extends AuditNotifier {
 		private String smEventNamec; // Text(50)
 		private String smEventTextc; // Long Text Area(32768)
 		private long smLastNotifiedAtc; // Date/Time --> timestamp
-		private int smSeverityc = 3; // Number(1, 0) (External ID) --> 0 through 5
+		private int smSeverityc = 5; // Number(1, 0) (External ID) --> 0 through 5
 		private boolean srActionablec = false;
 
 		/** Creates a new GOCDataBuilder object. */

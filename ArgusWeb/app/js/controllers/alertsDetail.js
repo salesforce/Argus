@@ -137,7 +137,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 metricsToAnnotate: [],
                 cooldownPeriod: 0,
                 sractionable:false,
-		severityLevel:0,
+		severityLevel:5,
                 alertId: $scope.alert.id
             };
 
