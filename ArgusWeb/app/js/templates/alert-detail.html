@@ -141,6 +141,7 @@
                 <tr>
                     <th>ID</th>
                     <th>Is SR Actionable</th>
+		    <th>Severity Level</th>
                     <th>Name</th>
                     <th>Type</th>
                     <th>Subscriptions</th>
@@ -157,6 +158,7 @@
                 <tr ng-repeat="notification in notifications| filter:notificationSearchText |orderBy:'name'">
                     <td>{{notification.id}}</td>
                     <td><input type="checkbox" ng-model="notification.sractionable" /></td>
+		    <td><input class="form-control" type="text" ng-model="notification.severityLevel" /></td>
                     <td><input class="form-control" type="text" ng-model="notification.name" /></td>
                     <td>
                         <select class="form-control" ng-model="notification.notifierName">

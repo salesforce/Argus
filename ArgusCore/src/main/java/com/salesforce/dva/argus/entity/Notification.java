@@ -86,6 +86,7 @@ public class Notification extends JPAEntity implements Serializable {
     )
     List<Trigger> triggers = new ArrayList<>(0);
     boolean isSRActionable = false;
+    int severityLevel = 5;
     @Lob
     private String customText;
     @ElementCollection
@@ -112,6 +113,7 @@ public class Notification extends JPAEntity implements Serializable {
         setSubscriptions(subscriptions);
         setCooldownPeriod(cooldownPeriod);
         setSRActionable(false);
+        setSeverityLevel(5);
     }
 
     /** Creates a new Notification object. */
@@ -361,7 +363,7 @@ public class Notification extends JPAEntity implements Serializable {
     public boolean getSRActionable() {
         return isSRActionable;
     }
-
+    
     /**
      * Specifies whether the notification should be monitored by SR (actionable by SR)
      *
@@ -369,6 +371,24 @@ public class Notification extends JPAEntity implements Serializable {
      */
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
+    }
+    
+    /**
+     * Gets the severity level of notification
+     *
+     * @return  The severity level
+     */
+    public int getSeverityLevel() {
+        return severityLevel;
+    }
+
+    /**
+     * Sets the severity level of notification
+     *
+     * @param  severityLevel  The severity level
+     */
+    public void setSeverityLevel(int severityLevel) {
+        this.severityLevel = severityLevel;
     }
     
 	public Map<String, Boolean> getActiveStatusMap() {
@@ -423,7 +443,7 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + ", severity=" + severityLevel +  triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
     
 

@@ -39,28 +39,28 @@
     "jsonInput" :null,
     "status": 200,
     "message": "get notifications",
-    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}]"
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}]"
 },{
     "type": "POST",
     "endpoint": "/alerts/1/notifications",
-    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}",
     "status": 200,
     "message": "create notification",
-    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}]"
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}]"
 },{
     "type": "GET",
     "endpoint": "/alerts/1/notifications/1",
     "jsonInput" :null,
     "status": 200,
     "message": "get notification",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}"
 },{
     "type": "PUT",
     "endpoint": "/alerts/1/notifications/1",
-    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}",
     "status": 200,
     "message": "update notification",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"UpdatedNotification\",\"notifierName\":\"EmailNotifier\",\"subscriptions\":[\"you@yourcompany.com\"],\"metricsToAnnotate\":[\"argus.jvm:open.file.descriptors:sum\"],\"cooldownPeriod\":60000,\"cooldownExpiration\":-1,\"triggersIds\":[],\"alertId\":1,\"customText\":\"custom_text\",\"sractionable\":false,\"severityLevel\":5}"
 },{
   "type": "GET",
     "endpoint": "/alerts/1/triggers",

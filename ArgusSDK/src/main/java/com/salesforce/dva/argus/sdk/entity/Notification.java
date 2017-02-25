@@ -56,6 +56,7 @@ public class Notification extends Entity {
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private boolean isSRActionable;
+    private int severityLevel;
     private String customText;
 
     //~ Methods **************************************************************************************************************************************
@@ -222,6 +223,24 @@ public class Notification extends Entity {
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
     }
+    
+    /**
+     * Gets the severity level of notification
+     *
+     * @return  The severity level
+     */
+    public int getSeverityLevel() {
+        return severityLevel;
+    }
+
+    /**
+     * Sets the severity level of notification
+     *
+     * @param  severityLevel  The severity level
+     */
+    public void setSeverityLevel(int severityLevel) {
+        this.severityLevel = severityLevel;
+    }    
     
     /**
 	 * @return the customText

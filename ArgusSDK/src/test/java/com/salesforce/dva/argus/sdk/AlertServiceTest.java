@@ -358,6 +358,7 @@ public class AlertServiceTest extends AbstractTest {
         notification.setName("TestNotification");
         notification.setNotifierName("EmailNotifier");
         notification.setSRActionable(false);
+        notification.setSeverityLevel(5);
         notification.setSubscriptions(Arrays.asList(new String[] { "you@yourcompany.com" }));
         notification.setCustomText("custom_text");
         return notification;

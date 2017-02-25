@@ -122,11 +122,12 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  elementName   The element/instance name
 	 * @param  eventName     The event name
 	 * @param  message       The message body.
+	 * @param  severityLevel The severity level
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-			boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
+			int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -138,7 +139,7 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 50);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-				withSRActionable(srActionable).withEventText(message);
+				withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -246,7 +247,7 @@ public class GOCNotifier extends AuditNotifier {
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
 		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
-				context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
+				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
 	/**
@@ -490,7 +491,7 @@ public class GOCNotifier extends AuditNotifier {
 		private String smEventNamec; // Text(50)
 		private String smEventTextc; // Long Text Area(32768)
 		private long smLastNotifiedAtc; // Date/Time --> timestamp
-		private int smSeverityc = 5; // Number(1, 0) (External ID) --> 0 through 5
+		private int smSeverityc = 3; // Number(1, 0) (External ID) --> 0 through 5
 		private boolean srActionablec = false;
 
 		/** Creates a new GOCDataBuilder object. */
@@ -615,7 +616,7 @@ public class GOCNotifier extends AuditNotifier {
 			this.srActionablec = sRActionablec;
 			return this;
 		}
-
+		
 		/**
 		 * Create the GOCData object, use defaults where needed.
 		 *
