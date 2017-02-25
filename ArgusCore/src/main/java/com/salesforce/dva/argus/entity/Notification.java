@@ -443,7 +443,7 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + ", severity=" + severityLevel +  triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" +  triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
     
 

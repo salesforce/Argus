@@ -55,9 +55,10 @@ public class Notification extends Entity {
     private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
-    private boolean isSRActionable;
-    private int severityLevel;
     private String customText;
+    private int severityLevel;
+    private boolean isSRActionable;
+    
 
     //~ Methods **************************************************************************************************************************************
 
