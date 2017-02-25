@@ -269,8 +269,9 @@ public class Notification extends Entity {
         hash = 59 * hash + (int) (this.cooldownExpiration ^ (this.cooldownExpiration >>> 32));
         hash = 59 * hash + Objects.hashCode(this.triggersIds);
         hash = 59 * hash + Objects.hashCode(this.alertId);
-        hash = 59 * hash + Objects.hashCode(this.isSRActionable);
         hash = 59 * hash + Objects.hashCode(this.customText);
+        hash = 59 * hash + Objects.hashCode(this.severityLevel);
+        hash = 59 * hash + Objects.hashCode(this.isSRActionable);
         return hash;
     }
 
@@ -317,7 +318,10 @@ public class Notification extends Entity {
         }
         if (!Objects.equals(this.isSRActionable, other.isSRActionable)) {
             return false;
-        } 
+        }
+        if (!Objects.equals(this.severityLevel, other.severityLevel)) {
+            return false;
+        }        
         if (!Objects.equals(this.customText, other.customText)) {
             return false;
         } 
