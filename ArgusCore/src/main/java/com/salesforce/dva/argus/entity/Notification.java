@@ -32,8 +32,6 @@
 package com.salesforce.dva.argus.entity;
 
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,8 +52,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
-
-import com.salesforce.dva.argus.system.SystemException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -433,17 +429,10 @@ public class Notification extends JPAEntity implements Serializable {
 
 
 	private String _hashTriggerAndMetric(Trigger trigger, Metric metric) {
-		requireArgument(trigger != null, "Trigger cannot be null.");
+        requireArgument(trigger != null, "Trigger cannot be null.");
         requireArgument(metric != null, "Metric cannot be null");
 
-        try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			digest.update(metric.getIdentifier().getBytes());
-			String code = new String(digest.digest());
-			return trigger.getId().toString() + "$$" + code;
-		} catch (NoSuchAlgorithmException e) {
-			throw new SystemException("This should never happen.", e);
-		}
+        return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
 	}
 
 }
