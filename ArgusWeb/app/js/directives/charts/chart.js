@@ -149,7 +149,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var lastId = lastEl? lastEl.id: null;
         element.empty();
         // generate a new chart ID, set css options for main chart container
+        //if the element has content previously, leave the id unchanged
         var newChartId = lastId || 'element_' + VIEWELEMENT.chart + chartNameIndex++;
+
         var chartType = attributes.type ? attributes.type : 'LINE';
         var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
@@ -221,6 +223,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
                         setupChart(scope, element, attributes, controls);
                     });
+                    element.on('$destroy', function(){
+                        chartNameIndex = 1;
+                    })
                 }
             };
         }
