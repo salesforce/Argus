@@ -7,7 +7,7 @@
         <li ng-class="{active:isTabSelected(2)}"><a href ng-click="selectTab(2)">Edit</a></li>
         <li ng-class="{active:isTabSelected(3)}"><a href ng-click="selectTab(3)">History</a></li>
     </ul>
-    
+
     <div ng-show="isTabSelected(1)">
         <ag-dashboard-resource></ag-dashboard-resource>
     </div>
@@ -34,7 +34,8 @@
                         </div>
                         <br/>
                         <input class="btn btn-default" ng-show="isDashboardDirty()" type="button" ng-click="resetDashboard()" value="Revert"/>
-                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || !dashboardEditable" type="submit" ng-click="updateDashboard()" value="Save" />
+                        <input class="btn btn-primary" ng-disabled="!isDashboardDirty() || dashboardNotEditable" type="submit" ng-click="updateDashboard()" value="Save" />
+                        <a class="cloneTrooperIcon floatR" ng-click="cloneDashboard(dashboard)" title="Clone '{{dashboard.name}}'"></a>
                     </div>
                     <div class="col-md-8">
                         <label>Markup</label>
@@ -68,19 +69,4 @@
             </table>
         </div>
     </div>
-
-<db-dashboard name="EPT dashboard">
-    <db-controls>
-        <db-control name="scope" labelname="Scope: "></db-control>
-        <db-control name="metric" labelname="Metric: "></db-control>
-        <db-control name="startdate" labelname="Start Date: "></db-control>
-        <db-control name="enddate" labelname="End Date: "></db-control>
-        <db-submit-button></db-submit-button>
-    </db-controls>
-
-    <db-views>
-        <db-view name="CPU"></db-view>
-        <db-view name="Free Memory"></db-view>
-        <db-view name="Used Memory"></db-view>
-    </db-views>
-</db-dashboard>
+</section>

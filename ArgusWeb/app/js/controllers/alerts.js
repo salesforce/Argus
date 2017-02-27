@@ -20,25 +20,78 @@
 'use strict';
 
 angular.module('argus.controllers.alerts', ['ngResource'])
-.controller('Alerts', ['$scope', 'growl', 'Alerts', '$sessionStorage', function ($scope, growl, Alerts, $sessionStorage) {
+.controller('Alerts', ['Auth', '$scope', 'growl', 'Alerts', '$sessionStorage', 'TableListService', function (Auth, $scope, growl, Alerts, $sessionStorage, TableListService) {
 
-    function getAlerts() {
+    $scope.colName = {
+        id:'ID',
+        name:'Name',
+        cronEntry:'CRON Entry',
+        createdDate:'Created',
+        modifiedDate:'Last Modified',
+        ownerName:'Owner',
+        state: "State"
+    };
+    $scope.properties = {
+        title: "Alert",
+        type: "alerts"
+    };
+    $scope.tabNames = {
+        firstTab: Auth.getUsername() + "'s Alerts",
+        secondTab: 'Shared Alerts'
+    };
+    $scope.alerts = [];
+    $scope.alertsLoaded = false;
+
+    var alertLists = {
+        sharedList: [],
+        usersList: []
+    };
+    var remoteUsername = Auth.getUsername();
+    var userPrivileged = Auth.isPrivileged();
+
+
+    $scope.getAlerts = function (shared) {
+        $sessionStorage.alerts.shared = shared;
+        if ($scope.alertsLoaded) {
+            // when only user's alerts are loaded but shared tab is chosen: need to start a new API call
+            if (shared && !$sessionStorage.alerts.loadedEverything) {
+                delete $scope.alerts;
+                $scope.alertsLoaded = false;
+                getAllAlerts();
+            } else {
+                $scope.alerts = shared ? alertLists.sharedList : alertLists.usersList;
+            }
+        }
+    };
+
+    function setAlertsAfterLoading (alerts, shared) {
+        alertLists.sharedList = TableListService.getListUnderTab(alerts, true, remoteUsername, userPrivileged);
+        alertLists.usersList = TableListService.getListUnderTab(alerts, false, remoteUsername, userPrivileged);
+        $scope.alertsLoaded = true;
+        $scope.getAlerts(shared);
+    }
+
+    function getAllAlerts () {
         Alerts.getMeta().$promise.then(function(alerts) {
-            $scope.alerts = alerts;
-            $sessionStorage.cachedAlerts = alerts;
+            $sessionStorage.alerts.cachedData = alerts;
+            $sessionStorage.alerts.loadedEverything = true;
+            setAlertsAfterLoading(alerts, $scope.shared);
         });
     }
 
-    if($sessionStorage.cachedAlerts) {
-        $scope.alerts = $sessionStorage.cachedAlerts;
-    } else {
-        getAlerts();
+    function getUsersAlerts () {
+        Alerts.getUsers().$promise.then(function(alerts) {
+            $sessionStorage.alerts.cachedData = alerts;
+            $sessionStorage.alerts.loadedEverything = false;
+            setAlertsAfterLoading(alerts, false);
+        });
     }
 
 	$scope.refreshAlerts = function () {
-		delete $sessionStorage.cachedAlerts;
-    delete $scope.alerts;
-		getAlerts();
+        delete $sessionStorage.alerts.cachedData;
+        delete $scope.alerts;
+        $scope.alertsLoaded = false;
+        $scope.shared? getAllAlerts(): getUsersAlerts();
 	};
 
     $scope.addAlert = function () {
@@ -50,11 +103,21 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         Alerts.save(alert, function (result) {
             // update both scope and session alerts
             result.expression = "";
-            $scope.alerts.push(result);
-            $sessionStorage.cachedAlerts = $scope.alerts;
+            alertLists = TableListService.addItemToTableList(alertLists, 'alerts', result, remoteUsername, userPrivileged);
+            $scope.getAlerts($scope.shared);
             growl.success('Created "' + alert.name + '"');
         }, function (error) {
             growl.error('Failed to create "' + alert.name + '"');
+        });
+    };
+
+    $scope.removeAlert = function (alert) {
+        Alerts.delete({alertId: alert.id}, function (result) {
+            alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUsername, userPrivileged);
+            $scope.getAlerts($scope.shared);
+            growl.success('Deleted "' + alert.name + '"');
+        }, function (error) {
+            growl.error('Failed to delete "' + alert.name + '"');
         });
     };
 
@@ -73,30 +136,13 @@ angular.module('argus.controllers.alerts', ['ngResource'])
         }
     };
 
-    $scope.removeAlert = function (alert) {
-        Alerts.delete({alertId: alert.id}, function (result) {
-            $scope.alerts = $scope.alerts.filter(function (element) {
-                return element.id !== alert.id;
-            });
-            $sessionStorage.cachedAlerts = $scope.alerts;
-            growl.success('Deleted "' + alert.name + '"');
-        }, function (error) {
-            growl.error('Failed to delete "' + alert.name + '"');
-        });
-    };
+    if ($sessionStorage.alerts === undefined) $sessionStorage.alerts = {};
+    if ($sessionStorage.alerts.cachedData !== undefined && $sessionStorage.alerts.shared !== undefined) {
+        var alerts = $sessionStorage.alerts.cachedData;
+        setAlertsAfterLoading(alerts, $sessionStorage.alerts.shared);
+    } else {
+        $scope.shared? getAllAlerts(): getUsersAlerts();
+    }
 
-    $scope.colName = {
-        id:'ID',
-        name:'Name',
-        cronEntry:'CRON Entry',
-        createdDate:'Created',
-        modifiedDate:'Last Modified',
-        ownerName:'Owner',
-        state: "State"
-    };
 
-    $scope.properties = {
-        title: "Alert",
-        type: "alerts"
-    };
 }]);

@@ -32,46 +32,34 @@
 package com.salesforce.dva.argus.service;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.entity.History.JobStatus;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
-import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public class AlertServiceTest extends AbstractTest {
 
-	private static final String expression =
+	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
-
+	
 	@Test
 	public void testUpdateAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", expression, "* * * * *");
+		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
 
@@ -96,7 +84,7 @@ public class AlertServiceTest extends AbstractTest {
 	public void testDeleteAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", expression, "* * * * *");
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
 		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", 0.95, 60000);
@@ -148,7 +136,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String alertName = "testAlert";
 		PrincipalUser expectedUser = new PrincipalUser("testUser", "testuser@testcompany.com");
-		Alert expectedAlert = new Alert(expectedUser, expectedUser, alertName, expression, "* * * * *");
+		Alert expectedAlert = new Alert(expectedUser, expectedUser, alertName, EXPRESSION, "* * * * *");
 
 		expectedAlert = alertService.updateAlert(expectedAlert);
 
@@ -171,7 +159,7 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> expectedAlerts = new ArrayList<>();
 
 		for (int i = 0; i < alertsCount; i++) {
-			expectedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, expression, "* * * * *")));
+			expectedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
 		}
 
 		List<Alert> actualAlerts = alertService.findAlertsByOwner(user);
@@ -199,7 +187,7 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> expectedAlerts = new ArrayList<>();
 
 		for (int i = 0; i < alertsCount; i++) {
-			expectedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, expression, "* * * * *")));
+			expectedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
 		}
 
 		List<Alert> actualAlerts = alertService.findAllAlerts();
@@ -220,7 +208,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user = userService.findAdminUser();
 		String alertName = createRandomName();
-		Alert expectedAlert = new Alert(user, user, alertName, expression, "* * * * *");
+		Alert expectedAlert = new Alert(user, user, alertName, EXPRESSION, "* * * * *");
 
 		expectedAlert = alertService.updateAlert(expectedAlert);
 		alertService.deleteAlert(expectedAlert);
@@ -228,54 +216,10 @@ public class AlertServiceTest extends AbstractTest {
 	}
 
 	@Test
-	public void testAlertDeletePerformance() {
+	public void testDeletedTriggersInNotifications() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		AuditService auditService = system.getServiceFactory().getAuditService();
-		HistoryService historyService = system.getServiceFactory().getHistoryService();
-		PrincipalUser user = userService.findAdminUser();
-		int alertCount = 10;
-		int auditCount = 5000;
-		int historyCount = 5000;
-		Alert[] alerts = new Alert[alertCount];
-
-		for (int i = 0; i < alerts.length; i++) {
-			Alert alert = new Alert(user, user, createRandomName() + i, "-1d:scope:metric:avg", "1 1 1 1 1");
-
-			alerts[i] = alertService.updateAlert(alert);
-			for (int j = 0; j < auditCount; j++) {
-				Audit audit = new Audit("message", "localhost", alerts[i]);
-
-				auditService.createAudit(audit);
-			}
-			for (int j = 0; j < historyCount; j++) {
-				History history = new History("message", "localhost", alerts[i], JobStatus.DEQUEUED);
-
-				historyService.updateHistory(history);
-			}
-			LoggerFactory.getLogger(getClass()).info("Created alert " + i);
-		}
-
-		double total = 0;
-
-		for (Alert alert : alerts) {
-			long start = System.currentTimeMillis();
-
-			alertService.deleteAlert(alert);
-
-			long delta = System.currentTimeMillis() - start;
-
-			total += delta;
-			LoggerFactory.getLogger(getClass()).info("Alert delete latency = " + delta);
-		}
-		LoggerFactory.getLogger(getClass()).info("Average delete latency = " + (total / alerts.length));
-	}
-
-	@Test
-	public void testDeletedTriggersInNotifications1() {
-		UserService userService = system.getServiceFactory().getUserService();
-		AlertService alertService = system.getServiceFactory().getAlertService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", expression, "* * * * *");
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
 		Notification notification3 = new Notification("notification3", alert, "notifier-name3", new ArrayList<String>(), 5000L);
@@ -298,280 +242,81 @@ public class AlertServiceTest extends AbstractTest {
 	}
 
 	@Test
-	public void testGetTriggerFiredDatapointTime() {
-		ServiceFactory factory = system.getServiceFactory();
-		NotifierFactory notifierFactory = system.getNotifierFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-				factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 90;
-		long inertia = 10;
-		long startTime = 1;
-		long expectedTriggerTime;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-
-		datapoints.putAll(createDatapoints(inertia + 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-		expectedTriggerTime = datapoints.size();
-
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-
-		assertEquals(expectedTriggerTime, actualValue);
-		startTime = datapoints.size() + 1;
-		datapoints.putAll(createDatapoints(201, thresholdValue, startTime, false));
-		metric.setDatapoints(datapoints);
-		actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		assertEquals(expectedTriggerTime, actualValue);
-		startTime = datapoints.size() + 1;
-		datapoints.putAll(createDatapoints(inertia - 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-		actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		assertEquals(expectedTriggerTime, actualValue);
-		startTime = datapoints.size() + 1;
-		datapoints.putAll(createDatapoints(inertia + 1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-		actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		expectedTriggerTime = datapoints.size();
-		assertEquals(expectedTriggerTime, actualValue);
-		startTime = datapoints.size() + 1;
-		datapoints.putAll(createDatapoints(201, thresholdValue, startTime, false));
-		metric.setDatapoints(datapoints);
-		actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		assertEquals(expectedTriggerTime, actualValue);
-	}
-
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenOneDatapointAndZeroInertia() {
-		ServiceFactory factory = system.getServiceFactory();
-		NotifierFactory notifierFactory = system.getNotifierFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-				factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 90;
-		long inertia = 0;
-		long startTime = 1000;
-		long expectedTriggerTime;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-
-		datapoints.putAll(createDatapoints(1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-		expectedTriggerTime = startTime;
-
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-
-		assertEquals(expectedTriggerTime, actualValue);
-	}
-
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenOneDatapointAndInertiaOne() {
-		ServiceFactory factory = system.getServiceFactory();
-		NotifierFactory notifierFactory = system.getNotifierFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-				factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 90;
-		long inertia = 1;
-		long startTime = 1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-
-		datapoints.putAll(createDatapoints(1, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-
-		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-
-		assertNull(actualValue);
-	}
-
-	@Test
-	public void testGetTriggerFiredDatapointTimeWehnNoDatapoints() {
-		ServiceFactory factory = system.getServiceFactory();
-		NotifierFactory notifierFactory = system.getNotifierFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(), factory.getMetricService(), factory.getAnnotationService(),
-				factory.getAuditService(), factory.getTSDBService(), factory.getMailService(), system.getConfiguration(), factory.getHistoryService(), factory.getMonitorService(), notifierFactory);
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 90;
-		long inertia = 0;
-		long startTime = 1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-
-		datapoints.putAll(createDatapoints(0, thresholdValue, startTime, true));
-		metric.setDatapoints(datapoints);
-
-		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-
-		assertNull(actualValue);
-	}
-
-
-	@Test
 	public void testAlertDeleteCreateAnotherAlertWithSameName() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user = userService.findAdminUser();
 		String alertName = createRandomName();
-		Alert alert = new Alert(user, user, alertName, expression, "* * * * *");
+		Alert alert = new Alert(user, user, alertName, EXPRESSION, "* * * * *");
 
 		alert = alertService.updateAlert(alert);
 		alertService.markAlertForDeletion(alert);
 		assertNull(alertService.findAlertByNameAndOwner(alertName, user));
-		alert = new Alert(user, user, alertName, expression, "* * * * *");
+		alert = new Alert(user, user, alertName, EXPRESSION, "* * * * *");
 		alert = alertService.updateAlert(alert);
 		assertNotNull((alertService.findAlertByNameAndOwner(alertName, user)));
 	}
+	
+	@Test
+	public void testAlertEnqueue() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		MQService mqService = system.getServiceFactory().getMQService();
+		PrincipalUser user = userService.findAdminUser();
+		List<Alert> actualAlertList = new ArrayList<>();
 
-	private Map<Long, String> createDatapoints(long size, Double value, long startTime, boolean greaterThan) {
-		Map<Long, String> result = new HashMap<Long, String>();
-
-		for (int i = 0; i < size; i++) {
-			double dataPointValue = random.nextInt(value.intValue()) + (greaterThan ? (value + 2) : -1);
-
-			result.put(startTime++, String.valueOf(dataPointValue));
+		for (int i = 0; i < 5; i++) {
+			actualAlertList.add(alertService.updateAlert(new Alert(user, user, createRandomName(), EXPRESSION, "* * * * *")));
 		}
-		return result;
-	}
+		alertService.enqueueAlerts(actualAlertList);
 
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps() {
+		List<AlertIdWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000, 10);
 
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
-
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "1");
-		datapoints.put(inertia, "1");
-		metric.setDatapoints(datapoints);
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		long expectedTriggerTime=5*60*1000;
-		assertEquals(expectedTriggerTime, actualValue);
+		assertEquals(actualAlertList.size(), expectedList.size());
 	}
-
+	
 	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps2() {
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
+	public void testSharedAlertWhenOneSharedAlert(){
 		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "1");
-		datapoints.put(3*60*1000L, "1");
-		datapoints.put(inertia, "1");
-		metric.setDatapoints(datapoints);
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		long expectedTriggerTime=5*60*1000;
-		assertEquals(expectedTriggerTime, actualValue);
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		
+		alertService.updateAlert(new Alert(user1, user1, "alert-name1", EXPRESSION, "* * * * *"));
+		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", EXPRESSION, "* * * * *"));
+		
+		alertShared.setShared(true);
+		alertService.updateAlert(alertShared);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertShared);
+		List<Alert> actualResult=alertService.findSharedAlerts();
+		assertEquals(expectedSharedResult, actualResult);
 	}
-
+	
 	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps3() {
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
+	public void testSharedAlertWhenTwoSharedAlert(){
 		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "1");
-		datapoints.put(9*60*1000L, "1");
-		metric.setDatapoints(datapoints);
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		long expectedTriggerTime=9*60*1000;
-		assertEquals(expectedTriggerTime, actualValue);
-	}
-
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps4() {
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "2");
-		datapoints.put(3*60*1000L, "2");
-		datapoints.put(6*60*1000L, "2");
-		datapoints.put(7*60*1000L, "0");
-		datapoints.put(9*60*1000L, "2");
-		metric.setDatapoints(datapoints);
-		long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		long expectedTriggerTime=6*60*1000;
-		assertEquals(expectedTriggerTime, actualValue);
-	}
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStamps5() {
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "2");
-		datapoints.put(3*60*1000L, "0");
-		datapoints.put(6*60*1000L, "2");
-		datapoints.put(7*60*1000L, "0");
-		datapoints.put(9*60*1000L, "2");
-		metric.setDatapoints(datapoints);
-		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		assertNull(actualValue);
-	}
-	@Test
-	public void testGetTriggerFiredDatapointTimeWhenMissingTimeStampsReturnNull() {
-		ServiceFactory factory = system.getServiceFactory();
-		DefaultAlertService service = new DefaultAlertService(factory.getMQService(),factory.getMetricService(),factory.getAnnotationService(),
-				factory.getAuditService(),factory.getTSDBService(),factory.getMailService(),system.getConfiguration(),factory.getHistoryService(),factory.getMonitorService(),
-				system.getNotifierFactory());
-		UserService userService = system.getServiceFactory().getUserService();
-		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name_test", expression, "* * * * *");
-		Metric metric = new Metric("scope", "metric");
-		double thresholdValue = 1;
-		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, String> datapoints = new HashMap<Long, String>();
-		datapoints.put(0L, "1");
-		datapoints.put(2*60*1000L, "0");
-		datapoints.put(inertia, "1");
-		metric.setDatapoints(datapoints);
-		Long actualValue = service.getTriggerFiredDatapointTime(trigger, metric);
-		assertNull(actualValue);
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser("test2", "test2@salesforce.com"));
+		
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
+		
+		alertSharedUser1.setShared(true);
+		alertService.updateAlert(alertSharedUser1);
+		alertSharedUser2.setShared(true);
+		alertService.updateAlert(alertSharedUser2);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertSharedUser1);
+		expectedSharedResult.add(alertSharedUser2);
+		
+		
+		assertEquals(expectedSharedResult, alertService.findSharedAlerts());
+		
+		
+		
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

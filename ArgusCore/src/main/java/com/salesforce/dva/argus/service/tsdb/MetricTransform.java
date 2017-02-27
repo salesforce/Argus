@@ -98,7 +98,7 @@ class MetricTransform {
     
     private static Metric _deserializeMetric(JsonNode node) throws IOException {
     	ObjectMapper mapper = new ObjectMapper();
-    	Map<Long, String> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, String>>() { });
+    	Map<Long, Double> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, Double>>() { });
     	if(datapoints.isEmpty()) {
     		return null;
     	}
@@ -194,13 +194,13 @@ class MetricTransform {
 
         @Override
         public void serialize(Metric metric, JsonGenerator jgen, SerializerProvider sp) throws IOException {
-            Map<Long, String> datapoints = metric.getDatapoints();
+            Map<Long, Double> datapoints = metric.getDatapoints();
 
-            for (Map.Entry<Long, String> entry : datapoints.entrySet()) {
+            for (Map.Entry<Long, Double> entry : datapoints.entrySet()) {
                 jgen.writeStartObject();
                 jgen.writeStringField("metric", DefaultTSDBService.constructTSDBMetricName(metric));
                 jgen.writeNumberField("timestamp", entry.getKey());
-                jgen.writeStringField("value", entry.getValue());
+                jgen.writeNumberField("value", entry.getValue());
                 serializeTags(metric, jgen);
                 jgen.writeEndObject();
             }
@@ -210,8 +210,7 @@ class MetricTransform {
             jgen.writeObjectFieldStart("tags");
 
             Map<String, String> tags = new HashMap<>(metric.getTags());
-
-            //tags.put(ReservedField.METRIC.getKey(), metric.getMetric());
+            
             tags.put(ReservedField.META.getKey(), toMeta(metric));
             for (Map.Entry<String, String> tagEntry : tags.entrySet()) {
                 jgen.writeStringField(tagEntry.getKey(), tagEntry.getValue());

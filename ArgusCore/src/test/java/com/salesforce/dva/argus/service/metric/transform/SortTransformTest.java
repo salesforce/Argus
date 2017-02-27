@@ -50,9 +50,9 @@ public class SortTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSortTransformWithIllegalLimit() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -73,9 +73,9 @@ public class SortTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSortTransformWithIllegalType() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -96,9 +96,9 @@ public class SortTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSortTransformWithIllegalOrder() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -131,11 +131,11 @@ public class SortTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSortTransformWithoutConstants() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -155,11 +155,11 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitAndType() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -175,11 +175,11 @@ public class SortTransformTest {
         constants.add("2");
         constants.add("minima");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "1");
-        expected.put(3000L, "1");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 1.0);
+        expected.put(3000L, 1.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -191,11 +191,11 @@ public class SortTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSortTransformWithLimitAndOrder() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
@@ -216,33 +216,33 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitLessThanLenNameDes() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "1");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = mock(Metric.class);
 
         when(metric_1.getDatapoints()).thenReturn(datapoints_1);
         when(metric_1.getMetric()).thenReturn("a");
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "2");
-        datapoints_2.put(3000L, "2");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 2.0);
+        datapoints_2.put(3000L, 2.0);
 
         Metric metric_2 = mock(Metric.class);
 
         when(metric_2.getDatapoints()).thenReturn(datapoints_2);
         when(metric_2.getMetric()).thenReturn("b");
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "3");
-        datapoints_3.put(3000L, "3");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 3.0);
+        datapoints_3.put(3000L, 3.0);
 
         Metric metric_3 = mock(Metric.class);
 
@@ -261,17 +261,17 @@ public class SortTransformTest {
         constants.add("name");
         constants.add("descending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "3");
-        expected_1.put(3000L, "3");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(3000L, 3.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "2");
-        expected_2.put(2000L, "2");
-        expected_2.put(3000L, "2");
+        expected_2.put(1000L, 2.0);
+        expected_2.put(2000L, 2.0);
+        expected_2.put(3000L, 2.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -283,31 +283,31 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitEqualToLenMinAsc() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "100");
-        datapoints_1.put(3000L, "100");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 100.0);
+        datapoints_1.put(3000L, 100.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "200");
-        datapoints_2.put(3000L, "200");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 200.0);
+        datapoints_2.put(3000L, 200.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "300");
-        datapoints_3.put(3000L, "300");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 300.0);
+        datapoints_3.put(3000L, 300.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -325,23 +325,23 @@ public class SortTransformTest {
         constants.add("minima");
         constants.add("ascending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "1");
-        expected_1.put(2000L, "100");
-        expected_1.put(3000L, "100");
+        expected_1.put(1000L, 1.0);
+        expected_1.put(2000L, 100.0);
+        expected_1.put(3000L, 100.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "2");
-        expected_2.put(2000L, "200");
-        expected_2.put(3000L, "200");
+        expected_2.put(1000L, 2.0);
+        expected_2.put(2000L, 200.0);
+        expected_2.put(3000L, 200.0);
 
-        Map<Long, String> expected_3 = new HashMap<Long, String>();
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
 
-        expected_3.put(1000L, "3");
-        expected_3.put(2000L, "300");
-        expected_3.put(3000L, "300");
+        expected_3.put(1000L, 3.0);
+        expected_3.put(2000L, 300.0);
+        expected_3.put(3000L, 300.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -354,31 +354,31 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitGreaterThanLenMaxDes() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "1");
-        datapoints_1.put(3000L, "100");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 1.0);
+        datapoints_1.put(3000L, 100.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "2");
-        datapoints_2.put(2000L, "2");
-        datapoints_2.put(3000L, "200");
+        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(2000L, 2.0);
+        datapoints_2.put(3000L, 200.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "3");
-        datapoints_3.put(2000L, "3");
-        datapoints_3.put(3000L, "300");
+        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(2000L, 3.0);
+        datapoints_3.put(3000L, 300.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -396,23 +396,23 @@ public class SortTransformTest {
         constants.add("maxima");
         constants.add("descending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "3");
-        expected_1.put(2000L, "3");
-        expected_1.put(3000L, "300");
+        expected_1.put(1000L, 3.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(3000L, 300.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "2");
-        expected_2.put(2000L, "2");
-        expected_2.put(3000L, "200");
+        expected_2.put(1000L, 2.0);
+        expected_2.put(2000L, 2.0);
+        expected_2.put(3000L, 200.0);
 
-        Map<Long, String> expected_3 = new HashMap<Long, String>();
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
 
-        expected_3.put(1000L, "1");
-        expected_3.put(2000L, "1");
-        expected_3.put(3000L, "100");
+        expected_3.put(1000L, 1.0);
+        expected_3.put(2000L, 1.0);
+        expected_3.put(3000L, 100.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -425,31 +425,31 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitLessThanLenDevAsc() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "4");
-        datapoints_1.put(3000L, "7");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 4.0);
+        datapoints_1.put(3000L, 7.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "1");
-        datapoints_2.put(2000L, "3");
-        datapoints_2.put(3000L, "5");
+        datapoints_2.put(1000L, 1.0);
+        datapoints_2.put(2000L, 3.0);
+        datapoints_2.put(3000L, 5.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
-        datapoints_3.put(1000L, "1");
-        datapoints_3.put(2000L, "2");
-        datapoints_3.put(3000L, "3");
+        datapoints_3.put(1000L, 1.0);
+        datapoints_3.put(2000L, 2.0);
+        datapoints_3.put(3000L, 3.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -467,17 +467,17 @@ public class SortTransformTest {
         constants.add("dev");
         constants.add("ascending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "1");
-        expected_1.put(2000L, "2");
-        expected_1.put(3000L, "3");
+        expected_1.put(1000L, 1.0);
+        expected_1.put(2000L, 2.0);
+        expected_1.put(3000L, 3.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "1");
-        expected_2.put(2000L, "3");
-        expected_2.put(3000L, "5");
+        expected_2.put(1000L, 1.0);
+        expected_2.put(2000L, 3.0);
+        expected_2.put(3000L, 5.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -489,31 +489,31 @@ public class SortTransformTest {
     @Test
     public void testSortTransformWithLimitGreaterThanLenMaxDesHavingNull() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, null);
-        datapoints_1.put(3000L, "100");
+        datapoints_1.put(3000L, 100.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
         datapoints_2.put(1000L, null);
         datapoints_2.put(2000L, null);
-        datapoints_2.put(3000L, "200");
+        datapoints_2.put(3000L, 200.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, String> datapoints_3 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
 
         datapoints_3.put(1000L, null);
         datapoints_3.put(2000L, null);
-        datapoints_3.put(3000L, "300");
+        datapoints_3.put(3000L, 300.0);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -531,23 +531,23 @@ public class SortTransformTest {
         constants.add("maxima");
         constants.add("descending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
         expected_1.put(1000L, null);
         expected_1.put(2000L, null);
-        expected_1.put(3000L, "300");
+        expected_1.put(3000L, 300.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
         expected_2.put(1000L, null);
         expected_2.put(2000L, null);
-        expected_2.put(3000L, "200");
+        expected_2.put(3000L, 200.0);
 
-        Map<Long, String> expected_3 = new HashMap<Long, String>();
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
 
         expected_3.put(1000L, null);
         expected_3.put(2000L, null);
-        expected_3.put(3000L, "100");
+        expected_3.put(3000L, 100.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 
@@ -560,21 +560,21 @@ public class SortTransformTest {
     @Test
     public void testSortTransformBug_W2802798() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(0L, "2");
-        datapoints_1.put(60000L, "1");
-        datapoints_1.put(120000L, "3");
+        datapoints_1.put(0L, 2.0);
+        datapoints_1.put(60000L, 1.0);
+        datapoints_1.put(120000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(0L, "3");
-        datapoints_2.put(60000L, "6");
-        datapoints_2.put(120000L, "9");
+        datapoints_2.put(0L, 3.0);
+        datapoints_2.put(60000L, 6.0);
+        datapoints_2.put(120000L, 9.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
@@ -590,17 +590,69 @@ public class SortTransformTest {
         constants.add("minima");
         constants.add("ascending");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, "2");
-        expected_1.put(60000L, "1");
-        expected_1.put(120000L, "3");
+        expected_1.put(0L, 2.0);
+        expected_1.put(60000L, 1.0);
+        expected_1.put(120000L, 3.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(0L, "3");
-        expected_2.put(60000L, "6");
-        expected_2.put(120000L, "9");
+        expected_2.put(0L, 3.0);
+        expected_2.put(60000L, 6.0);
+        expected_2.put(120000L, 9.0);
+
+        List<Metric> result = sortTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 2);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+        assertEquals(expected_2, result.get(1).getDatapoints());
+    }
+    
+    @Test
+    public void testSortTransform() {
+        Transform sortTransform = new SortTransformWrapAboveAndBelow();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(0L, 20.0);
+        datapoints_1.put(60000L, 10.0);
+        datapoints_1.put(120000L, 30.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(0L, 3.0);
+        datapoints_2.put(60000L, 6.0);
+        datapoints_2.put(120000L, 9.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("maxima");
+        constants.add("ascending");
+
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+        expected_1.put(0L, 3.0);
+        expected_1.put(60000L, 6.0);
+        expected_1.put(120000L, 9.0);
+
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+
+        expected_2.put(0L, 20.0);
+        expected_2.put(60000L, 10.0);
+        expected_2.put(120000L, 30.0);
 
         List<Metric> result = sortTransform.transform(metrics, constants);
 

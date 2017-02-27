@@ -45,7 +45,7 @@ public class Metric extends TSDBEntity {
     private String namespace;
     private String displayName;
     private String units;
-    private Map<Long, String> datapoints;
+    private Map<Long, Double> datapoints;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -108,7 +108,7 @@ public class Metric extends TSDBEntity {
      *
      * @return  The metric data points.
      */
-    public Map<Long, String> getDatapoints() {
+    public Map<Long, Double> getDatapoints() {
         return datapoints;
     }
 
@@ -117,7 +117,7 @@ public class Metric extends TSDBEntity {
      *
      * @param  datapoints  The metric data points.
      */
-    public void setDatapoints(Map<Long, String> datapoints) {
+    public void setDatapoints(Map<Long, Double> datapoints) {
         this.datapoints = datapoints;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2017, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -68,38 +67,58 @@ public class AliasTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        List<Metric> aliasMetricList = new ArrayList<Metric>();
-
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics");
-        if (metrics.isEmpty()) {
-            return metrics;
-        }
-        SystemAssert.requireArgument(constants != null && constants.size() == 2, "Alias Transform must provide exactly two constants.");
-        SystemAssert.requireArgument(REGRE.equals(constants.get(1)) || LITERAL.equals(constants.get(1)),
-            "Alias Transform can only performed for a regurlar expression or a string literal.");
-        if (constants.get(1).equals(REGRE)) {
+        SystemAssert.requireArgument(constants != null && (constants.size() == 2 || constants.size() == 4), "Alias Transform must provide either 2 or 4 constants.");
+        
+        String aliasTypeForMetric = constants.get(1);
+        
+        SystemAssert.requireArgument(REGRE.equals(aliasTypeForMetric) || LITERAL.equals(aliasTypeForMetric), 
+        		"Alias Transform can only performed for a regular expression or a string literal.");
+        if (REGRE.equals(aliasTypeForMetric)) {
             SystemAssert.requireArgument(constants.get(0).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
         }
 
-        String searchRegex = "";
-        String replaceText = "";
-        String type = constants.get(1);
-
-        if (REGRE.equals(type)) {
-            searchRegex = constants.get(0).split("/")[1];
-            replaceText = constants.get(0).split("/")[2];
-        } else if (LITERAL.equals(type)) {
-            searchRegex = ".+";
-            replaceText = constants.get(0);
+        String metricSearchRegex = "";
+        String metricReplaceText = "";
+        String scopeSearchRegex = "";
+        String scopeReplaceText = "";
+        if (REGRE.equals(aliasTypeForMetric)) {
+            metricSearchRegex = constants.get(0).split("/")[1];
+            metricReplaceText = constants.get(0).split("/")[2];
+        } else if (LITERAL.equals(aliasTypeForMetric)) {
+            metricSearchRegex = ".+";
+            metricReplaceText = constants.get(0);
         }
+
+        if(constants.size() == 4) {
+        	String aliasTypeForScope = constants.get(3);
+        	SystemAssert.requireArgument(REGRE.equals(aliasTypeForScope) || LITERAL.equals(aliasTypeForScope), 
+        			"Alias Transform can only performed for a regular expression or a string literal.");
+        	if (REGRE.equals(aliasTypeForScope)) {
+                SystemAssert.requireArgument(constants.get(2).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
+            }
+        	
+        	
+            if (REGRE.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = constants.get(2).split("/")[1];
+            	scopeReplaceText = constants.get(2).split("/")[2];
+            } else if (LITERAL.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = ".+";
+            	scopeReplaceText = constants.get(2);
+            }
+        }
+        
         for (Metric metric : metrics) {
-            String name = metric.getMetric();
-            String newName = name.replaceAll(searchRegex, replaceText);
-
-            metric.setMetric(newName);
-            aliasMetricList.add(metric);
+            String newMetricName = metric.getMetric().replaceAll(metricSearchRegex, metricReplaceText);
+            metric.setMetric(newMetricName);
+            
+            if(constants.size() == 4) {
+            	String newScopeName = metric.getScope().replaceAll(scopeSearchRegex, scopeReplaceText);
+            	metric.setScope(newScopeName);
+            }
         }
-        return aliasMetricList;
+        
+        return metrics;
     }
 
     @Override
@@ -108,7 +127,7 @@ public class AliasTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
 }

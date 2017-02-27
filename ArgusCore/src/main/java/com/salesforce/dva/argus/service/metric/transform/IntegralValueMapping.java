@@ -46,20 +46,20 @@ public class IntegralValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
-        Map<Long, String> sortedDatapoints = new TreeMap<>();
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
         Double prevSum = 0.0;
 
         sortedDatapoints.putAll(originalDatapoints);
-        for (Entry<Long, String> entry : sortedDatapoints.entrySet()) {
-            prevSum += Double.valueOf(entry.getValue());
-            sortedDatapoints.put(entry.getKey(), String.valueOf(prevSum));
+        for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
+            prevSum += entry.getValue();
+            sortedDatapoints.put(entry.getKey(), prevSum);
         }
         return sortedDatapoints;
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
     }
 

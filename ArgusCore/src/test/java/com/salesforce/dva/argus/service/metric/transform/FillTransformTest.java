@@ -152,12 +152,12 @@ public class FillTransformTest {
     @Test
     public void testWithIntervalLessThanFillRangeOffsetPositive() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -173,13 +173,13 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(3000L, "100.0");
-        expected.put(4000L, "100.0");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(3000L, 100.0);
+        expected.put(4000L, 100.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -190,12 +190,12 @@ public class FillTransformTest {
     @Test
     public void testWithIntervalEqualsToFillRangeOffsetNegative() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -211,13 +211,13 @@ public class FillTransformTest {
         constants.add("-1s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "100.0");
-        expected.put(4000L, "4");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 100.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -228,12 +228,12 @@ public class FillTransformTest {
     @Test
     public void testWithIntervalGreaterThanFillRangeOffsetNegative() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(4000L, "4");
-        datapoints.put(5000L, "5");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(4000L, 4.0);
+        datapoints.put(5000L, 5.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -249,12 +249,12 @@ public class FillTransformTest {
         constants.add("-1s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(4000L, "4");
-        expected.put(5000L, "5");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(4000L, 4.0);
+        expected.put(5000L, 5.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -265,11 +265,11 @@ public class FillTransformTest {
     @Test
     public void testWithMultipeFillRangeOffsetPositive() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(3000L, "3");
-        datapoints.put(6000L, "6");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(3000L, 3.0);
+        datapoints.put(6000L, 6.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -285,11 +285,11 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(3000L, "3");
-        expected.put(6000L, "6");
+        expected.put(1000L, 1.0);
+        expected.put(3000L, 3.0);
+        expected.put(6000L, 6.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -300,21 +300,21 @@ public class FillTransformTest {
     @Test
     public void testMetricListWithMultipeFillRangeOffsetNegative() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(3000L, "3");
-        datapoints_1.put(6000L, "6");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(6000L, 6.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "21");
-        datapoints_2.put(3000L, "23");
-        datapoints_2.put(6000L, "26");
+        datapoints_2.put(1000L, 21.0);
+        datapoints_2.put(3000L, 23.0);
+        datapoints_2.put(6000L, 26.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -331,19 +331,19 @@ public class FillTransformTest {
         constants.add("-1s");
         constants.add("100.0");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "100.0");
-        expected_1.put(3000L, "100.0");
-        expected_1.put(4000L, "100.0");
-        expected_1.put(6000L, "6");
+        expected_1.put(1000L, 100.0);
+        expected_1.put(3000L, 100.0);
+        expected_1.put(4000L, 100.0);
+        expected_1.put(6000L, 6.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "100.0");
-        expected_2.put(3000L, "100.0");
-        expected_2.put(4000L, "100.0");
-        expected_2.put(6000L, "26");
+        expected_2.put(1000L, 100.0);
+        expected_2.put(3000L, 100.0);
+        expected_2.put(4000L, 100.0);
+        expected_2.put(6000L, 26.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -356,9 +356,9 @@ public class FillTransformTest {
     @Test
     public void testWithOnlyOneDPOffsetPostitiveShouldShiftOnly() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -374,9 +374,9 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
+        expected.put(1000L, 1.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -387,11 +387,11 @@ public class FillTransformTest {
     @Test
     public void testNoMetricWithMissingPointAndOtherTimeUnitOffsetPositive() {
         Transform fillTransform = new FillTransform();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -407,11 +407,11 @@ public class FillTransformTest {
         constants.add("2s");
         constants.add("100.0");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "1");
-        expected.put(2000L, "2");
-        expected.put(3000L, "3");
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
 
         List<Metric> result = fillTransform.transform(metrics, constants);
 
@@ -431,11 +431,11 @@ public class FillTransformTest {
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(2000L, "100.0");
-        expected.put(3000L, "100.0");
-        expected.put(4000L, "100.0");
+        expected.put(2000L, 100.0);
+        expected.put(3000L, 100.0);
+        expected.put(4000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -455,10 +455,10 @@ public class FillTransformTest {
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(-1000L, "100.0");
-        expected.put(1000L, "100.0");
+        expected.put(-1000L, 100.0);
+        expected.put(1000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -478,10 +478,10 @@ public class FillTransformTest {
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(-1000L, "100.0");
-        expected.put(2000L, "100.0");
+        expected.put(-1000L, 100.0);
+        expected.put(2000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -501,9 +501,9 @@ public class FillTransformTest {
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(0L, "100.0");
+        expected.put(0L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -537,7 +537,7 @@ public class FillTransformTest {
         result.get(0).getDatapoints().keySet().toArray(timestampSet);
         assertEquals(true, timestampSet[0] - expectedStartTimestamp <= 1000L);
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
-        assertEquals(new HashSet<String>(Arrays.asList("100.0")), new HashSet<String>(result.get(0).getDatapoints().values()));
+        assertEquals(new HashSet<Double>(Arrays.asList(100.0)), new HashSet<Double>(result.get(0).getDatapoints().values()));
     }
 
     @Test
@@ -566,7 +566,7 @@ public class FillTransformTest {
         result.get(0).getDatapoints().keySet().toArray(timestampSet);
         assertEquals(true, timestampSet[0] - expectedStartTimestamp <= 1000L);
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
-        assertEquals(new HashSet<String>(Arrays.asList("100.0")), new HashSet<String>(result.get(0).getDatapoints().values()));
+        assertEquals(new HashSet<Double>(Arrays.asList(100.0)), new HashSet<Double>(result.get(0).getDatapoints().values()));
     }
 
     @Test
@@ -593,7 +593,7 @@ public class FillTransformTest {
         result.get(0).getDatapoints().keySet().toArray(timestampSet);
         assertEquals(true, timestampSet[0] - expectedStartTimestamp <= 1000L);
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
-        assertEquals(new HashSet<String>(Arrays.asList("100.0")), new HashSet<String>(result.get(0).getDatapoints().values()));
+        assertEquals(new HashSet<Double>(Arrays.asList(100.0)), new HashSet<Double>(result.get(0).getDatapoints().values()));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

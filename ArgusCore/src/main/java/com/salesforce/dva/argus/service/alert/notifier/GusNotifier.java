@@ -156,10 +156,10 @@ public class GusNotifier extends AuditNotifier {
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = context.getAlert().getExpression();
 		String triggerDetails = getTriggerDetails(trigger);
-		String triggerEventValue = context.getTriggerEventValue();
+		double triggerEventValue = context.getTriggerEventValue();
 		Object[] arguments = new Object[] {
 				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric()
+				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
 		};
 
 		/** gus feed template for notification information. */
@@ -177,6 +177,9 @@ public class GusNotifier extends AuditNotifier {
 		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
 			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
 					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
+		}
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("\n>"); 
 		}
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();

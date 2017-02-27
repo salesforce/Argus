@@ -59,7 +59,7 @@ public class AlertServiceTest extends AbstractTest {
     public void testGetAlerts() throws IOException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
-            List<Alert> result = alertService.getAlerts();
+            List<Alert> result = alertService.getAlerts(false);
             List<Alert> expected = Arrays.asList(new Alert[] { _constructPersistedAlert() });
 
             assertEquals(expected, result);
@@ -326,6 +326,7 @@ public class AlertServiceTest extends AbstractTest {
         alert.setMissingDataNotificationEnabled(false);
         alert.setName("TestAlert");
         alert.setOwnerName("admin");
+        alert.setShared(false);
         return alert;
     }
 
@@ -356,7 +357,9 @@ public class AlertServiceTest extends AbstractTest {
         notification.setMetricsToAnnotate(Arrays.asList(new String[] { "argus.jvm:open.file.descriptors:sum" }));
         notification.setName("TestNotification");
         notification.setNotifierName("EmailNotifier");
+        notification.setSRActionable(false);
         notification.setSubscriptions(Arrays.asList(new String[] { "you@yourcompany.com" }));
+        notification.setCustomText("custom_text");
         return notification;
     }
 

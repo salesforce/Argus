@@ -19,11 +19,11 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-    version: '2.2.0-SNAPSHOT',
+    version: '2.4.0-SNAPSHOT',
     wsUrl: 'http://localhost:8080/argusws/',
     emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
     feedUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-user',
-    wikiUrl: 'https://github.com/SalesforceEng/Argus/wiki',
+    wikiUrl: 'https://github.com/salesforce/Argus/wiki',
     issueUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev',
     templatePath: '/app/views/argus_custom_directives/templates/'
 });

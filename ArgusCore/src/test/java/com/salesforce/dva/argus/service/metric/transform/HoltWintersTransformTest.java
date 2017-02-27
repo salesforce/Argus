@@ -42,71 +42,71 @@ public class HoltWintersTransformTest {
     @Test
     public void testHoltWintersForecast() {
         HoltWintersAnalysis holtWinters = new HoltWintersAnalysis();
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
-        dp.put(2L, "3.0");
-        dp.put(3L, "4.0");
-        dp.put(4L, "5.0");
-        dp.put(5L, "8.0");
-        dp.put(6L, "13.0");
-        dp.put(7L, "6.0");
-        dp.put(8L, "4.0");
-        dp.put(9L, "3.0");
-        dp.put(10L, "2.5");
+        dp.put(2L, 3.0);
+        dp.put(3L, 4.0);
+        dp.put(4L, 5.0);
+        dp.put(5L, 8.0);
+        dp.put(6L, 13.0);
+        dp.put(7L, 6.0);
+        dp.put(8L, 4.0);
+        dp.put(9L, 3.0);
+        dp.put(10L, 2.5);
 
         double alpha = 0.1, beta = 0.0035, gamma = 0.1;
         int seasonLength = 1;
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(2L, "3");
-        expected.put(3L, "3");
-        expected.put(4L, "3.10035");
-        expected.put(5L, "3.2823");
-        expected.put(6L, "3.73133");
-        expected.put(7L, "4.59829");
-        expected.put(8L, "4.60102");
-        expected.put(9L, "4.40302");
-        expected.put(10L, "4.14214");
+        expected.put(2L, 3.0);
+        expected.put(3L, 3.0);
+        expected.put(4L, 3.10035);
+        expected.put(5L, 3.2823);
+        expected.put(6L, 3.73133);
+        expected.put(7L, 4.59829);
+        expected.put(8L, 4.60102);
+        expected.put(9L, 4.40302);
+        expected.put(10L, 4.14214);
 
-        Map<Long, String> forecastedDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
+        Map<Long, Double> forecastedDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
             .getForecastedDatapoints();
 
-        assertTrue(forecastedDatapoints.equals(expected));
+        assertEquals(expected, forecastedDatapoints);
     }
 
     @Test
     public void testHoltWintersDeviation() {
         HoltWintersAnalysis holtWinters = new HoltWintersAnalysis();
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
-        dp.put(2L, "3.0");
-        dp.put(3L, "4.0");
-        dp.put(4L, "5.0");
-        dp.put(5L, "8.0");
-        dp.put(6L, "13.0");
-        dp.put(7L, "6.0");
-        dp.put(8L, "4.0");
-        dp.put(9L, "3.0");
-        dp.put(10L, "2.5");
+        dp.put(2L, 3.0);
+        dp.put(3L, 4.0);
+        dp.put(4L, 5.0);
+        dp.put(5L, 8.0);
+        dp.put(6L, 13.0);
+        dp.put(7L, 6.0);
+        dp.put(8L, 4.0);
+        dp.put(9L, 3.0);
+        dp.put(10L, 2.5);
 
         double alpha = 0.1, beta = 0.0035, gamma = 0.1;
         int seasonLength = 1;
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(2L, "0");
-        expected.put(3L, "0.1");
-        expected.put(4L, "0.27997");
-        expected.put(5L, "0.72374");
-        expected.put(6L, "1.57824");
-        expected.put(7L, "1.56059");
-        expected.put(8L, "1.46463");
-        expected.put(9L, "1.45847");
-        expected.put(10L, "1.47683");
+        expected.put(2L, 0.0);
+        expected.put(3L, 0.1);
+        expected.put(4L, 0.27997);
+        expected.put(5L, 0.72374);
+        expected.put(6L, 1.57824);
+        expected.put(7L, 1.56059);
+        expected.put(8L, 1.46463);
+        expected.put(9L, 1.45847);
+        expected.put(10L, 1.47683);
 
-        Map<Long, String> deviationDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
+        Map<Long, Double> deviationDatapoints = holtWinters._performHoltWintersAnalysis(dp, alpha, beta, gamma, seasonLength, 2L)
             .getDeviationDatapoints();
 
-        assertTrue(deviationDatapoints.equals(expected));
+        assertEquals(expected, deviationDatapoints);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

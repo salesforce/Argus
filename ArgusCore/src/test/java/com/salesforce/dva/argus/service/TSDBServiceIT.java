@@ -64,7 +64,7 @@ public class TSDBServiceIT extends AbstractTest {
     private static final long SLEEP_AFTER_PUT_IN_MILLIS = 2000;
 
     protected static MetricQuery toQuery(Metric metric) {
-        TreeMap<Long, String> datapoints = new TreeMap<>(metric.getDatapoints());
+        TreeMap<Long, Double> datapoints = new TreeMap<>(metric.getDatapoints());
         Long start = datapoints.firstKey();
         Long end = datapoints.lastKey();
 
@@ -82,11 +82,11 @@ public class TSDBServiceIT extends AbstractTest {
             String metricName = metric == null ? createRandomName() : metric;
             Metric met = new Metric(scope, metricName);
             int datapointCount = random.nextInt(25) + 1;
-            Map<Long, String> datapoints = new HashMap<>();
+            Map<Long, Double> datapoints = new HashMap<>();
             long start = System.currentTimeMillis() - 60000L;
 
             for (int j = 0; j < datapointCount; j++) {
-                datapoints.put(start - (j * 60000L), String.valueOf(random.nextInt(100) + 1));
+                datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
             }
             met.setDatapoints(datapoints);
             met.setDisplayName(createRandomName());
@@ -180,7 +180,7 @@ public class TSDBServiceIT extends AbstractTest {
 
                 forType.setTag("recordType", recordType);
 
-                TreeMap<Long, String> dp = new TreeMap<>(forType.getDatapoints());
+                TreeMap<Long, Double> dp = new TreeMap<>(forType.getDatapoints());
                 long earliest = dp.firstKey();
                 long latest = dp.lastKey();
 
@@ -321,10 +321,10 @@ public class TSDBServiceIT extends AbstractTest {
     public void testFractureMetrics() {
         TSDBService service = new DefaultTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
         Metric metric = new Metric("testscope", "testMetric");
-        Map<Long, String> datapoints = new HashMap<>();
+        Map<Long, Double> datapoints = new HashMap<>();
 
         for (int i = 0; i <= 200; i++) {
-            datapoints.put(System.currentTimeMillis() + (i * 60000L), String.valueOf(random.nextInt(50)));
+            datapoints.put(System.currentTimeMillis() + (i * 60000L), (double)(random.nextInt(50)));
         }
         metric.setDatapoints(datapoints);
         try {

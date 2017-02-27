@@ -56,7 +56,7 @@ public class DashboardServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUserCrud() {
+    public void testDashboardCrud() {
         PrincipalUser owner = new PrincipalUser("owner", "owner@mycompany.abc");
         Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
 

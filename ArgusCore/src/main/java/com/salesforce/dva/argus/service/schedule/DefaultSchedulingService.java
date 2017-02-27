@@ -296,7 +296,7 @@ public class DefaultSchedulingService extends DefaultService implements Scheduli
                         key = _refreshMaster(key);
                     }
                 }
-
+                
                 boolean interrupted = interrupted();
 
                 _releaseLock(key);

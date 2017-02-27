@@ -31,14 +31,14 @@
 	 
 package com.salesforce.dva.argus.entity;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Objects;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -49,22 +49,17 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
-import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
 import javax.persistence.Query;
 import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 import javax.persistence.TypedQuery;
+import javax.persistence.UniqueConstraint;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * It encapsulates the information about job execution.
@@ -75,45 +70,44 @@ import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
 @Entity
 @NamedQueries(
     {
-        @NamedQuery(name = "History.findByJob", query = "SELECT a FROM History a WHERE a.entity = :entity order by a.createdDate DESC"),
+        @NamedQuery(
+        	name = "History.findByJob", 
+        	query = "SELECT a FROM History a WHERE a.entityId = :entityId order by a.creationTime DESC"),
         @NamedQuery(
             name = "History.findByJobAndStatus",
-            query = "SELECT a FROM History a WHERE a.entity = :entity and a.jobStatus = :jobStatus order by a.createdDate DESC"
-        ), @NamedQuery(
-            name = "History.cullExpired", query = "DELETE FROM History AS h WHERE H.createdDate < :expirationDate"
-        ), @NamedQuery(name = "History.cullOrphans", query = "DELETE FROM History AS h WHERE h.id IS NULL")
+            query = "SELECT a FROM History a WHERE a.entityId = :entityId and a.jobStatus = :jobStatus order by a.creationTime DESC"
+        ), 
+        @NamedQuery(
+            name = "History.cullExpired", 
+            query = "DELETE FROM History AS h WHERE H.creationTime < :expiryTime"
+        )
     }
 )
-@Table(indexes = { @Index(columnList = "entity_id") })
+@Table(indexes = { @Index(columnList = "entityId") }, uniqueConstraints = @UniqueConstraint(columnNames = { "entityId", "creationTime" }))
 public class History implements Serializable, Identifiable {
 
     //~ Instance fields ******************************************************************************************************************************
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	@Basic(optional = false)
+    @Column(nullable = false, updatable = false)
+	private BigInteger id;
+	
     @Basic(optional = false)
     @Column(nullable = false, updatable = false)
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Id
-    private BigInteger id;
+    private BigInteger entityId;
     @Basic(optional = false)
     @Column(nullable = false, updatable = false)
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdDate;
+    private Long creationTime;
     @Lob
     private String message;
     @Basic(optional = false)
     @Column(nullable = false)
     private String hostName;
-    @ManyToOne(optional = true)
-    @JoinColumn(nullable = true, name = "entity_id")
-    private JPAEntity entity;
     @Enumerated(EnumType.STRING)
     private JobStatus jobStatus;
-    private long waitTime;
     private long executionTime;
-    @Basic(optional = false)
-    @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
-    protected Date modifiedDate;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -122,11 +116,11 @@ public class History implements Serializable, Identifiable {
      *
      * @param  message    Describes the job status in detail.
      * @param  hostname   The host where the job is executed. Cannot be null.
-     * @param  entity     The job entity. Cannot be null.
+     * @param  entityId   The entity id of the job for which this history is created. Cannot be null.
      * @param  jobStatus  Status of the job.
      */
-    public History(String message, String hostname, JPAEntity entity, JobStatus jobStatus) {
-        this(message, hostname, entity, jobStatus, 0, 0);
+    public History(String message, String hostname, BigInteger entityId, JobStatus jobStatus) {
+        this(message, hostname, entityId, jobStatus, 0);
     }
 
     /**
@@ -134,18 +128,31 @@ public class History implements Serializable, Identifiable {
      *
      * @param  message        Describes the job status in detail.
      * @param  hostname       The host where the job is executed. Cannot be null.
-     * @param  entity         The job entity. Cannot be null.
+     * @param  entityId   	  The entity id of the job for which this history is created. Cannot be null.
      * @param  jobStatus      Status of the job.
-     * @param  waitTime       The job waiting time in MS .
      * @param  executionTime  The job execution time in MS.
      */
-    public History(String message, String hostname, JPAEntity entity, JobStatus jobStatus, long waitTime, long executionTime) {
+    public History(String message, String hostname, BigInteger entityId, JobStatus jobStatus, long executionTime) {
+        this(message, hostname, entityId, jobStatus, executionTime, System.currentTimeMillis());
+    }
+    
+    /**
+     * Creates a new History object.
+     *
+     * @param  message        Describes the job status in detail.
+     * @param  hostname       The host where the job is executed. Cannot be null.
+     * @param  entityId   	  The entity id of the job for which this history is created. Cannot be null.
+     * @param  jobStatus      Status of the job.
+     * @param  executionTime  The job execution time in ms.
+     * @param  creationTime   The history object creation timestamp.
+     */
+    public History(String message, String hostname, BigInteger entityId, JobStatus jobStatus, long executionTime, long creationTime) {
         setMessage(message);
         setHostName(hostname);
-        setEntity(entity);
+        setEntityId(entityId);
         setJobStatus(jobStatus);
-        setWaitTime(waitTime);
         setExecutionTime(executionTime);
+        setCreationTime(creationTime);
     }
 
     /** Creates a new History object. */
@@ -156,23 +163,22 @@ public class History implements Serializable, Identifiable {
     /**
      * Finds all history records for the given job.
      *
-     * @param   em     Entity manager. Cannot be null.
-     * @param   job    The job for which the history will be returned. Cannot be null.
-     * @param   limit  The number of results to return.
+     * @param   em     	Entity manager. Cannot be null.
+     * @param   jobId   The job for which the history will be returned. Cannot be null.
+     * @param   limit  	The number of results to return.
      *
      * @return  History belongs to given entity.
      */
-    public static List<History> findHistoryByJob(EntityManager em, JPAEntity job, BigInteger limit) {
+    public static List<History> findHistoryByJob(EntityManager em, BigInteger jobId, int limit) {
         requireArgument(em != null, "Entity manager cannot be null.");
-        requireArgument(job != null, "The job cannot be null.");
+        requireArgument(jobId != null, "The jobId cannot be null.");
+        requireArgument(limit > 0, "Limit must be a positive integer.");
 
         TypedQuery<History> query = em.createNamedQuery("History.findByJob", History.class);
-
-        if (limit != null) {
-            query.setMaxResults(limit.intValue());
-        }
+        query.setMaxResults(limit);
+        
         try {
-            query.setParameter("entity", job);
+            query.setParameter("entityId", jobId);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<History>(0);
@@ -183,23 +189,22 @@ public class History implements Serializable, Identifiable {
      * Finds all history records for the given job and job status.
      *
      * @param   em         Entity manager. Cannot be null.
-     * @param   job        The job for which the history will be returned. Cannot be null.
+     * @param   jobId      The job for which the history will be returned. Cannot be null.
      * @param   limit      The number of results to return.
      * @param   jobStatus  The status of the job. Cannot be null.
      *
      * @return  History belongs to given job.
      */
-    public static List<History> findHistoryByJobAndStatus(EntityManager em, JPAEntity job, BigInteger limit, JobStatus jobStatus) {
+    public static List<History> findHistoryByJobAndStatus(EntityManager em, BigInteger jobId, int limit, JobStatus jobStatus) {
         requireArgument(em != null, "Entity manager cannot be null.");
-        requireArgument(job != null, "The job cannot be null.");
+        requireArgument(jobId != null, "The jobId cannot be null.");
+        requireArgument(limit > 0, "Limit must be a positive integer.");
 
         TypedQuery<History> query = em.createNamedQuery("History.findByJobAndStatus", History.class);
-
-        if (limit != null) {
-            query.setMaxResults(limit.intValue());
-        }
+        query.setMaxResults(limit);
+        
         try {
-            query.setParameter("entity", job);
+            query.setParameter("entityId", jobId);
             query.setParameter("jobStatus", jobStatus);
             return query.getResultList();
         } catch (NoResultException ex) {
@@ -219,37 +224,17 @@ public class History implements Serializable, Identifiable {
 
         Query query = em.createNamedQuery("History.cullExpired");
 
-        query.setParameter("expirationDate", new Date(System.currentTimeMillis() - (2 * MILLIS_PER_WEEK)));
-        return query.executeUpdate();
-    }
-
-    /**
-     * Deletes the old job history.
-     *
-     * @param   em  Entity manager. Cannot be null.
-     *
-     * @return  no. of job history records deleted.
-     */
-    public static int deleteOrphans(EntityManager em) {
-        requireArgument(em != null, "Entity manager cannot be null.");
-
-        Query query = em.createNamedQuery("History.cullOrphans");
-
+        query.setParameter("expiryTime", System.currentTimeMillis() - (2 * MILLIS_PER_WEEK));
         return query.executeUpdate();
     }
 
     //~ Methods **************************************************************************************************************************************
 
-    /** Updates the created date and modified date before the entity is written to DB. */
-    @PrePersist
-    @PreUpdate
-    protected void preUpdate() {
-        this.modifiedDate = new Date();
-        if (this.createdDate == null) {
-            this.createdDate = this.modifiedDate;
-        }
-    }
-
+	@Override
+	public BigInteger getId() {
+		return id;
+	}
+    
     /**
      * returns the job status,
      *
@@ -266,24 +251,6 @@ public class History implements Serializable, Identifiable {
      */
     public void setJobStatus(JobStatus jobStatus) {
         this.jobStatus = jobStatus;
-    }
-
-    /**
-     * Returns job waiting time.
-     *
-     * @return  The job waiting time in MS.
-     */
-    public long getWaitTime() {
-        return waitTime;
-    }
-
-    /**
-     * Sets the waiting time.
-     *
-     * @param  waitTime  The job waiting time in MS.
-     */
-    public void setWaitTime(long waitTime) {
-        this.waitTime = waitTime;
     }
 
     /**
@@ -305,30 +272,22 @@ public class History implements Serializable, Identifiable {
     }
 
     /**
-     * Returns the Id.
+     * Returns the job history record creation time.
      *
-     * @return  The Id.
+     * @return  The timestamp when job history record was created
      */
-    public BigInteger getId() {
-        return id;
+    public Long getCreationTime() {
+        return creationTime;
     }
-
-    /**
-     * Returns the job modified date.
-     *
-     * @return  The modified date.
-     */
-    public Date getModifiedDate() {
-        return modifiedDate;
-    }
-
+    
     /**
      * Returns the job history record creation time.
      *
      * @return  The timestamp when job history record was created
      */
-    public Date getCreatedDate() {
-        return createdDate == null ? null : new Date(createdDate.getTime());
+    public void setCreationTime(Long creationTime) {
+    	requireArgument(creationTime != null, "Creation Time cannot be null.");
+        this.creationTime = creationTime;
     }
 
     /**
@@ -374,8 +333,8 @@ public class History implements Serializable, Identifiable {
      *
      * @return  The JPA entity which caused exception. Cannot be null or empty.
      */
-    public JPAEntity getEntity() {
-        return entity;
+    public BigInteger getEntityId() {
+        return entityId;
     }
 
     /**
@@ -383,44 +342,53 @@ public class History implements Serializable, Identifiable {
      *
      * @param  entity  The JPA entity. Cannot be null or empty.
      */
-    public void setEntity(JPAEntity entity) {
-        this.entity = entity;
+    public void setEntityId(BigInteger entityId) {
+        this.entityId = entityId;
     }
 
     @Override
     public String toString() {
-        return "History{" + "id=" + getId() + ", createdDate=" + getCreatedDate() + ", message= Too large to display here, hostName=" +
-            getHostName() + ", jobStatus=" + getJobStatus() + ", jobId=" + (getEntity() == null ? null : getEntity().id) + "}";
+        return "History{" + "creationTime=" + getCreationTime() + ", message= Too large to display here, hostName=" +
+            getHostName() + ", jobStatus=" + getJobStatus() + ", jobId=" + getEntityId() + "}";
     }
-
+    
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((creationTime == null) ? 0 : creationTime.hashCode());
+		result = prime * result
+				+ ((entityId == null) ? 0 : entityId.hashCode());
+		return result;
+	}
 
-        final History other = (History) obj;
-
-        if (!Objects.equals(this.id, other.id)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-
-        hash = 53 * hash + Objects.hashCode(this.id);
-        return hash;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		History other = (History) obj;
+		if (creationTime == null) {
+			if (other.creationTime != null)
+				return false;
+		} else if (!creationTime.equals(other.creationTime))
+			return false;
+		if (entityId == null) {
+			if (other.entityId != null)
+				return false;
+		} else if (!entityId.equals(other.entityId))
+			return false;
+		return true;
+	}
+    
 
     //~ Enums ****************************************************************************************************************************************
 
-    /**
+	/**
      * Describes the job status.
      *
      * @author  Raj Sarkapally (rsarkapally@salesforce.com)

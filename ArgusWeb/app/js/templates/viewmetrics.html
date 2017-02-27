@@ -21,14 +21,14 @@
     <p>Choose your search criteria from the categories below:<br />
         <span style="font-size:12px; color:#AAA;">* Results make take several seconds to appear</span>
     </p>
-    
+
     <div class="fullBox">
     
     <div class="metricFields">
         <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
         ng-class="{'loading': (loadingScope) ? true : false, 'cancel': (noScopeResults) ? true : false}"
-        typeahead-min-length="3"
+        typeahead-min-length="1"
         typeahead-wait-ms="500"
         typeahead-no-results="noScopeResults"
         typeahead-loading="loadingScope"
@@ -46,7 +46,7 @@
         <label>Metric</label><span ng-if="noMetricResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
         ng-class="{'loading': (loadingMetric) ? true : false, 'cancel': (noMetricResults) ? true : false}"
-        typeahead-min-length="3"
+        typeahead-min-length="1"
         typeahead-wait-ms="500"
         typeahead-no-results="noMetricResults"
         typeahead-loading="loadingMetric"
@@ -141,6 +141,8 @@
 </form>
 
     <hr width="100%" />
+
+    <div ng-loading="chartLoaded"></div>
 
     <div growl inline="true" reference="viewmetrics-error"></div>
 

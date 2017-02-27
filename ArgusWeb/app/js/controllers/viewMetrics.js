@@ -1,11 +1,13 @@
+'use strict';
+
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls) {
-        
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', '$compile',
+    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, $compile) {
+
         $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
 
-        // sub-views: (1) single chart, (2) metric discovery 
+        // sub-views: (1) single chart, (2) metric discovery
         $scope.checkMetricExpression = function() {
             if ($scope.expression) {
                 $scope.showMetricDiscovery = false;
@@ -25,18 +27,52 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
         });
 
         $scope.getMetricData = function () {
+            var tempSeries = [];
+            var annotationInfo = [];
             if ($scope.expression !== null && $scope.expression.length) {
+                // clear old chart
+                $("#" + "container").empty();
                 $scope.checkMetricExpression();
+                // show loading spinner
+                $scope.chartLoaded = false;
+
                 Metrics.query({expression: $scope.expression}, function (data) {
-                    $scope.showLoading = true;
-                    $scope.updateChart({}, data);
+                    if (data && data.length > 0) {
+                        tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, {});
+                        for (var i = 0; i < data.length; i++) {
+                            annotationInfo.push(ChartDataProcessingService.getAlertFlagExpression(data[i]));
+                        }
+                    } else {
+                        tempSeries = [{
+                            noData: true,
+                            errorMessage: 'Empty result returned for the metric expression',
+                            name: JSON.stringify($scope.expression).slice(1, -1),
+                            color: 'Maroon'
+                        }];
+                    }
+                    $scope.updateChart(tempSeries, annotationInfo, [$scope.expression]);
+                    $scope.chartLoaded = true;
                 }, function (error) {
-                    $scope.updateChart({}, null);
-                    growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    // prevent error.data.message being null breaks the message
+                    if (error.data.message === null) {
+                        error.data.message = "Something was wrong. No info.";
+                    } else {
+                       growl.error(error.data.message, {referenceId: 'viewmetrics-error'});
+                    }
+                    tempSeries = [{
+                        invalidMetric: true,
+                        errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+                        name: error.config.params.expression,
+                        color: 'Black'
+                    }];
+                    $scope.updateChart(tempSeries, annotationInfo, []);
+                    $scope.chartLoaded = true;
                 });
             } else {
+                // empty expression
                 $scope.checkMetricExpression();
-                $scope.updateChart({}, $scope.expression);
+                $scope.updateChart(tempSeries, annotationInfo, []);
+                $scope.chartLoaded = true;
             }
         };
 
@@ -54,7 +90,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             };
 
             var newParams = JSON.parse(JSON.stringify(defaultParams));
-            
+
             // update params with values in $scope if they exist
             newParams['scope'] = ($scope.scope) ? $scope.scope : '*';
             newParams['metric'] = ($scope.metric) ? $scope.metric : '*';
@@ -65,14 +101,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
             if(category) {
                 if(category === 'scope') {
-                    if(newParams['metric'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['scope'] = newParams['scope'] + '*';
                 } else if(category === 'metric') {
-                    if(newParams['scope'] === '*') {
-                        newParams['limit'] = 10;
-                    }
                     newParams['metric'] = newParams['metric'] + '*';
                 } else if(category === 'tagk') {
                     newParams['limit'] = 10;
@@ -122,7 +152,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             $scope.tagv = '';
             $scope.namespace = '';
             $scope.search_metrics.$setPristine();
-        }
+        };
 
         // construct full search string from search fields
         function constructSearchStr(addDefaultValues) {
@@ -135,7 +165,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
             var start_Str = '';
             var scope_Str = (s && s.length > 1) ? s + ':' : '';
             var metric_Str = (m && m.length > 1) ? m : '';
-            
+
             var tag_Str = '';
             if (tagk && tagv) {
                 tag_Str = '{' + tagk + '=' + tagv + "}";
@@ -145,7 +175,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 $scope.enterTagsErr = true;
                 return null;
             }
-            
+
             var agg_Str = '';
             var namespace_Str = (n && n.length > 1) ? ':' + n : '';
 
@@ -170,173 +200,68 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (config, data) {
-            var options = config ? angular.copy(config) : {};
-            var series = $scope.copySeries(data);
-            options.credits = {enabled: false},
-            options.rangeSelector = {selected: 1, inputEnabled: false};
-            options.xAxis = {
-            	type: 'datetime',
-            	ordinal: false
-            };
+        $scope.updateChart = function (series, annotationInfo, expressions) {
+            // if the metric expression is not empty
+            if (series && series.length > 0) {
+                var chartScope = $scope.$new(false);
+                chartScope.chartConfig = {
+                    chartId: 'container',
+                    expressions: expressions
+                };
+                chartScope.dateConfig = {};
+                chartScope.series = series;
 
-            //options.chart={renderTo: 'container',defaultSeriesType: 'line'};
-            options.lang = {noData: 'No Data to Display'};
-            options.legend = {
-                enabled: true,
-                maxHeight: 62,
-                itemStyle: {
-                    fontWeight: 'normal',
-                    fontSize: '10px'
-                },
-                navigation : {
-                    style : {
-                        fontWeight: 'normal',
-                        fontSize: '10px'
-                    }
+                // all graph class name and sort sources alphabetically
+                for (var i = 0; i < series.length; i++) {
+                    chartScope.series[i].graphClassName = chartScope.chartConfig.chartId + "_graph" + (i + 1);
                 }
-            };
-            options.series = series;
-            options.plotOptions = {
-            	series: {
-            		animation: false,
-            		connectNulls: true
-            	},
-            	line : {
-            		gapSize:1.5
-            	}
-            };
-            
-            options.chart = {animation: false, borderWidth: 1, borderColor: 'lightGray', borderRadius: 5};
-            
-            $('#container').highcharts('StockChart', options);
-            
+                chartScope.series.sort(function(a, b) {
+                    var textA = a.name.toUpperCase();
+                    var textB = b.name.toUpperCase();
+                    return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+                });
+
+                // get start and end time info based on data range
+                if (series[0].data && series[0].data.length > 0) {
+                    chartScope.dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
+                    chartScope.dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
+                }
+                chartScope.dateConfig.gmt = true;
+
+                // query annotations
+                if (annotationInfo.length > 0) {
+                    var annotationCount = {};
+                    annotationCount.tot = annotationInfo.length;
+                    for (var i = 0; i < annotationInfo.length; i++) {
+                        Annotations.query({expression: annotationInfo[i]}).$promise.then(function (data) {
+                            //prevent empty annotation returns
+                            if (data !== undefined && data.length !== 0) {
+                                var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
+                                if (flagSeries === null || flagSeries === undefined) return;
+                                flagSeries.linkedTo = ChartDataProcessingService.createSeriesName(data[0]);
+                                chartScope.series = chartScope.series.map(function (item) {
+                                    if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+                                    return item;
+                                });
+                            }
+                            annotationCount.tot--;
+                            if (annotationCount.tot == 0) {
+                                angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
+                            }
+                        }, function (error) {
+                            console.log('no annotation found;', error.statusText);
+                            annotationCount.tot--;
+                            if (annotationCount.tot == 0) {
+                                angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
+                            }
+                        })
+                    }
+                } else {
+                    angular.element("#" + "container").append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope) );
+                }
+            }
+
             $scope.series = series;
-            $scope.addAlertFlags(data);
-        };
-
-        // TODO: move all below scope functions to a public Scope service
-
-        $scope.addAlertFlags = function (metrics) {
-            if (metrics && metrics.length) {
-                for (var i = 0; i < metrics.length; i++) {
-                    $scope.addAlertFlag(metrics[i]);
-                }
-            }
-        };
-
-        $scope.addAlertFlag = function(metric) {
-            var forName = $scope.createSeriesName(metric);
-            Annotations.query({expression: $scope.getAlertFlagExpression(metric)}, function (data) {
-                var series = $scope.copyFlagSeries(data);
-                var chart = $('#container').highcharts();
-                series.linkedTo = forName;
-                series.color = chart.get(forName).color;
-                chart.addSeries(series);
-            });
-        };
-
-        $scope.getDatapointRange = function (datapoints) {
-            var result = {start: Number.MAX_VALUE, end: Number.MIN_VALUE};
-            for (var key in datapoints) {
-                if (datapoints.hasOwnProperty(key)) {
-                    if (key < result.start) {
-                        result.start = key;
-                    }
-                    if (key > result.end) {
-                        result.end = key;
-                    }
-                }
-            }
-            return result;
-        };
-
-        $scope.getAlertFlagExpression = function (metric) {
-            if (metric && metric.datapoints) {
-                var range = $scope.getDatapointRange(metric.datapoints);
-                var scopeName = metric.scope;
-                var metricName = metric.metric;
-                var tagData = metric.tags;
-                var result = range.start + ":" + range.end + ":" + scopeName + ":" + metricName;
-                result += $scope.createTagString(tagData);
-                result += ":ALERT";
-                return result;
-            } else {
-                return null;
-            }
-        };
-
-        $scope.copyFlagSeries = function (data) {
-            var result;
-            if (data) {
-                result = {type: 'flags', shape: 'circlepin', stackDistance: 20, width: 16, lineWidth: 2};
-                result.data = [];
-                for (var i = 0; i < data.length; i++) {
-                    var flagData = data[i];
-                    result.data.push({x: flagData.timestamp, title: 'A', text: $scope.formatFlagText(flagData.fields)});
-                }
-            } else {
-                result = null;
-            }
-            return result;
-        };
-
-        $scope.formatFlagText = function (fields) {
-            var result = '';
-            if (fields) {
-                for (var field in fields) {
-                    if (fields.hasOwnProperty(field)) {
-                        result += (field + ': ' + fields[field] + '<br/>');
-                    }
-                }
-            }
-            return result;
-        };
-
-        $scope.copySeries = function (data) {
-            var result = [];
-            if (data) {
-                for (var i = 0; i < data.length; i++) {
-                	var series = [];
-                	for(var key in data[i].datapoints) {
-                		var timestamp = parseInt(key);
-                		if(data[i].datapoints[key] !=null){
-                			var value = parseFloat(data[i].datapoints[key]);
-                			series.push([timestamp, value]);
-                		}
-                	}
-                    var id = $scope.createSeriesName(data[i]);
-                    result.push({name: id, id: id, data: series,marker : {enabled : true, radius: 1}});
-                }
-            } else {
-                result.push({name: 'result', data: []});
-            }
-            return result;
-        };
-
-        $scope.createSeriesName = function (metric) {
-            var scope = metric.scope;
-            var name = metric.metric;
-            var tags = $scope.createTagString(metric.tags);
-            return scope + ':' + name + tags;
-        };
-
-        $scope.createTagString = function (tags) {
-            var result = '';
-            if (tags) {
-                var tagString ='';
-                for (var key in tags) {
-                    if (tags.hasOwnProperty(key)) {
-                        tagString += (key + '=' + tags[key] + ',');
-                    }
-                }
-                if(tagString.length) {
-                    result += '{';
-                    result += tagString.substring(0, tagString.length - 1);
-                    result += '}';
-                }
-            }
-            return result;
         };
 
         $scope.getMetricData(null);

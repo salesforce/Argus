@@ -46,11 +46,11 @@ public class AbsoluteTransformTest {
     @Test
     public void transform_shouldReturnAbsoluteForOneMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
-        dp.put(2L, "-3.0");
-        dp.put(4L, "-5.0");
-        dp.put(5L, "-2.2");
+        dp.put(2L, -3.0);
+        dp.put(4L, -5.0);
+        dp.put(5L, -2.2);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -58,29 +58,29 @@ public class AbsoluteTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(2L, "3.0");
-        expectedDps.put(4L, "5.0");
-        expectedDps.put(5L, "2.2");
+        expectedDps.put(2L, 3.0);
+        expectedDps.put(4L, 5.0);
+        expectedDps.put(5L, 2.2);
         assertThat(result.get(0).getDatapoints(), equalTo(expectedDps));
     }
 
     @Test
     public void transform_shouldReturnAbsoluteForMultipleMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        HashMap<Long, String> dp1 = new HashMap<Long, String>();
+        HashMap<Long, Double> dp1 = new HashMap<Long, Double>();
 
-        dp1.put(2L, "-4");
-        dp1.put(3L, "-6");
+        dp1.put(2L, -4.0);
+        dp1.put(3L, -6.0);
         m1.setDatapoints(dp1);
 
         Metric m2 = new Metric("test_scope", "test_metric");
-        HashMap<Long, String> dp2 = new HashMap<Long, String>();
+        HashMap<Long, Double> dp2 = new HashMap<Long, Double>();
 
-        dp2.put(3L, "-5");
-        dp2.put(9L, "-2");
-        dp2.put(2L, "-6");
+        dp2.put(3L, -5.0);
+        dp2.put(9L, -2.0);
+        dp2.put(2L, -6.0);
         m2.setDatapoints(dp2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
@@ -88,17 +88,17 @@ public class AbsoluteTransformTest {
 
         assertThat(results, equalTo(metrics));
 
-        Map<Long, String> expectedDps1 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps1 = new HashMap<Long, Double>();
 
-        expectedDps1.put(2L, "4.0");
-        expectedDps1.put(3L, "6.0");
+        expectedDps1.put(2L, 4.0);
+        expectedDps1.put(3L, 6.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps1));
 
-        Map<Long, String> expectedDps2 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps2 = new HashMap<Long, Double>();
 
-        expectedDps2.put(2L, "6.0");
-        expectedDps2.put(3L, "5.0");
-        expectedDps2.put(9L, "2.0");
+        expectedDps2.put(2L, 6.0);
+        expectedDps2.put(3L, 5.0);
+        expectedDps2.put(9L, 2.0);
         assertThat(results.get(1).getDatapoints(), equalTo(expectedDps2));
     }
 }

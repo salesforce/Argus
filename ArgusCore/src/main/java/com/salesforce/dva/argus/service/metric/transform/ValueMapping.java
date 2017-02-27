@@ -50,7 +50,7 @@ public interface ValueMapping {
      *
      * @return  The value after mapping.
      */
-    Map<Long, String> mapping(Map<Long, String> originalDatapoints);
+    Map<Long, Double> mapping(Map<Long, Double> originalDatapoints);
 
     /**
      * Apply function to every datapoint of a datapoint map and return a new datapoint.
@@ -60,7 +60,7 @@ public interface ValueMapping {
      *
      * @return  The value after mapping.
      */
-    Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants);
+    Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants);
 
     /**
      * Returns the name of the value mapping.

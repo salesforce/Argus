@@ -1,7 +1,9 @@
-angular.module('argus.controllers.alerts.detail', ['ngResource'])
-.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage',
-    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage) {
+'use strict';
 
+angular.module('argus.controllers.alerts.detail', ['ngResource'])
+.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage', 'Auth',
+    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage, Auth) {
+        $scope.alertNotEditable = true;
         $scope.isAlertDirty = function () {
             return !angular.equals($scope.alert, $scope.unmodifiedAlert);
         };
@@ -24,7 +26,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                     $scope.fetchHistory();
                     $scope.fetchJobExecutionDetails();
                     // remove existing session storage for update
-                    delete $sessionStorage.cachedAlerts;
+                    if ($sessionStorage.alerts !== undefined)delete $sessionStorage.alerts.cachedData;
                 }, function (error) {
                     growl.error('Failed to update "' + alert.name + '"');
                 });
@@ -134,6 +136,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
                 subscriptions: [],
                 metricsToAnnotate: [],
                 cooldownPeriod: 0,
+                sractionable:false,
                 alertId: $scope.alert.id
             };
 
@@ -258,6 +261,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         if ($scope.alertId > 0) {
             Alerts.get({alertId: $scope.alertId}, function (alert) {
                 $scope.alert = alert;
+                $scope.alertNotEditable = Auth.isDisabled(alert);
                 $scope.unmodifiedAlert = angular.copy(alert);
             }, function (error) {
                 growl.error('Failed to get alert "' + $scope.alertId + '"');
