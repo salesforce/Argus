@@ -39,7 +39,6 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.DefaultTSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import com.salesforce.dva.argus.service.tsdb.PhoenixTSDBService;
 import com.salesforce.dva.argus.system.SystemException;
 
 import org.junit.Assert;
