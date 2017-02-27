@@ -31,23 +31,19 @@
 
 package com.salesforce.dva.argus.ws.filter;
 
+import java.io.IOException;
+
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.AuthService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
-import org.slf4j.MDC;
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import org.slf4j.MDC;
 
 /**
  * Enforces authentication requirements.<br />
@@ -93,9 +89,11 @@ public class AuthFilter implements Filter {
             Object remoteUser = httpSession.getAttribute(USER_ATTRIBUTE_NAME);
 
             // If automated login configured and currently no principalUser associated with HttpSession,
-            // assign principalUser 'admin' to this httpSession.
+            // assign principalUser to this httpSession.
             if(autoLogin && remoteUser == null) {
-                PrincipalUser principalUser = authService.getUser("admin", "admin");
+                String loginUser = String.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.AUTH_FILTER_AUTO_LOGIN_USER));
+                String loginPwd = String.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.AUTH_FILTER_AUTO_LOGIN_PWD));
+                PrincipalUser principalUser = authService.getUser(loginUser, loginPwd);
                 PrincipalUserDto principalUserDto = PrincipalUserDto.transformToDto(principalUser);
                 httpServletRequest.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, principalUserDto);
                 user = principalUserDto.getUserName();
