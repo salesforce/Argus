@@ -2,7 +2,7 @@
     <!-- Navigation tabs -->
     <table-tabs tab-names="tabNames" properties="properties" loaded="dashboardsLoaded" shared="shared" get-list="getDashboards"></table-tabs>
 	<!-- dashboard list -->
-	<table-list col-name="colName" properties="properties" loaded="dashboardsLoaded" data="dashboards" add-item="addDashboard()" delete="deleteDashboard" refresh-list="refreshDashboards()"></table-list>
+	<table-list col-name="colName" properties="properties" loaded="dashboardsLoaded" data="dashboards" add-item="addDashboard()" delete="deleteDashboard" clone="cloneDashboard" refresh-list="refreshDashboards()"></table-list>
 	<!--loading spinner-->
 	<div ng-loading="dashboardsLoaded"></div>
 </section>

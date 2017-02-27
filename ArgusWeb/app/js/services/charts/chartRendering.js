@@ -48,15 +48,23 @@ angular.module('argus.services.charts.rendering', [])
 				},
 
 				updateIndicatorStatus: function(attributes, lastStatusVal) {
-						if (!attributes || !lastStatusVal) return;
+					if (!attributes || !lastStatusVal) return;
 
-						if (lastStatusVal < attributes.lo) {
-								$('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
-						} else if (lastStatusVal > attributes.lo && lastStatusVal < attributes.hi) {
-								$('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
-						} else if (lastStatusVal > attributes.hi) {
-								$('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
-						}
+                    var lastStatusValNum = Number(lastStatusVal);
+                    var lowValNum = Number(attributes.lo);
+                    var highValNum = Number(attributes.hi);
+
+                    var errorMsg = "value in ag-status-indicator is not defined correctly";
+                    if (isNaN(lowValNum)) console.log(attributes.name + "'s lo " + errorMsg);
+                    if (isNaN(highValNum)) console.log(attributes.name + "'s hi " + errorMsg);
+
+					if (lastStatusValNum < lowValNum) {
+							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+					} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
+							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+					} else if (lastStatusValNum > highValNum) {
+							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+					}
 				}
 		};
 
