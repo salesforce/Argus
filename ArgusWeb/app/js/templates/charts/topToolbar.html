@@ -86,33 +86,33 @@
 				<a class="glyphicon glyphicon-filter"></a>
 				<ul class="subMenu menuPanel list-group">
 					<li>
-						<input type="radio" name="down-sample-method" class="pointer" 
-						id="largest-triangle-one-bucket-{{chartConfig.chartId}}" 
-						value="largest-triangle-one-bucket" 
-						ng-model="menuOption.downSampleMethod" 
+						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
+						value="largest-triangle-one-bucket"
+						id="largest-triangle-one-bucket-{{chartConfig.chartId}}"
+						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="largest-triangle-one-bucket-{{chartConfig.chartId}}" 
+							<label for="largest-triangle-one-bucket-{{chartConfig.chartId}}"
 							title="Use the largest triangle one bucket algorithm">Triangle 1 Bucket</label>
 					</li>
 					<li>
-						<input type="radio" name="down-sample-method" class="pointer" 
-						value="largest-triangle-three-bucket" 
-						id="largest-triangle-three-bucket-{{chartConfig.chartId}}" 
-						ng-model="menuOption.downSampleMethod" 
+						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
+						value="largest-triangle-three-bucket"
+						id="largest-triangle-three-bucket-{{chartConfig.chartId}}"
+						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}" 
+							<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}"
 							title="Use the largest triangle three bucket algorithm">Triangle 3 Bucket</label>
 					</li>
 					<li>
-						<input type="radio" name="down-sample-method" class="pointer"
-						value="mode-median" 
-						id="mode-median-{{chartConfig.chartId}}" 
-						ng-model="menuOption.downSampleMethod" 
+						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
+						value="mode-median"
+						id="mode-median-{{chartConfig.chartId}}"
+						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
 							<label for="mode-median-{{chartConfig.chartId}}" title="Use the mode median algorithm">Mode Median</label>
 					</li>
 					<li>
-						<input type="radio" name="down-sample-method" class="pointer"
+						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
 						value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}" 
 						ng-model="menuOption.downSampleMethod" 
 						ng-click="updateDownSample()" />
