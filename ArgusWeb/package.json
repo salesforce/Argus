@@ -22,11 +22,15 @@
     "protractor": "^1.1.1",
     "shelljs": "^0.2.6",
     "style-loader": "^0.13.1",
+    "url-loader": "^0.5.8",
     "webpack": "^2.2.1",
-    "webpack-chunk-hash": "^0.4.0"
+    "webpack-chunk-hash": "^0.4.0",
+    "babel-core": "^6.4.5",
+    "babel-loader": "^6.2.1",
+    "babel-preset-react": "^6.3.13"
   },
   "scripts": {
-    "postinstall": "bower install",
+    "postinstall": "npm install --prefix ./app/",
     "prestart": "npm install",
     "start": "http-server -a 0.0.0.0 -p 8000",
     "pretest": "npm install",

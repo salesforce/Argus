@@ -33,13 +33,16 @@ module.exports = {
                 options: {
                     name: '[path][name].[ext]',
                 }
-            }
+            },
+            // for react
+            {test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"}
         ]
     },
+    devtool: "cheap-source-map",
     plugins: [
         // TODO: need to make bower_components into vendor.js
         new CopyWebpackPlugin([
-            {from:'bower_components', to:'bower_components'},
+            {from: 'node_modules', to:'node_modules'},
             {from: 'img/argus_icon.png', to: 'img/argus_icon.png'},
             {from: 'img/argus_logo_rgb.png', to: 'img/argus_logo_rgb.png'},
             {from: 'js/templates', to: 'js/templates'}

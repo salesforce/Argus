@@ -152,7 +152,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
-				60000);
+				600000);
 		_setNotificationId(notification, "100003");
 
 		alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));

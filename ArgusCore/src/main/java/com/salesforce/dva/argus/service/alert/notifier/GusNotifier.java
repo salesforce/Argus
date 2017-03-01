@@ -159,7 +159,7 @@ public class GusNotifier extends AuditNotifier {
 		double triggerEventValue = context.getTriggerEventValue();
 		Object[] arguments = new Object[] {
 				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric()
+				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
 		};
 
 		/** gus feed template for notification information. */
