@@ -11,7 +11,9 @@ var path = require('path');
 module.exports = {
     context: __dirname + '/app',
     entry: {
-        argus: './js/argus.js'
+        argus: './js/argus.js',
+        vendor: ["codemirror","angular","angular-mocks","jquery","bootstrap","angular-route","angular-growl-v2","angular-animate","angular-resource","angular-utils-pagination","angular-ui-codemirror","ngstorage","angulartics","angular-bootstrap","angular-bootstrap-datetimepicker","q","d3","d3-tip","d3fc-rebind","d3fc-sample"]
+        // angular-table not working as require
     },
     output: {
         path: __dirname + '/dist',
@@ -35,19 +37,26 @@ module.exports = {
                 }
             },
             // for react
-            {test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"}
+            {
+                test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"
+            },
+            {
+                test: /\.(eot|woff|woff2|ttf|svg)$/,
+                loader: 'url-loader?limit=30000&name=[name]-[hash].[ext]'
+            }
         ]
     },
     devtool: "cheap-source-map",
     plugins: [
-        // TODO: need to make bower_components into vendor.js
+        // copy over static files and vendor
         new CopyWebpackPlugin([
-            {from: 'node_modules', to:'node_modules'},
+            // {from: 'node_modules', to:'node_modules'},
+            {from: 'node_modules/angular-utils-pagination/dirPagination.tpl.html', to: 'node_modules/angular-utils-pagination/dirPagination.tpl.html'},
             {from: 'img/argus_icon.png', to: 'img/argus_icon.png'},
             {from: 'img/argus_logo_rgb.png', to: 'img/argus_logo_rgb.png'},
             {from: 'js/templates', to: 'js/templates'}
         ]),
-        // use copy base html
+        // copy over base html
         new HtmlWebpackPlugin({
             template: __dirname + '/webpack_index.html',
             filename: 'index.html',
@@ -57,9 +66,13 @@ module.exports = {
         // cache hash management
         new webpack.HashedModuleIdsPlugin(),
         new webpack.optimize.CommonsChunkPlugin({
-            // name: ["vendor", "manifest"], // vendor libs + extracted manifest
-            name: "manifest",
-            minChunks: Infinity
+            name: ["vendor", "manifest"], // vendor libs + extracted manifest
+            // name: "manifest",
+            // minChunks: Infinity
+            minChunks: function (module) {
+               // this assumes your vendor imports exist in the node_modules directory
+               return module.context && module.context.indexOf('node_modules') !== -1;
+            }
         }),
         new WebpackChunkHash(),
         new ChunkManifestPlugin({
@@ -76,10 +89,17 @@ module.exports = {
             },
             mangle: false
         }),
+        // copy over css
         new ExtractTextPlugin({
-            filename: 'main.[contenthash].css',
+            filename: '[name].[contenthash].css',
             allChunks: true
         }),
-        new CleanWebpackPlugin('dist')
+        new CleanWebpackPlugin('dist'),
+        // handle jquery naming
+        new webpack.ProvidePlugin({
+            jQuery: 'jquery',
+            $: 'jquery',
+            jquery: 'jquery'
+        })
     ]
 };

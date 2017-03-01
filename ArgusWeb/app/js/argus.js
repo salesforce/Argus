@@ -215,4 +215,66 @@ require("./directives/UItools/ngEnter");
 
 // css
 require("../css/main.css");
+require("bootstrap/dist/css/bootstrap.min.css");
+require("angular-growl-v2/build/angular-growl.css");
+require("codemirror/lib/codemirror.css");
+require("codemirror/theme/monokai.css");
+require("angular-bootstrap-datetimepicker/src/css/datetimepicker.css");
+// vendor
+// require("codemirror");
+// require("jquery");
+// require("angular");
+// require("angular-mocks");
+// require("bootstrap");
+// require("angular-route");
+// require("angular-growl-v2");
+// require("angular-animate");
+// require("angular-resource");
+// require("angular-utils-pagination");
+// require("angular-ui-codemirror");
+// require("ngstorage");
+// require("angulartics");
+// require("angular-bootstrap");
+// require("angular-bootstrap-datetimepicker");
+// require("q");
+// require("d3");
+// require("d3-tip");
+// require("d3fc-rebind");
+// require("d3fc-sample");
 
+// require('angular-table');
+
+require("jquery/dist/jquery.min.js");
+require("angular/angular.js");
+require("angular-resource/angular-resource.js");
+require("angular-route/angular-route.js");
+require("angular-growl-v2/build/angular-growl.js");
+require("angular-animate/angular-animate.js");
+require("angular-utils-pagination/dirPagination.js");
+require("angular-bootstrap/ui-bootstrap-tpls.min.js");
+require("q/q.js");
+require("bootstrap/js/dropdown.js");
+require("bootstrap/js/affix.js");
+require("bootstrap/js/alert.js");
+require("bootstrap/js/button.js");
+require("bootstrap/js/modal.js");
+require("bootstrap/js/tooltip.js");
+require("bootstrap/js/popover.js");
+require("bootstrap/js/transition.js");
+require("d3/build/d3.min.js");
+require("d3-tip/index.js");
+require("d3fc-sample/build/d3fc-sample.js");
+require("d3fc-rebind/build/d3fc-rebind.js");
+require("codemirror/lib/codemirror.js");
+require('codemirror/mode/javascript/javascript');
+require("codemirror/mode/xml/xml.js");
+require("codemirror/mode/properties/properties.js");
+require("codemirror/mode/htmlmixed/htmlmixed.js");
+require("angular-ui-codemirror/src/ui-codemirror.js");
+require("ngstorage/ngStorage.js");
+require("angular-table/dist/angular-table.js");
+require("angulartics/src/angulartics.js");
+require("moment/moment.js");
+require("angular-bootstrap-datetimepicker/src/js/datetimepicker.js");
+
+// require("../node_modules/angular-table/dist/angular-table.min.js");
