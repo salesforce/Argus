@@ -33,9 +33,12 @@ module.exports = {
                 options: {
                     name: '[path][name].[ext]',
                 }
-            }
+            },
+            // for react
+            {test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"}
         ]
     },
+    devtool: "cheap-source-map",
     plugins: [
         // TODO: need to make bower_components into vendor.js
         new CopyWebpackPlugin([

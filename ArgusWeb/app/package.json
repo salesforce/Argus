@@ -25,6 +25,8 @@
     "d3fc-rebind": "^4.1.1",
     "d3fc-sample": "^3.0.4",
     "components-font-awesome": "~4.5.0",
-    "angular-selectize2": "~1.2.3"
+    "angular-selectize2": "~1.2.3",
+    "react": "^0.14.6",
+    "react-dom": "^0.14.6"
   }
 }
