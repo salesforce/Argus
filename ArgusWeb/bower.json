@@ -1,8 +1,0 @@
-{
-  "name": "argus-web",
-  "description": "Argus Web",
-  "private": true,
-  "dependencies": {
-    "at-table": "~1.0.4"
-  }
-}
