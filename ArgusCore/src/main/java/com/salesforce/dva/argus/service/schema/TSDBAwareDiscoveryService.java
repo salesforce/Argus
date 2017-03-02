@@ -6,14 +6,13 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.service.*;
+import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.DiscoveryService;
+import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
