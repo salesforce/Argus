@@ -55,11 +55,11 @@ public class LogTransformTest {
     @Test
     public void testLogTransformWithoutBaseForOneMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
-        dp.put(2L, "10.0");
-        dp.put(4L, "100.0");
-        dp.put(5L, "10000.0");
+        dp.put(2L, 10.0);
+        dp.put(4L, 100.0);
+        dp.put(5L, 10000.0);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -67,22 +67,22 @@ public class LogTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(2L, "1.0");
-        expectedDps.put(4L, "2.0");
-        expectedDps.put(5L, "4.0");
+        expectedDps.put(2L, 1.0);
+        expectedDps.put(4L, 2.0);
+        expectedDps.put(5L, 4.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps);
     }
 
     @Test
     public void testLogTransformWithBaseForOneMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
-        dp.put(2L, "4.0");
-        dp.put(4L, "8.0");
-        dp.put(5L, "32.0");
+        dp.put(2L, 4.0);
+        dp.put(4L, 8.0);
+        dp.put(5L, 32.0);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -94,30 +94,30 @@ public class LogTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(2L, "2.0");
-        expectedDps.put(4L, "3.0");
-        expectedDps.put(5L, "5.0");
+        expectedDps.put(2L, 2.0);
+        expectedDps.put(4L, 3.0);
+        expectedDps.put(5L, 5.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps);
     }
 
     @Test
     public void testLogWithoutBaseTransformForMultipleMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp_1 = new HashMap<Long, String>();
+        Map<Long, Double> dp_1 = new HashMap<Long, Double>();
 
-        dp_1.put(2L, "10.0");
-        dp_1.put(4L, "100.0");
-        dp_1.put(5L, "10000.0");
+        dp_1.put(2L, 10.0);
+        dp_1.put(4L, 100.0);
+        dp_1.put(5L, 10000.0);
         m1.setDatapoints(dp_1);
 
         Metric m2 = new Metric("test_scope", "test_metric");
-        HashMap<Long, String> dp_2 = new HashMap<Long, String>();
+        HashMap<Long, Double> dp_2 = new HashMap<Long, Double>();
 
-        dp_2.put(2L, "10000.0");
-        dp_2.put(4L, "10.0");
-        dp_2.put(5L, "1.0");
+        dp_2.put(2L, 10000.0);
+        dp_2.put(4L, 10.0);
+        dp_2.put(5L, 1.0);
         m2.setDatapoints(dp_2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
@@ -125,17 +125,17 @@ public class LogTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps_1 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps_1 = new HashMap<Long, Double>();
 
-        expectedDps_1.put(2L, "1.0");
-        expectedDps_1.put(4L, "2.0");
-        expectedDps_1.put(5L, "4.0");
+        expectedDps_1.put(2L, 1.0);
+        expectedDps_1.put(4L, 2.0);
+        expectedDps_1.put(5L, 4.0);
 
-        Map<Long, String> expectedDps_2 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps_2 = new HashMap<Long, Double>();
 
-        expectedDps_2.put(2L, "4.0");
-        expectedDps_2.put(4L, "1.0");
-        expectedDps_2.put(5L, "0.0");
+        expectedDps_2.put(2L, 4.0);
+        expectedDps_2.put(4L, 1.0);
+        expectedDps_2.put(5L, 0.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps_1);
         assertEquals(result.get(1).getDatapoints(), expectedDps_2);
     }
@@ -143,19 +143,19 @@ public class LogTransformTest {
     @Test
     public void testLogWithBaseTransformForMultipleMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp_1 = new HashMap<Long, String>();
+        Map<Long, Double> dp_1 = new HashMap<Long, Double>();
 
-        dp_1.put(2L, "4.0");
-        dp_1.put(4L, "8.0");
-        dp_1.put(5L, "32.0");
+        dp_1.put(2L, 4.0);
+        dp_1.put(4L, 8.0);
+        dp_1.put(5L, 32.0);
         m1.setDatapoints(dp_1);
 
         Metric m2 = new Metric("test_scope", "test_metric");
-        HashMap<Long, String> dp_2 = new HashMap<Long, String>();
+        HashMap<Long, Double> dp_2 = new HashMap<Long, Double>();
 
-        dp_2.put(2L, "1024.0");
-        dp_2.put(4L, "64.0");
-        dp_2.put(5L, "16.0");
+        dp_2.put(2L, 1024.0);
+        dp_2.put(4L, 64.0);
+        dp_2.put(5L, 16.0);
         m2.setDatapoints(dp_2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
@@ -167,17 +167,17 @@ public class LogTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps_1 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps_1 = new HashMap<Long, Double>();
 
-        expectedDps_1.put(2L, "2.0");
-        expectedDps_1.put(4L, "3.0");
-        expectedDps_1.put(5L, "5.0");
+        expectedDps_1.put(2L, 2.0);
+        expectedDps_1.put(4L, 3.0);
+        expectedDps_1.put(5L, 5.0);
 
-        Map<Long, String> expectedDps_2 = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps_2 = new HashMap<Long, Double>();
 
-        expectedDps_2.put(2L, "10.0");
-        expectedDps_2.put(4L, "6.0");
-        expectedDps_2.put(5L, "4.0");
+        expectedDps_2.put(2L, 10.0);
+        expectedDps_2.put(4L, 6.0);
+        expectedDps_2.put(5L, 4.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps_1);
         assertEquals(result.get(1).getDatapoints(), expectedDps_2);
     }
@@ -185,11 +185,11 @@ public class LogTransformTest {
     @Test
     public void testLogTransformWithoutBaseForOneMetricHavingNull() {
         Metric m1 = new Metric("test_scope", "test_metric");
-        Map<Long, String> dp = new HashMap<Long, String>();
+        Map<Long, Double> dp = new HashMap<Long, Double>();
 
         dp.put(2L, null);
-        dp.put(4L, "100.0");
-        dp.put(5L, "10000.0");
+        dp.put(4L, 100.0);
+        dp.put(5L, 10000.0);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -197,11 +197,11 @@ public class LogTransformTest {
 
         assertThat(result, equalTo(metrics));
 
-        Map<Long, String> expectedDps = new HashMap<Long, String>();
+        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(2L, "-Infinity");
-        expectedDps.put(4L, "2.0");
-        expectedDps.put(5L, "4.0");
+        expectedDps.put(2L, Double.NEGATIVE_INFINITY);
+        expectedDps.put(4L, 2.0);
+        expectedDps.put(5L, 4.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps);
     }
 }

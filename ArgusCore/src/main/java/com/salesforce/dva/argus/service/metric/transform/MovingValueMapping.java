@@ -57,12 +57,12 @@ public class MovingValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
     }
 
     @Override
-    public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
         SystemAssert.requireArgument(!constants.isEmpty(),
             "Moving Average Transform must provide at least 1 constant which is windowSize of time interval.");
@@ -89,12 +89,12 @@ public class MovingValueMapping implements ValueMapping {
             isMedian = true;
         }
 
-        Map<Long, String> movingDatapoints = new TreeMap<Long, String>();
-        Map<Long, String> sortedDatapoints = new TreeMap<Long, String>(originalDatapoints);
+        Map<Long, Double> movingDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
 
-        for (Map.Entry<Long, String> entry : originalDatapoints.entrySet()) {
-            if (entry.getValue() == null || entry.getValue().equals("")) {
-                sortedDatapoints.put(entry.getKey(), String.valueOf(0.0));
+        for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+            if (entry.getValue() == null) {
+                sortedDatapoints.put(entry.getKey(), 0.0);
             } else {
                 sortedDatapoints.put(entry.getKey(), entry.getValue());
             }
@@ -105,12 +105,12 @@ public class MovingValueMapping implements ValueMapping {
         sortedDatapoints.keySet().toArray(timestamps);
 
         double sum = 0.0;
-        String valueStr = "";
+        double value = 0.0;
         List<Double> numberArr = new ArrayList<Double>();
 
         try {
-            sum = Double.parseDouble(sortedDatapoints.get(timestamps[0]));
-            numberArr.add(Double.parseDouble(sortedDatapoints.get(timestamps[0])));
+            sum = sortedDatapoints.get(timestamps[0]);
+            numberArr.add(sortedDatapoints.get(timestamps[0]));
         } catch (NumberFormatException | NullPointerException e) {
             _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[0]));
             throw new UnsupportedOperationException("Bad datapoint!");
@@ -137,13 +137,13 @@ public class MovingValueMapping implements ValueMapping {
                         if (isMedian) {
                             double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
 
-                            valueStr = String.valueOf(new Percentile().evaluate(numbers, 50.0));
+                            value = new Percentile().evaluate(numbers, 50.0);
                         } else {
-                            valueStr = String.valueOf(sum / count);
+                            value = (sum / count);
                         }
-                        movingDatapoints.put(timestamps[head - 1], valueStr);
-                        sum += Double.parseDouble(sortedDatapoints.get(timestamps[head]));
-                        numberArr.add(Double.parseDouble(sortedDatapoints.get(timestamps[head])));
+                        movingDatapoints.put(timestamps[head - 1], value);
+                        sum += sortedDatapoints.get(timestamps[head]);
+                        numberArr.add(sortedDatapoints.get(timestamps[head]));
                     } catch (NumberFormatException | NullPointerException e) {
                         _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[head]));
                         throw new IllegalArgumentException("Bad datapoint!");
@@ -151,21 +151,23 @@ public class MovingValueMapping implements ValueMapping {
                     head++;
                     count++;
                 }
+                
                 if (isMedian) {
                     double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
 
-                    valueStr = String.valueOf(new Percentile().evaluate(numbers, 50.0));
+                    value = new Percentile().evaluate(numbers, 50.0);
                 } else {
-                    valueStr = String.valueOf(sum / count);
+                    value = (sum / count);
                 }
-                movingDatapoints.put(timestamps[head - 1], valueStr);
+                movingDatapoints.put(timestamps[head - 1], value);
             }
+            
             try {
-                sum += Double.parseDouble(sortedDatapoints.get(timestamps[head]));
-                numberArr.add(Double.parseDouble(sortedDatapoints.get(timestamps[head])));
+                sum += sortedDatapoints.get(timestamps[head]);
+                numberArr.add(sortedDatapoints.get(timestamps[head]));
                 while (timestamps[head] - timestamps[tail] >= windowSizeInSeconds * 1000) {
                     sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps[tail], timestamps[head]);
-                    numberArr.remove(Double.parseDouble(sortedDatapoints.get(timestamps[tail])));
+                    numberArr.remove(sortedDatapoints.get(timestamps[tail]));
                     count--;
                     tail++;
                 }
@@ -177,11 +179,11 @@ public class MovingValueMapping implements ValueMapping {
             if (isMedian) {
                 double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
 
-                valueStr = String.valueOf(new Percentile().evaluate(numbers, 50.0));
+                value = new Percentile().evaluate(numbers, 50.0);
             } else {
-                valueStr = String.valueOf(sum / count);
+                value = (sum / count);
             }
-            movingDatapoints.put(timestamps[head], valueStr);
+            movingDatapoints.put(timestamps[head], value);
         } // end for
         return movingDatapoints;
     }
@@ -191,12 +193,8 @@ public class MovingValueMapping implements ValueMapping {
         return TransformFactory.Function.MOVING.name();
     }
 
-    private double _subtractWithinWindow(double sum, Map<Long, String> sortedDatapoints, long end, long start) {
-        try {
-            sum -= Double.parseDouble(sortedDatapoints.get(end));
-        } catch (NumberFormatException | NullPointerException e) {
-            _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(end));
-        }
+    private double _subtractWithinWindow(double sum, Map<Long, Double> sortedDatapoints, long end, long start) {
+        sum -= sortedDatapoints.get(end);
         return sum;
     }
 

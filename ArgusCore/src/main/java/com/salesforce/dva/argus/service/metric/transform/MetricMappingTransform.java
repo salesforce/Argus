@@ -91,7 +91,7 @@ public class MetricMappingTransform implements Transform {
         List<Metric> newMetricsList = new ArrayList<Metric>();
 
         for (Metric metric : metrics) {
-            Map<Long, String> cleanDatapoints = cleanDPs(metric.getDatapoints());
+            Map<Long, Double> cleanDatapoints = cleanDPs(metric.getDatapoints());
 
             metric.setDatapoints(this.valueMapping.mapping(cleanDatapoints));
             newMetricsList.add(metric);
@@ -113,7 +113,7 @@ public class MetricMappingTransform implements Transform {
         List<Metric> newMetricsList = new ArrayList<Metric>();
 
         for (Metric metric : metrics) {
-            Map<Long, String> cleanDatapoints = cleanDPs(metric.getDatapoints());
+            Map<Long, Double> cleanDatapoints = cleanDPs(metric.getDatapoints());
 
             metric.setDatapoints(this.valueMapping.mapping(cleanDatapoints, constants));
             newMetricsList.add(metric);
@@ -121,12 +121,12 @@ public class MetricMappingTransform implements Transform {
         return newMetricsList;
     }
 
-    private Map<Long, String> cleanDPs(Map<Long, String> originalDPs) {
-        Map<Long, String> cleanDPs = new TreeMap<Long, String>();
+    private Map<Long, Double> cleanDPs(Map<Long, Double> originalDPs) {
+        Map<Long, Double> cleanDPs = new TreeMap<>();
 
-        for (Map.Entry<Long, String> entry : originalDPs.entrySet()) {
-            if (entry.getValue() == null || entry.getValue().equals("")) {
-                cleanDPs.put(entry.getKey(), Double.toString(0));
+        for (Map.Entry<Long, Double> entry : originalDPs.entrySet()) {
+            if (entry.getValue() == null) {
+                cleanDPs.put(entry.getKey(), 0.0);
             } else {
                 cleanDPs.put(entry.getKey(), entry.getValue());
             }

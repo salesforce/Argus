@@ -45,15 +45,15 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithTwoTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
-        datapoints.put(5000L, "10");
-        datapoints.put(6000L, "2");
-        datapoints.put(7000L, "3");
-        datapoints.put(10000L, "15");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
+        datapoints.put(5000L, 10.0);
+        datapoints.put(6000L, 2.0);
+        datapoints.put(7000L, 3.0);
+        datapoints.put(10000L, 15.0);
 
         Metric metric = new Metric("test-scope", "test-metric");
 
@@ -64,12 +64,12 @@ public class ZeroIfMissingSumTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
 
         metrics.add(metric);
-        datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
-        datapoints.put(4000L, "10");
-        datapoints.put(8000L, "2");
+        datapoints = new HashMap<>();
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
+        datapoints.put(4000L, 10.0);
+        datapoints.put(8000L, 2.0);
         metric = new Metric("test-scope", "test-metric");
         metric.setDatapoints(datapoints);
         metric.setTag("user", "user1");
@@ -77,17 +77,17 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, String> expectedDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
 
-        expectedDatapoints.put(1000L, "2.0");
-        expectedDatapoints.put(2000L, "4.0");
-        expectedDatapoints.put(3000L, "6.0");
-        expectedDatapoints.put(4000L, "10");
-        expectedDatapoints.put(5000L, "10");
-        expectedDatapoints.put(6000L, "2");
-        expectedDatapoints.put(7000L, "3");
-        expectedDatapoints.put(8000L, "2");
-        expectedDatapoints.put(10000L, "15");
+        expectedDatapoints.put(1000L, 2.0);
+        expectedDatapoints.put(2000L, 4.0);
+        expectedDatapoints.put(3000L, 6.0);
+        expectedDatapoints.put(4000L, 10.0);
+        expectedDatapoints.put(5000L, 10.0);
+        expectedDatapoints.put(6000L, 2.0);
+        expectedDatapoints.put(7000L, 3.0);
+        expectedDatapoints.put(8000L, 2.0);
+        expectedDatapoints.put(10000L, 15.0);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
@@ -95,9 +95,9 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithNullValuesInTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric("test-scope", "test-metric");
 
@@ -107,7 +107,7 @@ public class ZeroIfMissingSumTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
 
         metrics.add(metric);
-        datapoints = new HashMap<Long, String>();
+        datapoints = new HashMap<>();
         datapoints.put(1000L, null);
         metric = new Metric("test-scope", "test-metric");
         metric.setDatapoints(datapoints);
@@ -115,9 +115,9 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, String> expectedDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
 
-        expectedDatapoints.put(1000L, null);
+        expectedDatapoints.put(1000L, 1.0);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
@@ -125,9 +125,9 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithEmptyValuesInTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric("test-scope", "test-metric");
 
@@ -137,17 +137,17 @@ public class ZeroIfMissingSumTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
 
         metrics.add(metric);
-        datapoints = new HashMap<Long, String>();
-        datapoints.put(1000L, "");
+        datapoints = new HashMap<>();
+        datapoints.put(1000L, null);
         metric = new Metric("test-scope", "test-metric");
         metric.setDatapoints(datapoints);
         metric.setTag("user", "user1");
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, String> expectedDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
 
-        expectedDatapoints.put(1000L, null);
+        expectedDatapoints.put(1000L, 1.0);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
@@ -155,11 +155,11 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithOneTimeSeriesHavingOneNullEmptyDatapoints() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
         datapoints.put(2000L, null);
-        datapoints.put(3000L, "");
+        datapoints.put(3000L, null);
 
         Metric metric = new Metric("test-scope", "test-metric");
 
@@ -171,11 +171,11 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, String> expectedDatapoints = new HashMap<Long, String>();
+        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
 
-        expectedDatapoints.put(1000L, "1");
+        expectedDatapoints.put(1000L, 1.0);
         expectedDatapoints.put(2000L, null);
-        expectedDatapoints.put(3000L, "");
+        expectedDatapoints.put(3000L, null);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }

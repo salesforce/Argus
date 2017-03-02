@@ -49,9 +49,9 @@ public class ScaleTransformTest {
     @Test(expected = SystemException.class)
     public void testScaleTransformWithIllegalConstant() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
+        datapoints.put(1000L, 1.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -80,11 +80,11 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithOneConstantAgainstOneMetric() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints = new HashMap<Long, String>();
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, "1");
-        datapoints.put(2000L, "2");
-        datapoints.put(3000L, "3");
+        datapoints.put(1000L, 1.0);
+        datapoints.put(2000L, 2.0);
+        datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -98,11 +98,11 @@ public class ScaleTransformTest {
 
         constants.add("5");
 
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "5.0");
-        expected.put(2000L, "10.0");
-        expected.put(3000L, "15.0");
+        expected.put(1000L, 5.0);
+        expected.put(2000L, 10.0);
+        expected.put(3000L, 15.0);
 
         List<Metric> result = scaleTransform.transform(metrics, constants);
 
@@ -113,21 +113,21 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithOneConstantAgainstMetricList() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -142,17 +142,17 @@ public class ScaleTransformTest {
 
         constants.add("5");
 
-        Map<Long, String> expected_1 = new HashMap<Long, String>();
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(1000L, "5.0");
-        expected_1.put(2000L, "10.0");
-        expected_1.put(3000L, "15.0");
+        expected_1.put(1000L, 5.0);
+        expected_1.put(2000L, 10.0);
+        expected_1.put(3000L, 15.0);
 
-        Map<Long, String> expected_2 = new HashMap<Long, String>();
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        expected_2.put(1000L, "50.0");
-        expected_2.put(2000L, "500.0");
-        expected_2.put(3000L, "5000.0");
+        expected_2.put(1000L, 50.0);
+        expected_2.put(2000L, 500.0);
+        expected_2.put(3000L, 5000.0);
 
         List<Metric> result = scaleTransform.transform(metrics, constants);
 
@@ -180,21 +180,21 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithNoConstantShareCommonDPs() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(1000L, "10");
-        datapoints_2.put(2000L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -206,11 +206,11 @@ public class ScaleTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(1000L, "10.0");
-        expected.put(2000L, "200.0");
-        expected.put(3000L, "3000.0");
+        expected.put(1000L, 10.0);
+        expected.put(2000L, 200.0);
+        expected.put(3000L, 3000.0);
 
         List<Metric> result = scaleTransform.transform(metrics, constants);
 
@@ -221,21 +221,21 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithNoConstantShareNoCommonDPs() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(300L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(300L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -247,7 +247,7 @@ public class ScaleTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
         List<Metric> result = scaleTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -257,21 +257,21 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithNoConstantShareSomeCommonDPs() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -283,9 +283,9 @@ public class ScaleTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>(1);
-        Map<Long, String> expected = new HashMap<Long, String>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(3000L, "3000.0");
+        expected.put(3000L, 3000.0);
 
         List<Metric> result = scaleTransform.transform(metrics, constants);
 
@@ -297,21 +297,21 @@ public class ScaleTransformTest {
     @Test
     public void testScaleTransformWithFullConstantShareSomeCommonDPs() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());
-        Map<Long, String> datapoints_1 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1000L, "1");
-        datapoints_1.put(2000L, "2");
-        datapoints_1.put(3000L, "3");
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, String> datapoints_2 = new HashMap<Long, String>();
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        datapoints_2.put(100L, "10");
-        datapoints_2.put(200L, "100");
-        datapoints_2.put(3000L, "1000");
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -324,12 +324,12 @@ public class ScaleTransformTest {
 
         List<String> constants = new ArrayList<String>();
         constants.add("union");
-        Map<Long, String> expected = new HashMap<Long, String>();
-        expected.put(100L, "10.0");
-        expected.put(200L, "100.0");
-        expected.put(1000L, "1.0");
-        expected.put(2000L, "2.0");
-        expected.put(3000L, "3000.0");
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+        expected.put(100L, 10.0);
+        expected.put(200L, 100.0);
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3000.0);
 
         List<Metric> result = scaleTransform.transform(metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
