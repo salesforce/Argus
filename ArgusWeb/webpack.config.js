@@ -4,6 +4,7 @@ var ChunkManifestPlugin = require('chunk-manifest-webpack-plugin');
 var WebpackChunkHash = require('webpack-chunk-hash');
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var CleanWebpackPlugin = require('clean-webpack-plugin');
+var OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 
 var webpack = require('webpack');
 var path = require('path');
@@ -38,7 +39,7 @@ module.exports = {
             {test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"}
         ]
     },
-    devtool: "cheap-source-map",
+    devtool: "source-map",
     plugins: [
         // TODO: need to make bower_components into vendor.js
         new CopyWebpackPlugin([
@@ -74,12 +75,21 @@ module.exports = {
             output: {
                 comments: false
             },
-            mangle: false
+            mangle: false,
+            sourceMap: true
         }),
         new ExtractTextPlugin({
             filename: 'main.[contenthash].css',
             allChunks: true
         }),
-        new CleanWebpackPlugin('dist')
+        new CleanWebpackPlugin('dist'),
+        new OptimizeCssAssetsPlugin({
+            // only minify main.css
+            assetNameRegExp: /^main.*.css$/g,
+            cssProcessor: require('cssnano'),
+            cssProcessorOptions: { discardComments: true },
+            canPrint: false,
+            safe: true
+        })
     ]
 };
