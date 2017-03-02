@@ -205,7 +205,9 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" | "last" | "none" | "first" > }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" | <TSDB_2_2_AGGREGATOR> |<TSDB_2_3_AGGREGATOR> > }
+TOKEN : { < TSDB_2_2_AGGREGATOR :  "count" | "ep50r3" | "ep50r7" | "ep75r3" | "ep75r7" | "ep90r3" | "ep90r7" | "ep95r3" | "ep95r7" | "ep99r3" | "ep99r7" | "ep999r3" | "ep999r7" | "p50" | "p75"  | "p90" | "p95" | "p99" | "p999" >}
+TOKEN : { < TSDB_2_3_AGGREGATOR :  "last" | "none" | "first" >}
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
