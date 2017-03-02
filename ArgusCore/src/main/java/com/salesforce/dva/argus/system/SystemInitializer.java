@@ -231,6 +231,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
+		bindConcreteClass(Property.DISCOVERY_SERVICE_IMPL_CLASS, DiscoveryService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -251,7 +252,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
         bindConcreteClass(DefaultAuditService.class, AuditService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
-        bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
     }
 
@@ -291,6 +291,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
+		readFile(properties, _systemConfiguration.getValue(Property.DISCOVERY_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }
