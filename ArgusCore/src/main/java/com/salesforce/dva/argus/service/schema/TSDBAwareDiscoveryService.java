@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the DiscoveryService, that decorates the {@link CachedDiscoveryService} to allow openTSDB 2.x
- * filters for tags. It checks the tags of a given query for the occurence of tsdb filters and masks them, before
+ * filters for tags. It checks the tags of a given query for the occurrence of tsdb filters and masks them, before
  * forwarding the query to the {@link CachedDiscoveryService}. That way, it allows all the caching and query discovery
  * by wildcards of the {@link CachedDiscoveryService}, but also the usage of the tsdb tag query features. It is not
  * possible to use argus-wildcard and tsdb filters in the same tag, but it is possible to use filters for one tag and
@@ -145,7 +145,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 		for (Map.Entry<String, String> tag : query.getTags().entrySet()) {
 			String tagExpression = tag.getValue();
 			String maskedExpression = tagExpression;
-			if (checkRegexExpression(tagExpression)) {
+			if (checkFilterExpression(tagExpression)) {
 				maskedExpression = String.valueOf(tagExpression.hashCode());
 				replacementMap.put(maskedExpression, tagExpression);
 			}
@@ -169,7 +169,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	private boolean isTSDBRegexQuery(MetricQuery query) {
 
 		for (String tagExpression : query.getTags().values()) {
-			if (checkRegexExpression(tagExpression)) {
+			if (checkFilterExpression(tagExpression)) {
 				return true;
 			}
 		}
@@ -182,7 +182,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	 * @param tagExpression - the expression to check
 	 * @return is there a filter?
 	 */
-	private boolean checkRegexExpression(String tagExpression) {
+	private boolean checkFilterExpression(String tagExpression) {
 		for (String tsdbFilter : TSDB_FILTERS) {
 			if (tagExpression.startsWith(tsdbFilter)) {
 				return true;
