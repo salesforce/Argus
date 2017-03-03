@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class TSDBAwareDiscoveryService extends DefaultService implements DiscoveryService {
 
-	protected final Logger _logger = LoggerFactory.getLogger(getClass());
+	private final Logger _logger = LoggerFactory.getLogger(getClass());
 
 	@Inject
 	private CachedDiscoveryService _discoveryService;
 
-	private final List<String> TSDB_FILTERS = Arrays.asList("regexp",
+	private static final List<String> TSDB_FILTERS = Arrays.asList("regexp",
 			"literal_or",
 			"iliteral_or",
 			"not_literal_or",
@@ -46,7 +46,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 			"regexp");
 
 	@Inject
-	TSDBAwareDiscoveryService(SystemConfiguration config)
+	private TSDBAwareDiscoveryService(SystemConfiguration config)
 	{
 		super(config);
 	}
@@ -88,72 +88,26 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	@Override
 	public List<MetricQuery> getMatchingQueries(MetricQuery query) {
 
-		Map<String, String> replacementMap = null;
+		MetricQuery queryToDiscover = new MetricQuery(query);
+
+		MetricQueryMasker metricQueryMasker = new MetricQueryMasker();
 
 		if (isTSDBRegexQuery(query)) {
-			replacementMap = maskQuery(query);
+			queryToDiscover = metricQueryMasker.maskQuery(query);
 		}
 
-		List<MetricQuery> resultQueries = _discoveryService.getMatchingQueries(query);
+		List<MetricQuery> resultQueries = _discoveryService.getMatchingQueries(queryToDiscover);
 
-		if (replacementMap != null && !replacementMap.isEmpty()) {
+		if (metricQueryMasker.isQueryMasked()) {
 			for (MetricQuery metricQuery : resultQueries) {
-				demaskQuery(metricQuery, replacementMap);
+				metricQueryMasker.demaskQuery(metricQuery);
 			}
 		}
 
 		return resultQueries;
 	}
 
-	/**
-	 * Remove the masks from the query, using the given replacement map. The tagExpression will be URL encoded, to allow
-	 * the usage of tsdb filters.
-	 *
-	 * @param metricQuery - the metric query to demask
-	 * @param replacementMap - a map with replacements for the masks
-	 */
-	void demaskQuery(MetricQuery metricQuery, Map<String, String> replacementMap) {
 
-		Map<String, String> demaskedTags = new LinkedHashMap<>();
-		for (Map.Entry<String, String> tag : metricQuery.getTags().entrySet()) {
-			String tagExpression = tag.getValue();
-			if (replacementMap.containsKey(tagExpression)) {
-				tagExpression = replacementMap.get(tagExpression);
-			}
-			try {
-				demaskedTags.put(tag.getKey(), URLEncoder.encode(tagExpression, "UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				_logger.error(String.format("The expression %s cannot be encoded as an URL.", tagExpression), e);
-				throw new IllegalArgumentException(String.format("The expression %s cannot be encoded as an URL.",
-						tagExpression), e);
-			}
-		}
-		metricQuery.setTags(demaskedTags);
-	}
-
-	/**
-	 * Mask the filters in the given query. Will exchange the tagExpression with a hash of the expression.
-	 *
-	 * @param query - the query to mask
-	 * @return a map with the masks and the regexes they replaced.
-	 */
-	Map<String, String> maskQuery(MetricQuery query) {
-
-		Map<String, String> replacementMap = new LinkedHashMap<>();
-		Map<String, String> maskedTags = new LinkedHashMap<>();
-
-		for (Map.Entry<String, String> tag : query.getTags().entrySet()) {
-			String tagExpression = tag.getValue();
-			String maskedExpression = tagExpression;
-			if (checkFilterExpression(tagExpression)) {
-				maskedExpression = String.valueOf(tagExpression.hashCode());
-				replacementMap.put(maskedExpression, tagExpression);
-			}
-			maskedTags.put(tag.getKey(), maskedExpression);
-		}
-		query.setTags(maskedTags);
-		return replacementMap;
-	}
 
 	@Override
 	public boolean isWildcardQuery(MetricQuery query) {
@@ -182,7 +136,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	 * @param tagExpression - the expression to check
 	 * @return is there a filter?
 	 */
-	private boolean checkFilterExpression(String tagExpression) {
+	public static boolean checkFilterExpression(String tagExpression) {
 		for (String tsdbFilter : TSDB_FILTERS) {
 			if (tagExpression.startsWith(tsdbFilter)) {
 				return true;
