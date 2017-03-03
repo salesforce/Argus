@@ -281,12 +281,9 @@ public class MetricQuery extends AnnotationQuery {
         AVG("avg"),
         DEV("dev"),
         ZIMSUM("zimsum"),
-        COUNT("count"),
-        MIMMIN("mimmin"),
-        MIMMAX("mimmax"),
-		LAST("last"),
-		FIRST("first"),
-		NONE("none"),
+		MIMMAX("mimmax"),
+		MIMMIN("mimmin"),
+		COUNT("count"),
 		EP50R3("ep50r3"),
 		EP50R7("ep50r7"),
 		EP75R3("ep75r3"),
@@ -304,7 +301,10 @@ public class MetricQuery extends AnnotationQuery {
 		P90("p90"),
 		P95("p95"),
 		P99("p99"),
-		P999("p999");
+		P999("p999"),
+		LAST("last"),
+		FIRST("first"),
+		NONE("none");
 
         private final String _description;
 
