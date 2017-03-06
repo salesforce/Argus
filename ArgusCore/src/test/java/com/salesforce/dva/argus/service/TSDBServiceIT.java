@@ -40,9 +40,11 @@ import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.DefaultTSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -146,7 +148,6 @@ public class TSDBServiceIT extends AbstractTest {
                 assertEquals(metric.getDisplayName(), actualMetric.getDisplayName());
                 assertEquals(metric.getUnits(), actualMetric.getUnits());
                 assertEquals(metric.getDatapoints(), actualMetric.getDatapoints());
-                assertNotNull(actualMetric.getUid());
             }
         } finally {
             service.dispose();
@@ -202,7 +203,7 @@ public class TSDBServiceIT extends AbstractTest {
             List<MetricQuery> queries = Arrays.asList(new MetricQuery[] { query });
             List<Metric> actual = new LinkedList<>(_coalesceMetrics(service.getMetrics(queries)));
 
-            assertTrue(actual.size() == expected.size());
+            assertEquals(expected.size(), actual.size());
         } finally {
             service.dispose();
         }
