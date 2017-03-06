@@ -107,6 +107,11 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 		return resultQueries;
 	}
 
+	@Override
+	public boolean isWildcardQuery(MetricQuery query) {
+		return _discoveryService.isWildcardQuery(query);
+	}
+
 	/**
 	 * Check if the given query has a tag that includes a tsdb filter
 	 *
