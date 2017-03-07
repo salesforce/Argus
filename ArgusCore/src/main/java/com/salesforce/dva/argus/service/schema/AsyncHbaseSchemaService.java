@@ -681,19 +681,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
     			null, null, METRIC_SCHEMA_TABLENAME);
 
-    	boolean exists = false;
-    	if(_cacheEnabled) {
-    		exists = _trie.getValueForExactKey(rowKeyScopeTable) != null;
-    	}
-    	
-    	if(!exists) {
-    		_put(SCOPE_SCHEMA_TABLENAME, rowKeyScopeTable);
-    		_put(METRIC_SCHEMA_TABLENAME, rowKeyMetricTable);
-    		if(_cacheEnabled) {
-    			_trie.putIfAbsent(rowKeyScopeTable, VoidValue.SINGLETON);
-    		}
-    		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, 2, null);
-    	}
+    	_putIfAbsent(rowKeyScopeTable, rowKeyMetricTable);
     }
     
     private void _putWithTag(Metric metric, Entry<String, String> tag) {
@@ -702,7 +690,11 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), 
     			tag.getValue(), METRIC_SCHEMA_TABLENAME);
     	
-    	boolean exists = false;
+    	_putIfAbsent(rowKeyScopeTable, rowKeyMetricTable);
+    }
+
+	private void _putIfAbsent(String rowKeyScopeTable, String rowKeyMetricTable) {
+		boolean exists = false;
     	if(_cacheEnabled) {
     		exists = _trie.getValueForExactKey(rowKeyScopeTable) != null;
     	}
@@ -715,7 +707,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     		}
     		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, 2, null);
     	}
-    }
+	}
 
 	private void _put(String tableName, String rowKey) {
 		_logger.debug(MessageFormat.format("Inserting rowkey {0} into table {1}", rowKey, tableName));
