@@ -262,7 +262,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .chartTitle {margin-top:0; margin-bottom:.55em; text-align:center; font-size:16px;}
 
 /* main elements */
-.chartContainer {margin:0 .5em .5em 0; pad ding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
+.chartContainer {margin:0 .5em .5em 0; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
 .smallChart {padding:0 0 0 9em; width:100%; border:none;}
 .lineChartToolbar {margin-left:3em;}
 
