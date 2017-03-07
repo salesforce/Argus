@@ -87,6 +87,7 @@ public class Notification extends JPAEntity implements Serializable {
     List<Trigger> triggers = new ArrayList<>(0);
     boolean isSRActionable = false;
     int severityLevel = 5;
+    
     @Lob
     private String customText;
     @ElementCollection
@@ -112,8 +113,6 @@ public class Notification extends JPAEntity implements Serializable {
         setNotifierName(notifierName);
         setSubscriptions(subscriptions);
         setCooldownPeriod(cooldownPeriod);
-        setSRActionable(false);
-        setSeverityLevel(5);
     }
 
     /** Creates a new Notification object. */
