@@ -2,6 +2,8 @@
 
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
+    
+    //--------------------resize all charts-------------------
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
@@ -26,7 +28,7 @@ angular.module('argus.directives.charts.lineChart', [])
             dateConfig: '=dateconfig'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
-        controller: ['$scope', 'Metrics', 'DownloadHelper', 'growl', function($scope, Metrics, DownloadHelper, growl) {
+        controller: ['$scope', '$filter', '$uibModal', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, Metrics, DownloadHelper, growl) {
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
                 var dataHandler, filename, chartTitle;
@@ -54,7 +56,81 @@ angular.module('argus.directives.charts.lineChart', [])
                         console.log(error);
                     });
                 });
+            };
 
+            $scope.openChartOptions = function(chartId, chartTitle) {
+                if (!chartId) return;
+
+                var optionsModal = $uibModal.open({
+                    // scope: $scope,
+                    resolve: {
+                        menuOption: function () {
+                            return $scope.menuOption;
+                        }
+                    },
+                    templateUrl: 'js/templates/modals/chartOptions.html',
+                    windowClass: 'chartOptions',
+                    size: 'lg',
+                    // controller: chartOptions,     // ['optionsModal', 'menuOption', ChartOptions],
+                    // controllerAs: 'ChartOptions',     // modal options
+                    controller: ['$scope', function($scope) {
+                        // console.log( $scope );
+                        // console.log( chartId );
+                        // console.log( chartTitle );
+
+                        // set $scope items
+                        $scope.menuOption = $scope.$resolve.menuOption;
+                        $scope.chartId = chartId;
+                        $scope.chartTitle = chartTitle;
+
+                        // display current date in 'sample' format
+                        var currDate = new Date();
+                        var sampleFormat = "%a %b %e %Y %H:%M"; // "Sat Nov 5 1929 11:58"
+                        // var formatDate = d3.timeFormat(sampleFormat);
+                        $scope.dateFormatOutput = d3.timeFormat(sampleFormat)(currDate);
+
+                        // update date format to show sample date in modal view
+                        $scope.updateDateFormatOutput = function() {
+                            // check if field is empty
+                            if (!$scope.menuOption.dateFormat || $scope.menuOption.length === 0) {
+                                $scope.dateFormatOutput = d3.timeFormat(sampleFormat)(new Date());
+                            } else {
+                                // update new date displayed with format in field
+                                // check for a valid date format ?
+                                $scope.dateFormatOutput = d3.timeFormat($scope.menuOption.dateFormat)(new Date());
+                            }
+                        }
+
+                        /*
+                        $scope.menuOption.isBrushMainOn = true;
+                        $scope.menuOption.isWheelOn = true;
+                        $scope.menuOption.isTooltipSortOn = true;
+                        $scope.menuOption.isTooltipDetailOn = true;
+                        $scope.menuOption.downSampleMethod = 'mode-median';        // 'largest-triangle-one-bucket'
+                        */
+
+                        $scope.close = function () {
+                            optionsModal.close();
+                        };
+
+                        //add lightMask class when modal is opened
+                        optionsModal.opened.then(function () {
+                            $('body').addClass('lightMask');
+                        });
+
+                        //remove lightMask class when modal is closed
+                        optionsModal.result.then(function (menuOption) {
+                            // angular.noop();
+                            // $scope.menuOption = menuOption;
+                            // console.log( $scope.menuOption );
+
+                        }, function (menuOption) {
+                            $('body').removeClass('lightMask');
+
+                            // console.log( $scope.menuOption );
+                        });
+                    }]
+                });
             };
 
             $scope.sources = [];
@@ -92,7 +168,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 $scope.reScaleY();
                 $scope.redraw();
             }
-
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
@@ -209,15 +284,18 @@ angular.module('argus.directives.charts.lineChart', [])
             // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
             var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
             var shortDate = '%b %e, %H:%M';
-            var numericalDate = '%-m/%-d/%y %H:%M:%S';   // %x = %m/%d/%Y  11/5/2016
-            var smallChartDate = '%x';
+            var numericalDate = '%-m/%-d/%y %H:%M:%S';
+            var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
+            
+            // date settings
             var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
             var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
 
+            // not utilized ?
             var formatValue = d3.format(',');
 
             //graph setup variables
@@ -242,7 +320,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
 
             //downsample threshold
-            var downsampleThreshold = 1/2;// datapoints per pixel
+            var downsampleThreshold = 1/2;  // datapoints per pixel
+            
             // Base graph setup, initialize all the graph variables
             function setGraph() {
                 // use different x axis scale based on timezone
@@ -531,6 +610,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
+
                     currSeries.forEach(function (metric) {
                         if (metric.data.length === 0) return;
                         var data = metric.data;
@@ -576,6 +656,7 @@ angular.module('argus.directives.charts.lineChart', [])
                             });
                         }
                     });
+
                     // sort items in tooltip if needed
                     if (scope.menuOption.isTooltipSortOn) {
                         datapoints = datapoints.sort(function (a, b) {
@@ -624,7 +705,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
                     if (scope.menuOption.isTooltipDetailOn) {
-                        textLine.text(datapoints[i].name + "   " + d3.format('0,.8')(tempData));
+                        textLine.text(datapoints[i].name + "  -  " + d3.format('0,.8')(tempData));
                     } else {
                         textLine.text(d3.format('.3s')(tempData));
                     }
@@ -697,6 +778,25 @@ angular.module('argus.directives.charts.lineChart', [])
                 focus.select('[name=crossLineX]')
                     .attr('x1', X).attr('y1', 0)
                     .attr('x2', X).attr('y2', height);
+
+                var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
+                focus.select('[name=crossLineTipX]')
+                    .attr('x', X)
+                    .attr('y', 0)
+                    .attr('dy', crossLineTipHeight)
+                    .text(date);
+
+                //add a background to it
+                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
+                focus.select('[name=crossLineTipRectX]')
+                    .attr('x', boxX.x - crossLineTipPadding)
+                    .attr('y', boxX.y - crossLineTipPadding)
+                    .attr('width', boxX.width + 2 * crossLineTipPadding)
+                    .attr('height', boxX.height + 2 * crossLineTipPadding);
+
+                if(mouseY ===  undefined || Y === undefined) return;
+
+                //------------------Y
                 focus.select('[name=crossLineY]')
                     .attr('x1', 0).attr('y1', Y)
                     .attr('x2', width).attr('y2', Y);
@@ -722,21 +822,6 @@ angular.module('argus.directives.charts.lineChart', [])
                     .attr('y', boxY.y - crossLineTipPadding)
                     .attr('width', boxY.width + 2 * crossLineTipPadding)
                     .attr('height', boxY.height + 2 * crossLineTipPadding);
-
-                var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
-                focus.select('[name=crossLineTipX]')
-                    .attr('x', X)
-                    .attr('y', 0)
-                    .attr('dy', crossLineTipHeight)
-                    .text(date);
-
-                //add a background to it
-                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
-                focus.select('[name=crossLineTipRectX]')
-                    .attr('x', boxX.x - crossLineTipPadding)
-                    .attr('y', boxX.y - crossLineTipPadding)
-                    .attr('width', boxX.width + 2 * crossLineTipPadding)
-                    .attr('height', boxX.height + 2 * crossLineTipPadding);
 
             }
 
@@ -1195,6 +1280,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
+            // menuOption items
+
             //toggle time brush
             function toggleBrush() {
                 var display = !scope.menuOption.isBrushOn ? 'none' : null;
@@ -1238,14 +1325,31 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateStorage();
             }
 
+            // end menuOption items
+
             //date range
             function updateDateRange() {
-                var start, end, str;
+                var start, end, str, userInputDateFormat;
+
+                // user input dateFormat from chart options
+                if (scope.menuOption.dateFormat) {
+                    // check if isValid date?
+                    userInputDateFormat = scope.menuOption.dateFormat;
+                } else {
+                    userInputDateFormat = shortDate;
+                    userInputDateFormat = numericalDate;
+                }
+
+                // date settings
                 if (GMTon) {
+                    GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(userInputDateFormat);
+
                     start = GMTformatDate(x.domain()[0]);
                     end = GMTformatDate(x.domain()[1]);
                     str = start + ' - ' + end + " (GMT/UTC)";
                 } else {
+                    formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(userInputDateFormat);
+
                     start = formatDate(x.domain()[0]);
                     end = formatDate(x.domain()[1]);
                     var temp = (new Date()).toString();
@@ -1337,13 +1441,14 @@ angular.module('argus.directives.charts.lineChart', [])
             scope.updateStorage = updateStorage;
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + chartId, scope.menuOption);
-            }
+            };
 
             scope.updateDownSample = function(){
                 adjustSeries();
-                reScaleY()
+                reScaleY();
                 redraw();
-            }
+                updateStorage();
+            };
 
             function downSample(series){
                 // Create the sampler
@@ -1478,6 +1583,17 @@ angular.module('argus.directives.charts.lineChart', [])
                     hideMenu();
                 }
             }
+
+            // watch changes from chart options modal to update graph
+            scope.$watch('menuOption', function() {
+                updateDateRange();
+                toggleBrushMain();
+                toggleWheel();
+                toggleTooltip();
+                
+                // mouseMove();
+                // downSample();
+            }, true);
 
             //TODO improve the resize efficiency if performance becomes an issue
             element.on('$destroy', function(){

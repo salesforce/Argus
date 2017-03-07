@@ -24,8 +24,15 @@ label {
     padding-top: 5px;
 }
 
-a {cursor:pointer;}
+a {cursor:pointer; text-decoration:none;}
 a:hover {text-decoration:none; color:inherit;}
+a:active, a:hover, a:focus, a:visited {outline:0;}
+
+/* placeholder styling */
+::-webkit-input-placeholder {color:#BBB;}
+/* firefox 19+ */
+::-moz-placeholder {color:#BBB;}
+input:-moz-placeholder {color:#BBB;}
 
 ul {margin-bottom:0;}
 ul li {list-style:none;}
@@ -36,6 +43,12 @@ button[disabled] {color:#CCC;}
 .floatR {float:right;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
 .pointer {cursor:pointer;}
+.clearAll {clear:both;}
+
+.btmBdr {padding-bottom:.25em; border-bottom:solid 1px #CCC;}
+
+/** small 'X' icon */
+a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflings.png") -314px -2px no-repeat;}
 
 .glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
@@ -92,6 +105,39 @@ button[disabled] {color:#CCC;}
 .h3 {margin-top: 10px;}
 h3.bcTitle {margin:11px 0 0 35px; font-size:18px;}
 h5.bcDesc {margin-bottom:20px; font-weight:normal;}
+
+/* Modal options **/
+.modal.fade {top:-25%;}
+.modal.fade.in {top:10%;}
+
+/* modal backdrop (mask) settings **/
+.modal-backdrop {position:fixed; top:0; right:0; bottom:0; left:0; z-index:999; background-color:#000;}
+.modal-backdrop.fade {opacity:0;}
+.modal-backdrop, .modal-backdrop.fade.in {}
+.modal .smallClose {position:absolute; display:inline-block; top:1em; right:1em;}
+
+.modal .chkBox {margin:.75em .5em 0 0; max-width:90%; vertical-align:top;}
+.modal .chkBoxLbl {max-width:90%;}
+
+.modal .footer {margin-top:1em; padding-top:1em; border-top:solid 1px #CCC;}
+
+/* lighten up default modal backdrop (mask) */
+.lightMask .modal-backdrop.fade.in {opacity:.3;}
+
+/* modal specific */
+
+
+/* chart options */
+.modal .mainContent {padding:0 1em 1em 1em;}
+.modal .mainContent .title {margin-bottom:.5em; padding-bottom:.25em; border-bottom:solid 1px #CCC;}
+.modal .mainContent h2 {margin-left:0; padding-top:0; font-size:1.5em;}
+.modal .mainContent h3 {font-size:1.3em;}
+.modal .mainContent h4.sectionTitle {font-weight:normal; color:#428BCA;}
+.modal .mainContent pre {overflow-x:auto; margin-top:1em;}
+.modal .mainContent label {color:#666;}
+
+
+/* Dashboard related **/
 
 .rowIndicator {position:relative; margin-bottom:.5em;}
 .serviceItem {position:absolute; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
@@ -216,7 +262,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .chartTitle {margin-top:0; margin-bottom:.55em; text-align:center; font-size:16px;}
 
 /* main elements */
-.chartContainer {margin:0 .5em .5em 0; padding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
+.chartContainer {margin:0 .5em .5em 0; pad ding-top:1em; border:solid 2px #CCC; border-radius:5px; background:#FFF;}
 .smallChart {padding:0 0 0 9em; width:100%; border:none;}
 .lineChartToolbar {margin-left:3em;}
 
