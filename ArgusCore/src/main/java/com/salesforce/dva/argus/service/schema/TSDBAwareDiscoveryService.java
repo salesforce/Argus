@@ -81,7 +81,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	}
 
 	/**
-	 * Checks first if the query has some openTSDB tag-filters. If so, it masks them with a hass before forwarding them
+	 * Checks first if the query has some openTSDB tag-filters. If so, it masks them with a hash before forwarding them
 	 * to the {@link CachedDiscoveryService}. The masked tags will be unmasked after the queries return from the
 	 * service.
 	 */
