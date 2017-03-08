@@ -382,10 +382,15 @@
             <version>3.6.14</version>
         </dependency>
         <dependency>
-        <groupId>org.apache.phoenix</groupId>
-        <artifactId>phoenix-core</artifactId>
-        <version>4.9.0-HBase-0.98</version>
-      </dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>ST4</artifactId>
+            <version>4.0.7</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.phoenix</groupId>
+          <artifactId>phoenix-core</artifactId>
+          <version>4.9.0-HBase-0.98</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
