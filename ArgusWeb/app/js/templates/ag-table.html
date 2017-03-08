@@ -1,0 +1,66 @@
+<div ng-transclude="" style="display:none"></div>
+    <div id="{{tableId}}" class="row">
+        <div class="col-md-3 h3">{{}} Table</div>
+
+        <div class="col-md-4 text-right">
+            <dir-pagination-controls></dir-pagination-controls>
+        </div>
+        <div class="col-md-1">
+            <select class="form-control" ng-model="itemsPerPage"
+                    ng-options="val for val in itemsPerPageOptions"></select>
+        </div>
+        <div class="col-md-3">
+        <span class="pull-right input-group">
+            <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
+            <span class="input-group-btn">
+                <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
+                    <span class="glyphicon glyphicon-remove-circle"></span>
+                </button>
+                <button class="btn btn-default active" ng-show="!searchText">
+                    <span class="glyphicon glyphicon-filter"></span>
+                </button>
+            </span>
+        </span>
+        </div>
+
+    </div>
+<div>
+    <table class="table table-striped table-bordered agTable">
+        <tr>
+            <th  ng-click="sort(colNames)">{{colNames.timestamp}}
+                <span class="glyphicon sort-icon" ng-show="sortKey===colNames.timestamp"
+                ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
+            </th>
+            <th  ng-repeat="value in (colNames | agTableSort: sortedSourceIndices) track by $index">
+                {{value}}
+            </th>
+        </tr>
+        <tr dir-paginate="item in results = (tData | filter:searchText) | itemsPerPage:itemsPerPage track by $index"
+            current-page="currentPage">
+            <td ng-click="sort(item)">{{item.timestamp}}
+                <span class="glyphicon sort-icon" ng-show="sortKey===item.timestamp"
+                ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
+            </td>
+            <td ng-repeat="value in (item | agTableSort: sortedSourceIndices)">{{value}}</td>
+        </tr>
+    </table>
+</div>
+
+
+    <div ng-if="loaded">
+        <div class="row text-center" ng-show="searchText.length === 0">
+            <ng-pluralize count="dataSet.length"
+                          when="{'0': 'No {{}} to show.',
+                          'one': 'Showing 1 of 1 {{}}.',
+                          'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{}}.'}">
+            </ng-pluralize>
+        </div>
+        <!--after user type in searchText-->
+        <div class="row text-center" ng-show="searchText.length">
+            <ng-pluralize count="results.length"
+                          when="{'0': 'No results found...',
+                          'one': '1 result found.',
+                          'other': '{{results.length}} results found.'}">
+            </ng-pluralize>
+        </div>
+</div>
