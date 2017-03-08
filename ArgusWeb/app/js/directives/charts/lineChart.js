@@ -582,7 +582,67 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mouseY = y.invert(positionY);
 
                 if(isBrushInNonEmptyRange()) {
+
                     updateCircles(mouseX, datapoints);
+
+                    currSeries.forEach(function (metric, index) {
+                        var circle = focus.select('.' + metric.graphClassName);
+                        if (metric.data.length === 0 || !scope.sources[index].displaying) {
+                            circle.style('display', 'none');
+                            tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+                            return;
+                        }
+                        var data = metric.data;
+                        var i = bisectDate(metric.data, mouseX, 1);
+                        var d0 = data[i - 1];
+                        var d1 = data[i];
+                        var d;
+                        // snap the datapoint that lives in the x domain
+                        if (!d0) {
+                            //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
+                            //we could still render d0 but make it invisible.
+                            d = d1;
+                        } else if (!d1) {
+                            d = d0;
+                            // if both data points lives in the domain, choose the closer one to the mouse position
+                        } else {
+                            d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
+                        }
+
+
+                        var displayProperty = circle.attr("displayProperty");
+
+                        if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
+                            //outside domain
+                            circle.style('display', 'none');
+                            displayProperty = 'none'
+
+                        }else{
+                            circle.style('display', null);
+                        }
+
+                        tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
+                        // update circle's position on each graph
+                        circle
+                            .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
+                            .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')')
+
+                        // check if the source is displaying based on the legend
+                        // var sourceInLegend = scope.sources.find(function (source) {
+                        //     return source.graphClassName === metric.graphClassName;
+                        // });
+                        // if (sourceInLegend.displaying) {
+                        //already checked displaying
+                        if(displayProperty !== 'none'){
+                            datapoints.push({
+                                data: d,
+                                graphClassName: metric.graphClassName,
+                                name: metric.name
+                            });
+                        }
+                        // }
+                    });
+
                     // sort items in tooltip if needed
                     if (scope.menuOption.isTooltipSortOn) {
                         datapoints = datapoints.sort(function (a, b) {
