@@ -57,8 +57,8 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 .eyeIcon.eyeOpen {background-position:-96px -121px;}
 .eyeIcon.eyeClosed {background-position:-120px -121px;}
 
-.resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}
-.resetIcon:hover {background-position:0 -37px;}
+/*.resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}*/
+/*.resetIcon:hover {background-position:0 -37px;}*/
 
 .cloneTrooperIcon {display:inline-block; width:28px; height:35px; background:url(../img/clone-trooper.png) no-repeat; vertical-align:middle;}
 

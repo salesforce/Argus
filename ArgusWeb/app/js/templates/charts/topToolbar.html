@@ -79,6 +79,10 @@
 					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn" ng-click="updateStorage()"/>
 					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
 				</li>
+				<li>
+					<input type="checkbox" name="toggle-syncchart" id="toggle-syncchart-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>
+					<label for="toggle-syncchart-{{chartConfig.chartId}}" title="synchronize this chart with other checked charts">Synchronize Chart</label>
+				</li>
 				</ul>
 			</div>
 
@@ -111,8 +115,8 @@
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
-						value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}" 
-						ng-model="menuOption.downSampleMethod" 
+						value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}"
+						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
 						<label for="every-nth-point-{{chartConfig.chartId}}" title="N is calculated based on the container width and # of datapoints)">Every n'th point</label>
 				    </li>
