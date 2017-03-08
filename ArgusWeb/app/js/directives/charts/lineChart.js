@@ -1204,7 +1204,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function updateAnnotations() {
                 if (!series) return;
-                series.forEach(function(metric) {
+                series.forEach(function(metric, index) {
                     if (!metric.flagSeries) return;
                     var flagSeries = metric.flagSeries.data;
                     flagSeries.forEach(function(d) {
@@ -1215,7 +1215,8 @@ angular.module('argus.directives.charts.lineChart', [])
                         if (d.x < x.domain()[0] || d.x > x.domain()[1]) {
                             label.style("display", 'none');
                         } else {
-                            label.style("display", null);
+                            var displayProperty = scope.sources[index].displaying? null: 'none';
+                            label.style("display", displayProperty);
                             label.attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
                         }
                     });
