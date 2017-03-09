@@ -45,3 +45,6 @@ property
 #Scripts
 update_tomcat.sh
 update_views.sh
+
+#webpack
+ArgusWeb/dist
