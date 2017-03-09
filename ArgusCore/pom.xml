@@ -324,7 +324,7 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>2.7.2</version>
+            <version>2.9.0</version>
             <type>jar</type>
             <scope>compile</scope>
         </dependency>		
@@ -403,7 +403,27 @@
                     <groupId>com.sun.jersey</groupId>
                 </exclusion>
             </exclusions>
-      </dependency>
+        </dependency>
+        <dependency>
+              <groupId>org.apache.curator</groupId>
+              <artifactId>curator-x-discovery</artifactId>
+              <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.concurrent-trees</groupId>
+            <artifactId>concurrent-trees</artifactId>
+            <version>2.6.0</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
