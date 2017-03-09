@@ -124,6 +124,8 @@ angular.module('argus.directives.charts.table', [])
             if ( data && data.length > 0) {
                 //set scope.tData and scope.colNames
                 AgTableService.setTData(data, scope, scope.GMTOn);
+                scope.tableLoaded = true;
+
             }else{
                 console.log('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
             }
@@ -143,8 +145,19 @@ angular.module('argus.directives.charts.table', [])
 
         link: function(scope, element, attributes, dashboardCtrl) {
             //DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);
+
             setupTable(scope, element, dashboardCtrl.getAllControls());
             queryMetricData(scope, dashboardCtrl.getAllControls());
+
+            scope.$watch('tableLoaded', function(val){
+               //do not use ng-show cause it does not update dom size in this digest
+               if(val){
+                   angular.element(element.context.querySelector('.agTableDiv')).show();
+               }else{
+                   angular.element(element.context.querySelector('.agTableDiv')).hide();
+               }
+            });
+
             scope.$watch(function(){
                 return angular.element(element.context.querySelector('.agTableHeadRow th:nth-child(2)')).css('height'); }, function(val){
                     scope.headerHeight = val;

@@ -2,7 +2,7 @@
     <div ng-loading="tableLoaded"></div>
 </div>
 <div ng-transclude="" style="display:none"></div>
-<div ng-show="tableLoaded">
+<div class="agTableDiv" style="display:none">
     <div id="{{tableId}}" class="row">
         <div class="col-md-3 h3">{{}} Table</div>
 
@@ -51,7 +51,7 @@
                     <span class="glyphicon sort-icon" ng-show="sortKey===item.timestamp"
                           ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
                 </td>
-                <td ng-repeat="value in (item | agTableSort: sortedSourceIndices)">{{value}}</td>
+                <td ng-repeat="value in (item | agTableSort: sortedSourceIndices) track by $index">{{value}}</td>
             </tr>
             </tbody>
         </table>
