@@ -55,13 +55,13 @@ public class IntegralTransform implements Transform {
         List<Metric> result = new ArrayList<>(metrics.size());
 
         for (Metric metric : metrics) {
-            Map<Long, String> sortedDatapoints = new TreeMap<>();
+            Map<Long, Double> sortedDatapoints = new TreeMap<>();
             Double prevSum = 0.0;
 
             sortedDatapoints.putAll(metric.getDatapoints());
-            for (Entry<Long, String> entry : sortedDatapoints.entrySet()) {
-                prevSum += Double.valueOf(entry.getValue());
-                sortedDatapoints.put(entry.getKey(), String.valueOf(prevSum));
+            for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
+                prevSum += entry.getValue();
+                sortedDatapoints.put(entry.getKey(), prevSum);
             }
             metric.setDatapoints(sortedDatapoints);
             result.add(metric);

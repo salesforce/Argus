@@ -11,7 +11,7 @@ angular.module('argus.services.tableListService', [])
         });
     };
 
-    this.getListUnderTab = function (allItems, shared, userName) {
+    this.getListUnderTab = function (allItems, shared, userName, userPrivileged) {
         var i, result = [];
         var totNum = allItems.length;
         if(shared) {
@@ -22,7 +22,7 @@ angular.module('argus.services.tableListService', [])
             }
         } else {
             for(i = 0; i < totNum; i++) {
-                if (allItems[i].ownerName === userName) {
+                if (allItems[i].ownerName === userName || userPrivileged) {
                     result.push(allItems[i]);
                 }
             }
@@ -30,17 +30,17 @@ angular.module('argus.services.tableListService', [])
         return result;
     };
 
-    this.addItemToTableList = function (allList, propertyType, item, userName) {
+    this.addItemToTableList = function (allList, propertyType, item, userName, userPrivileged) {
         $sessionStorage[propertyType].cachedData.push(item);
         if (item.shared) allList.sharedList.push(item);
-        if (item.ownerName === userName) allList.usersList.push(item);
+        if (item.ownerName === userName || userPrivileged) allList.usersList.push(item);
         return allList;
     };
 
-    this.deleteItemFromTableList = function (allList, propertyType, item, userName) {
+    this.deleteItemFromTableList = function (allList, propertyType, item, userName, userPrivileged) {
         $sessionStorage[propertyType].cachedData = this.deleteItemFromListHelper($sessionStorage[propertyType].cachedData, item);
         if (item.shared) allList.sharedList = this.deleteItemFromListHelper(allList.sharedList, item);
-        if (item.ownerName === userName) allList.usersList = this.deleteItemFromListHelper(allList.usersList, item);
+        if (item.ownerName === userName || userPrivileged) allList.usersList = this.deleteItemFromListHelper(allList.usersList, item);
         return allList;
     };
 }]);

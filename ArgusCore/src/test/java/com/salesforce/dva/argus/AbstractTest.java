@@ -107,10 +107,10 @@ public abstract class AbstractTest {
         String scope = MessageFormat.format(scopeNameTemplate, scopeIndex);
         String metric = MessageFormat.format(metricNameTemplate, metricIndex);
         Metric result = new Metric(scope, metric);
-        Map<Long, String> datapoints = new TreeMap<Long, String>();
+        Map<Long, Double> datapoints = new TreeMap<>();
 
         for (int i = 0; i < datapointCount; i++) {
-            datapoints.put(System.currentTimeMillis(), Long.toString((int) (random.nextDouble() * 500)));
+            datapoints.put(System.currentTimeMillis(), random.nextDouble() * 500);
         }
         result.setDatapoints(datapoints);
         result.setTags(tags);
