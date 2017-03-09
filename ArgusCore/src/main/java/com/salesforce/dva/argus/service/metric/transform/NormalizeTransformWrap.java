@@ -99,13 +99,13 @@ public class NormalizeTransformWrap implements Transform {
 
         // Padding Zeros for every datapoints map in every metric
         for (Metric metric : metrics) {
-            Map<Long, String> paddingDatapoints = new TreeMap<Long, String>();
+            Map<Long, Double> paddingDatapoints = new TreeMap<>();
             Set<Long> metricDPKeyset = metric.getDatapoints().keySet();
 
             // Calculate those timestamps this datapoint map doesn't have
             for (Long unionKey : unionKeyset) {
                 if (!metricDPKeyset.contains(unionKey)) {
-                    paddingDatapoints.put(unionKey, String.valueOf(0.0));
+                    paddingDatapoints.put(unionKey, 0.0);
                 }
             }
 
@@ -163,24 +163,25 @@ public class NormalizeTransformWrap implements Transform {
     private static class DivideByConstantValueMapping implements ValueMapping {
 
         @Override
-        public Map<Long, String> mapping(Map<Long, String> originalDatapoints, List<String> constants) {
-            Map<Long, String> divideByConstantDatapoints = new HashMap<Long, String>();
+        public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+            Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
 
-            for (Entry<Long, String> entry : originalDatapoints.entrySet()) {
+            for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
                 Double adivideByConstantValue = null;
 
-                if (entry.getValue() == null || entry.getValue().equals("")) {
+                if (entry.getValue() == null) {
                     adivideByConstantValue = 0.0;
                 } else {
-                    adivideByConstantValue = Double.parseDouble(entry.getValue()) / Double.parseDouble(constants.get(0));
+                    adivideByConstantValue = entry.getValue() / Double.parseDouble(constants.get(0));
                 }
-                divideByConstantDatapoints.put(entry.getKey(), String.valueOf(adivideByConstantValue));
+                
+                divideByConstantDatapoints.put(entry.getKey(), adivideByConstantValue);
             }
             return divideByConstantDatapoints;
         }
 
         @Override
-        public Map<Long, String> mapping(Map<Long, String> originalDatapoints) {
+        public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
             throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
         }
 

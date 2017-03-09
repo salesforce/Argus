@@ -64,7 +64,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         }
 
         Metric metric = metrics.get(0);
-        Map<Long, String> metricData = metric.getDatapoints();
+        Map<Long, Double> metricData = metric.getDatapoints();
         if (metricData.size() == 0) {
             throw new MissingDataException("Metric must contain data points to perform transforms.");
         }
@@ -79,7 +79,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
     }
 
     //Fits the mean and variance parameters to the data
-    private void fitParameters(Map<Long, String> metricData) {
+    private void fitParameters(Map<Long, Double> metricData) {
         mean = getMetricMean(metricData);
         variance = getMetricVariance(metricData);
     }
@@ -88,9 +88,9 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
      * Assigns an anomaly score to each data point, indicating how likely it is
      * to be an anomaly relative to other points.
      */
-    private Metric predictAnomalies(Map<Long, String> metricData) {
+    private Metric predictAnomalies(Map<Long, Double> metricData) {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, String> predictionDatapoints = new HashMap<>();
+        Map<Long, Double> predictionDatapoints = new HashMap<>();
 
         if (variance == 0.0) {
             /**
@@ -98,18 +98,17 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
              * Also, using 0 for variance would cause divide by zero operations
              * in Gaussian anomaly formulas. This condition avoids such operations.
              */
-            for (Entry<Long, String> entry : metricData.entrySet()) {
+            for (Entry<Long, Double> entry : metricData.entrySet()) {
                 Long timestamp = entry.getKey();
-                predictionDatapoints.put(timestamp, "0.0");
+                predictionDatapoints.put(timestamp, 0.0);
             }
         } else {
-            for (Entry<Long, String> entry : metricData.entrySet()) {
+            for (Entry<Long, Double> entry : metricData.entrySet()) {
                 Long timestamp = entry.getKey();
-                String valueString = entry.getValue();
-                double valueDouble = Double.parseDouble(valueString);
+                double value = entry.getValue();
                 try {
-                    double anomalyScore = calculateAnomalyScore(valueDouble);
-                    predictionDatapoints.put(timestamp, String.valueOf(anomalyScore));
+                    double anomalyScore = calculateAnomalyScore(value);
+                    predictionDatapoints.put(timestamp, anomalyScore);
                 } catch (ArithmeticException e) {
                     continue;
                 }
@@ -120,20 +119,18 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         return predictions;
     }
 
-    private double getMetricMean(Map<Long, String> metricData) {
+    private double getMetricMean(Map<Long, Double> metricData) {
         double sum = 0;
-        for (String valueString : metricData.values()) {
-            double valueDouble = Double.parseDouble(valueString);
-            sum += valueDouble;
+        for (Double value : metricData.values()) {
+            sum += value;
         }
         return sum/metricData.size();
     }
 
-    private double getMetricVariance(Map<Long, String> metricData) {
+    private double getMetricVariance(Map<Long, Double> metricData) {
         double sumSquareDiff = 0;
-        for (String valueString : metricData.values()) {
-            double valueDouble = Double.parseDouble(valueString);
-            sumSquareDiff += Math.pow((valueDouble - mean), 2);
+        for (Double value : metricData.values()) {
+            sumSquareDiff += Math.pow((value - mean), 2);
         }
         return sumSquareDiff/metricData.size();
     }

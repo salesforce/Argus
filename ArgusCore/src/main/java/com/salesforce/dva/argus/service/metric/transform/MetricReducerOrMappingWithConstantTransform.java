@@ -109,8 +109,8 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
 
         distiller.distill(metrics);
 
-        Map<Long, List<String>> collated = collate(metrics);
-        Map<Long, String> reducedDatapoints = reduce(collated, constants, metrics);
+        Map<Long, List<Double>> collated = collate(metrics);
+        Map<Long, Double> reducedDatapoints = reduce(collated, constants, metrics);
         String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
         Metric newMetric = new Metric(defaultScope, newMetricName);
 
@@ -121,13 +121,13 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         return newMetric;
     }
 
-    private Map<Long, List<String>> collate(List<Metric> metrics) {
-        Map<Long, List<String>> collated = new HashMap<Long, List<String>>();
+    private Map<Long, List<Double>> collate(List<Metric> metrics) {
+        Map<Long, List<Double>> collated = new HashMap<>();
 
         for (Metric metric : metrics) {
-            for (Map.Entry<Long, String> point : metric.getDatapoints().entrySet()) {
+            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
                 if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), new ArrayList<String>());
+                    collated.put(point.getKey(), new ArrayList<Double>());
                 }
                 collated.get(point.getKey()).add(point.getValue());
             }
@@ -135,10 +135,10 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         return collated;
     }
 
-    private Map<Long, String> reduce(Map<Long, List<String>> collated, List<String> constants, List<Metric> metrics) {
-        Map<Long, String> reducedDatapoints = new HashMap<>();
+    private Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
+        Map<Long, Double> reducedDatapoints = new HashMap<>();
 
-        for (Map.Entry<Long, List<String>> entry : collated.entrySet()) {
+        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
             if (entry.getValue().size() < metrics.size()) {
                 continue;
             }

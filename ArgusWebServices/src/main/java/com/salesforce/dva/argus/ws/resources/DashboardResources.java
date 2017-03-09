@@ -135,23 +135,7 @@ public class DashboardResources extends AbstractResource {
     public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
                                             @QueryParam("dashboardName") String dashboardName,
                                             @QueryParam("owner") String ownerName) {
-//        Set<Dashboard> result = new HashSet<>();
         PrincipalUser owner = validateAndGetOwner(req, ownerName);
-
-//        if (dashboardName != null && !dashboardName.isEmpty()) {
-//            Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
-//
-//            if (dashboard != null) {
-//                result.add(dashboard);
-//            }
-//        } else {
-//            if (owner.isPrivileged()) {
-//                result.addAll(dService.findDashboards(null));
-//            } else {
-//                result.addAll(dService.findDashboardsByOwner(owner));
-//                result.addAll(dService.findSharedDashboards());
-//            }
-//        }
         Set<Dashboard> result = getDashboardsObj(dashboardName, owner);
         return DashboardDto.transformToDto(new LinkedList<>(result));
     }

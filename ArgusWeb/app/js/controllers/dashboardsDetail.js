@@ -57,6 +57,24 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
             });
         };
 
+        $scope.cloneDashboard = function (dashboard) {
+            var tempDashboard = {
+                name: dashboard.name + "-" + Auth.getUsername() + "'s copy",
+                description: "A copy of " + dashboard.name,
+                shared: false,
+                content: dashboard.content
+            };
+            Dashboards.save(tempDashboard, function (result) {
+                // add this dashboard session cache
+                result.content = "";
+                $sessionStorage.dashboards.cachedData.push(result);
+                growl.success('Cloned "' + dashboard.name + '"');
+            }, function (error) {
+                growl.error('Failed to clone ' + dashboard.name + '"');
+                console.log(error);
+            });
+        };
+
         $scope.dashboardId = $routeParams.dashboardId;
         $scope.selectedTab = 1;
 

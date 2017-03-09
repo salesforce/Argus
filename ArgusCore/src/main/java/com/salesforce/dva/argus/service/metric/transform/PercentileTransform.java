@@ -59,8 +59,8 @@ public class PercentileTransform implements Transform {
      *
      * @return  The nth-percentile value.
      */
-    static String calculateNthPercentile(List<String> values, int n) {
-        String[] valuesArr = new String[values.size()];
+    static Double calculateNthPercentile(List<Double> values, int n) {
+        Double[] valuesArr = new Double[values.size()];
 
         valuesArr = values.toArray(valuesArr);
         Arrays.sort(valuesArr);
@@ -116,15 +116,15 @@ public class PercentileTransform implements Transform {
         }
     }
 
-    private Map<Long, String> _calculatePercenTileSeries(Map<Long, String> originalDatapoints, int n, long windowInSeconds) {
-        Map<Long, String> transformedDatapoints = new HashMap<>();
-        Map<Long, String> sortedDatapoints = new TreeMap<>(originalDatapoints);
-        List<String> values = new ArrayList<>();
+    private Map<Long, Double> _calculatePercenTileSeries(Map<Long, Double> originalDatapoints, int n, long windowInSeconds) {
+        Map<Long, Double> transformedDatapoints = new HashMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
+        List<Double> values = new ArrayList<>();
         Long windowStart = 0L;
 
-        for (Map.Entry<Long, String> entry : sortedDatapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
             Long timestamp = entry.getKey();
-            String value = entry.getValue();
+            Double value = entry.getValue();
 
             if (values.isEmpty()) {
                 values.add(value);
@@ -138,9 +138,11 @@ public class PercentileTransform implements Transform {
                 values.add(value);
             }
         }
+        
         if (!values.isEmpty()) {
             transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
         }
+        
         return transformedDatapoints;
     }
 

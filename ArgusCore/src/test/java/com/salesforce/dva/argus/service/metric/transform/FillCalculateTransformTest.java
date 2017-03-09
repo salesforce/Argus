@@ -44,19 +44,19 @@ public class FillCalculateTransformTest {
 
     private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
-    private static final Map<Long, String> input = new HashMap<>();
+    private static final Map<Long, Double> input = new HashMap<>();
 
     static {
-        input.put(1000L, "1");
-        input.put(2000L, "2");
-        input.put(3000L, "3");
-        input.put(4000L, "4");
-        input.put(5000L, "5");
-        input.put(6000L, "6");
-        input.put(7000L, "7");
-        input.put(8000L, "8");
-        input.put(9000L, "9");
-        input.put(10000L, "10");
+        input.put(1000L, 1.0);
+        input.put(2000L, 2.0);
+        input.put(3000L, 3.0);
+        input.put(4000L, 4.0);
+        input.put(5000L, 5.0);
+        input.put(6000L, 6.0);
+        input.put(7000L, 7.0);
+        input.put(8000L, 8.0);
+        input.put(9000L, 9.0);
+        input.put(10000L, 10.0);
     }
 
     @Test
@@ -74,18 +74,18 @@ public class FillCalculateTransformTest {
 
         constants.add("p95");
 
-        Map<Long, String> expected_1 = new HashMap<>();
+        Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, "9");
-        expected_1.put(2000L, "9");
-        expected_1.put(3000L, "9");
-        expected_1.put(4000L, "9");
-        expected_1.put(5000L, "9");
-        expected_1.put(6000L, "9");
-        expected_1.put(7000L, "9");
-        expected_1.put(8000L, "9");
-        expected_1.put(9000L, "9");
-        expected_1.put(10000L, "9");
+        expected_1.put(1000L, 10.0);
+        expected_1.put(2000L, 10.0);
+        expected_1.put(3000L, 10.0);
+        expected_1.put(4000L, 10.0);
+        expected_1.put(5000L, 10.0);
+        expected_1.put(6000L, 10.0);
+        expected_1.put(7000L, 10.0);
+        expected_1.put(8000L, 10.0);
+        expected_1.put(9000L, 10.0);
+        expected_1.put(10000L, 10.0);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
@@ -97,16 +97,16 @@ public class FillCalculateTransformTest {
     @Test
     public void testMetricListIntervalOffsetWithPercentile() {
         Transform fillCalculateTransform = new FillCalculateTransform();
-        Map<Long, String> input1 = new HashMap<>();
+        Map<Long, Double> input1 = new HashMap<>();
 
-        input1.put(1000L, "1");
-        input1.put(4000L, "4");
-        input1.put(5000L, "5");
-        input1.put(6000L, "6");
-        input1.put(7000L, "7");
-        input1.put(8000L, "8");
-        input1.put(9000L, "9");
-        input1.put(10000L, "10");
+        input1.put(1000L, 1.0);
+        input1.put(4000L, 4.0);
+        input1.put(5000L, 5.0);
+        input1.put(6000L, 6.0);
+        input1.put(7000L, 7.0);
+        input1.put(8000L, 8.0);
+        input1.put(9000L, 9.0);
+        input1.put(10000L, 10.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -118,21 +118,21 @@ public class FillCalculateTransformTest {
 
         List<String> constants = new ArrayList<>();
 
-        constants.add("p95");
+        constants.add("p80");
         constants.add("1s");
         constants.add("1s");
 
-        Map<Long, String> expected_1 = new HashMap<>();
+        Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, "9");
-        expected_1.put(3000L, "9");
-        expected_1.put(4000L, "9");
-        expected_1.put(5000L, "9");
-        expected_1.put(6000L, "9");
-        expected_1.put(7000L, "9");
-        expected_1.put(8000L, "9");
-        expected_1.put(9000L, "9");
-        expected_1.put(10000L, "9");
+        expected_1.put(1000L, 9.0);
+        expected_1.put(3000L, 9.0);
+        expected_1.put(4000L, 9.0);
+        expected_1.put(5000L, 9.0);
+        expected_1.put(6000L, 9.0);
+        expected_1.put(7000L, 9.0);
+        expected_1.put(8000L, 9.0);
+        expected_1.put(9000L, 9.0);
+        expected_1.put(10000L, 9.0);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
@@ -155,18 +155,18 @@ public class FillCalculateTransformTest {
 
         constants.add("min");
 
-        Map<Long, String> expected_1 = new HashMap<>();
+        Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, "1");
-        expected_1.put(2000L, "1");
-        expected_1.put(3000L, "1");
-        expected_1.put(4000L, "1");
-        expected_1.put(5000L, "1");
-        expected_1.put(6000L, "1");
-        expected_1.put(7000L, "1");
-        expected_1.put(8000L, "1");
-        expected_1.put(9000L, "1");
-        expected_1.put(10000L, "1");
+        expected_1.put(1000L, 1.0);
+        expected_1.put(2000L, 1.0);
+        expected_1.put(3000L, 1.0);
+        expected_1.put(4000L, 1.0);
+        expected_1.put(5000L, 1.0);
+        expected_1.put(6000L, 1.0);
+        expected_1.put(7000L, 1.0);
+        expected_1.put(8000L, 1.0);
+        expected_1.put(9000L, 1.0);
+        expected_1.put(10000L, 1.0);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
@@ -190,18 +190,18 @@ public class FillCalculateTransformTest {
 
         constants.add("max");
 
-        Map<Long, String> expected_1 = new HashMap<>();
+        Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, "10");
-        expected_1.put(2000L, "10");
-        expected_1.put(3000L, "10");
-        expected_1.put(4000L, "10");
-        expected_1.put(5000L, "10");
-        expected_1.put(6000L, "10");
-        expected_1.put(7000L, "10");
-        expected_1.put(8000L, "10");
-        expected_1.put(9000L, "10");
-        expected_1.put(10000L, "10");
+        expected_1.put(1000L, 10.0);
+        expected_1.put(2000L, 10.0);
+        expected_1.put(3000L, 10.0);
+        expected_1.put(4000L, 10.0);
+        expected_1.put(5000L, 10.0);
+        expected_1.put(6000L, 10.0);
+        expected_1.put(7000L, 10.0);
+        expected_1.put(8000L, 10.0);
+        expected_1.put(9000L, 10.0);
+        expected_1.put(10000L, 10.0);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
@@ -225,18 +225,18 @@ public class FillCalculateTransformTest {
 
         constants.add("avg");
 
-        Map<Long, String> expected_1 = new HashMap<>();
+        Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, "5.5");
-        expected_1.put(2000L, "5.5");
-        expected_1.put(3000L, "5.5");
-        expected_1.put(4000L, "5.5");
-        expected_1.put(5000L, "5.5");
-        expected_1.put(6000L, "5.5");
-        expected_1.put(7000L, "5.5");
-        expected_1.put(8000L, "5.5");
-        expected_1.put(9000L, "5.5");
-        expected_1.put(10000L, "5.5");
+        expected_1.put(1000L, 5.5);
+        expected_1.put(2000L, 5.5);
+        expected_1.put(3000L, 5.5);
+        expected_1.put(4000L, 5.5);
+        expected_1.put(5000L, 5.5);
+        expected_1.put(6000L, 5.5);
+        expected_1.put(7000L, 5.5);
+        expected_1.put(8000L, 5.5);
+        expected_1.put(9000L, 5.5);
+        expected_1.put(10000L, 5.5);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
