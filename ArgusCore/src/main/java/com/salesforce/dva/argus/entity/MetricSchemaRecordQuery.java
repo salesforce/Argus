@@ -167,5 +167,56 @@ public class MetricSchemaRecordQuery {
         return MessageFormat.format("MetricSchemaRecordQuery = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4})", namespace,
             scope, metric, tagKey, tagValue);
     }
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((metric == null) ? 0 : metric.hashCode());
+		result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
+		result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+		result = prime * result + ((tagKey == null) ? 0 : tagKey.hashCode());
+		result = prime * result + ((tagValue == null) ? 0 : tagValue.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MetricSchemaRecordQuery other = (MetricSchemaRecordQuery) obj;
+		if (metric == null) {
+			if (other.metric != null)
+				return false;
+		} else if (!metric.equals(other.metric))
+			return false;
+		if (namespace == null) {
+			if (other.namespace != null)
+				return false;
+		} else if (!namespace.equals(other.namespace))
+			return false;
+		if (scope == null) {
+			if (other.scope != null)
+				return false;
+		} else if (!scope.equals(other.scope))
+			return false;
+		if (tagKey == null) {
+			if (other.tagKey != null)
+				return false;
+		} else if (!tagKey.equals(other.tagKey))
+			return false;
+		if (tagValue == null) {
+			if (other.tagValue != null)
+				return false;
+		} else if (!tagValue.equals(other.tagValue))
+			return false;
+		return true;
+	}
+    
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
