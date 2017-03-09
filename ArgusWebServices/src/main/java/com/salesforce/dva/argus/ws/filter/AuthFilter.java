@@ -28,27 +28,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+	 
 package com.salesforce.dva.argus.ws.filter;
 
-import java.io.IOException;
-
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.AuthService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
-import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
-import javax.servlet.*;
+import org.slf4j.MDC;
+import java.io.IOException;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import org.slf4j.MDC;
 
 /**
- * Enforces authentication requirements.<br />
- * If you're in a secure environment and wants to get rid of the login/logout procedure, automated authentication
- * can be achieved by setting 'service.config.auth.auto.login=true' in your argus.properties.
+ * Enforces authentication requirements.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
@@ -58,10 +55,6 @@ public class AuthFilter implements Filter {
 
     /** The session attribute name to store the authenticated user. */
     public static final String USER_ATTRIBUTE_NAME = "USER";
-
-    //~ Instance fields ******************************************************************************************************************************
-    private final SystemMain system = ArgusWebServletListener.getSystem();
-    private final AuthService authService = system.getServiceFactory().getAuthService();
 
     //~ Methods **************************************************************************************************************************************
 
@@ -83,30 +76,17 @@ public class AuthFilter implements Filter {
         String user = null;
 
         if (HttpServletRequest.class.isAssignableFrom(request.getClass())) {
-            boolean autoLogin = Boolean.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.AUTH_FILTER_AUTO_LOGIN));
-            HttpServletRequest httpServletRequest = HttpServletRequest.class.cast(request);
-            HttpSession httpSession = httpServletRequest.getSession(true);
-            Object remoteUser = httpSession.getAttribute(USER_ATTRIBUTE_NAME);
+            HttpServletRequest req = HttpServletRequest.class.cast(request);
+            HttpSession session = req.getSession(true);
+            Object remoteUser = session.getAttribute(USER_ATTRIBUTE_NAME);
 
-            // If automated login configured and currently no principalUser associated with HttpSession,
-            // assign principalUser to this httpSession.
-            if(autoLogin && remoteUser == null) {
-                String loginUser = String.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.AUTH_FILTER_AUTO_LOGIN_USER));
-                String loginPwd = String.valueOf(system.getConfiguration().getValue(SystemConfiguration.Property.AUTH_FILTER_AUTO_LOGIN_PWD));
-                PrincipalUser principalUser = authService.getUser(loginUser, loginPwd);
-                PrincipalUserDto principalUserDto = PrincipalUserDto.transformToDto(principalUser);
-                httpServletRequest.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, principalUserDto);
-                user = principalUserDto.getUserName();
-            }
-            // If it's not an HTTP OPTION request or login/logout request and no principalUser is associated
-            // with HttpSession, then return SC_UNAUTHORIZED
-            else if (!"options".equalsIgnoreCase(httpServletRequest.getMethod()) && !_isAuthEndpoint(httpServletRequest) && remoteUser == null) {
-                HttpServletResponse httpResponse = HttpServletResponse.class.cast(response);
-                httpResponse.setHeader("Access-Control-Allow-Origin", httpServletRequest.getHeader("Origin"));
-                httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
-                httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            if (!"options".equalsIgnoreCase(req.getMethod()) && !_isAuthEndpoint(req) && remoteUser == null) {
+            	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+            	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+            	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+            	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             } else if (remoteUser != null) {
-                user = PrincipalUserDto.class.cast(httpSession.getAttribute(USER_ATTRIBUTE_NAME)).getUserName();
+                user = PrincipalUserDto.class.cast(session.getAttribute(USER_ATTRIBUTE_NAME)).getUserName();
             }
         }
         try {

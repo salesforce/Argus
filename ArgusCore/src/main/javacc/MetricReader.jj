@@ -164,7 +164,6 @@ TOKEN : { < MOVINGAVERAGE : "MOVINGAVERAGE" > }
 TOKEN : { < ZEROIFMISSINGSUM : "ZEROIFMISSINGSUM" > }
 TOKEN : { < ABSOLUTE : "ABSOLUTE" > }
 TOKEN : { < ALIAS : "ALIAS" > }
-TOKEN : { < ALIASBYTAG : "ALIASBYTAG" > }
 TOKEN : { < NORMALIZE : "NORMALIZE" > }
 TOKEN : { < NORMALIZE_V : "NORMALIZE_V" > }
 TOKEN : { < UNION : "UNION" > }
@@ -379,9 +378,6 @@ private String functionName() :
 	{ return t.image; }
 	|
 	t = <ALIAS>
-	{ return t.image; }
-	|
-	t = <ALIASBYTAG>
 	{ return t.image; }
 	|
 	t = <PROPAGATE>

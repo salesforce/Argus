@@ -390,7 +390,7 @@
             <groupId>org.apache.phoenix</groupId>
             <artifactId>phoenix-core</artifactId>
             <version>4.9.0-HBase-0.98</version>
-      </dependency>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
