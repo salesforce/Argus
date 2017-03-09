@@ -94,17 +94,10 @@ angular.module('argus.directives.charts.table', [])
                 scope.end = end < scope.dataSet.length ? end : scope.dataSet.length;
             }
         }
-
-
-        //reserved for some fix header implementation
-        // angular.element(element.context.querySelector('table')).on('scroll', function(event){
-        //     console.log(this.scrollTop);
-        //     var top = this.scrollTop;
-        //     angular.element(this.querySelector('th')).css('top', top);
-        // });
     }
 
     function queryMetricData(scope, controls){
+        scope.tableLoaded = false;
         var metricExpressionList = [];
         var optionList = [];
 
@@ -152,9 +145,22 @@ angular.module('argus.directives.charts.table', [])
             //DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);
             setupTable(scope, element, dashboardCtrl.getAllControls());
             queryMetricData(scope, dashboardCtrl.getAllControls());
+            scope.$watch(function(){
+                return angular.element(element.context.querySelector('.agTableHeadRow th:nth-child(2)')).css('height'); }, function(val){
+                    scope.headerHeight = val;
+                }
+            );
+
+            angular.element(element.context.querySelector('table')).on('scroll', function(event){
+                scope.headerTop = this.scrollTop;
+                scope.headerLeft = this.scrollLeft;
+                scope.$apply();
+            });
 
             scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
                 delete scope.tData;
+                var headerHeight = angular.element(element.context.querySelector('.agTableHead th:first-child')).css('height');
+                angular.element(element.context.querySelector('.firstEmptyRow ')).css('height', headerHeight);
                 queryMetricData(scope,controls);
             });
         }

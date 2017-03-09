@@ -304,7 +304,7 @@ g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
 ag-dashboard table {width: 100%; table-layout:fixed;}
 
 /* for ag-table */
-.agTable {display: block; max-height: 600px; display: block; overflow: scroll;}
-/*.agTableHead{position:absolute; top: 100px;}*/
-.agTable th {min-width: 40px; max-width: 180px; word-wrap: break-word; width: 50px;}
-.agTable td {min-width: 40px; max-width: 180px; word-wrap: break-word; width: 50px;}
+.agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; display: block; overflow: scroll;}
+.agTableHead {position:absolute; background-color: #eee;}
+.agTable th {min-width: 180px; max-width: 180px; word-wrap: break-word; width: 50px;}
+.agTable td {min-width: 180px; max-width: 180px; word-wrap: break-word; width: 50px;}

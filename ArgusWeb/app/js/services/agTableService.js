@@ -79,6 +79,7 @@ angular.module('argus.services.agTableService', [])
                     }
                 }
                 scope.tData = tData;
+                scope.tableLoaded = true;
             }
 
         }]);
