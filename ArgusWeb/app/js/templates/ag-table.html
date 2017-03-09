@@ -47,7 +47,7 @@
             <tbody>
             <tr dir-paginate="item in results = (tData | filter:searchText) | itemsPerPage:itemsPerPage track by $index"
                 current-page="currentPage">
-                <td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px'}" ng-click="sort(item)">{{item.timestamp}}
+                <td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px'}" ng-click="sort(item)">{{item.datetime}}
                     <span class="glyphicon sort-icon" ng-show="sortKey===item.timestamp"
                           ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
                 </td>

@@ -57,6 +57,8 @@ angular.module('argus.directives.charts.table', [])
         var sortReverseFromStorage = storageId + '-sortReverse';
         scope.reverse = InputTracker.getDefaultValue(sortReverseFromStorage, 1);
         if(Math.abs(scope.reverse)!==1) scope.reverse = 1;
+
+
         scope.sort = function (item) {
             var key = item.timestamp;
             if (scope.sortKey === key) {
@@ -73,9 +75,9 @@ angular.module('argus.directives.charts.table', [])
             var sortedArray =[];
             for(var key in item)
             {
-                if(key !== 'timestamp') sortedArray.push([key, item[key]]);
+                if(key !== 'timestamp' && key !== 'datetime') sortedArray.push([key, item[key]]);
             }
-            if(item['timestamp'] === scope.colNames.timestamp){
+            if(item['datetime'] === scope.colNames.datetime){
                 sortedArray.sort(function(a, b){
                     return (a[1].localeCompare(b[1])) * scope.reverse;
                 });

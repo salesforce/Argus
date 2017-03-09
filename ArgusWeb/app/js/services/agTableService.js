@@ -46,7 +46,7 @@ angular.module('argus.services.agTableService', [])
                         }
                     }
 
-                    var columns = {"timestamp": "Timestamp"};
+                    var columns = {"datetime": "Datetime"};
                     for (i in data) {
                         dps = data[i].datapoints;
                         if (dps) {
@@ -66,17 +66,22 @@ angular.module('argus.services.agTableService', [])
                     scope.sortSourceIndices(columns);
                     for (timestamp in allTimestamps) {
                         var obj = {
-                            timestamp: GMTon? $filter('date')(timestamp, 'M/d/yyyy HH:mm:ss', 'UTC'):
-                                              $filter('date')(timestamp, 'M/d/yyyy HH:mm:ss')
+                            datetime: GMTon? $filter('date')(timestamp, 'M/d/yyyy HH:mm:ss', 'UTC'):
+                                              $filter('date')(timestamp, 'M/d/yyyy HH:mm:ss'),
+                            timestamp: timestamp
                         };
 
                         var index = 0;
                         for (i in columns) {
-                            if (i !== "timestamp")
+                            if (i !== "datetime")
                                 obj[i] = allTimestamps[timestamp][index++];
                         }
                         tData.push(obj);
                     }
+
+                    tData.sort(function(a,b){
+                       return a.timestamp - b.timestamp;
+                    });
                 }
                 scope.tData = tData;
             }
