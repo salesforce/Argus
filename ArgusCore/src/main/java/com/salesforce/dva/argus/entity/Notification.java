@@ -387,6 +387,9 @@ public class Notification extends JPAEntity implements Serializable {
      * @param  severityLevel  The severity level
      */
     public void setSeverityLevel(int severityLevel) {
+        if (severityLevel < 1 || severityLevel > 5) {
+            throw new IllegalArgumentException("The severty level should be between 1-5");
+        }
         this.severityLevel = severityLevel;
     }
     

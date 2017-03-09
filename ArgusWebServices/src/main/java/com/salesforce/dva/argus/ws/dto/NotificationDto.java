@@ -61,7 +61,7 @@ public class NotificationDto extends EntityDTO {
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private String customText;
-    private int severityLevel;
+    private int severityLevel = 5;
     private boolean isSRActionable;
 
     //~ Methods **************************************************************************************************************************************
@@ -286,13 +286,10 @@ public class NotificationDto extends EntityDTO {
     /**
      * Sets the severity level of notification
      *
-     * @param  severityLevel  The severity level
+     * @param  severityLevel  The severity level (1-5, 1 - Most Severe, 5 - Least Severe)
      * @throws  IllegalArgumentException  If an error occurs.
      */
     public void setSeverityLevel(int severityLevel) {
-        if (severityLevel < 1 || severityLevel > 5) {
-            throw new IllegalArgumentException("The severty level should be between 1-5");
-        }    	
         this.severityLevel = severityLevel;
     }    
     
