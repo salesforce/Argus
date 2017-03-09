@@ -33,6 +33,7 @@ angular.module('argus', [
   'angulartics',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
+  'angularScreenfull',
   'argus.urlConfig',
   'argus.config',
   'argus.filters',

@@ -254,16 +254,21 @@ angular.module('argus.directives.charts.lineChart', [])
             var containerHeight = chartOptions.smallChart ? 150 : 330;
             var containerWidth = $("#" + chartId).width();
 
+            var defaultContainerWidth = -1;
             if (chartOptions.chart !== undefined) {
                 containerHeight = chartOptions.chart.height === undefined ? containerHeight: chartOptions.chart.height;
-                containerWidth = chartOptions.chart.width === undefined ? containerWidth: chartOptions.chart.width;
+                if (chartOptions.chart.width !== undefined) {
+                    containerWidth = chartOptions.chart.width;
+                    defaultContainerWidth = containerWidth;
+                }
             }
+            var defaultContainerHeight = containerHeight;
+
             var xAxisLabelHeightFactor = 15;
             var brushHeightFactor = 20;
             var mainChartRatio = 0.8, //ratio of height
                 tipBoxRatio = 0.2,
-                brushChartRatio = 0.2
-                ;
+                brushChartRatio = 0.2;
             var marginTop = chartOptions.smallChart ? 5 : 15,
                 marginBottom = 35,
                 marginLeft = 50,
@@ -1115,23 +1120,27 @@ angular.module('argus.directives.charts.lineChart', [])
                     return;
                 }
 
-                containerWidth = $(container).width();
-                width = containerWidth - marginLeft - marginRight;
-
-                if(width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
-
-                margin = {
-                    top: marginTop,
-                    right: marginRight,
-                    bottom: containerHeight - marginTop - height,
-                    left: marginLeft
-                };
-                margin2 = {
-                    top: containerHeight - height2 - marginBottom,
-                    right: marginRight,
-                    bottom: marginBottom,
-                    left: marginLeft
-                };
+                if (window.innerHeight === screen.height) {
+                    // in full screen mode
+                    containerWidth = container.offsetWidth;
+                    // containerHeight = container.parentElement.offsetHeight;
+                    console.log("entering fullscreen: "+ containerWidth + ", " + containerHeight);
+                } else {
+                    // default containerHeight will be used
+                    containerHeight = defaultContainerHeight;
+                    // no width defined via chart option: window width will be used
+                    if (defaultContainerWidth < 0) {
+                        containerWidth = container.offsetWidth;
+                    }
+                }
+                var newSize = calculateDimensions(containerWidth, containerHeight);
+                width = newSize.width;
+                height = newSize.height;
+                height2 = newSize.height2;
+                margin = newSize.margin;
+                margin2 = newSize.margin2;
+                //TODO: refactor height, width, and margins calculation methods in both default draw and redraw
+                if (width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
 
                 if (series.length > 0) {
                     var tempX = x.domain(); //remember that when resize
@@ -1173,6 +1182,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     yAxisRG.attr('transform', 'translate(' + width + ')')
                         .call(yAxisR);
+                    // TODO: height both brush and regular chart
 
                     svg_g.selectAll(".line").attr("d", line); //redraw the line
                     svg_g.selectAll(".brushLine").attr("d", line2); //redraw brush line
@@ -1689,10 +1699,36 @@ angular.module('argus.directives.charts.lineChart', [])
                     removeFromSyncCharts();
                 }
                 updateStorage();
-            }
+            };
 
             if(scope.menuOption.isSyncChart){
                 addToSyncCharts();
+            }
+
+            function calculateDimensions (newContainerWidth, newContainerHeight) {
+                var newWidth = newContainerWidth - marginLeft - marginRight;
+                var newHeight = parseInt((newContainerHeight - marginTop - marginBottom) * mainChartRatio);
+                var newHeight2 = parseInt((newContainerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
+                var newMargin = {
+                    top: marginTop,
+                    right: marginRight,
+                    bottom: newContainerHeight - marginTop - newHeight,
+                    left: marginLeft
+                };
+
+                var newMargin2 = {
+                    top: newContainerHeight - newHeight2 - marginBottom,
+                    right: marginRight,
+                    bottom: marginBottom,
+                    left: marginLeft
+                };
+                return {
+                    width: newWidth,
+                    height: newHeight,
+                    height2: newHeight2,
+                    margin: newMargin,
+                    margin2: newMargin2
+                };
             }
         }
     };

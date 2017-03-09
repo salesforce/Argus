@@ -1,7 +1,7 @@
 angular.module('argus.services.charts.rendering', [])
 .service('ChartRenderingService', [function() {
 		'use strict';
-
+        //TODO: clean up the highcharts stuff
 		var service = {
 				getChart: function(chartId, highChartOptions) {
 						if (!chartId) return;

@@ -348,3 +348,9 @@ g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
 
 /* for charts in table */
 ag-dashboard table {width: 100%; table-layout:fixed;}
+
+/* for full screen mode */
+.fullscreen {
+  width: 100%;
+  height: 100%;
+}
