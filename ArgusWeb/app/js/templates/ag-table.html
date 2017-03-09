@@ -2,9 +2,9 @@
     <div ng-loading="tableLoaded"></div>
 </div>
 <div ng-transclude="" style="display:none"></div>
-<div class="agTableDiv" style="display:none">
-    <div id="{{tableId}}" class="row">
-        <div class="col-md-3 h3">{{}} Table</div>
+<div id="{{tableId}}" class="agTableDiv" style="display:none">
+    <div  class="row">
+        <div class="col-md-4 h4">{{processedOptions.title? processedOptions.title.text: ""}}</div>
 
         <div class="col-md-4 text-right">
             <dir-pagination-controls></dir-pagination-controls>
@@ -14,17 +14,17 @@
                     ng-options="val for val in itemsPerPageOptions"></select>
         </div>
         <div class="col-md-3">
-    <span class="pull-right input-group">
-        <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
-        <span class="input-group-btn">
-            <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
-                <span class="glyphicon glyphicon-remove-circle"></span>
-            </button>
-            <button class="btn btn-default active" ng-show="!searchText">
-                <span class="glyphicon glyphicon-filter"></span>
-            </button>
-        </span>
-    </span>
+            <span class="pull-right input-group">
+                <input type="text" class="form-control" placeholder="Search..." ng-model="searchText">
+                <span class="input-group-btn">
+                    <button class="btn btn-default dropdown-toggle" ng-show="searchText" ng-click="searchText = ''">
+                        <span class="glyphicon glyphicon-remove-circle"></span>
+                    </button>
+                    <button class="btn btn-default active" ng-show="!searchText">
+                        <span class="glyphicon glyphicon-filter"></span>
+                    </button>
+                </span>
+            </span>
         </div>
 
     </div>

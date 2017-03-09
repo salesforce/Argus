@@ -1,5 +1,5 @@
 angular.module('argus.directives.charts.table', [])
-.directive('agTable', ['DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', function(DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG) {
+.directive('agTable', ['JsonFlattenService','$routeParams', 'DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', function( JsonFlattenService, $routeParams, DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG) {
     var tableNameIndex = 1;
 
     function setupTable(scope, element, controls){
@@ -101,8 +101,6 @@ angular.module('argus.directives.charts.table', [])
     function queryMetricData(scope, controls){
         scope.tableLoaded = false;
         var metricExpressionList = [];
-        var optionList = [];
-
         var key;
         for (key in scope.metrics) {
             if (scope.metrics.hasOwnProperty(key)) {
@@ -113,11 +111,9 @@ angular.module('argus.directives.charts.table', [])
             }
         }
 
-        for (key in scope.options) {
-            if (scope.options.hasOwnProperty(key)) {
-                optionList.push({name: key, value: scope.options[key]});
-            }
-        }
+
+        scope.processedOptions = JsonFlattenService.unflatten(scope.options);
+
         $http({
             method: 'GET',
             url: CONFIG.wsUrl + 'metrics',
@@ -148,6 +144,7 @@ angular.module('argus.directives.charts.table', [])
         link: function(scope, element, attributes, dashboardCtrl) {
             //DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);
 
+            scope.dashboardId = $routeParams.dashboardId;
             setupTable(scope, element, dashboardCtrl.getAllControls());
             queryMetricData(scope, dashboardCtrl.getAllControls());
 
@@ -177,6 +174,10 @@ angular.module('argus.directives.charts.table', [])
                 var headerHeight = angular.element(element.context.querySelector('.agTableHead th:first-child')).css('height');
                 angular.element(element.context.querySelector('.firstEmptyRow ')).css('height', headerHeight);
                 queryMetricData(scope,controls);
+            });
+
+            element.on('$destroy', function(){
+                tableNameIndex = 1;
             });
         }
     }
