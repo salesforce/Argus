@@ -43,6 +43,8 @@ import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPool;
+
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -292,7 +294,11 @@ public class RedisCacheService extends DefaultService implements CacheService {
     @Override
     public void dispose() {
     	super.dispose();
-    	_jedisClusterClient.close();
+    	try {
+			_jedisClusterClient.close();
+		} catch (IOException e) {
+			_logger.warn("IOException while trying to close JedisClusterClient", e);
+		}
     }
 
     //~ Enums ****************************************************************************************************************************************
