@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,34 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
 
         assertEquals(new MetricQuery("scope0", "metric0", tags, 1L, 2L), queries.get(0));
         assertEquals(new MetricQuery("scope1", "metric1", tags, 1L, 2L), queries.get(1));
+    }
+    
+    /**
+	 * Assume that following schemarecords exist in the database:
+	 * scope0,metric0,source,unittest0,null
+	 * scope0,metric0,source,unittest1,null
+	 * scope0,metric0,device,device0,null
+	 */
+    @Test
+    public void testWildcardQueriesMatchMultipleTags() {
+    	
+    	SchemaService schemaServiceMock = mock(SchemaService.class);
+        
+        MetricSchemaRecordQuery queryForTag1 = new MetricSchemaRecordQuery(null, "scope0", "metric0", "source", "unittest0");
+        MetricSchemaRecordQuery queryForTag2 = new MetricSchemaRecordQuery(null, "scope0", "metric0", "device", "device[1]");
+        when(schemaServiceMock.get(queryForTag1, 500, 1)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0")));
+        when(schemaServiceMock.get(queryForTag2, 500, 1)).thenReturn(new ArrayList<>());
+        
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
+
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("source", "unittest0");
+        tags.put("device", "device[1]");
+
+        MetricQuery query = new MetricQuery("scope0", "metric0", tags, 1L, 2L);
+        List<MetricQuery> matchedQueries = discoveryService.getMatchingQueries(query);
+        
+        assertTrue(matchedQueries.isEmpty());
     }
     
     @Test(expected = WildcardExpansionLimitExceededException.class)

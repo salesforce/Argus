@@ -79,6 +79,10 @@
 					<input type="checkbox" name="tooltip-detail" id="tooltip-detail-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isTooltipDetailOn" ng-disabled="!menuOption.isTooltipOn" ng-click="updateStorage()"/>
 					<label for="tooltip-detail-{{chartConfig.chartId}}" title="Show all the information on tooltip">Tooltip Detail</label>
 				</li>
+				<li>
+					<input type="checkbox" name="toggle-syncchart" id="toggle-syncchart-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>
+					<label for="toggle-syncchart-{{chartConfig.chartId}}" title="synchronize this chart with other checked charts">Synchronize Chart</label>
+				</li>
 				</ul>
 			</div>
 

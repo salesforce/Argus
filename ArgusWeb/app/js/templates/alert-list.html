@@ -1,5 +1,5 @@
 <section>
-    <table-tabs tab-names="tabNames" properties="properties" loaded="alertsLoaded" shared="shared" get-list="getAlerts"></table-tabs>
+    <table-tabs tab-names="tabNames" properties="properties" loaded="alertsLoaded" selected-tab="selectedTab" get-list="getAlerts"></table-tabs>
     <table-list col-name="colName" properties = "properties" loaded="alertsLoaded" data="alerts" add-item="addAlert()" delete="removeAlert" enable="enableAlert" refresh-list="refreshAlerts()"></table-list>
     <div ng-loading="alertsLoaded"></div>
 </section>

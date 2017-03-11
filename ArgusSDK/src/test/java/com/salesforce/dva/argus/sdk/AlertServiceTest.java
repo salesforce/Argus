@@ -165,7 +165,21 @@ public class AlertServiceTest extends AbstractTest {
             Notification notification = alertService.getNotification(BigInteger.ONE, BigInteger.ONE);
 
             notification.setName("UpdatedNotification");
+            Notification result = alertService.updateNotification(BigInteger.ONE, BigInteger.ONE, notification);
+            Notification expected = _constructUpdatedNotification();
 
+            assertEquals(expected, result);
+        }
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateNotificationWrongSeverityLevel() throws IOException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
+            AlertService alertService = argusService.getAlertService();
+            Notification notification = alertService.getNotification(BigInteger.ONE, BigInteger.ONE);
+
+            notification.setName("UpdatedNotification");
+            notification.setSeverityLevel(6);
             Notification result = alertService.updateNotification(BigInteger.ONE, BigInteger.ONE, notification);
             Notification expected = _constructUpdatedNotification();
 
@@ -358,6 +372,7 @@ public class AlertServiceTest extends AbstractTest {
         notification.setName("TestNotification");
         notification.setNotifierName("EmailNotifier");
         notification.setSRActionable(false);
+        notification.setSeverityLevel(5);
         notification.setSubscriptions(Arrays.asList(new String[] { "you@yourcompany.com" }));
         notification.setCustomText("custom_text");
         return notification;

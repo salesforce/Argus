@@ -1,4 +1,7 @@
 <ul class="nav nav-tabs">
-    <li ng-class="{active:isTabSelected(1)}"><a href ng-click="selectTab(1);getList()(false)">{{tabNames.firstTab}}</a></li>
-    <li ng-class="{active:isTabSelected(2)}"><a href ng-click="selectTab(2);getList()(true)">{{tabNames.secondTab}}</a></li>
+    <li ng-class="{active:isTabSelected(1)}"><a href ng-click="selectTab(1);getList()(1)">{{tabNames.firstTab}}</a></li>
+    <li ng-class="{active:isTabSelected(2)}"><a href ng-click="selectTab(2);getList()(2)">{{tabNames.secondTab}}</a></li>
+    <li ng-if="tabNames.userPrivileged"
+        ng-class="{active:isTabSelected(3)}"><a href ng-click="selectTab(3);getList()(3)">{{tabNames.thirdTab}}</a>
+    </li>
 </ul>
