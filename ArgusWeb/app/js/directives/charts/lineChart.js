@@ -99,18 +99,31 @@ angular.module('argus.directives.charts.lineChart', [])
 
                         // display current date in 'sample' format
                         var currDate = new Date();
-                        var sampleFormat = "%-m/%-d/%y %H:%M:%S"; // "Sat Nov 5 1929 11:58"
+                        var sampleDateFormat = "%-m/%-d/%y %H:%M:%S"; // "Sat Nov 5 1929 11:58"
                         
-                        $scope.dateFormatOutput = d3.timeFormat(sampleFormat)(currDate);
+                        $scope.dateFormatOutput = d3.timeFormat(sampleDateFormat)(currDate);
 
                         // update date format to show sample date in modal view
                         $scope.updateDateFormatOutput = function() {
-                            var userInputDateFormat = $scope.menuOption.dateFormat ? $scope.menuOption.dateFormat : sampleFormat;
+                            var userInputDateFormat = $scope.menuOption.dateFormat ? $scope.menuOption.dateFormat : sampleDateFormat;
                             $scope.dateFormatOutput = d3.timeFormat(userInputDateFormat)(new Date());
                         }
 
-                        // display date in correct format when modal opens: either menuOptions OR current date with 'sampleFormat'
+                        // display date in correct format when modal opens: either menuOptions OR current date with 'sampleDateFormat'
                         $scope.updateDateFormatOutput();
+
+                        $scope.resetSettings = function () {
+                            console.log('reset settings');
+
+                            // show confirmation to 'reset all current settings to default'
+                            // this will also update localStorage
+                        };
+
+                        $scope.applyToAllGraphs = function () {
+                            console.log('apply to all graphs');
+
+                            // update all graphs on dashboard with current scope.menuOption settings
+                        };
 
                         $scope.close = function () {
                             optionsModal.close();
@@ -211,7 +224,8 @@ angular.module('argus.directives.charts.lineChart', [])
             var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
             // default formats & settings for chart options
-            var defaultFormat = ',';
+            var rawDataFormat = ',';
+            var sampleCustomFormat = '0,.8';     // scientific notation
             var defaultYaxis = '.3s';
             var defaultTicksYaxis = '5';
 
@@ -222,8 +236,7 @@ angular.module('argus.directives.charts.lineChart', [])
             
             // set scope values, get them from the local storage before setting default
             scope.menuOption = {
-                dateFormat: (menuOption && menuOption.dateFormat) ? menuOption.dateFormat : numericalDate,  // check for smallChart, then localStorage before setting default
-
+                dateFormat: (menuOption && menuOption.dateFormat) ? menuOption.dateFormat : numericalDate,
                 formatYaxis: (menuOption && menuOption.formatYaxis) ? menuOption.formatYaxis : defaultYaxis,
                 numTicksYaxis: (menuOption && menuOption.numTicksYaxis) ? menuOption.numTicksYaxis : defaultTicksYaxis,
 
@@ -231,24 +244,18 @@ angular.module('argus.directives.charts.lineChart', [])
                 trailingNum: (menuOption && menuOption.trailingNum) ? menuOption.trailingNum : null,
 
                 downSampleMethod: (menuOption && menuOption.downSampleMethod) ? menuOption.downSampleMethod : '',
-                isBrushMainOn: false,
-                isWheelOn: false,
-                isBrushOn: !chartOptions.smallChart,    // for 'smallChart' only, does not display timeline brush below graph
-
-                isTooltipDetailOn: false,   // to be replaced by other settings below:
-                // rawTooltip: ,
-                // customTooltipFormat: ,
-                // decimalNumTooltip: ,
+                isBrushMainOn: menuOption ? menuOption.isBrushMainOn : false,
+                isWheelOn: menuOption ? menuOption.isWheelOn : false,
                 
-                isTooltipOn: true,   // to be removed. most users dont want to turn tooltips off
-                isTooltipSortOn: true,
+                // for 'smallChart' only, does not display timeline brush below graph
+                isBrushOn: !chartOptions.smallChart,
 
-                // colorPallete: 
+                isTooltipSortOn: menuOption ? menuOption.isTooltipSortOn : true,
+                rawTooltip: menuOption ? menuOption.rawTooltip : true,
+                customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
+
+                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : d3.schemeCategory20,
             };
-
-            console.log( scope.menuOption );
-            // -------------
-
 
             var dateExtent; //extent of non empty data date range
             var topToolbar = $(element); //jquery selection
@@ -333,7 +340,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // color scheme
             var z = d3.scaleOrdinal(d3.schemeCategory20);
-
 
             //downsample threshold
             var downsampleThreshold = 1/2;  // datapoints per pixel
@@ -736,13 +742,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var YOffset = 0;
                 var newXOffset = 0;
                 var OffsetMultiplier = -1;
-                var itemsPerCol = 8;
+                var itemsPerCol = 14;
                 var circleLen = circleRadius * 2;
-                if (scope.menuOption.isTooltipDetailOn) {
-                    itemsPerCol = 14;
-                } else if (datapoints.length < 2*itemsPerCol) {
-                    itemsPerCol = Math.ceil(datapoints.length / 2);
-                }
 
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
@@ -766,12 +767,9 @@ angular.module('argus.directives.charts.lineChart', [])
                                         .attr('dy', 20 * (1 + i - YOffset) + Y)
                                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
-                    if (scope.menuOption.isTooltipDetailOn) {
-                        var name = trimMetricName(datapoints[i].name);
-                        textLine.text(name + "  -  " + d3.format('0,.8')(tempData));
-                    } else {
-                        textLine.text(d3.format('.3s')(tempData));
-                    }
+                    var dataFormat = scope.menuOption.rawTooltip ? rawDataFormat : scope.menuOption.customTooltipFormat;
+                    var name = trimMetricName(datapoints[i].name);
+                    textLine.text(name + " -- " + d3.format(dataFormat)(tempData));
 
                     // update XOffset if existing offset is smaller than texLine
                     var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;

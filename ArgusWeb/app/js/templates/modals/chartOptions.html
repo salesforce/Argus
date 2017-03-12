@@ -13,12 +13,12 @@
 				ng-model="menuOption.dateFormat"
 				ng-change="updateDateFormatOutput()"
 				/>
-			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank"></a>
+			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank" title="Custom d3 date format codes"></a>
 			<div style="margin-left:3em; color:#999;">{{dateFormatOutput}}</div>
 		</div>
 
 		<div style="margin:.5em 0 .5em 1em;">
-			<label><strong>Tick labels:</strong>&nbsp;</label>&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" target="_blank"></a>
+			<label><strong>Tick labels:</strong>&nbsp;</label>&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" target="_blank" title="Custom d3 format codes"></a>
 
 			<div style="margin:0 0 .5em 1em;" class="hide">
 				<label for="tickFormat-Xaxis-{{chartId}}">X-axis: </label>
@@ -63,7 +63,7 @@
 			<label>output:</label>&nbsp;<span>argus.jvm:mem.nonheap.used</span>
 		</div>
 
-		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank"></a></h4>
+		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank" title="Custom d3 downsample data options"></a></h4>
 
 		<div style="margin:0 0 .5em 1em;">
 			<label>Select a downsample method: </label>&nbsp;
@@ -93,17 +93,21 @@
 
 		<br /><input class="chkBox pointer" id="tooltips-raw-{{chartId}}" type="checkbox" ng-model="menuOption.rawTooltip" title="Display raw data inside tooltips" />&nbsp;<label class="chkBoxLbl" for="tooltips-raw-{{chartId}}">Display raw data point value. <span style="font-weight:normal;">No formatting applied.</span></label>
 
-		<br /><label class="chkBoxLbl" for="tooltips-custom-{{chartId}}">Custom format:</label>&nbsp; <input id="" type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.customTooltipFormat" /> &nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank"></a>
+		<div style="margin-left:23px;" title="Uncheck raw data point to use">
+			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.customTooltipFormat" ng-disabled="menuOption.rawTooltip" ng-class="{'disabled': menuOption.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
+		</div>
 
+		<!--
 		<br /><label class="chkBoxLbl" for="tooltips-decimalNum-{{chartId}}">'n' number of decimal places: </label>&nbsp; <input id="" type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.decimalNumTooltip" />
+		-->
 
-		<h4 class="sectionTitle btmBdr">Color palletes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank"></a></h4>
+		<h4 class="sectionTitle btmBdr">Color palletes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
 
 		<select ng-model="menuOption.colorPallete" name="color-pallete">
-			<option value="d3.schemeCategory10" ng-selected="">d3 scheme category 10</option>
-			<option value="d3.schemeCategory20" ng-selected="true">d3 scheme category 20</option>
-			<option value="d3.schemeCategory20b" ng-selected="">d3 scheme category 20b</option>
-			<option value="d3.schemeCategory20c" ng-selected="">d3 scheme category 20c</option>
+			<option value="d3.schemeCategory10" ng-selected="menuOption.colorPallete == d3.schemeCategory10">d3 scheme category 10</option>
+			<option value="d3.schemeCategory20" ng-selected="menuOption.colorPallete == d3.schemeCategory20">d3 scheme category 20</option>
+			<option value="d3.schemeCategory20b" ng-selected="menuOption.colorPallete == d3.schemeCategory20b">d3 scheme category 20b</option>
+			<option value="d3.schemeCategory20c" ng-selected="menuOption.colorPallete == d3.schemeCategory20c">d3 scheme category 20c</option>
 		</select>
 	</div>
 
@@ -111,7 +115,9 @@
 
 	<div class="footer">
 		
-		<div class="col-md-6"></div>
+		<div class="col-md-6">
+			<button id="reset" class="btn btn-cancel floatL" style="display:inline-block;" ng-click="resetSettings()">Reset to default settings</button>
+		</div>
 
 		<div class="col-md-6">
 			<input class="chkBox pointer" id="applySettingsAll-{{chartId}}" type="checkbox" ng-model="menuOption.applySettingsAll" title="Apply settings to all graphs" />
