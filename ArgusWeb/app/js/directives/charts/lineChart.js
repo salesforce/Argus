@@ -255,6 +255,9 @@ angular.module('argus.directives.charts.lineChart', [])
                 customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
 
                 colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : d3.schemeCategory20,
+
+                // TODO: refactor code base for no 'isTooltipOn' property
+                isTooltipOn: true
             };
 
             var dateExtent; //extent of non empty data date range
