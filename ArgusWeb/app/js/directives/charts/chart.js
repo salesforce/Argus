@@ -39,7 +39,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         });
 
         scope.seriesDataLoaded = true;
-
+        //TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
         // append, compile, & attach new scope to line-chart directive
         angular.element("#" + newChartId).append(
             $compile(

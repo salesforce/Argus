@@ -7,13 +7,23 @@ angular.module('argus.directives.charts.lineChart', [])
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
+    var fullscreenChartID;
 
     function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
         timer = $timeout(function () {
-            resizeJobs.forEach(function (resizeJob) { //resize all the charts
-                resizeJob();
-            });
+            if (fullscreenChartID === undefined) {
+                resizeJobs.forEach(function (resizeJob) { //resize all the charts
+                    resizeJob.resize();
+                });
+            } else { // resize only one chart that in fullscreen mode
+                var chartToFullscreen = resizeJobs.filter(function (item) {
+                    return item.chartID === fullscreenChartID;
+                });
+                chartToFullscreen[0].resize();
+                // reset the ID after resizing
+                fullscreenChartID = undefined;
+            }
         }, resizeTimeout); //only execute resize after a timeout
     }
 
@@ -45,6 +55,10 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, Metrics, DownloadHelper, growl) {
+            $scope.updateFullscreenChartID= function (clickedChartID) {
+                    fullscreenChartID = clickedChartID;
+            };
+                
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
                 var dataHandler, filename, chartTitle;
@@ -1116,6 +1130,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //precise resize without removing and recreating everything
             function resize(){
+                console.log("resize on "+ chartId);
                 if (series === "series" || !series) {
                     return;
                 }
@@ -1679,7 +1694,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             });
 
-            resizeJobs.push(resize);
+            resizeJobs.push({
+                chartID: chartId,
+                resize: resize
+            });
 
             function addToSyncCharts(){
                 syncChartJobs[chartId] = {
