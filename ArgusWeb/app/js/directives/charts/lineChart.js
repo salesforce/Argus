@@ -90,60 +90,55 @@ angular.module('argus.directives.charts.lineChart', [])
                     // controller: chartOptions,     // ['optionsModal', 'menuOption', ChartOptions],
                     // controllerAs: 'ChartOptions',     // modal options
                     controller: ['$scope', function($scope) {
-                        // console.log( $scope );
-                        // console.log( chartId );
-                        // console.log( chartTitle );
 
-                        // set $scope items
+                        // set $scope items from $resolve method above - only way to 'watch' $scope for changes in chart options.
                         $scope.menuOption = $scope.$resolve.menuOption;
+                        
                         $scope.chartId = chartId;
                         $scope.chartTitle = chartTitle;
 
                         // display current date in 'sample' format
                         var currDate = new Date();
-                        var sampleFormat = "%a %b %e %Y %H:%M"; // "Sat Nov 5 1929 11:58"
-                        // var formatDate = d3.timeFormat(sampleFormat);
-                        $scope.dateFormatOutput = d3.timeFormat(sampleFormat)(currDate);
+                        var sampleDateFormat = "%-m/%-d/%y %H:%M:%S"; // "Sat Nov 5 1929 11:58"
+                        
+                        $scope.dateFormatOutput = d3.timeFormat(sampleDateFormat)(currDate);
 
                         // update date format to show sample date in modal view
                         $scope.updateDateFormatOutput = function() {
-                            // check if field is empty
-                            if (!$scope.menuOption.dateFormat || $scope.menuOption.length === 0) {
-                                $scope.dateFormatOutput = d3.timeFormat(sampleFormat)(new Date());
-                            } else {
-                                // update new date displayed with format in field
-                                // check for a valid date format ?
-                                $scope.dateFormatOutput = d3.timeFormat($scope.menuOption.dateFormat)(new Date());
-                            }
+                            var userInputDateFormat = $scope.menuOption.dateFormat ? $scope.menuOption.dateFormat : sampleDateFormat;
+                            $scope.dateFormatOutput = d3.timeFormat(userInputDateFormat)(new Date());
                         }
 
-                        /*
-                        $scope.menuOption.isBrushMainOn = true;
-                        $scope.menuOption.isWheelOn = true;
-                        $scope.menuOption.isTooltipSortOn = true;
-                        $scope.menuOption.isTooltipDetailOn = true;
-                        $scope.menuOption.downSampleMethod = 'mode-median';        // 'largest-triangle-one-bucket'
-                        */
+                        // display date in correct format when modal opens: either menuOptions OR current date with 'sampleDateFormat'
+                        $scope.updateDateFormatOutput();
+
+                        $scope.resetSettings = function () {
+                            console.log('reset settings');
+
+                            // show confirmation to 'reset all current settings to default'
+                            // this will also update localStorage
+                        };
+
+                        $scope.applyToAllGraphs = function () {
+                            console.log('apply to all graphs');
+
+                            // update all graphs on dashboard with current scope.menuOption settings
+                        };
 
                         $scope.close = function () {
                             optionsModal.close();
                         };
 
-                        //add lightMask class when modal is opened
+                        // add lightMask class when modal is opened
                         optionsModal.opened.then(function () {
                             $('body').addClass('lightMask');
                         });
 
-                        //remove lightMask class when modal is closed
+                        // remove lightMask class when modal is closed
                         optionsModal.result.then(function (menuOption) {
-                            // angular.noop();
-                            // $scope.menuOption = menuOption;
-                            // console.log( $scope.menuOption );
-
+                            angular.noop();
                         }, function (menuOption) {
                             $('body').removeClass('lightMask');
-
-                            // console.log( $scope.menuOption );
                         });
                     }]
                 });
@@ -222,28 +217,50 @@ angular.module('argus.directives.charts.lineChart', [])
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
-            // set $scope values, get them from the local storage
-            scope.menuOption = {
-                isWheelOn : false,
-                isBrushOn : !chartOptions.smallChart,
-                isBrushMainOn : false,
-                isTooltipOn : true,
-                isTooltipSortOn: false,
-                isTooltipDetailOn: false,
-                isSyncChart: false,
-                downSampleMethod: 'largest-triangle-one-bucket'
-            };
-            scope.hideMenu = false;
+            // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
+            var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
+            var shortDate = '%b %e, %H:%M';
+            var numericalDate = '%-m/%-d/%y %H:%M:%S';
+            var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
+            // default formats & settings for chart options
+            var rawDataFormat = ',';
+            var sampleCustomFormat = '0,.8';     // scientific notation
+            var defaultYaxis = '.3s';
+            var defaultTicksYaxis = '5';
+
+            scope.hideMenu = false;
             scope.dashboardId = $routeParams.dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId + '_' + chartId);
-            if (menuOption){
-                scope.menuOption = menuOption;
-            }
+            
+            // set scope values, get them from the local storage before setting default
+            scope.menuOption = {
+                dateFormat: (menuOption && menuOption.dateFormat) ? menuOption.dateFormat : numericalDate,
+                formatYaxis: (menuOption && menuOption.formatYaxis) ? menuOption.formatYaxis : defaultYaxis,
+                numTicksYaxis: (menuOption && menuOption.numTicksYaxis) ? menuOption.numTicksYaxis : defaultTicksYaxis,
+
+                leadingNum: (menuOption && menuOption.leadingNum) ? menuOption.leadingNum : null,
+                trailingNum: (menuOption && menuOption.trailingNum) ? menuOption.trailingNum : null,
+
+                downSampleMethod: (menuOption && menuOption.downSampleMethod) ? menuOption.downSampleMethod : '',
+                isBrushMainOn: menuOption ? menuOption.isBrushMainOn : false,
+                isWheelOn: menuOption ? menuOption.isWheelOn : false,
+                
+                // for 'smallChart' only, does not display timeline brush below graph
+                isBrushOn: !chartOptions.smallChart,
+
+                isTooltipSortOn: menuOption ? menuOption.isTooltipSortOn : true,
+                rawTooltip: menuOption ? menuOption.rawTooltip : true,
+                customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
+
+                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : d3.schemeCategory20,
+
+                // TODO: refactor code base for no 'isTooltipOn' property
+                isTooltipOn: true
+            };
 
             var dateExtent; //extent of non empty data date range
-            // ---------
             var topToolbar = $(element); //jquery selection
             var container = topToolbar.parent()[0];//real DOM
 
@@ -258,6 +275,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 containerHeight = chartOptions.chart.height === undefined ? containerHeight: chartOptions.chart.height;
                 containerWidth = chartOptions.chart.width === undefined ? containerWidth: chartOptions.chart.width;
             }
+
             var xAxisLabelHeightFactor = 15;
             var brushHeightFactor = 20;
             var mainChartRatio = 0.8, //ratio of height
@@ -297,29 +315,19 @@ angular.module('argus.directives.charts.lineChart', [])
 
             var bufferRatio = 0.2; //the ratio of buffer above/below max/min on yAxis for better showing experience
 
-            // Local helpers
-            // date formats
-            // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
-            var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
-            var shortDate = '%b %e, %H:%M';
-            var numericalDate = '%-m/%-d/%y %H:%M:%S';
-            var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
-
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-
-            // date settings
-            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(shortDate);
-            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(numericalDate);
-
-            // not utilized ?
-            var formatValue = d3.format(',');
+            
+            // date settings.  tmpDate is default is chart option 'dateFormat' is not set.
+            var tmpDate = scope.menuOption.dateFormat ? scope.menuOption.dateFormat : numericalDate;
+            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(tmpDate);
+            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(tmpDate);
 
             //graph setup variables
             var x, x2, y, y2,
                 nGridX = chartOptions.smallChart ? 3 : 7,
-                nGridY = chartOptions.smallChart ? 3 : 5,
+                nGridY = chartOptions.smallChart ? 3 : scope.menuOption.numTicksYaxis,
                 xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
                 line, line2, area, area2,
                 brush, brushMain, zoom,
@@ -335,7 +343,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // color scheme
             var z = d3.scaleOrdinal(d3.schemeCategory20);
-
 
             //downsample threshold
             var downsampleThreshold = 1/2;  // datapoints per pixel
@@ -368,13 +375,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 yAxis = d3.axisLeft()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.3s'))
+                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
                 ;
 
                 yAxisR = d3.axisRight()
                     .scale(y)
                     .ticks(nGridY)
-                    .tickFormat(d3.format('.3s'))
+                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
                 ;
 
                 //grid
@@ -738,13 +745,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var YOffset = 0;
                 var newXOffset = 0;
                 var OffsetMultiplier = -1;
-                var itemsPerCol = 8;
+                var itemsPerCol = 14;
                 var circleLen = circleRadius * 2;
-                if (scope.menuOption.isTooltipDetailOn) {
-                    itemsPerCol = 14;
-                } else if (datapoints.length < 2*itemsPerCol) {
-                    itemsPerCol = Math.ceil(datapoints.length / 2);
-                }
 
                 for (var i = 0; i < datapoints.length; i++) {
                     // create a new col after every itemsPerCol
@@ -768,11 +770,9 @@ angular.module('argus.directives.charts.lineChart', [])
                                         .attr('dy', 20 * (1 + i - YOffset) + Y)
                                         .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
 
-                    if (scope.menuOption.isTooltipDetailOn) {
-                        textLine.text(datapoints[i].name + "  -  " + d3.format('0,.8')(tempData));
-                    } else {
-                        textLine.text(d3.format('.3s')(tempData));
-                    }
+                    var dataFormat = scope.menuOption.rawTooltip ? rawDataFormat : scope.menuOption.customTooltipFormat;
+                    var name = trimMetricName(datapoints[i].name);
+                    textLine.text(name + " -- " + d3.format(dataFormat)(tempData));
 
                     // update XOffset if existing offset is smaller than texLine
                     var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
@@ -817,12 +817,29 @@ angular.module('argus.directives.charts.lineChart', [])
                 tipBox.attr('transform', transformAttr);
             }
 
+            // TODO: move to filter
+            function trimMetricName(metricName) {
+                if (!metricName) return;
+                
+                var startVal, endVal;
+                startVal = (scope.menuOption.leadingNum > 0) ? scope.menuOption.leadingNum : null;
+                endVal = (scope.menuOption.trailingNum > 0) ? scope.menuOption.trailingNum : null;
+
+                if (startVal && !endVal) {
+                    return metricName.slice(startVal);
+                } else if (endVal) {
+                    return metricName.slice(startVal, -endVal);
+                } else {
+                    return metricName;
+                }
+            }
+
             function legendCreator(names, colors, graphClassNames) {
                 var tmpSources = [];
                 for (var i = 0; i < names.length; i++) {
                     var tempColor = colors[i] === null ? z(names[i]) : colors[i];
                     tmpSources.push({
-                        name: names[i],
+                        name: trimMetricName(names[i]),
                         displaying: true,
                         color: tempColor,
                         graphClassName: graphClassNames[i]
@@ -870,7 +887,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if(isNaN(mouseY)){ //mouseY can be 0
                     textY = "No Data";
                 }else{
-                    textY = d3.format('.3s')(mouseY);
+                    textY = d3.format(scope.menuOption.formatYaxis)(mouseY);
                 }
 
                 focus.select('[name=crossLineTipY')
@@ -1340,8 +1357,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-            // menuOption items
-
             //toggle time brush
             function toggleBrush() {
                 var display = !scope.menuOption.isBrushOn ? 'none' : null;
@@ -1385,30 +1400,22 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateStorage();
             }
 
-            // end menuOption items
-
             //date range
             function updateDateRange() {
-                var start, end, str, userInputDateFormat;
-
-                // user input dateFormat from chart options
-                if (scope.menuOption.dateFormat) {
-                    // check if isValid date?
-                    userInputDateFormat = scope.menuOption.dateFormat;
-                } else {
-                    userInputDateFormat = shortDate;
-                    userInputDateFormat = numericalDate;
-                }
+                var start, end, str, 
+                    dateFormat = scope.menuOption.dateFormat;
 
                 // date settings
                 if (GMTon) {
-                    GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(userInputDateFormat);
+                    var dateFormatGMT = dateFormat ? dateFormat : numericalDate;
+                    GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(dateFormatGMT);
 
                     start = GMTformatDate(x.domain()[0]);
                     end = GMTformatDate(x.domain()[1]);
                     str = start + ' - ' + end + " (GMT/UTC)";
                 } else {
-                    formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(userInputDateFormat);
+                    dateFormat = dateFormat ? dateFormat : shorDate;
+                    formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(formatDate);
 
                     start = formatDate(x.domain()[0]);
                     end = formatDate(x.domain()[1]);
@@ -1494,7 +1501,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
                 $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
 
-                //toggle
+                // TODO: to be remove once chart options is in place
                 $('[name=toggle-brush]', topToolbar).change(toggleBrush);
                 $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
                 $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
@@ -1518,6 +1525,8 @@ angular.module('argus.directives.charts.lineChart', [])
             };
 
             function downSample(series){
+                if (!series) return;
+
                 // Create the sampler
                 var temp = JSON.parse(JSON.stringify(series));
                 var sampler;
@@ -1570,17 +1579,19 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
 
                 // Run the sampler
-                series.forEach(function(metric, index){
-                    //determine whether to downsample or not
-                    //downsample if there are too many datapoints per pixel
-                    if(metric.data.length / containerWidth > downsampleThreshold){
-                        //determine bucket size
-                        var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
-                        // Configure the size of the buckets used to downsample the data.
-                        sampler.bucketSize(bucketSize);
-                        temp[index].data  = sampler(metric.data);
-                    }
-                });
+                if (sampler) {
+                    series.forEach(function(metric, index){
+                        //determine whether to downsample or not
+                        //downsample if there are too many datapoints per pixel
+                        if(metric.data.length / containerWidth > downsampleThreshold){
+                            //determine bucket size
+                            var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
+                            // Configure the size of the buckets used to downsample the data.
+                            sampler.bucketSize(bucketSize);
+                            temp[index].data  = sampler(metric.data);
+                        }
+                    });
+                }
 
                 return temp;
             }
@@ -1656,9 +1667,26 @@ angular.module('argus.directives.charts.lineChart', [])
                 toggleBrushMain();
                 toggleWheel();
                 toggleTooltip();
+                legendCreator(names, colors, graphClassNames);
+                scope.updateDownSample();
 
+                // update any changes for the Y-axis tick formatting & number of ticks displayed
+                yAxis = d3.axisLeft()
+                    .scale(y)
+                    .ticks(scope.menuOption.numTicksYaxis)
+                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
+                ;
+
+                yGrid = d3.axisLeft()
+                    .scale(y)
+                    .ticks(scope.menuOption.numTicksYaxis)
+                    .tickSizeInner(-width)
+                ;
+
+                yAxisG.call(yAxis);
+                yGridG.call(yGrid);
+                
                 // mouseMove();
-                // downSample();
             }, true);
 
             //TODO improve the resize efficiency if performance becomes an issue
