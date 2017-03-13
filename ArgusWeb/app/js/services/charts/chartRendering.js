@@ -1,7 +1,7 @@
 angular.module('argus.services.charts.rendering', [])
 .service('ChartRenderingService', [function() {
 		'use strict';
-        //TODO: clean up the highcharts stuff
+        //TODO: clean up the highchart
 		var service = {
 				getChart: function(chartId, highChartOptions) {
 						if (!chartId) return;
@@ -12,7 +12,9 @@ angular.module('argus.services.charts.rendering', [])
 
 				setChartContainer: function(element, chartId, cssOpts) {
 						if (!element || !chartId) return;
-						element.prepend('<div id='+ chartId +' class="chartContainer ' + cssOpts +'"></div>');
+						element.prepend(
+						    '<div id='+ chartId +' class="chartContainer ' + cssOpts +'"></div>'
+                        );
 				},
 
 				loadChart: function(chartId, highChartOptions) {

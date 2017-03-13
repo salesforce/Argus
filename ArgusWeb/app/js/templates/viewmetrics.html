@@ -149,7 +149,6 @@
     <div growl inline="true" reference="viewmetrics-error"></div>
 
     <div ngsf-fullscreen>
-        <button ngsf-toggle-fullscreen ng-show="showChart&&chartLoaded">Toggle fullscreen</button>
-        <div id="container" class="graphContainer" ng-show="showChart" width="100%"></div>
+        <div id="container" class="graphContainer" ng-show="showChart" width="100%" show-if-fullscreen-enabled></div>
     </div>
 </section>

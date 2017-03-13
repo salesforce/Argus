@@ -39,10 +39,14 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         });
 
         scope.seriesDataLoaded = true;
-        // // wrap full screen directive around chart div
-        // angular.element("#" + newChartId).wrap('<div ngsf-fullscreen></div>');
+
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append(
+            $compile(
+                '<div ngsf-fullscreen>' +
+                '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                "</div>")(lineChartScope)
+        );
     }
 
     function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
