@@ -4,43 +4,57 @@
 'use strict';
 
 angular.module('argus.services.tableListService', [])
-.service('TableListService', ['$sessionStorage', function ($sessionStorage) {
+.service('TableListService', [function () {
     this.deleteItemFromListHelper = function (itemList, itemToDelete) {
         return itemList.filter(function(element) {
             return element.id !== itemToDelete.id;
         });
     };
 
-    this.getListUnderTab = function (allItems, shared, userName) {
-        var i, result = [];
+    this.getListUnderTab = function (allItems, userName, userPrivileged) {
+        var i;
+        var result = {
+            sharedList: [],
+            usersList: []
+        };
         var totNum = allItems.length;
-        if(shared) {
-            for(i = 0; i < totNum; i++) {
-                if(allItems[i].shared) {
-                    result.push(allItems[i]);
+        if (userPrivileged) {
+            result.privilegedList= [];
+            for (i = 0; i < totNum; i++) {
+                // get all shared items
+                if (allItems[i].shared) {
+                    result.sharedList.push(allItems[i]);
+                }
+                // get all user's items
+                if (allItems[i].ownerName === userName) {
+                    result.usersList.push(allItems[i]);
+                // get all privileged items
+                } else if (!allItems[i].shared) {
+                    result.privilegedList.push(allItems[i]);
                 }
             }
         } else {
-            for(i = 0; i < totNum; i++) {
-                if (allItems[i].ownerName === userName) {
-                    result.push(allItems[i]);
-                }
+            for (i = 0; i < totNum; i++) {
+                if (allItems[i].shared) result.sharedList.push(allItems[i]);
+                if (allItems[i].ownerName === userName) result.usersList.push(allItems[i]);
             }
         }
         return result;
     };
 
-    this.addItemToTableList = function (allList, propertyType, item, userName) {
-        $sessionStorage[propertyType].cachedData.push(item);
+    this.addItemToTableList = function (allList, propertyType, item, userName, userPrivileged) {
         if (item.shared) allList.sharedList.push(item);
-        if (item.ownerName === userName) allList.usersList.push(item);
+        if (item.ownerName === userName || userPrivileged) allList.usersList.push(item);
+        if (userPrivileged && !item.shared && item.ownerName !== userName) allList.privilegedList.push(item);
         return allList;
     };
 
-    this.deleteItemFromTableList = function (allList, propertyType, item, userName) {
-        $sessionStorage[propertyType].cachedData = this.deleteItemFromListHelper($sessionStorage[propertyType].cachedData, item);
+    this.deleteItemFromTableList = function (allList, propertyType, item, userName, userPrivileged) {
         if (item.shared) allList.sharedList = this.deleteItemFromListHelper(allList.sharedList, item);
-        if (item.ownerName === userName) allList.usersList = this.deleteItemFromListHelper(allList.usersList, item);
+        if (item.ownerName === userName || userPrivileged)
+            allList.usersList = this.deleteItemFromListHelper(allList.usersList, item);
+        if (userPrivileged && !item.shared && item.ownerName !== userName)
+            allList.privilegedList = this.deleteItemFromListHelper(allList.privilegedList, item);
         return allList;
     };
 }]);

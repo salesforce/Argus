@@ -32,8 +32,6 @@
 package com.salesforce.dva.argus.entity;
 
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,8 +52,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
-
-import com.salesforce.dva.argus.system.SystemException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -90,6 +86,8 @@ public class Notification extends JPAEntity implements Serializable {
     )
     List<Trigger> triggers = new ArrayList<>(0);
     boolean isSRActionable = false;
+    int severityLevel = 5;
+    
     @Lob
     private String customText;
     @ElementCollection
@@ -115,7 +113,6 @@ public class Notification extends JPAEntity implements Serializable {
         setNotifierName(notifierName);
         setSubscriptions(subscriptions);
         setCooldownPeriod(cooldownPeriod);
-        setSRActionable(false);
     }
 
     /** Creates a new Notification object. */
@@ -365,7 +362,7 @@ public class Notification extends JPAEntity implements Serializable {
     public boolean getSRActionable() {
         return isSRActionable;
     }
-
+    
     /**
      * Specifies whether the notification should be monitored by SR (actionable by SR)
      *
@@ -373,6 +370,27 @@ public class Notification extends JPAEntity implements Serializable {
      */
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
+    }
+    
+    /**
+     * Gets the severity level of notification
+     *
+     * @return  The severity level
+     */
+    public int getSeverityLevel() {
+        return severityLevel;
+    }
+
+    /**
+     * Sets the severity level of notification
+     *
+     * @param  severityLevel  The severity level
+     */
+    public void setSeverityLevel(int severityLevel) {
+        if (severityLevel < 1 || severityLevel > 5) {
+            throw new IllegalArgumentException("The severty level should be between 1-5");
+        }
+        this.severityLevel = severityLevel;
     }
     
 	public Map<String, Boolean> getActiveStatusMap() {
@@ -427,7 +445,7 @@ public class Notification extends JPAEntity implements Serializable {
     @Override
     public String toString() {
         return "Notification{" + "name=" + name + ", notifierName=" + notifierName + ", subscriptions=" + subscriptions + ", metricsToAnnotate=" +
-            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" + triggers + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
+            metricsToAnnotate + ", cooldownPeriod=" + cooldownPeriod + ", triggers=" +  triggers + ", severity=" + severityLevel + ", srActionable=" + isSRActionable +  ", customText;" + customText + '}';
     }
     
 
@@ -435,14 +453,7 @@ public class Notification extends JPAEntity implements Serializable {
 		requireArgument(trigger != null, "Trigger cannot be null.");
         requireArgument(metric != null, "Metric cannot be null");
         
-        try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			digest.update(metric.getIdentifier().getBytes());
-			String code = new String(digest.digest());
-			return trigger.getId().toString() + "$$" + code;
-		} catch (NoSuchAlgorithmException e) {
-			throw new SystemException("This should never happen.", e);
-		}
+		return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
 	}
 	
 }

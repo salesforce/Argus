@@ -146,10 +146,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 
                 while (true) {
                     List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
-
-                    if (records.isEmpty()) {
-                        break;
-                    }
+                    
                     for (MetricSchemaRecord record : records) {
                         String identifier = _getIdentifier(record);
 
@@ -165,6 +162,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             queries.put(identifier, mq);
                         }
                     }
+                    
+                    if (records.size() < limit) {
+                        break;
+                    }
                 }
             } else {
             	Map<String, Integer> timeseriesCount = new HashMap<>();
@@ -176,9 +177,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     while (true) {
                         List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
 
-                        if (records.isEmpty()) {
-                            break;
-                        }
                         for (MetricSchemaRecord record : records) {
                         	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
                                 throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
@@ -211,6 +209,17 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 timeseriesCount.put(identifier, 1);
                             }
                         }
+                        
+                        if (records.size() < limit) {
+                            break;
+                        }
+                    }
+                    
+                    for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
+                    	MetricQuery q = entry.getValue();
+                    	if(q.getTags().size() != query.getTags().size()) {
+                    		queries.remove(entry.getKey());
+                    	}
                     }
                 }
             } // end if-else
