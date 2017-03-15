@@ -415,7 +415,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			if (scheduler != null) {
 				try {
 					_logger.info("Stopping scheduler {}", _getSchedulerName(scheduler));
-					scheduler.clear();
 					scheduler.shutdown();
 					_logger.info("Finished stopping scheduler {}", _getSchedulerName(scheduler));
 				} catch (SchedulerException e) {
