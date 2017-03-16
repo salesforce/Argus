@@ -31,8 +31,12 @@
 	 
 package com.salesforce.dva.argus.service.jpa;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -43,6 +47,8 @@ import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.Optional;
+
 import javax.persistence.EntityManager;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -53,7 +59,11 @@ import static java.math.BigInteger.ZERO;
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
+@Singleton
 public class DefaultUserService extends DefaultJPAService implements UserService {
+	
+	private static final int NUM_USERS_TO_CACHE = 50;
+	private static LoadingCache<String, Optional<PrincipalUser>> USERCACHE;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -61,6 +71,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     private Logger _logger;
     @Inject
     Provider<EntityManager> emf;
+    
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -73,20 +84,41 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     @Inject
     public DefaultUserService(AuditService auditService, SystemConfiguration _sysConfig) {
         super(auditService, _sysConfig);
+        
+        USERCACHE = CacheBuilder
+        		.newBuilder()
+        		.maximumSize(NUM_USERS_TO_CACHE)
+        		.build(new CacheLoader<String, Optional<PrincipalUser>>() {
+
+			@Override
+			public Optional<PrincipalUser> load(String username) {
+				return Optional.ofNullable(_findUserByUsernameFromDB(username));
+			}
+		});
     }
 
     //~ Methods **************************************************************************************************************************************
 
-    @Override
     @Transactional
-    public PrincipalUser findUserByUsername(String userName) {
-        requireNotDisposed();
+    private PrincipalUser _findUserByUsernameFromDB(String userName) {
+    	requireNotDisposed();
         requireArgument(userName != null && !userName.trim().isEmpty(), "User name cannot be null or empty.");
 
         PrincipalUser result = PrincipalUser.findByUserName(emf.get(), userName);
 
-        _logger.debug("Query for user having username {} resulted in : {}", userName, result);
+        _logger.debug("Retrieving user having username {} from db.", userName);
         return result;
+    }
+    
+    @Override
+    public PrincipalUser findUserByUsername(String userName) {
+        PrincipalUser user = USERCACHE.getUnchecked(userName).orElse(null);
+        if(user == null) {
+        	USERCACHE.invalidate(userName);
+        }
+        
+        _logger.info("Query for user having username {} resulted in : {}", userName, user);
+        return user;
     }
 
     @Override
@@ -112,6 +144,7 @@ public class DefaultUserService extends DefaultJPAService implements UserService
 
         deleteEntity(em, user);
         em.flush();
+        USERCACHE.invalidate(user.getUserName());
     }
 
     @Override
@@ -126,6 +159,11 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         _logger.debug("Updated user to : {}", result);
         _auditService.createAudit("Updated user : {0}", result, result);
         em.flush();
+        
+        if(USERCACHE.getIfPresent(result.getUserName()) != null) {
+        	USERCACHE.put(result.getUserName(), Optional.of(result));;
+        }
+        
         return result;
     }
 
@@ -179,5 +217,6 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         return PrincipalUser.findUniqueUserCount(emf.get());
     }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
