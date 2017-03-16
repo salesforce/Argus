@@ -74,11 +74,11 @@ public class DashboardResources extends AbstractResource {
 	//~ Methods **************************************************************************************************************************************
 
 	/**
-	 * Return all shared dashboards and dashboards owned by owner.
+	 * Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   owner          The principlaUser owner for owner name filter.
 	 *
-	 * @return  Return all shared dashboards and dashboards owned by owner.
+	 * @return  Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
 	 */
 	private Set<Dashboard> getDashboardsObj(String dashboardName, String ownerName, HttpServletRequest req) {
 
