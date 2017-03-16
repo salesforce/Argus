@@ -102,7 +102,9 @@ angular.module('argus.services', [
   'argus.services.jsonFlatten',
   'argus.services.tableListService',
   'argus.services.downloadHelper',
-  'argus.services.agTableService'
+  'argus.services.agTableService',
+  'argus.services.tokenAuthInterceptor',
+  'argus.services.testInterceptor'
 ]);
 
 // Controllers
@@ -168,6 +170,7 @@ require("./services/utilService");
 require("./services/jsonUnflatten");
 require("./services/tableListService");
 require("./services/downloadHelper");
+require("./services/tokenAuthInterceptor")
 
 require("./services/charts/chartOptions");
 require("./services/charts/chartRendering");
