@@ -89,9 +89,19 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("new scope");
 
         Metric m = new Metric("s", "m");
-        Metric m2 = new Metric("s", "m");
+        Metric m2 = new Metric("s1", "m");
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
         List<Metric> expected = Arrays.asList(new Metric("new scope", "m"));
+
+        assertThat(results, equalTo(expected));
+    }
+    
+    @Test
+    public void reduce_shouldUseDistilledScopeNameWhenCommon() {
+        Metric m = new Metric("s", "m1");
+        Metric m2 = new Metric("s", "m2");
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> expected = Arrays.asList(new Metric("s", TransformFactory.DEFAULT_METRIC_NAME));
 
         assertThat(results, equalTo(expected));
     }
