@@ -20,19 +20,6 @@
 		<div style="margin:.5em 0 .5em 1em;">
 			<label><strong>Tick labels:</strong>&nbsp;</label>&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" target="_blank" title="Custom d3 format codes"></a>
 
-			<div style="margin:0 0 .5em 1em;" class="hide">
-				<label for="tickFormat-Xaxis-{{chartId}}">X-axis: </label>
-				<input id="tickFormat-Xaxis-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.formatXaxis" />
-
-				<label>&nbsp; # of ticks: </label>
-				<select ng-model="menuOption.numTicksXaxis" style="margin-left:.5em;">
-					<option value="4">4</option>
-					<option value="5">5</option>
-					<option value="6">6</option>
-					<option value="7" ng-selected="true">7</option>
-				</select>
-			</div>
-
 			<div style="margin:0 0 .5em 1em;">
 				<label for="tickFormat-Yaxis-{{chartId}}">Y-axis: </label>
 				<input id="tickFormat-Yaxis-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.formatYaxis" />
@@ -75,10 +62,17 @@
 				<option value="every-nth-point" ng-selected="menuOption.downSampleMethod == 'every-nth-point'">Every n'th point</option>
 			</select>
 		</div>
+
+		<h4 class="sectionTitle btmBdr">Synchronize charts</h4>
+
+		<div style="display:inline-block; margin:0 0 .5em 1em;">
+			<input class="chkBox pointer" id="toggle-syncchart-{{chartConfig.chartId}}" type="checkbox" name="toggle-syncchart" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>&nbsp;
+			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize Chart</label>
+		</div>		
 	</div>
 
 	<!-- right col -->
-	<div class="col-md-6">
+	<div class="col-md-6" style="width:48%;">
 		<h4 class="sectionTitle btmBdr">Brushing & Zooming</h4>
 
 		<input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" />&nbsp;<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
@@ -97,17 +91,14 @@
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.customTooltipFormat" ng-disabled="menuOption.rawTooltip" ng-class="{'disabled': menuOption.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
 
-		<!--
-		<br /><label class="chkBoxLbl" for="tooltips-decimalNum-{{chartId}}">'n' number of decimal places: </label>&nbsp; <input id="" type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.decimalNumTooltip" />
-		-->
-
 		<h4 class="sectionTitle btmBdr">Color palletes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
 
+		<label>Select a color pallete: </label>&nbsp;
 		<select ng-model="menuOption.colorPallete" name="color-pallete">
-			<option value="d3.schemeCategory10" ng-selected="menuOption.colorPallete == d3.schemeCategory10">d3 scheme category 10</option>
-			<option value="d3.schemeCategory20" ng-selected="menuOption.colorPallete == d3.schemeCategory20">d3 scheme category 20</option>
-			<option value="d3.schemeCategory20b" ng-selected="menuOption.colorPallete == d3.schemeCategory20b">d3 scheme category 20b</option>
-			<option value="d3.schemeCategory20c" ng-selected="menuOption.colorPallete == d3.schemeCategory20c">d3 scheme category 20c</option>
+			<option value="schemeCategory10" ng-selected="menuOption.colorPallete == 'schemeCategory10'">d3 scheme category 10</option>
+			<option value="schemeCategory20" ng-selected="menuOption.colorPallete == 'schemeCategory20'">d3 scheme category 20</option>
+			<option value="schemeCategory20b" ng-selected="menuOption.colorPallete == 'schemeCategory20b'">d3 scheme category 20b</option>
+			<option value="schemeCategory20c" ng-selected="menuOption.colorPallete == 'schemeCategory20c'">d3 scheme category 20c</option>
 		</select>
 	</div>
 

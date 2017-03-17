@@ -114,7 +114,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .modal-backdrop {position:fixed; top:0; right:0; bottom:0; left:0; z-index:999; background-color:#000;}
 .modal-backdrop.fade {opacity:0;}
 .modal-backdrop, .modal-backdrop.fade.in {}
-.modal .smallClose {position:absolute; display:inline-block; top:10px; right:1em;}
+.modal .smallClose {position:absolute; display:inline-block; top:10px; right:1em; z-index:99;}
 .modal .chkBox {margin:.75em .5em 0 0; max-width:90%; vertical-align:top;}
 .modal .footer {margin-top:1em; padding-top:1em; border-top:solid 1px #CCC;}
 
@@ -125,7 +125,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 
 /* chart options */
-.modal .mainContent {padding:1em 0;}
+.modal .mainContent {padding:0 0 1em 0;}
 .modal .mainContent .title {margin-bottom:.5em; padding-bottom:.25em; border-bottom:solid 1px #CCC;}
 .modal .mainContent h2 {margin-left:0; padding-top:0; font-size:1.5em;}
 .modal .mainContent h3 {font-size:1.3em;}

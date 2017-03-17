@@ -244,6 +244,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 trailingNum: (menuOption && menuOption.trailingNum) ? menuOption.trailingNum : null,
 
                 downSampleMethod: (menuOption && menuOption.downSampleMethod) ? menuOption.downSampleMethod : '',
+                isSyncChart: menuOption ? menuOption.isSyncChart : false,
+
                 isBrushMainOn: menuOption ? menuOption.isBrushMainOn : false,
                 isWheelOn: menuOption ? menuOption.isWheelOn : false,
                 
@@ -254,7 +256,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 rawTooltip: menuOption ? menuOption.rawTooltip : true,
                 customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
 
-                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : d3.schemeCategory20,
+                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : 'schemeCategory20',
 
                 // TODO: refactor code base for no 'isTooltipOn' property
                 isTooltipOn: true
@@ -343,6 +345,24 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // color scheme
             var z = d3.scaleOrdinal(d3.schemeCategory20);
+
+            function setColorScheme() {
+                switch (scope.menuOption.colorPallete) {
+                    case 'schemeCategory10':
+                        z = d3.scaleOrdinal(d3.schemeCategory10);
+                        break;
+                    case 'schemeCategory20b':
+                        z = d3.scaleOrdinal(d3.schemeCategory20b);
+                        break;
+                    case 'schemeCategory20c':
+                        z = d3.scaleOrdinal(d3.schemeCategory20c);
+                        break;
+                    default:
+                        z = d3.scaleOrdinal(d3.schemeCategory20);
+                }
+            }
+
+            setColorScheme();
 
             //downsample threshold
             var downsampleThreshold = 1/2;  // datapoints per pixel
@@ -1661,34 +1681,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-            // watch changes from chart options modal to update graph
-            scope.$watch('menuOption', function() {
-                updateDateRange();
-                toggleBrushMain();
-                toggleWheel();
-                toggleTooltip();
-                legendCreator(names, colors, graphClassNames);
-                scope.updateDownSample();
-
-                // update any changes for the Y-axis tick formatting & number of ticks displayed
-                yAxis = d3.axisLeft()
-                    .scale(y)
-                    .ticks(scope.menuOption.numTicksYaxis)
-                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
-                ;
-
-                yGrid = d3.axisLeft()
-                    .scale(y)
-                    .ticks(scope.menuOption.numTicksYaxis)
-                    .tickSizeInner(-width)
-                ;
-
-                yAxisG.call(yAxis);
-                yGridG.call(yGrid);
-                
-                // mouseMove();
-            }, true);
-
             //TODO improve the resize efficiency if performance becomes an issue
             element.on('$destroy', function(){
                 if(resizeJobs.length){
@@ -1701,7 +1693,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             function addToSyncCharts(){
                 syncChartJobs[chartId] = {
-                    syncChartMouseMove : syncChartMouseMove,
+                    syncChartMouseMove: syncChartMouseMove,
                     syncChartMouseOut: syncChartMouseOut
                 };
             }
@@ -1722,6 +1714,37 @@ angular.module('argus.directives.charts.lineChart', [])
             if(scope.menuOption.isSyncChart){
                 addToSyncCharts();
             }
+
+            // watch changes from chart options modal to update graph
+            scope.$watch('menuOption', function() {
+                setColorScheme();
+                // setGraphTools(series);
+                legendCreator(names, colors, graphClassNames);
+                updateDateRange();
+                toggleBrushMain();
+                toggleWheel();
+                toggleTooltip();
+                scope.updateDownSample();
+                scope.toggleSyncChart();
+
+                // update any changes for the Y-axis tick formatting & number of ticks displayed
+                yAxis = d3.axisLeft()
+                    .scale(y)
+                    .ticks(scope.menuOption.numTicksYaxis)
+                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
+                ;
+
+                yGrid = d3.axisLeft()
+                    .scale(y)
+                    .ticks(scope.menuOption.numTicksYaxis)
+                    .tickSizeInner(-width)
+                ;
+
+                yAxisG.call(yAxis);
+                yGridG.call(yGrid);
+                
+                // mouseMove();
+            }, true);
         }
     };
 }]);
