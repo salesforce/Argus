@@ -82,6 +82,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
             dashboardLists = TableListService.getListUnderTab(dashboards, remoteUsername, userPrivileged);
             $sessionStorage.dashboards.cachedData = dashboardLists;
             setDashboardsAfterLoading($scope.selectedTab);
+        }, function(error){
+            console.log(error);
         });
     }
 

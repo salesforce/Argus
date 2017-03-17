@@ -1,7 +1,6 @@
 angular.module('argus.services.auth', [])
 .factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
-    var refreshPath = '';
-    var tokenAuthPath = '';
+    var refreshPath = 'refresh';
 
     return {
         login: function (username, password) {
@@ -70,14 +69,11 @@ angular.module('argus.services.auth', [])
         getRefreshPath: function(){
             return refreshPath;
         },
-        getTokenAuthPath: function(){
-            return tokenAuthPath;
-        },
         refreshToken: function(){
             var creds = {
                 refreshToken: Storage.get('refreshToken')
             };
-            $resource(CONFIG.wsUrl + refreshPath, {}, {}).save(creds, function(data){
+            return $resource(CONFIG.wsUrl + refreshPath, {}, {}).save(creds, function(data){
                 Storage.set('accessToken', data.accessToken);
             }, function(error){
                 growl.error(error);

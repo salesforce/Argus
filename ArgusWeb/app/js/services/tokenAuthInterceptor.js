@@ -2,7 +2,7 @@
  * Created by pfu on 3/14/17.
  */
 angular.module('argus.services.tokenAuthInterceptor',[])
-.factory("TokenAuthInterceptor", ['$q', '$location', 'Storage', '$injector', function($q, $location, Storage, $injector){
+.factory("TokenAuthInterceptor", ['$q', '$location', 'Storage', '$injector', 'CONFIG', 'growl', function($q, $location, Storage, $injector, CONFIG, growl){
     var refreshTokenRequest = null;
     return {
         'request' : function(config){
@@ -31,7 +31,7 @@ angular.module('argus.services.tokenAuthInterceptor',[])
             }else if(response.status === 401){
                 if(path === '/login'){
                     //login fails, just return to login page
-                }else if(path === refreshPath){
+                }else if(response.config.url === CONFIG.wsUrl + refreshPath){
                     growl.error("You refresh token has expired");//-------Token Based Authentication----------
                     //remove token
                     // Storage.clear('accessToken');
@@ -41,18 +41,17 @@ angular.module('argus.services.tokenAuthInterceptor',[])
                     if(!refreshTokenRequest){
                         refreshTokenRequest =  Auth.refreshToken(); //preventing resending duplicate token refresh request
                     }
-                    refreshTokenRequest.$promise.then(function () {
+                    refreshTokenRequest.$promise.then(function (data) {
                         refreshTokenRequest = null;
                         //resend request
                         $injector.get("$http")(response.config).then(function (resp) {
-                            deferred.resolve(resp);
+                           return deferred.resolve(resp);
                         }, function (resp) {
-                            deferred.reject(resp);
+                           return deferred.reject(resp);
                         });
-                        return deferred;
-                    }, function(){
+                    }, function(error){
                         refreshTokenRequest = null;
-                        deferred.reject(response);
+                        return deferred.reject(response);
                     });
                     return deferred.promise;
                 }

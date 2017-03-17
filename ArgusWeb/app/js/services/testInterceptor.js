@@ -19,6 +19,10 @@ angular.module('argus.services.testInterceptor',[])
         },
         'responseError' : function(response){
             Storage;
+            var testcode=0;//for the breakpoint
+            if(testcode==1){
+                return $q.resolve(response);
+            }
             return $q.reject(response);
         }
     }
