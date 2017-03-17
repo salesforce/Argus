@@ -384,8 +384,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 	
 	private int _getActiveSize(Map<String, Boolean> activeStatusMap) {
 		int size = 0; 
-		for(String key : activeStatusMap.keySet()) {
-			if(activeStatusMap.get(key)) {
+		for(Map.Entry<String, Boolean> entry : activeStatusMap.entrySet()) {
+			if(entry.getValue()) {
 				size++;
 			}
 		}
