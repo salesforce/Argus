@@ -1,5 +1,5 @@
 angular.module('argus.services.charts.rendering', [])
-.service('ChartRenderingService', [function() {
+.service('ChartRenderingService', ['UtilService', function(UtilService) {
 		'use strict';
         //TODO: clean up the highchart
 		var service = {
@@ -41,7 +41,7 @@ angular.module('argus.services.charts.rendering', [])
 				},
 
 				displayChart: function(chartId, highChartOptions) {
-						// display chart in DOM
+						// display chart in DO/M
 						var chart = this.getChart(chartId);
 
 						// hide the loading spinner after data loads.
@@ -50,7 +50,7 @@ angular.module('argus.services.charts.rendering', [])
 				},
 
 				updateIndicatorStatus: function(attributes, lastStatusVal) {
-					if (!attributes || !lastStatusVal) return;
+					if (attributes === undefined || lastStatusVal === undefined) return;
 
                     var lastStatusValNum = Number(lastStatusVal);
                     var lowValNum = Number(attributes.lo);
@@ -61,11 +61,11 @@ angular.module('argus.services.charts.rendering', [])
                     if (isNaN(highValNum)) console.log(attributes.name + "'s hi " + errorMsg);
 
 					if (lastStatusValNum < lowValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('red');
 					} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('orange');
 					} else if (lastStatusValNum > highValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('green');
 					}
 				}
 		};
