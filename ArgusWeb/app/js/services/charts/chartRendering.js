@@ -41,7 +41,7 @@ angular.module('argus.services.charts.rendering', [])
 				},
 
 				displayChart: function(chartId, highChartOptions) {
-						// display chart in DO/M
+						// display chart in DOM
 						var chart = this.getChart(chartId);
 
 						// hide the loading spinner after data loads.
