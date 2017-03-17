@@ -37,7 +37,7 @@ input:-moz-placeholder {color:#BBB;}
 ul {margin-bottom:0;}
 ul li {list-style:none;}
 
-button[disabled] {color:#CCC;}
+button[disabled], .disabled {color:#CCC !important;}
 
 .floatL {float:left;}
 .floatR {float:right;}
@@ -114,11 +114,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .modal-backdrop {position:fixed; top:0; right:0; bottom:0; left:0; z-index:999; background-color:#000;}
 .modal-backdrop.fade {opacity:0;}
 .modal-backdrop, .modal-backdrop.fade.in {}
-.modal .smallClose {position:absolute; display:inline-block; top:1em; right:1em;}
-
+.modal .smallClose {position:absolute; display:inline-block; top:10px; right:1em; z-index:99;}
 .modal .chkBox {margin:.75em .5em 0 0; max-width:90%; vertical-align:top;}
-.modal .chkBoxLbl {max-width:90%;}
-
 .modal .footer {margin-top:1em; padding-top:1em; border-top:solid 1px #CCC;}
 
 /* lighten up default modal backdrop (mask) */
@@ -128,13 +125,13 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 
 /* chart options */
-.modal .mainContent {padding:0 1em 1em 1em;}
+.modal .mainContent {padding:0 0 1em 0;}
 .modal .mainContent .title {margin-bottom:.5em; padding-bottom:.25em; border-bottom:solid 1px #CCC;}
 .modal .mainContent h2 {margin-left:0; padding-top:0; font-size:1.5em;}
 .modal .mainContent h3 {font-size:1.3em;}
-.modal .mainContent h4.sectionTitle {font-weight:normal; color:#428BCA;}
+.modal .mainContent h4.sectionTitle {margin-top:1em; padding:.25em; background-color:#EEE; font-weight:normal; color:#428BCA;}
 .modal .mainContent pre {overflow-x:auto; margin-top:1em;}
-.modal .mainContent label {color:#666;}
+.modal .mainContent label {max-width:90%; font-weight:normal; color:#666;}
 
 
 /* Dashboard related **/
@@ -354,3 +351,9 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
   width: 100%;
   height: 100%;
 }
+
+/* for ag-table */
+.agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; display: block; overflow: scroll;}
+.agTableHead {position:absolute; background-color: #eee;}
+.agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; width: 50px;}
+.agTable td {min-width: 180px; max-width: 180px; height: 40px;  word-wrap: break-word; width: 50px;}
