@@ -21,8 +21,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     return item.chartID === fullscreenChartID;
                 });
                 chartToFullscreen[0].resize();
-                // reset the ID after resizing
-                fullscreenChartID = undefined;
+                if (window.innerHeight !== screen.height) {
+                    // reset the ID after exiting full screen
+                    fullscreenChartID = undefined;
+                }
             }
         }, resizeTimeout); //only execute resize after a timeout
     }
@@ -279,32 +281,19 @@ angular.module('argus.directives.charts.lineChart', [])
             var defaultContainerHeight = containerHeight;
 
             var xAxisLabelHeightFactor = 15;
-            var brushHeightFactor = 20;
             var mainChartRatio = 0.8, //ratio of height
-                tipBoxRatio = 0.2,
-                brushChartRatio = 0.2;
+                brushChartRatio = 0.15;
             var marginTop = chartOptions.smallChart ? 5 : 15,
                 marginBottom = 35,
                 marginLeft = 50,
                 marginRight = chartOptions.smallChart ? 5 : 60;
 
-            var width = containerWidth - marginLeft - marginRight;
-            var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
-            var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
-
-            var margin = {
-                top: marginTop,
-                right: marginRight,
-                bottom: containerHeight - marginTop - height,
-                left: marginLeft
-            };
-
-            var margin2 = {
-                top: containerHeight - height2 - marginBottom,
-                right: marginRight,
-                bottom: marginBottom,
-                left: marginLeft
-            };
+            var allSize = calculateDimensions(containerWidth, containerHeight);
+            var width = allSize.width;
+            var height = allSize.height;
+            var height2 = allSize.height2;
+            var margin = allSize.margin;
+            var margin2 = allSize.margin2;
 
             var tipPadding = 3;
             var tipOffset = 8;
@@ -1130,16 +1119,20 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //precise resize without removing and recreating everything
             function resize(){
-                console.log("resize on "+ chartId);
                 if (series === "series" || !series) {
                     return;
                 }
 
                 if (window.innerHeight === screen.height) {
-                    // in full screen mode
-                    containerWidth = container.offsetWidth;
-                    // containerHeight = container.parentElement.offsetHeight;
-                    console.log("entering fullscreen: "+ containerWidth + ", " + containerHeight);
+                    // in full screen mode, get the div size
+                    if (container.offsetHeight !== window.innerHeight || container.offsetWidth !== window.innerWidth) {
+                        // to prevent full screen delay causing resize to a non full screen size
+                        containerWidth = window.innerWidth;
+                        containerHeight = window.innerHeight * 0.9;
+                    } else {
+                        containerWidth = container.offsetWidth;
+                        containerHeight = container.offsetHeight * 0.9;
+                    }
                 } else {
                     // default containerHeight will be used
                     containerHeight = defaultContainerHeight;
@@ -1154,7 +1147,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 height2 = newSize.height2;
                 margin = newSize.margin;
                 margin2 = newSize.margin2;
-                //TODO: refactor height, width, and margins calculation methods in both default draw and redraw
+
                 if (width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
 
                 if (series.length > 0) {
@@ -1163,6 +1156,22 @@ angular.module('argus.directives.charts.lineChart', [])
                     clip.attr('width', width)
                         .attr('height', height);
                     chartRect.attr('width', width);
+
+                    if (fullscreenChartID !== undefined) {
+                        // only adjust height related items when full screen chart is used
+                        chartRect.attr('height', height);
+                        y.range([height, 0]);
+                        y2.range([height2, 0]);
+                        svg.attr('height', height + margin.top + margin.bottom);
+                        svg_g.attr('height', height);
+                        xGrid.tickSizeInner(-height);
+                        xGridG.attr('transform', 'translate(0,' + height + ')');
+                        xAxisG.attr('transform', 'translate(0,' + height + ')');
+                        // reposition the brush
+                        context.attr("transform", "translate(0," + margin2.top + ")");
+                        xAxisG2.attr("transform", "translate(0," + height2 + ")");
+                    }
+
                     //update range
                     x.range([0, width]);
                     x2.range([0, width]);
@@ -1197,7 +1206,6 @@ angular.module('argus.directives.charts.lineChart', [])
 
                     yAxisRG.attr('transform', 'translate(' + width + ')')
                         .call(yAxisR);
-                    // TODO: height both brush and regular chart
 
                     svg_g.selectAll(".line").attr("d", line); //redraw the line
                     svg_g.selectAll(".brushLine").attr("d", line2); //redraw brush line
@@ -1677,13 +1685,16 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // watch changes from chart options modal to update graph
             scope.$watch('menuOption', function() {
-                updateDateRange();
-                toggleBrushMain();
-                toggleWheel();
-                toggleTooltip();
+                if (!scope.hideMenu) {
+                    // dont wat this if the menu is hidden/ there is no graph
+                    updateDateRange();
+                    toggleBrushMain();
+                    toggleWheel();
+                    toggleTooltip();
 
-                // mouseMove();
-                // downSample();
+                    // mouseMove();
+                    // downSample();
+                }
             }, true);
 
             //TODO improve the resize efficiency if performance becomes an issue
@@ -1726,7 +1737,7 @@ angular.module('argus.directives.charts.lineChart', [])
             function calculateDimensions (newContainerWidth, newContainerHeight) {
                 var newWidth = newContainerWidth - marginLeft - marginRight;
                 var newHeight = parseInt((newContainerHeight - marginTop - marginBottom) * mainChartRatio);
-                var newHeight2 = parseInt((newContainerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
+                var newHeight2 = parseInt((newContainerHeight - marginTop - marginBottom) * brushChartRatio);
                 var newMargin = {
                     top: marginTop,
                     right: marginRight,
