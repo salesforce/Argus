@@ -36,8 +36,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         type: "dashboards"
     };
     $scope.tabNames = {
+        userPrivileged: Auth.isPrivileged(),
         firstTab: Auth.getUsername() + "'s Dashboards",
-        secondTab: 'Shared Dashboards'
+        secondTab: 'Shared Dashboards',
+        thirdTab: 'All Other Dashboards'
     };
     $scope.dashboards = [];
     $scope.dashboardsLoaded = false;
@@ -45,31 +47,47 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     // private variables
     var dashboardLists = {
         sharedList: [],
-        usersList: []
+        usersList: [],
+        privilegedList: []
     };
     var remoteUsername = Auth.getUsername();
     var userPrivileged = Auth.isPrivileged();
 
     // TODO: refactor to DashboardService
-    $scope.getDashboards = function (shared) {
+    $scope.getDashboards = function (selectedTab) {
         if ($scope.dashboardsLoaded) {
-            $scope.dashboards = shared? dashboardLists.sharedList: dashboardLists.usersList;
+            switch (selectedTab) {
+                case 2: //shared
+                    $scope.dashboards = dashboardLists.sharedList;
+                    break;
+                case 3: //privileged
+                    if (userPrivileged) {
+                        $scope.dashboards = dashboardLists.privilegedList;
+                        break;
+                    }
+                default: //personal
+                    $scope.dashboards = dashboardLists.usersList;
+
+            }
         }
-        $sessionStorage.dashboards.shared = shared;
     };
 
-    function setDashboardsAfterLoading (dashboards, shared) {
-      dashboardLists.sharedList = TableListService.getListUnderTab(dashboards, true, remoteUsername, userPrivileged);
-      dashboardLists.usersList = TableListService.getListUnderTab(dashboards, false, remoteUsername, userPrivileged);
-      $scope.dashboardsLoaded = true;
-      $scope.getDashboards(shared);
+    function setDashboardsAfterLoading (selectedTab) {
+        $scope.dashboardsLoaded = true;
+        $scope.getDashboards(selectedTab);
     }
 
     function getNewDashboards () {
         Dashboards.getMeta().$promise.then(function(dashboards) {
-            setDashboardsAfterLoading(dashboards, $scope.shared);
-            $sessionStorage.dashboards.cachedData = dashboards;
+            dashboardLists = TableListService.getListUnderTab(dashboards, remoteUsername, userPrivileged);
+            $sessionStorage.dashboards.cachedData = dashboardLists;
+            setDashboardsAfterLoading($scope.selectedTab);
         });
+    }
+
+    function updateList () {
+        $sessionStorage.dashboards.cachedData = dashboardLists;
+        $scope.getDashboards($scope.selectedTab);
     }
 
     // TODO: refactor to DashboardService
@@ -85,15 +103,14 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         var dashboard = {
             name: 'new-dashboard-' + Date.now(),
             description: 'A new dashboard',
-            shared: $scope.shared,
+            shared: $scope.selectedTab === 2,
             content: getContentTemplate()
         };
         Dashboards.save(dashboard, function (result) {
-            // update all dashboards
             result.content = "";
             dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUsername, userPrivileged);
             // update dashboards to be seen
-            $scope.getDashboards($scope.shared);
+            updateList();
             growl.success('Created "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to create "' + dashboard.name + '"');
@@ -103,10 +120,8 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     // TODO: refactor to DashboardService
     $scope.deleteDashboard = function (dashboard) {
         Dashboards.delete({dashboardId: dashboard.id}, function (result) {
-            // update all dashboards
             dashboardLists = TableListService.deleteItemFromTableList(dashboardLists, 'dashboards', dashboard, remoteUsername, userPrivileged);
-            // update dashboards to be seen
-            $scope.getDashboards($scope.shared);
+            updateList();
             growl.success('Deleted "' + dashboard.name + '"');
         }, function (error) {
             growl.error('Failed to delete "' + dashboard.name + '"');
@@ -122,11 +137,9 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
                 content: result.content
             };
             Dashboards.save(tempDashboard, function (result) {
-                // update all dashboards
                 result.content = "";
                 dashboardLists = TableListService.addItemToTableList(dashboardLists, 'dashboards', result, remoteUsername, userPrivileged);
-                // update dashboards to be seen
-                $scope.getDashboards($scope.shared);
+                updateList();
                 growl.success('Cloned "' + dashboard.name + '"');
             }, function (error) {
                 growl.error('Failed to clone ' + dashboard.name + '"');
@@ -170,10 +183,11 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
     }
 
     if ($sessionStorage.dashboards === undefined) $sessionStorage.dashboards = {};
-    if ($sessionStorage.dashboards.cachedData !== undefined && $sessionStorage.dashboards.shared !== undefined) {
+    if ($sessionStorage.dashboards.cachedData !== undefined && $sessionStorage.dashboards.selectedTab !== undefined) {
         // get data from cache if it exists initially
-        var dashboards = $sessionStorage.dashboards.cachedData;
-        setDashboardsAfterLoading(dashboards, $sessionStorage.dashboards.shared);
+        dashboardLists = $sessionStorage.dashboards.cachedData;
+        $scope.selectedTab = $sessionStorage.dashboards.selectedTab;
+        setDashboardsAfterLoading($scope.selectedTab);
     } else {
         // trigger API call if there is no data in cache
         getNewDashboards();

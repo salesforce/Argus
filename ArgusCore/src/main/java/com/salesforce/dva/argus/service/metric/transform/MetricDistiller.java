@@ -128,7 +128,7 @@ public class MetricDistiller {
     /**
      * The common tags.
      *
-     * @return  the common tags, empty map if known are common.
+     * @return  the common tags, empty map if none are common.
      */
     public Map<String, String> getTags() {
         Map<String, String> distilledTags = new HashMap<String, String>();

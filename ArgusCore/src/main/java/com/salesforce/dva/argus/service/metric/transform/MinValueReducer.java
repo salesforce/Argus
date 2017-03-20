@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
@@ -45,9 +46,16 @@ public class MinValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
-    	if(values == null || values.isEmpty() || StreamSupport.stream(values.spliterator(), true).allMatch(o -> o == null)) {
+    	if(values == null || values.isEmpty()) {
     		return null;
     	}
+    	
+    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+    	if(stream.allMatch(o -> o == null)) {
+    		stream.close();
+    		return null;
+    	}
+    	stream.close();
     	
         double min = Double.MAX_VALUE;
         for (Double value : values) {
