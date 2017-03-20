@@ -160,30 +160,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         return toAnnotationKey(scope, metric, type, tags);
     }
     
-//    public static void main(String args[]) throws IOException {
-//    	
-//    	ObjectMapper mapper = new ObjectMapper();
-//        SimpleModule module = new SimpleModule();
-//
-//        module.addSerializer(Metric.class, new MetricTransform.Serializer());
-//        module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
-//        module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
-//        module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
-//        module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serizlizer());
-//        mapper.registerModule(module);
-//        
-//        Map<String, String> tags = new HashMap<>();
-//        //tags.put("device", "*");
-//        MetricQuery query = new MetricQuery("system.CHI.SP1.cs10", "CpuPerc.cpu.idle", tags, System.currentTimeMillis() - 1000000L, System.currentTimeMillis());
-//        query.setAggregator(Aggregator.AVG);
-//        query.setDownsampler(Aggregator.AVG);
-//        query.setDownsamplingPeriod(60000L);
-//        
-//        String json = mapper.writeValueAsString(query);
-//        System.out.println(json);
-//    	
-//    }
-    
     /**
      * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
      * 			
@@ -301,9 +277,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         String requestUrl = _readEndpoint + "/api/query";
 
         for (MetricQuery query : queries) {
-            //String requestUrl = MessageFormat.format(pattern, query.toString());
-        	
-            futures.put(query, _executorService.submit(new QueryWorker(requestUrl, fromEntity(query))));
+        	String requestBody = fromEntity(query);
+            futures.put(query, _executorService.submit(new QueryWorker(requestUrl, requestBody)));
             queryStartExecutionTime.put(query, System.currentTimeMillis());
         }
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
@@ -813,7 +788,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     /**
      * Helper class used to parallelize query execution.
      *
-     * @author  Tom Valine (tvaline@salesforce.com)
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
     private class QueryWorker implements Callable<List<Metric>> {
 
