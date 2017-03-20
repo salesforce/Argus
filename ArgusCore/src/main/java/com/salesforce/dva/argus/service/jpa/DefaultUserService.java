@@ -140,11 +140,11 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireArgument(user != null && user.getId() != null && user.getId().compareTo(ZERO) > 0, "User cannot be null and must have a valid ID.");
         _logger.debug("Deleting user {}.", user);
 
+        USERCACHE.invalidate(user.getUserName());
+	    
         EntityManager em = emf.get();
-
         deleteEntity(em, user);
         em.flush();
-        USERCACHE.invalidate(user.getUserName());
     }
 
     @Override
@@ -153,16 +153,14 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         requireArgument(user != null, "User cannot be null.");
 
+        USERCACHE.invalidate(user.getUserName());
+	    
         EntityManager em = emf.get();
         PrincipalUser result = mergeEntity(em, user);
 
         _logger.debug("Updated user to : {}", result);
         _auditService.createAudit("Updated user : {0}", result, result);
         em.flush();
-        
-        if(USERCACHE.getIfPresent(result.getUserName()) != null) {
-        	USERCACHE.put(result.getUserName(), Optional.of(result));;
-        }
         
         return result;
     }
