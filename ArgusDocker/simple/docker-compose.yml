@@ -60,6 +60,8 @@ services:
     environment:
       - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
       - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    depends_on:
+      - "kafka"
     command: [COMMIT_METRICS]
   argus-alert-client:
     image: rmelick/argus-client
@@ -72,6 +74,8 @@ services:
     environment:
       - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
       - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    depends_on:
+      - "kafka"
     command: [ALERT]
   argus-annotations-client:
     image: rmelick/argus-client
@@ -84,4 +88,6 @@ services:
     environment:
       - "EXTRA_JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5000"
       - "ARGUSCLIENT_CFG=/usr/argus/argusClient/argus.properties"
+    depends_on:
+      - "kafka"
     command: [COMMIT_ANNOTATIONS]

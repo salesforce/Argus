@@ -231,6 +231,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
+        bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
