@@ -68,7 +68,7 @@ public class LoggingFilter implements Filter {
         HttpServletRequest req = HttpServletRequest.class.cast(request);
         String url = req.getRequestURI();
 
-        LoggerFactory.getLogger(getClass()).info("Request started: {}", url);
+        LoggerFactory.getLogger(getClass()).debug("Request started: {}", url);
 
         long start = System.currentTimeMillis();
 

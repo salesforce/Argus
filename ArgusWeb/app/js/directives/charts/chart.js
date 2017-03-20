@@ -101,6 +101,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                 }
                 // metric item attributes are assigned to the data (i.e. name, color, etc.)
                 tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+                // keep metric expression info if the query succeeded
+                metricCount.expressions.push(metricItem.expression);
             } else {
                 // growl.info('No data found for the metric expression: ' + JSON.stringify(metricItem.expression));
                 console.log('Empty result returned for the metric expression');
@@ -116,6 +118,8 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
             // decrement metric count each time an expression is added to the series.
             metricCount.tot -= 1;
             if (metricCount.tot === 0) {
+                // pass in metric expression in as chartConfig
+                updatedOptionList.expressions = metricCount.expressions;
                 // check for Annotations
                 setupAnnotations(scope, newChartId, series, updatedAnnotationList, dateConfig, updatedOptionList);
             }
@@ -141,9 +145,13 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
     // TODO: below functions 'should' be refactored to the chart services.
     function setupChart(scope, element, attributes, controls) {
         // remove/clear any previous chart rendering from DOM
+        var lastEl = element.context.querySelector('[id^=element_chart]');
+        var lastId = lastEl? lastEl.id: null;
         element.empty();
         // generate a new chart ID, set css options for main chart container
-        var newChartId = 'element_' + VIEWELEMENT.chart + chartNameIndex++;
+        //if the element has content previously, leave the id unchanged
+        var newChartId = lastId || 'element_' + VIEWELEMENT.chart + chartNameIndex++;
+
         var chartType = attributes.type ? attributes.type : 'LINE';
         var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
@@ -190,13 +198,13 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var series = [];
         var metricCount = {};
         metricCount.tot = updatedMetricList.length;
+        metricCount.expressions = [];
 
         scope.seriesDataLoaded = false; //used for load spinner
         angular.element("#" + newChartId).append( $compile('<div ng-loading="seriesDataLoaded"></div>')(scope) );
 
         for (var i = 0; i < updatedMetricList.length; i++) {
             var metricItem = updatedMetricList[i];
-
             // get data for each metric item, bind optional data with metric data
             queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes, updatedOptionList);
         }
@@ -215,6 +223,9 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
                     scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
                         setupChart(scope, element, attributes, controls);
                     });
+                    element.on('$destroy', function(){
+                        chartNameIndex = 1;
+                    })
                 }
             };
         }

@@ -59,11 +59,6 @@ import java.util.Map.Entry;
  */
 public class DefaultDiscoveryService extends DefaultService implements DiscoveryService {
 
-    //~ Static fields/initializers *******************************************************************************************************************
-
-    private static final int HARD_LIMIT = 25;
-    private static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
-
     //~ Instance fields ******************************************************************************************************************************
     
     private final Logger _logger = LoggerFactory.getLogger(DefaultDiscoveryService.class);
@@ -130,29 +125,34 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
-        Map<String, MetricQuery> queries = new HashMap<String, MetricQuery>(HARD_LIMIT);
+        int limit = 500;
+        
+        Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
+        
 
-        if (isWildcardQuery(query)) {
+        if (DiscoveryService.isWildcardQuery(query)) {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
+            
+            int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
+            if(noOfTimeseriesAllowed == 0) {
+            	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+            }
+            
             if (query.getTags() == null || query.getTags().isEmpty()) {
                 MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
                 		query.getScope(), query.getMetric(), "*", "*");
                 int page = 1;
 
                 while (true) {
-                    List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, 200, page++);
-
-                    if (records.isEmpty()) {
-                        break;
-                    }
+                    List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
+                    
                     for (MetricSchemaRecord record : records) {
                         String identifier = _getIdentifier(record);
 
                         if (!queries.containsKey(identifier)) {
-                            if (queries.size() == HARD_LIMIT) {
-                            	String msg = MessageFormat.format("Wildcard query expands to more than {0} queries. Please narrow your search.", HARD_LIMIT);
-                                throw new WildcardExpansionLimitExceededException(msg);
+                            if (queries.size() == noOfTimeseriesAllowed) {
+                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
                             }
 
                             MetricQuery mq = new MetricQuery(record.getScope(), record.getMetric(), null, 0L, 1L);
@@ -162,20 +162,26 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             queries.put(identifier, mq);
                         }
                     }
+                    
+                    if (records.size() < limit) {
+                        break;
+                    }
                 }
             } else {
+            	Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
                         tag.getKey(), tag.getValue());
                     int page = 1;
 
                     while (true) {
-                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, 200, page++);
+                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
 
-                        if (records.isEmpty()) {
-                            break;
-                        }
                         for (MetricSchemaRecord record : records) {
+                        	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
+                                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                            }
+                        	
                             String identifier = _getIdentifier(record);
 
                             if (queries.containsKey(identifier)) {
@@ -189,12 +195,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 } else {
                                     mq.setTag(record.getTagKey(), record.getTagValue());
                                 }
+                                timeseriesCount.put(identifier, DiscoveryService.numApproxTimeseriesForQuery(mq));
                             } else {
-                                if (queries.size() == HARD_LIMIT) {
-                                	String msg = MessageFormat.format("Wildcard query expands to more than {0} queries. Please narrow your search.", HARD_LIMIT);
-                                    throw new WildcardExpansionLimitExceededException(msg);
-                                }
-
                                 Map<String, String> tags = new HashMap<String, String>();
 
                                 tags.put(record.getTagKey(), record.getTagValue());
@@ -204,8 +206,20 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                                 mq.setNamespace(record.getNamespace());
                                 _copyRemainingProperties(mq, query);
                                 queries.put(identifier, mq);
+                                timeseriesCount.put(identifier, 1);
                             }
                         }
+                        
+                        if (records.size() < limit) {
+                            break;
+                        }
+                    }
+                    
+                    for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
+                    	MetricQuery q = entry.getValue();
+                    	if(q.getTags().size() != query.getTags().size()) {
+                    		queries.remove(entry.getKey());
+                    	}
                     }
                 }
             } // end if-else
@@ -221,6 +235,15 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         return queryList;
     }
 
+	private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
+    	int sum = 0;
+    	for(Integer count : timeseriesCountMap.values()) {
+    		sum += count;
+    	}
+    	
+    	return sum;
+    }
+
 	private String _getIdentifier(MetricSchemaRecord record) {
 		String identifier = new StringBuilder(record.getScope()).
 													append(record.getMetric()).
@@ -229,24 +252,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 		return identifier;
 	}
 
-    @Override
-    public boolean isWildcardQuery(MetricQuery query) {
-        if (_containsWildcard(query.getScope()) || _containsWildcard(query.getMetric())) {
-            return true;
-        }
-        if (_containsWildcard(query.getNamespace())) {
-            return true;
-        }
-        if (query.getTags() != null) {
-            for (String tagKey : query.getTags().keySet()) {
-                if (_containsWildcard(tagKey) || (!"*".equals(query.getTag(tagKey)) && _containsWildcard(query.getTag(tagKey)))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private void _logMatchedQueries(List<MetricQuery> queryList) {
         _logger.debug("Matched Queries:");
 
@@ -254,29 +259,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         for (MetricQuery q : queryList) {
             _logger.debug(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
         }
-    }
-
-    private boolean _containsWildcard(String str) {
-        if (str == null || str.isEmpty()) {
-            return false;
-        }
-
-        char[] arr = str.toCharArray();
-        for (char ch : arr) {
-            if (_isWildcard(ch)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean _isWildcard(char ch) {
-        for (char c : WILDCARD_CHARSET) {
-            if (c == ch) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void _copyRemainingProperties(MetricQuery dest, MetricQuery orig) {

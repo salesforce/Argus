@@ -24,6 +24,7 @@ label {
     padding-top: 5px;
 }
 
+a {cursor:pointer;}
 a:hover {text-decoration:none; color:inherit;}
 
 ul {margin-bottom:0;}
@@ -43,8 +44,10 @@ button[disabled] {color:#CCC;}
 .eyeIcon.eyeOpen {background-position:-96px -121px;}
 .eyeIcon.eyeClosed {background-position:-120px -121px;}
 
-.resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}
-.resetIcon:hover {background-position:0 -37px;}
+/*.resetIcon {display:inline-block; width:25px; height:25px; background:url(../img/reset-icon-sm.png) 0 0 no-repeat; vertical-align:bottom;}*/
+/*.resetIcon:hover {background-position:0 -37px;}*/
+
+.cloneTrooperIcon {display:inline-block; width:28px; height:35px; background:url(../img/clone-trooper.png) no-repeat; vertical-align:middle;}
 
 /* loading spinner small, eg input field */
 .loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}

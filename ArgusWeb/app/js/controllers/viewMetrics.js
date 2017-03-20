@@ -4,7 +4,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', '$compile',
     function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, $compile) {
 
-        $('[data-toggle="tooltip"]').tooltip();
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
 
         // sub-views: (1) single chart, (2) metric discovery
@@ -50,8 +49,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             color: 'Maroon'
                         }];
                     }
-                    $scope.updateChart(tempSeries, annotationInfo);
-                    $scope.chartLoaded = true;
+                    $scope.updateChart(tempSeries, annotationInfo, [$scope.expression]);
                 }, function (error) {
                     // prevent error.data.message being null breaks the message
                     if (error.data.message === null) {
@@ -65,14 +63,12 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                         name: error.config.params.expression,
                         color: 'Black'
                     }];
-                    $scope.updateChart(tempSeries, annotationInfo);
-                    $scope.chartLoaded = true;
+                    $scope.updateChart(tempSeries, annotationInfo, []);
                 });
             } else {
                 // empty expression
                 $scope.checkMetricExpression();
-                $scope.updateChart(tempSeries, annotationInfo);
-                $scope.chartLoaded = true;
+                $scope.updateChart(tempSeries, annotationInfo, []);
             }
         };
 
@@ -200,11 +196,14 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
         // -------------
 
-        $scope.updateChart = function (series, annotationInfo) {
+        $scope.updateChart = function (series, annotationInfo, expressions) {
             // if the metric expression is not empty
             if (series && series.length > 0) {
                 var chartScope = $scope.$new(false);
-                chartScope.chartConfig = {chartId: 'container'};
+                chartScope.chartConfig = {
+                    chartId: 'container',
+                    expressions: expressions
+                };
                 chartScope.dateConfig = {};
                 chartScope.series = series;
 
@@ -243,22 +242,23 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             }
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
+                                $scope.chartLoaded = true;
                                 angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
                             }
                         }, function (error) {
                             console.log('no annotation found;', error.statusText);
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
+                                $scope.chartLoaded = true;
                                 angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
                             }
                         })
                     }
                 } else {
+                    $scope.chartLoaded = true;
                     angular.element("#" + "container").append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope) );
                 }
             }
-
-            $scope.series = series;
         };
 
         $scope.getMetricData(null);

@@ -122,11 +122,12 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  elementName   The element/instance name
 	 * @param  eventName     The event name
 	 * @param  message       The message body.
+	 * @param  severityLevel The severity level
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-			boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
+			int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -138,7 +139,7 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 50);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-				withSRActionable(srActionable).withEventText(message);
+				withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -246,7 +247,7 @@ public class GOCNotifier extends AuditNotifier {
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
 		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
-				context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
+				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
 	/**
@@ -268,7 +269,7 @@ public class GOCNotifier extends AuditNotifier {
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
-		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric()));
+		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
 		sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		sb.append("\n");
@@ -615,7 +616,7 @@ public class GOCNotifier extends AuditNotifier {
 			this.srActionablec = sRActionablec;
 			return this;
 		}
-
+		
 		/**
 		 * Create the GOCData object, use defaults where needed.
 		 *

@@ -42,6 +42,8 @@ import java.util.List;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public interface SchemaService extends Service {
+	
+	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 
     //~ Methods **************************************************************************************************************************************
 
@@ -81,6 +83,29 @@ public interface SchemaService extends Service {
      * @return  A list of unique names for the give record type.  Will never return null, but may be empty.
      */
     List<String> getUnique(MetricSchemaRecordQuery query, int limit, int page, RecordType type);
+    
+    static boolean containsWildcard(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+
+        char[] arr = str.toCharArray();
+        for (char ch : arr) {
+            if (isWildcard(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean isWildcard(char ch) {
+        for (char c : WILDCARD_CHARSET) {
+            if (c == ch) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     //~ Enums ****************************************************************************************************************************************
 
