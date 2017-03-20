@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
- * alert notifier sending the event via REST client to an endpoint defined within the notification subscription.
+ * Callback notifier sending the event via REST client to an endpoint defined within the notification subscription.
  *
  * @author svenkrause
  */
@@ -40,7 +40,7 @@ public class CallbackNotifier extends AuditNotifier {
 
 	private final CallbackService _callbackService;
 	/**
-	 * Creates a new DBNotifier object.
+	 * Creates a new CallbackNotifier object.
 	 *
 	 * @param metricService The metric service. Cannot be null.
 	 * @param annotationService The annotation service. Cannot be null.

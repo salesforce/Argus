@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.stringtemplate.v4.ST;
 
 /**
- * default CallbackService implementation sending the request via a shared apache HttpClient
+ * Default {@link CallbackService} implementation sending the request via a shared apache HttpClient
  *
  * @author svenkrause
  */
@@ -55,7 +55,7 @@ public class DefaultCallbackService extends DefaultService implements CallbackSe
 	//~ Constructors *********************************************************************************************************************************
 
 	/**
-	 * Creates a new DefaultMailService object.
+	 * Creates a new DefaultCallbackService object.
 	 *
 	 * @param config The system configuration. Cannot be null.
 	 */
