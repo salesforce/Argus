@@ -7,13 +7,25 @@ angular.module('argus.directives.charts.lineChart', [])
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
     var timer;
+    var fullscreenChartID;
 
     function resizeHelper(){
         $timeout.cancel(timer); //clear to improve performance
         timer = $timeout(function () {
-            resizeJobs.forEach(function (resizeJob) { //resize all the charts
-                resizeJob();
-            });
+            if (fullscreenChartID === undefined) {
+                resizeJobs.forEach(function (resizeJob) { //resize all the charts
+                    resizeJob.resize();
+                });
+            } else { // resize only one chart that in fullscreen mode
+                var chartToFullscreen = resizeJobs.filter(function (item) {
+                    return item.chartID === fullscreenChartID;
+                });
+                chartToFullscreen[0].resize();
+                if (window.innerHeight !== screen.height) {
+                    // reset the ID after exiting full screen
+                    fullscreenChartID = undefined;
+                }
+            }
         }, resizeTimeout); //only execute resize after a timeout
     }
 
@@ -62,6 +74,10 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, Metrics, DownloadHelper, growl) {
+            $scope.updateFullscreenChartID= function (clickedChartID) {
+                    fullscreenChartID = clickedChartID;
+            };
+                
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
                 var dataHandler, filename, chartTitle;
@@ -298,39 +314,31 @@ angular.module('argus.directives.charts.lineChart', [])
             var containerHeight = chartOptions.smallChart ? 150 : 330;
             var containerWidth = $("#" + chartId).width();
 
+            var defaultContainerWidth = -1;
             if (chartOptions.chart !== undefined) {
                 containerHeight = chartOptions.chart.height === undefined ? containerHeight: chartOptions.chart.height;
-                containerWidth = chartOptions.chart.width === undefined ? containerWidth: chartOptions.chart.width;
+                if (chartOptions.chart.width !== undefined) {
+                    containerWidth = chartOptions.chart.width;
+                    defaultContainerWidth = containerWidth;
+                }
             }
 
+            var defaultContainerHeight = containerHeight;
+
             var xAxisLabelHeightFactor = 15;
-            var brushHeightFactor = 20;
             var mainChartRatio = 0.8, //ratio of height
-                tipBoxRatio = 0.2,
-                brushChartRatio = 0.2
-                ;
+                brushChartRatio = 0.15;
             var marginTop = chartOptions.smallChart ? 5 : 15,
                 marginBottom = 35,
                 marginLeft = 50,
                 marginRight = chartOptions.smallChart ? 5 : 60;
 
-            var width = containerWidth - marginLeft - marginRight;
-            var height = parseInt((containerHeight - marginTop - marginBottom) * mainChartRatio);
-            var height2 = parseInt((containerHeight - marginTop - marginBottom) * brushChartRatio) - brushHeightFactor;
-
-            var margin = {
-                top: marginTop,
-                right: marginRight,
-                bottom: containerHeight - marginTop - height,
-                left: marginLeft
-            };
-
-            var margin2 = {
-                top: containerHeight - height2 - marginBottom,
-                right: marginRight,
-                bottom: marginBottom,
-                left: marginLeft
-            };
+            var allSize = calculateDimensions(containerWidth, containerHeight);
+            var width = allSize.width;
+            var height = allSize.height;
+            var height2 = allSize.height2;
+            var margin = allSize.margin;
+            var margin2 = allSize.margin2;
 
             var tipPadding = 3;
             var tipOffset = 8;
@@ -1177,23 +1185,32 @@ angular.module('argus.directives.charts.lineChart', [])
                     return;
                 }
 
-                containerWidth = $(container).width();
-                width = containerWidth - marginLeft - marginRight;
+                if (window.innerHeight === screen.height) {
+                    // in full screen mode, get the div size
+                    if (container.offsetHeight !== window.innerHeight || container.offsetWidth !== window.innerWidth) {
+                        // to prevent full screen delay causing resize to a non full screen size
+                        containerWidth = window.innerWidth;
+                        containerHeight = window.innerHeight * 0.9;
+                    } else {
+                        containerWidth = container.offsetWidth;
+                        containerHeight = container.offsetHeight * 0.9;
+                    }
+                } else {
+                    // default containerHeight will be used
+                    containerHeight = defaultContainerHeight;
+                    // no width defined via chart option: window width will be used
+                    if (defaultContainerWidth < 0) {
+                        containerWidth = container.offsetWidth;
+                    }
+                }
+                var newSize = calculateDimensions(containerWidth, containerHeight);
+                width = newSize.width;
+                height = newSize.height;
+                height2 = newSize.height2;
+                margin = newSize.margin;
+                margin2 = newSize.margin2;
 
-                if(width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
-
-                margin = {
-                    top: marginTop,
-                    right: marginRight,
-                    bottom: containerHeight - marginTop - height,
-                    left: marginLeft
-                };
-                margin2 = {
-                    top: containerHeight - height2 - marginBottom,
-                    right: marginRight,
-                    bottom: marginBottom,
-                    left: marginLeft
-                };
+                if (width < 0) return; //it happens when click other tabs (like 'edit'/'history', the charts are not destroyed
 
                 if (series.length > 0) {
                     var tempX = x.domain(); //remember that when resize
@@ -1201,6 +1218,22 @@ angular.module('argus.directives.charts.lineChart', [])
                     clip.attr('width', width)
                         .attr('height', height);
                     chartRect.attr('width', width);
+
+                    if (fullscreenChartID !== undefined) {
+                        // only adjust height related items when full screen chart is used
+                        chartRect.attr('height', height);
+                        y.range([height, 0]);
+                        y2.range([height2, 0]);
+                        svg.attr('height', height + margin.top + margin.bottom);
+                        svg_g.attr('height', height);
+                        xGrid.tickSizeInner(-height);
+                        xGridG.attr('transform', 'translate(0,' + height + ')');
+                        xAxisG.attr('transform', 'translate(0,' + height + ')');
+                        // reposition the brush
+                        context.attr("transform", "translate(0," + margin2.top + ")");
+                        xAxisG2.attr("transform", "translate(0," + height2 + ")");
+                    }
+
                     //update range
                     x.range([0, width]);
                     x2.range([0, width]);
@@ -1714,7 +1747,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             });
 
-            resizeJobs.push(resize);
+            resizeJobs.push({
+                chartID: chartId,
+                resize: resize
+            });
 
             function addToSyncCharts(){
                 syncChartJobs[chartId] = {
@@ -1727,6 +1763,32 @@ angular.module('argus.directives.charts.lineChart', [])
                 delete syncChartJobs[chartId];
             }
 
+            function calculateDimensions (newContainerWidth, newContainerHeight) {
+                var newWidth = newContainerWidth - marginLeft - marginRight;
+                var newHeight = parseInt((newContainerHeight - marginTop - marginBottom) * mainChartRatio);
+                var newHeight2 = parseInt((newContainerHeight - marginTop - marginBottom) * brushChartRatio);
+                var newMargin = {
+                    top: marginTop,
+                    right: marginRight,
+                    bottom: newContainerHeight - marginTop - newHeight,
+                    left: marginLeft
+                };
+
+                var newMargin2 = {
+                    top: newContainerHeight - newHeight2 - marginBottom,
+                    right: marginRight,
+                    bottom: marginBottom,
+                    left: marginLeft
+                };
+                return {
+                    width: newWidth,
+                    height: newHeight,
+                    height2: newHeight2,
+                    margin: newMargin,
+                    margin2: newMargin2
+                };
+            }
+
             scope.toggleSyncChart = function(){
                 if (scope.menuOption.isSyncChart){
                     addToSyncCharts();
@@ -1734,7 +1796,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     removeFromSyncCharts();
                 }
                 updateStorage();
-            }
+            };
 
             if(scope.menuOption.isSyncChart){
                 addToSyncCharts();
@@ -1742,33 +1804,35 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // watch changes from chart options modal to update graph
             scope.$watch('menuOption', function() {
-                setColorScheme();
-                // setGraphTools(series);
-                legendCreator(names, colors, graphClassNames);
-                updateDateRange();
-                toggleBrushMain();
-                toggleWheel();
-                toggleTooltip();
-                scope.updateDownSample();
-                scope.toggleSyncChart();
+                if (!scope.hideMenu) {
+                    setColorScheme();
+                    // setGraphTools(series);
+                    legendCreator(names, colors, graphClassNames);
+                    updateDateRange();
+                    toggleBrushMain();
+                    toggleWheel();
+                    toggleTooltip();
+                    scope.updateDownSample();
+                    scope.toggleSyncChart();
 
-                // update any changes for the Y-axis tick formatting & number of ticks displayed
-                yAxis = d3.axisLeft()
-                    .scale(y)
-                    .ticks(scope.menuOption.numTicksYaxis)
-                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
-                ;
+                    // update any changes for the Y-axis tick formatting & number of ticks displayed
+                    yAxis = d3.axisLeft()
+                        .scale(y)
+                        .ticks(scope.menuOption.numTicksYaxis)
+                        .tickFormat(d3.format(scope.menuOption.formatYaxis))
+                    ;
 
-                yGrid = d3.axisLeft()
-                    .scale(y)
-                    .ticks(scope.menuOption.numTicksYaxis)
-                    .tickSizeInner(-width)
-                ;
+                    yGrid = d3.axisLeft()
+                        .scale(y)
+                        .ticks(scope.menuOption.numTicksYaxis)
+                        .tickSizeInner(-width)
+                    ;
 
-                yAxisG.call(yAxis);
-                yGridG.call(yGrid);
-                
-                // mouseMove();
+                    yAxisG.call(yAxis);
+                    yGridG.call(yGrid);
+
+                    // mouseMove();
+                }
             }, true);
         }
     };

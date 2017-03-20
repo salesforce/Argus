@@ -243,20 +243,32 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
                                 $scope.chartLoaded = true;
-                                angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
+                                angular.element("#" + "container").append($compile(
+                                    '<div ngsf-fullscreen>' +
+                                    '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                                    '</div>')(chartScope)
+                                );
                             }
                         }, function (error) {
                             console.log('no annotation found;', error.statusText);
                             annotationCount.tot--;
                             if (annotationCount.tot == 0) {
                                 $scope.chartLoaded = true;
-                                angular.element("#" + "container").append($compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope));
+                                angular.element("#" + "container").append($compile(
+                                    '<div ngsf-fullscreen>' +
+                                    '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                                    '</div>')(chartScope)
+                                );
                             }
                         })
                     }
                 } else {
                     $scope.chartLoaded = true;
-                    angular.element("#" + "container").append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(chartScope) );
+                    aangular.element("#" + "container").append($compile(
+                        '<div ngsf-fullscreen>' +
+                        '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                        '</div>')(chartScope)
+                    );
                 }
             }
         };
