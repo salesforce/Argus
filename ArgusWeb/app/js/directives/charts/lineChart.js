@@ -47,6 +47,23 @@ angular.module('argus.directives.charts.lineChart', [])
         }
     }
 
+    //----------------default chart values----------------------
+
+    var dashboardId = $routeParams.dashboardId;
+
+    // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
+    var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
+    var shortDate = '%b %e, %H:%M';
+    var numericalDate = '%-m/%-d/%y %H:%M:%S';
+    var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
+
+    // default formats & settings for chart options
+    var rawDataFormat = ',';
+    var sampleCustomFormat = '0,.8';     // scientific notation
+    var defaultYaxis = '.3s';
+    var defaultTicksYaxis = '5';
+
+
     return {
         restrict: 'E',
         replace: true,
@@ -129,10 +146,30 @@ angular.module('argus.directives.charts.lineChart', [])
                         $scope.updateDateFormatOutput();
 
                         $scope.resetSettings = function () {
-                            console.log('reset settings');
+                            // set menuOption back to default. can be stored in separate properties file for charts
+                            var menuOption = {
+                                dateFormat: numericalDate,
+                                formatYaxis: defaultYaxis,
+                                numTicksYaxis: defaultTicksYaxis,
+                                leadingNum: null,
+                                trailingNum: null,
+                                downSampleMethod: '',
+                                isSyncChart: false,
+                                isBrushMainOn: false,
+                                isWheelOn: false,
+                                isBrushOn: false,
+                                isTooltipSortOn: true,
+                                rawTooltip: true,
+                                customTooltipFormat: sampleCustomFormat,
+                                colorPallete: 'schemeCategory20',
+                                isTooltipOn: true
+                            };
 
-                            // show confirmation to 'reset all current settings to default'
-                            // this will also update localStorage
+                            // update localStorage
+                            Storage.set('menuOption_' + dashboardId + '_' + $scope.chartId, menuOption);
+
+                            // update modal view
+                            $scope.menuOption = menuOption;
                         };
 
                         $scope.applyToAllGraphs = function () {
@@ -233,20 +270,8 @@ angular.module('argus.directives.charts.lineChart', [])
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
-            // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
-            var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
-            var shortDate = '%b %e, %H:%M';
-            var numericalDate = '%-m/%-d/%y %H:%M:%S';
-            var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
-
-            // default formats & settings for chart options
-            var rawDataFormat = ',';
-            var sampleCustomFormat = '0,.8';     // scientific notation
-            var defaultYaxis = '.3s';
-            var defaultTicksYaxis = '5';
-
             scope.hideMenu = false;
-            scope.dashboardId = $routeParams.dashboardId;
+            scope.dashboardId = dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId + '_' + chartId);
             

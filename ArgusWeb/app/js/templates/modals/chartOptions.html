@@ -65,9 +65,9 @@
 
 		<h4 class="sectionTitle btmBdr">Synchronize charts</h4>
 
-		<div style="display:inline-block; margin:0 0 .5em 1em;">
+		<div style="margin:0 0 .5em 1em;">
 			<input class="chkBox pointer" id="toggle-syncchart-{{chartConfig.chartId}}" type="checkbox" name="toggle-syncchart" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>&nbsp;
-			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize Chart</label>
+			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize chart to show X-axis value for each chart</label>
 		</div>		
 	</div>
 
@@ -107,14 +107,16 @@
 	<div class="footer">
 		
 		<div class="col-md-6">
-			<button id="reset" class="btn btn-cancel floatL" style="display:inline-block;" ng-click="resetSettings()">Reset to default settings</button>
+			<a id="reset" class="glyphicon glyphicon-ban-circle floatL" ng-confirm="Are you sure you want reset all your current chart settings?" ng-confirm-action="resetSettings()" title="Reset to default settings"><span class="glyphIconTxt">Reset to default</span></a>
 		</div>
 
 		<div class="col-md-6">
+			<div class="hide">
 			<input class="chkBox pointer" id="applySettingsAll-{{chartId}}" type="checkbox" ng-model="menuOption.applySettingsAll" title="Apply settings to all graphs" />
 			<label for="applySettingsAll-{{chartId}}">Apply settings to all graphs</label>
+			</div>
 
-			<button id="save" class="btn btn-primary floatR" style="display:inline-block;" ng-click="close()">Save settings</button>
+			<button id="save" class="btn btn-primary floatR" ng-click="close()">Save settings</button>
 		</div>
 
 		<div class="clearAll"></div>
