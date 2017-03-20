@@ -145,6 +145,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.red {background-color:red; border-color:red;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
+.serviceItem .serviceName p {word-wrap: break-word;}
+
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
