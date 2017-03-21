@@ -33,10 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
+import com.salesforce.dva.argus.service.alert.notifier.*;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
 
@@ -61,7 +58,11 @@ public final class NotifierFactory {
     private Provider<WardenPostingNotifier> _wardenPostingNotifierProvider;
     @Inject
     private Provider<GusNotifier> _gusNotifierProvider;
-    
+    @Inject
+    private Provider<CallbackNotifier> _callbackNotifierProvider;
+
+    public synchronized CallbackNotifier getCallbackNotifier() { return _callbackNotifierProvider.get(); }
+
     
     /**
      * Returns an instance of the Email Notifier.
