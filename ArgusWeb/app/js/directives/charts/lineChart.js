@@ -77,7 +77,7 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.updateFullscreenChartID= function (clickedChartID) {
                     fullscreenChartID = clickedChartID;
             };
-                
+
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
                 var dataHandler, filename, chartTitle;
@@ -126,14 +126,14 @@ angular.module('argus.directives.charts.lineChart', [])
 
                         // set $scope items from $resolve method above - only way to 'watch' $scope for changes in chart options.
                         $scope.menuOption = $scope.$resolve.menuOption;
-                        
+
                         $scope.chartId = chartId;
                         $scope.chartTitle = chartTitle;
 
                         // display current date in 'sample' format
                         var currDate = new Date();
                         var sampleDateFormat = "%-m/%-d/%y %H:%M:%S"; // "Sat Nov 5 1929 11:58"
-                        
+
                         $scope.dateFormatOutput = d3.timeFormat(sampleDateFormat)(currDate);
 
                         // update date format to show sample date in modal view
