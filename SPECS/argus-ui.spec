@@ -28,7 +28,9 @@ mkdir -p %{_stagerootdir}/%{_targetdir}
 cp -r %{_topdir}/ArgusWeb/app/*	 %{_stagerootdir}/%{_targetdir}
 
 %files
-/%{_targetdir}
+%defattr(755, sfdc, sfdc,755)
+%{_targetdir}/../../../..
+
 %pre
 
 %post

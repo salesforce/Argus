@@ -1,7 +1,7 @@
 # makefile for building Argus webservices rpms
 #change the following two props
 
-targetpath=/home/sfdc/argus/installed/
+targetpath=/home/sfdc/argustest/installed
 
 buildnumber=${BUILD_NUMBER}
 
@@ -13,7 +13,7 @@ client: build-all create-argusclient-rpm
 
 build-all:
 	rm -rf Argus
-	mvn install -Dmaven.test.skip=true
+	mvn install -Dmaven.test.skip=true -DskipDockerBuild
 
 package: create-arguswebservices-rpm create-argusclient-rpm create-argusui-rpm
 

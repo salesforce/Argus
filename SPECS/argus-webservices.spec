@@ -28,7 +28,9 @@ mkdir -p %{_stagerootdir}/%{_targetdir}
 cp %{_topdir}/ArgusWebServices/target/argus-webservices-*.war %{_stagerootdir}/%{_targetdir}
 
 %files
-/%{_targetdir}
+%defattr(755, sfdc, sfdc,755)
+%{_targetdir}/../../../..
+
 %pre
 
 %post

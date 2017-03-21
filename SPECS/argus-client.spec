@@ -28,7 +28,9 @@ mkdir -p %{_stagerootdir}/%{_targetdir}
 cp %{_topdir}/ArgusClient/target/argus-client-*-jar-with-dependencies.jar %{_stagerootdir}/%{_targetdir}
 
 %files
-/%{_targetdir}
+%defattr(755, sfdc, sfdc,755)
+%{_targetdir}/../../../..
+
 %pre
 
 %post
