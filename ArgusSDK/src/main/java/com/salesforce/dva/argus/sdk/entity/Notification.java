@@ -55,8 +55,10 @@ public class Notification extends Entity {
     private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
-    private boolean isSRActionable;
     private String customText;
+    private int severityLevel;
+    private boolean isSRActionable;
+    
 
     //~ Methods **************************************************************************************************************************************
 
@@ -224,6 +226,27 @@ public class Notification extends Entity {
     }
     
     /**
+     * Gets the severity level of notification
+     *
+     * @return  The severity level
+     */
+    public int getSeverityLevel() {
+        return severityLevel;
+    }
+
+    /**
+     * Sets the severity level of notification
+     *
+     * @param  severityLevel  The severity level
+     */
+    public void setSeverityLevel(int severityLevel) {
+        if (severityLevel < 1 || severityLevel > 5) {
+            throw new IllegalArgumentException("The severty level should be between 1-5");
+        }
+        this.severityLevel = severityLevel;
+    }    
+    
+    /**
 	 * @return the customText
 	 */
 	public String getCustomText() {
@@ -250,8 +273,9 @@ public class Notification extends Entity {
         hash = 59 * hash + (int) (this.cooldownExpiration ^ (this.cooldownExpiration >>> 32));
         hash = 59 * hash + Objects.hashCode(this.triggersIds);
         hash = 59 * hash + Objects.hashCode(this.alertId);
-        hash = 59 * hash + Objects.hashCode(this.isSRActionable);
         hash = 59 * hash + Objects.hashCode(this.customText);
+        hash = 59 * hash + Objects.hashCode(this.severityLevel);
+        hash = 59 * hash + Objects.hashCode(this.isSRActionable);
         return hash;
     }
 
@@ -298,7 +322,10 @@ public class Notification extends Entity {
         }
         if (!Objects.equals(this.isSRActionable, other.isSRActionable)) {
             return false;
-        } 
+        }
+        if (!Objects.equals(this.severityLevel, other.severityLevel)) {
+            return false;
+        }        
         if (!Objects.equals(this.customText, other.customText)) {
             return false;
         } 

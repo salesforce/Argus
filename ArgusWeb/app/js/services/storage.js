@@ -1,5 +1,5 @@
 angular.module('argus.services.storage', [])
-.factory('Storage', ['$rootScope', '$localStorage', function ($rootScope, $localStorage) {
+.factory('Storage', ['$rootScope', '$localStorage','$sessionStorage', function ($rootScope, $localStorage, $sessionStorage) {
     $rootScope.storage = $localStorage;
     return {
         set: function (key, value) {
@@ -14,6 +14,7 @@ angular.module('argus.services.storage', [])
         },
         reset: function () {
             $rootScope.storage.$reset();
+            $sessionStorage.$reset();
         }
     };
 }]);
