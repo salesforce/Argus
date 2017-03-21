@@ -361,7 +361,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
         module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
         module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
-        module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serizlizer());
+        module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serializer());
         mapper.registerModule(module);
         return mapper;
     }
