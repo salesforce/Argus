@@ -1,7 +1,7 @@
 # makefile for building Argus webservices rpms
 #change the following two props
 
-targetpath=/home/sfdc/argustest/installed
+targetpath=/home/sfdc/argus/installed
 
 buildnumber=${BUILD_NUMBER}
 
