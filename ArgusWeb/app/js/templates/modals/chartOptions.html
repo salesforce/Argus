@@ -111,12 +111,9 @@
 		</div>
 
 		<div class="col-md-6">
-			<div class="hide">
-			<input class="chkBox pointer" id="applySettingsAll-{{chartId}}" type="checkbox" ng-model="menuOption.applySettingsAll" title="Apply settings to all graphs" />
-			<label for="applySettingsAll-{{chartId}}">Apply settings to all graphs</label>
-			</div>
-
-			<button id="save" class="btn btn-primary floatR" ng-click="close()">Save settings</button>
+			<input class="chkBox pointer" id="applyToAllGraphs-{{chartId}}" type="checkbox" ng-click="updateSettingsToAllGraphs()" ng-model="applyToAllGraphs" title="Apply settings to all graphs" />
+			<label for="applyToAllGraphs-{{chartId}}">Apply settings to all graphs</label>
+			<button id="save" class="btn btn-primary floatR" ng-click="saveSettings()">Save settings</button>
 		</div>
 
 		<div class="clearAll"></div>

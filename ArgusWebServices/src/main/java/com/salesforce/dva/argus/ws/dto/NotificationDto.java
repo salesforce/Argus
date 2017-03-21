@@ -61,6 +61,7 @@ public class NotificationDto extends EntityDTO {
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private String customText;
+    private int severityLevel = 5;
     private boolean isSRActionable;
 
     //~ Methods **************************************************************************************************************************************
@@ -271,7 +272,26 @@ public class NotificationDto extends EntityDTO {
      */
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
-    }  
+    }
+    
+    /**
+     * Gets the severity level of notification
+     *
+     * @return  The severity level
+     */
+    public int getSeverityLevel() {
+        return severityLevel;
+    }
+
+    /**
+     * Sets the severity level of notification
+     *
+     * @param  severityLevel  The severity level (1-5, 1 - Most Severe, 5 - Least Severe)
+     * @throws  IllegalArgumentException  If an error occurs.
+     */
+    public void setSeverityLevel(int severityLevel) {
+        this.severityLevel = severityLevel;
+    }    
     
     @Override
     public Object createExample() {
@@ -287,6 +307,7 @@ public class NotificationDto extends EntityDTO {
         result.setModifiedDate(new Date());
         result.setName("sample-notification");
         result.setNotifierName("email");
+        result.setSeverityLevel(5);
         result.setSRActionable(false);
         result.setSubscriptions(Arrays.asList(new String[] { "joe.smith@salesforce.com" }));
         result.setCustomText("Sample custom text to include in the notification"); 

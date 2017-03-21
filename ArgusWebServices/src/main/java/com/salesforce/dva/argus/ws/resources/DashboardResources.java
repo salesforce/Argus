@@ -38,8 +38,8 @@ import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
@@ -67,202 +67,225 @@ import javax.ws.rs.core.Response.Status;
 @Description("Provides methods to manipulate dashboards.")
 public class DashboardResources extends AbstractResource {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    private DashboardService dService = ArgusWebServletListener.getSystem().getServiceFactory().getDashboardService();
+	private DashboardService dService = ArgusWebServletListener.getSystem().getServiceFactory().getDashboardService();
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    /**
-     * Return all dashboards in dashboard objects filtered by owner.
-     * @param   dashboardName  The dashboard name filter.
-     * @param   owner          The principlaUser owner for owner name filter.
-     *
-     * @return  The list of filtered dashboards in dashboard object.
-     */
-    private Set<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner) {
-        Set<Dashboard> result = new HashSet<>();
-        if (dashboardName != null && !dashboardName.isEmpty()) {
-            Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
+	/**
+	 * Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
+	 * @param   dashboardName  The dashboard name filter.
+	 * @param   owner          The principlaUser owner for owner name filter.
+	 *
+	 * @return  Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
+	 */
+	private Set<Dashboard> getDashboardsObj(String dashboardName, String ownerName, HttpServletRequest req) {
 
-            if (dashboard != null) {
-                result.add(dashboard);
-            }
-        } else {
-            if (owner.isPrivileged()) {
-                result.addAll(dService.findDashboards(null));
-            } else {
-                result.addAll(dService.findDashboardsByOwner(owner));
-                result.addAll(dService.findSharedDashboards());
-            }
-        }
-        return result;
-    }
+		PrincipalUser owner=null, loggedInUser=getRemoteUser(req);
+		if(ownerName !=null && ownerName.length()>0){
+			owner=userService.findUserByUsername(ownerName);
+			if(owner==null){
+				throw new WebApplicationException(ownerName + ": User does not exist.", Status.NOT_FOUND);
+			}
+		}else{
+			owner=loggedInUser;
+		}
 
-    /**
-     * Returns all dashboards' metadata filtered by owner.
-     *
-     * @param   req            The HTTP request.
-     * @param   dashboardName  The dashboard name filter.
-     * @param   ownerName      The owner name filter.
-     *
-     * @return  The list of filtered dashboards' metadata.
-     */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/meta")
-    @Description("Returns all dashboards' metadata.")
-    public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req,
-                                                @QueryParam("dashboardName") String dashboardName,
-                                                @QueryParam("owner") String ownerName) {
-        PrincipalUser owner = validateAndGetOwner(req, ownerName);
-        Set<Dashboard> result = getDashboardsObj(dashboardName, owner);
-        return DashboardDto.transformToDtoNoContent(new LinkedList<>(result));
-    }
+		Set<Dashboard> result = new HashSet<>();
+		if (dashboardName != null && !dashboardName.isEmpty()) {
+			Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
+			if (dashboard != null) {
+				result.add(dashboard);
+			}
+			if(!owner.equals(loggedInUser) && !loggedInUser.isPrivileged()){
+				_removeNonSharedDashboards(result);
+			}	
+		} else {
+			if(ownerName != null && ownerName.length()>0){ 
+				result.addAll(dService.findDashboardsByOwner(owner)); 
+				if(!owner.equals(loggedInUser) && !loggedInUser.isPrivileged()){
+					_removeNonSharedDashboards(result);
+				}	
+			}else{
+				if (loggedInUser.isPrivileged()) {
+					result.addAll(dService.findDashboards(null));
+				} else {
+					result.addAll(dService.findDashboardsByOwner(owner));
+					result.addAll(dService.findSharedDashboards());
+				}
+			}
+		}
+		return result;
+	}
 
-    /**
-     * Returns all dashboards filtered by owner.
-     *
-     * @param   req            The HTTP request.
-     * @param   dashboardName  The dashboard name filter.
-     * @param   ownerName      The owner name filter.
-     *
-     * @return  The list of filtered dashboards.
-     */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Description("Returns all dashboards.")
-    public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
-                                            @QueryParam("dashboardName") String dashboardName,
-                                            @QueryParam("owner") String ownerName) {
-        PrincipalUser owner = validateAndGetOwner(req, ownerName);
-        Set<Dashboard> result = getDashboardsObj(dashboardName, owner);
-        return DashboardDto.transformToDto(new LinkedList<>(result));
-    }
+	/**
+	 * Returns all dashboards' metadata filtered by owner.
+	 *
+	 * @param   req            The HTTP request.
+	 * @param   dashboardName  The dashboard name filter.
+	 * @param   ownerName      The owner name filter.
+	 *
+	 * @return  The list of filtered dashboards' metadata.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta")
+	@Description("Returns all dashboards' metadata.")
+	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req,
+			@QueryParam("dashboardName") String dashboardName,
+			@QueryParam("owner") String ownerName) {
+		Set<Dashboard> result = getDashboardsObj(dashboardName, ownerName,req);
+		return DashboardDto.transformToDtoNoContent(new ArrayList<>(result));
 
-    /**
-     * Returns a dashboard by its ID.
-     *
-     * @param   req          The HTTP request.
-     * @param   dashboardId  The dashboard ID to retrieve.
-     *
-     * @return  The corresponding dashboard.
-     *
-     * @throws  WebApplicationException  If no corresponding dashboard exists.
-     */
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{dashboardId}")
-    @Description("Returns a dashboard by its ID.")
-    public DashboardDto getDashboardByID(@Context HttpServletRequest req,
-                                         @PathParam("dashboardId") BigInteger dashboardId) {
-        if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
-            throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-        }
+	}
 
-        Dashboard dashboard = dService.findDashboardByPrimaryKey(dashboardId);
+	/**
+	 * Returns all dashboards filtered by owner.
+	 *
+	 * @param   req            The HTTP request.
+	 * @param   dashboardName  The dashboard name filter.
+	 * @param   ownerName      The owner name filter.
+	 *
+	 * @return  The list of filtered dashboards.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Description("Returns all dashboards.")
+	public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
+			@QueryParam("dashboardName") String dashboardName,
+			@QueryParam("owner") String ownerName) {
+		Set<Dashboard> result = getDashboardsObj(dashboardName, ownerName, req);
+		return DashboardDto.transformToDto(new ArrayList<>(result));
+	}
 
-        if (dashboard != null && !dashboard.isShared()) {
-            validateAndGetOwner(req, null);
-            validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
-        }
-        if (dashboard != null) {
-            return DashboardDto.transformToDto(dashboard);
-        }
-        throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-    }
+	/**
+	 * Returns a dashboard by its ID.
+	 *
+	 * @param   req          The HTTP request.
+	 * @param   dashboardId  The dashboard ID to retrieve.
+	 *
+	 * @return  The corresponding dashboard.
+	 *
+	 * @throws  WebApplicationException  If no corresponding dashboard exists.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/{dashboardId}")
+	@Description("Returns a dashboard by its ID.")
+	public DashboardDto getDashboardByID(@Context HttpServletRequest req,
+			@PathParam("dashboardId") BigInteger dashboardId) {
+		if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
+			throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+		}
 
-    /**
-     * Creates a dashboard.
-     *
-     * @param   req           The HTTP request.
-     * @param   dashboardDto  The dashboard to create.
-     *
-     * @return  The corresponding updated DTO for the created dashboard.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Description("Creates a dashboard.")
-    public DashboardDto createDashboard(@Context HttpServletRequest req, DashboardDto dashboardDto) {
-        if (dashboardDto == null) {
-            throw new WebApplicationException("Null dashboard object cannot be created.", Status.BAD_REQUEST);
-        }
+		Dashboard dashboard = dService.findDashboardByPrimaryKey(dashboardId);
 
-        PrincipalUser owner = validateAndGetOwner(req, dashboardDto.getOwnerName());
-        Dashboard dashboard = new Dashboard(getRemoteUser(req), dashboardDto.getName(), owner);
+		if (dashboard != null && !dashboard.isShared()) {
+			validateAndGetOwner(req, null);
+			validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
+		}
+		if (dashboard != null) {
+			return DashboardDto.transformToDto(dashboard);
+		}
+		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+	}
 
-        copyProperties(dashboard, dashboardDto);
-        return DashboardDto.transformToDto(dService.updateDashboard(dashboard));
-    }
+	/**
+	 * Creates a dashboard.
+	 *
+	 * @param   req           The HTTP request.
+	 * @param   dashboardDto  The dashboard to create.
+	 *
+	 * @return  The corresponding updated DTO for the created dashboard.
+	 *
+	 * @throws  WebApplicationException  If an error occurs.
+	 */
+	@POST
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Description("Creates a dashboard.")
+	public DashboardDto createDashboard(@Context HttpServletRequest req, DashboardDto dashboardDto) {
+		if (dashboardDto == null) {
+			throw new WebApplicationException("Null dashboard object cannot be created.", Status.BAD_REQUEST);
+		}
 
-    /**
-     * Updates a dashboard having the given ID.
-     *
-     * @param   req           The HTTP request.
-     * @param   dashboardId   The dashboard ID to update.
-     * @param   dashboardDto  The updated date.
-     *
-     * @return  The updated dashboard DTO.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("/{dashboardId}")
-    @Description("Updates a dashboard having the given ID.")
-    public DashboardDto updateDashboard(@Context HttpServletRequest req,
-                                        @PathParam("dashboardId") BigInteger dashboardId, DashboardDto dashboardDto) {
-        if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
-            throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-        }
-        if (dashboardDto == null) {
-            throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
-        }
+		PrincipalUser owner = validateAndGetOwner(req, dashboardDto.getOwnerName());
+		Dashboard dashboard = new Dashboard(getRemoteUser(req), dashboardDto.getName(), owner);
 
-        PrincipalUser owner = validateAndGetOwner(req, dashboardDto.getOwnerName());
-        Dashboard oldDashboard = dService.findDashboardByPrimaryKey(dashboardId);
+		copyProperties(dashboard, dashboardDto);
+		return DashboardDto.transformToDto(dService.updateDashboard(dashboard));
+	}
 
-        if (oldDashboard == null) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-        }
-        validateResourceAuthorization(req, oldDashboard.getOwner(), owner);
-        copyProperties(oldDashboard, dashboardDto);
-        oldDashboard.setModifiedBy(getRemoteUser(req));
-        return DashboardDto.transformToDto(dService.updateDashboard(oldDashboard));
-    }
+	/**
+	 * Updates a dashboard having the given ID.
+	 *
+	 * @param   req           The HTTP request.
+	 * @param   dashboardId   The dashboard ID to update.
+	 * @param   dashboardDto  The updated date.
+	 *
+	 * @return  The updated dashboard DTO.
+	 *
+	 * @throws  WebApplicationException  If an error occurs.
+	 */
+	@PUT
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Path("/{dashboardId}")
+	@Description("Updates a dashboard having the given ID.")
+	public DashboardDto updateDashboard(@Context HttpServletRequest req,
+			@PathParam("dashboardId") BigInteger dashboardId, DashboardDto dashboardDto) {
+		if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
+			throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+		}
+		if (dashboardDto == null) {
+			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
+		}
 
-    /**
-     * Deletes the dashboard having the given ID.
-     *
-     * @param   req          The HTTP request.
-     * @param   dashboardId  The dashboard ID to delete.
-     *
-     * @return  An empty body if the delete was successful.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{dashboardId}")
-    @Description("Deletes the dashboard having the given ID.")
-    public Response deleteDashboard(@Context HttpServletRequest req,
-                                    @PathParam("dashboardId") BigInteger dashboardId) {
-        if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
-            throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-        }
+		PrincipalUser owner = validateAndGetOwner(req, dashboardDto.getOwnerName());
+		Dashboard oldDashboard = dService.findDashboardByPrimaryKey(dashboardId);
 
-        Dashboard dashboard = dService.findDashboardByPrimaryKey(dashboardId);
+		if (oldDashboard == null) {
+			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+		}
+		validateResourceAuthorization(req, oldDashboard.getOwner(), owner);
+		copyProperties(oldDashboard, dashboardDto);
+		oldDashboard.setModifiedBy(getRemoteUser(req));
+		return DashboardDto.transformToDto(dService.updateDashboard(oldDashboard));
+	}
 
-        if (dashboard != null) {
-            validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
-            dService.deleteDashboard(dashboard);
-            return Response.status(Status.OK).build();
-        }
-        throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-    }
+	/**
+	 * Deletes the dashboard having the given ID.
+	 *
+	 * @param   req          The HTTP request.
+	 * @param   dashboardId  The dashboard ID to delete.
+	 *
+	 * @return  An empty body if the delete was successful.
+	 *
+	 * @throws  WebApplicationException  If an error occurs.
+	 */
+	@DELETE
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/{dashboardId}")
+	@Description("Deletes the dashboard having the given ID.")
+	public Response deleteDashboard(@Context HttpServletRequest req,
+			@PathParam("dashboardId") BigInteger dashboardId) {
+		if (dashboardId == null || dashboardId.compareTo(BigInteger.ZERO) < 1) {
+			throw new WebApplicationException("Dashboard Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
+		}
+
+		Dashboard dashboard = dService.findDashboardByPrimaryKey(dashboardId);
+
+		if (dashboard != null) {
+			validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
+			dService.deleteDashboard(dashboard);
+			return Response.status(Status.OK).build();
+		}
+		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
+	}
+
+	private void _removeNonSharedDashboards(Set<Dashboard> input){
+		input.removeIf(e->e.isShared()==false);
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

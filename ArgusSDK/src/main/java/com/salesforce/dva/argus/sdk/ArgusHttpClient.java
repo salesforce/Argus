@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -52,6 +53,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  * HTTP based API client for Argus.
@@ -142,15 +144,16 @@ class ArgusHttpClient {
         StringEntity entity = null;
 
         if (json != null) {
-            entity = new StringEntity(json);
-            entity.setContentType("application/json");
+            entity = new StringEntity(json, StandardCharsets.UTF_8.name());
+            entity.setContentEncoding(StandardCharsets.UTF_8.name());
+            entity.setContentType(ContentType.APPLICATION_JSON.getMimeType());
         }
         switch (requestType) {
             case POST:
 
                 HttpPost post = new HttpPost(url);
-
                 post.setEntity(entity);
+
                 return _httpClient.execute(post, _httpContext);
             case GET:
 
