@@ -33,6 +33,7 @@ angular.module('argus', [
   'angulartics',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
+  'angularScreenfull',
   'argus.urlConfig',
   'argus.config',
   'argus.filters',
@@ -101,7 +102,8 @@ angular.module('argus.services', [
   'argus.services.utils',
   'argus.services.jsonFlatten',
   'argus.services.tableListService',
-  'argus.services.downloadHelper'
+  'argus.services.downloadHelper',
+  'argus.services.agTableService'
 ]);
 
 // Controllers
@@ -167,6 +169,7 @@ require("./services/utilService");
 require("./services/jsonUnflatten");
 require("./services/tableListService");
 require("./services/downloadHelper");
+require("./services/agTableService")
 
 require("./services/charts/chartOptions");
 require("./services/charts/chartRendering");

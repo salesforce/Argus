@@ -1,7 +1,7 @@
 angular.module('argus.services.charts.rendering', [])
-.service('ChartRenderingService', [function() {
+.service('ChartRenderingService', ['UtilService', function(UtilService) {
 		'use strict';
-
+        //TODO: clean up the highchart
 		var service = {
 				getChart: function(chartId, highChartOptions) {
 						if (!chartId) return;
@@ -12,7 +12,9 @@ angular.module('argus.services.charts.rendering', [])
 
 				setChartContainer: function(element, chartId, cssOpts) {
 						if (!element || !chartId) return;
-						element.prepend('<div id='+ chartId +' class="chartContainer ' + cssOpts +'"></div>');
+						element.prepend(
+						    '<div id='+ chartId +' class="chartContainer ' + cssOpts +'"></div>'
+                        );
 				},
 
 				loadChart: function(chartId, highChartOptions) {
@@ -48,7 +50,7 @@ angular.module('argus.services.charts.rendering', [])
 				},
 
 				updateIndicatorStatus: function(attributes, lastStatusVal) {
-					if (!attributes || !lastStatusVal) return;
+					if (attributes === undefined || lastStatusVal === undefined) return;
 
                     var lastStatusValNum = Number(lastStatusVal);
                     var lowValNum = Number(attributes.lo);
@@ -59,11 +61,11 @@ angular.module('argus.services.charts.rendering', [])
                     if (isNaN(highValNum)) console.log(attributes.name + "'s hi " + errorMsg);
 
 					if (lastStatusValNum < lowValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('red');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('red');
 					} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('orange');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('orange');
 					} else if (lastStatusValNum > highValNum) {
-							$('#' + attributes.name + '-status').removeClass('red orange green').addClass('green');
+							$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('green');
 					}
 				}
 		};
