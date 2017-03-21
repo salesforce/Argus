@@ -3,6 +3,22 @@
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
 
+    //----------------default chart values----------------------
+
+    var dashboardId = $routeParams.dashboardId;
+
+    // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
+    var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
+    var shortDate = '%b %e, %H:%M';
+    var numericalDate = '%-m/%-d/%y %H:%M:%S';
+    var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
+
+    // default formats & settings for chart options
+    var rawDataFormat = ',';
+    var sampleCustomFormat = '0,.8';     // scientific notation
+    var defaultYaxis = '.3s';
+    var defaultTicksYaxis = '5';
+
     //--------------------resize all charts-------------------
     var resizeTimeout = 250; //the time for resize function to fire
     var resizeJobs = [];
@@ -47,22 +63,6 @@ angular.module('argus.directives.charts.lineChart', [])
         }
     }
 
-    //----------------default chart values----------------------
-
-    var dashboardId = $routeParams.dashboardId;
-
-    // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
-    var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
-    var shortDate = '%b %e, %H:%M';
-    var numericalDate = '%-m/%-d/%y %H:%M:%S';
-    var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
-
-    // default formats & settings for chart options
-    var rawDataFormat = ',';
-    var sampleCustomFormat = '0,.8';     // scientific notation
-    var defaultYaxis = '.3s';
-    var defaultTicksYaxis = '5';
-
 
     return {
         restrict: 'E',
@@ -73,9 +73,9 @@ angular.module('argus.directives.charts.lineChart', [])
             dateConfig: '=dateconfig'
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
-        controller: ['$scope', '$filter', '$uibModal', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, Metrics, DownloadHelper, growl) {
+        controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
             $scope.updateFullscreenChartID= function (clickedChartID) {
-                    fullscreenChartID = clickedChartID;
+                fullscreenChartID = clickedChartID;
             };
 
             $scope.downloadData = function (queryFunction) {
@@ -172,12 +172,24 @@ angular.module('argus.directives.charts.lineChart', [])
                             $scope.menuOption = menuOption;
                         };
 
-                        $scope.applyToAllGraphs = function () {
-                            console.log('apply to all graphs');
-
+                        $scope.updateSettingsToAllGraphs = function () {
                             // update all graphs on dashboard with current scope.menuOption settings
+                            if ($scope.applyToAllGraphs) {
+                                //update localStorage for each chart
+                                resizeJobs.forEach(function (job) {
+                                    Storage.set('menuOption_' + dashboardId + '_' + job.chartID, $scope.menuOption);
+                                });
+                            }
                         };
 
+                        $scope.saveSettings = function () {
+                            optionsModal.close();
+                            if ($scope.applyToAllGraphs) {
+                                // manually refresh page so all charts are updated with settings
+                                $window.location.reload();
+                            }
+                        };
+                        
                         $scope.close = function () {
                             optionsModal.close();
                         };

@@ -112,7 +112,8 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         Map<Long, List<Double>> collated = collate(metrics);
         Map<Long, Double> reducedDatapoints = reduce(collated, constants, metrics);
         String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
-        Metric newMetric = new Metric(defaultScope, newMetricName);
+        String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
+        Metric newMetric = new Metric(newScopeName, newMetricName);
 
         newMetric.setDisplayName(distiller.getDisplayName());
         newMetric.setUnits(distiller.getUnits());
