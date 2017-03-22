@@ -74,10 +74,10 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
-            $scope.inFullscreen = false;
+            $scope.changeToFullscreen = false;
             $scope.updateFullscreenChartID= function (clickedChartID) {
                 fullscreenChartID = clickedChartID;
-                $scope.inFullscreen = !($scope.inFullscreen);
+                $scope.changeToFullscreen = screen.height !== window.innerHeight; // get the size of chart's wrapper element
             };
 
             $scope.downloadData = function (queryFunction) {
@@ -1198,11 +1198,13 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (series === "series" || !series) {
                     return;
                 }
-
-                if (scope.inFullscreen) {
+                var fullscreenHeight = screen.height * 0.9;
+                var alreadyInFullscreen = containerHeight === fullscreenHeight && containerWidth === screen.width;
+                // using the button to toggle on and off full screen
+                if (scope.changeToFullscreen && !alreadyInFullscreen) {
                     // force the graph to be the same size as the screen
                     containerWidth = screen.width;
-                    containerHeight = screen.height * 0.9;
+                    containerHeight = fullscreenHeight;
                 } else {
                     // default containerHeight will be used
                     containerHeight = defaultContainerHeight;
@@ -1291,8 +1293,8 @@ angular.module('argus.directives.charts.lineChart', [])
                                   .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")");
                     }
 
-                    if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-                        tempX[1].getTime() == x2.domain()[1].getTime()) {
+                    if (tempX[0].getTime() === x2.domain()[0].getTime() &&
+                        tempX[1].getTime() === x2.domain()[1].getTime()) {
                         reset();
                     } else {
                         //restore the zoom&brush
