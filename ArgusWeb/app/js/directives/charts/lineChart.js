@@ -74,8 +74,10 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
+            $scope.inFullscreen = false;
             $scope.updateFullscreenChartID= function (clickedChartID) {
                 fullscreenChartID = clickedChartID;
+                $scope.inFullscreen = !($scope.inFullscreen);
             };
 
             $scope.downloadData = function (queryFunction) {
@@ -189,7 +191,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                 $window.location.reload();
                             }
                         };
-                        
+
                         $scope.close = function () {
                             optionsModal.close();
                         };
@@ -286,7 +288,7 @@ angular.module('argus.directives.charts.lineChart', [])
             scope.dashboardId = dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId + '_' + chartId);
-            
+
             // set scope values, get them from the local storage before setting default
             scope.menuOption = {
                 dateFormat: (menuOption && menuOption.dateFormat) ? menuOption.dateFormat : numericalDate,
@@ -301,7 +303,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 isBrushMainOn: menuOption ? menuOption.isBrushMainOn : false,
                 isWheelOn: menuOption ? menuOption.isWheelOn : false,
-                
+
                 // for 'smallChart' only, does not display timeline brush below graph
                 isBrushOn: !chartOptions.smallChart,
 
@@ -365,7 +367,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            
+
             // date settings.  tmpDate is default is chart option 'dateFormat' is not set.
             var tmpDate = scope.menuOption.dateFormat ? scope.menuOption.dateFormat : numericalDate;
             var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(tmpDate);
@@ -885,7 +887,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // TODO: move to filter
             function trimMetricName(metricName) {
                 if (!metricName) return;
-                
+
                 var startVal, endVal;
                 startVal = (scope.menuOption.leadingNum > 0) ? scope.menuOption.leadingNum : null;
                 endVal = (scope.menuOption.trailingNum > 0) ? scope.menuOption.trailingNum : null;
@@ -1197,16 +1199,10 @@ angular.module('argus.directives.charts.lineChart', [])
                     return;
                 }
 
-                if (window.innerHeight === screen.height) {
-                    // in full screen mode, get the div size
-                    if (container.offsetHeight !== window.innerHeight || container.offsetWidth !== window.innerWidth) {
-                        // to prevent full screen delay causing resize to a non full screen size
-                        containerWidth = window.innerWidth;
-                        containerHeight = window.innerHeight * 0.9;
-                    } else {
-                        containerWidth = container.offsetWidth;
-                        containerHeight = container.offsetHeight * 0.9;
-                    }
+                if (scope.inFullscreen) {
+                    // force the graph to be the same size as the screen
+                    containerWidth = screen.width;
+                    containerHeight = screen.height * 0.9;
                 } else {
                     // default containerHeight will be used
                     containerHeight = defaultContainerHeight;
