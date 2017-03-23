@@ -87,7 +87,7 @@ public class NormalizeTransformWrap implements Transform {
             return metrics;
         }
 
-        // do a union tranform, the reducer perform a sum calculation
+        // do a union transform, the reducer perform a sum calculation
         Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
         List<Metric> sumUnitMetric = unionTransform.transform(metrics);
 
