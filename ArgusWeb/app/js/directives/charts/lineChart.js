@@ -1199,8 +1199,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (series === "series" || !series) {
                     return;
                 }
-
-                if (container.offsetHeight === window.innerHeight && scope.changeToFullscreen) {
+                if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && scope.changeToFullscreen) {
                     // set the graph size to be the same as the screen
                     containerWidth = screen.width;
                     containerHeight = screen.height * 0.9;
