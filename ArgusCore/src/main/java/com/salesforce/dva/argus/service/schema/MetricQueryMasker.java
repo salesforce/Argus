@@ -27,18 +27,17 @@ public class MetricQueryMasker {
 	 * Remove the masks from the query, using the given replacement map. The tagExpression will be URL encoded, to allow
 	 * the usage of tsdb filters through the rest call to the openTSDB.
 	 *
-	 * @param metricQuery - the metric query to demask
+	 * @param metricQuery the metric query to demask
 	 */
-	public MetricQuery demaskQuery(final MetricQuery metricQuery) {
-
-		MetricQuery demaskedQuery = new MetricQuery(metricQuery);
+	public void demaskQuery(MetricQuery metricQuery) {
 
 		Map<String, String> demaskedTags = new LinkedHashMap<>();
 		for (Map.Entry<String, String> tag : metricQuery.getTags().entrySet()) {
 			String tagExpression = tag.getValue();
 			if (replacementMap.containsKey(tagExpression)) {
-				_logger.debug("Replacing masked expression {}.", tagExpression);
-				tagExpression = replacementMap.get(tagExpression);
+				String demaskedExpression = replacementMap.get(tagExpression);
+				_logger.debug("Replacing masked expression [{}] by [{}].", tagExpression, demaskedExpression);
+				tagExpression = demaskedExpression;
 			}
 			try {
 				demaskedTags.put(tag.getKey(), URLEncoder.encode(tagExpression, "UTF-8"));
@@ -48,15 +47,13 @@ public class MetricQueryMasker {
 						tagExpression), e);
 			}
 		}
-		demaskedQuery.setTags(demaskedTags);
-
-		return demaskedQuery;
+		metricQuery.setTags(demaskedTags);
 	}
 
 	/**
 	 * Mask the filters in the given query. Will exchange the tagExpression with a hash of the expression.
 	 *
-	 * @param query - the query to mask
+	 * @param query the query to mask
 	 * @return the masked query
 	 */
 	public MetricQuery maskQuery(final MetricQuery query) {
@@ -69,8 +66,8 @@ public class MetricQueryMasker {
 			String tagExpression = tag.getValue();
 			String maskedExpression = tagExpression;
 			if (checkFilterExpression(tagExpression)) {
-				_logger.debug("Mask expression {}.", tagExpression);
 				maskedExpression = String.valueOf(tagExpression.hashCode());
+				_logger.debug("Mask expression [{}] by [{}}.", tagExpression, maskedExpression);
 				replacementMap.put(maskedExpression, tagExpression);
 			}
 			maskedTags.put(tag.getKey(), maskedExpression);

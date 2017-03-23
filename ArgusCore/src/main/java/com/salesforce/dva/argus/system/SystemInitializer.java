@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -184,12 +185,11 @@ final class SystemInitializer extends AbstractModule {
 
     private Properties getJpaProperties(Properties properties) {
         Properties jpaProperties = new Properties();
-        for (Object rawPropertyNameWithPrefix : properties.keySet()) {
-            String propertyNameWithPrefix = (String) rawPropertyNameWithPrefix;
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            String propertyNameWithPrefix = (String) entry.getKey();
             if (propertyNameWithPrefix.startsWith(JPA_PROPERTY_PREFIX)) {
                 String propertyName = propertyNameWithPrefix.substring(JPA_PROPERTY_PREFIX.length());
-                Object propertyValue = properties.get(rawPropertyNameWithPrefix);
-                jpaProperties.put(propertyName, propertyValue);
+                jpaProperties.put(propertyName, entry.getValue());
             }
         }
         return jpaProperties;

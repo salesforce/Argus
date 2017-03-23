@@ -1,11 +1,7 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -15,8 +11,6 @@ import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the DiscoveryService, that decorates the {@link CachedDiscoveryService} to allow openTSDB 2.x
@@ -30,8 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class TSDBAwareDiscoveryService extends DefaultService implements DiscoveryService {
-
-	private final Logger _logger = LoggerFactory.getLogger(getClass());
 
 	@Inject
 	private CachedDiscoveryService _discoveryService;
@@ -89,19 +81,15 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	public List<MetricQuery> getMatchingQueries(MetricQuery query) {
 
 		MetricQuery queryToDiscover = new MetricQuery(query);
-
 		MetricQueryMasker metricQueryMasker = new MetricQueryMasker();
 
 		if (isTSDBRegexQuery(query)) {
 			queryToDiscover = metricQueryMasker.maskQuery(query);
 		}
 
-		List<MetricQuery> resultQueries = _discoveryService.getMatchingQueries(queryToDiscover);
-
+		final List<MetricQuery> resultQueries = _discoveryService.getMatchingQueries(queryToDiscover);
 		if (metricQueryMasker.isQueryMasked()) {
-			for (MetricQuery metricQuery : resultQueries) {
-				metricQueryMasker.demaskQuery(metricQuery);
-			}
+			resultQueries.forEach(metricQueryMasker::demaskQuery);
 		}
 
 		return resultQueries;
@@ -110,7 +98,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	/**
 	 * Check if the given query has a tag that includes a tsdb filter
 	 *
-	 * @param query - the query to check
+	 * @param query the query to check
 	 * @return is there a filter?
 	 */
 	private boolean isTSDBRegexQuery(MetricQuery query) {
@@ -126,10 +114,11 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	/**
 	 * Check if the given expression is a tsdb filter
 	 *
-	 * @param tagExpression - the expression to check
+	 * @param tagExpression the expression to check
 	 * @return is there a filter?
 	 */
 	public static boolean checkFilterExpression(String tagExpression) {
+
 		for (String tsdbFilter : TSDB_FILTERS) {
 			if (tagExpression.startsWith(tsdbFilter)) {
 				return true;

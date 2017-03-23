@@ -25,7 +25,7 @@ angular.module('argus.config', [])
     function ($routeProvider, $httpProvider, growlProvider, paginationTemplateProvider, $analyticsProvider) {
         $httpProvider.defaults.withCredentials = true;
         $httpProvider.interceptors.push('UnauthorizedInterceptor');
-        paginationTemplateProvider.setPath('bower_components/angular-utils-pagination/dirPagination.tpl.html');
+        paginationTemplateProvider.setPath('node_modules/angular-utils-pagination/dirPagination.tpl.html');
         $routeProvider.
             when('/viewmetrics', {
                 templateUrl: 'js/templates/viewmetrics.html',
