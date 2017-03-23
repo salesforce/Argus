@@ -559,7 +559,7 @@ public class HbaseSchemaService extends DefaultService implements SchemaService 
             j++;
         }
 
-        // If the first wildcard character is OR, then we have to backtrack until the last ROW_SEPARATOR occurence.
+        // If the first wildcard character is OR, then we have to backtrack until the last ROW_SEPARATOR occurrence.
         if (i < scopeTableRowKey.length && scopeTableRowKey[i] == '|') {
             while (i >= 0 && scopeTableRowKey[i] != ROWKEY_SEPARATOR) {
                 i--;

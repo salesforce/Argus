@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Filter transform is used by transform functions which cull the metric based on the result of evaluation againts their datapoints.
+ * Filter transform is used by transform functions which cull the metric based on the result of evaluation against their datapoints.
  *
  * <p>So far, this transform funcs use this filter ABOVE, BELOW, HIGHEST, LOWEST, SORT, DOWNSAMPLER</p>
  *

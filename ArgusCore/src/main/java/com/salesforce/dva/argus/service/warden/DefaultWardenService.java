@@ -581,7 +581,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
             try {
                 _disableWardenAlertsThatAreNotUpdated();
             } catch (Exception ex) {
-                _logger.warn("Error occured Reason: {}", ex.getMessage());
+                _logger.warn("Error occurred Reason: {}", ex.getMessage());
             }
         }
     }
