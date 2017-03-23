@@ -628,6 +628,8 @@ public class AlertResources extends AbstractResource {
 					notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
 			notification.setCustomText(notificationDto.getCustomText());
 
+			// TODO: 14.12.16 validate notification
+
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 
 			List<Notification> notifications = new ArrayList<Notification>(alert.getNotifications());

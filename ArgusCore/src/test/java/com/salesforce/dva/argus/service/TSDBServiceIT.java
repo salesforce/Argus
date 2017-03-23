@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
@@ -153,8 +152,73 @@ public class TSDBServiceIT extends AbstractTest {
             service.dispose();
         }
     }
+    
+    @Test
+    public void testGetMetricsTagValueTooLarge() throws InterruptedException {
+    	
+    	TSDBService service = system.getServiceFactory().getTSDBService();
+        List<Metric> expected = createMetricWithMultipleTags("tagKey", 100);
 
-    private List<MetricQuery> toQueries(List<Metric> expected) {
+        try {
+            service.putMetrics(expected);
+            Thread.sleep(SLEEP_AFTER_PUT_IN_MILLIS);
+
+            MetricQuery query = toWildcardOrQuery(expected, "tagKey");
+            List<Metric> actual = _coalesceMetrics(service.getMetrics(Arrays.asList(query)));
+
+            Assert.assertEquals(new HashSet<>(expected), new HashSet<>(actual));
+            for (Metric metric : expected) {
+                Metric actualMetric = actual.remove(actual.indexOf(metric));
+
+                assertEquals(metric.getDisplayName(), actualMetric.getDisplayName());
+                assertEquals(metric.getUnits(), actualMetric.getUnits());
+                assertEquals(metric.getDatapoints(), actualMetric.getDatapoints());
+            }
+        } finally {
+            service.dispose();
+        }
+    	
+    }
+
+    private MetricQuery toWildcardOrQuery(List<Metric> metrics, String commonTagKey) {
+    	Metric metric = metrics.get(0);
+    	TreeMap<Long, Double> datapoints = new TreeMap<>(metric.getDatapoints());
+        Long start = datapoints.firstKey();
+        Long end = datapoints.lastKey();
+
+        Map<String, String> tags = new HashMap<>();
+        StringBuilder sb = new StringBuilder();
+        for(Metric m : metrics) {
+        	sb.append(m.getTag(commonTagKey)).append("|");
+        }
+        tags.put(commonTagKey, sb.substring(0, sb.length() - 1));
+        
+        return new MetricQuery(metric.getScope(), metric.getMetric(), tags, start, end);
+	}
+
+	private List<Metric> createMetricWithMultipleTags(String commonTagKey, int tagValueCount) {
+    	List<Metric> result = new ArrayList<>(tagValueCount);
+
+    	String scope = createRandomName();
+    	String metric = createRandomName();
+    	long timestamp = System.currentTimeMillis() - 60000L;
+        for(int i=0; i<tagValueCount; i++) {
+        	Metric m = new Metric(scope, metric);
+        	Map<Long, Double> datapoints = new HashMap<>();
+        	datapoints.put(timestamp, Double.valueOf(i));
+        	
+        	Map<String, String> tags = new HashMap<>();
+        	tags.put(commonTagKey, "someverylooooooooooooooooooooooooooooooooooooooooongTagValue" + i);
+        	
+        	m.setDatapoints(datapoints);
+        	m.setTags(tags);
+        	result.add(m);
+        }
+        
+        return result;
+	}
+
+	private List<MetricQuery> toQueries(List<Metric> expected) {
         List<MetricQuery> queries = new LinkedList<>();
 
         for (Metric metric : expected) {

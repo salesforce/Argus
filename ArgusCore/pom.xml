@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>argus</artifactId>
@@ -90,7 +91,9 @@
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>
-                        <goals><goal>add-source</goal></goals>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
                         <configuration>
                             <sources>
                                 <source>${project.build.directory}/generated-sources/javacc</source>
@@ -127,7 +130,7 @@
                 <directory>${project.build.directory}/generated-test-resources</directory>
                 <filtering>true</filtering>
             </testResource>
-        </testResources>        
+        </testResources>
     </build>
     <reporting>
         <plugins>
@@ -287,7 +290,7 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
-            </exclusions>            
+            </exclusions>
             <version>3.4.6</version>
         </dependency>
         <dependency>
@@ -327,7 +330,7 @@
             <version>2.9.0</version>
             <type>jar</type>
             <scope>compile</scope>
-        </dependency>		
+        </dependency>
         <dependency>
             <groupId>postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -342,8 +345,8 @@
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz-jobs</artifactId>
             <version>2.2.2</version>
-        </dependency>        
-        <dependency>	
+        </dependency>
+        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
             <version>0.98.8-hadoop2</version>
@@ -382,6 +385,11 @@
             <version>3.6.14</version>
         </dependency>
         <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>ST4</artifactId>
+            <version>4.0.7</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.phoenix</groupId>
             <artifactId>phoenix-core</artifactId>
             <version>4.9.0-HBase-0.98</version>
@@ -405,9 +413,9 @@
             </exclusions>
         </dependency>
         <dependency>
-              <groupId>org.apache.curator</groupId>
-              <artifactId>curator-x-discovery</artifactId>
-              <version>2.10.0</version>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-x-discovery</artifactId>
+            <version>2.10.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
