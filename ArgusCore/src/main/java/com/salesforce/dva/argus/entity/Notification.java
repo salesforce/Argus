@@ -397,7 +397,7 @@ public class Notification extends JPAEntity implements Serializable {
         }
         this.severityLevel = severityLevel;
     }
-    
+
 	public Map<String, Boolean> getActiveStatusMap() {
 		return activeStatusByTriggerAndMetric;
 	}

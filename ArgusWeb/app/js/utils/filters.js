@@ -105,6 +105,14 @@ angular.module('argus.filters', [])
 	};
 })
 
+// all date/times come back from the server in UTC - reformat to utc (browser) time
+	.filter('_date_time_utc', function() {
+		return function(input) {
+			if (input === undefined || input === null || input === 0) return 'n/a';
+			return moment.utc(input).format('MMM Do, YYYY h:mm:ss a');
+		};
+	})
+
 // short version of date_time, format:  Jan 10th
 .filter('_short_date_time_', function() {
 	return function(input) {
@@ -181,4 +189,21 @@ angular.module('argus.filters', [])
 	};
 }])
 
+.filter('agTableSort', function(){
+	return function(item, sortedIndices){
+		var newArray =[];
+		if(!sortedIndices || sortedIndices.length ==0){
+			for(var key in item){
+				if(key !=='timestamp'){
+					newArray.push(item[key]);
+				}
+			}
+		}else{
+			for(var i = 0; i< sortedIndices.length; i++) {
+				newArray.push(item[sortedIndices[i]]);
+			}
+		}
+		return newArray;
+	};
+})
 ;

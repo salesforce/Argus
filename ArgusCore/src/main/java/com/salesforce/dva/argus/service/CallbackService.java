@@ -10,7 +10,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 
 /**
- * ToDo: insert javadoc
+ * Send notifications to a HTTP endpoint.
  *
  * @author svenkrause
  */
