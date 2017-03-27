@@ -163,7 +163,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                 isTooltipSortOn: true,
                                 rawTooltip: true,
                                 customTooltipFormat: sampleCustomFormat,
-                                colorPallete: 'schemeCategory20',
+                                colorPalette: 'schemeCategory20',
                                 isTooltipOn: true
                             };
 
@@ -311,7 +311,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 rawTooltip: menuOption ? menuOption.rawTooltip : true,
                 customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
 
-                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : 'schemeCategory20',
+                colorPalette: (menuOption && menuOption.colorPalette) ? menuOption.colorPalette : 'schemeCategory20',
 
                 // TODO: refactor code base for no 'isTooltipOn' property
                 isTooltipOn: true
@@ -394,7 +394,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var z = d3.scaleOrdinal(d3.schemeCategory20);
 
             function setColorScheme() {
-                switch (scope.menuOption.colorPallete) {
+                switch (scope.menuOption.colorPalette) {
                     case 'schemeCategory10':
                         z = d3.scaleOrdinal(d3.schemeCategory10);
                         break;
