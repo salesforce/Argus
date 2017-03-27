@@ -48,7 +48,7 @@ public class PhoenixTSDBEngine {
 			stmt = connection.createStatement();
 			stmt.executeUpdate(createViewSql);
 		} catch(SQLException sqle) {
-			 throw new SystemException("Database access error occured or "
+			 throw new SystemException("Database access error occurred or "
 			 		+ "createStatement() was called on a closed connection.", sqle);
 		} finally {
 			if(stmt != null) {
