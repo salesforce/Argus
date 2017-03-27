@@ -34,6 +34,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Batch;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
@@ -73,8 +75,9 @@ public class BatchService extends EndpointService {
      * @return  The ID of the batch.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public BigInteger createBatch(List<String> expressions, int ttl) throws IOException {
+    public BigInteger createBatch(List<String> expressions, int ttl) throws IOException, TokenExpiredException {
         StringBuilder requestUrl = new StringBuilder(METRIC_RESOURCE).append("/batch?");
 
         expressions.stream().forEach((expression) -> { requestUrl.append("expression=").append(expression); });
@@ -94,8 +97,9 @@ public class BatchService extends EndpointService {
      * @param   batchId  The ID of the batch to delete.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public void deleteBatch(BigInteger batchId) throws IOException {
+    public void deleteBatch(BigInteger batchId) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/" + batchId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.DELETE, requestUrl, null);
 
@@ -110,8 +114,9 @@ public class BatchService extends EndpointService {
      * @return  The batch.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Batch getBatch(BigInteger batchId) throws IOException {
+    public Batch getBatch(BigInteger batchId) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/" + batchId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
@@ -125,8 +130,9 @@ public class BatchService extends EndpointService {
      * @return  The list of batches owned by the user.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Map<String, String> getBatches() throws IOException {
+    public Map<String, String> getBatches() throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 

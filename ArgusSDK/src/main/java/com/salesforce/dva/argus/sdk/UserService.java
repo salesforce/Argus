@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.PrincipalUser;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.math.BigInteger;
 
@@ -68,8 +70,9 @@ public class UserService extends EndpointService {
      * @return  The information for the specified user.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public PrincipalUser getUser(BigInteger id) throws IOException {
+    public PrincipalUser getUser(BigInteger id) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/id/" + id.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
@@ -85,8 +88,9 @@ public class UserService extends EndpointService {
      * @return  The information for the specified user.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public PrincipalUser getUser(String username) throws IOException {
+    public PrincipalUser getUser(String username) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/username/" + username;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 

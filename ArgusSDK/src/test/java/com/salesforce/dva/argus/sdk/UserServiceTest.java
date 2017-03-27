@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.PrincipalUser;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -41,7 +43,7 @@ import static org.junit.Assert.*;
 public class UserServiceTest extends AbstractTest {
 
     @Test
-    public void testGetUserById() throws IOException {
+    public void testGetUserById() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/UserServiceTest.json"))) {
             UserService userService = argusService.getUserService();
             PrincipalUser result = userService.getUser(BigInteger.ONE);
@@ -52,7 +54,7 @@ public class UserServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetUserByUsername() throws IOException {
+    public void testGetUserByUsername() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/UserServiceTest.json"))) {
             UserService userService = argusService.getUserService();
             PrincipalUser result = userService.getUser("admin");
@@ -62,7 +64,7 @@ public class UserServiceTest extends AbstractTest {
         }
     }
 
-    PrincipalUser _constructAdminUser() throws IOException {
+    PrincipalUser _constructAdminUser() throws IOException, TokenExpiredException {
         PrincipalUser result = new PrincipalUser();
 
         result.setCreatedById(BigInteger.ONE);
