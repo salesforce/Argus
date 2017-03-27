@@ -367,7 +367,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
 			return Collections.emptyList();
 		} catch (Exception e) {
-			throw new SystemException("Exception occured in getting results for query: " + query, e);
+			throw new SystemException("Exception occurred in getting results for query: " + query, e);
 		}
 
     }
@@ -479,7 +479,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		} catch (TimeoutException e) {
 			_logger.warn("Timed out while waiting to obtain results.");
 		} catch (Exception e) {
-			throw new SystemException("Exception occured in getting results for query", e);
+			throw new SystemException("Exception occurred in getting results for query", e);
 		}
 		return null;
 	}
@@ -628,7 +628,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 			_logger.warn("Timed out while waiting to obtain results for query: {}. Will return an empty list.", query);
 			return Collections.emptyList();
 		} catch (Exception e) {
-			throw new SystemException("Exception occured in getting results for query: " + query, e);
+			throw new SystemException("Exception occurred in getting results for query: " + query, e);
 		}
         
     }
@@ -662,7 +662,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             deferred.addErrback(new Callback<Void, Exception>() {
                 @Override
                 public Void call(Exception arg) throws Exception {
-                    _logger.warn("Error occured while shutting down asynchbase client.");
+                    _logger.warn("Error occurred while shutting down asynchbase client.");
                     return null;
                 }
             });
@@ -726,7 +726,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         deferred.addErrback(new Callback<Object, Exception>() {
             @Override
             public Object call(Exception e) throws Exception {
-                throw new SystemException("Error occured while trying to execute put().", e);
+                throw new SystemException("Error occurred while trying to execute put().", e);
             }
         });
         
@@ -797,7 +797,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             j++;
         }
 
-        // If the first wildcard character is OR, then we have to backtrack until the last ROW_SEPARATOR occurence.
+        // If the first wildcard character is OR, then we have to backtrack until the last ROW_SEPARATOR occurrence.
         if (i < scopeTableRowKey.length && scopeTableRowKey[i] == '|') {
             while (i >= 0 && scopeTableRowKey[i] != ROWKEY_SEPARATOR) {
                 i--;

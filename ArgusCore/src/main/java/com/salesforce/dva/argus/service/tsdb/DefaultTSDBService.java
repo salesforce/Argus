@@ -516,7 +516,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 if (errorMap != null) {
                     throw new SystemException("Error : " + errorMap.toString());
                 } else {
-                    throw new SystemException("Status code: " + status + " .  Unknown error occured. ");
+                    throw new SystemException("Status code: " + status + " .  Unknown error occurred. ");
                 }
             } else {
                 return extractStringResponse(response);

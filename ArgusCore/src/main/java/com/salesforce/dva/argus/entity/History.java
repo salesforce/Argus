@@ -399,7 +399,7 @@ public class History implements Serializable, Identifiable {
         STARTED("Job started."),
         SUCCESS("Job successfully completed."),
         FAILURE("Job failed."),
-        ERROR("Exception occured."),
+        ERROR("Exception occurred."),
         INTERRUPTED("Job interrupted."),
         TIMED_OUT("Job timed out."),
         QUEUED("Job queued.");

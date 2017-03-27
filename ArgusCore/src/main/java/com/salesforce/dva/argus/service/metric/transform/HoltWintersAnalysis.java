@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Performas a Holt-Winters analysis.
+ * Performs a Holt-Winters analysis.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
