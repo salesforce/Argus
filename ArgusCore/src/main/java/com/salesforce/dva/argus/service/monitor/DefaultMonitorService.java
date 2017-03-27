@@ -195,7 +195,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				
 				@Override
 				public void uncaughtException(Thread t, Throwable e) {
-					_logger.error("Uncaught exception occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
+					_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
 					t.interrupt();
 				}
 			});
@@ -631,7 +631,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
                     try {
                         _pushCounters();
                     } catch (Exception ex) {
-                        _logger.error("Error occured while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
+                        _logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
                     }
                 }
             }
