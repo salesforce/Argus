@@ -79,7 +79,7 @@ public class AnnotationCommitter extends AbstractCommitter {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable ex) {
-                LOGGER.info("Error occured while committing annotations. Reason {}", ex.toString());
+                LOGGER.info("Error occurred while committing annotations. Reason {}", ex.toString());
             }
         }
         LOGGER.warn(MessageFormat.format("Annotation committer thread interrupted. {} annotations committed by this thread.", jobCounter.get()));

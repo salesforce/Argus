@@ -42,7 +42,7 @@ import java.util.Map;
 /**
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
  * transform for either mapping if no constant input, or reduing with a constant input Similar to MetricReducerOrMappingTransform, but this class need
- * a required constant which is required for transfrom function Do a mapping or reducing depends on other constants.
+ * a required constant which is required for transform function Do a mapping or reducing depends on other constants.
  *
  * <p>So far, Such functions include: List<Metric> PERCENTILE(List <Metric> metrics, Double constant);</p>
  *

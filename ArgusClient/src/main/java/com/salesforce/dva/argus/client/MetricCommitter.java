@@ -92,7 +92,7 @@ public class MetricCommitter extends AbstractCommitter {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable ex) {
-                LOGGER.info("Error occured while committing metrics. Reason {}", ex.toString());
+                LOGGER.info("Error occurred while committing metrics. Reason {}", ex.toString());
             }
         }
         LOGGER.warn(MessageFormat.format("Metric committer thread interrupted. {} datapoints committed by this thread.", jobCounter.get()));
