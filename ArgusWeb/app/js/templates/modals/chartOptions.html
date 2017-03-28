@@ -91,14 +91,14 @@
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.customTooltipFormat" ng-disabled="menuOption.rawTooltip" ng-class="{'disabled': menuOption.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
 
-		<h4 class="sectionTitle btmBdr">Color palletes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
+		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
 
-		<label>Select a color pallete: </label>&nbsp;
-		<select ng-model="menuOption.colorPallete" name="color-pallete">
-			<option value="schemeCategory10" ng-selected="menuOption.colorPallete == 'schemeCategory10'">d3 scheme category 10</option>
-			<option value="schemeCategory20" ng-selected="menuOption.colorPallete == 'schemeCategory20'">d3 scheme category 20</option>
-			<option value="schemeCategory20b" ng-selected="menuOption.colorPallete == 'schemeCategory20b'">d3 scheme category 20b</option>
-			<option value="schemeCategory20c" ng-selected="menuOption.colorPallete == 'schemeCategory20c'">d3 scheme category 20c</option>
+		<label>Select a color palette: </label>&nbsp;
+		<select ng-model="menuOption.colorPalette" name="color-palette">
+			<option value="schemeCategory10" ng-selected="menuOption.colorPalette == 'schemeCategory10'">d3 scheme category 10</option>
+			<option value="schemeCategory20" ng-selected="menuOption.colorPalette == 'schemeCategory20'">d3 scheme category 20</option>
+			<option value="schemeCategory20b" ng-selected="menuOption.colorPalette == 'schemeCategory20b'">d3 scheme category 20b</option>
+			<option value="schemeCategory20c" ng-selected="menuOption.colorPalette == 'schemeCategory20c'">d3 scheme category 20c</option>
 		</select>
 	</div>
 
