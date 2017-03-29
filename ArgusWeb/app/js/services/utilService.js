@@ -54,6 +54,22 @@ angular.module('argus.services.utils', [])
 
         cssNotationCharactersConverter: function (name) {
             return name.replace( /(:|\.|\[|\]|,|=|@)/g, "\\$1" );
+        },
+
+        trimMetricName: function (metricName, leadingNum, trailingNum) {
+            if (!metricName) return;
+
+            var startVal, endVal;
+            startVal = (leadingNum > 0) ? leadingNum : null;
+            endVal = (trailingNum > 0) ? trailingNum : null;
+
+            if (startVal && !endVal) {
+                return metricName.slice(startVal);
+            } else if (endVal) {
+                return metricName.slice(startVal, -endVal);
+            } else {
+                return metricName;
+            }
         }
     };
 

@@ -85,6 +85,7 @@ angular.module('argus.services', [
   'argus.services.charts.tools',
   'argus.services.charts.dataProcessing',
   'argus.services.charts.dateHandler',
+  'argus.services.charts.elements',
   'argus.services.dashboard',
   'argus.services.dashboards',
   'argus.services.history',
@@ -176,6 +177,7 @@ require("./services/charts/chartRendering");
 require("./services/charts/chartTools");
 require("./services/charts/dataProcessing");
 require("./services/charts/dateHandler");
+require("./services/charts/chartElements");
 
 require("./services/factories/alerts");
 require("./services/factories/asyncMetrics");
@@ -218,4 +220,3 @@ require("./directives/UItools/ngEnter");
 
 // css
 require("../css/main.css");
-

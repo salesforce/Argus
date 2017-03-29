@@ -1,15 +1,13 @@
 'use strict';
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', '$routeParams', function($timeout, Storage, $routeParams) {
+.directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'ChartToolService', 'ChartElementService', function($timeout, Storage, $routeParams, ChartToolService, ChartElementService) {
 
     //----------------default chart values----------------------
 
     var dashboardId = $routeParams.dashboardId;
 
     // date formats: https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
-    var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
-    var shortDate = '%b %e, %H:%M';
     var numericalDate = '%-m/%-d/%y %H:%M:%S';
     var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
@@ -74,6 +72,7 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
+            $scope.hideMenu = true;
             $scope.changeToFullscreen = false;
             $scope.updateFullscreenChartID= function (clickedChartID) {
                 // using the button to toggle on and off full screen
@@ -271,8 +270,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 fewer x-axis tick labels
             */
 
+            // provide support for yaxis lower case situation.
             var agYMin, agYMax;
-            //provide support for yaxis lower case situation.
             if(chartOptions.yAxis){
                 agYMin = chartOptions.yAxis.min;
                 agYMax = chartOptions.yAxis.max;
@@ -281,7 +280,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 agYMin = agYMin || chartOptions.yaxis.min;
                 agYMax = agYMax || chartOptions.yaxis.max;
             }
-
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
@@ -325,8 +323,15 @@ angular.module('argus.directives.charts.lineChart', [])
             var maxScaleExtent = 100; //zoom in extent
             var currSeries = series;
 
-            // Layout parameters
-            var containerHeight = chartOptions.smallChart ? 150 : 330;
+            //---------------- check if it is a small chart (need to be called first) --------------
+            var isSmallChart = chartOptions.smallChart === undefined? false: chartOptions.smallChart;
+            //---------------- loading basic information from  ChartToolService----------------------
+            var dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
+            var messagesToDisplay = [ChartToolService.defaultEmptyGraphMessage];
+            // color scheme
+            var z = ChartToolService.setColorScheme(scope.menuOption.colorPallete);
+            //---------------- determine chart layout and dimensions ----------------------
+            var containerHeight = isSmallChart ? 150 : 330;
             var containerWidth = $("#" + chartId).width();
 
             var defaultContainerWidth = -1;
@@ -337,646 +342,229 @@ angular.module('argus.directives.charts.lineChart', [])
                     defaultContainerWidth = containerWidth;
                 }
             }
-
             var defaultContainerHeight = containerHeight;
 
-            var xAxisLabelHeightFactor = 15;
-            var mainChartRatio = 0.8, //ratio of height
-                brushChartRatio = 0.15;
-            var marginTop = chartOptions.smallChart ? 5 : 15,
-                marginBottom = 35,
-                marginLeft = 50,
-                marginRight = chartOptions.smallChart ? 5 : 60;
-
-            var allSize = calculateDimensions(containerWidth, containerHeight);
+            var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart);
             var width = allSize.width;
             var height = allSize.height;
             var height2 = allSize.height2;
             var margin = allSize.margin;
             var margin2 = allSize.margin2;
 
-            var tipPadding = 3;
-            var tipOffset = 8;
             var circleRadius = 4.5;
-
-            var crossLineTipWidth = 35;
-            var crossLineTipHeight = 15;
-            var crossLineTipPadding = 3;
-
-            var bufferRatio = 0.2; //the ratio of buffer above/below max/min on yAxis for better showing experience
-
-            var bisectDate = d3.bisector(function (d) {
-                return d[0];
-            }).left;
-
-            // date settings.  tmpDate is default is chart option 'dateFormat' is not set.
-            var tmpDate = scope.menuOption.dateFormat ? scope.menuOption.dateFormat : numericalDate;
-            var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(tmpDate);
-            var GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(tmpDate);
 
             //graph setup variables
             var x, x2, y, y2,
-                nGridX = chartOptions.smallChart ? 3 : 7,
-                nGridY = chartOptions.smallChart ? 3 : scope.menuOption.numTicksYaxis,
                 xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
-                line, line2, area, area2,
+                line, line2,
                 brush, brushMain, zoom,
                 svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
-                focus, context, clip, brushG, brushMainG, chartRect, flags,//g
+                focus, context, clip, brushG, brushMainG, chartRect,//g
                 tip, tipBox, tipItems,
                 crossLine,
                 names, colors, graphClassNames,
-                flagsG, labelTip, label,
-                yAxisPadding = 1;
-
-            var messageToDisplay = ['No graph available'];
-
-            // color scheme
-            var z = d3.scaleOrdinal(d3.schemeCategory20);
-
-            function setColorScheme() {
-                switch (scope.menuOption.colorPallete) {
-                    case 'schemeCategory10':
-                        z = d3.scaleOrdinal(d3.schemeCategory10);
-                        break;
-                    case 'schemeCategory20b':
-                        z = d3.scaleOrdinal(d3.schemeCategory20b);
-                        break;
-                    case 'schemeCategory20c':
-                        z = d3.scaleOrdinal(d3.schemeCategory20c);
-                        break;
-                    default:
-                        z = d3.scaleOrdinal(d3.schemeCategory20);
-                }
-            }
-
-            setColorScheme();
+                flagsG, labelTip;
 
             //downsample threshold
             var downsampleThreshold = 1/2;  // datapoints per pixel
 
             // Base graph setup, initialize all the graph variables
             function setGraph() {
-                // use different x axis scale based on timezone
-                if (GMTon) {
-                    x = d3.scaleUtc().domain([startTime, endTime]).range([0, width]);
-                    x2 = d3.scaleUtc().domain([startTime, endTime]).range([0, width]); //for brush
-                } else {
-                    x = d3.scaleTime().domain([startTime, endTime]).range([0, width]);
-                    x2 = d3.scaleTime().domain([startTime, endTime]).range([0, width]); //for brush
-                }
+                var xy = ChartToolService.getXandY(scope.dateConfig, allSize, "linear");
+                x = xy.x;
+                y = xy.y;
 
-                y = d3.scaleLinear().range([height, 0]);
-                y2 = d3.scaleLinear().range([height2, 0]);
+                var axises = ChartElementService.createAxisElements(x, y, isSmallChart, scope.menuOption.formatYaxis, scope.menuOption.numTicksYaxis);
+                var grids = ChartElementService.createGridElements(x, y, allSize, isSmallChart, scope.menuOption.numTicksYaxis);
 
-                //Axis
-                xAxis = d3.axisBottom()
-                    .scale(x)
-                    .ticks(nGridX)
-                ;
+                xAxis = axises.xAxis;
+                yAxis = axises.yAxis;
+                yAxisR = axises.yAxisR;
+                xGrid = grids.xGrid;
+                yGrid = grids.yGrid;
 
-                xAxis2 = d3.axisBottom() //for brush
-                    .scale(x2)
-                    .ticks(nGridX)
-                ;
+                line = ChartElementService.createLine(x, y);
 
-                yAxis = d3.axisLeft()
-                    .scale(y)
-                    .ticks(nGridY)
-                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
-                ;
+                var smallBrush = ChartElementService.createBushElements(scope.dateConfig, allSize, isSmallChart, 'lineChart', brushed);
+                xAxis2 = smallBrush.xAxis;
+                x2 = smallBrush.x;
+                y2 = smallBrush.y;
+                line2 = smallBrush.graphs;
+                brush = smallBrush.brush;
 
-                yAxisR = d3.axisRight()
-                    .scale(y)
-                    .ticks(nGridY)
-                    .tickFormat(d3.format(scope.menuOption.formatYaxis))
-                ;
+                brushMain = ChartElementService.createMainBush(allSize, brushedMain);
 
-                //grid
-                xGrid = d3.axisBottom()
-                    .scale(x)
-                    .ticks(nGridX)
-                    .tickSizeInner(-height)
-                ;
+                var chartContainerElements = ChartElementService.generateMainChartElements(allSize, container);
+                svg = chartContainerElements.svg;
+                svg_g = chartContainerElements.svg_g; // clip, flags, brush area,
+                mainChart = chartContainerElements.mainChart; // zoom, axis, grid
 
-                yGrid = d3.axisLeft()
-                    .scale(y)
-                    .ticks(nGridY)
-                    .tickSizeInner(-width)
-                ;
+                zoom = ChartElementService.createZoom(allSize, zoomed, mainChart);
 
-                //line
-                line = d3.line()
-                    .x(function (d) {
-                        return x(d[0]);
-                    })
-                    .y(function (d) {
-                        return y(d[1]);
-                    });
+                var axisesElement = ChartElementService.appendAxisElements(allSize, mainChart, axises, chartOptions.xAxis, chartOptions.yAxis);
+                xAxisG = axisesElement.xAxisG;
+                yAxisG = axisesElement.yAxisG;
+                yAxisRG = axisesElement.yAxisRG;
 
-                //line2 (for brush area)
-                line2 = d3.line()
-                    .x(function (d) {
-                        return x2(d[0]);
-                    })
-                    .y(function (d) {
-                        return y2(d[1]);
-                    });
-
-                //brush
-                brush = d3.brushX()
-                    .extent([[0, 0], [width, height2]])
-                    .on("brush end", brushed);
-
-                brushMain = d3.brushX()
-                    .extent([[0, 0], [width, height]])
-                    .on("end", brushedMain);
-
-                //zoom
-                zoom = d3.zoom()
-                    .scaleExtent([1, Infinity])
-                    .translateExtent([[0, 0], [width, height]])
-                    .extent([[0, 0], [width, height]])
-                    .on("zoom", zoomed)
-                    .on("start", function () {
-                        mainChart.select(".chartOverlay").style("cursor", "move");
-                    })
-                    .on("end", function () {
-                        mainChart.select(".chartOverlay").style("cursor", "crosshair");
-                    })
-                ;
-
-                //Add elements to SVG
-                svg = d3.select(container).append('svg')
-                    .attr('width', width + margin.left + margin.right)
-                    .attr('height', height + margin.top + margin.bottom);
-
-                svg_g = svg
-                    .append('g')
-                    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-                mainChart = svg_g.append("g");
-
-                xAxisG = mainChart.append('g')
-                    .attr('class', 'x axis')
-                    .attr('transform', 'translate(0,' + height + ')')
-                    .call(xAxis);
-
-                yAxisG = mainChart.append('g')
-                    .attr('class', 'y axis')
-                    .call(yAxis);
-
-                // add axis label if they are in ag options
-                if (chartOptions.xAxis!== undefined && chartOptions.xAxis.title !== undefined) {
-                    mainChart.append("text")
-                              .attr("class", "xAxisLabel")
-                              .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")")
-                              .style("text-anchor", "middle")
-                              .style("font-size", 12)
-                              .text(chartOptions.xAxis.title.text);
-                }
-                if (chartOptions.yAxis!== undefined && chartOptions.yAxis.title !== undefined) {
-                    mainChart.append("text")
-                              .attr("class", "yAxisLabel")
-                              .attr("transform", "rotate(-90)")
-                              .attr("y", 0 - margin.left)
-                              .attr("x",0 - (height / 2))
-                              .attr("dy", "1em")
-                              .style("text-anchor", "middle")
-                              .style("font-size", 12)
-                              .text(chartOptions.yAxis.title.text);
-                }
-
-                yAxisRG = mainChart.append('g')
-                    .attr('class', 'y axis')
-                    .attr('transform', 'translate(' + width + ')')
-                    .call(yAxisR);
-
-                xGridG = mainChart.append('g')
-                    .attr('class', 'x grid')
-                    .attr('transform', 'translate(0,' + height + ')')
-                    .call(xGrid);
-
-                yGridG = mainChart.append('g')
-                    .attr('class', 'y grid')
-                    .call(yGrid);
+                var gridsElement = ChartElementService.appendGridElements(allSize, mainChart, grids);
+                xGridG = gridsElement.xGridG;
+                yGridG = gridsElement.yGridG;
 
                 //Brush, zoom, pan
                 //clip path
-                clip = svg_g.append("defs").append("clipPath")
-                    .attr('name','clip')
-                    .attr("id", "clip_" + chartId)
-                    .append("rect")
-                    .attr("width", width)
-                    .attr("height", height);
+                clip = ChartElementService.appendClip(allSize, svg_g, chartId);
 
                 //brush area
-                context = svg_g.append("g")
-                    .attr("class", "context")
-                    // .attr("transform", "translate(0," + (height + margin.top + 10) + ")");
-                    .attr("transform", "translate(0," + margin2.top + ")");
+                var smallBrushElement = ChartElementService.appendBrushWithXAxisElements(allSize, svg_g, xAxis2);
+                context = smallBrushElement.context;
+                xAxisG2 = smallBrushElement.xAxisG2;
 
-                // flags (annotations)
-                flags = svg_g.append("g").attr("class", "flags");
+                // flags and annotations
+                var flagsElement = ChartElementService.appendFlagsElements(svg_g, chartId);
+                flagsG = flagsElement.flagsG;
+                labelTip = flagsElement.labelTip;
 
-                //set brush area axis
-                xAxisG2 = context.append("g")
-                    .attr("class", "xBrush axis")
-                    .attr("transform", "translate(0," + height2 + ")")
-                    .call(xAxis2)
-                ;
+                // Mouseover focus and crossline
+                focus = ChartElementService.appendFocus(mainChart);
+                crossLine = ChartElementService.appendCrossLine(focus);
 
-                // Mouseover/tooltip setup
-                focus = mainChart.append('g')
-                    .attr('class', 'focus')
-                    .style('display', 'none');
-                tip = svg_g.append('g')
-                    .attr('class', 'tooltip')
-                    .style('opacity', 1)
-                    .style('display', 'none');
-                tipBox = tip.append('rect')
-                    .attr('rx', tipPadding)
-                    .attr('ry', tipPadding);
-                tipItems = tip.append('g')
-                    .attr('class', 'tooltip-items');
-
-                //focus tracking/crossLine
-                crossLine = focus.append('g')
-                    .attr('name', 'crossLine');
-                crossLine.append('line')
-                    .attr('name', 'crossLineX')
-                    .attr('class', 'crossLine');
-                crossLine.append('line')
-                    .attr('name', 'crossLineY')
-                    .attr('class', 'crossLine crossLineY');
-
-                //tooltip label on axis background rect
-                crossLine.append('rect')
-                    .attr('name', 'crossLineTipRectX')
-                    .attr('class', 'crossLineTipRect');
-                crossLine.append('rect')
-                    .attr('name', 'crossLineTipRectY')
-                    .attr('class', 'crossLineTipRect crossLineY');
-                //tooltip label on axis text
-                crossLine.append('text')
-                    .attr('name', 'crossLineTipX')
-                    .attr('class', 'crossLineTip');
-                crossLine.append('text')
-                    .attr('name', 'crossLineTipY')
-                    .attr('class', 'crossLineTip crossLineY');
-
-                //annotations
-                flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-                labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
-                d3.select('#' + chartId).select('svg').call(labelTip);
+                // tooltip setup
+                var tooltipElement = ChartElementService.appendTooltipElements(svg_g);
+                tip = tooltipElement.tip;
+                tipBox = tooltipElement.tipBox;
+                tipItems = tooltipElement.tipItems;
+                // get color
+                ChartToolService.bindDefaultColorsWithSources(z, names);
             }
 
-            // Graph tools that only needs to be created once in theory; all of these are data independent
-            function setGraphTools(series) {
-                // set z to metric names and set legend content
-                z.domain(names);
-                // create mouse over circle, tooltip items, lines and brush lines
-                series.forEach(function (metric) {
+            function renderGraphs (series) {
+                // downsample if its needed
+                if (scope.menuOption.downSampleMethod !== "") {
+                    currSeries = ChartToolService.downSample(series, scope.menuOption.downSampleMethod, containerWidth);
+                }
+
+                var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries);
+                var xDomain = xyDomain.xDomain;
+                var yDomain = xyDomain.yDomain;
+
+                //startTime/endTime will not be 0
+                if(!startTime) startTime = xDomain[0];
+                if(!endTime) endTime = xDomain[1];
+                //x.domain([startTime, endTime]);
+                x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
+
+                // if only a straight line is plotted
+                if (yDomain[0] === yDomain[1]) {
+                    yDomain[0] -= ChartToolService.yAxisPadding;
+                    yDomain[1] += 3 * ChartToolService.yAxisPadding;
+                }
+                // check if user has provide any y domain requirement
+                var mainChartYDomain = yDomain.slice();
+                if (agYMin !== undefined) mainChartYDomain[0] = agYMin;
+                if (agYMax !== undefined) mainChartYDomain[1] = agYMax;
+                y.domain(mainChartYDomain);
+
+                // update brush's x and y
+                x2.domain(xDomain);
+                y2.domain(yDomain);
+
+                dateExtent = xDomain;
+
+                currSeries.forEach(function (metric) {
                     if (metric.data.length === 0) return;
                     var tempColor = metric.color === null ? z(metric.name) : metric.color;
-                    // main graphs
-                    mainChart.append('path')
-                      .attr('class', 'line ' + metric.graphClassName)
-                      .style('stroke', tempColor)
-                      .style('clip-path', "url('#clip_" + chartId + "')");
-                    // graphs in the brush
-                    context.append('path')
-                        .attr('class', 'brushLine ' + metric.graphClassName + '_brushline')
-                        .style('stroke', tempColor);
-                    // circle on graph during mouse over
-                    focus.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName);
-                    // tooltip items
-                    tipItems.append('circle')
-                        .attr('r', circleRadius)
-                        .attr('fill', tempColor)
-                        .attr('class', metric.graphClassName);
-                    tipItems.append('text')
-                        .attr('class', metric.graphClassName);
+                    ChartElementService.renderLineChart(mainChart, tempColor, metric, line, chartId);
+                    ChartElementService.renderBrushLineChart(context, tempColor, metric, line2);
+                    ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName);
+                    ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
                     // annotations
                     if (!metric.flagSeries) return;
                     var flagSeries = metric.flagSeries.data;
                     flagSeries.forEach(function (d) {
-                        var label = flagsG.append('g')
-                            .attr("class", "flagItem " + metric.graphClassName)
-                            .attr("id", metric.graphClassName + d.flagID)
-                            .style("stroke", tempColor)
-                            .on("mouseover", function() {
-                                // add timestamp to the annotation label
-                                var tempTimestamp = GMTon ? GMTformatDate(d.x) : formatDate(d.x);
-                                tempTimestamp =  "<strong>" + tempTimestamp + "</strong><br/>" + d.text;
-                                labelTip.style("border-color", tempColor).html(tempTimestamp);
-                                labelTip.show();
-                                // prevent annotation label goes outside of the view on the  side
-                                if (parseInt(labelTip.style("left")) < 15) labelTip.style("left", "15px");
-                            })
-                            .on("mouseout", labelTip.hide);
-                        label.append("line")
-                            .attr("y2", 35)
-                            .attr("stroke-width", 2);
-                        label.append("circle")
-                            .attr("r", 8)
-                            .attr("class", "flag");
-                        label.append("text")
-                            .attr('dy', 4)
-                            .style("text-anchor", "middle")
-                            .style("stroke", "black")
-                            .text(d.title);
+                        ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
                     })
                 });
+
+                ChartToolService.setZoomExtent(series, zoom);
+                ChartElementService.updateAnnotations(series, x, flagsG, height, scope.sources);
             }
 
-            //sync vertical focus line across charts, mouseX is the timestamp
-            function syncChartMouseMove(mouseX){
-                if(mouseX < x.domain()[0] || mouseX > x.domain()[1]){
-                    syncChartMouseOut();
-                    return;
-                }
-                mouseOverChart();
-                crossLine.selectAll('.crossLineY').style("display", "none");
-                var positionX = x(mouseX);
-                var positionY = focus.select('[name=crossLineTipX]').node().getBBox().height +  crossLineTipPadding;;
-                var datapoints = [];
-
-                if(isBrushInNonEmptyRange()){
-                    updateCircles(mouseX, datapoints);
-                    if (scope.menuOption.isTooltipSortOn) {
-                        datapoints = datapoints.sort(function (a, b) {
-                            return b.data[1] - a.data[1]
-                        });
-                    }
-                    toolTipUpdate(tipItems, datapoints, positionX, positionY);
-                }
-                updateCrossLine(mouseX, positionX);
-            }
-
-            //clear vertical lines and tooltip when move mouse off the focus chart
-            function syncChartMouseOut(){
-                focus.style('display', 'none');
-                if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
+            //this function add the overlay element to the graph when mouse interaction takes place
+            //need to call this after drawing the lines in order to put mouse interaction overlay on top
+            function addOverlay() {
+                //the graph rectangle area
+                chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
+                // the brush overlay
+                brushG = ChartElementService.appendBrushOverlay(context, brush, x.range());
+                brushMainG = ChartElementService.appendMainBrushOverlay(mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom, brushMain);
             }
 
             function mouseMove() {
                 if (!currSeries || currSeries.length === 0) return;
-                var datapoints = [];
-                var position = d3.mouse(this);
-                var positionX = position[0];
-                var positionY = position[1];
-                var mouseX = x.invert(positionX);
-                var mouseY = y.invert(positionY);
+                var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
+                var tooltipConfig = {
+                    rawTooltip: scope.menuOption.rawTooltip,
+                    customTooltipFormat: scope.menuOption.customTooltipFormat,
+                    leadingNum: scope.menuOption.leadingNum,
+                    trailingNum: scope.menuOption.trailingNum,
+                    isTooltipSortOn: scope.menuOption.isTooltipSortOn
+                };
+                var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 
-                if(isBrushInNonEmptyRange()) {
-                    updateCircles(mouseX, datapoints);
-                    // sort items in tooltip if needed
-                    if (scope.menuOption.isTooltipSortOn) {
-                        datapoints = datapoints.sort(function (a, b) {
-                            return b.data[1] - a.data[1]
-                        });
-                    }
+                ChartElementService.updateFocusCirclesToolTipsCrossLines(
+                    allSize, dateFormatter, scope.menuOption.formatYaxis, tooltipConfig, focus, tipItems, tipBox,
+                    series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
 
-                    toolTipUpdate(tipItems, datapoints, positionX, positionY);
-                }
-                updateCrossLine(mouseX, positionX, mouseY, positionY);
-
-                if(chartId in syncChartJobs) syncChartMouseMoveAll(mouseX, chartId);
+                if(chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
             }
 
-
-            function updateCircles(mouseX, datapoints){
-                currSeries.forEach(function (metric, index) {
-                    var circle = focus.select('.' + metric.graphClassName);
-                    if (metric.data.length === 0 || !scope.sources[index].displaying) {
-                        circle.style('display', 'none');
-                        tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
-                        return;
-                    }
-                    var data = metric.data;
-                    var i = bisectDate(metric.data, mouseX, 1);
-                    var d0 = data[i - 1];
-                    var d1 = data[i];
-                    var d;
-                    // snap the datapoint that lives in the x domain
-                    if (!d0) {
-                        //There is a case when d0 is outside domain but d1 is undefined, we cannot render d1
-                        //we could still render d0 but make it invisible.
-                        d = d1;
-                    } else if (!d1) {
-                        d = d0;
-                        // if both data points lives in the domain, choose the closer one to the mouse position
-                    } else {
-                        d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
-                    }
-
-
-                    var displayProperty = circle.attr("displayProperty");
-
-                    if(d[0] < x.domain()[0] || d[0] > x.domain()[1].getTime() ||d[1] < y.domain()[0] || d[1] > y.domain()[1]){
-                        //outside domain
-                        circle.style('display', 'none');
-                        displayProperty = 'none'
-
-                    }else{
-                        circle.style('display', null);
-                    }
-
-                    tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
-                    // update circle's position on each graph
-                    circle
-                        .attr('dataX', d[0]).attr('dataY', d[1]) //store the data
-                        .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')')
-
-                    // check if the source is displaying based on the legend
-                    // var sourceInLegend = scope.sources.find(function (source) {
-                    //     return source.graphClassName === metric.graphClassName;
-                    // });
-                    // if (sourceInLegend.displaying) {
-                    //already checked displaying
-                    if(displayProperty !== 'none'){
-                        datapoints.push({
-                            data: d,
-                            graphClassName: metric.graphClassName,
-                            name: metric.name
-                        });
-                    }
-                });
+            function mouseOverChart(){
+                var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
+                ChartElementService.showFocusAndTooltip(focus, tip, scope.menuOption.isTooltipOn, brushInNonEmptyRange);
+                crossLine.selectAll('.crossLineY').style('display', null);
             }
 
-            function toolTipUpdate(group, datapoints, X, Y) {
-                var XOffset = 0;
-                var YOffset = 0;
-                var newXOffset = 0;
-                var OffsetMultiplier = -1;
-                var itemsPerCol = 14;
-                var circleLen = circleRadius * 2;
+            function mouseOutChart(){
+                // focus.style('display', 'none');
+                // if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
+                ChartElementService.hideFocusAndTooltip(focus, tip);
+                syncChartMouseOutAll();
+            }
 
-                for (var i = 0; i < datapoints.length; i++) {
-                    // create a new col after every itemsPerCol
-                    if (i % itemsPerCol === 0) {
-                        OffsetMultiplier++;
-                        YOffset = OffsetMultiplier * itemsPerCol;
-                        XOffset += newXOffset;
-                        newXOffset = 0;
-                    }
-                    // Y data point - metric specific
-                    var tempData = datapoints[i].data[1];
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-                    // X data point - time
-                    // var tempDate = new Date(datapoints[i].data[0]);
-                    // tempDate = GMTon ? GMTformatDate(tempDate) : formatDate(tempDate);
-
-                    var circle = group.select("circle." + datapoints[i].graphClassName)
-                                        .attr('cy', 20 * (0.75 + i - YOffset) + Y)
-                                        .attr('cx', X + tipOffset + tipPadding + circleRadius + XOffset);
-                    var textLine = group.select("text." + datapoints[i].graphClassName)
-                                        .attr('dy', 20 * (1 + i - YOffset) + Y)
-                                        .attr('dx', X + tipOffset + tipPadding + circleLen + 2 + XOffset);
-
-                    var dataFormat = scope.menuOption.rawTooltip ? rawDataFormat : scope.menuOption.customTooltipFormat;
-                    var name = trimMetricName(datapoints[i].name);
-                    textLine.text(name + " -- " + d3.format(dataFormat)(tempData));
-
-                    // update XOffset if existing offset is smaller than texLine
-                    var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
-                    if (tempXOffset > newXOffset) {
-                        newXOffset = tempXOffset;
-                    }
-
-                    /*
-                     // keep this just in case different styles are needed for time and value
-                     textLine.append('tspan')
-                     .attr('class', 'timestamp')
-                     .text(formatDate(new Date(datapoints[i][0])));
-                     textLine.append('tspan').attr('class', 'value')
-                     .attr('dx', 8)
-                     .text(formatValue(datapoints[i][1]));
-                     textLine.append('tspan').attr('dx', 8).text(names[i]);
-                     */
-                }
-
-                var tipBounds = group.node().getBBox();
-                tipBox.attr('x', X + tipOffset);
-                tipBox.attr('y', Y + tipOffset);
-
-                if (tipBounds.width === 0 || tipBounds.height === 0) {
-                    // when there is no graph, make the tipBox 0 size
-                    tipBox.attr('width', 0);
-                    tipBox.attr('height', 0);
+            //sync vertical focus line across charts, mouseX is the timestamp
+            function syncChartMouseMove(mouseX){
+                if(mouseX < x.domain()[0] || mouseX > x.domain()[1]){
+                    // mouseOutChart
+                    ChartElementService.hideFocusAndTooltip(focus, tip);
                 } else {
-                    tipBox.attr('width', tipBounds.width + 4 * tipPadding);
-                    tipBox.attr('height', tipBounds.height + 2 * tipPadding);
-                }
-
-                // move tooltip on the right if there is not enough to display it on the right
-                var transformAttr;
-                if (X + Number(tipBox.attr('width')) > (width + marginRight) &&
-                    X - Number(tipBox.attr('width')) > 0) {
-                    transformAttr = 'translate(-' + (Number(tipBox.attr('width')) + 2 * tipOffset) + ')';
-                } else {
-                    transformAttr = null;
-                }
-                group.attr('transform', transformAttr);
-                tipBox.attr('transform', transformAttr);
-            }
-
-            // TODO: move to filter
-            function trimMetricName(metricName) {
-                if (!metricName) return;
-
-                var startVal, endVal;
-                startVal = (scope.menuOption.leadingNum > 0) ? scope.menuOption.leadingNum : null;
-                endVal = (scope.menuOption.trailingNum > 0) ? scope.menuOption.trailingNum : null;
-
-                if (startVal && !endVal) {
-                    return metricName.slice(startVal);
-                } else if (endVal) {
-                    return metricName.slice(startVal, -endVal);
-                } else {
-                    return metricName;
+                    // moueOverChart
+                    var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
+                    ChartElementService.showFocusAndTooltip(focus, tip, scope.menuOption.isTooltipOn, brushInNonEmptyRange);
+                    crossLine.selectAll('.crossLineY').style("display", "none");
+                    // mouseMove
+                    var mousePositionData = {
+                        mouseX: mouseX,
+                        positionX: x(mouseX),
+                        positionY: focus.select('[name=crossLineTipX]').node().getBBox().height + 3  // crossLineTipPadding
+                    };
+                    var tooltipConfig = {
+                        rawTooltip: scope.menuOption.rawTooltip,
+                        customTooltipFormat: scope.menuOption.customTooltipFormat,
+                        leadingNum: scope.menuOption.leadingNum,
+                        trailingNum: scope.menuOption.trailingNum,
+                        isTooltipSortOn: scope.menuOption.isTooltipSortOn
+                    };
+                    ChartElementService.updateFocusCirclesToolTipsCrossLines(
+                        allSize, dateFormatter, scope.menuOption.formatYaxis, tooltipConfig, focus, tipItems, tipBox,
+                        series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
                 }
             }
 
-            function legendCreator(names, colors, graphClassNames) {
-                var tmpSources = [];
-                for (var i = 0; i < names.length; i++) {
-                    var tempColor = colors[i] === null ? z(names[i]) : colors[i];
-                    tmpSources.push({
-                        name: trimMetricName(names[i]),
-                        displaying: true,
-                        color: tempColor,
-                        graphClassName: graphClassNames[i]
-                    });
-                }
-                // set names into $scope for legend
-                scope.sources = tmpSources;
-            }
-
-            /*  Generate cross lines at the point/cursor
-             mouseX,mouseY are actual values
-             X,Y are coordinates value
-             */
-            function updateCrossLine(mouseX, X, mouseY, Y) {
-                //if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
-
-                focus.select('[name=crossLineX]')
-                    .attr('x1', X).attr('y1', 0)
-                    .attr('x2', X).attr('y2', height);
-
-                var date = GMTon ? GMTformatDate(mouseX) : formatDate(mouseX);
-                focus.select('[name=crossLineTipX]')
-                    .attr('x', X)
-                    .attr('y', 0)
-                    .attr('dy', crossLineTipHeight)
-                    .text(date);
-
-                //add a background to it
-                var boxX = focus.select('[name=crossLineTipX]').node().getBBox();
-                focus.select('[name=crossLineTipRectX]')
-                    .attr('x', boxX.x - crossLineTipPadding)
-                    .attr('y', boxX.y - crossLineTipPadding)
-                    .attr('width', boxX.width + 2 * crossLineTipPadding)
-                    .attr('height', boxX.height + 2 * crossLineTipPadding);
-
-                if(mouseY ===  undefined || Y === undefined) return;
-
-                //------------------Y
-                focus.select('[name=crossLineY]')
-                    .attr('x1', 0).attr('y1', Y)
-                    .attr('x2', width).attr('y2', Y);
-                //add some information around the axis
-
-                var textY;
-                if(isNaN(mouseY)){ //mouseY can be 0
-                    textY = "No Data";
-                }else{
-                    textY = d3.format(scope.menuOption.formatYaxis)(mouseY);
-                }
-
-                focus.select('[name=crossLineTipY')
-                    .attr('x', 0)
-                    .attr('y', Y)
-                    .attr('dx', -crossLineTipWidth)
-                    .text(textY);
-
-                //add a background to it
-                var boxY = focus.select('[name=crossLineTipY]').node().getBBox();
-                focus.select('[name=crossLineTipRectY]')
-                    .attr('x', boxY.x - crossLineTipPadding)
-                    .attr('y', boxY.y - crossLineTipPadding)
-                    .attr('width', boxY.width + 2 * crossLineTipPadding)
-                    .attr('height', boxY.height + 2 * crossLineTipPadding);
-            }
-
-            //reset the brush area
-            function reset() {
-                svg_g.selectAll(".brush").call(brush.move, null);
-                svg_g.selectAll(".brushMain").call(brush.move, null);
+            //clear vertical lines and tooltip when move mouse off the focus chart
+            function syncChartMouseOut(){
+                ChartElementService.hideFocusAndTooltip(focus, tip);
             }
 
             //adjust the series when zoom in/out
@@ -998,12 +586,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     }
                     tipItems.selectAll("." + source.graphClassName).style('display', source.displaying? null: 'none');
                     //if this metric time range is within the x domain
-                    var start = bisectDate(metric.data, x.domain()[0]);
+                    var start = ChartToolService.bisectDate(metric.data, x.domain()[0]);
                     if(start > 0) start-=1; //to avoid cut off issue on the edge
-                    var end = bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
+                    var end = ChartToolService.bisectDate(metric.data, x.domain()[1], start) + 1; //to avoid cut off issue on the edge
                     currSeries[index].data = metric.data.slice(start, end + 1);
                 });
-                currSeries = downSample(currSeries);
+                currSeries = ChartToolService.downSample(currSeries, scope.menuOption.downSampleMethod, containerWidth);
             }
 
             //redraw the line with restrict
@@ -1011,7 +599,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 var domainStart = x.domain()[0].getTime();
                 var domainEnd = x.domain()[1].getTime();
                 //redraw
-                if(isBrushInNonEmptyRange()) {
+                if(ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
                     //update the dataum and redraw the line
                     currSeries.forEach(function (metric, index) {
                         if (metric === null || //empty data should also render
@@ -1045,8 +633,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (!scope.menuOption.isBrushOn) {
                     context.style("display", "none");
                 }
-                updateDateRange();
-                updateAnnotations();
+                scope.dateRange = ChartToolService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+                ChartElementService.updateAnnotations(series, x, flagsG, height, scope.sources);
             }
 
             scope.redraw = redraw; //have to register this as scope function cause toggleGraphOnOff is outside link function
@@ -1099,7 +687,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
                                                     //invert the x value in brush axis range to the
                                                     //value in domain
-
                 //ajust currSeries to the brushed period
                 adjustSeries();
 
@@ -1110,31 +697,11 @@ angular.module('argus.directives.charts.lineChart', [])
                 context.select(".brush").call
                 (brush.move, x.range().map(t.invertX, t));
 
-                //sync the crossLine
-                var position = d3.mouse(this);
-                var positionX = position[0];
-                var positionY = position[1];
-                var mouseX = x.invert(positionX);
-                var mouseY = y.invert(positionY); //domain value
-                if(isBrushInNonEmptyRange()) {
-                    focus.selectAll('circle')
-                        .each(function (d, i) {
-                        var circle = d3.select(this);
-                        var displayProperty = circle.attr('displayProperty');
-                        var dataX = circle.attr('dataX');
-                        var dataY = circle.attr('dataY');
-
-                        circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')')
-                            .style('display', displayProperty);
-
-                        if(dataX < x.domain()[0] || dataX > x.domain()[1]){
-                            circle.style('display', 'none');
-                        }
-                    });
-                }else{
-                    focus.selectAll('circle').style('display', 'none');
-                }
-                updateCrossLine(mouseX, positionX, mouseY, positionY);
+                // sync the crossLine
+                var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
+                var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
+                ChartElementService.updateFocusCirclesPositionWithZoom(x, y, focus, brushInNonEmptyRange);
+                ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.formatYaxis, focus, mousePositionData);
             }
 
             //change brush focus range, k is the number of minutes
@@ -1163,6 +730,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //rescale YAxis based on XAxis Domain
             function reScaleY() {
+                var bufferRatio = 0.2; //the ratio of buffer above/below max/min on yAxis for better showing experience
+
                 if (currSeries === "series" || !currSeries) return;
                 if(agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
 
@@ -1176,8 +745,8 @@ angular.module('argus.directives.charts.lineChart', [])
                     var len = metric.data.length;
                     if (metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime()) return;
                     //if this metric time range is within the xDomain
-                    var start = bisectDate(metric.data, xDomain[0]);
-                    var end = bisectDate(metric.data, xDomain[1], start);
+                    var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
+                    var end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
                     datapoints = datapoints.concat(metric.data.slice(start, end + 1));
                 });
 
@@ -1185,7 +754,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     return d[1];
                 });
                 var diff = extent[1] - extent[0];
-                if (diff === 0) diff = yAxisPadding;
+                if (diff === 0) diff = ChartToolService.yAxisPadding;
                 var buffer = diff * bufferRatio;
                 var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
                 var yMax = (agYMax === undefined) ? extent[1] + 3 * buffer : agYMax;
@@ -1210,7 +779,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
                 }
 
-                var newSize = calculateDimensions(containerWidth, containerHeight);
+                var newSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart);
                 width = newSize.width;
                 height = newSize.height;
                 height2 = newSize.height2;
@@ -1287,158 +856,19 @@ angular.module('argus.directives.charts.lineChart', [])
                     // update x axis label if it's in ag options
                     if (chartOptions.xAxis!== undefined && chartOptions.xAxis.title !== undefined) {
                         mainChart.select(".xAxisLabel")
-                                  .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")");
+                                  .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + ChartToolService.xAxisLabelHeightFactor) + ")");
                     }
 
                     if (tempX[0].getTime() === x2.domain()[0].getTime() &&
                         tempX[1].getTime() === x2.domain()[1].getTime()) {
-                        reset();
+                        ChartElementService.resetBothBrushes(svg_g, [".brush", ".brushMain"], brush);
                     } else {
                         //restore the zoom&brush
                         context.select(".brush").call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
                     }
                     adjustSeries();
                 } else {
-                    displayEmptyGraph(container, width, height, margin, messageToDisplay);
-                }
-            }
-
-            function updateGraph(series) {
-                var allDatapoints = [];
-
-                currSeries = downSample(series);
-
-                currSeries.forEach(function (metric) {
-                    allDatapoints = allDatapoints.concat(metric.data);
-                });
-
-                //x domain was set according to dateConfig previously
-                //this shows exactly the date range of actual data
-
-                dateExtent = d3.extent(allDatapoints, function (d) {
-                    return d[0];
-                });
-
-                if(!startTime) startTime = dateExtent[0]; //startTime/endTime will not be 0
-                if(!endTime) endTime = dateExtent[1];
-
-                //x.domain([startTime, endTime]);
-                x.domain(dateExtent); //doing this cause some date range are defined in metric queries and regardless of ag-date
-
-                var yDomain = d3.extent(allDatapoints, function (d) {
-                    return d[1];
-                });
-
-                // if only a straight line
-                if (yDomain[0] === yDomain[1]) {
-                    yDomain[0] -= yAxisPadding;
-                    yDomain[1] += 3 * yAxisPadding;
-                }
-
-                if(agYMin !== undefined && agYMax !== undefined){
-                    y.domain([agYMin, agYMax]);
-                }else{
-                    y.domain(yDomain);
-                }
-
-                x2.domain(x.domain());
-                y2.domain(yDomain);
-
-                currSeries.forEach(function (metric) {
-                    mainChart.select('path.line.' + metric.graphClassName)
-                        .datum(metric.data)
-                        .attr('d', line);
-                    context.select('path.brushLine.' + metric.graphClassName + '_brushline')
-                        .datum(metric.data)
-                        .attr('d', line2);
-                });
-
-                //draw the brush xAxis
-                xAxisG2.call(xAxis2);
-                setZoomExtent(3);
-
-                // draw flag(s) to denote annotation mark
-                updateAnnotations();
-            }
-
-            // when there is no data for series, display a message
-            function displayEmptyGraph(containerName, width, height, margin, messageToDisplay) {
-                if (svg) svg.remove();
-                svg = d3.select(containerName).append('svg')
-                    .attr('width', width + margin.left + margin.right)
-                    .attr('height', height + margin.top + margin.bottom);
-                svg.selectAll('text')
-                    .data(messageToDisplay)
-                    .enter()
-                    .append("text")
-                    .attr("x", margin.left + width/2)
-                    .attr("y", function (d, i) {
-                        return 20*i + margin.top;
-                    })
-                    .style("text-anchor", "middle")
-                    .style("font-size", "12px")
-                    .text(function(d){return d;});
-            }
-
-            function updateAnnotations() {
-                if (!series) return;
-                series.forEach(function(metric, index) {
-                    if (!metric.flagSeries) return;
-                    var flagSeries = metric.flagSeries.data;
-                    flagSeries.forEach(function(d) {
-                        var label = flagsG.select('#' + metric.graphClassName + d.flagID);
-                        var x_Val = x(d.x); // d.x is timestamp of X axis
-                        var y_Val = height - 35;
-                        // dont render flag if it's outside of the range; similar to focus circle
-                        if (d.x < x.domain()[0] || d.x > x.domain()[1]) {
-                            label.style("display", 'none');
-                        } else {
-                            var displayProperty = scope.sources[index].displaying? null: 'none';
-                            label.style("display", displayProperty);
-                            label.attr("transform", "translate(" + x_Val + ", " + y_Val + ")");
-                        }
-                    });
-                });
-            }
-
-            //this function add the overlay element to the graph when mouse interaction takes place
-            //need to call this after drawing the lines in order to put mouse interaction overlay on top
-            function addOverlay() {
-                //the graph rectangle area
-                chartRect = mainChart.append('rect')
-                    .attr('class', 'chartOverlay')
-                    .attr('width', width)
-                    .attr('height', height)
-                    .on('mouseover', mouseOverChart)
-                    .on('mouseout', mouseOutChart)
-                    .on('mousemove', mouseMove)
-                    .call(zoom)
-                ;
-
-                //the brush overlay
-                brushG = context.append("g")
-                    .attr("class", "brush")
-                    .call(brush)
-                    .call(brush.move, x.range()); //change the x axis range when brush area changes
-
-                brushMainG = mainChart.append("g")//have to do this seperately, because rect svg cannot register brush
-                    .attr("class", "brushMain")
-                    .call(zoom)
-                    .on("mousedown.zoom", null)
-                    .call(brushMain)
-                    .on('mouseover', mouseOverChart)
-                    .on('mouseout', mouseOutChart)
-                    .on('mousemove', mouseMove);
-
-                if (scope.menuOption.isBrushMainOn) {
-                    brushMainG.style('display', null);
-                } else {
-                    brushMainG.style('display', 'none');
-                }
-                // no wheel zoom on page load
-                if (!scope.menuOption.isWheelOn) {
-                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
-                    brushMainG.on("wheel.zoom", null);
+                    svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
                 }
             }
 
@@ -1485,122 +915,49 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateStorage();
             }
 
-            //date range
-            function updateDateRange() {
-                var start, end, str, 
-                    dateFormat = scope.menuOption.dateFormat;
+            function setupMenu(){
+                // TODO: this is broken after click one of the options; brush is not set correctly
+                //button set up
 
-                // date settings
-                if (GMTon) {
-                    var dateFormatGMT = dateFormat ? dateFormat : numericalDate;
-                    GMTformatDate = chartOptions.smallChart ? d3.utcFormat(smallChartDate) : d3.utcFormat(dateFormatGMT);
-
-                    start = GMTformatDate(x.domain()[0]);
-                    end = GMTformatDate(x.domain()[1]);
-                    str = start + ' - ' + end + " (GMT/UTC)";
-                } else {
-                    dateFormat = dateFormat ? dateFormat : shorDate;
-                    formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(formatDate);
-
-                    start = formatDate(x.domain()[0]);
-                    end = formatDate(x.domain()[1]);
-                    var temp = (new Date()).toString();
-                    var currentTimeZone = temp.substring(temp.length - 6, temp.length);
-                    str = start + ' - ' + end + currentTimeZone;
-                }
-
-                // update $scope
-                scope.dateRange = str;
-
-                // update view
-                d3.select('#topTb-' + chartId + ' .dateRange').text(str);
-            }
-
-            //extent, k is the least number of points in one line you want to see on the main chart view
-            function setZoomExtent(k) {
-                var numOfPoints = series[0].data.length;
-                //choose the max among all the series
-                for (var i = 1; i < series.length; i++) {
-                    if (numOfPoints < series[i].data.length) {
-                        numOfPoints = series[i].data.length;
-                    }
-                }
-                if (!k || k > numOfPoints) k = 3;
-                zoom.scaleExtent([1, numOfPoints / k]);
-                maxScaleExtent = parseInt(numOfPoints / k);
-            }
-
-            //dynamically enable button for brush time period(1h/1d/1w/1m/1y)
-            function enableBrushTime() {
-                var range = x2.domain()[1] - x2.domain()[0];
+                //dynamically enable button for brush time period(1h/1d/1w/1m/1y)
+                var range = dateExtent[1] - dateExtent[0];
                 if (range > 3600000) {
                     //enable 1h button
-                    $('[name=oneHour]', topToolbar).prop('disabled', false);
+                    $('[name=oneHour]', topToolbar).prop('disabled', false).click(brushMinute(60));
                 }
                 if (range > 3600000 * 24) {
                     //enable 1d button
-                    $('[name=oneDay]', topToolbar).prop('disabled', false);
+                    $('[name=oneDay]', topToolbar).prop('disabled', false).click(brushMinute(60*24));
                 }
                 if (range > 3600000 * 24 * 7) {
                     //enable 1w button
-                    $('[name=oneWeek]', topToolbar).prop('disabled', false);
+                    $('[name=oneWeek]', topToolbar).prop('disabled', false).click(brushMinute(60*24*7));
                 }
                 if (range > 3600000 * 24 * 30) {
                     //enable 1month button
-                    $('[name=oneMonth]', topToolbar).prop('disabled', false);
+                    $('[name=oneMonth]', topToolbar).prop('disabled', false).click(brushMinute(60*24*30));
                 }
                 if (range > 3600000 * 24 * 365) {
                     //enable 1y button
-                    $('[name=oneYear]', topToolbar).prop('disabled', false);
+                    $('[name=oneYear]', topToolbar).prop('disabled', false).click(brushMinute(60*24*365));
                 }
-            }
 
-            function isBrushInNonEmptyRange(){
-                return x.domain()[0].getTime() <= dateExtent[1] &&  x.domain()[1].getTime()>= dateExtent[0];
-            }
-
-            function mouseOverChart(){
-                focus.style('display', null);
-                crossLine.selectAll('.crossLineY').style('display', null);
-                if(isBrushInNonEmptyRange()) {
-                    if (scope.menuOption.isTooltipOn) tip.style('display', null);
-                }else{
-                    //no need to show the circle to tip
-                    focus.selectAll('circle').style('display', 'none');
-                    tip.style('display', 'none');
+                if (scope.menuOption.isBrushMainOn) {
+                    brushMainG.style('display', null);
+                } else {
+                    brushMainG.style('display', 'none');
                 }
-            }
-
-            function mouseOutChart(){
-                focus.style('display', 'none');
-                if (scope.menuOption.isTooltipOn) tip.style('display', 'none');
-                syncChartMouseOutAll();
-            }
-
-            function setupMenu(){
-                //button set up
-                $('[name=reset]', topToolbar).click(reset);
-                $('[name=oneHour]', topToolbar).click(brushMinute(60));
-                $('[name=oneDay]', topToolbar).click(brushMinute(60*24));
-                $('[name=oneWeek]', topToolbar).click(brushMinute(60*24*7));
-                $('[name=oneMonth]', topToolbar).click(brushMinute(60*24*30));
-                $('[name=oneYear]', topToolbar).click(brushMinute(60*24*365));
-
-                // TODO: to be remove once chart options is in place
-                $('[name=toggle-brush]', topToolbar).change(toggleBrush);
-                $('[name=toggle-brush-main]', topToolbar).change(toggleBrushMain);
-                $('[name=toggle-wheel]', topToolbar).change(toggleWheel);
-                $('[name=toggle-tooltip]', topToolbar).change(toggleTooltip);
-            }
-
-            function hideMenu(){
-                scope.hideMenu = true;
+                // no wheel zoom on page load
+                if (!scope.menuOption.isWheelOn) {
+                    chartRect.on("wheel.zoom", null);   // does not disable 'double-click' to zoom
+                    brushMainG.on("wheel.zoom", null);
+                }
             }
 
             scope.updateStorage = updateStorage;
             function updateStorage(){
                 Storage.set('menuOption_' + scope.dashboardId + '_' + chartId, scope.menuOption);
-            };
+            }
 
             scope.updateDownSample = function(){
                 adjustSeries();
@@ -1609,89 +966,21 @@ angular.module('argus.directives.charts.lineChart', [])
                 updateStorage();
             };
 
-            function downSample(series){
-                if (!series) return;
+            // dont know how to refactor these....
 
-                // Create the sampler
-                var temp = JSON.parse(JSON.stringify(series));
-                var sampler;
-                switch (scope.menuOption.downSampleMethod){
-                    case 'largest-triangle-one-bucket':
-                        sampler = fc.largestTriangleOneBucket();
-                        // Configure the x / y value accessors
-                        sampler.x(function(d) {
-                            return d[0];
-                        })
-                            .y(function(d){
-                                return d[1];
-                            });
-                        break;
-                    case 'largest-triangle-three-bucket':
-                        sampler = fc.largestTriangleThreeBucket();
-                        // Configure the x / y value accessors
-                        sampler.x(function(d) {
-                            return d[0];
-                        })
-                            .y(function(d){
-                                return d[1];
-                            });
-                        break;
-                    case 'mode-median':
-                        sampler = fc.modeMedian();
-                        sampler.value(function(d){
-                            return d[1];
-                        });
-                        break;
-                    case 'every-nth-point':
-                        sampler = everyNthPoint();
-                    default:
-                        break;
-                }
-
-                function everyNthPoint(){
-                    var bucketSize = 1;
-                    var everyNthPoint = function(data){
-                        var temp = [];
-                        for(var i = 0; i < data.length; i+=bucketSize){
-                            temp.push(data[i])
-                        }
-                        return temp;
-                    };
-                    everyNthPoint.bucketSize = function(size){
-                        bucketSize = size;
-                    };
-                    return everyNthPoint;
-                }
-
-                // Run the sampler
-                if (sampler) {
-                    series.forEach(function(metric, index){
-                        //determine whether to downsample or not
-                        //downsample if there are too many datapoints per pixel
-                        if(metric.data.length / containerWidth > downsampleThreshold){
-                            //determine bucket size
-                            var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
-                            // Configure the size of the buckets used to downsample the data.
-                            sampler.bucketSize(bucketSize);
-                            temp[index].data  = sampler(metric.data);
-                        }
-                    });
-                }
-
-                return temp;
-            }
+            ///////////////////////////////////////////////////////////////////////////////////////////////
 
             // create graph only when there is data
+
             if (!series || series.length === 0) {
                 //this should never happen
                 console.log("Empty data from chart data processing");
-                hideMenu();
             } else {
                 // set up legend
                 names = series.map(function(metric) { return metric.name; });
                 colors = series.map(function(metric) { return metric.color; });
                 graphClassNames = series.map(function(metric) { return metric.graphClassName; });
-                legendCreator(names, colors, graphClassNames);
+                scope.sources = ChartToolService.createSourceListForLegend(names, colors, graphClassNames, z);
                 // check if there is anything to graph
                 var hasNoData, emptyReturn, invalidExpression;
                 var tempSeries = [];
@@ -1712,37 +1001,34 @@ angular.module('argus.directives.charts.lineChart', [])
                 series = tempSeries;
 
                 if (series.length > 0) {
+                    scope.hideMenu = false;
                     // Update graph on new metric results
                     setGraph();
-                    setGraphTools(series);
-                    updateGraph(series);
-                    // initialize starting point for graph settings & info
+                    renderGraphs(series);
                     addOverlay();
 
                     // dont need to setup everything for a small chart
-                    updateDateRange();
-                    enableBrushTime();
-                    reset();    //to remove the brush cover first for user the drag
+                    scope.dateRange = ChartToolService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+                    ChartElementService.resetBothBrushes(svg_g, [".brush", ".brushMain"], brush); //to remove the brush cover first for user the drag
                     setupMenu();
                 } else {
                     // generate content for no graph message
                     if (invalidExpression) {
-                        messageToDisplay.push('Metric does not exist in TSDB');
+                        messagesToDisplay.push('Metric does not exist in TSDB');
                         for (var i = 0; i < scope.invalidSeries.length; i ++) {
-                            messageToDisplay.push(scope.invalidSeries[i].errorMessage);
+                            messagesToDisplay.push(scope.invalidSeries[i].errorMessage);
                         }
-                        messageToDisplay.push('(Failed metrics are black in the legend)');
+                        messagesToDisplay.push('(Failed metrics are black in the legend)');
                     }
                     if (emptyReturn) {
-                        messageToDisplay.push('No data returned from TSDB');
-                        messageToDisplay.push('(Empty metrics are labeled maroon)');
+                        messagesToDisplay.push('No data returned from TSDB');
+                        messagesToDisplay.push('(Empty metrics are labeled maroon)');
                     }
                     if (hasNoData) {
-                        messageToDisplay.push('No data found for metric expressions');
-                        messageToDisplay.push('(Valid sources have normal colors)');
+                        messagesToDisplay.push('No data found for metric expressions');
+                        messagesToDisplay.push('(Valid sources have normal colors)');
                     }
-                    displayEmptyGraph(container, width, height, margin, messageToDisplay);
-                    hideMenu();
+                    svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
                 }
             }
 
@@ -1770,32 +1056,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 delete syncChartJobs[chartId];
             }
 
-            function calculateDimensions (newContainerWidth, newContainerHeight) {
-                var newWidth = newContainerWidth - marginLeft - marginRight;
-                var newHeight = parseInt((newContainerHeight - marginTop - marginBottom) * mainChartRatio);
-                var newHeight2 = parseInt((newContainerHeight - marginTop - marginBottom) * brushChartRatio);
-                var newMargin = {
-                    top: marginTop,
-                    right: marginRight,
-                    bottom: newContainerHeight - marginTop - newHeight,
-                    left: marginLeft
-                };
-
-                var newMargin2 = {
-                    top: newContainerHeight - newHeight2 - marginBottom,
-                    right: marginRight,
-                    bottom: marginBottom,
-                    left: marginLeft
-                };
-                return {
-                    width: newWidth,
-                    height: newHeight,
-                    height2: newHeight2,
-                    margin: newMargin,
-                    margin2: newMargin2
-                };
-            }
-
             scope.toggleSyncChart = function(){
                 if (scope.menuOption.isSyncChart){
                     addToSyncCharts();
@@ -1812,10 +1072,9 @@ angular.module('argus.directives.charts.lineChart', [])
             // watch changes from chart options modal to update graph
             scope.$watch('menuOption', function() {
                 if (!scope.hideMenu) {
-                    setColorScheme();
-                    // setGraphTools(series);
-                    legendCreator(names, colors, graphClassNames);
-                    updateDateRange();
+                    ChartToolService.setColorScheme(scope.menuOption.colorPallete);
+                    dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
+                    scope.dateRange = ChartToolService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
                     toggleBrushMain();
                     toggleWheel();
                     toggleTooltip();
