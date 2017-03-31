@@ -74,10 +74,11 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
-            $scope.inFullscreen = false;
+            $scope.changeToFullscreen = false;
             $scope.updateFullscreenChartID= function (clickedChartID) {
+                // using the button to toggle on and off full screen
                 fullscreenChartID = clickedChartID;
-                $scope.inFullscreen = !($scope.inFullscreen);
+                $scope.changeToFullscreen = screen.height !== window.innerHeight;
             };
 
             $scope.downloadData = function (queryFunction) {
@@ -142,7 +143,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         $scope.updateDateFormatOutput = function() {
                             var userInputDateFormat = $scope.menuOption.dateFormat ? $scope.menuOption.dateFormat : sampleDateFormat;
                             $scope.dateFormatOutput = d3.timeFormat(userInputDateFormat)(new Date());
-                        }
+                        };
 
                         // display date in correct format when modal opens: either menuOptions OR current date with 'sampleDateFormat'
                         $scope.updateDateFormatOutput();
@@ -163,7 +164,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                 isTooltipSortOn: true,
                                 rawTooltip: true,
                                 customTooltipFormat: sampleCustomFormat,
-                                colorPallete: 'schemeCategory20',
+                                colorPalette: 'schemeCategory20',
                                 isTooltipOn: true
                             };
 
@@ -311,7 +312,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 rawTooltip: menuOption ? menuOption.rawTooltip : true,
                 customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
 
-                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : 'schemeCategory20',
+                colorPalette: (menuOption && menuOption.colorPalette) ? menuOption.colorPalette : 'schemeCategory20',
 
                 // TODO: refactor code base for no 'isTooltipOn' property
                 isTooltipOn: true
@@ -394,7 +395,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var z = d3.scaleOrdinal(d3.schemeCategory20);
 
             function setColorScheme() {
-                switch (scope.menuOption.colorPallete) {
+                switch (scope.menuOption.colorPalette) {
                     case 'schemeCategory10':
                         z = d3.scaleOrdinal(d3.schemeCategory10);
                         break;
@@ -1198,19 +1199,17 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (series === "series" || !series) {
                     return;
                 }
-
-                if (scope.inFullscreen) {
-                    // force the graph to be the same size as the screen
+                if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && scope.changeToFullscreen) {
+                    // set the graph size to be the same as the screen
                     containerWidth = screen.width;
                     containerHeight = screen.height * 0.9;
                 } else {
                     // default containerHeight will be used
                     containerHeight = defaultContainerHeight;
                     // no width defined via chart option: window width will be used
-                    if (defaultContainerWidth < 0) {
-                        containerWidth = container.offsetWidth;
-                    }
+                    containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
                 }
+
                 var newSize = calculateDimensions(containerWidth, containerHeight);
                 width = newSize.width;
                 height = newSize.height;
@@ -1291,8 +1290,8 @@ angular.module('argus.directives.charts.lineChart', [])
                                   .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")");
                     }
 
-                    if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-                        tempX[1].getTime() == x2.domain()[1].getTime()) {
+                    if (tempX[0].getTime() === x2.domain()[0].getTime() &&
+                        tempX[1].getTime() === x2.domain()[1].getTime()) {
                         reset();
                     } else {
                         //restore the zoom&brush
