@@ -30,5 +30,8 @@
     "react": "^0.14.6",
     "react-dom": "^0.14.6",
     "screenfull": "^3.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0"
   }
 }
