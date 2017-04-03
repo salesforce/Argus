@@ -95,7 +95,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     private static final byte[] COLUMN_QUALIFIER = "c".getBytes(Charset.forName("UTF-8"));
     private static final byte[] CELL_VALUE = new byte[1];
     private static final char ROWKEY_SEPARATOR = '\u0000';
-    private static final char PLACEHOLDER_FOR_NULL_STRINGS = '\u0024';
+    private static final char PLACEHOLDER_FOR_NULL_STRINGS = '\u0023';
     
     private static final long TIMEOUT_MS = 30 * 1000;
     private static final long SCAN_TIMEOUT_MS = 2 * 60 * 1000; 
