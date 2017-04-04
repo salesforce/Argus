@@ -74,10 +74,13 @@ angular.module('argus.directives.charts.lineChart', [])
         },
         templateUrl: 'js/templates/charts/topToolbar.html',
         controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
+            $scope.changeToFullscreen = false;
             $scope.updateFullscreenChartID= function (clickedChartID) {
+                // using the button to toggle on and off full screen
                 fullscreenChartID = clickedChartID;
+                $scope.changeToFullscreen = screen.height !== window.innerHeight;
             };
-                
+
             $scope.downloadData = function (queryFunction) {
                 // each metric expression will be a separate file
                 var dataHandler, filename, chartTitle;
@@ -126,21 +129,21 @@ angular.module('argus.directives.charts.lineChart', [])
 
                         // set $scope items from $resolve method above - only way to 'watch' $scope for changes in chart options.
                         $scope.menuOption = $scope.$resolve.menuOption;
-                        
+
                         $scope.chartId = chartId;
                         $scope.chartTitle = chartTitle;
 
                         // display current date in 'sample' format
                         var currDate = new Date();
                         var sampleDateFormat = "%-m/%-d/%y %H:%M:%S"; // "Sat Nov 5 1929 11:58"
-                        
+
                         $scope.dateFormatOutput = d3.timeFormat(sampleDateFormat)(currDate);
 
                         // update date format to show sample date in modal view
                         $scope.updateDateFormatOutput = function() {
                             var userInputDateFormat = $scope.menuOption.dateFormat ? $scope.menuOption.dateFormat : sampleDateFormat;
                             $scope.dateFormatOutput = d3.timeFormat(userInputDateFormat)(new Date());
-                        }
+                        };
 
                         // display date in correct format when modal opens: either menuOptions OR current date with 'sampleDateFormat'
                         $scope.updateDateFormatOutput();
@@ -161,7 +164,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                 isTooltipSortOn: true,
                                 rawTooltip: true,
                                 customTooltipFormat: sampleCustomFormat,
-                                colorPallete: 'schemeCategory20',
+                                colorPalette: 'schemeCategory20',
                                 isTooltipOn: true
                             };
 
@@ -189,7 +192,7 @@ angular.module('argus.directives.charts.lineChart', [])
                                 $window.location.reload();
                             }
                         };
-                        
+
                         $scope.close = function () {
                             optionsModal.close();
                         };
@@ -286,7 +289,7 @@ angular.module('argus.directives.charts.lineChart', [])
             scope.dashboardId = dashboardId;
 
             var menuOption = Storage.get('menuOption_' + scope.dashboardId + '_' + chartId);
-            
+
             // set scope values, get them from the local storage before setting default
             scope.menuOption = {
                 dateFormat: (menuOption && menuOption.dateFormat) ? menuOption.dateFormat : numericalDate,
@@ -301,7 +304,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
                 isBrushMainOn: menuOption ? menuOption.isBrushMainOn : false,
                 isWheelOn: menuOption ? menuOption.isWheelOn : false,
-                
+
                 // for 'smallChart' only, does not display timeline brush below graph
                 isBrushOn: !chartOptions.smallChart,
 
@@ -309,7 +312,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 rawTooltip: menuOption ? menuOption.rawTooltip : true,
                 customTooltipFormat: (menuOption && menuOption.customTooltipFormat) ? menuOption.customTooltipFormat : sampleCustomFormat,
 
-                colorPallete: (menuOption && menuOption.colorPallete) ? menuOption.colorPallete : 'schemeCategory20',
+                colorPalette: (menuOption && menuOption.colorPalette) ? menuOption.colorPalette : 'schemeCategory20',
 
                 // TODO: refactor code base for no 'isTooltipOn' property
                 isTooltipOn: true
@@ -365,7 +368,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var bisectDate = d3.bisector(function (d) {
                 return d[0];
             }).left;
-            
+
             // date settings.  tmpDate is default is chart option 'dateFormat' is not set.
             var tmpDate = scope.menuOption.dateFormat ? scope.menuOption.dateFormat : numericalDate;
             var formatDate = chartOptions.smallChart ? d3.timeFormat(smallChartDate) : d3.timeFormat(tmpDate);
@@ -392,7 +395,7 @@ angular.module('argus.directives.charts.lineChart', [])
             var z = d3.scaleOrdinal(d3.schemeCategory20);
 
             function setColorScheme() {
-                switch (scope.menuOption.colorPallete) {
+                switch (scope.menuOption.colorPalette) {
                     case 'schemeCategory10':
                         z = d3.scaleOrdinal(d3.schemeCategory10);
                         break;
@@ -885,7 +888,7 @@ angular.module('argus.directives.charts.lineChart', [])
             // TODO: move to filter
             function trimMetricName(metricName) {
                 if (!metricName) return;
-                
+
                 var startVal, endVal;
                 startVal = (scope.menuOption.leadingNum > 0) ? scope.menuOption.leadingNum : null;
                 endVal = (scope.menuOption.trailingNum > 0) ? scope.menuOption.trailingNum : null;
@@ -1196,25 +1199,17 @@ angular.module('argus.directives.charts.lineChart', [])
                 if (series === "series" || !series) {
                     return;
                 }
-
-                if (window.innerHeight === screen.height) {
-                    // in full screen mode, get the div size
-                    if (container.offsetHeight !== window.innerHeight || container.offsetWidth !== window.innerWidth) {
-                        // to prevent full screen delay causing resize to a non full screen size
-                        containerWidth = window.innerWidth;
-                        containerHeight = window.innerHeight * 0.9;
-                    } else {
-                        containerWidth = container.offsetWidth;
-                        containerHeight = container.offsetHeight * 0.9;
-                    }
+                if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && scope.changeToFullscreen) {
+                    // set the graph size to be the same as the screen
+                    containerWidth = screen.width;
+                    containerHeight = screen.height * 0.9;
                 } else {
                     // default containerHeight will be used
                     containerHeight = defaultContainerHeight;
                     // no width defined via chart option: window width will be used
-                    if (defaultContainerWidth < 0) {
-                        containerWidth = container.offsetWidth;
-                    }
+                    containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
                 }
+
                 var newSize = calculateDimensions(containerWidth, containerHeight);
                 width = newSize.width;
                 height = newSize.height;
@@ -1295,8 +1290,8 @@ angular.module('argus.directives.charts.lineChart', [])
                                   .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.top + xAxisLabelHeightFactor) + ")");
                     }
 
-                    if (tempX[0].getTime() == x2.domain()[0].getTime() &&
-                        tempX[1].getTime() == x2.domain()[1].getTime()) {
+                    if (tempX[0].getTime() === x2.domain()[0].getTime() &&
+                        tempX[1].getTime() === x2.domain()[1].getTime()) {
                         reset();
                     } else {
                         //restore the zoom&brush

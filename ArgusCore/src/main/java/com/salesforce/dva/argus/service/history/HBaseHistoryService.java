@@ -123,7 +123,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			deferred.addErrback(new Callback<Object, Exception>() {
 			    @Override
 			    public Object call(Exception e) throws Exception {
-			        throw new SystemException("Error occured while trying to execute put().", e);
+			        throw new SystemException("Error occurred while trying to execute put().", e);
 			    }
 			});
 			
@@ -201,7 +201,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
             deferred.addErrback(new Callback<Void, Exception>() {
                 @Override
                 public Void call(Exception arg) throws Exception {
-                    _logger.warn("Error occured while shutting down asynchbase client.");
+                    _logger.warn("Error occurred while shutting down asynchbase client.");
                     return null;
                 }
             });
@@ -292,7 +292,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			_logger.warn("Timed out while waiting to obtain results for jobId: {}. Will return an empty list.", entityId);
 			return Collections.emptyList();
 		} catch (Exception e) {
-			throw new SystemException("Exception occured in getting results for jobId: " + entityId, e);
+			throw new SystemException("Exception occurred in getting results for jobId: " + entityId, e);
 		}
 	}
 	
