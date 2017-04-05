@@ -158,7 +158,12 @@
                 <tr ng-repeat="notification in notifications| filter:notificationSearchText |orderBy:'name'">
                     <td>{{notification.id}}</td>
                     <td><input type="checkbox" ng-model="notification.sractionable" /></td>
-		    <td><input class="form-control" type="text" ng-model="notification.severityLevel" /></td>
+		    <td>
+                <select class="form-control" ng-model="notification.severityLevel">
+                    <option ng-repeat="level in [1,2,3,4,5] " value="{{level}}">{{level}}</option>
+                </select>
+
+            </td>
                     <td><input class="form-control" type="text" ng-model="notification.name" /></td>
                     <td>
                         <select class="form-control" ng-model="notification.notifierName">
