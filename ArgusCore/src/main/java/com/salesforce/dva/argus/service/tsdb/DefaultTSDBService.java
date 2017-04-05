@@ -274,12 +274,11 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
         Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
         Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
-        String pattern = _readEndpoint + "/api/query?no_annotations=true&{0}";
+        String requestUrl = _readEndpoint + "/api/query";
 
         for (MetricQuery query : queries) {
-            String requestUrl = MessageFormat.format(pattern, query.toString());
-
-            futures.put(query, _executorService.submit(new QueryWorker(requestUrl)));
+        	String requestBody = fromEntity(query);
+            futures.put(query, _executorService.submit(new QueryWorker(requestUrl, requestBody)));
             queryStartExecutionTime.put(query, System.currentTimeMillis());
         }
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
@@ -362,6 +361,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         module.addDeserializer(ResultSet.class, new MetricTransform.MetricListDeserializer());
         module.addSerializer(AnnotationWrapper.class, new AnnotationTransform.Serializer());
         module.addDeserializer(AnnotationWrappers.class, new AnnotationTransform.Deserializer());
+        module.addSerializer(MetricQuery.class, new MetricQueryTransform.Serializer());
         mapper.registerModule(module);
         return mapper;
     }
@@ -516,7 +516,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 if (errorMap != null) {
                     throw new SystemException("Error : " + errorMap.toString());
                 } else {
-                    throw new SystemException("Status code: " + status + " .  Unknown error occured. ");
+                    throw new SystemException("Status code: " + status + " .  Unknown error occurred. ");
                 }
             } else {
                 return extractStringResponse(response);
@@ -729,7 +729,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
             for (int attempts = 0; attempts < 3; attempts++) {
                 try {
-                    return _service.getMetrics(Arrays.asList(new MetricQuery[] { query })).get(query).get(0).getUid();
+                    return _service.getMetrics(Arrays.asList(query)).get(query).get(0).getUid();
                 } catch (Exception e) {
                     Metric metric = new Metric(scope, type);
                     Map<Long, Double> datapoints = new HashMap<>();
@@ -788,28 +788,35 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     /**
      * Helper class used to parallelize query execution.
      *
-     * @author  Tom Valine (tvaline@salesforce.com)
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
     private class QueryWorker implements Callable<List<Metric>> {
 
         private final String _requestUrl;
+        private final String _requestBody;
 
         /**
          * Creates a new QueryWorker object.
          *
-         * @param  requestUrl  The URL to which the request will be issued.  Cannot be null.
+         * @param  requestUrl  The URL to which the request will be issued.
+         * @param  requestBody The request body. 
          */
-        public QueryWorker(String requestUrl) {
+        public QueryWorker(String requestUrl, String requestBody) {
             this._requestUrl = requestUrl;
+            this._requestBody = requestBody;
         }
 
         @Override
         public List<Metric> call() {
-            _logger.debug("TSDB Query = " + _requestUrl);
+            _logger.debug("TSDB Query = " + _requestBody);
 
-            HttpResponse response = executeHttpRequest(HttpMethod.GET, _requestUrl, null);
-            List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
-            return metrics;
+			try {
+				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl, new StringEntity(_requestBody));
+				List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
+	            return metrics;
+			} catch (UnsupportedEncodingException e) {
+				throw new SystemException("Failed to retrieve metrics.", e);
+			}
         }
     }
     

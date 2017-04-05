@@ -264,7 +264,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                     }
                 } else {
                     $scope.chartLoaded = true;
-                    aangular.element("#" + "container").append($compile(
+                    angular.element("#" + "container").append($compile(
                         '<div ngsf-fullscreen>' +
                         '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
                         '</div>')(chartScope)
