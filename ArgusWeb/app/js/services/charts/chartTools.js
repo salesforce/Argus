@@ -56,8 +56,7 @@ angular.module('argus.services.charts.tools', [])
         };
     };
 
-    // date and formatting
-    // https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
+    // date and formatting https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat
     var longDate = '%A, %b %e, %H:%M';      // Saturday, Nov 5, 11:58
     var shortDate = '%b %e, %H:%M';
     var numericalDate = '%-m/%-d/%y %H:%M:%S';
@@ -73,23 +72,37 @@ angular.module('argus.services.charts.tools', [])
         return result;
     };
 
-    this.updateDateRangeLabel = function (dateFormatter, isGMT, chartId, x) {
-        if (x === undefined) return;
-        var start = dateFormatter(x.domain()[0]);
-        var end = dateFormatter(x.domain()[1]);
-        var temp = (new Date()).toString();
-        var timeZoneInfo = isGMT? " (GMT/UTC)": temp.substring(temp.length - 6, temp.length);
-        var str = start + ' - ' + end + timeZoneInfo;
-
-        // update view
-        d3.select('#topTb-' + chartId + ' .dateRange').text(str);
-        return str
-    };
-
     this.bisectDate = d3.bisector(function (d) {
         return d[0];
     }).left;
     this.rawDataFormat = ',';
+
+    // menu option
+    var rawDataFormat = ',';
+    var sampleCustomFormat = '0,.8';     // scientific notation
+    var defaultYaxis = '.3s';
+    var defaultTicksYaxis = '5';
+    this.defaultMenuOption = {
+        dateFormat: numericalDate,
+        colorPalette: 'schemeCategory20',
+        downSampleMethod: '',
+        isSyncChart: false,
+        isBrushMainOn: false,
+        isWheelOn: false,
+        isBrushOn: true,
+        isTooltipOn: true,
+        tooltipConfig: {
+            rawTooltip: true,
+            customTooltipFormat: sampleCustomFormat,
+            leadingNum: null,
+            trailingNum: null,
+            isTooltipSortOn: true
+        },
+        yAxisConfig: {
+            formatYaxis: defaultYaxis,
+            numTicksYaxis: defaultTicksYaxis
+        }
+    };
 
     // color
     this.setColorScheme = function (colorPalette) {
@@ -247,6 +260,8 @@ angular.module('argus.services.charts.tools', [])
         }
         if (!k || k > numOfPoints) k = 3;
         zoom.scaleExtent([1, numOfPoints / k]);
+        return parseInt(numOfPoints / k);
+
     };
 
     this.isBrushInNonEmptyRange = function (xDomain, dateExtent) {
@@ -255,5 +270,5 @@ angular.module('argus.services.charts.tools', [])
 
     this.isNotInTheDomain = function (value, domainArray) {
         return value < domainArray[0] || value > domainArray[1];
-    }
+    };
 }]);

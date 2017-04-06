@@ -14,19 +14,19 @@ angular.module('argus.services.charts.elements', [])
     var tipPadding = 3;
     var circleRadius = 4.5;
     var circleLen = circleRadius * 2;
-    var itemsPerCol = 14; // for tooltip
+    var itemsPerCol = 12; // for tooltip
     var crossLineTipWidth = 35;
     var crossLineTipHeight = 15;
     var crossLineTipPadding = 3;
 
     // pre populate the elements
-    this.createAxisElements = function (x, y, isSmallChart, formatYaxis, numTicksYaxis) {
+    this.createAxisElements = function (x, y, isSmallChart, yAxisConfig) {
         var xAxis, yAxis, yAxisR,
             currentnGridX, currentnGridY;
 
         if (isSmallChart) {
             currentnGridX = nGridX;
-            currentnGridY = numTicksYaxis;
+            currentnGridY = yAxisConfig.numTicksYaxis;
         } else {
             currentnGridX = nGridXSmall;
             currentnGridY = nGridYSmall;
@@ -39,12 +39,12 @@ angular.module('argus.services.charts.elements', [])
         yAxis = d3.axisLeft()
             .scale(y)
             .ticks(currentnGridY)
-            .tickFormat(d3.format(formatYaxis));
+            .tickFormat(d3.format(yAxisConfig.formatYaxis));
 
         yAxisR = d3.axisRight()
             .scale(y)
             .ticks(currentnGridY)
-            .tickFormat(d3.format(formatYaxis));
+            .tickFormat(d3.format(yAxisConfig.formatYaxis));
 
         return {
             xAxis: xAxis,
@@ -322,18 +322,18 @@ angular.module('argus.services.charts.elements', [])
     };
 
     this.appendTooltipElements = function (svg_g) {
-        var tip = svg_g.append('g')
+        var tooltip = svg_g.append('g')
             .attr('class', 'tooltip')
             .style('opacity', 1)
             .style('display', 'none');
-        var tipBox = tip.append('rect')
+        var tipBox = tooltip.append('rect')
             .attr('rx', tipPadding)
             .attr('ry', tipPadding);
-        var tipItems = tip.append('g')
+        var tipItems = tooltip.append('g')
             .attr('class', 'tooltip-items');
 
         return {
-            tip: tip,
+            tooltip: tooltip,
             tipBox: tipBox,
             tipItems: tipItems
         }
@@ -438,20 +438,7 @@ angular.module('argus.services.charts.elements', [])
         return brushMainG;
     };
 
-    // Actions
-    this.resetBrush = function (svg_g, brushClassName, brush) {
-        //reset the brush area
-        if (svg_g === undefined || brush === undefined) return;
-        svg_g.selectAll(brushClassName).call(brush.move, null);
-    };
-
-    this.resetBothBrushes = function (svg_g, brushClassNames, brush) {
-        var resetBrush = this.resetBrush;
-        brushClassNames.map(function (brushClassName) {
-            resetBrush(svg_g, brushClassName, brush);
-        });
-    };
-
+    // mouse related
     this.getMousePositionData = function (x, y, mouse) {
         // mouseX, mouseY are actual values
         // positionX, positionY are coordinates value
@@ -640,22 +627,6 @@ angular.module('argus.services.charts.elements', [])
         this.updateCrossLines(sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData);
     };
 
-    this.showFocusAndTooltip = function (focus, tip, isTooltipOn, brushInNonEmptyRange) {
-        focus.style('display', null);
-        if (brushInNonEmptyRange) {
-            if (isTooltipOn) tip.style('display', null);
-        } else {
-            //no need to show the circle or tip
-            focus.selectAll('circle').style('display', 'none');
-            tip.style('display', 'none');
-        }
-    };
-
-    this.hideFocusAndTooltip = function (focus, tip) {
-        focus.style('display', 'none');
-        tip.style('display', 'none');
-    };
-
     this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange) {
         if (brushInNonEmptyRange) {
             focus.selectAll('circle')
@@ -698,4 +669,70 @@ angular.module('argus.services.charts.elements', [])
             });
         });
     };
+
+    this.updateDateRangeLabel = function (dateFormatter, isGMT, chartId, x) {
+        if (x === undefined) return;
+        var start = dateFormatter(x.domain()[0]);
+        var end = dateFormatter(x.domain()[1]);
+        var temp = (new Date()).toString();
+        var timeZoneInfo = isGMT? " (GMT/UTC)": temp.substring(temp.length - 6, temp.length);
+        var str = start + ' - ' + end + timeZoneInfo;
+        // TODO: this should be done in angular with 2 way data binding update view
+        $("#date-range-" + chartId).text(str);
+    };
+
+    // show and hide stuff
+    this.resetBrush = function (svg_g, brushClassName, brush) {
+        //reset the brush area
+        if (svg_g === undefined || brush === undefined) return;
+        svg_g.selectAll(brushClassName).call(brush.move, null);
+    };
+
+    this.resetBothBrushes = function (svg_g, brushClassNames, brush) {
+        var resetBrush = this.resetBrush;
+        brushClassNames.map(function (brushClassName) {
+            resetBrush(svg_g, brushClassName, brush);
+        });
+    };
+
+    this.showFocusAndTooltip = function (focus, tooltip, isTooltipOn, brushInNonEmptyRange) {
+        focus.style('display', null);
+        if (brushInNonEmptyRange) {
+            // if (isTooltipOn) tooltip.style('display', null);
+            this.toggleElementShowAndHide(isTooltipOn, tooltip);
+        } else {
+            //no need to show the circle or tooltip
+            focus.selectAll('circle').style('display', 'none');
+            tooltip.style('display', 'none');
+        }
+    };
+
+    this.hideFocusAndTooltip = function (focus, tooltip) {
+        focus.style('display', 'none');
+        tooltip.style('display', 'none');
+    };
+
+    this.toggleWheel = function (wheelOn, zoom, chartRect, brushMainG) {
+        var isThereMainBrush = brushMainG === undefined || brushMainG.style('display') === 'none';
+        if (isThereMainBrush && wheelOn) {
+            // wheel on graph and main brush
+            chartRect.call(zoom);
+            brushMainG.call(zoom).on("mousedown.zoom", null);
+        } else if (wheelOn) {
+            // wheel on only graph
+            chartRect.call(zoom);
+        } else if (isThereMainBrush) {
+            // no wheel on graph or main brush
+            chartRect.on("wheel.zoom", null);
+            brushMainG.on("wheel.zoom", null);
+        } else {
+            // no wheel on graph
+            chartRect.on("wheel.zoom", null);
+        }
+    };
+
+    this.toggleElementShowAndHide = function (elementOn, elementName) {
+        var display = elementOn? null: 'none';
+        elementName.style('display', display);
+    }
 }]);
