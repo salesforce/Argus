@@ -147,7 +147,8 @@
                     <th>Subscriptions</th>
                     <th>Metrics to Annotate</th>
                     <th>Cooldown Millis</th>
-                    <th>Triggers</th>
+                    <th style="min-width: 95px">Triggers</th>
+                    <th>Custom Text</th>
                     <th>
                         <button class="btn btn-success btn-sm" type="button"
                                 ng-click="addNotification()" ng-disabled="alertNotEditable">
@@ -177,6 +178,9 @@
                     <td><select class="form-control" multiple="multiple"
                                 ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()">
                     </select></td>
+                    <td>
+                        <textarea rows="4" cols="35" ng-model="notification.customText"></textarea>
+                    </td>
                     <td>
                         <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
                                 ng-confirm='Delete "{{notification.name}}"?'
