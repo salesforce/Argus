@@ -214,14 +214,15 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             break;
                         }
                     }
-                    
-                    for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
-                    	MetricQuery q = entry.getValue();
-                    	if(q.getTags().size() != query.getTags().size()) {
-                    		queries.remove(entry.getKey());
-                    	}
-                    }
                 }
+                
+                for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
+                	MetricQuery q = entry.getValue();
+                	if(q.getTags().size() != query.getTags().size()) {
+                		queries.remove(entry.getKey());
+                	}
+                }
+                
             } // end if-else
         } else {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
