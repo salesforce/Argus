@@ -89,6 +89,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
+	private static final String USERTAG = "user";
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
@@ -361,7 +362,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 				
 			} finally {
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 				historyList.add(history);
 			}
@@ -439,6 +442,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
+					Map<String, String> tags = new HashMap<>();
+					tags.put(USERTAG, trigger.getAlert().getOwner().getUserName());
 					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, null);
 				}
 			}
@@ -568,8 +573,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			AlertIdWithTimestamp obj = new AlertIdWithTimestamp(alert.getId(), System.currentTimeMillis());
 
 			idsWithTimestamp.add(obj);
+			
+			Map<String, String> tags = new HashMap<>();
+			tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
-		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alerts.size(), null);
+		
  		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
