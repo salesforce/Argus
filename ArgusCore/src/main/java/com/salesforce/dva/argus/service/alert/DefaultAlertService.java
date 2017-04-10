@@ -430,7 +430,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	/**
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
-	 * and the trigger fired time.
+	 * and the trigger fired time. 
 	 */
 	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(List<Trigger> triggers, List<Metric> metrics, History history) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
