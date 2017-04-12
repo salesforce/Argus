@@ -107,7 +107,13 @@
 	<div class="footer">
 		
 		<div class="col-md-6">
-			<a id="reset" class="glyphicon glyphicon-ban-circle floatL" ng-confirm="Are you sure you want reset all your current chart settings?" ng-confirm-action="resetSettings()" title="Reset to default settings"><span class="glyphIconTxt">Reset to default</span></a>
+			<a id="reset" class="glyphicon glyphicon-ban-circle floatL"
+			   confirm-click
+			   confirm-title="Reset to default settings"
+			   confirm-message="Are you sure you want reset all your current chart settings?"
+			   confirm-call="resetSettings()"
+			   ><span class="glyphIconTxt">Reset to default</span>
+			</a>
 		</div>
 
 		<div class="col-md-6">

@@ -1,5 +1,6 @@
 angular.module('argus.directives.confirm', [])
 .directive('ngConfirm', [function () {
+    //todo delete this file if it can be totally replaced by the confirm modal
     return {
         restrict: 'A',
         link: function (scope, element, attrs) {
