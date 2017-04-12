@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'ChartToolService', 'ChartElementService', function($timeout, Storage, $routeParams, ChartToolService, ChartElementService) {
+.directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, $routeParams, ChartToolService, ChartElementService, UtilService) {
 
     //----------------default chart values----------------------
 
@@ -75,12 +75,12 @@ angular.module('argus.directives.charts.lineChart', [])
             $scope.updateStorage = function () {
                 Storage.set('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId, $scope.menuOption);
             };
+            // read menuOption from local storage; use default one if there is none
             $scope.menuOption = angular.copy(Storage.get('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId));
             if ($scope.menuOption === null) {
                 $scope.menuOption = angular.copy(ChartToolService.defaultMenuOption);
                 $scope.updateStorage();
             }
-
             // reformat existing stored menuOption
             if ($scope.menuOption.tooltipConfig === undefined) {
                 $scope.menuOption.tooltipConfig = {
@@ -155,7 +155,7 @@ angular.module('argus.directives.charts.lineChart', [])
                         };
 
                         $scope.saveSettings = function () {
-                            Storage.set('menuOption_' + dashboardId + '_' + $scope.chartId, $scope.menuOption);
+                            Storage.set('menuOption_' + dashboardId + '_' + $scope.chartId, angular.copy($scope.menuOption));
                             optionsModal.close();
                             if ($scope.applyToAllGraphs) {
                                 // manually refresh page so all charts are updated with settings
@@ -218,7 +218,19 @@ angular.module('argus.directives.charts.lineChart', [])
             };
 
             $scope.labelTextColor = function(source) {
-                return source.displaying? source.color: '#FFF';
+                var color;
+                if (source.displaying) {
+                    var elementWithColor = d3.select("." + source.graphClassName + "_brushline");
+                    if (elementWithColor.empty()) {
+                        // have a default color
+                        color = source.color;
+                    } else {
+                        color = elementWithColor.style('stroke');
+                    }
+                } else {
+                    color = '#FFF';
+                }
+                return color;
             };
 
             $scope.toggleSource = function(source) {
@@ -252,39 +264,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 $scope.reScaleY();
                 $scope.redraw();
             }
-
-            // $scope.watch('menuOption', function(newOptions, oldOptions) {
-            //     if ($scope.hideMenu) return;
-            //     for (var option in newOptions) {
-            //         if (newOptions.hasOwnProperty(option) && oldOptions.hasOwnProperty(option)) {
-            //             if (newOptions[option] !== oldOptions[option]) {
-            //                 switch (option) {
-            //                     case "yAxisConfig":
-            //                         if (newOptions.yAxisConfig.formatYaxis !== oldOptions.yAxisConfig.formatYaxis) {
-            //                             $scope.configurableElements.yAxis
-            //                                 .tickFormat(d3.format(newOptions.yAxisConfig.formatYaxis));
-            //
-            //                         }
-            //                         if (newOptions.yAxisConfig.numTicksYaxis !== oldOptions.yAxisConfig.numTicksYaxis) {
-            //                             $scope.configurableElements.yAxis
-            //                                 .ticks(newOptions.yAxisConfig.numTicksYaxis);
-            //                             $scope.configurableElements.yGrid
-            //                                 .ticks(newOptions.yAxisConfig.numTicksYaxis);
-            //                             $scope.configurableElements.yGridG.call($scope.configurableElements.yGrid);
-            //                         }
-            //                         $scope.configurableElements.yAxisG.call($scope.configurableElements.yAxis);
-            //                         break;
-            //                     case "dateFormat":
-            //                         $scope.configurableElements.dateFormatter =
-            //                             ChartToolService.generateDateFormatter($scope.dateConfig.gmt, newOptions.dateFormat, $scope.chartConfig.smallChart);
-            //                         break;
-            //                     case "colorPalette":
-            //
-            //                 }
-            //             }
-            //         }
-            //     }
-            // });
         }],
         // compile: function (iElement, iAttrs, transclude) {},
         link: function (scope, element, attributes) {
@@ -308,18 +287,36 @@ angular.module('argus.directives.charts.lineChart', [])
                 fewer x-axis tick labels
             */
 
-            // provide support for yaxis lower case situation.
-            var agYMin, agYMax;
-            if(chartOptions.yAxis){
+
+            var agYMin, agYMax, yScaleType = "linear";
+            var yScaleConfigValue;
+            if (chartOptions.yAxis){
                 agYMin = chartOptions.yAxis.min;
                 agYMax = chartOptions.yAxis.max;
+                if ((chartOptions.yAxis.type !== undefined) && (typeof chartOptions.yAxis.type === "string")) {
+                    var yScaleTypeInput = chartOptions.yAxis.type.toLowerCase();
+                    switch (yScaleTypeInput){
+                        case "log":
+                        case "logarithmic":
+                            yScaleType = "log";
+                            yScaleConfigValue = parseInt(chartOptions.yAxis.base);
+                            break;
+                        case "pow":
+                        case "power":
+                            yScaleType = "power";
+                            yScaleConfigValue = parseInt(chartOptions.yAxis.exponent);
+                            break;
+                    }
+                }
             }
+            // provide support for yaxis lower case situation.
             if(chartOptions.yaxis){
                 agYMin = agYMin || chartOptions.yaxis.min;
                 agYMax = agYMax || chartOptions.yaxis.max;
             }
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
+
 
             var dateExtent; //extent of non empty data date range
             var topToolbar = $(element); //jquery selection
@@ -330,12 +327,12 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //---------------- check if it is a small chart (need to be called first) --------------
             var isSmallChart = chartOptions.smallChart === undefined? false: chartOptions.smallChart;
-            //---------------- loading basic information from  ChartToolService----------------------
+
             var dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
             var messagesToDisplay = [ChartToolService.defaultEmptyGraphMessage];
             // color scheme
             var z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
-            //---------------- determine chart layout and dimensions ----------------------
+            // determine chart layout and dimensions
             var containerHeight = isSmallChart ? 150 : 330;
             var containerWidth = $("#" + chartId).width();
 
@@ -356,8 +353,8 @@ angular.module('argus.directives.charts.lineChart', [])
             var margin = allSize.margin;
             var margin2 = allSize.margin2;
 
-            //graph setup variables
-            var x, x2, y, y2,
+            //setup graph variables
+            var x, x2, y, y2, yScalePlain,
                 xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
                 line, line2,
                 brush, brushMain, zoom,
@@ -370,9 +367,10 @@ angular.module('argus.directives.charts.lineChart', [])
 
             // setup: initialize all the graph variables
             function setUpGraphs() {
-                var xy = ChartToolService.getXandY(scope.dateConfig, allSize, "linear");
+                var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
                 x = xy.x;
                 y = xy.y;
+                yScalePlain = xy.yScalePlain;
 
                 var axises = ChartElementService.createAxisElements(x, y, isSmallChart, scope.menuOption.yAxisConfig);
                 var grids = ChartElementService.createGridElements(x, y, allSize, isSmallChart, scope.menuOption.yAxisConfig.numTicksYaxis);
@@ -441,6 +439,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 // downsample if its needed
                 if (scope.menuOption.downSampleMethod !== "") {
                     currSeries = ChartToolService.downSample(series, scope.menuOption.downSampleMethod, containerWidth);
+                } else {
+                    currSeries = series;
                 }
 
                 var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries);
@@ -462,6 +462,14 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mainChartYDomain = yDomain.slice();
                 if (agYMin !== undefined) mainChartYDomain[0] = agYMin;
                 if (agYMax !== undefined) mainChartYDomain[1] = agYMax;
+                if (yScaleType === "log") {
+                    // log(0) does not exist
+                    if (mainChartYDomain[0] === 0) mainChartYDomain[0] = 1;
+                    if (mainChartYDomain[1] === 0) mainChartYDomain[1] = 1;
+                    if (yDomain[0] === 0) yDomain[0] = 1;
+                    if (yDomain[1] === 0) yDomain[1] = 1;
+
+                }
                 y.domain(mainChartYDomain);
 
                 // update brush's x and y
@@ -504,8 +512,8 @@ angular.module('argus.directives.charts.lineChart', [])
                 var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
                 var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 
-                ChartElementService.updateFocusCirclesToolTipsCrossLines(
-                    allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+                ChartElementService.updateFocusCirclesToolTipsCrossLines(allSize, dateFormatter,
+                    scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
                     series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
 
                 if(chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
@@ -719,12 +727,12 @@ angular.module('argus.directives.charts.lineChart', [])
                 var extent = d3.extent(datapoints, function (d) {
                     return d[1];
                 });
-                var diff = extent[1] - extent[0];
-                if (diff === 0) diff = ChartToolService.yAxisPadding;
-                var buffer = diff * bufferRatio;
-                var yMin = (agYMin === undefined) ? extent[0] - buffer : agYMin;
-                var yMax = (agYMax === undefined) ? extent[1] + 3 * buffer : agYMax;
-
+                var yMin = UtilService.validNumberChecker(yScalePlain(extent[0]));
+                var yMax = UtilService.validNumberChecker(yScalePlain(extent[1]));
+                var buffer = (yMax - yMin) * bufferRatio;
+                if (buffer === 0) buffer = ChartToolService.yAxisPadding;
+                yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
+                yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
                 y.domain([yMin, yMax]);
             }
             scope.reScaleY = reScaleY; //have to register this as scope function cause toggleGraphOnOff is outside link function
@@ -863,40 +871,6 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            //toggle the mouse wheel for zoom
-            function toggleWheel() {
-                if (scope.menuOption.isWheelOn) {
-                    chartRect.call(zoom);
-                    brushMainG.call(zoom)
-                        .on("mousedown.zoom", null);
-                } else {
-                    chartRect.on("wheel.zoom", null);
-                    brushMainG.on("wheel.zoom", null);
-                }
-                // updateStorage();
-            }
-
-            //toggle time brush
-            function toggleBrushMain() {
-                //enable main chart brush
-                if (scope.menuOption.isBrushMainOn) {
-                    brushMainG.style('display', null);
-                } else {
-                    //disable main chart brush
-                    brushMainG.style('display', 'none');
-                }
-                // updateStorage();
-            }
-
-            //toggle tooltip
-            function toggleTooltip() {
-                if (scope.menuOption.isTooltipOn) {
-                    svg_g.select(".tooltip").style("display", 'none');
-                } else {
-                    svg_g.select(".tooltip").style("display", null);
-                }
-                // updateStorage();
-            }
 
             function setupMenu(){
                 // TODO: this is broken after click one of the options; brush is not set correctly
@@ -937,15 +911,10 @@ angular.module('argus.directives.charts.lineChart', [])
                 }
             }
 
-            function updateStorage(){
-                Storage.set('menuOption_' + scope.dashboardId + '_' + chartId, scope.menuOption);
-            }
-
             scope.updateDownSample = function(){
                 adjustSeries();
                 reScaleY();
                 redraw();
-                // updateStorage();
             };
 
 
@@ -960,7 +929,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 names = series.map(function(metric) { return metric.name; });
                 colors = series.map(function(metric) { return metric.color; });
                 graphClassNames = series.map(function(metric) { return metric.graphClassName; });
-                scope.sources = ChartToolService.createSourceListForLegend(names, colors, graphClassNames, z);
+                scope.sources = ChartToolService.createSourceListForLegend(names, graphClassNames, colors, z);
                 // filter out series with no data
                 var hasNoData, emptyReturn, invalidExpression;
                 var tempSeries = [];
@@ -1031,7 +1000,6 @@ angular.module('argus.directives.charts.lineChart', [])
                 }else{
                     removeFromSyncCharts();
                 }
-                // updateStorage();
             };
 
             if(scope.menuOption.isSyncChart){
@@ -1039,35 +1007,30 @@ angular.module('argus.directives.charts.lineChart', [])
             }
 
             // watch changes from chart options modal to update graph
-            scope.$watch('menuOption', function() {
+            scope.$watch('menuOption', function(newValues, oldValues) {
                 if (!scope.hideMenu) {
-                    // TODO: need to update all the place uses z/color
-                    z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
+                    // update color scheme
+                    ChartElementService.updateColors(scope.menuOption.colorPalette, names, colors, graphClassNames);
+                    // update dateFormatter
                     dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
                     ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
-                    toggleBrushMain();
-                    toggleWheel();
-                    toggleTooltip();
+
+                    // toggle different things
+                    ChartElementService.toggleElementShowAndHide(scope.menuOption.isBrushMainOn, brushMainG);
+                    ChartElementService.toggleElementShowAndHide(scope.menuOption.isBrushOn, context);
+                    ChartElementService.toggleElementShowAndHide(scope.menuOption.isTooltipOn, tooltip);
+                    if (scope.menuOption.isTooltipOn) mouseOutChart(); // hide the left over tooltip on the chart
+                    ChartElementService.toggleWheel(scope.menuOption.isWheelOn, zoom, chartRect, brushMainG);
+
                     scope.updateDownSample();
                     scope.toggleSyncChart();
 
                     // update any changes for the Y-axis tick formatting & number of ticks displayed
-                    yAxis = d3.axisLeft()
-                        .scale(y)
-                        .ticks(scope.menuOption.yAxisConfig.numTicksYaxis)
-                        .tickFormat(d3.format(scope.menuOption.yAxisConfig.formatYaxis))
-                    ;
-
-                    yGrid = d3.axisLeft()
-                        .scale(y)
-                        .ticks(scope.menuOption.yAxisConfig.numTicksYaxis)
-                        .tickSizeInner(-width)
-                    ;
-
+                    yAxis.ticks(scope.menuOption.yAxisConfig.numTicksYaxis)
+                        .tickFormat(d3.format(scope.menuOption.yAxisConfig.formatYaxis));
+                    yGrid.ticks(scope.menuOption.yAxisConfig.numTicksYaxis);
                     yAxisG.call(yAxis);
                     yGridG.call(yGrid);
-
-                    // mouseMove();
                 }
             }, true);
         }

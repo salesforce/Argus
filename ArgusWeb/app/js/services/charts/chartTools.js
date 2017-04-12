@@ -71,17 +71,15 @@ angular.module('argus.services.charts.tools', [])
         }
         return result;
     };
-
     this.bisectDate = d3.bisector(function (d) {
         return d[0];
     }).left;
-    this.rawDataFormat = ',';
 
     // menu option
-    var rawDataFormat = ',';
     var sampleCustomFormat = '0,.8';     // scientific notation
     var defaultYaxis = '.3s';
     var defaultTicksYaxis = '5';
+    this.rawDataFormat = ',';
     this.defaultMenuOption = {
         dateFormat: numericalDate,
         colorPalette: 'schemeCategory20',
@@ -136,24 +134,29 @@ angular.module('argus.services.charts.tools', [])
     // other things
     this.defaultEmptyGraphMessage = 'No graph available';
 
-    this.getXandY = function (timeInfo, sizeInfo, yScaleType) {
+    this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
         var xScale = timeInfo.GMTon? d3.scaleUtc(): d3.scaleTime();
-        var yScale;
+        var yScale, yScalePlain;
+        if (yScaleConfigValue === undefined || isNaN(yScaleConfigValue)) yScaleConfigValue = 10;
         switch (yScaleType) {
             case "log":
-                yScale = d3.scaleLog();
+                yScale = d3.scaleLog().base(yScaleConfigValue);
+                yScalePlain = d3.scaleLog().base(yScaleConfigValue);
                 break;
             case "power":
-                yScale = d3.scalePow();
+                yScale = d3.scalePow().exponent(yScaleConfigValue);
+                yScalePlain = d3.scalePow().exponent(yScaleConfigValue);
                 break;
             case "linear":
             default:
                 yScale = d3.scaleLinear();
+                yScalePlain = d3.scaleLinear();
         }
 
         return {
             x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
-            y: yScale.range([sizeInfo.height, 0])
+            y: yScale.range([sizeInfo.height, 0]),
+            yScalePlain: yScalePlain
         }
     };
 
@@ -174,7 +177,7 @@ angular.module('argus.services.charts.tools', [])
         }
     };
 
-    this.createSourceListForLegend = function (names, colors, graphClassNames, colorZ) {
+    this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
         var tmpSources = [];
         for (var i = 0; i < names.length; i++) {
             var tempColor = colors[i] === null ? colorZ(names[i]) : colors[i];
@@ -237,7 +240,7 @@ angular.module('argus.services.charts.tools', [])
             series.forEach(function(metric, index){
                 //determine whether to downsample or not
                 //downsample if there are too many datapoints per pixel
-                if(metric.data.length / containerWidth > downsampleThreshold){
+                if (metric.data.length / containerWidth > downsampleThreshold){
                     //determine bucket size
                     var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
                     // Configure the size of the buckets used to downsample the data.

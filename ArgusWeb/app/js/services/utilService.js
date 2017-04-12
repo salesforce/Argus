@@ -70,6 +70,10 @@ angular.module('argus.services.utils', [])
             } else {
                 return metricName;
             }
+        },
+
+        validNumberChecker: function (num) {
+            return isFinite(num)? num: 0;
         }
     };
 

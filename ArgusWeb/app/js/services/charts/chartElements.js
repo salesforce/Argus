@@ -79,7 +79,7 @@ angular.module('argus.services.charts.elements', [])
         }
     };
 
-    this.createBushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType) {
+    this.createBushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
         // axis and ticks
         var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
@@ -87,7 +87,7 @@ angular.module('argus.services.charts.elements', [])
             width: sizeInfo.width,
             height: sizeInfo.height2
         };
-        var xy = ChartToolService.getXandY(timeInfo, brushSizeInfo, yScaleType);
+        var xy = ChartToolService.getXandY(timeInfo, brushSizeInfo, yScaleType, yScaleConfigValue);
         var x2 = xy.x;
         var y2 = xy.y;
 
@@ -100,10 +100,18 @@ angular.module('argus.services.charts.elements', [])
             case "lineChart":
                 bushGraphs = d3.line()
                     .x(function (d) {
-                        return x2(d[0]);
+                        // return x2(d[0]);
+                        // var result = x2(d[0]);
+                        // if (!isFinite(result)) result = 0;
+                        // return result;
+                        return UtilService.validNumberChecker(x2(d[0]));
                     })
                     .y(function (d) {
-                        return y2(d[1]);
+                        // return y2(d[1]);
+                        // var result = y2(d[1]);
+                        // if (!isFinite(result)) result = 0;
+                        // return result;
+                        return UtilService.validNumberChecker(y2(d[1]));
                     });
                 break;
             // other chart types here
@@ -135,10 +143,10 @@ angular.module('argus.services.charts.elements', [])
     this.createLine = function (x, y) {
         var line = d3.line()
             .x(function (d) {
-                return x(d[0]);
+                return UtilService.validNumberChecker(x(d[0]));
             })
             .y(function (d) {
-                return y(d[1]);
+                return UtilService.validNumberChecker(y(d[1]));
             });
         return line;
     };
@@ -491,8 +499,10 @@ angular.module('argus.services.charts.elements', [])
                 }
                 tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
                 // update circle's position on each graph
+                var newX = UtilService.validNumberChecker(x(d[0]));
+                var newY = UtilService.validNumberChecker(y(d[1]));
                 circle.attr('dataX', d[0]).attr('dataY', d[1]) //store the data
-                    .attr('transform', 'translate(' + x(d[0]) + ',' + y(d[1]) + ')');
+                    .attr('transform', 'translate(' + newX + ',' + newY + ')');
                 if (displayProperty !== 'none') {
                     datapoints.push({
                         data: d,
@@ -734,5 +744,18 @@ angular.module('argus.services.charts.elements', [])
     this.toggleElementShowAndHide = function (elementOn, elementName) {
         var display = elementOn? null: 'none';
         elementName.style('display', display);
-    }
+    };
+
+    this.updateColors = function (colorPalette, names, colors, graphClassNames) {
+        var newColorZ = ChartToolService.setColorScheme(colorPalette);
+        ChartToolService.bindDefaultColorsWithSources(newColorZ, names);
+        for (var i = 0; i < names.length; i++) {
+            var tempColor = colors[i] === null ? newColorZ(names[i]) : colors[i];
+            var allElementsLinkedWithThisSeries = d3.selectAll("." + graphClassNames[i]);
+            allElementsLinkedWithThisSeries.filter("circle").style("fill", tempColor);
+            allElementsLinkedWithThisSeries.filter("path").style("stroke", tempColor);
+            d3.select("." + graphClassNames[i] + '_brushline').style("stroke", tempColor);
+            d3.select("." + graphClassNames[i] + '_legend').style("color", tempColor);
+        }
+    };
 }]);
