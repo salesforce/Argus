@@ -74,6 +74,10 @@ angular.module('argus.services.utils', [])
 
         validNumberChecker: function (num) {
             return isFinite(num)? num: 0;
+        },
+
+        capitalizeString: function (string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
     };
 

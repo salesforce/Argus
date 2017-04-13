@@ -202,7 +202,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 var chartScope = $scope.$new(false);
                 chartScope.chartConfig = {
                     chartId: 'container',
-                    expressions: expressions
+                    expressions: expressions,
+                    chartType: 'line'
                 };
                 chartScope.dateConfig = {};
                 chartScope.series = series;

@@ -29,12 +29,19 @@ angular.module('argus.services.charts.tools', [])
     var mainChartRatio = 0.8, //ratio of height
         brushChartRatio = 0.15;
 
-    this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart) {
+    this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn) {
         var currentMarginTop = isSmallChart? marginTopSmall: marginTop;
         var currentMarginRight = isSmallChart? marginRightSmall: marginRight;
         var newWidth = newContainerWidth - marginLeft - currentMarginRight;
-        var newHeight = parseInt((newContainerHeight - currentMarginTop - marginBottom) * mainChartRatio);
-        var newHeight2 = parseInt((newContainerHeight - currentMarginTop - marginBottom) * brushChartRatio);
+        var newHeight, newHeight2;
+        if (isBrushOn) {
+            newHeight = parseInt((newContainerHeight - currentMarginTop - marginBottom) * mainChartRatio);
+            newHeight2 = parseInt((newContainerHeight - currentMarginTop - marginBottom) * brushChartRatio);
+        } else {
+            newHeight = parseInt(newContainerHeight - currentMarginTop - marginBottom);
+            newHeight2 = 0;
+        }
+
         var newMargin = {
             top: currentMarginTop,
             right: currentMarginRight,
@@ -126,10 +133,7 @@ angular.module('argus.services.charts.tools', [])
     };
 
     // other constants
-    this.xAxisLabelHeightFactor = 15;
     this.yAxisPadding = 1;
-
-    var bufferRatio = 0.2; //the ratio of buffer above/below max/min on yAxis for better showing experience
 
     // other things
     this.defaultEmptyGraphMessage = 'No graph available';
@@ -177,6 +181,13 @@ angular.module('argus.services.charts.tools', [])
         }
     };
 
+    this.updateXandYRange = function (sizeInfo, x, y, needToAdjustHeight) {
+        if (needToAdjustHeight) {
+            y.range([sizeInfo.height, 0]);
+        }
+        x.range([0, sizeInfo.width]);
+    };
+
     this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
         var tmpSources = [];
         for (var i = 0; i < names.length; i++) {
@@ -192,8 +203,9 @@ angular.module('argus.services.charts.tools', [])
     };
 
     var downsampleThreshold = 1/2; // datapoints per pixel
-    this.downSample = function (series, downSampleMethod, containerWidth) {
+    this.downSample = function (series, containerWidth, downSampleMethod) {
         if (!series) return;
+        if (downSampleMethod === "" || downSampleMethod === undefined) return series;
 
         // Create the sampler
         var temp = JSON.parse(JSON.stringify(series));
@@ -240,7 +252,7 @@ angular.module('argus.services.charts.tools', [])
             series.forEach(function(metric, index){
                 //determine whether to downsample or not
                 //downsample if there are too many datapoints per pixel
-                if (metric.data.length / containerWidth > downsampleThreshold){
+                if (metric.data.length / containerWidth > downsampleThreshold) {
                     //determine bucket size
                     var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
                     // Configure the size of the buckets used to downsample the data.
@@ -273,5 +285,30 @@ angular.module('argus.services.charts.tools', [])
 
     this.isNotInTheDomain = function (value, domainArray) {
         return value < domainArray[0] || value > domainArray[1];
+    };
+
+    this.isMetricNotInTheDomain = function (metric, xDomain) {
+        var len = metric.data.length;
+        return metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime();
+    };
+
+    this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen) {
+        var containerWidth, containerHeight;
+        if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && changeToFullscreen) {
+            // set the graph size to be the same as the screen
+            containerWidth = screen.width;
+            containerHeight = screen.height * 0.95;
+        } else {
+            // default containerHeight will be used
+            containerHeight = defaultContainerHeight;
+            // no width defined via chart option: window width will be used
+            containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
+        }
+        var newSize = this.calculateDimensions(containerWidth, containerHeight, isSmallChart, isBrushOn);
+        return {
+            newSize: newSize,
+            containerWidth: containerWidth,
+            containerHeight: containerHeight
+        }
     };
 }]);

@@ -154,10 +154,15 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var lastId = lastEl? lastEl.id: null;
         element.empty();
         // generate a new chart ID, set css options for main chart container
-        //if the element has content previously, leave the id unchanged
+        // if the element has content previously, leave the id unchanged
         var newChartId = lastId || 'element_' + VIEWELEMENT.chart + chartNameIndex++;
 
-        var chartType = attributes.type ? attributes.type : 'LINE';
+        var chartType = attributes.type ? attributes.type : 'line';
+        chartType = chartType.toLowerCase();
+        // TODO: make this a constant somewhere else
+        var supportedChartTypes = ['line', 'area'];
+        // check if a supported chartType is used
+        if (!supportedChartTypes.includes(chartType)) chartType = 'line';
         var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
         // set the charts container for rendering
@@ -198,6 +203,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var updatedMetricList = processedData.updatedMetricList;
         var updatedAnnotationList = processedData.updatedAnnotationList;
         var updatedOptionList = processedData.updatedOptionList;
+        updatedOptionList.chartType = chartType;
 
         // define series first, then build list for each metric expression
         var series = [];
