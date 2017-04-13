@@ -21,89 +21,89 @@
  * Created by liuxizi.xu on 9/2/16.
  */
 'use strict';
+/*global angular:false */
 
 angular.module('argus.directives')
-    .directive('tableList', function() {
-        return {
-            restrict: "E",
-            templateUrl: 'js/templates/tableList.html',
-            scope: {
-                colName: '=',
-                properties: '=',
-                loaded: '=',
-                dataSet: '=data',
-                addItem: '&',
-                delete: '&',
-                clone: '&',
-                enable: '&',
-                refreshList: '&'
-            },
-            controller: ['$scope', 'InputTracker', 'Auth',
-                function($scope, InputTracker, Auth) {
-                // TODO: move this to a service
-                // itemsPerPage setting
-                $scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
-                var itemsPerPageFromStorage = $scope.properties.type + '-itemsPerPage';
-                $scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1]);
-                $scope.$watch('itemsPerPage', function(newValue) {
-                    InputTracker.updateDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1], newValue);
-                    update();
-                });
+.directive('tableList', function() {
+	return {
+		restrict: 'E',
+		templateUrl: 'js/templates/tableList.html',
+		scope: {
+			colName: '=',
+			properties: '=',
+			loaded: '=',
+			dataSet: '=data',
+			addItem: '&',
+			delete: '&',
+			clone: '&',
+			enable: '&',
+			refreshList: '&'
+		},
+		controller: ['$scope', 'InputTracker', 'Auth', function($scope, InputTracker, Auth) {
+			// TODO: move this to a service
+			// itemsPerPage setting
+			$scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
+			var itemsPerPageFromStorage = $scope.properties.type + '-itemsPerPage';
+			$scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1]);
+			$scope.$watch('itemsPerPage', function(newValue) {
+				InputTracker.updateDefaultValue(itemsPerPageFromStorage, $scope.itemsPerPageOptions[1], newValue);
+				update();
+			});
 
-                // searchText setting
-                var searchTextFromStorage = $scope.properties.type + '-searchText';
-                $scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, "");
-                $scope.$watch('searchText', function(newValue) {
-                    InputTracker.updateDefaultValue(searchTextFromStorage, "", newValue);
-                });
+			// searchText setting
+			var searchTextFromStorage = $scope.properties.type + '-searchText';
+			$scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, '');
+			$scope.$watch('searchText', function(newValue) {
+				InputTracker.updateDefaultValue(searchTextFromStorage, '', newValue);
+			});
 
-                // pagination page setting
-                var currentPageFromStorage = $scope.properties.type + '-currentPage';
-                $scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
-                $scope.$watch('currentPage', function (newValue) {
-                    InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
-                    update();
-                });
+			// pagination page setting
+			var currentPageFromStorage = $scope.properties.type + '-currentPage';
+			$scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
+			$scope.$watch('currentPage', function (newValue) {
+				InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
+				update();
+			});
 
-                // sort setting
-                var sortKeyFromStorage = $scope.properties.type + '-sortKey';
-                $scope.sortKey = InputTracker.getDefaultValue(sortKeyFromStorage, 'modifiedDate');
-                var sortReverseFromStorage = $scope.properties.type + '-sortReverse';
-                $scope.reverse = InputTracker.getDefaultValue(sortReverseFromStorage, true);
-                $scope.sort = function (key) {
-                    if ($scope.sortKey === key) {
-                        $scope.reverse = !$scope.reverse;
-                        InputTracker.updateDefaultValue(sortReverseFromStorage, true, $scope.reverse);
-                    } else {
-                        $scope.sortKey = key;
-                        InputTracker.updateDefaultValue(sortKeyFromStorage, 'modifiedDate', $scope.sortKey);
-                    }
-                };
+			// sort setting
+			var sortKeyFromStorage = $scope.properties.type + '-sortKey';
+			$scope.sortKey = InputTracker.getDefaultValue(sortKeyFromStorage, 'modifiedDate');
+			var sortReverseFromStorage = $scope.properties.type + '-sortReverse';
+			$scope.reverse = InputTracker.getDefaultValue(sortReverseFromStorage, true);
+			$scope.sort = function (key) {
+				if ($scope.sortKey === key) {
+					$scope.reverse = !$scope.reverse;
+					InputTracker.updateDefaultValue(sortReverseFromStorage, true, $scope.reverse);
+				} else {
+					$scope.sortKey = key;
+					InputTracker.updateDefaultValue(sortKeyFromStorage, 'modifiedDate', $scope.sortKey);
+				}
+			};
 
-                // total number setting
-                $scope.$watch('dataSet.length', function () {
-                    update();
-                });
+			// total number setting
+			$scope.$watch('dataSet.length', function () {
+				update();
+			});
 
-                //enableAlert, isDisabled & delete setting
-                $scope.deleteItem = function(item) {
-                    $scope.delete()(item);
-                };
-                $scope.isDisabled = Auth.isDisabled;
-                $scope.enableItem = function(item, enabled) {
-                    $scope.enable()(item, enabled);
-                };
-                $scope.cloneItem = function (item) {
-                    $scope.clone()(item);
-                };
+			//enableAlert, isDisabled & delete setting
+			$scope.deleteItem = function(item) {
+				$scope.delete()(item);
+			};
+			$scope.isDisabled = Auth.isDisabled;
+			$scope.enableItem = function(item, enabled) {
+				$scope.enable()(item, enabled);
+			};
+			$scope.cloneItem = function (item) {
+				$scope.clone()(item);
+			};
 
-                function update(){
-                    $scope.start = ($scope.currentPage - 1)* $scope.itemsPerPage + 1;
-                    var end = $scope.start + $scope.itemsPerPage - 1;
-                    if ($scope.dataSet) {
-                        $scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
-                    }
-                }
-            }]
-        };
-    });
+			function update(){
+				$scope.start = ($scope.currentPage - 1) * $scope.itemsPerPage + 1;
+				var end = $scope.start + $scope.itemsPerPage - 1;
+				if ($scope.dataSet) {
+					$scope.end = end < $scope.dataSet.length ? end : $scope.dataSet.length;
+				}
+			}
+		}]
+	};
+});
