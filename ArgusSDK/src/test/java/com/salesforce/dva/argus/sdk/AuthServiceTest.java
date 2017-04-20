@@ -31,6 +31,10 @@
 package com.salesforce.dva.argus.sdk;
 
 import org.junit.Test;
+
+import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -38,18 +42,20 @@ import static org.junit.Assert.*;
 public class AuthServiceTest extends AbstractTest {
 
     @Test
-    public void testLoginLogout() throws IOException {
-        try(ArgusService argusService = new ArgusService(getMockedClient("/AuthServiceTest.json"))) {
+    public void testLoginLogout() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AuthServiceTest2.json"))) {
             AuthService authService = argusService.getAuthService();
 
             authService.login("aUsername", "aPassword");
+            assertEquals("anAccessToken", authService.getClient().accessToken);
+            assertEquals("aRefreshToken", authService.getClient().refreshToken);
             authService.logout();
         }
     }
 
     @Test
-    public void testBadLogin() throws IOException {
-        try(ArgusService argusService = new ArgusService(getMockedClient("/AuthServiceTest.json"))) {
+    public void testBadLogin() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AuthServiceTest2.json"))) {
             AuthService authService = argusService.getAuthService();
 
             authService.login("aBadUsername", "aBadPassword");
@@ -59,5 +65,18 @@ public class AuthServiceTest extends AbstractTest {
         }
         fail("Expected an ArgusServiceException for bad login.");
     }
+    
+    @Test
+    public void testObtainNewAccessToken() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AuthServiceTest2.json"))) {
+            AuthService authService = argusService.getAuthService();
+
+            authService.login("aUsername", "aPassword");
+            assertEquals("anAccessToken", authService.getClient().accessToken);
+            authService.obtainNewAccessToken();
+            assertEquals("aNewAccessToken", authService.getClient().accessToken);
+        }
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

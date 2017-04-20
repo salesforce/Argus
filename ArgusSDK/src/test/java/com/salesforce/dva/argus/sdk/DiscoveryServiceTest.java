@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 public class DiscoveryServiceTest extends AbstractTest {
 
     @Test
-    public void testGetMatchingRecords() throws IOException {
+    public void testGetMatchingRecords() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
             DiscoveryService discoveryService = argusService.getDiscoveryService();
             List<MetricSchemaRecord> result = discoveryService.getMatchingRecords("nsReg", "scpReg", "metReg", "tkReg", "tvReg", 1);
@@ -53,7 +55,7 @@ public class DiscoveryServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetMatchingRecordFields() throws IOException {
+    public void testGetMatchingRecordFields() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
             DiscoveryService discoveryService = argusService.getDiscoveryService();
             List<String> result = discoveryService.getMatchingRecordFields("nsReg", "scpReg", "metReg", "tkReg", "tvReg", NAMESPACE, 2);

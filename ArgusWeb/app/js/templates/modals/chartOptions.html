@@ -40,7 +40,7 @@
 			<label for="leadingNum-{{chartId}}">Leading 'n' #:</label> &nbsp;
 			<input id="leadingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.leadingNum" style="width:3.5em;" />
 		</div>
-		
+
 		<div style="display:inline-block; margin:.5em 0 .5em 1em;">
 			<label for="trailingNum-{{chartId}}">Trailing 'n' #:</label> &nbsp;
 			<input id="trailingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.trailingNum" style="width:3.5em;" />
@@ -68,7 +68,7 @@
 		<div style="margin:0 0 .5em 1em;">
 			<input class="chkBox pointer" id="toggle-syncchart-{{chartConfig.chartId}}" type="checkbox" name="toggle-syncchart" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>&nbsp;
 			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize chart to show X-axis value for each chart</label>
-		</div>		
+		</div>
 	</div>
 
 	<!-- right col -->
@@ -96,10 +96,9 @@
 		<div style="margin-left:23px;" title="Uncheck raw data point to use">
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.tooltipConfig.customTooltipFormat" ng-disabled="menuOption.tooltipConfig.rawTooltip" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
-
-		<h4 class="sectionTitle btmBdr">Color Palette <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
-
-		<label>Select a color Palette: </label>&nbsp;
+		
+		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
+		<label>Select a color palette: </label>&nbsp;
 		<select ng-model="menuOption.colorPalette" name="color-palette">
 			<option value="schemeCategory10" ng-selected="menuOption.colorPalette == 'schemeCategory10'">d3 scheme category 10</option>
 			<option value="schemeCategory20" ng-selected="menuOption.colorPalette == 'schemeCategory20'">d3 scheme category 20</option>
@@ -111,7 +110,7 @@
 	<div class="clearAll"></div>
 
 	<div class="footer">
-		
+
 		<div class="col-md-6">
 			<a id="reset" class="glyphicon glyphicon-ban-circle floatL" ng-confirm="Are you sure you want reset all your current chart settings?" ng-confirm-action="resetSettings()" title="Reset to default settings"><span class="glyphIconTxt">Reset to default</span></a>
 		</div>

@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('argus.controllers.alerts.detail', ['ngResource'])
-.controller('AlertsDetail', ['$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage', 'Auth',
-    function ($scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage, Auth) {
+.controller('AlertsDetail', ['$q','$scope', '$routeParams', '$location', 'growl', 'Alerts', 'Triggers', 'Notifications', 'History', 'TriggersMap', 'JobExecutionDetails', '$sessionStorage', 'Auth',
+    function ($q, $scope, $routeParams, $location, growl, Alerts, Triggers, Notifications, History, TriggersMap, JobExecutionDetails, $sessionStorage, Auth) {
         $scope.alertNotEditable = true;
         $scope.isAlertDirty = function () {
             return !angular.equals($scope.alert, $scope.unmodifiedAlert);
@@ -181,14 +181,17 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
         };
 
         $scope.mapTriggers = function (notification) {
-            for (var i = 0; i < $scope.unmodifiedTriggers.length; i++) {
-                var trigger = $scope.unmodifiedTriggers[i];
-                TriggersMap.unmap({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger.id});
-            }
-            for (var i = 0; i < notification.triggersIds.length; i++) {
-                var trigger = notification.triggersIds[i];
-                TriggersMap.map({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger}, null);
-            }
+            var promises = $scope.unmodifiedTriggers.map(function(trigger){
+                return TriggersMap.unmap({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger.id}).$promise;
+            });
+
+            $q.all(promises).finally(function(){
+                for (var i = 0; i < notification.triggersIds.length; i++) {
+                    var trigger = notification.triggersIds[i];
+                    TriggersMap.map({alertId: notification.alertId, notificationId: notification.id, triggerId: trigger}, null);
+                }
+            });
+
             $scope.fetchHistory();
             $scope.fetchJobExecutionDetails();
         };

@@ -325,7 +325,6 @@ angular.module('argus.directives.charts.lineChart', [])
             if (isNaN(agYMin)) agYMin = undefined;
             if (isNaN(agYMax)) agYMax = undefined;
 
-
             var dateExtent; //extent of non empty data date range
             var topToolbar = $(element); //jquery selection
             var container = topToolbar.parent()[0];//real DOM
@@ -367,7 +366,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine,
                 names, colors, graphClassNames,
                 flagsG, labelTip;
-
+                
             // setup: initialize all the graph variables
             function setUpGraphs() {
                 var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);

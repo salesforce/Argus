@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.sdk;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
 import com.salesforce.dva.argus.sdk.entity.Metric;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
@@ -46,7 +48,7 @@ import static org.junit.Assert.*;
 public class MetricServiceTest extends AbstractTest {
 
     @Test
-    public void testPutMetrics() throws IOException {
+    public void testPutMetrics() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/MetricServiceTest.json"))) {
             MetricService metricService = argusService.getMetricService();
             List<Metric> metrics = Arrays.asList(new Metric[] { _constructMetric() });
@@ -57,7 +59,7 @@ public class MetricServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetMetrics() throws IOException {
+    public void testGetMetrics() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/MetricServiceTest.json"))) {
             MetricService metricService = argusService.getMetricService();
             List<String> expressions = Arrays.asList(new String[] { "-1d:TestScope:TestMetric:TestNamespace{TestTag=TagValue}:sum" });

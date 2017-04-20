@@ -640,7 +640,7 @@ public class GOCNotifier extends AuditNotifier {
 
 		private static final String UTF_8 = "UTF-8";
 		private static final String NO_TOKEN = "NO_TOKEN";
-		private static final long MIN_SESSION_REFRESH_THRESHOLD_MILLIS = 5 * 60 * 1000; // Wait at least 5 minutes between refresh attemps
+		private static final long MIN_SESSION_REFRESH_THRESHOLD_MILLIS = 5 * 60 * 1000; // Wait at least 5 minutes between refresh attempts
 		private static final int CONNECTION_TIMEOUT_MILLIS = 10000;
 		private static final int READ_TIMEOUT_MILLIS = 10000;
 		private volatile EndpointInfo theEndpointInfo = null;
