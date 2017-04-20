@@ -57,7 +57,8 @@ angular.module('argus', [
   'argus.directives.charts.option',
   'argus.directives.charts.statusIndicator',
   'argus.directives.charts.table',
-  'argus.directives.headerMenu'
+  'argus.directives.headerMenu',
+  'argus.directives.modals.confirmClick'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
@@ -217,6 +218,6 @@ require("./directives/UItools/stopEvent");
 require("./directives/UItools/ngConfirm");
 require("./directives/UItools/ngLoading");
 require("./directives/UItools/ngEnter");
-
+require("./directives/modals/confirmClick");
 // css
 require("../css/main.css");

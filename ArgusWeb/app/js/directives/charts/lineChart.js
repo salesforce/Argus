@@ -95,7 +95,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 $scope.menuOption.yAxisConfig = {
                     formatYaxis: $scope.menuOption.formatYaxis,
                     numTicksYaxis: $scope.menuOption.numTicksYaxis
-                }
+                };
             }
 
             $scope.openChartOptions = function(chartId, chartTitle) {
@@ -366,7 +366,7 @@ angular.module('argus.directives.charts.lineChart', [])
                 crossLine,
                 names, colors, graphClassNames,
                 flagsG, labelTip;
-                
+
             // setup: initialize all the graph variables
             function setUpGraphs() {
                 var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
@@ -489,7 +489,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     var flagSeries = metric.flagSeries.data;
                     flagSeries.forEach(function (d) {
                         ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
-                    })
+                    });
                 });
 
                 maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
@@ -651,7 +651,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             //have to register this as scope function cause toggleGraphOnOff is outside link function
             scope.reScaleY = function () {
-                ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax)
+                ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
             };
 
             //have to register this as scope function cause toggleGraphOnOff is outside link function
@@ -852,7 +852,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
             scope.$watch('menuOption.isBrushOn', function (newValue, oldValue) {
                 ChartElementService.toggleElementShowAndHide(newValue, context);
-                resize ()
+                resize ();
             }, true);
 
             scope.$watch('menuOption.isTooltipOn', function (newValue, oldValue) {

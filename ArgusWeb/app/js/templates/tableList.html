@@ -66,18 +66,20 @@
     </td>
     <td ng-if="colName.cloneItem" class="text-center">
         <button class="btn btn-info btn-sm" type="button"
-                ng-confirm="Clone '{{item.name}}'?"
-                ng-confirm-action="cloneItem(item)"
-                title="Clone '{{item.name}}'">
-            <i class="glyphicon glyphicon-duplicate"></i>
+                confirm-click
+                confirm-title="Clone {{properties.title}} "
+                confirm-message="Clone '{{item.name}}'?"
+                confirm-call="cloneItem(item)">
+        <i class="glyphicon glyphicon-duplicate"></i>
         </button>
     </td>
     <td class="text-center">
         <button class="btn btn-warning btn-sm" type="button"
+                confirm-click
+                confirm-title="Delete {{properties.title}} "
                 ng-disabled="isDisabled(item)"
-                ng-confirm="Delete '{{item.name}}'?"
-                ng-confirm-action="deleteItem(item)"
-                title="Delete '{{item.name}}'">
+                confirm-message="Delete '{{item.name}}'?"
+                confirm-call="deleteItem(item)">
             <i class="glyphicon glyphicon-trash"></i>
         </button>
     </td>

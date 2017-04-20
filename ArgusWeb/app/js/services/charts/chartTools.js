@@ -161,7 +161,7 @@ angular.module('argus.services.charts.tools', [])
             x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
             y: yScale.range([sizeInfo.height, 0]),
             yScalePlain: yScalePlain
-        }
+        };
     };
 
     this.getXandYDomainsOfSeries = function (series) {
@@ -178,7 +178,7 @@ angular.module('argus.services.charts.tools', [])
         return {
             xDomain: xDomain,
             yDomain: yDomain
-        }
+        };
     };
 
     this.updateXandYRange = function (sizeInfo, x, y, needToAdjustHeight) {
@@ -237,7 +237,7 @@ angular.module('argus.services.charts.tools', [])
             var everyNthPoint = function(data){
                 var temp = [];
                 for(var i = 0; i < data.length; i+=bucketSize){
-                    temp.push(data[i])
+                    temp.push(data[i]);
                 }
                 return temp;
             };
@@ -309,6 +309,6 @@ angular.module('argus.services.charts.tools', [])
             newSize: newSize,
             containerWidth: containerWidth,
             containerHeight: containerHeight
-        }
+        };
     };
 }]);
