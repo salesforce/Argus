@@ -214,5 +214,10 @@
         	<artifactId>jersey-common</artifactId>
         	<version>2.6</version>
         </dependency>
+        <dependency>
+		    <groupId>io.jsonwebtoken</groupId>
+		    <artifactId>jjwt</artifactId>
+		    <version>0.7.0</version>
+		</dependency>
     </dependencies>
 </project>

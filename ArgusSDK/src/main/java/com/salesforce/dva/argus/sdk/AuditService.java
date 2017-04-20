@@ -34,6 +34,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Audit;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
@@ -70,8 +72,9 @@ public class AuditService extends EndpointService {
      * @return  The audit history for the entity.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public List<Audit> getAuditsForEntity(BigInteger entityId) throws IOException {
+    public List<Audit> getAuditsForEntity(BigInteger entityId) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/entity/" + entityId.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
@@ -87,8 +90,9 @@ public class AuditService extends EndpointService {
      * @return  The corresponding audit.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Audit getAudit(BigInteger id) throws IOException {
+    public Audit getAudit(BigInteger id) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/" + id.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 

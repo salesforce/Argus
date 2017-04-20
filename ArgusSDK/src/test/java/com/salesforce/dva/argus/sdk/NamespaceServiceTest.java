@@ -32,6 +32,8 @@ package com.salesforce.dva.argus.sdk;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.salesforce.dva.argus.sdk.entity.Namespace;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -46,7 +48,7 @@ import static org.junit.Assert.*;
 public class NamespaceServiceTest extends AbstractTest {
 
     @Test
-    public void testCreateNamespace() throws IOException {
+    public void testCreateNamespace() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/NamespaceServiceTest.json"))) {
             NamespaceService namespaceService = argusService.getNamespaceService();
             Namespace result = namespaceService.createNamespace(_constructUnpersistedNamespace());
@@ -57,7 +59,7 @@ public class NamespaceServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetNamespace() throws IOException {
+    public void testGetNamespace() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/NamespaceServiceTest.json"))) {
             NamespaceService namespaceService = argusService.getNamespaceService();
             List<Namespace> result = namespaceService.getNamespaces();
@@ -68,7 +70,7 @@ public class NamespaceServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateNamespace() throws IOException {
+    public void testUpdateNamespace() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/NamespaceServiceTest.json"))) {
             NamespaceService namespaceService = argusService.getNamespaceService();
             Namespace result = namespaceService.updateNamespace(BigInteger.ONE, _constructUpdatedNamespace());
@@ -79,7 +81,7 @@ public class NamespaceServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateNamespaceMembers() throws IOException {
+    public void testUpdateNamespaceMembers() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/NamespaceServiceTest.json"))) {
             NamespaceService namespaceService = argusService.getNamespaceService();
             Set<String> members = new HashSet<>(Arrays.asList(new String[] { "TestUser", "UpdatedUser" }));
