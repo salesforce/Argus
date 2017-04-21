@@ -168,7 +168,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
         template += "<!-- A dashboard template can also have arbitrary number of html tags. -->\n";
         template += "<h4>Argus mem heap used - Chart</h4>\n\n";
 
-        template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponsing tag as well as the actual metric/annotation data. -->\n";
+        template += "<!-- This defines a chart on the dashboard. A dashboard can also have tables which are defined using <ag-table> tag. This/these tags encapsulate all the options for the corresponding tag as well as the actual metric/annotation data. -->\n";
         template += "<ag-chart name='Chart'>\n\n";
 
         template += "<!-- This defines options for a chart or a table. The value of 'name' attribute is directly used as the key for the config object(options object for highcharts/highstocks, config object for at-table. Hence use valid values for name attribute.). The values for the corresponding keys can either be provided using the value attribute on the tag or using innerHtml for the tag. -->\n";
