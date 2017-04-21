@@ -1,11 +1,14 @@
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
-.controller('ViewMetrics', ['$location', '$routeParams', '$scope', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', '$compile',
-    function ($location, $routeParams, $scope, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, $compile) {
+.controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
+    function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
 
         $scope.expression = $routeParams.expression ? $routeParams.expression : null;
-
+        $scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
+        $scope.$watch('includeAnnotations', function (newValue) {
+            InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
+        });
         // sub-views: (1) single chart, (2) metric discovery
         $scope.checkMetricExpression = function() {
             if ($scope.expression) {
@@ -38,8 +41,10 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 Metrics.query({expression: $scope.expression}, function (data) {
                     if (data && data.length > 0) {
                         tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, {});
-                        for (var i = 0; i < data.length; i++) {
-                            annotationInfo.push(ChartDataProcessingService.getAlertFlagExpression(data[i]));
+                        if ($scope.includeAnnotations) {
+                            for (var i = 0; i < data.length; i++) {
+                                annotationInfo.push(ChartDataProcessingService.getAlertFlagExpression(data[i]));
+                            }
                         }
                     } else {
                         tempSeries = [{
@@ -202,7 +207,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                 var chartScope = $scope.$new(false);
                 chartScope.chartConfig = {
                     chartId: 'container',
-                    expressions: expressions
+                    expressions: expressions,
+                    chartType: 'line'
                 };
                 chartScope.dateConfig = {};
                 chartScope.series = series;
@@ -241,22 +247,22 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                                 });
                             }
                             annotationCount.tot--;
-                            if (annotationCount.tot == 0) {
+                            if (annotationCount.tot === 0) {
                                 $scope.chartLoaded = true;
                                 angular.element("#" + "container").append($compile(
                                     '<div ngsf-fullscreen>' +
-                                    '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                                    '<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
                                     '</div>')(chartScope)
                                 );
                             }
                         }, function (error) {
                             console.log('no annotation found;', error.statusText);
                             annotationCount.tot--;
-                            if (annotationCount.tot == 0) {
+                            if (annotationCount.tot === 0) {
                                 $scope.chartLoaded = true;
                                 angular.element("#" + "container").append($compile(
                                     '<div ngsf-fullscreen>' +
-                                    '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                                    '<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
                                     '</div>')(chartScope)
                                 );
                             }
@@ -266,7 +272,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
                     $scope.chartLoaded = true;
                     angular.element("#" + "container").append($compile(
                         '<div ngsf-fullscreen>' +
-                        '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                        '<line-chart chartConfig="chartConfig" series="series" dateConfig="dateConfig"></line-chart>' +
                         '</div>')(chartScope)
                     );
                 }

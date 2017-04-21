@@ -1,9 +1,7 @@
 /*global angular:false, copyProperties:false */
-
+'use strict';
 angular.module('argus.services.utils', [])
 .service('UtilService', [function() {
-	'use strict';
-
 	var options = {
 		assignController: function(controllers) {
 			if (!controllers) return;
@@ -41,7 +39,7 @@ angular.module('argus.services.utils', [])
 		},
 
 		getParsedValue: function(value) {
-			if (value instanceof Object || value.length == 0) {
+			if (value instanceof Object || value.length === 0) {
 				return value;
 			}
 			if (value == 'true') {
@@ -56,8 +54,31 @@ angular.module('argus.services.utils', [])
 
 		cssNotationCharactersConverter: function (name) {
 			return name.replace( /(:|\.|\[|\]|,|=|@)/g, '\\$1' );
-		}
-	};
+		},
 
+    trimMetricName: function (metricName, leadingNum, trailingNum) {
+        if (!metricName) return;
+
+        var startVal, endVal;
+        startVal = (leadingNum > 0) ? leadingNum : null;
+        endVal = (trailingNum > 0) ? trailingNum : null;
+
+        if (startVal && !endVal) {
+            return metricName.slice(startVal);
+        } else if (endVal) {
+            return metricName.slice(startVal, -endVal);
+        } else {
+            return metricName;
+        }
+    },
+
+    validNumberChecker: function (num) {
+        return isFinite(num)? num: 0;
+    },
+
+    capitalizeString: function (string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+	};
 	return options;
 }]);
