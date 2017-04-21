@@ -34,6 +34,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Namespace;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.List;
@@ -69,8 +71,9 @@ public class NamespaceService extends EndpointService {
      * @return  The namespaces owned by the user.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public List<Namespace> getNamespaces() throws IOException {
+    public List<Namespace> getNamespaces() throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
@@ -86,8 +89,9 @@ public class NamespaceService extends EndpointService {
      * @return  The persisted namespace.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Namespace createNamespace(Namespace namespace) throws IOException {
+    public Namespace createNamespace(Namespace namespace) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, namespace);
 
@@ -104,8 +108,9 @@ public class NamespaceService extends EndpointService {
      * @return  The updated namespace.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Namespace updateNamespace(BigInteger id, Namespace namespace) throws IOException {
+    public Namespace updateNamespace(BigInteger id, Namespace namespace) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/" + id.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, namespace);
 
@@ -122,8 +127,9 @@ public class NamespaceService extends EndpointService {
      * @return  The updated namespace.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public Namespace updateNamespaceMembers(BigInteger id, Set<String> users) throws IOException {
+    public Namespace updateNamespaceMembers(BigInteger id, Set<String> users) throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE + "/" + id.toString() + "/users";
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.PUT, requestUrl, users);
 

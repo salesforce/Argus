@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.dva.argus.sdk;
+package com.salesforce.dva.argus.sdk.excpetions;
 
 /**
  * Exception class for the Argus SDK.
@@ -38,8 +38,9 @@ package com.salesforce.dva.argus.sdk;
 public class ArgusServiceException extends RuntimeException {
 
     //~ Instance fields ******************************************************************************************************************************
-
-    private final int _status;
+	
+	private static final long serialVersionUID = 1L;
+	private final int _status;
     private final String _url;
     private final String _json;
 
@@ -53,7 +54,7 @@ public class ArgusServiceException extends RuntimeException {
      * @param  url      The request URL.
      * @param  json     The JSON request payload.
      */
-    ArgusServiceException(int status, String message, String url, String json) {
+    public ArgusServiceException(int status, String message, String url, String json) {
         super(message);
         _status = status;
         _url = url;

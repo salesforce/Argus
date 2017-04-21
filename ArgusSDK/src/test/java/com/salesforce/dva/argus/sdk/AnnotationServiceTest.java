@@ -32,6 +32,8 @@ package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
 import com.salesforce.dva.argus.sdk.entity.Annotation;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,7 +47,7 @@ import static org.junit.Assert.*;
 public class AnnotationServiceTest extends AbstractTest {
 
     @Test
-    public void testPutAnnotations() throws IOException {
+    public void testPutAnnotations() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AnnotationServiceTest.json"))) {
             AnnotationService annotationService = argusService.getAnnotationService();
             List<Annotation> annotations = Arrays.asList(new Annotation[] { _constructAnnotation() });
@@ -56,7 +58,7 @@ public class AnnotationServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetAnnotations() throws IOException {
+    public void testGetAnnotations() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AnnotationServiceTest.json"))) {
             AnnotationService annotationService = argusService.getAnnotationService();
             List<String> expressions = Arrays.asList(new String[] { "-1d:TestScope:TestMetric{TestTag=TagValue}:TestType" });

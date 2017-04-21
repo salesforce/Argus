@@ -31,8 +31,17 @@
 	 
 package com.salesforce.dva.argus.ws.filter;
 
-import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.UnsupportedJwtException;
+
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
+import com.salesforce.dva.argus.ws.resources.JWTUtils;
+
 import java.io.IOException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -43,11 +52,13 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.ws.rs.core.HttpHeaders;
 
 /**
  * Enforces authentication requirements.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class AuthFilter implements Filter {
 
@@ -55,6 +66,7 @@ public class AuthFilter implements Filter {
 
     /** The session attribute name to store the authenticated user. */
     public static final String USER_ATTRIBUTE_NAME = "USER";
+    private static final String SESSION_ATTRIBUTE_NAME = "SESSION";
 
     //~ Methods **************************************************************************************************************************************
 
@@ -74,26 +86,72 @@ public class AuthFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         String user = null;
+        String sessionId = null;
 
         if (HttpServletRequest.class.isAssignableFrom(request.getClass())) {
             HttpServletRequest req = HttpServletRequest.class.cast(request);
-            HttpSession session = req.getSession(true);
-            Object remoteUser = session.getAttribute(USER_ATTRIBUTE_NAME);
-
-            if (!"options".equalsIgnoreCase(req.getMethod()) && !_isAuthEndpoint(req) && remoteUser == null) {
-            	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
-            	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
-            	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
-            	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            } else if (remoteUser != null) {
-                user = PrincipalUserDto.class.cast(session.getAttribute(USER_ATTRIBUTE_NAME)).getUserName();
+            
+            String authorizationHeader = req.getHeader(HttpHeaders.AUTHORIZATION);
+            
+            if(authorizationHeader == null && !_isTokenAuthEndpoint(req)) {
+            	LoggerFactory.getLogger(getClass()).info("Using Session Based Auth...");
+            	//Use Session Based Authentication
+            	HttpSession session = req.getSession(true);
+            	sessionId = session.getId();
+                Object remoteUser = session.getAttribute(USER_ATTRIBUTE_NAME);
+                
+                if (!"options".equalsIgnoreCase(req.getMethod()) && !_isAuthEndpoint(req) && remoteUser == null) {
+                	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+                	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+                	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+                	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                } else if (remoteUser != null) {
+                    user = PrincipalUserDto.class.cast(remoteUser).getUserName();
+                }
+                
+            } else {
+            	//Token Based Authentication
+            	LoggerFactory.getLogger(getClass()).info("Using Token Based Auth...");
+            	if (!"options".equalsIgnoreCase(req.getMethod()) && !_isAuthEndpoint(req)) {
+                	if(!authorizationHeader.startsWith("Bearer ")) {
+                		HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+                    	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+                    	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+                    	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, HttpHeaders.AUTHORIZATION + 
+                    			" Header is either not proivded or incorrectly formatted.");
+                	} else {               
+                        try {
+                        	String jwt = authorizationHeader.substring("Bearer ".length()).trim();
+                        	user = JWTUtils.validateTokenAndGetSubj(jwt, JWTUtils.TokenType.ACCESS);
+                        } catch(UnsupportedJwtException | MalformedJwtException | IllegalArgumentException e) {
+                        	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+                        	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+                        	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+                        	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unsupported or Malformed JWT. Please provide a valid JWT.");
+                        } catch(SignatureException e) {
+                        	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+                        	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+                        	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+                        	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Signature Exception. Please provide a valid JWT.");
+                        } catch(ExpiredJwtException e) {
+                        	HttpServletResponse httpresponse = HttpServletResponse.class.cast(response);
+                        	httpresponse.setHeader("Access-Control-Allow-Origin", req.getHeader("Origin"));
+                        	httpresponse.setHeader("Access-Control-Allow-Credentials", "true");
+                        	httpresponse.sendError(HttpServletResponse.SC_UNAUTHORIZED, "JWT has expired. Please obtain a new token.");
+                        }
+                	}
+                }
             }
         }
+        
         try {
             MDC.put(USER_ATTRIBUTE_NAME, user);
+            MDC.put(SESSION_ATTRIBUTE_NAME, sessionId);
+            request.setAttribute(USER_ATTRIBUTE_NAME, user);
             chain.doFilter(request, response);
         } finally {
             MDC.remove(USER_ATTRIBUTE_NAME);
+            MDC.remove(SESSION_ATTRIBUTE_NAME);
         }
     }
 
@@ -104,7 +162,14 @@ public class AuthFilter implements Filter {
         String path = req.getRequestURI();
         String contextPath = req.getContextPath();
 
-        return path.startsWith(contextPath + "/auth") || path.endsWith("/help");
+        return path.startsWith(contextPath + "/auth") || path.startsWith(contextPath + "/v2/auth") || path.endsWith("/help");
+    }
+    
+    private boolean _isTokenAuthEndpoint(HttpServletRequest req) {
+        String path = req.getRequestURI();
+        String contextPath = req.getContextPath();
+
+        return path.startsWith(contextPath + "/v2/auth") || path.endsWith("/help");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
