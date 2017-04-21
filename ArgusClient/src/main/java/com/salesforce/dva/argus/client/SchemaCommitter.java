@@ -84,7 +84,7 @@ class SchemaCommitter extends AbstractCommitter {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable ex) {
-                LOGGER.info("Error occured while committing metrics for schema records creation.", ex);
+                LOGGER.info("Error occurred while committing metrics for schema records creation.", ex);
             }
         }
         LOGGER.warn(MessageFormat.format("Schema committer thread interrupted. {} metrics committed by this thread.", jobCounter.get()));

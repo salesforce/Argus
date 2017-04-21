@@ -35,10 +35,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import org.apache.http.HttpStatus;
 
 /**
  * Provides read and write access to Argus.
@@ -359,7 +364,8 @@ public class ArgusService implements AutoCloseable {
          *
          * @throws  IOException  If the Java object cannot be constructed from the provided JSON.
          */
-        protected <T> T fromJson(String json, TypeReference typeRef) throws IOException {
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+		protected <T> T fromJson(String json, TypeReference typeRef) throws IOException {
             return (T) MAPPER.readValue(json, typeRef);
         }
 
@@ -379,9 +385,14 @@ public class ArgusService implements AutoCloseable {
          * @param   requestUrl  The URL to which the request was dispatched.
          *
          * @throws  ArgusServiceException  If the request resulted in an error.
+         * @throws TokenExpiredException 
          */
-        protected void assertValidResponse(ArgusHttpClient.ArgusResponse response, String requestUrl) throws ArgusServiceException {
+        protected void assertValidResponse(ArgusHttpClient.ArgusResponse response, String requestUrl) throws TokenExpiredException, ArgusServiceException {
             if (response.getErrorMessage() != null) {
+            	if(response.getStatus() == HttpStatus.SC_UNAUTHORIZED && !requestUrl.contains("login")) {
+            		throw new TokenExpiredException(response.getErrorMessage(), requestUrl, response.getResult());
+            	}
+            	
                 throw new ArgusServiceException(response.getStatus(), response.getErrorMessage(), requestUrl, response.getResult());
             }
         }

@@ -35,6 +35,8 @@ import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
 import com.salesforce.dva.argus.sdk.entity.Annotation;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -72,8 +74,9 @@ public class AnnotationService extends EndpointService {
      * @return  The annotations that match the given expressions.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public List<Annotation> getAnnotations(List<String> expressions) throws IOException {
+    public List<Annotation> getAnnotations(List<String> expressions) throws IOException, TokenExpiredException {
         StringBuilder requestUrl = new StringBuilder(RESOURCE);
 
         for (int i = 0; i < expressions.size(); i++) {
@@ -95,8 +98,9 @@ public class AnnotationService extends EndpointService {
      * @return  A description of the operation result.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
-    public PutResult putAnnotations(List<Annotation> annotations) throws IOException {
+    public PutResult putAnnotations(List<Annotation> annotations) throws IOException, TokenExpiredException {
         String requestUrl = COLLECTION_RESOURCE + RESOURCE;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, annotations);
 

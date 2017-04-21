@@ -75,7 +75,7 @@ public class PercentileTransformTest {
             assertEquals(p50, new Double(35.0));
             assertEquals(p100, new Double(50.0));
         } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new SystemException("Exception occured while trying to invoke method via reflection.", e);
+            throw new SystemException("Exception occurred while trying to invoke method via reflection.", e);
         }
     }
 
