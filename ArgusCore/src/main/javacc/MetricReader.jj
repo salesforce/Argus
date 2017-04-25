@@ -118,7 +118,9 @@ PARSER_END(MetricReader)
 SKIP : { " " }
 SKIP : { "\n" | "\r" | "\r\n" }
 
-TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> )+ > }
+TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> | <TSDB_REGEX> )+ > }
+TOKEN : { < #TSDB_REGEX : <TSDB_ALLOWED_FILTERS>"("(<DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> | <TOP> | <DOLLAR> | <POUND> | <LEFT_PARENTHESIS> | <RIGHT_PARENTHESIS> )+")" >}
+TOKEN : { < #TSDB_ALLOWED_FILTERS : "regexp" | "literal_or" | "iliteral_or" | "not_literal_or" | "not_iliteral_or" | "wildcard" | "iwildcard" | "regexp" >}
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT>> }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
@@ -136,8 +138,10 @@ TOKEN : { < #OR : "|" > }
 TOKEN : { < #DOLLAR : "$" > }
 TOKEN : { < #POUND : "#" > }
 TOKEN : { < #NOT : "!" > }
+TOKEN : { < #TOP : "^" > }
 TOKEN : { < #TIME_UNIT : "s" | "m" | "h" | "d" > }
 TOKEN : { < #ANYTHING : ~["#"] > }
+
 
 TOKEN : { < IDENTITY : "IDENTITY" > }
 TOKEN : { < SUM : "SUM" > }
@@ -160,7 +164,6 @@ TOKEN : { < MOVINGAVERAGE : "MOVINGAVERAGE" > }
 TOKEN : { < ZEROIFMISSINGSUM : "ZEROIFMISSINGSUM" > }
 TOKEN : { < ABSOLUTE : "ABSOLUTE" > }
 TOKEN : { < ALIAS : "ALIAS" > }
-TOKEN : { < ALIASBYTAG : "ALIASBYTAG" > }
 TOKEN : { < NORMALIZE : "NORMALIZE" > }
 TOKEN : { < NORMALIZE_V : "NORMALIZE_V" > }
 TOKEN : { < UNION : "UNION" > }
@@ -202,7 +205,9 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" > }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" | <TSDB_2_2_AGGREGATOR> |<TSDB_2_3_AGGREGATOR> > }
+TOKEN : { < TSDB_2_2_AGGREGATOR :  "count" | "ep50r3" | "ep50r7" | "ep75r3" | "ep75r7" | "ep90r3" | "ep90r7" | "ep95r3" | "ep95r7" | "ep99r3" | "ep99r7" | "ep999r3" | "ep999r7" | "p50" | "p75"  | "p90" | "p95" | "p99" | "p999" >}
+TOKEN : { < TSDB_2_3_AGGREGATOR :  "last" | "none" | "first" >}
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
@@ -375,9 +380,6 @@ private String functionName() :
 	t = <ALIAS>
 	{ return t.image; }
 	|
-	t = <ALIASBYTAG>
-	{ return t.image; }
-	|
 	t = <PROPAGATE>
 	{ return t.image; }
 	|
@@ -480,7 +482,8 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
 	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	      	constants.add(String.valueOf(relativeTo));
+	  	  	    }
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
