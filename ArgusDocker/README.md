@@ -28,7 +28,7 @@ The simple deployment contains approximately the minimum services required for a
  * argus-web-services
    * The REST api for argus, running inside a tomcat container
    * Available after deployment at http://localhost:8081/argus/
-   * The top level tomcat web.xml is overriden to include a CORS filter
+   * The top level tomcat web.xml is overridden to include a CORS filter
  * argus-web
    * The web ui / frontend for argus
    * Available after deployment at http://localhost:8082/app/

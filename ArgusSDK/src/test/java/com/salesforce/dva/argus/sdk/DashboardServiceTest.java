@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.Dashboard;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -43,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 public class DashboardServiceTest extends AbstractTest {
 
     @Test
-    public void testCreateDashboard() throws IOException {
+    public void testCreateDashboard() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
             DashboardService dashboardService = argusService.getDashboardService();
             Dashboard result = dashboardService.createDashboard(_constructUnpersistedDashboard());
@@ -54,7 +56,7 @@ public class DashboardServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteDashboard() throws IOException {
+    public void testDeleteDashboard() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
             DashboardService dashboardService = argusService.getDashboardService();
 
@@ -63,7 +65,7 @@ public class DashboardServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetDashboard() throws IOException {
+    public void testGetDashboard() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
             DashboardService dashboardService = argusService.getDashboardService();
             Dashboard result = dashboardService.getDashboard(BigInteger.ONE);
@@ -74,7 +76,7 @@ public class DashboardServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetDashboards() throws IOException {
+    public void testGetDashboards() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
             DashboardService batchService = argusService.getDashboardService();
             List<Dashboard> result = batchService.getDashboards();
@@ -85,7 +87,7 @@ public class DashboardServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateDashboard() throws IOException {
+    public void testUpdateDashboard() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
             DashboardService dashboardService = argusService.getDashboardService();
             Dashboard updated = _constructUpdatedDashboard();
@@ -96,7 +98,7 @@ public class DashboardServiceTest extends AbstractTest {
         }
     }
 
-    private Dashboard _constructPersistedDashboard() throws IOException {
+    private Dashboard _constructPersistedDashboard() throws IOException, TokenExpiredException {
         Dashboard result = _constructUnpersistedDashboard();
 
         result.setId(BigInteger.ONE);
@@ -107,7 +109,7 @@ public class DashboardServiceTest extends AbstractTest {
         return result;
     }
 
-    private Dashboard _constructUnpersistedDashboard() throws IOException {
+    private Dashboard _constructUnpersistedDashboard() throws IOException, TokenExpiredException {
         Dashboard result = new Dashboard();
 
         result.setContent("TestContent");
@@ -118,7 +120,7 @@ public class DashboardServiceTest extends AbstractTest {
         return result;
     }
 
-    private Dashboard _constructUpdatedDashboard() throws IOException {
+    private Dashboard _constructUpdatedDashboard() throws IOException, TokenExpiredException {
         Dashboard result = _constructPersistedDashboard();
 
         result.setContent("UpdatedContent");

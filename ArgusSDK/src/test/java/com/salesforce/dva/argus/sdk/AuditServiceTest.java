@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.Audit;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -43,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 public class AuditServiceTest extends AbstractTest {
 
     @Test
-    public void testGetAuditsForEntity() throws IOException {
+    public void testGetAuditsForEntity() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AuditServiceTest.json"))) {
             AuditService auditService = argusService.getAuditService();
             List<Audit> result = auditService.getAuditsForEntity(BigInteger.ONE);
@@ -54,7 +56,7 @@ public class AuditServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetAudit() throws IOException {
+    public void testGetAudit() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AuditServiceTest.json"))) {
             AuditService auditService = argusService.getAuditService();
             Audit result = auditService.getAudit(BigInteger.ONE);

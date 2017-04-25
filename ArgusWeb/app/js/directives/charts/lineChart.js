@@ -1421,7 +1421,7 @@ angular.module('argus.directives.charts.lineChart', [])
                     .call(brush)
                     .call(brush.move, x.range()); //change the x axis range when brush area changes
 
-                brushMainG = mainChart.append("g")//have to do this seperately, because rect svg cannot register brush
+                brushMainG = mainChart.append("g")//have to do this separately, because rect svg cannot register brush
                     .attr("class", "brushMain")
                     .call(zoom)
                     .on("mousedown.zoom", null)
