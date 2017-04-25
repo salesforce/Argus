@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -173,9 +174,22 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
                         tag.getKey(), tag.getValue());
                     int page = 1;
+                    
+                    boolean containsWildcard = SchemaService.containsWildcard(query.getScope())
+                							|| SchemaService.containsWildcard(query.getMetric())
+                							|| SchemaService.containsWildcard(query.getNamespace())
+                							|| SchemaService.containsWildcard(tag.getKey())
+                							|| SchemaService.containsWildcard(tag.getValue());
 
                     while (true) {
-                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
+                        List<MetricSchemaRecord> records;
+                        
+                        if(!containsWildcard) {
+                    		records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(), 
+                    				tag.getKey(), tag.getValue()));
+                    	} else {
+                    		records = _schemaService.get(schemaQuery, limit, page++);
+                    	}
 
                         for (MetricSchemaRecord record : records) {
                         	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
@@ -214,14 +228,15 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             break;
                         }
                     }
-                    
-                    for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
-                    	MetricQuery q = entry.getValue();
-                    	if(q.getTags().size() != query.getTags().size()) {
-                    		queries.remove(entry.getKey());
-                    	}
-                    }
                 }
+                
+                for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
+                	MetricQuery q = entry.getValue();
+                	if(q.getTags().size() != query.getTags().size()) {
+                		queries.remove(entry.getKey());
+                	}
+                }
+                
             } // end if-else
         } else {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));

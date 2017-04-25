@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.entity.Batch;
 import com.salesforce.dva.argus.sdk.entity.Batch.Query;
 import com.salesforce.dva.argus.sdk.entity.Metric;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 public class BatchServiceTest extends AbstractTest {
 
     @Test
-    public void testCreateBatch() throws IOException {
+    public void testCreateBatch() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/BatchServiceTest.json"))) {
             BatchService batchService = argusService.getBatchService();
             BigInteger id = batchService.createBatch(Arrays.asList(new String[] { "-1d:TestScope:TestMetric{TestTag=TagValue}:avg" }), 3600);
@@ -55,7 +57,7 @@ public class BatchServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteBatch() throws IOException {
+    public void testDeleteBatch() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/BatchServiceTest.json"))) {
             BatchService batchService = argusService.getBatchService();
 
@@ -64,7 +66,7 @@ public class BatchServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetBatch() throws IOException {
+    public void testGetBatch() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/BatchServiceTest.json"))) {
             BatchService batchService = argusService.getBatchService();
             Batch result = batchService.getBatch(BigInteger.ONE);
@@ -75,7 +77,7 @@ public class BatchServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetBatches() throws IOException {
+    public void testGetBatches() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/BatchServiceTest.json"))) {
             BatchService batchService = argusService.getBatchService();
             Map<String, String> result = batchService.getBatches();

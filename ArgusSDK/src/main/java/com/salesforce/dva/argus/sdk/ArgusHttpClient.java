@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpDelete;
@@ -49,9 +50,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
@@ -76,6 +75,8 @@ class ArgusHttpClient {
     private final String _endpoint;
     private final CloseableHttpClient _httpClient;
     private final BasicHttpContext _httpContext;
+    String accessToken;
+    String refreshToken;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -90,7 +91,7 @@ class ArgusHttpClient {
      * @throws  IOException  If the client cannot be initialized due a configuration error such as a malformed URL for example.
      */
     ArgusHttpClient(String endpoint, int maxConn, int timeout, int reqTimeout) throws IOException {
-        URL url = new URL(endpoint);
+        new URL(endpoint);
         PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
 
         connMgr.setMaxTotal(maxConn);
@@ -138,6 +139,8 @@ class ArgusHttpClient {
 
         return ArgusResponse.generateResponse(_doHttpRequest(requestType, url, json));
     }
+    
+    
 
     /* The actual request call.  Factored for test mocking. */
     HttpResponse _doHttpRequest(RequestType requestType, String url, String json) throws IOException {
@@ -154,22 +157,26 @@ class ArgusHttpClient {
                 HttpPost post = new HttpPost(url);
                 post.setEntity(entity);
 
+                post.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
                 return _httpClient.execute(post, _httpContext);
             case GET:
 
                 HttpGet httpGet = new HttpGet(url);
-
+                
+                httpGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
                 return _httpClient.execute(httpGet, _httpContext);
             case DELETE:
 
                 HttpDelete httpDelete = new HttpDelete(url);
-
+                
+                httpDelete.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
                 return _httpClient.execute(httpDelete, _httpContext);
             case PUT:
 
                 HttpPut httpput = new HttpPut(url);
 
                 httpput.setEntity(entity);
+                httpput.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
                 return _httpClient.execute(httpput, _httpContext);
             default:
                 throw new IllegalArgumentException(" Request Type " + requestType + " not a valid request type. ");
