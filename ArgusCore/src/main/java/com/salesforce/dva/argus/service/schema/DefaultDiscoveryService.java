@@ -133,7 +133,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         
 
         if (DiscoveryService.isWildcardQuery(query)) {
-            _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
+            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             
             int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
             if(noOfTimeseriesAllowed == 0) {
@@ -239,7 +239,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                 
             } // end if-else
         } else {
-            _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
+            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
             queries.put(null, query);
         } // end if-else
         _logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
@@ -268,11 +268,11 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 	}
 
     private void _logMatchedQueries(List<MetricQuery> queryList) {
-        _logger.debug("Matched Queries:");
+        _logger.info("Matched Queries:");
 
         int i = 1;
         for (MetricQuery q : queryList) {
-            _logger.debug(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
+            _logger.info(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
         }
     }
 
