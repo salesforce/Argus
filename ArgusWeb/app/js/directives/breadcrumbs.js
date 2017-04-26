@@ -9,8 +9,8 @@ angular.module('argus.directives.breadcrumbs', [])
 		scope: {},
 		controller: ['$scope', 'breadcrumbs', function ($scope, breadcrumbs) {
 			$scope.breadcrumbs = breadcrumbs;
-		}],
-		link: function(scope, element, attribute) {
-		}
+		}]
+		// link: function(scope, element, attribute) {
+		// }
 	};
 });
