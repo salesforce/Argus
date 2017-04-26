@@ -46,9 +46,9 @@ angular.module('argus', [
   'argus.directives.dashboardResource',
   'argus.directives.controls.dashboard',
   'argus.directives.controls.date',
-  'argus.directives.controls.dropdown',
   'argus.directives.controls.submit',
   'argus.directives.controls.text',
+  'argus.directives.controls.select',
   'argus.directives.charts.chart',
   'argus.directives.charts.lineChart',
   'argus.directives.charts.flags',
@@ -202,9 +202,10 @@ require("./directives/breadcrumbs");
 require("./directives/dashboardResource");
 require("./directives/controls/dashboard");
 require("./directives/controls/date");
-require("./directives/controls/dropdown");
+require("./directives/controls/select");
 require("./directives/controls/submit");
 require("./directives/controls/text");
+require("./directives/controls/select");
 require("./directives/charts/chart");
 require("./directives/charts/lineChart");
 require("./directives/charts/flags");
