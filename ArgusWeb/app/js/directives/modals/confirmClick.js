@@ -26,12 +26,10 @@ angular.module('argus.directives.modals.confirmClick', []).
                              $scope.confirmCall = confirmCall;
 
                              $scope.confirm = function () {
-                                 console.log("confirm");
                                  $scope.confirmCall();
                                  $scope.close();
                              };
                              $scope.close = function () {
-                                 console.log("close");
                                  confirmModal.close();
                              };
                          }]

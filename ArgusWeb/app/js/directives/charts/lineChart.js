@@ -683,7 +683,12 @@ angular.module('argus.directives.charts.lineChart', [])
                     ChartElementService.resizeZoom(allSize, zoom);
                     ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
                     ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
-
+                    if (chartType === 'scatter') {
+                        graph.x = x;
+                        graph.y = y;
+                        graph2.x = x2;
+                        graph2.y = y2;
+                    }
                     ChartElementService.resizeGraphs(svg_g, graph, chartType);
                     ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType);
 

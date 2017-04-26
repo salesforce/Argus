@@ -160,7 +160,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         var chartType = attributes.type ? attributes.type : 'line';
         chartType = chartType.toLowerCase();
         // TODO: make this a constant somewhere else
-        var supportedChartTypes = ['line', 'area'];
+        var supportedChartTypes = ['line', 'area', 'scatter'];
         // check if a supported chartType is used
         if (!supportedChartTypes.includes(chartType)) chartType = 'line';
         var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
