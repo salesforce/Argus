@@ -14,16 +14,10 @@ angular.module('argus.directives.controls.select', ['selectize'])
             },
             controller: function($scope) {
                 $scope.ctrlVal = $scope.controlValue;
-                for (var prop in $routeParams) {
-                    if (prop == $scope.controlName) {
-                        $scope.ctrlVal = $routeParams[prop];
-                    }
-                }
-
                 $scope.selectizeOptions = [];
                 $scope.selectizeConfig = {
                     delimiter: '|',
-                    sortField: "text",
+                    sortField: '$order',
                     maxItems: 1,
                     create: false
                 };
@@ -39,13 +33,25 @@ angular.module('argus.directives.controls.select', ['selectize'])
             link: function(scope, element, attributes, dashboardCtrl) {
                 var selectize = element.find('selectize')[0].selectize;
 
+                var optionSet = new Set();
                 //find all option tags in the ag-select tag, and add their contents
                 element.find('ng-transclude option').each(function(){
                     selectize.addOption({
                         text: this.innerHTML,
                         value: this.value
                     });
+                    optionSet.add(this.value);
                 });
+
+                for (var prop in $routeParams) {
+                    if (prop === scope.controlName) {
+                        var val = $routeParams[prop];
+                        if(val in optionSet){
+                            scope.ctrlVal = val; //to disable adding new option through url parameter
+                        }
+                        break;
+                    }
+                }
 
                 element.find('ng-transclude').remove();
                 selectize.refreshOptions(false);
