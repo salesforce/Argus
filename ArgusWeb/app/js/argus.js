@@ -200,7 +200,6 @@ require("./directives/breadcrumbs");
 require("./directives/dashboardResource");
 require("./directives/controls/dashboard");
 require("./directives/controls/date");
-require("./directives/controls/select");
 require("./directives/controls/submit");
 require("./directives/controls/text");
 require("./directives/controls/select");
