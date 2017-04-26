@@ -5,13 +5,18 @@
         <span class="input-group-btn" style="font-size:inherit;">
           <a data-toggle="tooltip" data-placement="right" ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
         </span>
-        
+
         <div class="input-group" style="width:100%;">
             <span class="input-group-btn" style="cursor:pointer;">
                 <button type="submit" class="btn btn-primary" ng-click="getMetricData()" ng-disabled="showChart&&!chartLoaded">Go!</button>
             </span>
             <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
         </div>
+    </div>
+
+    <div class="search-options">
+        <input class="form-check-input" type="checkbox" ng-model="includeAnnotations">
+        Include annotations related to the metric
     </div>
 
     <div id="discoveryLookup" ng-show="showMetricDiscovery">
@@ -25,7 +30,7 @@
     </p>
 
     <div class="fullBox">
-    
+
     <div class="metricFields">
         <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
@@ -61,8 +66,6 @@
           </a>
         </script>
     </div>
-
-    <div></div>
 
     <div ng-show="enterTagsErr" style="color:red;">You must enter both a <strong>Tag key AND Tag value</strong>!</div>
     
@@ -104,8 +107,6 @@
         </script>
     </div>
 
-    <div></div>
-        
     <div class="metricFields">
         <label>Namespace</label><span ng-if="noNamespaceResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
@@ -124,8 +125,6 @@
           </a>
         </script>
     </div>
-
-    <div></div>
 
     <div class="metricFields" style="margin-top:2em;">
         <span ng-show="false"><strong>Metric Expression:</strong> &nbsp;</span><span id="searchExpression"></span>

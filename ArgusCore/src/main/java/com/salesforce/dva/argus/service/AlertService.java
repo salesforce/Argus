@@ -37,10 +37,7 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.EmailNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.GOCNotifier;
-import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
+import com.salesforce.dva.argus.service.alert.notifier.*;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
 
@@ -274,7 +271,8 @@ public interface AlertService extends Service {
         GOC(GOCNotifier.class.getName()),
         WARDENAPI(WardenApiNotifier.class.getName()),
         WARDENPOSTING(WardenPostingNotifier.class.getName()),
-        GUS(GusNotifier.class.getName());
+        GUS(GusNotifier.class.getName()),
+        CALLBACK(CallbackNotifier.class.getName());
 
         String name;
 

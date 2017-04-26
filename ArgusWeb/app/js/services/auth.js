@@ -1,5 +1,9 @@
+'use strict';
+/*global angular:false */
+
 angular.module('argus.services.auth', [])
 .factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
+
     var refreshPath = 'refresh';
 
     return {
@@ -8,7 +12,7 @@ angular.module('argus.services.auth', [])
                 username: username,
                 password: password
             };
-            $resource(CONFIG.wsUrl + 'auth/login', {}, {}).save(creds, function (result) {
+            $resource(CONFIG.wsUrl + '/v2/auth/login', {}, {}).save(creds, function (result) {
                 Storage.set('user', result);
 
                 //-------Token Based Authentication----------
@@ -80,4 +84,5 @@ angular.module('argus.services.auth', [])
             });
         }
     };
+
 }]);

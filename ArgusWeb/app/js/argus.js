@@ -33,6 +33,7 @@ angular.module('argus', [
   'angulartics',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
+  'angularScreenfull',
   'argus.urlConfig',
   'argus.config',
   'argus.filters',
@@ -56,7 +57,8 @@ angular.module('argus', [
   'argus.directives.charts.option',
   'argus.directives.charts.statusIndicator',
   'argus.directives.charts.table',
-  'argus.directives.headerMenu'
+  'argus.directives.headerMenu',
+  'argus.directives.modals.confirmClick'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
   "use strict";
   // template caching
@@ -84,6 +86,7 @@ angular.module('argus.services', [
   'argus.services.charts.tools',
   'argus.services.charts.dataProcessing',
   'argus.services.charts.dateHandler',
+  'argus.services.charts.elements',
   'argus.services.dashboard',
   'argus.services.dashboards',
   'argus.services.history',
@@ -171,12 +174,15 @@ require("./services/jsonUnflatten");
 require("./services/tableListService");
 require("./services/downloadHelper");
 require("./services/tokenAuthInterceptor")
+require("./services/agTableService")
+
 
 require("./services/charts/chartOptions");
 require("./services/charts/chartRendering");
 require("./services/charts/chartTools");
 require("./services/charts/dataProcessing");
 require("./services/charts/dateHandler");
+require("./services/charts/chartElements");
 
 require("./services/factories/alerts");
 require("./services/factories/asyncMetrics");
@@ -216,7 +222,6 @@ require("./directives/UItools/stopEvent");
 require("./directives/UItools/ngConfirm");
 require("./directives/UItools/ngLoading");
 require("./directives/UItools/ngEnter");
-
+require("./directives/modals/confirmClick");
 // css
 require("../css/main.css");
-

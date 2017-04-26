@@ -37,7 +37,7 @@ input:-moz-placeholder {color:#BBB;}
 ul {margin-bottom:0;}
 ul li {list-style:none;}
 
-button[disabled] {color:#CCC;}
+button[disabled], .disabled {color:#CCC !important;}
 
 .floatL {float:left;}
 .floatR {float:right;}
@@ -49,6 +49,8 @@ button[disabled] {color:#CCC;}
 
 /** small 'X' icon */
 a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflings.png") -314px -2px no-repeat;}
+
+.glyphIconTxt {font-size:14px; padding-left:.5em; font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; vertical-align:top;}
 
 .glyphicon.glyphicon-search {margin-right:.5em; padding:6px; border:solid 1px #CCC; border-radius:5px; font-size:20px; color:#599BD9; background-color:#EEE;}
 .glyphicon.glyphicon-search:hover {color:#2C4386;}
@@ -114,12 +116,9 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .modal-backdrop {position:fixed; top:0; right:0; bottom:0; left:0; z-index:999; background-color:#000;}
 .modal-backdrop.fade {opacity:0;}
 .modal-backdrop, .modal-backdrop.fade.in {}
-.modal .smallClose {position:absolute; display:inline-block; top:1em; right:1em;}
-
-.modal .chkBox {margin:.75em .5em 0 0; max-width:90%; vertical-align:top;}
-.modal .chkBoxLbl {max-width:90%;}
-
-.modal .footer {margin-top:1em; padding-top:1em; border-top:solid 1px #CCC;}
+.modal .smallClose {position:absolute; display:inline-block; top:10px; right:1em; z-index:99;}
+.modal .chkBox {margin:.7em .5em 0 0; max-width:90%; vertical-align:top;}
+.modal .footer {padding-top:1em; border-top:solid 1px #CCC;}
 
 /* lighten up default modal backdrop (mask) */
 .lightMask .modal-backdrop.fade.in {opacity:.3;}
@@ -128,13 +127,14 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 
 /* chart options */
-.modal .mainContent {padding:0 1em 1em 1em;}
+.modal .mainContent {padding:0 0 1em 0;}
 .modal .mainContent .title {margin-bottom:.5em; padding-bottom:.25em; border-bottom:solid 1px #CCC;}
 .modal .mainContent h2 {margin-left:0; padding-top:0; font-size:1.5em;}
 .modal .mainContent h3 {font-size:1.3em;}
-.modal .mainContent h4.sectionTitle {font-weight:normal; color:#428BCA;}
+.modal .mainContent h4.sectionTitle {margin-top:1em; padding:.25em; background-color:#EEE; font-weight:normal; color:#428BCA;}
 .modal .mainContent pre {overflow-x:auto; margin-top:1em;}
-.modal .mainContent label {color:#666;}
+.modal .mainContent label {max-width:90%; font-weight:normal; color:#666;}
+.modal .glyphicon-ban-circle {margin-top:5px; line-height:20px; color:#999; font-size:20px;}
 
 
 /* Dashboard related **/
@@ -148,6 +148,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.red {background-color:red; border-color:red;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
+.serviceItem .serviceName p {word-wrap: break-word;}
+
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
@@ -303,16 +305,18 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
-.line {fill:none; stroke:steelblue; stroke-width:1.5; } /*clip-path: url('#clip');*/
+.line {fill:none; stroke:steelblue; stroke-width:1.5;} /*clip-path: url('#clip');*/
+.area {fill:steelblue; stroke:none;}
 
 .brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
+.brushArea {fill:steelblue; stroke:none;}
 
 .chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
-.focus circle {opacity:0.5;}
+/*.focus circle {opacity:0.5;}*/
 
 /* dotted line on main line graph */
-.crossLine {fill:none; stroke:#066EEA; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLine {fill:none; stroke:#000000; stroke-width:1px; stroke-dasharray:3,3;}
 .crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
 .crossLineTip {font-size:12px;}
 
@@ -349,8 +353,20 @@ g.tooltip-items text .value {font-weight: 600; font-size: 14px;}
 /* for charts in table */
 ag-dashboard table {width: 100%; table-layout:fixed;}
 
+/* for full screen mode */
+.fullscreen {
+  width: 100%;
+  height: 100%;
+}
+
 /* for ag-table */
 .agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; display: block; overflow: scroll;}
 .agTableHead {position:absolute; background-color: #eee;}
 .agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; width: 50px;}
 .agTable td {min-width: 180px; max-width: 180px; height: 40px;  word-wrap: break-word; width: 50px;}
+
+/* view metrics page */
+.search-options {
+  margin-top: 1em;
+
+}

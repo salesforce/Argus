@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 
 /**
  * Creates a constant line based on the calculated value.<br/>
- * <tt>FILL_CALCUALTE(<expr>, <interval>, <interval>, <constant>)</tt>
+ * <tt>FILL_CALCULATE(<expr>, <interval>, <interval>, <constant>)</tt>
  *
  * @param   metrics   The list of metrics to evaluate. Cannot be null or empty.
  * @param   interval  The interval at which to fill data points. For example 10m would create data points every 10 minutes if a gap greater than 10

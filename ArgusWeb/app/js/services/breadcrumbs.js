@@ -18,39 +18,39 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
-
+/*global angular:false */
 
 angular.module('argus.services.breadcrumbs', [])
 .factory('breadcrumbs', ['$rootScope', '$location', function($rootScope, $location) {
 
-  var breadcrumbs = [];
-  var breadcrumbsService = {};
+	var breadcrumbs = [];
+	var breadcrumbsService = {};
 
-  // we want to update breadcrumbs only when a route is actually changed
-  // as $location.path() will get updated imediatelly (even if route change fails!)
-  $rootScope.$on('$routeChangeSuccess', function(event, current) {
+	// we want to update breadcrumbs only when a route is actually changed
+	// as $location.path() will get updated imediatelly (even if route change fails!)
+	$rootScope.$on('$routeChangeSuccess', function() {
 
-    var _contextRootPath = $location.absUrl().substr(0, $location.absUrl().lastIndexOf("#"));
-    var pathElements = $location.path().split('/'), result = [], i;
-    var breadcrumbPath = function (index) {
-      return _contextRootPath + '#/' + (pathElements.slice(0, index + 1)).join('/');
-    };
+		var _contextRootPath = $location.absUrl().substr(0, $location.absUrl().lastIndexOf('#'));
+		var pathElements = $location.path().split('/'), result = [], i;
+		var breadcrumbPath = function (index) {
+			return _contextRootPath + '#/' + (pathElements.slice(0, index + 1)).join('/');
+		};
 
-    pathElements.shift();
-    for (i=0; i < pathElements.length; i++) {
-      result.push({name: pathElements[i], path: breadcrumbPath(i)});
-    }
+		pathElements.shift();
+		for (i=0; i < pathElements.length; i++) {
+			result.push({name: pathElements[i], path: breadcrumbPath(i)});
+		}
 
-    breadcrumbs = result;
-  });
+		breadcrumbs = result;
+	});
 
-  breadcrumbsService.getAll = function() {
-    return breadcrumbs;
-  };
+	breadcrumbsService.getAll = function() {
+		return breadcrumbs;
+	};
 
-  breadcrumbsService.getFirst = function() {
-    return breadcrumbs[0] || {};
-  };
+	breadcrumbsService.getFirst = function() {
+		return breadcrumbs[0] || {};
+	};
 
-  return breadcrumbsService;
+	return breadcrumbsService;
 }]);

@@ -5,116 +5,126 @@
 
 	<!-- left col -->
 	<div class="col-md-6">
-
 		<h4 class="sectionTitle btmBdr">Formatting</h4>
 
-		<div style="white-space:nowrap;">
-			<label for="dateFormat-{{chartId}}">Date: </label>
+		<div style="margin:.5em 0 .5em 1em;">
+			<label for="dateFormat-{{chartId}}"><strong>Date:</strong> </label>
 			<input id="dateFormat-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="%A, %b %e, %H:%M" size="25"
 				ng-model="menuOption.dateFormat"
-				ng-blur="updateDateFormatOutput()"
+				ng-change="updateDateFormatOutput()"
 				/>
-			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank"></a> &nbsp; 
-			<span style="color:#999;">{{dateFormatOutput}}</span>
+			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank" title="Custom d3 date format codes"></a>
+			<div style="margin-left:3em; color:#999;">{{dateFormatOutput}}</div>
 		</div>
 
-		<div style="margin-top:.5em; white-space:nowrap;">
-			<label>Tick labels:</label>&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" target="_blank"></a>
+		<div style="margin:.5em 0 .5em 1em;">
+			<label><strong>Tick labels:</strong>&nbsp;</label>&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" target="_blank" title="Custom d3 format codes"></a>
 
 			<div style="margin:0 0 .5em 1em;">
-			<label for="tickFormat-Yaxis-{{chartId}}">Y-axis: </label>
-			<input id="tickFormat-Yaxis-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.formatYaxis" />
+				<label for="tickFormat-Yaxis-{{chartId}}">Y-axis: </label>
+				<input id="tickFormat-Yaxis-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.yAxisConfig.formatYaxis" />
 
-			<select ng-model="menuOption.numTicksYaxis" style="margin-left:.5em;">
-				<option value="">Select # of ticks</option>
-				<option value="4">4</option>
-				<option value="5">5</option>
-				<option value="6">6</option>
-				<option value="7">7</option>
-			</select>
-			</div>
-
-			<div style="margin:0 0 .5em 1em;">
-			<label for="tickFormat-Xaxis-{{chartId}}">X-axis: </label>
-			<input id="tickFormat-Xaxis-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.formatXaxis" />
-
-			<select ng-model="menuOption.numTicksXaxis" style="margin-left:.5em;">
-				<option value="">Select # of ticks</option>
-				<option value="4">4</option>
-				<option value="5">5</option>
-				<option value="6">6</option>
-				<option value="7">7</option>
-			</select>
+				<label>&nbsp; # of ticks: </label>
+				<select ng-model="menuOption.yAxisConfig.numTicksYaxis" style="margin-left:.5em;">
+					<option value="4" ng-selected="menuOption.yAxisConfig.numTicksYaxis == 4">4</option>
+					<option value="5" ng-selected="menuOption.yAxisConfig.numTicksYaxis == 5">5</option>
+					<option value="6" ng-selected="menuOption.yAxisConfig.numTicksYaxis == 6">6</option>
+					<option value="7" ng-selected="menuOption.yAxisConfig.numTicksYaxis == 7">7</option>
+				</select>
 			</div>
 		</div>
 
 		<h4 class="sectionTitle btmBdr">Truncate metric name</h4>
 
-		<div style="margin:0 0 .5em 1em;">
-			<label for="leadingNum-{{chartId}}">Leading 'n' number:</label> <input id="leadingNum-{{chartId}}" type="input" ng-model="menuOption.leadingNum" size="7" />
-		</div>
-		
-		<div style="margin:0 0 .5em 1em;">
-			<label for="trailingNum-{{chartId}}">Trailing 'n' number:</label> <input id="trailingNum-{{chartId}}" type="input" ng-model="menuOption.trailingNum" size="7" />
+		<div style="display:inline-block; margin:.5em 0 .5em 1em;">
+			<label for="leadingNum-{{chartId}}">Leading 'n' #:</label> &nbsp;
+			<input id="leadingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.leadingNum" style="width:3.5em;" />
 		</div>
 
-		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank"></a></h4>
+		<div style="display:inline-block; margin:.5em 0 .5em 1em;">
+			<label for="trailingNum-{{chartId}}">Trailing 'n' #:</label> &nbsp;
+			<input id="trailingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.trailingNum" style="width:3.5em;" />
+		</div>
+
+		<div class="hide" style="margin-left:1em;">
+			<label>output:</label>&nbsp;<span>argus.jvm:mem.nonheap.used</span>
+		</div>
+
+		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank" title="Custom d3 downsample data options"></a></h4>
 
 		<div style="margin:0 0 .5em 1em;">
 			<label>Select a downsample method: </label>&nbsp;
 			<select ng-model="menuOption.downSampleMethod" name="down-sample-method">
 				<option value="">[ Select a method ]</option>
-				<option value="largest-triangle-one-bucket" ng-selected="">Triangle 1 Bucket</option>
-				<option value="largest-triangle-three-bucket" ng-selected="">Triangle 3 Bucket</option>
-				<option value="mode-median" ng-selected="">Mode Median</option>
-				<option value="every-nth-point" ng-selected="">Every n'th point</option>
+				<option value="largest-triangle-one-bucket" ng-selected="menuOption.downSampleMethod == 'largest-triangle-one-bucket'">Triangle 1 Bucket</option>
+				<option value="largest-triangle-three-bucket" ng-selected="menuOption.downSampleMethod == 'largest-triangle-three-bucket'">Triangle 3 Bucket</option>
+				<option value="mode-median" ng-selected="menuOption.downSampleMethod == 'mode-median'">Mode Median</option>
+				<option value="every-nth-point" ng-selected="menuOption.downSampleMethod == 'every-nth-point'">Every n'th point</option>
 			</select>
+		</div>
+
+		<h4 class="sectionTitle btmBdr">Synchronize charts</h4>
+
+		<div style="margin:0 0 .5em 1em;">
+			<input class="chkBox pointer" id="toggle-syncchart-{{chartConfig.chartId}}" type="checkbox" name="toggle-syncchart" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>&nbsp;
+			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize chart to show X-axis value for each chart</label>
 		</div>
 	</div>
 
 	<!-- right col -->
-	<div class="col-md-6">
-
+	<div class="col-md-6" style="width:48%;">
 		<h4 class="sectionTitle btmBdr">Brushing & Zooming</h4>
 
-		<input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" />&nbsp;<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
+		<input class="chkBox pointer" id="toggleBrush-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushOn" title="Show bottom brush" />
+		<label class="chkBoxLbl" for="toggleBrush-{{chartId}}">Show timeline of graphs at the bottom.</label>
 
-		<br />
+		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" />
+		<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
 
-		<input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;<label class="chkBoxLbl" for="toggle-wheel-{{chartId}}">Use mousewheel to zoom in/out of the main graph. <span style="font-weight:normal;">(Move mouse off the main graph to page scroll)</span></label>
+		<br /><input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;
+		<label class="chkBoxLbl" for="toggle-wheel-{{chartId}}">Use mousewheel to zoom in/out of the main graph.
+		<br /><span style="font-weight:normal;">(Move mouse off the main graph to page scroll)</span></label>
 
 		<h4 class="sectionTitle btmBdr">Tooltips</h4>
 
-		<input class="chkBox pointer" id="tooltips-raw-{{chartId}}" type="checkbox" ng-model="menuOption.rawTooltip" title="Display raw data inside tooltips" />&nbsp;<label class="chkBoxLbl" for="tooltips-raw-{{chartId}}">Display raw data point value. <span style="font-weight:normal;">No formatting applied.</span></label>
+		<input class="chkBox pointer" id="tooltip-on-{{chartId}}" name="tooltip-on" type="checkbox" ng-model="menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-on-{{chartId}}" title="Show tooltip">Show tooltip</label>
 
-		<br /><label class="chkBoxLbl" for="tooltips-custom-{{chartId}}">Custom format:</label>&nbsp; <input id="" type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.customTooltipFormat" /> &nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank"></a>
+		<br /><input class="chkBox pointer" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.tooltipConfig.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
 
-		<br /><label class="chkBoxLbl" for="tooltips-decimalNum-{{chartId}}">'n' number of decimal places: </label>&nbsp; <input id="" type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.decimalNumTooltip" />
+		<br /><input class="chkBox pointer" id="tooltips-raw-{{chartId}}" type="checkbox" ng-model="menuOption.tooltipConfig.rawTooltip" title="Display raw data inside tooltips" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltips-raw-{{chartId}}">Display raw data point value. <span style="font-weight:normal;">No formatting applied.</span></label>
 
-		<br /><input class="chkBox pointer" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.isTooltipSortOn" ng-click="updateStorage()" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
-
-		<h4 class="sectionTitle btmBdr">Color palletes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank"></a></h4>
-
-		<select ng-model="menuOption.colorPallete" name="color-pallete">
-			<option value="10" ng-selected="">d3 scheme category 10</option>
-			<option value="20" ng-selected="true">d3 scheme category 20</option>
-			<option value="20b" ng-selected="">d3 scheme category 20b</option>
-			<option value="20c" ng-selected="">d3 scheme category 20c</option>
+		<div style="margin-left:23px;" title="Uncheck raw data point to use">
+			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.tooltipConfig.customTooltipFormat" ng-disabled="menuOption.tooltipConfig.rawTooltip" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
+		</div>
+		
+		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
+		<label>Select a color palette: </label>&nbsp;
+		<select ng-model="menuOption.colorPalette" name="color-palette">
+			<option value="schemeCategory10" ng-selected="menuOption.colorPalette == 'schemeCategory10'">d3 scheme category 10</option>
+			<option value="schemeCategory20" ng-selected="menuOption.colorPalette == 'schemeCategory20'">d3 scheme category 20</option>
+			<option value="schemeCategory20b" ng-selected="menuOption.colorPalette == 'schemeCategory20b'">d3 scheme category 20b</option>
+			<option value="schemeCategory20c" ng-selected="menuOption.colorPalette == 'schemeCategory20c'">d3 scheme category 20c</option>
 		</select>
-
 	</div>
 
 	<div class="clearAll"></div>
 
 	<div class="footer">
-		
-		<div class="col-md-6"></div>
 
 		<div class="col-md-6">
-			<input class="chkBox pointer" id="applySettingsAll-{{chartId}}" type="checkbox" ng-model="menuOption.applySettingsAll" title="Apply settings to all graphs" />
-			<label for="applySettingsAll-{{chartId}}">Apply settings to all graphs</label>
+			<a id="reset" class="glyphicon glyphicon-ban-circle floatL"
+			   confirm-click
+			   confirm-title="Reset to default settings"
+			   confirm-message="Are you sure you want reset all your current chart settings?"
+			   confirm-call="resetSettings()"
+			   ><span class="glyphIconTxt">Reset to default</span>
+			</a>
+		</div>
 
-			<button id="save" class="btn btn-primary floatR" style="display:inline-block;" ng-click="close()">Save settings</button>
+		<div class="col-md-6">
+			<input class="chkBox pointer" id="applyToAllGraphs-{{chartId}}" type="checkbox" ng-click="updateSettingsToAllGraphs()" ng-model="applyToAllGraphs" title="Apply settings to all graphs" />
+			<label for="applyToAllGraphs-{{chartId}}">Apply settings to all graphs</label>
+			<button id="save" class="btn btn-primary floatR" ng-click="saveSettings()">Save settings</button>
 		</div>
 
 		<div class="clearAll"></div>

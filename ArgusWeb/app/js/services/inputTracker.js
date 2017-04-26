@@ -21,15 +21,16 @@
  * Created by liuxizi.xu on 9/2/16.
  */
 'use strict';
+/*global angular:false */
 
 angular.module('argus.services.inputTracker', [])
 .service('InputTracker', ['Storage', function (Storage) {
-    this.getDefaultValue = function(fieldName, defaultVal) {
-        return Storage.get(fieldName) === null ? defaultVal : Storage.get(fieldName);
-    };
+	this.getDefaultValue = function(fieldName, defaultVal) {
+		return Storage.get(fieldName) === null ? defaultVal : Storage.get(fieldName);
+	};
 
-    this.updateDefaultValue = function(fieldName, defaultVal, val) {
-        var result = val === null ? defaultVal : val;
-        Storage.set(fieldName, result);
-    };
+	this.updateDefaultValue = function(fieldName, defaultVal, val) {
+		var result = val === null ? defaultVal : val;
+		Storage.set(fieldName, result);
+	};
 }]);

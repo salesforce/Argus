@@ -28,57 +28,67 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
-package com.salesforce.dva.argus.ws.filter;
+package com.salesforce.dva.argus.sdk.excpetions;
 
-import org.slf4j.MDC;
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import org.apache.http.HttpStatus;
 
 /**
- * Establishes a session if required.
+ * Exception class for the Argus SDK.
  *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
-public class SessionFilter implements Filter {
+public class TokenExpiredException extends Exception {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+    //~ Instance fields ******************************************************************************************************************************
+	
+	private static final long serialVersionUID = 1L;
+	private final int _status = HttpStatus.SC_UNAUTHORIZED;
+    private final String _url;
+    private final String _json;
 
-    private static final String SESSION_ATTRIBUTE_NAME = "SESSION";
+    //~ Constructors *********************************************************************************************************************************
+
+    /**
+     * Creates a new ArgusServiceException object.
+     *
+     * @param  status   The corresponding HTTP status code.
+     * @param  message  The exception message.
+     * @param  url      The request URL.
+     * @param  json     The JSON request payload.
+     */
+    public TokenExpiredException(String message, String url, String json) {
+        super(message);
+        _url = url;
+        _json = json;
+    }
 
     //~ Methods **************************************************************************************************************************************
 
-    @Override
-    public void destroy() { }
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        String sessionId;
-
-        if (HttpServletRequest.class.isAssignableFrom(request.getClass())) {
-            HttpServletRequest req = HttpServletRequest.class.cast(request);
-            HttpSession session = req.getSession(true);
-
-            sessionId = (session == null) ? null : session.getId();
-        } else {
-            sessionId = null;
-        }
-        try {
-            MDC.put(SESSION_ATTRIBUTE_NAME, sessionId);
-            chain.doFilter(request, response);
-        } finally {
-            MDC.remove(SESSION_ATTRIBUTE_NAME);
-        }
+    /**
+     * Returns the status code.
+     *
+     * @return  The status code.
+     */
+    public int getStatus() {
+        return _status;
     }
 
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException { }
+    /**
+     * Returns the request URL.
+     *
+     * @return  The request URL.
+     */
+    public String getUrl() {
+        return _url;
+    }
+
+    /**
+     * Returns the JSON payload.
+     *
+     * @return  The JSON payload.
+     */
+    public String getJson() {
+        return _json;
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
