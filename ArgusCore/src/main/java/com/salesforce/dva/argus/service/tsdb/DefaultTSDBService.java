@@ -89,7 +89,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     private CloseableHttpClient _writePort;
     private final String _writeEndpoint;
     private final String _readEndpoint;
-    private final SystemConfiguration _configuration;
     private final ExecutorService _executorService;
     private final MonitorService _monitorService;
 
@@ -108,19 +107,18 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     	super(config);
         requireArgument(config != null, "System configuration cannot be null.");
         requireArgument(monitorService != null, "Monitor service cannot be null.");
-        _configuration = config;
         _monitorService = monitorService;
 
         _mapper = getMapper();
-        int connCount = Integer.parseInt(_configuration.getValue(Property.TSD_CONNECTION_COUNT.getName(),
+        int connCount = Integer.parseInt(config.getValue(Property.TSD_CONNECTION_COUNT.getName(),
                 Property.TSD_CONNECTION_COUNT.getDefaultValue()));
-        int connTimeout = Integer.parseInt(_configuration.getValue(Property.TSD_ENDPOINT_CONNECTION_TIMEOUT.getName(),
+        int connTimeout = Integer.parseInt(config.getValue(Property.TSD_ENDPOINT_CONNECTION_TIMEOUT.getName(),
                 Property.TSD_ENDPOINT_CONNECTION_TIMEOUT.getDefaultValue()));
-        int socketTimeout = Integer.parseInt(_configuration.getValue(Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getName(),
+        int socketTimeout = Integer.parseInt(config.getValue(Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getName(),
                 Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
 
-        _readEndpoint = _configuration.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue());
-        _writeEndpoint = _configuration.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue());
+        _readEndpoint = config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue());
+        _writeEndpoint = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue());
         requireArgument((_readEndpoint != null) && (!_readEndpoint.isEmpty()), "Illegal read endpoint URL.");
         requireArgument((_writeEndpoint != null) && (!_writeEndpoint.isEmpty()), "Illegal write endpoint URL.");
         requireArgument(connCount >= 2, "At least two connections are required.");

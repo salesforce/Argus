@@ -122,7 +122,7 @@ TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <U
 TOKEN : { < #TSDB_REGEX : <TSDB_ALLOWED_FILTERS>"("(<DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> | <TOP> | <DOLLAR> | <POUND> | <LEFT_PARENTHESIS> | <RIGHT_PARENTHESIS> )+")" >}
 TOKEN : { < #TSDB_ALLOWED_FILTERS : "regexp" | "literal_or" | "iliteral_or" | "not_literal_or" | "not_iliteral_or" | "wildcard" | "iwildcard" | "regexp" >}
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
-TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT>> }
+TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
 TOKEN : { < #DIGIT : ["0"-"9"] > }
 TOKEN : { < #LETTER :  ["a"-"z","A"-"Z"] > }
@@ -217,7 +217,6 @@ TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
-//TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
 TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :

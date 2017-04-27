@@ -15,7 +15,7 @@ import com.salesforce.dva.argus.entity.Metric;
 public class GroupByTransformTest extends AbstractTest {
 	
 	@Test
-	public void testGroupByPodOnly() {
+	public void testGroupByDC() {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
 		
@@ -34,6 +34,44 @@ public class GroupByTransformTest extends AbstractTest {
         metric3.setDatapoints(datapoints);
         
         Metric metric4 = new Metric("system.CHI.na2", "metric1");
+        metric4.setDatapoints(datapoints);
+        
+        metrics.add(metric1);
+        metrics.add(metric2);
+        metrics.add(metric3);
+        metrics.add(metric4);
+		
+		List<String> constants = new ArrayList<>();
+		constants.add("system\\.([A-Z]+)\\.na.");
+		constants.add("SUM");
+		
+		List<Metric> result = transform.transform(metrics, constants);
+		assertTrue(result.size() == 2);
+		for(Metric r : result) {
+			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
+		}
+	}
+	
+	@Test
+	public void testGroupByDCAndUncapturedGroup() {
+		
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
+		
+		List<Metric> metrics = new ArrayList<>();
+		
+		Metric metric1 = new Metric("system.WAS.na1", "metric1");
+        metric1.setDatapoints(datapoints);
+        
+        Metric metric2 = new Metric("system.WAS.na2", "metric1");
+        metric2.setDatapoints(datapoints);
+        
+        Metric metric3 = new Metric("bla1", "metric1");
+        metric3.setDatapoints(datapoints);
+        
+        Metric metric4 = new Metric("bla2", "metric1");
         metric4.setDatapoints(datapoints);
         
         metrics.add(metric1);
