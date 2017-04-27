@@ -371,3 +371,7 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
   margin-top: 1em;
 
 }
+
+/* for ag-select */
+ag-select .selectize-input{top: 7px; height: 25px; padding-top: 3px; padding-left: 5px; font-size: 14px;}
+ag-select > div {min-width: 152px;}
