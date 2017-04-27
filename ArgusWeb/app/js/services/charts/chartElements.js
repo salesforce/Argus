@@ -154,17 +154,17 @@ angular.module('argus.services.charts.elements', [])
 		area.y0(y(0));
 		return area;
 	};
-    this.createScatter = function (x, y) {
-        // does not actually create a graph element
-        return {x: x, y: y};
-    };
+	this.createScatter = function (x, y) {
+		// does not actually create a graph element
+		return {x: x, y: y};
+	};
 
 	this.createGraph = function (x, y, chartType) {
 		var graphElement;
 		switch (chartType) {
-            case 'scatter':
-                graphElement = graphElement = this.createScatter(x, y);
-                break;
+			case 'scatter':
+				graphElement = graphElement = this.createScatter(x, y);
+				break;
 			case 'area':
 				graphElement = this.createArea(x, y);
 				break;
@@ -390,27 +390,25 @@ angular.module('argus.services.charts.elements', [])
 			.attr('d', area);
 	};
 
-    this.renderScatterGraph = function (chart, color, metric, dot) {
-        chart.selectAll(".dot")
-            .data(metric.data)
-            .enter().append("circle")
-            .attr('class', 'dot ' + metric.graphClassName)
-            .style('fill', color)
-            .style('opacity', 0.7)
-            .attr("r", circleRadius * 0.7);
-    };
+	this.renderScatterGraph = function (chart, color, metric, dot) {
+		chart.selectAll(".dot")
+			.data(metric.data)
+			.enter().append("circle")
+			.attr('class', 'dot ' + metric.graphClassName)
+			.style('fill', color).style('opacity', 0.7).attr("r", circleRadius * 0.7);
+	};
 
 	this.renderGraph = function (chart, color, metric, graph, chartId, chartType, opacity) {
-        if (chartType === 'scatter') {
-            this.renderScatterGraph(chart, color, metric, graph, chartId);
-        } else {
-            var newGraph = chart.append('path')
-                .attr('class', chartType + ' ' + metric.graphClassName)
-                .style('clip-path', "url('#clip_'" + chartId + "'')")
-                .datum(metric.data)
-                .attr('d', graph);
-            setGraphColorStyle(newGraph, color, chartType, opacity);
-        }
+		if (chartType === 'scatter') {
+			this.renderScatterGraph(chart, color, metric, graph, chartId);
+		} else {
+			var newGraph = chart.append('path')
+				.attr('class', chartType + ' ' + metric.graphClassName)
+				.style('clip-path', "url('#clip_'" + chartId + "'')")
+				.datum(metric.data)
+				.attr('d', graph);
+			setGraphColorStyle(newGraph, color, chartType, opacity);
+		}
 	};
 
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
@@ -429,27 +427,27 @@ angular.module('argus.services.charts.elements', [])
 			.attr('d', area2);
 	};
 
-    this.renderBrushScatterGraph = function (context, color, metric, dot2) {
-        context.selectAll(".dot")
-            .data(metric.data)
-            .enter().append("circle")
-            .attr('class', 'brushDot ' + metric.graphClassName + '_brushDot')
-            .style('fill', color)
-            .attr("r", 1.5);
-    };
+	this.renderBrushScatterGraph = function (context, color, metric, dot2) {
+		context.selectAll(".dot")
+			.data(metric.data)
+			.enter().append("circle")
+			.attr('class', 'brushDot ' + metric.graphClassName + '_brushDot')
+			.style('fill', color)
+			.attr("r", 1.5);
+	};
 
 
-    this.renderBrushGraph = function (context, color, metric, graph2, chartType, opacity) {
+	this.renderBrushGraph = function (context, color, metric, graph2, chartType, opacity) {
 		var cappedChartTypeStr = UtilService.capitalizeString(chartType);
-        if (chartType === 'scatter') {
-            this.renderBrushScatterGraph(context, color, metric, graph2);
-        } else {
-            var newGraph = context.append('path')
-                .attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr)
-                .datum(metric.data)
-                .attr('d', graph2);
-            setGraphColorStyle(newGraph, color, chartType, opacity);
-        }
+		if (chartType === 'scatter') {
+			this.renderBrushScatterGraph(context, color, metric, graph2);
+		} else {
+			var newGraph = context.append('path')
+				.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr)
+				.datum(metric.data)
+				.attr('d', graph2);
+			setGraphColorStyle(newGraph, color, chartType, opacity);
+		}
 	};
 
 	this.renderFocusCircle = function (focus, color, className) {
@@ -837,12 +835,12 @@ angular.module('argus.services.charts.elements', [])
 
 	this.toggleWheel = function (wheelOn, zoom, chartRect, brushMainG) {
 		if (wheelOn) {
-            chartRect.call(zoom);
-            brushMainG.call(zoom).on("mousedown.zoom", null);
-        } else {
-            chartRect.on("wheel.zoom", null);
-            brushMainG.on("wheel.zoom", null);
-        }
+			chartRect.call(zoom);
+			brushMainG.call(zoom).on("mousedown.zoom", null);
+		} else {
+			chartRect.on("wheel.zoom", null);
+			brushMainG.on("wheel.zoom", null);
+		}
 	};
 
 	this.toggleElementShowAndHide = function (elementOn, elementName) {
@@ -857,20 +855,20 @@ angular.module('argus.services.charts.elements', [])
 			var tempColor = colors[i] === null ? newColorZ(names[i]) : colors[i];
 			var allElementsLinkedWithThisSeries = d3.selectAll('.' + graphClassNames[i]);
 			allElementsLinkedWithThisSeries.filter('circle').style('fill', tempColor);
-            switch (chartType) {
-                case "area":
-                    allElementsLinkedWithThisSeries.filter("path").style("fill", tempColor);
-                    d3.select("." + graphClassNames[i] + '_brushArea').style("fill", tempColor);
-                    break;
-                case "scatter":
-                    allElementsLinkedWithThisSeries.filter("dot").style("fill", tempColor);
-                    d3.selectAll("." + graphClassNames[i] + '_brushDot').style("fill", tempColor);
-                    break;
-                // case "line":
-                default:
-                    allElementsLinkedWithThisSeries.filter("path").style("stroke", tempColor);
-                    d3.select("." + graphClassNames[i] + '_brushLine').style("stroke", tempColor);
-            }
+			switch (chartType) {
+				case "area":
+					allElementsLinkedWithThisSeries.filter("path").style("fill", tempColor);
+					d3.select("." + graphClassNames[i] + '_brushArea').style("fill", tempColor);
+					break;
+				case "scatter":
+					allElementsLinkedWithThisSeries.filter("dot").style("fill", tempColor);
+					d3.selectAll("." + graphClassNames[i] + '_brushDot').style("fill", tempColor);
+					break;
+				// case "line":
+				default:
+					allElementsLinkedWithThisSeries.filter("path").style("stroke", tempColor);
+					d3.select("." + graphClassNames[i] + '_brushLine').style("stroke", tempColor);
+			}
 			d3.select('.' + graphClassNames[i] + '_legend').style('color', tempColor);
 		}
 	};
@@ -918,24 +916,24 @@ angular.module('argus.services.charts.elements', [])
 		series.forEach(function (metric, index) {
 			// metric with no defined data or hidden
 			if (metric === null || metric.data === undefined || !sources[index].displaying) return;
-            if (chartType === 'scatter') {
-                mainChart.selectAll('circle.dot.' + metric.graphClassName)
-                    .attr("transform", function (d) {
-                        return "translate(" + graph.x(d[0]) + "," + graph.y(d[1]) + ")";
-                    })
-                    .style("display", function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-                            ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-                            return "none";
-                        } else {
-                            return null;
-                        }
-                    });
-            } else {
-                mainChart.select("path." + chartType + "." + metric.graphClassName)
-                    .datum(metric.data)
-                    .attr('d', graph);
-            }
+			if (chartType === 'scatter') {
+				mainChart.selectAll('circle.dot.' + metric.graphClassName)
+					.attr("transform", function (d) {
+						return "translate(" + graph.x(d[0]) + "," + graph.y(d[1]) + ")";
+					})
+					.style("display", function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
+							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
+							return "none";
+						} else {
+							return null;
+						}
+					});
+			} else {
+				mainChart.select("path." + chartType + "." + metric.graphClassName)
+					.datum(metric.data)
+					.attr('d', graph);
+			}
 		});
 	};
 
@@ -1065,40 +1063,40 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.resizeGraphs = function (svg_g, graph, chartType) {
-        if (chartType === "scatter") {
-            svg_g.selectAll(".dot")
-                .attr("transform", function (d) {
-                    return "translate(" + graph.x(d[0]) + "," + graph.y(d[1]) + ")";
-                })
-                .style("display", function (d) {
-                    if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-                        ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-                        return "none";
-                    } else {
-                        return null;
-                    }
-                });
-        } else {
-            svg_g.selectAll("." + chartType).attr("d", graph);
-        }
+		if (chartType === "scatter") {
+			svg_g.selectAll(".dot")
+				.attr("transform", function (d) {
+					return "translate(" + graph.x(d[0]) + "," + graph.y(d[1]) + ")";
+				})
+				.style("display", function (d) {
+					if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
+						ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
+						return "none";
+					} else {
+						return null;
+					}
+				});
+		} else {
+			svg_g.selectAll("." + chartType).attr("d", graph);
+		}
 	};
 
-    this.resizeBrushGraphs = function (svg_g, graph2, chartType) {
-        if (chartType === "scatter") {
-            svg_g.selectAll(".brushDot")
-                .attr("transform", function (d) {
-                    return "translate(" + graph2.x(d[0]) + "," + graph2.y(d[1]) + ")";
-                })
-                .style("display", function (d) {
-                    if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
-                        ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
-                        return "none";
-                    } else {
-                        return null;
-                    }
-                });
-        } else {
-            svg_g.selectAll(".brush" + UtilService.capitalizeString(chartType)).attr("d", graph2);
-        }
-    };
+	this.resizeBrushGraphs = function (svg_g, graph2, chartType) {
+		if (chartType === "scatter") {
+			svg_g.selectAll(".brushDot")
+				.attr("transform", function (d) {
+					return "translate(" + graph2.x(d[0]) + "," + graph2.y(d[1]) + ")";
+				})
+				.style("display", function (d) {
+					if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
+						ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
+						return "none";
+					} else {
+						return null;
+					}
+				});
+		} else {
+			svg_g.selectAll(".brush" + UtilService.capitalizeString(chartType)).attr("d", graph2);
+		}
+	};
 }]);
