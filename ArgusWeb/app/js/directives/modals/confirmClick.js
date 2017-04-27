@@ -53,7 +53,6 @@ angular.module('argus.directives.modals.confirmClick', [])
 
 				// check 'disabled' before opening modal
 				if ($scope.confirmDisabled) return;
-
 				$scope.openConfirmModal(
 					$scope.confirmTitle,
 					$scope.confirmMessage,

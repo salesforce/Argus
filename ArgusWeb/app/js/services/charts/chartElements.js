@@ -154,7 +154,6 @@ angular.module('argus.services.charts.elements', [])
 		area.y0(y(0));
 		return area;
 	};
-
     this.createScatter = function (x, y) {
         // does not actually create a graph element
         return {x: x, y: y};
