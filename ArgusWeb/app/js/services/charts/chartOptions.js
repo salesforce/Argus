@@ -1,9 +1,7 @@
 /*global angular:false */
-
+'use strict';
 angular.module('argus.services.charts.options', [])
 .service('ChartOptionService', ['UtilService', function(UtilService) {
-	'use strict';
-
 	var options = {
 		setCustomOptions: function(options, optionList) {
 			for (var idx in optionList) {
@@ -90,8 +88,8 @@ angular.module('argus.services.charts.options', [])
 				options.legend.enabled = false;
 				options.rangeSelector.enabled = false;
 
-				options['scrollbar'] = {enabled: false};
-				options['navigator'] = {enabled: false};
+				options.scrollbar = {enabled: false};
+				options.navigator = {enabled: false};
 
 				options.chart.height = '120';
 				options.chart.borderWidth = 0;

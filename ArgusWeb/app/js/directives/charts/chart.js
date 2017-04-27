@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false, $:false */
+/*global angular:false, $:false, console:false */
 
 angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
@@ -161,7 +161,7 @@ angular.module('argus.directives.charts.chart', [])
 			var chartType = attributes.type ? attributes.type : 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
-			var supportedChartTypes = ['line', 'area'];
+			var supportedChartTypes = ['line', 'area', 'scatter'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
@@ -215,7 +215,7 @@ angular.module('argus.directives.charts.chart', [])
 			scope.seriesDataLoaded = false; //used for load spinner
 			angular.element('#' + newChartId).append( $compile('<div ng-loading="seriesDataLoaded"></div>')(scope) );
 
-			for (var i = 0; i < updatedMetricList.length; i++) {
+			for (i = 0; i < updatedMetricList.length; i++) {
 				var metricItem = updatedMetricList[i];
 				// get data for each metric item, bind optional data with metric data
 				queryMetricData(scope, metricItem, metricCount, newChartId, series, updatedAnnotationList, dateConfig, attributes, updatedOptionList);

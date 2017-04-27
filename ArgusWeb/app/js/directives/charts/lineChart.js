@@ -1,9 +1,8 @@
 'use strict';
-/*global angular:false, d3:false, $:false */
+/*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
 
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, $routeParams, ChartToolService, ChartElementService, UtilService) {
-
 	//----------------default chart values----------------------
 
 	var dashboardId = $routeParams.dashboardId;
@@ -121,6 +120,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 						$scope.chartId = chartId;
 						$scope.chartTitle = chartTitle;
+						$scope.applyToAllGraphs = false;
 
 						// display current date in 'sample' format
 						var currDate = new Date();
@@ -231,7 +231,7 @@ angular.module('argus.directives.charts.lineChart', [])
 							case 'area':
 								color = elementWithColor.style('fill');
 								break;
-							case 'line':
+							// case 'line':
 							default:
 								color = elementWithColor.style('stroke');
 						}
@@ -319,7 +319,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}
 			// provide support for yaxis lower case situation.
-			if(chartOptions.yaxis){
+			if (chartOptions.yaxis !== undefined) {
 				agYMin = agYMin || chartOptions.yaxis.min;
 				agYMax = agYMax || chartOptions.yaxis.max;
 			}
@@ -683,7 +683,12 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeZoom(allSize, zoom);
 					ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
 					ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
-
+					if (chartType === 'scatter') {
+						graph.x = x;
+						graph.y = y;
+						graph2.x = x2;
+						graph2.y = y2;
+					}
 					ChartElementService.resizeGraphs(svg_g, graph, chartType);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType);
 
@@ -790,7 +795,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					// generate content for no graph message
 					if (invalidExpression) {
 						messagesToDisplay.push('Metric does not exist in TSDB');
-						for (var i = 0; i < scope.invalidSeries.length; i ++) {
+						for (i = 0; i < scope.invalidSeries.length; i ++) {
 							messagesToDisplay.push(scope.invalidSeries[i].errorMessage);
 						}
 						messagesToDisplay.push('(Failed metrics are black in the legend)');

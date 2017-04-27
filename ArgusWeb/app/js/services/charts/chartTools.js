@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false, d3:false, fc:false */
+/*global angular:false, d3:false, fc:false, window:false, screen:false, console:false */
 
 angular.module('argus.services.charts.tools', [])
 .service('ChartToolService', [function() {
@@ -153,7 +153,7 @@ angular.module('argus.services.charts.tools', [])
 				yScale = d3.scalePow().exponent(yScaleConfigValue);
 				yScalePlain = d3.scalePow().exponent(yScaleConfigValue);
 				break;
-			case 'linear':
+			// case 'linear':
 			default:
 				yScale = d3.scaleLinear();
 				yScalePlain = d3.scaleLinear();

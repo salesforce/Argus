@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false, $:false */
+/*global angular:false, $:false, console:false */
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
@@ -94,28 +94,28 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			var newParams = JSON.parse(JSON.stringify(defaultParams));
 
 			// update params with values in $scope if they exist
-			newParams['scope'] = ($scope.scope) ? $scope.scope : '*';
-			newParams['metric'] = ($scope.metric) ? $scope.metric : '*';
-			newParams['namespace'] = ($scope.namespace) ? $scope.namespace : '*';
-			newParams['tagk'] = ($scope.tagk) ? $scope.tagk : '*';
-			newParams['tagv'] = ($scope.tagv) ? $scope.tagv : '*';
-			newParams['type'] = category ? category : 'scope';
+			newParams.scope = ($scope.scope) ? $scope.scope : '*';
+			newParams.metric = ($scope.metric) ? $scope.metric : '*';
+			newParams.namespace = ($scope.namespace) ? $scope.namespace : '*';
+			newParams.tagk = ($scope.tagk) ? $scope.tagk : '*';
+			newParams.tagv = ($scope.tagv) ? $scope.tagv : '*';
+			newParams.type = category ? category : 'scope';
 
 			if(category) {
 				if(category === 'scope') {
-					newParams['scope'] = newParams['scope'] + '*';
+					newParams.scope = newParams.scope + '*';
 				} else if(category === 'metric') {
-					newParams['metric'] = newParams['metric'] + '*';
+					newParams.metric = newParams.metric + '*';
 				} else if(category === 'tagk') {
-					newParams['limit'] = 10;
-					newParams['tagk'] = newParams['tagk'] + '*';
+					newParams.limit = 10;
+					newParams.tagk = newParams.tagk + '*';
 				} else if(category === 'tagv') {
-					newParams['tagv'] = newParams['tagv'] + '*';
+					newParams.tagv = newParams.tagv + '*';
 				} else if(category === 'namespace') {
-					newParams['namespace'] = newParams['namespace'] + '*';
+					newParams.namespace = newParams.namespace + '*';
 				}
 			} else {
-				newParams['scope'] = newParams['scope'] + '*';
+				newParams.scope = newParams.scope + '*';
 			}
 			// end TODO
 
@@ -235,7 +235,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				if (annotationInfo.length > 0) {
 					var annotationCount = {};
 					annotationCount.tot = annotationInfo.length;
-					for (var i = 0; i < annotationInfo.length; i++) {
+					for (i = 0; i < annotationInfo.length; i++) {
 						Annotations.query({expression: annotationInfo[i]}).$promise.then(function (data) {
 							//prevent empty annotation returns
 							if (data !== undefined && data.length !== 0) {
