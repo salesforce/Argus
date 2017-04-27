@@ -32,17 +32,13 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
-import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
-import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -56,77 +52,6 @@ import static org.mockito.Mockito.*;
 
 
 public class DefaultDiscoveryServiceTest extends AbstractTest {
-	
-	@Test
-	@Ignore
-	public void testElasticSearch_Put() {
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration());
-		
-		List<Metric> metrics = createRandomMetrics(null, null, 10);
-		service.put(metrics);
-	}
-	
-	@Test
-	@Ignore
-	public void testElasticSearch_Search() {
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration());
-		
-		List<MetricSchemaRecord> records = service.keywordSearch("redis", 500, 1);
-		for(MetricSchemaRecord record : records) {
-			System.out.println(MetricSchemaRecord.print(record));
-		}
-	}
-	
-	@Test
-	@Ignore
-	public void testElasticSearch_Get() {
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration());
-		
-		MetricSchemaRecordQuery query = new MetricSchemaRecordQuery("*", "*f0675a53ea898665", "AbstractTest-15b64863b7d-9c5*", "*", "*");
-		List<MetricSchemaRecord> records = service.get(query, 10, 1);
-		for(MetricSchemaRecord record : records) {
-			System.out.println(MetricSchemaRecord.print(record));
-		}
-	}
-	
-	@Test
-	@Ignore
-	public void testElasticSearch_GetUnique() {
-		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration());
-		
-		MetricSchemaRecordQuery query = new MetricSchemaRecordQuery("*", "*f0675a53ea898665", "AbstractTest-15b64863b7d-9c5*", "*", "*");
-		List<String> records = service.getUnique(query, 10, 1, RecordType.SCOPE);
-		for(String record : records) {
-			System.out.println(record);
-		}
-	}
-	
-	protected List<Metric> createRandomMetrics(String scope, String metric, int count) {
-        List<Metric> result = new ArrayList<>(count);
-
-        scope = scope == null ? createRandomName() : scope;
-
-        String tag = createRandomName();
-
-        for (int i = 0; i < count; i++) {
-            String metricName = metric == null ? createRandomName() : metric;
-            Metric met = new Metric(scope, metricName);
-            int datapointCount = 1;
-            Map<Long, Double> datapoints = new HashMap<>();
-            long start = System.currentTimeMillis() - 60000L;
-
-            for (int j = 0; j < datapointCount; j++) {
-                datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
-            }
-            met.setDatapoints(datapoints);
-            met.setDisplayName(createRandomName());
-            met.setUnits(createRandomName());
-            met.setTag(tag, String.valueOf(i));
-            result.add(met);
-        }
-        
-        return result;
-    }
 
     @Test
     public void testWildcardQueriesMatchWithinLimit() {
