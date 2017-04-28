@@ -247,5 +247,22 @@ public class MetricSchemaRecord {
         return MessageFormat.format("MetricSchemaRecord = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4})", namespace,
             scope, metric, tagKey, tagValue);
     }
+    
+    public static String print(MetricSchemaRecord msr) {
+    	
+    	StringBuilder sb = new StringBuilder(msr.getScope());
+    	sb.append(":");
+    	sb.append(msr.getMetric());
+    	
+    	if(msr.getTagKey() != null) {
+    		sb.append("{").append(msr.getTagKey()).append("=").append(msr.getTagValue()).append("}");
+    	}
+    	
+    	if(msr.getNamespace() != null) {
+    		sb.append(":").append(msr.getNamespace());
+    	}
+    	
+    	return sb.toString();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
