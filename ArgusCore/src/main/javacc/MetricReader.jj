@@ -120,7 +120,7 @@ SKIP : { "\n" | "\r" | "\r\n" }
 
 TOKEN : { < #TSDB_ALLOWED_TEXT : ( <DIGIT> | <LETTER> | <HYPHEN> | <PERIOD> | <UNDERSCORE> | <FWD_SLASH> | <ASTERISK> | <QUESTION> | <SQUARE_OPEN> | <SQUARE_CLOSE> | <OR> )+ > }
 TOKEN : { < #TAGK : <TSDB_ALLOWED_TEXT> > }
-TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT>> }
+TOKEN : { < #TAGV : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < #TAG : <TAGK>"="<TAGV> > }
 TOKEN : { < #DIGIT : ["0"-"9"] > }
 TOKEN : { < #LETTER :  ["a"-"z","A"-"Z"] > }
@@ -211,7 +211,6 @@ TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < METRIC : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < TAGS : <TAG>(<COMMA><TAG>)* > }
-//TOKEN : { < CONSTANT : <DOLLAR>(<TSDB_ALLOWED_TEXT>)+ > }
 TOKEN : { < CONSTANT : <POUND>(<ANYTHING>)+<POUND> > }
 
 boolean isValidExpression(String expression) :

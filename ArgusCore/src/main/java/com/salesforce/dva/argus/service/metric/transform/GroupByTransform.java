@@ -63,6 +63,9 @@ public class GroupByTransform implements Transform {
 		for(Entry<String, List<Metric>> entry : groups.entrySet()) {
 			List<Metric> metricsInThisGroup = entry.getValue();
 			List<Metric> reducedMetrics = constants.isEmpty() ? transform.transform(metricsInThisGroup) : transform.transform(metricsInThisGroup, constants);
+			for(Metric reducedMetric : reducedMetrics) {
+				reducedMetric.setScope(entry.getKey() != null ? entry.getKey() : "uncaptured-group");
+			}
 			result.addAll(reducedMetrics);
 		}
 		

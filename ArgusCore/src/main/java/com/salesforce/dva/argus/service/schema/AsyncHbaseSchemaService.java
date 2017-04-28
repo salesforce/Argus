@@ -74,8 +74,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -128,70 +126,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     }
 
     //~ Methods **************************************************************************************************************************************
-
-    private static boolean _isWildcardCharacter(char c) {
-        for (char ch : WILDCARD_CHARSET) {
-            if (c == ch) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static String _convertToRegex(String wildcardStr) {
-        if (wildcardStr == null || wildcardStr.isEmpty()) {
-            return wildcardStr;
-        }
-
-        char[] arr = wildcardStr.toCharArray();
-        char[] result = new char[arr.length * 3];
-        boolean flag = false;
-        int j = -1, k = 0;
-
-        for (int i = 0; i < arr.length; i++, k++) {
-            k = _replace(result, arr, k, i);
-            if (arr[i] == '[') {
-                j = k;
-            }
-            if (arr[i] == '|') {
-                if (j != -1) {
-                    result[j] = '(';
-                    while (i < arr.length && arr[i] != ']') {
-                        k = _replace(result, arr, k, i);
-                        i++;
-                        k++;
-                    }
-                    if (i < arr.length) {
-                        result[k] = ')';
-                        j = -1;
-                    }
-                } else {
-                    flag = true;
-                }
-            }
-        }
-        if (flag) {
-            return "(" + new String(result).trim() + ")";
-        }
-        return new String(result).trim();
-    }
-
-    private static int _replace(char[] dest, char[] orig, int destIndex, int origIndex) {
-        if (orig[origIndex] == '?') {
-            dest[destIndex] = '.';
-            return destIndex;
-        } else if (orig[origIndex] == '*') {
-            dest[destIndex] = '.';
-            dest[destIndex + 1] = '*';
-            return destIndex + 1;
-        } else if (orig[origIndex] == '.') {
-            dest[destIndex] = '\\';
-            dest[destIndex + 1] = '.';
-            return destIndex + 1;
-        }
-        dest[destIndex] = orig[origIndex];
-        return destIndex;
-    }
 
     private static String _constructRowKey(String namespace, String scope, String metric, String tagKey, String tagValue, String tableName) {
         namespace = namespace == null ? Character.toString(PLACEHOLDER_FOR_NULL_STRINGS) : namespace;
@@ -275,15 +209,15 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 
         final List<MetricSchemaRecord> records = new ArrayList<MetricSchemaRecord>(limit);
         final ScanMetadata metadata = _constructScanMetadata(query);
-        String namespace = _convertToRegex(query.getNamespace());
-        String scope = _convertToRegex(query.getScope());
-        String metric = _convertToRegex(query.getMetric());
-        String tagKey = _convertToRegex(query.getTagKey());
-        String tagValue = _convertToRegex(query.getTagValue());
+        String namespace = SchemaService.convertToRegex(query.getNamespace());
+        String scope = SchemaService.convertToRegex(query.getScope());
+        String metric = SchemaService.convertToRegex(query.getMetric());
+        String tagKey = SchemaService.convertToRegex(query.getTagKey());
+        String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
-        _logger.debug("Using table: " + metadata.tableName);
-        _logger.debug("Rowkey: " + rowKeyRegex);
+        _logger.info("Using table: " + metadata.tableName);
+        _logger.info("Rowkey: " + rowKeyRegex);
         _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
         _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
         
@@ -318,13 +252,13 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
              * @return  The list of metric schema records.
              */
             public Object scan() {
-            	_logger.debug("Getting next set of rows.");
+            	_logger.trace("Getting next set of rows.");
                 return scanner.nextRows().addCallback(this);
             }
 
             @Override
             public Object call(ArrayList<ArrayList<KeyValue>> rows) throws Exception {
-            	_logger.debug("Inside nextRows() callback..");
+            	_logger.trace("Inside nextRows() callback..");
                 try {
                     if (rows == null) {
                         results.callback(records);
@@ -403,16 +337,16 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
     			"This method is only for use with metric or scope.");
     	
-    	_logger.debug("Using FastScan. Will skip rows while scanning.");
+    	_logger.info("Using FastScan. Will skip rows while scanning.");
     	
     	final List<String> records = new ArrayList<>();
     	
     	final ScanMetadata metadata = _constructScanMetadata(query);
-        String namespace = _convertToRegex(query.getNamespace());
-        String scope = _convertToRegex(query.getScope());
-        String metric = _convertToRegex(query.getMetric());
-        String tagKey = _convertToRegex(query.getTagKey());
-        String tagValue = _convertToRegex(query.getTagValue());
+        String namespace = SchemaService.convertToRegex(query.getNamespace());
+        String scope = SchemaService.convertToRegex(query.getScope());
+        String metric = SchemaService.convertToRegex(query.getMetric());
+        String tagKey = SchemaService.convertToRegex(query.getTagKey());
+        String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
     	
     	List<ScanFilter> filters = new ArrayList<ScanFilter>();
@@ -436,7 +370,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     		}
         	
         	String newScanStart;
-        	if(_noFilter(query.getScope()) || _noFilter(query.getMetric())) {
+        	if(!SchemaService.containsFilter(query.getScope()) || !SchemaService.containsFilter(query.getMetric())) {
         		newScanStart = _plusOne(record);
         	} else {
         		newScanStart = _plusOne(splits[0] + ROWKEY_SEPARATOR + splits[1]);
@@ -498,14 +432,14 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		
 		
 		if( (RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type)) 
-				&& _noFilter(query.getTagKey()) 
-				&& _noFilter(query.getTagValue()) 
-				&& _noFilter(query.getNamespace())) {
-			if(RecordType.METRIC.equals(type) && _noFilter(query.getMetric())) {
+				&& !SchemaService.containsFilter(query.getTagKey()) 
+				&& !SchemaService.containsFilter(query.getTagValue()) 
+				&& !SchemaService.containsFilter(query.getNamespace())) {
+			if(RecordType.METRIC.equals(type) && !SchemaService.containsFilter(query.getMetric())) {
 				return false;
 			}
 			
-			if(RecordType.SCOPE.equals(type) && _noFilter(query.getScope())) {
+			if(RecordType.SCOPE.equals(type) && !SchemaService.containsFilter(query.getScope())) {
 				return false;
 			}
 			
@@ -515,12 +449,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 		return false;
 	}
 	
-	private boolean _noFilter(String str) {
-		Pattern pattern = Pattern.compile("\\**");
-		Matcher matcher = pattern.matcher(str);
-		
-		return matcher.matches();
-	}
+	
 
     @Override
     public List<String> getUnique(MetricSchemaRecordQuery query, final int limit, final int page, final RecordType type) {
@@ -543,15 +472,15 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         final Set<String> records = new TreeSet<String>();
         final Set<String> skip = new HashSet<String>();
         final ScanMetadata metadata = _constructScanMetadata(query);
-        String namespace = _convertToRegex(query.getNamespace());
-        String scope = _convertToRegex(query.getScope());
-        String metric = _convertToRegex(query.getMetric());
-        String tagKey = _convertToRegex(query.getTagKey());
-        String tagValue = _convertToRegex(query.getTagValue());
+        String namespace = SchemaService.convertToRegex(query.getNamespace());
+        String scope = SchemaService.convertToRegex(query.getScope());
+        String metric = SchemaService.convertToRegex(query.getMetric());
+        String tagKey = SchemaService.convertToRegex(query.getTagKey());
+        String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
-        _logger.debug("Using table: " + metadata.tableName);
-        _logger.debug("Rowkey: " + rowKeyRegex);
+        _logger.info("Using table: " + metadata.tableName);
+        _logger.info("Rowkey: " + rowKeyRegex);
         _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
         _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
 
@@ -786,14 +715,14 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         int i = 0, j = 0;
 
         for (; (i < scopeTableRowKey.length && j < metricTableRowKey.length); i++, j++) {
-            if (_isWildcardCharacter(scopeTableRowKey[i]) || _isWildcardCharacter(metricTableRowKey[j])) {
+            if (SchemaService.isWildcardCharacter(scopeTableRowKey[i]) || SchemaService.isWildcardCharacter(metricTableRowKey[j])) {
                 break;
             }
         }
-        while (i < scopeTableRowKey.length && !_isWildcardCharacter(scopeTableRowKey[i])) {
+        while (i < scopeTableRowKey.length && !SchemaService.isWildcardCharacter(scopeTableRowKey[i])) {
             i++;
         }
-        while (j < metricTableRowKey.length && !_isWildcardCharacter(metricTableRowKey[j])) {
+        while (j < metricTableRowKey.length && !SchemaService.isWildcardCharacter(metricTableRowKey[j])) {
             j++;
         }
 
