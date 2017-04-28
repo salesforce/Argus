@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+     
 package com.salesforce.dva.argus.service.schema;
 
 import com.google.inject.Inject;
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ import java.util.Map.Entry;
 /**
  * The default implementation of the discover service. 
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class DefaultDiscoveryService extends DefaultService implements DiscoveryService {
 
@@ -74,7 +75,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
      */
     @Inject
     public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config) {
-    	super(config);
+        super(config);
         this._schemaService = schemaService;
     }
 
@@ -126,6 +127,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
         int limit = 500;
+        List<MetricQuery> expandedQueryList = null;
         
         Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
@@ -136,12 +138,12 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             
             int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
             if(noOfTimeseriesAllowed == 0) {
-            	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
             }
             
             if (query.getTags() == null || query.getTags().isEmpty()) {
                 MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
-                		query.getScope(), query.getMetric(), "*", "*");
+                        query.getScope(), query.getMetric(), "*", "*");
                 int page = 1;
 
                 while (true) {
@@ -167,8 +169,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                 }
+                
+                expandedQueryList = new ArrayList<>(queries.values());
             } else {
-            	Map<String, Integer> timeseriesCount = new HashMap<>();
+                Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
                         tag.getKey(), tag.getValue());
@@ -178,10 +182,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
 
                         for (MetricSchemaRecord record : records) {
-                        	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
+                            if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
                                 throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
                             }
-                        	
+                            
                             String identifier = _getIdentifier(record);
 
                             if (queries.containsKey(identifier)) {
@@ -216,42 +220,41 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     }
                 }
                 
+                expandedQueryList = new ArrayList<>(queries.size());
                 for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
-                	MetricQuery q = entry.getValue();
-                	if(q.getTags().size() != query.getTags().size()) {
-                		queries.remove(entry.getKey());
-                	}
+                    MetricQuery q = entry.getValue();
+                    if(q.getTags().size() == query.getTags().size()) {
+                        expandedQueryList.add(q);
+                    }
                 }
                 
             } // end if-else
         } else {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
-            queries.put(null, query);
+            expandedQueryList = Arrays.asList(query);
         } // end if-else
         _logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
 
-        List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries.values());
-
-        _logMatchedQueries(queryList);
-        return queryList;
+        _logMatchedQueries(expandedQueryList);
+        return expandedQueryList;
     }
 
-	private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
-    	int sum = 0;
-    	for(Integer count : timeseriesCountMap.values()) {
-    		sum += count;
-    	}
-    	
-    	return sum;
+    private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
+        int sum = 0;
+        for(Integer count : timeseriesCountMap.values()) {
+            sum += count;
+        }
+        
+        return sum;
     }
 
-	private String _getIdentifier(MetricSchemaRecord record) {
-		String identifier = new StringBuilder(record.getScope()).
-													append(record.getMetric()).
-													append(record.getNamespace()).
-													toString();
-		return identifier;
-	}
+    private String _getIdentifier(MetricSchemaRecord record) {
+        String identifier = new StringBuilder(record.getScope()).
+                                                    append(record.getMetric()).
+                                                    append(record.getNamespace()).
+                                                    toString();
+        return identifier;
+    }
 
     private void _logMatchedQueries(List<MetricQuery> queryList) {
         _logger.debug("Matched Queries:");
