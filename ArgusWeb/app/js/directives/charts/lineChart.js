@@ -51,7 +51,6 @@ angular.module('argus.directives.charts.lineChart', [])
 		}
 	}
 
-
 	return {
 		restrict: 'E',
 		replace: true,
@@ -857,7 +856,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			scope.$watch('menuOption.isBrushOn', function (newValue) {
 				ChartElementService.toggleElementShowAndHide(newValue, context);
-				resize ();
+				resize();
 			}, true);
 
 			scope.$watch('menuOption.isTooltipOn', function (newValue) {
