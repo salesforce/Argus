@@ -4,7 +4,7 @@
 angular.module('argus.services.auth', [])
 .factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
 
-    var refreshPath = 'refresh';
+    var refreshPath = 'v2/auth/token/refresh';
 
     return {
         login: function (username, password) {
@@ -12,7 +12,7 @@ angular.module('argus.services.auth', [])
                 username: username,
                 password: password
             };
-            $resource(CONFIG.wsUrl + '/v2/auth/login', {}, {}).save(creds, function (result) {
+            $resource(CONFIG.wsUrl + 'v2/auth/login', {}, {}).save(creds, function (result) {
                 Storage.set('user', result);
 
                 //-------Token Based Authentication----------
@@ -30,7 +30,7 @@ angular.module('argus.services.auth', [])
         },
         logout: function () {
             Storage.reset(); //not sure if reset  is good, cause it deletes user option preference too.
-            $resource(CONFIG.wsUrl + 'auth/logout', {}, {}).get({}, function (result) {
+            $resource(CONFIG.wsUrl + 'v2/auth/logout', {}, {}).get({}, function (result) {
                 growl.info('You are now logged out');
                 //-------Token Based Authentication----------
                 //remove token
