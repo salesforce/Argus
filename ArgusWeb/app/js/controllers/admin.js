@@ -1,8 +1,8 @@
 /*! Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
- *  
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
- *   
+ *
  *      Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
  *
  *      Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
@@ -18,33 +18,32 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
+/*global angular:false */
 
 angular.module('argus.controllers.admin', ['ngResource'])
-.controller('Admin', ['$scope', 'CONFIG', 'Auth', 'growl', 'ReinstateUser',
-		function ($scope, CONFIG, Auth, growl, ReinstateUser) {
-				$scope.config = CONFIG;
+.controller('Admin', ['$scope', 'CONFIG', 'Auth', 'growl', 'ReinstateUser', function ($scope, CONFIG, Auth, growl, ReinstateUser) {
+	$scope.config = CONFIG;
 
-				// check for admin, otherwise don't render view
-				$scope.isPrivileged = Auth.isPrivileged();
+	// check for admin, otherwise don't render view
+	$scope.isPrivileged = Auth.isPrivileged();
 
-        $scope.submitUser = function () {
-						if ($scope.username === '' || $scope.subsystem === '') return;
+	$scope.submitUser = function () {
+		if ($scope.username === '' || $scope.subsystem === '') return;
 
-						var userInfo = {
-								username: $scope.username,
-								subsystem: $scope.subsystem
-						};
+		var userInfo = {
+			username: $scope.username,
+			subsystem: $scope.subsystem
+		};
 
-						// submit request to reinstate a specific user
-						ReinstateUser.update(userInfo, function (result) {
-								// reset $scope values after submission
-								// $scope.username = "";
-								// $scope.subsystem = "";
+		// submit request to reinstate a specific user
+		ReinstateUser.update(userInfo, function (result) {
+			// reset $scope values after submission
+			// $scope.username = "";
+			// $scope.subsystem = "";
 
-								growl.success('User: "' + result + '" successfully reinstated!"');
-						}, function (error) {
-								growl.error('Failed to reinstate user: "' + $scope.username + ' - ' + error + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
-						});
-				};
-		}
-]);
+			growl.success('User: "' + result + '" successfully reinstated!"');
+		}, function (error) {
+			growl.error('Failed to reinstate user: "' + $scope.username + ' - ' + error + '"' + (error && error.data && error.data.message) ? error.data.message : error.statusText);
+		});
+	};
+}]);
