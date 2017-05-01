@@ -294,7 +294,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.appendFlagsElements = function (svg_g, chartId) {
-		// var flags = svg_g.append('g').attr('class', 'flags');
+		var flags = svg_g.append('g').attr('class', 'flags');
 		var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
 		var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
 		d3.select('#' + chartId).select('svg').call(labelTip);
@@ -404,7 +404,7 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
-				.style('clip-path', "url('#clip_'" + chartId + "'')")
+				.style('clip-path', "url('#clip_" + chartId + "')")
 				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
