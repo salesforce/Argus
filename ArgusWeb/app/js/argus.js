@@ -107,7 +107,8 @@ angular.module('argus.services', [
   'argus.services.downloadHelper',
   'argus.services.agTableService',
   'argus.services.tokenAuthInterceptor',
-  'argus.services.testInterceptor'
+  'argus.services.testInterceptor',
+  'argus.services.users'
 ]);
 
 // Controllers
@@ -197,6 +198,7 @@ require("./services/factories/notifications");
 require("./services/factories/reinstateUser");
 require("./services/factories/triggers");
 require("./services/factories/triggersMap");
+require("./services/factories/users")
 
 // directives
 require("./directives/headerMenu");

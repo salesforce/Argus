@@ -2,7 +2,7 @@
 /*global angular:false */
 
 angular.module('argus.services.auth', [])
-.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', function ($resource, $location, CONFIG, growl, Storage) {
+.factory('Auth', ['$resource', '$location', 'CONFIG', 'growl', 'Storage', 'Users', function ($resource, $location, CONFIG, growl, Storage, Users) {
 
     var refreshPath = 'v2/auth/token/refresh';
 
@@ -13,16 +13,17 @@ angular.module('argus.services.auth', [])
                 password: password
             };
             $resource(CONFIG.wsUrl + 'v2/auth/login', {}, {}).save(creds, function (result) {
-                Storage.set('user', result);
 
                 //-------Token Based Authentication----------
                 //save tokens
                 Storage.set('accessToken', result.accessToken);
                 Storage.set('refreshToken', result.refreshToken);
 
-
-                var target = Storage.get('target');
-                $location.path(target === null || target === '/login' ? '/' : target);
+                Users.getByUsername({username: jwt_decode(result.accessToken).sub}, function(user){
+                    Storage.set('user', user);
+                    var target = Storage.get('target');
+                    $location.path(target === null || target === '/login' ? '/' : target);
+                });
             }, function (error) {
                 Storage.reset(); //not sure if reset  is good, cause it deletes user option preference too.
                 growl.error('Login failed');
