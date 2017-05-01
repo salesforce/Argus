@@ -45,8 +45,6 @@ import java.util.List;
  */
 public interface DiscoveryService extends Service {
 	
-	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
-	
 	/** This should be a configuration. For now, this is how we reached on a value of 2M. 
 	 *  A datapoint in Argus is a tuple containing a Long timestamp (8 bytes with some additional Java Wrapper Class bytes) 
 	 *  and a Double value (8 bytes with some additional Java Wrapper Class bytes). We would then consider a datapoint to 
@@ -120,40 +118,19 @@ public interface DiscoveryService extends Service {
      * @return  True if the query is a wildcard query.
      */
     static boolean isWildcardQuery(MetricQuery query) {
-    	if (_containsWildcard(query.getScope()) || _containsWildcard(query.getMetric())) {
+    	
+    	if (SchemaService.containsWildcard(query.getScope()) 
+    			|| SchemaService.containsWildcard(query.getMetric()) 
+    			|| SchemaService.containsWildcard(query.getNamespace())) {
             return true;
         }
-        if (_containsWildcard(query.getNamespace())) {
-            return true;
-        }
+
         if (query.getTags() != null) {
             for (String tagKey : query.getTags().keySet()) {
-                if (_containsWildcard(tagKey) || (!"*".equals(query.getTag(tagKey)) && _containsWildcard(query.getTag(tagKey)))) {
+                if (SchemaService.containsWildcard(tagKey) || 
+                		(!"*".equals(query.getTag(tagKey)) && SchemaService.containsWildcard(query.getTag(tagKey)))) {
                     return true;
                 }
-            }
-        }
-        return false;
-    }
-    
-    static boolean _containsWildcard(String str) {
-        if (str == null || str.isEmpty()) {
-            return false;
-        }
-
-        char[] arr = str.toCharArray();
-        for (char ch : arr) {
-            if (_isWildcard(ch)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static boolean _isWildcard(char ch) {
-        for (char c : WILDCARD_CHARSET) {
-            if (c == ch) {
-                return true;
             }
         }
         return false;

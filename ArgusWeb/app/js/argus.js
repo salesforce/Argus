@@ -33,6 +33,7 @@ angular.module('argus', [
   'angulartics',
   'ui.bootstrap',
   'ui.bootstrap.datetimepicker',
+  'angularScreenfull',
   'argus.urlConfig',
   'argus.config',
   'argus.filters',
@@ -101,7 +102,8 @@ angular.module('argus.services', [
   'argus.services.utils',
   'argus.services.jsonFlatten',
   'argus.services.tableListService',
-  'argus.services.downloadHelper'
+  'argus.services.downloadHelper',
+  'argus.services.agTableService'
 ]);
 
 // Controllers
@@ -129,3 +131,91 @@ angular.module('argus.directives', [
 // Filters
 angular.module('argus.filters', [
 ]);
+
+// Argus module
+require("./config");
+require("./argusConfig");
+
+// utils
+require("./utils/constants");
+require("./utils/filters");
+
+// controllers
+require("./controllers/about");
+require("./controllers/admin");
+require("./controllers/alerts");
+require("./controllers/alertsDetail");
+require("./controllers/batches");
+require("./controllers/dashboards");
+require("./controllers/dashboardsDetail");
+require("./controllers/login");
+require("./controllers/main");
+require("./controllers/metricElements");
+require("./controllers/namespace");
+require("./controllers/viewElements");
+require("./controllers/viewMetrics");
+
+// services
+require("./services/auth");
+require("./services/breadcrumbs");
+require("./services/controls");
+require("./services/dashboard");
+require("./services/inputTracker");
+require("./services/search");
+require("./services/storage");
+require("./services/tags");
+require("./services/unauthorizedInterceptor");
+require("./services/utilService");
+require("./services/jsonUnflatten");
+require("./services/tableListService");
+require("./services/downloadHelper");
+require("./services/agTableService")
+
+require("./services/charts/chartOptions");
+require("./services/charts/chartRendering");
+require("./services/charts/chartTools");
+require("./services/charts/dataProcessing");
+require("./services/charts/dateHandler");
+
+require("./services/factories/alerts");
+require("./services/factories/asyncMetrics");
+require("./services/factories/annotations");
+require("./services/factories/batches");
+require("./services/factories/dashboards");
+require("./services/factories/history");
+require("./services/factories/jobExecutionDetails");
+require("./services/factories/metrics");
+require("./services/factories/namespace");
+require("./services/factories/notifications");
+require("./services/factories/reinstateUser");
+require("./services/factories/triggers");
+require("./services/factories/triggersMap");
+
+// directives
+require("./directives/headerMenu");
+require("./directives/tableList");
+require("./directives/tableTabs");
+require("./directives/breadcrumbs");
+require("./directives/dashboardResource");
+require("./directives/controls/dashboard");
+require("./directives/controls/date");
+require("./directives/controls/dropdown");
+require("./directives/controls/submit");
+require("./directives/controls/text");
+require("./directives/charts/chart");
+require("./directives/charts/lineChart");
+require("./directives/charts/flags");
+require("./directives/charts/heatmap");
+require("./directives/charts/metric");
+require("./directives/charts/option");
+require("./directives/charts/statusIndicator");
+require("./directives/charts/table");
+require("./directives/UItools/autoFocus");
+require("./directives/UItools/stopEvent");
+require("./directives/UItools/ngConfirm");
+require("./directives/UItools/ngLoading");
+require("./directives/UItools/ngEnter");
+
+// css
+require("../css/main.css");
+

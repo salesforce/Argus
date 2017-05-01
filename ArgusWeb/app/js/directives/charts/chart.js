@@ -18,7 +18,7 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
 
         lineChartScope.series = series;
         // when there is no agDate
-        if (dateConfig.startTime == undefined || dateConfig.endTime == undefined) {
+        if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
             if (series[0].data && series[0].data.length > 0) {
                 dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
                 dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
@@ -39,9 +39,14 @@ function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService
         });
 
         scope.seriesDataLoaded = true;
-
+        //TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
         // append, compile, & attach new scope to line-chart directive
-        angular.element("#" + newChartId).append( $compile('<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>')(lineChartScope) );
+        angular.element("#" + newChartId).append(
+            $compile(
+                '<div ngsf-fullscreen>' +
+                '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                "</div>")(lineChartScope)
+        );
     }
 
     function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {

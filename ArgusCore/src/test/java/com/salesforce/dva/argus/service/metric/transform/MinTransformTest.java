@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Ignore;
 import org.junit.Test;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -262,6 +263,64 @@ public class MinTransformTest {
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
+    }
+    
+    @Test
+    public void testMinTransformScopeNameWhenScopeIsSameAcrossMetrics() {
+    	Transform minTransform = new MetricReducerTransform(new MinValueReducer());
+    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = Arrays.asList(metric_1, metric_2);
+        Metric result = minTransform.transform(metrics).get(0);
+        
+        assertEquals(metric_1.getScope(), result.getScope());
+    }
+    
+    @Test
+    public void testMinTransformScopeNameWhenScopeIsDifferentAcrossMetrics() {
+    	Transform minTransform = new MetricReducerTransform(new MinValueReducer());
+    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric("scope", "metric");
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(100L, 10.0);
+        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
+
+        Metric metric_2 = new Metric("scope1", "metric");
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = Arrays.asList(metric_1, metric_2);
+        Metric result = minTransform.transform(metrics).get(0);
+        
+        assertEquals(new MinValueReducer().name(), result.getScope());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

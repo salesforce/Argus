@@ -226,7 +226,7 @@ public class Producer {
                 _logger.warn("Buffer exhausted on kafka producer. Skipping this message.", e);
                 return false;
             } catch (Exception e) {
-                _logger.warn("Exception occured when executing producer send(). ", e);
+                _logger.warn("Exception occurred when executing producer send(). ", e);
                 throw new SystemException(e);
             }
             return true;

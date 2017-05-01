@@ -50,6 +50,10 @@ angular.module('argus.services.utils', [])
                 return parseInt(value);
             }
             return value;
+        },
+
+        cssNotationCharactersConverter: function (name) {
+            return name.replace( /(:|\.|\[|\]|,|=|@)/g, "\\$1" );
         }
     };
 

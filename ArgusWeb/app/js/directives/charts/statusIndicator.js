@@ -18,7 +18,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
                 var metricExpression;
                 var indicatorHTML =
                     '<div class="serviceItem">' +
-                        '<div class="serviceName">' + attributes.name + '</div>' +
+                        '<div class="serviceName"><p>' + attributes.name + '</p></div>' +
                         '<div id="'+ attributes.name + '-status" class="statusIndicator"></div>' +
                     '</div>';
 
@@ -40,7 +40,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
                     }
 
                     // get datapoints from metric expression
-                    if ( metricExpression) {
+                    if (metricExpression) {
                         DashboardService.getMetricData(metricExpression)
                             .then(function( result ) {
                                 // get the last data point from the result data

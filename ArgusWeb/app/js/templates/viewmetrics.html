@@ -5,9 +5,11 @@
         <span class="input-group-btn" style="font-size:inherit;">
           <a data-toggle="tooltip" data-placement="right" ng-click="showMetricDiscovery = true; showChart = false;" class="glyphicon glyphicon-search" title="View Metric Discovery" style="cursor:pointer;"></a>
         </span>
-        
+
         <div class="input-group" style="width:100%;">
-            <span class="input-group-addon" ng-click="getMetricData()" style="cursor:pointer;">Go!</span>
+            <span class="input-group-btn" style="cursor:pointer;">
+                <button type="submit" class="btn btn-primary" ng-click="getMetricData()" ng-disabled="showChart&&!chartLoaded">Go!</button>
+            </span>
             <input type="text" class="form-control" placeholder="Enter expression" ng-model="expression" />
         </div>
     </div>
@@ -23,7 +25,7 @@
     </p>
 
     <div class="fullBox">
-    
+
     <div class="metricFields">
         <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
@@ -142,7 +144,7 @@
 
     <hr width="100%" />
 
-    <div ng-loading="chartLoaded"></div>
+    <div ng-loading="showMetricDiscovery||chartLoaded"></div>
 
     <div growl inline="true" reference="viewmetrics-error"></div>
 

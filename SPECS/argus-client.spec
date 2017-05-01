@@ -5,7 +5,7 @@ BuildArch:     noarch
 Name:          argusclient
 Version:       4.3
 Release:       1
-License:       GPL+
+License:       BSD-3-Clause
 Group:         Applications/System
 Summary:       Argus web services
 Distribution:  Salesforce.com, Inc.
@@ -28,7 +28,9 @@ mkdir -p %{_stagerootdir}/%{_targetdir}
 cp %{_topdir}/ArgusClient/target/argus-client-*-jar-with-dependencies.jar %{_stagerootdir}/%{_targetdir}
 
 %files
-/%{_targetdir}
+%defattr(755, sfdc, sfdc,755)
+%{_targetdir}/../../../..
+
 %pre
 
 %post
