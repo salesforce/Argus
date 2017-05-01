@@ -15,8 +15,14 @@
     </div>
 
     <div class="search-options">
-        <input class="form-check-input" type="checkbox" ng-model="includeAnnotations">
-        Include annotations related to the metric
+        <label class="checkbox-inline">
+            <input type="checkbox" ng-model="includeAnnotations">
+            Include annotations related to the metric
+        </label>
+        <label class="checkbox-inline">
+            <input type="checkbox" ng-model="timeZoneOption">
+            Use GMT
+        </label>
     </div>
 
     <div id="discoveryLookup" ng-show="showMetricDiscovery">
