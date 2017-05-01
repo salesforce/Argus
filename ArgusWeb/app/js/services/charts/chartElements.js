@@ -755,10 +755,12 @@ angular.module('argus.services.charts.elements', [])
 			var flagSeries = metric.flagSeries.data;
 			flagSeries.forEach(function(d) {
 				var label = flagsG.select('#' + metric.graphClassName + d.flagID);
-				var x_Val = x(d.x); // d.x is timestamp of X axis
+				// d.x is timestamp of X axis and sometimes it can be in second instead of millisecond
+				var dx = UtilService.epochTimeMillisecondConverter(d.x);
+				var x_Val = x(dx);
 				var y_Val = height - 35;
 				// dont render flag if it's outside of the range; similar to focus circle
-				if (ChartToolService.isNotInTheDomain(d.x, x.domain())) {
+				if (ChartToolService.isNotInTheDomain(dx, x.domain())) {
 					label.style('display', 'none');
 				} else {
 					var displayProperty = sources[index].displaying? null: 'none';
