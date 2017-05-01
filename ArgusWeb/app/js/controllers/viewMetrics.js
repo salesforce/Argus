@@ -12,8 +12,8 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		});
 		$scope.timeZoneOption = InputTracker.getDefaultValue('viewMetricsTimeZoneOption', true);
 		$scope.$watch('timeZoneOption', function (newValue) {
-            InputTracker.updateDefaultValue('viewMetricsTimeZoneOption', true, newValue);
-        });
+			InputTracker.updateDefaultValue('viewMetricsTimeZoneOption', true, newValue);
+		});
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
 			if ($scope.expression) {
