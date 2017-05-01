@@ -294,7 +294,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.appendFlagsElements = function (svg_g, chartId) {
-		// var flags = svg_g.append('g').attr('class', 'flags');
+		var flags = svg_g.append('g').attr('class', 'flags');
 		var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
 		var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
 		d3.select('#' + chartId).select('svg').call(labelTip);
@@ -404,7 +404,7 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
-				.style('clip-path', "url('#clip_'" + chartId + "'')")
+				.style('clip-path', "url('#clip_" + chartId + "')")
 				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
@@ -755,10 +755,12 @@ angular.module('argus.services.charts.elements', [])
 			var flagSeries = metric.flagSeries.data;
 			flagSeries.forEach(function(d) {
 				var label = flagsG.select('#' + metric.graphClassName + d.flagID);
-				var x_Val = x(d.x); // d.x is timestamp of X axis
+				// d.x is timestamp of X axis and sometimes it can be in second instead of millisecond
+				var dx = UtilService.epochTimeMillisecondConverter(d.x);
+				var x_Val = x(dx);
 				var y_Val = height - 35;
 				// dont render flag if it's outside of the range; similar to focus circle
-				if (ChartToolService.isNotInTheDomain(d.x, x.domain())) {
+				if (ChartToolService.isNotInTheDomain(dx, x.domain())) {
 					label.style('display', 'none');
 				} else {
 					var displayProperty = sources[index].displaying? null: 'none';
