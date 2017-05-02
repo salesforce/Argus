@@ -5,9 +5,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
-import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpUriRequest;
 
 /**
  * Send notifications to a HTTP endpoint.

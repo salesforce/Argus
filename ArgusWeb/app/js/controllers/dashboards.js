@@ -22,6 +22,7 @@
 
 angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 .controller('Dashboards', ['Auth', '$scope', 'growl', 'Dashboards', '$sessionStorage', 'TableListService', function (Auth, $scope, growl, Dashboards, $sessionStorage, TableListService) {
+
 	// scope variables
 	$scope.colName = {
 		id:'ID',

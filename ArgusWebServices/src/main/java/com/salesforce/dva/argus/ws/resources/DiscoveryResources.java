@@ -35,6 +35,8 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.ws.annotation.Description;
+
+import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
@@ -90,10 +92,18 @@ public class DiscoveryResources extends AbstractResource {
         @QueryParam("type") String type) {
         
         if (type == null) {
-            List<MetricSchemaRecord> records = _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit,
+            List<MetricSchemaRecord> schemaRecords = _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit,
                 page);
-
-            return records;
+            
+            boolean format = req.getParameterMap().containsKey("format") && 
+            		(req.getParameter("format") == null || Boolean.parseBoolean(req.getParameter("format")));
+            if(format) {
+            	List<String> records = new ArrayList<>(schemaRecords.size()); 
+                _formatToString(schemaRecords, records);
+                return records;
+            }
+            
+            return schemaRecords;
         } else {
             List<String> records = _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex,
                 RecordType.fromName(type), limit, page);
@@ -101,6 +111,13 @@ public class DiscoveryResources extends AbstractResource {
             return records;
         }
     }
+
+	private static void _formatToString(List<MetricSchemaRecord> schemaRecords, List<String> records) {
+		
+		for(MetricSchemaRecord msr : schemaRecords) {
+			records.add(MetricSchemaRecord.print(msr));
+		}
+	}
     
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

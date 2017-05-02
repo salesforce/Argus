@@ -35,6 +35,8 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Provides methods to update metric schema records for use in wildcard expansion and metric discovery.
@@ -91,20 +93,82 @@ public interface SchemaService extends Service {
 
         char[] arr = str.toCharArray();
         for (char ch : arr) {
-            if (isWildcard(ch)) {
+            if (isWildcardCharacter(ch)) {
                 return true;
             }
         }
         return false;
     }
 
-    static boolean isWildcard(char ch) {
+    static boolean isWildcardCharacter(char ch) {
         for (char c : WILDCARD_CHARSET) {
             if (c == ch) {
                 return true;
             }
         }
         return false;
+    }
+    
+    static boolean containsFilter(String str) {
+		Pattern pattern = Pattern.compile("\\**");
+		Matcher matcher = pattern.matcher(str);
+		
+		return !matcher.matches();
+	}
+    
+    static String convertToRegex(String wildcardStr) {
+        if (wildcardStr == null || wildcardStr.isEmpty()) {
+            return wildcardStr;
+        }
+
+        char[] arr = wildcardStr.toCharArray();
+        char[] result = new char[arr.length * 3];
+        boolean flag = false;
+        int j = -1, k = 0;
+
+        for (int i = 0; i < arr.length; i++, k++) {
+            k = replace(result, arr, k, i);
+            if (arr[i] == '[') {
+                j = k;
+            }
+            if (arr[i] == '|') {
+                if (j != -1) {
+                    result[j] = '(';
+                    while (i < arr.length && arr[i] != ']') {
+                        k = replace(result, arr, k, i);
+                        i++;
+                        k++;
+                    }
+                    if (i < arr.length) {
+                        result[k] = ')';
+                        j = -1;
+                    }
+                } else {
+                    flag = true;
+                }
+            }
+        }
+        if (flag) {
+            return "(" + new String(result).trim() + ")";
+        }
+        return new String(result).trim();
+    }
+    
+    static int replace(char[] dest, char[] orig, int destIndex, int origIndex) {
+        if (orig[origIndex] == '?') {
+            dest[destIndex] = '.';
+            return destIndex;
+        } else if (orig[origIndex] == '*') {
+            dest[destIndex] = '.';
+            dest[destIndex + 1] = '*';
+            return destIndex + 1;
+        } else if (orig[origIndex] == '.') {
+            dest[destIndex] = '\\';
+            dest[destIndex + 1] = '.';
+            return destIndex + 1;
+        }
+        dest[destIndex] = orig[origIndex];
+        return destIndex;
     }
 
     //~ Enums ****************************************************************************************************************************************

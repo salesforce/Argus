@@ -56,29 +56,39 @@ angular.module('argus.services.utils', [])
 			return name.replace( /(:|\.|\[|\]|,|=|@)/g, '\\$1' );
 		},
 
-    trimMetricName: function (metricName, leadingNum, trailingNum) {
-        if (!metricName) return;
+		trimMetricName: function (metricName, leadingNum, trailingNum) {
+			if (!metricName) return;
 
-        var startVal, endVal;
-        startVal = (leadingNum > 0) ? leadingNum : null;
-        endVal = (trailingNum > 0) ? trailingNum : null;
+			var startVal, endVal;
+			startVal = (leadingNum > 0) ? leadingNum : null;
+			endVal = (trailingNum > 0) ? trailingNum : null;
 
-        if (startVal && !endVal) {
-            return metricName.slice(startVal);
-        } else if (endVal) {
-            return metricName.slice(startVal, -endVal);
-        } else {
-            return metricName;
-        }
-    },
+			if (startVal && !endVal) {
+				return metricName.slice(startVal);
+			} else if (endVal) {
+				return metricName.slice(startVal, -endVal);
+			} else {
+				return metricName;
+			}
+		},
 
-    validNumberChecker: function (num) {
-        return isFinite(num)? num: 0;
-    },
+		validNumberChecker: function (num) {
+			return isFinite(num)? num: 0;
+		},
 
-    capitalizeString: function (string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    }
+		capitalizeString: function (string) {
+			return string.charAt(0).toUpperCase() + string.slice(1);
+		},
+
+		epochTimeMillisecondConverter: function (timestampNum) {
+			// sometimes epoch time is in second instead of milisecond
+			// http://stackoverflow.com/questions/23929145/how-to-test-if-a-given-time-stamp-is-in-seconds-or-milliseconds
+			if (timestampNum.toString().length < 12) {
+				return timestampNum * 1000;
+			} else {
+				return timestampNum;
+			}
+		}
 	};
 	return options;
 }]);
