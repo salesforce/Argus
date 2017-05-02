@@ -44,11 +44,13 @@ angular.module('argus.directives.charts.statusIndicator', [])
 					if (metricExpression) {
 						DashboardService.getMetricData(metricExpression)
 							.then(function( result ) {
-								// get the last data point from the result data
-								var lastStatusVal = ChartDataProcessingService.getLastDataPoint(result.data[0].datapoints);
+								if (result !== undefined) {
+									// get the last data point from the result data
+									var lastStatusVal = ChartDataProcessingService.getLastDataPoint(result.data[0].datapoints);
 
-								// update status indicator
-								ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+									// update status indicator
+									ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+								}
 							});
 					}
 				});

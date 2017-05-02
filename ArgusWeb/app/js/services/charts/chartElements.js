@@ -846,8 +846,10 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.toggleElementShowAndHide = function (elementOn, elementName) {
-		var display = elementOn? null: 'none';
-		elementName.style('display', display);
+		if (elementName !== undefined) {
+			var display = elementOn? null: 'none';
+			elementName.style('display', display);
+		}
 	};
 
 	this.updateColors = function (colorPalette, names, colors, graphClassNames, chartType) {

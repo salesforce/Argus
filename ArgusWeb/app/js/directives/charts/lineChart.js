@@ -830,52 +830,70 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			// watch changes from chart options modal to update graph
 			scope.$watch('menuOption.colorPalette', function (newValue) {
-				ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType);
+				if (!scope.hideMenu) {
+					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType);
+				}
 			}, true);
 
 			scope.$watch('menuOption.dateFormat', function (newValue) {
-				dateFormatter = ChartToolService.generateDateFormatter(GMTon, newValue, isSmallChart);
-				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+				if (!scope.hideMenu) {
+					dateFormatter = ChartToolService.generateDateFormatter(GMTon, newValue, isSmallChart);
+					ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+				}
 			}, true);
 
 			scope.$watch('menuOption.isBrushMainOn', function (newValue) {
-				ChartElementService.toggleElementShowAndHide(newValue, brushMainG);
+				if (!scope.hideMenu) {
+					ChartElementService.toggleElementShowAndHide(newValue, brushMainG);
+				}
 			}, true);
 
 			scope.$watch('menuOption.isWheelOn', function (newValue) {
-				ChartElementService.toggleWheel(newValue, zoom, chartRect, brushMainG);
+				if (!scope.hideMenu) {
+					ChartElementService.toggleWheel(newValue, zoom, chartRect, brushMainG);
+				}
 			}, true);
 
 			scope.$watch('menuOption.yAxisConfig', function (newValue) {
-				yAxis.ticks(newValue.numTicksYaxis)
-					.tickFormat(d3.format(newValue.formatYaxis));
-				yGrid.ticks(newValue.numTicksYaxis);
-				yAxisG.call(yAxis);
-				yGridG.call(yGrid);
+				if (!scope.hideMenu) {
+					yAxis.ticks(newValue.numTicksYaxis)
+						.tickFormat(d3.format(newValue.formatYaxis));
+					yGrid.ticks(newValue.numTicksYaxis);
+					yAxisG.call(yAxis);
+					yGridG.call(yGrid);
+				}
 			}, true);
 
 			scope.$watch('menuOption.isBrushOn', function (newValue) {
-				ChartElementService.toggleElementShowAndHide(newValue, context);
-				resize();
+				if (!scope.hideMenu) {
+					ChartElementService.toggleElementShowAndHide(newValue, context);
+					resize();
+				}
 			}, true);
 
 			scope.$watch('menuOption.isTooltipOn', function (newValue) {
-				ChartElementService.toggleElementShowAndHide(newValue, tooltip);
-				if (scope.menuOption.isTooltipOn) mouseOutChart(); // hide the left over tooltip on the chart
+				if (!scope.hideMenu) {
+					ChartElementService.toggleElementShowAndHide(newValue, tooltip);
+					if (scope.menuOption.isTooltipOn) mouseOutChart(); // hide the left over tooltip on the chart
+				}
 			}, true);
 
 			scope.$watch('menuOption.isSyncChart', function (newValues) {
-				if (newValues) {
-					addToSyncCharts();
-				} else {
-					removeFromSyncCharts();
+				if (!scope.hideMenu) {
+					if (newValues) {
+						addToSyncCharts();
+					} else {
+						removeFromSyncCharts();
+					}
 				}
 			}, true);
 
 			scope.$watch('menuOption.downSampleMethod', function (newValue) {
-				currSeries = ChartElementService.adjustSeriesAndTooltips(series,  scope.sources, x, tipItems, containerWidth, newValue);
-				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
-				redraw();
+				if (!scope.hideMenu) {
+					currSeries = ChartElementService.adjustSeriesAndTooltips(series,  scope.sources, x, tipItems, containerWidth, newValue);
+					ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
+					redraw();
+				}
 			}, true);
 		}
 	};
