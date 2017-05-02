@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,19 +127,20 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
         int limit = 500;
+        List<MetricQuery> expandedQueryList = null;
         
-        Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
         
 
         if (DiscoveryService.isWildcardQuery(query)) {
-            _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
+            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             
             int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
             if(noOfTimeseriesAllowed == 0) {
             	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
             }
             
+            Map<String, MetricQuery> queries = new HashMap<>();
             if (query.getTags() == null || query.getTags().isEmpty()) {
                 MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
                 		query.getScope(), query.getMetric(), "*", "*");
@@ -167,15 +169,30 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                 }
+                
+                expandedQueryList = new ArrayList<>(queries.values());
             } else {
             	Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
                         tag.getKey(), tag.getValue());
                     int page = 1;
+                    
+                    boolean containsWildcard = SchemaService.containsWildcard(query.getScope())
+                							|| SchemaService.containsWildcard(query.getMetric())
+                							|| SchemaService.containsWildcard(query.getNamespace())
+                							|| SchemaService.containsWildcard(tag.getKey())
+                							|| SchemaService.containsWildcard(tag.getValue());
 
                     while (true) {
-                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
+                        List<MetricSchemaRecord> records;
+                        
+                        if(!containsWildcard) {
+                    		records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(), 
+                    				tag.getKey(), tag.getValue()));
+                    	} else {
+                    		records = _schemaService.get(schemaQuery, limit, page++);
+                    	}
 
                         for (MetricSchemaRecord record : records) {
                         	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
@@ -214,25 +231,25 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                             break;
                         }
                     }
-                    
-                    for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
-                    	MetricQuery q = entry.getValue();
-                    	if(q.getTags().size() != query.getTags().size()) {
-                    		queries.remove(entry.getKey());
-                    	}
-                    }
                 }
+                
+                expandedQueryList = new ArrayList<>(queries.size());
+                for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
+                	MetricQuery q = entry.getValue();
+                	if(q.getTags().size() == query.getTags().size()) {
+                		expandedQueryList.add(q);
+                	}
+                }
+                
             } // end if-else
         } else {
-            _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
-            queries.put(null, query);
+            _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
+            expandedQueryList = Arrays.asList(query);
         } // end if-else
         _logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
 
-        List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries.values());
-
-        _logMatchedQueries(queryList);
-        return queryList;
+        _logMatchedQueries(expandedQueryList);
+        return expandedQueryList;
     }
 
 	private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
@@ -253,11 +270,11 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 	}
 
     private void _logMatchedQueries(List<MetricQuery> queryList) {
-        _logger.debug("Matched Queries:");
+        _logger.info("Matched Queries:");
 
         int i = 1;
         for (MetricQuery q : queryList) {
-            _logger.debug(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
+            _logger.info(MessageFormat.format("MetricQuery{0} = {1}", i++, q));
         }
     }
 

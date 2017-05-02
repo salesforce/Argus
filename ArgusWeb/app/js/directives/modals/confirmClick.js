@@ -26,19 +26,15 @@ angular.module('argus.directives.modals.confirmClick', [])
 						$scope.confirmTitle = confirmTitle;
 						$scope.confirmMessage = confirmMessage;
 						$scope.confirmCall = confirmCall;
-
 						$scope.confirm = function () {
-							console.log('confirm');
 							$scope.confirmCall();
 							$scope.close();
 						};
 						$scope.close = function () {
-							console.log('close');
 							confirmModal.close();
 						};
 					}]
 				});
-
 				// add lightMask class when modal is opened
 				confirmModal.opened.then(function () {
 					$('body').addClass('lightMask');
@@ -57,7 +53,6 @@ angular.module('argus.directives.modals.confirmClick', [])
 
 				// check 'disabled' before opening modal
 				if ($scope.confirmDisabled) return;
-
 				$scope.openConfirmModal(
 					$scope.confirmTitle,
 					$scope.confirmMessage,

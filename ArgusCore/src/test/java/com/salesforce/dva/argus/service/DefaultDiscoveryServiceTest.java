@@ -104,6 +104,37 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         assertTrue(matchedQueries.isEmpty());
     }
     
+    /**
+	 * Assume that following schemarecords exist in the database:
+	 * scope0,metric0,source,unittest0,null
+	 * scope0,metric0,source,unittest1,null
+	 * scope0,metric0,device,device0,null
+	 * scope1,metric0,source,unittest0,null
+	 * scope1,metric0,source,unittest1,null
+	 * scope1,metric0,device,device0,null
+	 */
+    @Test
+    public void testWildcardQueriesMatchMultipleTags1() {
+    	
+    	SchemaService schemaServiceMock = mock(SchemaService.class);
+        
+        MetricSchemaRecordQuery queryForTag1 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "source", "unittest0");
+        MetricSchemaRecordQuery queryForTag2 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "device", "device[1]");
+        when(schemaServiceMock.get(queryForTag1, 500, 1)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"), new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
+        when(schemaServiceMock.get(queryForTag2, 500, 1)).thenReturn(new ArrayList<>());
+        
+        DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
+
+        Map<String, String> tags = new HashMap<String, String>();
+        tags.put("source", "unittest0");
+        tags.put("device", "device[1]");
+
+        MetricQuery query = new MetricQuery("scope?", "metric0", tags, 1L, 2L);
+        List<MetricQuery> matchedQueries = discoveryService.getMatchingQueries(query);
+        
+        assertTrue(matchedQueries.isEmpty());
+    }
+    
     @Test(expected = WildcardExpansionLimitExceededException.class)
     public void testWildcardQueriesMatchExceedingLimit() {
     	
