@@ -127,8 +127,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
         int limit = 500;
+        List<MetricQuery> expandedQueryList = null;
         
-        Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
         
 
@@ -140,6 +140,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
             }
             
+            Map<String, MetricQuery> queries = new HashMap<>();
             if (query.getTags() == null || query.getTags().isEmpty()) {
                 MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
                 		query.getScope(), query.getMetric(), "*", "*");
@@ -168,6 +169,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                 }
+                
+                expandedQueryList = new ArrayList<>(queries.values());
             } else {
             	Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
@@ -230,24 +233,23 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     }
                 }
                 
+                expandedQueryList = new ArrayList<>(queries.size());
                 for(Map.Entry<String, MetricQuery> entry : queries.entrySet()) {
                 	MetricQuery q = entry.getValue();
-                	if(q.getTags().size() != query.getTags().size()) {
-                		queries.remove(entry.getKey());
+                	if(q.getTags().size() == query.getTags().size()) {
+                		expandedQueryList.add(q);
                 	}
                 }
                 
             } // end if-else
         } else {
             _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
-            queries.put(null, query);
+            expandedQueryList = Arrays.asList(query);
         } // end if-else
         _logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
 
-        List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries.values());
-
-        _logMatchedQueries(queryList);
-        return queryList;
+        _logMatchedQueries(expandedQueryList);
+        return expandedQueryList;
     }
 
 	private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
