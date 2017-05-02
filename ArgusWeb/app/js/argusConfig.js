@@ -102,7 +102,6 @@ angular.module('argus.config', [])
 
 		$analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
 		$analyticsProvider.withAutoBase(true);  /* Records full path */
-		$httpProvider.interceptors.push('TestInterceptor');
 	}])
 
 .run(['CONFIG', '$rootScope', '$location', '$route', 'Auth', 'growl', function (CONFIG, $rootScope, $location, $route, Auth, growl) {

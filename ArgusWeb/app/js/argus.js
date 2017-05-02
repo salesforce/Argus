@@ -86,7 +86,6 @@ angular.module('argus.services', [
 	'argus.services.dashboard',
 	'argus.services.dashboards',
 	'argus.services.history',
-	'argus.services.interceptor',
 	'argus.services.inputTracker',
 	'argus.services.jobexecutiondetails',
 	'argus.services.metrics',
@@ -103,7 +102,6 @@ angular.module('argus.services', [
 	'argus.services.downloadHelper',
 	'argus.services.agTableService',
 	'argus.services.tokenAuthInterceptor',
-	'argus.services.testInterceptor',
 	'argus.services.users'
 ]);
 
