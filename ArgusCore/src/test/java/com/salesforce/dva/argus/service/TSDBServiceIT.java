@@ -425,5 +425,20 @@ public class TSDBServiceIT extends AbstractTest {
 
         assertTrue(service1 == service2);
     }
+    
+    @Test
+    public void testPut_DatapointsContainNullValues() {
+    	
+    	TSDBService service = system.getServiceFactory().getTSDBService();
+    	
+    	Map<Long, Double> datapoints = new HashMap<>();
+    	datapoints.put(1493973552000L, 100D);
+    	datapoints.put(1493973652000L, null);
+    	Metric m = new Metric("scope", "metric");
+    	m.setDatapoints(datapoints);
+    	
+    	service.putMetrics(Arrays.asList(m));
+    	
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
