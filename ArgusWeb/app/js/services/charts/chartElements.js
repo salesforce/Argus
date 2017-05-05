@@ -467,21 +467,11 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint, dateFormatter) {
-		// add the info box while hovering over
 		var label = flags.append('g')
 			.attr('class', 'flagItem ' + className)
 			.attr('id', className + dataPoint.flagID)
 			.style('stroke', color)
-			.on('mouseover', function() {
-				// add timestamp to the annotation label
-				var tempTimestamp = dateFormatter(dataPoint.x);
-				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
-				labelTip.style('border-color', color).html(tempTimestamp);
-				labelTip.show();
-				// prevent annotation label goes outside of the view on the  side
-				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
-			})
-			.on('mouseout', labelTip.hide);
+			.attr('clicked', 'No');
 
 		// add the pin on the graph
 		label.append('line')
@@ -495,6 +485,31 @@ angular.module('argus.services.charts.elements', [])
 			.style('text-anchor', 'middle')
 			.style('stroke', 'black')
 			.text(dataPoint.title);
+
+		// add the info box while hovering over
+		label.on('click', function () {
+				// click to make the label tip stay while hovering over and enlarge the annotation's circle
+				var newValue = label.attr('clicked') !== 'Yes';
+				if (newValue) {
+					label.attr('clicked', 'Yes');
+					label.select('circle').attr('r', 16);
+				} else {
+					label.attr('clicked', 'No');
+					label.select('circle').attr('r', 8);
+				}
+			})
+			.on('mouseover', function () {
+				// add timestamp to the annotation label
+				var tempTimestamp = dateFormatter(dataPoint.x);
+				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
+				labelTip.style('border-color', color).html(tempTimestamp);
+				labelTip.show();
+				// prevent annotation label goes outside of the view on the  side
+				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
+			})
+			.on('mouseout', function () {
+				if (label.attr('clicked') !== 'Yes') labelTip.hide();
+			});
 	};
 
 	// add overlay stuff (do this last during the rendering process since these will be on top)
