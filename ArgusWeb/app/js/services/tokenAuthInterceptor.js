@@ -33,9 +33,6 @@ angular.module('argus.services.tokenAuthInterceptor',[])
                     //login fails, just return to login page
                 }else if(response.config.url === CONFIG.wsUrl + refreshPath){
                     growl.error("You refresh token has expired");//-------Token Based Authentication----------
-                    //remove token
-                    // Storage.clear('accessToken');
-                    // Storage.clear('refreshToken');
                 }else{
                     //access token fails, refresh AccessToken
                     if(!refreshTokenRequest){
@@ -45,22 +42,24 @@ angular.module('argus.services.tokenAuthInterceptor',[])
                         refreshTokenRequest = null;
                         //resend request
                         $injector.get("$http")(response.config).then(function (resp) {
-                           return deferred.resolve(resp);
-                        }, function (resp) {
-                           return deferred.reject(resp);
+                           deferred.resolve(resp);
+                        }, function (error) {
+                           deferred.reject(error);
                         });
                     }, function(error){
                         refreshTokenRequest = null;
-                        return deferred.reject(response);
+                        deferred.reject(error);
                     });
                     return deferred.promise;
                 }
+                //remove token and other stuff
                 Storage.reset();
                 Storage.set('target', target);
                 $location.path('/login');
             }
 
-            return deferred.reject(response);
+            deferred.reject(response);
+            return deferred.promise;
         }
     }
 }]);
