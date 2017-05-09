@@ -2,11 +2,7 @@
 /*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', '$routeParams', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, $routeParams, ChartToolService, ChartElementService, UtilService) {
-	//----------------default chart values----------------------
-
-	var dashboardId = $routeParams.dashboardId;
-
+.directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, ChartToolService, ChartElementService, UtilService) {
 	//--------------------resize all charts-------------------
 	var resizeTimeout = 250; //the time for resize function to fire
 	var resizeJobs = [];
@@ -60,11 +56,11 @@ angular.module('argus.directives.charts.lineChart', [])
 			dateConfig: '=dateconfig'
 		},
 		templateUrl: 'js/templates/charts/topToolbar.html',
-		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl) {
+		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
 			$scope.hideMenu = true;
 			$scope.dateRange = '';
 			$scope.changeToFullscreen = false;
-			$scope.dashboardId = dashboardId;
+			$scope.dashboardId = $routeParams.dashboardId;
 
 			$scope.sources = [];
 			$scope.otherSourcesHidden = false;
@@ -97,6 +93,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				};
 			}
 
+			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 			$scope.openChartOptions = function(chartId, chartTitle) {
 				if (!chartId) return;
 

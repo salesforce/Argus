@@ -15,6 +15,12 @@ angular.module('argus.services.storage', [])
 			delete $rootScope.storage[key];
 		},
 		reset: function () {
+			//delete user info, but preserve the storage of preferences
+			delete $rootScope.storage['user'];
+			delete $rootScope.storage['target'];
+			$sessionStorage.$reset();
+		},
+		resetAll: function() {
 			$rootScope.storage.$reset();
 			$sessionStorage.$reset();
 		}
