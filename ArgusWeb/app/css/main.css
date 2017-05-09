@@ -305,16 +305,19 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
-.line {fill:none; stroke:steelblue; stroke-width:1.5; } /*clip-path: url('#clip');*/
+.line {fill:none; stroke:steelblue; stroke-width:1.5;} /*clip-path: url('#clip');*/
+.area {fill:steelblue; stroke:none;}
+.dot {stroke: #000; stroke-width:0.5;}
 
 .brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
+.brushArea {fill:steelblue; stroke:none;}
 
 .chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
-.focus circle {opacity:0.5;}
+/*.focus circle {opacity:0.5;}*/
 
 /* dotted line on main line graph */
-.crossLine {fill:none; stroke:#066EEA; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLine {fill:none; stroke:#000000; stroke-width:1px; stroke-dasharray:3,3;}
 .crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
 .crossLineTip {font-size:12px;}
 
@@ -362,3 +365,13 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
 .agTableHead {position:absolute; background-color: #eee;}
 .agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; width: 50px;}
 .agTable td {min-width: 180px; max-width: 180px; height: 40px;  word-wrap: break-word; width: 50px;}
+
+/* view metrics page */
+.search-options {
+  margin-top: 1em;
+
+}
+
+/* for ag-select */
+ag-select .selectize-input{top: 7px; height: 25px; padding-top: 3px; padding-left: 5px; font-size: 14px;}
+ag-select > div {min-width: 152px;}
