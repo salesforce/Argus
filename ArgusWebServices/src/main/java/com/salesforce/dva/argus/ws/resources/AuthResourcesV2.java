@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.AuthService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.CredentialsDto;
+import com.salesforce.dva.argus.ws.filter.AuthFilter;
 
 import io.jsonwebtoken.ExpiredJwtException;
 
@@ -87,6 +88,7 @@ public class AuthResourcesV2 extends AbstractResource {
 
             if (user != null) {
                 JWTUtils.Tokens tokens = JWTUtils.generateTokens(user.getUserName());
+                req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
                 return Response.ok(tokens).build();
             } else {
                 throw new WebApplicationException("User does not exist. Please provide valid credentials.", Response.Status.UNAUTHORIZED);
