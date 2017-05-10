@@ -17,7 +17,6 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			lineChartScope.series = series;
 			// when there is no agDate
 			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
 				if (series[0].data && series[0].data.length > 0) {
@@ -27,32 +26,22 @@ angular.module('argus.directives.charts.chart', [])
 			}
 			lineChartScope.dateConfig = dateConfig;
 			scope.seriesDataLoaded = true;
+			lineChartScope.series= series;
 
-			if (updatedOptionList.timeBased) {
-				lineChartScope.series = ChartDataProcessingService.convertSeriesToTimebasedFormat(series);
-				for (var i = 0; i < lineChartScope.series.info.length; i++) {
-					// use graphClassName to bind all the graph element of a metric together
-					lineChartScope.series.info[i].graphClassName = newChartId + '_graph' + (i + 1);
-				}
-				lineChartScope.series.info.sort(UtilService.alphabeticalSort);
-				//TODO: create new stackarea chart directive
-			} else {
-				// give each series an unique ID if it has data
-				for (var i = 0; i < series.length; i++) {
-					// use graphClassName to bind all the graph element of a metric together
-					lineChartScope.series[i].graphClassName = newChartId + '_graph' + (i + 1);
-				}
-				// sort series alphabetically
-				lineChartScope.series.sort(UtilService.alphabeticalSort);
-				//TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
-				// append, compile, & attach new scope to line-chart directive
-				angular.element('#' + newChartId).append(
-					$compile(
-						'<div ngsf-fullscreen>' +
-						'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
-						'</div>')(lineChartScope)
-				);
+			for (var i = 0; i < series.length; i++) {
+				// use graphClassName to bind all the graph element of a metric together
+				lineChartScope.series[i].graphClassName = newChartId + '_graph' + (i + 1);
 			}
+			// sort series alphabetically
+			lineChartScope.series.sort(UtilService.alphabeticalSort);
+			// append, compile, & attach new scope to line-chart directive
+			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
+			angular.element('#' + newChartId).append(
+				$compile(
+					'<div ngsf-fullscreen>' +
+					'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+					'</div>')(lineChartScope)
+			);
 		}
 
 		function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {

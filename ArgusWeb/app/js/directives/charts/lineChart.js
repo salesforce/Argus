@@ -227,6 +227,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						color = source.color;
 					} else {
 						switch (chartType) {
+							case 'stackarea':
 							case 'area':
 								color = elementWithColor.style('fill');
 								break;
@@ -365,10 +366,13 @@ angular.module('argus.directives.charts.lineChart', [])
 				tooltip, tipBox, tipItems,
 				crossLine,
 				names, colors, graphClassNames,
-				flagsG, labelTip;
+				flagsG, labelTip,
+				stack;
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
+				if (chartType === 'stackarea') stack = d3.stack();
+
 				var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
 				x = xy.x;
 				y = xy.y;
@@ -435,13 +439,22 @@ angular.module('argus.directives.charts.lineChart', [])
 				tipItems = tooltipElement.tipItems;
 				// get color
 				ChartToolService.bindDefaultColorsWithSources(z, names);
+				// populate stack if its needed
+				if (chartType === 'stackarea') {
+					stack.keys(names)
+						.order(d3.stackOrderNone)
+						.offset(d3.stackOffsetNone);
+				}
 			}
 
 			function renderGraphs (series) {
 				// downsample if its needed
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
+				if (chartType === 'stackarea') {
+					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack);
+				}
 
-				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries);
+				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, chartType === 'stackarea');
 				var xDomain = xyDomain.xDomain;
 				var yDomain = xyDomain.yDomain;
 
@@ -478,8 +491,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					// TODO: make this a constant somewhere else
-					var chartOpacity = chartType === 'area'? 0.9 - 0.7*(index/currSeries.length): 1;
+					var chartOpacity = chartType === 'area' ? ChartToolService.calculateGradientOpacity(index, currSeries.length) : 1;
 					ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
 					ChartElementService.renderBrushGraph(context, tempColor, metric, graph2, chartType, chartOpacity);
 					ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName);
@@ -577,10 +589,10 @@ angular.module('argus.directives.charts.lineChart', [])
 													//value in domain
 
 				//ajust currSeries to the brushed period
-				currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod);
+				currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod, stack);
 
 				//rescale domain of y axis
-				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
+				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax, chartType === 'stackarea');
 
 				//redraw
 				redraw();
@@ -619,10 +631,10 @@ angular.module('argus.directives.charts.lineChart', [])
 													//invert the x value in brush axis range to the
 													//value in domain
 				//ajust currSeries to the brushed period
-				currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod);
+				currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod, stack);
 
 				//rescale domain of y axis
-				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
+				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax, chartType === 'stackarea');
 
 				//redraw
 				redraw();
@@ -650,7 +662,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//have to register this as scope function cause toggleGraphOnOff is outside link function
 			scope.reScaleY = function () {
-				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
+				ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax, chartType === 'stackarea');
 			};
 
 			//have to register this as scope function cause toggleGraphOnOff is outside link function
@@ -701,7 +713,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						//restore the zoom&brush
 						context.select('.brush').call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
 					}
-					currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod);
+					currSeries = ChartElementService.adjustSeriesAndTooltips(series, scope.sources, x, tipItems, containerWidth, scope.menuOption.downSampleMethod, stack);
 				} else {
 					svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
 				}
@@ -770,7 +782,8 @@ angular.module('argus.directives.charts.lineChart', [])
 					} else if (series[i].noData) {
 						scope.noDataSeries.push(series[i]);
 						emptyReturn = true;
-					} else if (series[i].data.length === 0) {
+					} else if (series[i].data.length === 0 ||
+								angular.equals(series[i].data, {})) {
 						hasNoData = true;
 					} else {
 						// only keep the metric that's graphable
@@ -890,8 +903,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			scope.$watch('menuOption.downSampleMethod', function (newValue) {
 				if (!scope.hideMenu) {
-					currSeries = ChartElementService.adjustSeriesAndTooltips(series,  scope.sources, x, tipItems, containerWidth, newValue);
-					ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax);
+					currSeries = ChartElementService.adjustSeriesAndTooltips(series,  scope.sources, x, tipItems, containerWidth, newValue, stack);
+					ChartElementService.reScaleYAxis(currSeries, scope.sources, x, y, yScalePlain, agYMin, agYMax, chartType === 'stackarea');
 					redraw();
 				}
 			}, true);

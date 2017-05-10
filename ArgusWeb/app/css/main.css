@@ -314,7 +314,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
-/*.focus circle {opacity:0.5;}*/
+.focus circle {opacity:0.5;}
 
 /* dotted line on main line graph */
 .crossLine {fill:none; stroke:#000000; stroke-width:1px; stroke-dasharray:3,3;}

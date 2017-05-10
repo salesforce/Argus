@@ -251,20 +251,15 @@ angular.module('argus.services.charts.dataProcessing', [])
 			if (data && data.length !== 0) {
 				for (var i = 0; i < data.length; i++) {
 					var series;
-					if (useJson) {
-						series = data[i].datapoints;
-					} else {
-						// converts json to 2D array
-						series = [];
-						for (var key in data[i].datapoints) {
-							var timestamp = parseInt(key);
-							if (data[i].datapoints[key] !== null) {
-								var value = parseFloat(data[i].datapoints[key]);
-								series.push([timestamp, value]);
-							}
+					// converts json to 2D array
+					series = [];
+					for (var key in data[i].datapoints) {
+						var timestamp = parseInt(key);
+						if (data[i].datapoints[key] !== null) {
+							var value = parseFloat(data[i].datapoints[key]);
+							series.push([timestamp, value]);
 						}
 					}
-
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
 					var objSeries = {
@@ -274,42 +269,14 @@ angular.module('argus.services.charts.dataProcessing', [])
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
 
+                    if (useJson) objSeriesWithOptions.rawData = data[i].datapoints;
+
 					result.push(objSeriesWithOptions);
 				}
 			} else {
 				result.push({name: 'result', data: []});
 			}
 			return result;
-		},
-
-
-		convertSeriesToTimebasedFormat: function (series) {
-			var result = [];
-			var allTimestamps = [];
-			var metricInfoList = [];
-			series.map(function(metric) {
-				metricInfoList.push(UtilService.copyObjectWithoutProps(metric, ['data']));
-				for (var key in metric.data) {
-					var timestamp = parseInt(key);
-					if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
-				}
-			});
-			allTimestamps.sort(function(a, b) {
-				return a - b;
-			});
-
-			allTimestamps.map(function(timestamp) {
-				var valuesAtThisTimestamp = {timestamp: timestamp};
-				series.map(function(metric, index) {
-					var tempValue = metric.data[timestamp];
-					// make it 0 when there is no data for this timestamp
-					if (tempValue === undefined) tempValue = 0;
-					valuesAtThisTimestamp[metricInfoList[index].name] = tempValue;
-				});
-				result.push(valuesAtThisTimestamp);
-			});
-
-			return {info:metricInfoList, data:result};
 		},
 
 		populateAnnotations: function(annotationsList, chart) {

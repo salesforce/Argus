@@ -166,22 +166,47 @@ angular.module('argus.services.charts.tools', [])
 		};
 	};
 
-	this.getXandYDomainsOfSeries = function (series) {
+	this.getXandYDomainsOfSeries = function (series, isDataStacked) {
 		var allDatapoints = [];
+		var dataFieldName = isDataStacked? 'stackedData': 'data';
 		series.forEach(function (metric) {
-			allDatapoints = allDatapoints.concat(metric.data);
+			allDatapoints = allDatapoints.concat(metric[dataFieldName]);
 		});
-		var xDomain = d3.extent(allDatapoints, function (d) {
-			return d[0];
-		});
-		var yDomain = d3.extent(allDatapoints, function (d) {
-			return d[1];
-		});
+
 		return {
-			xDomain: xDomain,
-			yDomain: yDomain
+			xDomain: this.getXDomainOfSeries(allDatapoints, isDataStacked),
+			yDomain: this.getYDomainOfSeries(allDatapoints, isDataStacked)
 		};
 	};
+
+	this.getXDomainOfSeries = function (dataPoints, isDataStacked) {
+        var extent;
+        if (isDataStacked) {
+            extent = d3.extent(dataPoints, function (d) {
+                return d.data.timestamp;
+            });
+        } else {
+            extent = d3.extent(dataPoints, function (d) {
+                return d[0];
+            });
+        }
+        return extent;
+    };
+
+	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
+        var extent;
+        if (isDataStacked) {
+            var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
+            dataPoints.map(function (d) {
+                if (d[0] < yMin) yMin = d[0];
+                if (d[1] > yMax) yMax = d[1];
+            });
+            extent = [yMin, yMax];
+        } else {
+            extent = d3.extent(dataPoints, function (d) { return d[1]; });
+        }
+        return extent;
+    };
 
 	this.updateXandYRange = function (sizeInfo, x, y, needToAdjustHeight) {
 		if (needToAdjustHeight) {
@@ -312,5 +337,54 @@ angular.module('argus.services.charts.tools', [])
 			containerWidth: containerWidth,
 			containerHeight: containerHeight
 		};
+	};
+
+	this.calculateGradientOpacity = function (num, tot) {
+		return 0.9 - 0.7 * (num / tot);
+	};
+
+	this.convertSeriesToTimeBasedFormat = function (series, metricsToIgnore) {
+		var result = [];
+		var allTimestamps = [];
+		var needToIgnoreSomeMetrics = metricsToIgnore !== undefined && metricsToIgnore.length !== 0;
+        series.map(function(metric) {
+			if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
+			for (var key in metric.rawData) {
+				var timestamp = parseInt(key);
+				if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
+			}
+		});
+		// sort the timestamps and add values from each source
+		var valuesAtPreviousTimestamp = {};
+		allTimestamps.sort(function(a, b) { return a - b; });
+		allTimestamps.map(function(timestamp) {
+			var valuesAtThisTimestamp = {timestamp: timestamp};
+			series.map(function(metric) {
+                if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
+				var tempValue = metric.rawData[timestamp];
+				// use previous value when there is no data for this timestamp
+				if (tempValue === undefined) {
+					if (valuesAtPreviousTimestamp[metric.name] !== undefined) {
+                        tempValue = valuesAtPreviousTimestamp[metric.name];
+					} else {
+						tempValue = 0;
+					}
+				} else {
+                    valuesAtPreviousTimestamp[metric.name] = tempValue;
+				}
+				valuesAtThisTimestamp[metric.name] = tempValue;
+			});
+			result.push(valuesAtThisTimestamp);
+		});
+		return result;
+	};
+
+	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
+		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
+        series = series.map(function (metric, index) {
+            metric.stackedData = stackedData[index];
+            return metric;
+        });
+        return series
 	};
 }]);

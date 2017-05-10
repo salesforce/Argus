@@ -24,6 +24,7 @@ angular.module('argus.services.charts.elements', [])
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		switch (chartType) {
+			case 'stackarea':
 			case 'area':
 				graph.style('fill', color).style('opacity', opacity);
 				break;
@@ -154,6 +155,23 @@ angular.module('argus.services.charts.elements', [])
 		area.y0(y(0));
 		return area;
 	};
+
+	this.createStackArea = function (x, y) {
+		return d3.area()
+			.x(function (d) {
+				var time = UtilService.validNumberChecker(x(d.data.timestamp));
+				return time;
+			})
+			.y0(function (d) {
+				var lowerY = UtilService.validNumberChecker(y(d[0]));
+				return lowerY;
+			})
+			.y1(function (d) {
+				var upperY = UtilService.validNumberChecker(y(d[1]));
+				return upperY;
+			});
+	};
+
 	this.createScatter = function (x, y) {
 		// does not actually create a graph element
 		return {x: x, y: y};
@@ -167,6 +185,9 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'area':
 				graphElement = this.createArea(x, y);
+				break;
+			case 'stackarea':
+				graphElement = this.createStackArea(x, y);
 				break;
 			// case 'line':
 			default:
@@ -390,6 +411,15 @@ angular.module('argus.services.charts.elements', [])
 			.attr('d', area);
 	};
 
+	this.renderStackareaGraph = function (chart, color, metric, stackarea, chartId) {
+		chart.append('path')
+			.attr('class', 'stackarea ' + metric.graphClassName)
+			.style('fill', color)
+			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.datum(metric.stackedData)
+			.attr('d', stackarea);
+	};
+
 	this.renderScatterGraph = function (chart, color, metric) {
 		chart.selectAll('.dot')
 			.data(metric.data)
@@ -402,10 +432,11 @@ angular.module('argus.services.charts.elements', [])
 		if (chartType === 'scatter') {
 			this.renderScatterGraph(chart, color, metric, graph, chartId);
 		} else {
+			var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
 				.style('clip-path', "url('#clip_" + chartId + "')")
-				.datum(metric.data)
+				.datum(metric[dataFieldName])
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
@@ -442,9 +473,10 @@ angular.module('argus.services.charts.elements', [])
 		if (chartType === 'scatter') {
 			this.renderBrushScatterGraph(context, color, metric, graph2);
 		} else {
+            var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 			var newGraph = context.append('path')
 				.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr)
-				.datum(metric.data)
+                .datum(metric[dataFieldName])
 				.attr('d', graph2);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
@@ -893,9 +925,10 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	// TODO: need to separate these 2 since it's a mix of modifying the view and data
-	this.adjustSeriesAndTooltips = function (series, sources, x, tipItems, containerWidth, downSampleMethod) {
+	this.adjustSeriesAndTooltips = function (series, sources, x, tipItems, containerWidth, downSampleMethod, stack) {
 		var xDomain = x.domain();
-		var newCurrSeries = JSON.parse(JSON.stringify(series));
+		// deep copy series object
+		var newCurrSeries = angular.copy(series);
 		series.forEach(function (metric, index) {
 			var source = sources[index];
 			// metric with no data
@@ -917,6 +950,9 @@ angular.module('argus.services.charts.elements', [])
 			newCurrSeries[index].data = metric.data.slice(start, end + 1);
 		});
 		newCurrSeries = ChartToolService.downSample(newCurrSeries, containerWidth, downSampleMethod);
+		if (stack !== undefined) {
+            newCurrSeries = ChartToolService.addStackedDataToSeries(newCurrSeries, stack);
+		}
 		return newCurrSeries;
 	};
 
@@ -949,20 +985,22 @@ angular.module('argus.services.charts.elements', [])
 						}
 					});
 			} else {
+                var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 				mainChart.select('path.' + chartType + '.' + metric.graphClassName)
-					.datum(metric.data)
+					.datum(metric[dataFieldName])
 					.attr('d', graph);
 			}
 		});
 	};
 
 	//rescale YAxis based on XAxis Domain
-	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax) {
+	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax, isDataStacked) {
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
 
 		var xDomain = x.domain();
 		var datapoints = [];
+        var dataFieldName = isDataStacked? 'stackedData': 'data';
 
 		series.forEach(function (metric, index) {
 			// metric with no data or hidden
@@ -972,9 +1010,10 @@ angular.module('argus.services.charts.elements', [])
 
 			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
 			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
-			datapoints = datapoints.concat(metric.data.slice(start, end + 1));
+			datapoints = datapoints.concat(metric[dataFieldName].slice(start, end + 1));
 		});
-		var extent = d3.extent(datapoints, function (d) { return d[1]; });
+		var extent = ChartToolService.getYDomainOfSeries(datapoints, isDataStacked);
+
 		// TODO: still buggy with log scale when it try to calculate log(0)
 		var yMin = UtilService.validNumberChecker(yScalePlain(extent[0]));
 		var yMax = UtilService.validNumberChecker(yScalePlain(extent[1]));
@@ -982,9 +1021,11 @@ angular.module('argus.services.charts.elements', [])
 		var buffer = (yMax - yMin) * bufferRatio;
 		if (buffer === 0) buffer = ChartToolService.yAxisPadding;
 
-		yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
-		yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
-		y.domain([yMin, yMax]);
+		var resultYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
+		var resultYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
+		// for area chart types to not have buffer at the bottom
+		if (resultYMin < 0 && yMin === 0) resultYMin = 0;
+		y.domain([resultYMin, resultYMax]);
 	};
 
 	this.resizeMainChartElements = function (sizeInfo, svg, svg_g, needToAdjustHeight) {
