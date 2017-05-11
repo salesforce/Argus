@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.sdk;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
+import com.salesforce.dva.argus.sdk.entity.Alert;
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryQuery;
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryResult;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
 
@@ -116,6 +119,17 @@ public class DiscoveryService extends EndpointService {
 
         assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<String>>() { });
+    }
+    /*
+     * 
+     */
+    public MetricDiscoveryResult getMatchingRecords(MetricDiscoveryQuery query) throws IOException, TokenExpiredException{
+    	
+    	String requestUrl=RESOURCE;
+    	 ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, query);
+    	 assertValidResponse(response, requestUrl);
+         return fromJson(response.getResult(), MetricDiscoveryResult.class);
+    	
     }
 
     private StringBuilder _buildBaseUrl(String namespaceRegex, String scopeRegex, String metricRegex, String tagKeyRegex, String tagValueRegex,
