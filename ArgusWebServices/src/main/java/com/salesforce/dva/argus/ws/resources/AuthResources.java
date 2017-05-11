@@ -92,7 +92,7 @@ public class AuthResources extends AbstractResource {
             req.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, result);
             return result;
         } catch (Exception ex) {
-            throw new WebApplicationException(Response.Status.UNAUTHORIZED.getReasonPhrase(), Response.Status.UNAUTHORIZED);
+            throw new WebApplicationException(ex.getMessage(), Response.Status.UNAUTHORIZED);
         }
     }
 
