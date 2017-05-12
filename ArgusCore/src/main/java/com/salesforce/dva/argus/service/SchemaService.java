@@ -68,23 +68,23 @@ public interface SchemaService extends Service {
      *
      * @param   query  The query to evaluate.  Cannot be null.
      * @param   limit  The maximum number of records to return.  Must be a positive integer.
-     * @param   page   The page of records to return.  Must be a non-negative integer.
+     * @param   scanFrom   String representing the scanner start row
      *
      * @return  The list of matching schema records.
      */
-    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, int limit, int page);
+    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, int limit, MetricSchemaRecord scanFrom);
 
     /**
      * Returns a list of unique names for the given record type.
      *
      * @param   query  The query to evaluate.  Cannot be null.
      * @param   limit  The maximum number of records to return.  Must be a positive integer.
-     * @param   page   The page of results to return.  Must be a non-negative integer.
      * @param   type   The record type for which to return unique names.
+     * @param   scanFrom   String representing the scanner start row
      *
-     * @return  A list of unique names for the give record type.  Will never return null, but may be empty.
+     * @return  A list of MetricSchemaRecords for the give record type.  Will never return null, but may be empty.
      */
-    List<String> getUnique(MetricSchemaRecordQuery query, int limit, int page, RecordType type);
+    List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, int limit, RecordType type, MetricSchemaRecord scanFrom);
     
     static boolean containsWildcard(String str) {
         if (str == null || str.isEmpty()) {

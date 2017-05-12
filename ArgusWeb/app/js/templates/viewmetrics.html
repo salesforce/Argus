@@ -14,6 +14,17 @@
         </div>
     </div>
 
+    <div class="search-options">
+        <label class="checkbox-inline">
+            <input type="checkbox" ng-model="includeAnnotations">
+            Include annotations related to the metric
+        </label>
+        <label class="checkbox-inline">
+            <input type="checkbox" ng-model="timeZoneOption">
+            Use GMT
+        </label>
+    </div>
+
     <div id="discoveryLookup" ng-show="showMetricDiscovery">
 
     <hr width="100%" />
@@ -62,8 +73,6 @@
         </script>
     </div>
 
-    <div></div>
-
     <div ng-show="enterTagsErr" style="color:red;">You must enter both a <strong>Tag key AND Tag value</strong>!</div>
     
     <div class="metricFields">
@@ -104,8 +113,6 @@
         </script>
     </div>
 
-    <div></div>
-        
     <div class="metricFields">
         <label>Namespace</label><span ng-if="noNamespaceResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
@@ -124,8 +131,6 @@
           </a>
         </script>
     </div>
-
-    <div></div>
 
     <div class="metricFields" style="margin-top:2em;">
         <span ng-show="false"><strong>Metric Expression:</strong> &nbsp;</span><span id="searchExpression"></span>

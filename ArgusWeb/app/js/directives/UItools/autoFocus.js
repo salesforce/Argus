@@ -5,17 +5,20 @@
  *
  * Usage:
  * <input type="text" autoFocus>
- * 
+ *
  * License: MIT
  */
+'use strict';
+/*global angular:false */
+
 angular.module('argus.directives')
-.directive('autoFocus', ['$timeout', '$exceptionHandler', function($timeout, $exceptionHandler) {
-  return {
-    restrict: 'A',
-    link : function($scope, $element) {
-      $timeout(function() {
-        $element[0].focus();
-      });
-    }
-  }
+.directive('autoFocus', ['$timeout', function($timeout) {
+	return {
+		restrict: 'A',
+		link : function($scope, $element) {
+			$timeout(function() {
+				$element[0].focus();
+			});
+		}
+	};
 }]);
