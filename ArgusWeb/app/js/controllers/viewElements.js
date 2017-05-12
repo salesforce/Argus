@@ -8,6 +8,7 @@ angular.module('argus.controllers.viewelements', [])
         var metric = {
             'name': seriesData.name,
             'color': seriesData.color,
+            'extraYAxis': seriesData.extraYAxis,
             'expression': expression,
             'metricSpecificOptions': metricSpecificOptions
         };
