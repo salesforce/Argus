@@ -120,9 +120,9 @@ public class PerfFilter implements Filter {
             }
             
             Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-            String username = user != null ? String.class.cast(user) : null;
-            
-            if(username != null && !username.isEmpty()) {
+            String username = user != null ? String.class.cast(user) : "NULLUSER";
+	    
+	    if(!username.isEmpty()) {
             	tags.put(TAGS_USER_KEY, username);
             }
 
