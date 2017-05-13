@@ -246,7 +246,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 			}
 		},
 
-		copySeriesDataNSetOptions: function(data, metricItem, useJson) {
+		copySeriesDataNSetOptions: function(data, metricItem) {
 			var result = [];
 			if (data && data.length !== 0) {
 				for (var i = 0; i < data.length; i++) {
@@ -268,8 +268,6 @@ angular.module('argus.services.charts.dataProcessing', [])
 						data: series
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
-
-                    if (useJson) objSeriesWithOptions.rawData = data[i].datapoints;
 
 					result.push(objSeriesWithOptions);
 				}

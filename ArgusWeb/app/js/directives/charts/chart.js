@@ -103,7 +103,7 @@ angular.module('argus.directives.charts.chart', [])
 					}
 
 					// metric item attributes are assigned to the data (i.e. name, color, etc.)
-					tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem, updatedOptionList.timeBased);
+					tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
 
 					// keep metric expression info if the query succeeded
 					metricCount.expressions.push(metricItem.expression);
@@ -173,7 +173,6 @@ angular.module('argus.directives.charts.chart', [])
 			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
-			var timeBased = chartType === 'stackarea';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
 
 			// set the charts container for rendering
@@ -215,7 +214,6 @@ angular.module('argus.directives.charts.chart', [])
 			var updatedAnnotationList = processedData.updatedAnnotationList;
 			var updatedOptionList = processedData.updatedOptionList;
 			updatedOptionList.chartType = chartType;
-			updatedOptionList.timeBased = timeBased;
 
 			// define series first, then build list for each metric expression
 			var series = [];

@@ -159,16 +159,13 @@ angular.module('argus.services.charts.elements', [])
 	this.createStackArea = function (x, y) {
 		return d3.area()
 			.x(function (d) {
-				var time = UtilService.validNumberChecker(x(d.data.timestamp));
-				return time;
+				return UtilService.validNumberChecker(x(d.data.timestamp));
 			})
 			.y0(function (d) {
-				var lowerY = UtilService.validNumberChecker(y(d[0]));
-				return lowerY;
+				return UtilService.validNumberChecker(y(d[0]));
 			})
 			.y1(function (d) {
-				var upperY = UtilService.validNumberChecker(y(d[1]));
-				return upperY;
+				return UtilService.validNumberChecker(y(d[1]));
 			});
 	};
 
@@ -290,14 +287,14 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.appendGridElements = function (sizeInfo, chart, grids) {
+	this.appendGridElements = function (sizeInfo, chart, xGrid, yGrid) {
 		var xGridG = chart.append('g')
 			.attr('class', 'x grid')
 			.attr('transform', 'translate(0,' + sizeInfo.height + ')')
-			.call(grids.xGrid);
+			.call(xGrid);
 		var yGridG = chart.append('g')
 			.attr('class', 'y grid')
-			.call(grids.yGrid);
+			.call(yGrid);
 		return {
 			xGridG: xGridG,
 			yGridG: yGridG
@@ -432,11 +429,10 @@ angular.module('argus.services.charts.elements', [])
 		if (chartType === 'scatter') {
 			this.renderScatterGraph(chart, color, metric, graph, chartId);
 		} else {
-			var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
 				.style('clip-path', "url('#clip_" + chartId + "')")
-				.datum(metric[dataFieldName])
+				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
@@ -473,10 +469,9 @@ angular.module('argus.services.charts.elements', [])
 		if (chartType === 'scatter') {
 			this.renderBrushScatterGraph(context, color, metric, graph2);
 		} else {
-            var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 			var newGraph = context.append('path')
 				.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr)
-                .datum(metric[dataFieldName])
+				.datum(metric.data)
 				.attr('d', graph2);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
@@ -616,8 +611,8 @@ angular.module('argus.services.charts.elements', [])
 					d = d1;
 				} else if (!d1) {
 					d = d0;
-					// if both data points lives in the domain, choose the closer one to the mouse position
 				} else {
+					// if both data points lives in the domain, choose the closer one to the mouse position
 					d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
 				}
 
@@ -642,6 +637,59 @@ angular.module('argus.services.charts.elements', [])
 				if (displayProperty !== 'none') {
 					datapoints.push({
 						data: d,
+						graphClassName: metric.graphClassName,
+						name: metric.name
+					});
+				}
+			}
+		});
+		return datapoints;
+	};
+
+	this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mouseX) {
+		var datapoints = [];
+		series.forEach(function (metric, index) {
+			var circle = focus.select('.' + metric.graphClassName);
+			if (metric.data.length === 0 || !sources[index].displaying) {
+				circle.style('display', 'none');
+				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+			} else {
+				var data = metric.data;
+				var i = ChartToolService.bisectDateStackedData(metric.data, mouseX, 1);
+				var d0 = data[i - 1];
+				var d1 = data[i];
+				var d;
+
+				if (!d0) {
+					d = d1;
+				} else if (!d1) {
+					d = d0;
+				} else {
+					d = mouseX - d0.data.timestamp > d1.data.timestamp - mouseX ? d1 : d0;
+				}
+
+				var tempX = d.data.timestamp;
+				var tempY = d.data[metric.name];
+				var tempYStacked = d[1];
+
+				var notInSnappingRange = Math.abs(mouseX - tempX) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
+				var displayProperty = circle.attr('displayProperty');
+				if (ChartToolService.isNotInTheDomain(tempX, x.domain()) ||
+					ChartToolService.isNotInTheDomain(tempYStacked, y.domain()) ||
+					notInSnappingRange) {
+					circle.style('display', 'none');
+					displayProperty = 'none';
+				} else {
+					circle.style('display', null);
+				}
+				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
+				var newX = UtilService.validNumberChecker(x(tempX));
+				var newY = UtilService.validNumberChecker(y(tempYStacked));
+				circle.attr('dataX', d[0]).attr('dataY', d[1])
+					.attr('transform', 'translate(' + newX + ',' + newY + ')');
+				if (displayProperty !== 'none') {
+					datapoints.push({
+						data: [tempX, tempY],
 						graphClassName: metric.graphClassName,
 						name: metric.name
 					});
@@ -758,19 +806,20 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateFocusCirclesToolTipsCrossLines = function (sizeInfo, dateFormatter, formatYaxis, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, brushInNonEmptyRange) {
+	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, isDataStacked) {
 		var datapoints;
-		if (brushInNonEmptyRange) {
+		if (isDataStacked) {
+			datapoints = this.updateFocusCirclesAndTooltipItemsWithStackedData(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
+		} else {
 			datapoints = this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
-			// sort items in tooltip if needed
-			if (tooltipConfig.isTooltipSortOn) {
-				datapoints = datapoints.sort(function (a, b) {
-					return b.data[1] - a.data[1];
-				});
-			}
-			this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
 		}
-		this.updateCrossLines(sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData);
+		// sort items in tooltip if needed
+		if (tooltipConfig.isTooltipSortOn) {
+			datapoints = datapoints.sort(function (a, b) {
+				return b.data[1] - a.data[1];
+			});
+		}
+		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
 	};
 
 	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange) {
@@ -937,7 +986,8 @@ angular.module('argus.services.charts.elements', [])
 				return;
 			}
 			// metric out of x domain
-			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain)) {
+			// series is still in its original form here; convert to stack form later
+			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain, false)) {
 				newCurrSeries[index].data = [];
 				tipItems.selectAll('.'+ source.graphClassName).style('display', 'none');
 				return;
@@ -951,7 +1001,7 @@ angular.module('argus.services.charts.elements', [])
 		});
 		newCurrSeries = ChartToolService.downSample(newCurrSeries, containerWidth, downSampleMethod);
 		if (stack !== undefined) {
-            newCurrSeries = ChartToolService.addStackedDataToSeries(newCurrSeries, stack);
+			newCurrSeries = ChartToolService.addStackedDataToSeries(newCurrSeries, stack);
 		}
 		return newCurrSeries;
 	};
@@ -985,9 +1035,8 @@ angular.module('argus.services.charts.elements', [])
 						}
 					});
 			} else {
-                var dataFieldName = chartType === 'stackarea'? 'stackedData': 'data';
 				mainChart.select('path.' + chartType + '.' + metric.graphClassName)
-					.datum(metric[dataFieldName])
+					.datum(metric.data)
 					.attr('d', graph);
 			}
 		});
@@ -998,19 +1047,24 @@ angular.module('argus.services.charts.elements', [])
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
 
+		console.time("concatenation");
 		var xDomain = x.domain();
 		var datapoints = [];
-        var dataFieldName = isDataStacked? 'stackedData': 'data';
 
 		series.forEach(function (metric, index) {
 			// metric with no data or hidden
 			if (metric === null || metric.data === undefined || metric.data.length === 0 || !sources[index].displaying) return;
 			// metric out of x domain
-			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain)) return;
-
-			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
-			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
-			datapoints = datapoints.concat(metric[dataFieldName].slice(start, end + 1));
+			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) return;
+			var start, end;
+			if (isDataStacked) {
+				start = ChartToolService.bisectDateStackedData(metric.data, xDomain[0]);
+				end = ChartToolService.bisectDateStackedData(metric.data, xDomain[1], start);
+			} else {
+				start = ChartToolService.bisectDate(metric.data, xDomain[0]);
+				end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
+			}
+			datapoints = datapoints.concat(metric.data.slice(start, end + 1));
 		});
 		var extent = ChartToolService.getYDomainOfSeries(datapoints, isDataStacked);
 
@@ -1026,6 +1080,8 @@ angular.module('argus.services.charts.elements', [])
 		// for area chart types to not have buffer at the bottom
 		if (resultYMin < 0 && yMin === 0) resultYMin = 0;
 		y.domain([resultYMin, resultYMax]);
+		console.timeEnd("concatenation");
+		console.log('rescaled Y');
 	};
 
 	this.resizeMainChartElements = function (sizeInfo, svg, svg_g, needToAdjustHeight) {

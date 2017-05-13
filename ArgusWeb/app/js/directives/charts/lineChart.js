@@ -371,6 +371,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
+				console.time("concatenation");
 				if (chartType === 'stackarea') stack = d3.stack();
 
 				var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
@@ -410,7 +411,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				yAxisG = axisesElement.yAxisG;
 				yAxisRG = axisesElement.yAxisRG;
 
-				var gridsElement = ChartElementService.appendGridElements(allSize, mainChart, grids);
+				var gridsElement = ChartElementService.appendGridElements(allSize, mainChart, xGrid, yGrid);
 				xGridG = gridsElement.xGridG;
 				yGridG = gridsElement.yGridG;
 
@@ -428,10 +429,6 @@ angular.module('argus.directives.charts.lineChart', [])
 				flagsG = flagsElement.flagsG;
 				labelTip = flagsElement.labelTip;
 
-				// Mouseover focus and crossline
-				focus = ChartElementService.appendFocus(mainChart);
-				crossLine = ChartElementService.appendCrossLine(focus);
-
 				// tooltip setup
 				var tooltipElement = ChartElementService.appendTooltipElements(svg_g);
 				tooltip = tooltipElement.tooltip;
@@ -445,14 +442,19 @@ angular.module('argus.directives.charts.lineChart', [])
 						.order(d3.stackOrderNone)
 						.offset(d3.stackOffsetNone);
 				}
+				console.timeEnd("concatenation");
+				console.log('set up graph');
 			}
 
 			function renderGraphs (series) {
+				console.time("concatenation");
 				// downsample if its needed
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 				if (chartType === 'stackarea') {
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack);
 				}
+				console.timeEnd("concatenation");
+				console.log('convert data to stack form');
 
 				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, chartType === 'stackarea');
 				var xDomain = xyDomain.xDomain;
@@ -488,13 +490,24 @@ angular.module('argus.directives.charts.lineChart', [])
 
 				dateExtent = xDomain;
 
+				console.time("concatenation");
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					var chartOpacity = chartType === 'area' ? ChartToolService.calculateGradientOpacity(index, currSeries.length) : 1;
+					var chartOpacity;
+					switch (chartType) {
+						case 'area':
+							chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
+							break;
+						case 'stackarea':
+							chartOpacity = 0.8;
+							break;
+						default:
+							chartOpacity = 1;
+					}
+
 					ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
 					ChartElementService.renderBrushGraph(context, tempColor, metric, graph2, chartType, chartOpacity);
-					ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName);
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// annotations
 					if (!metric.flagSeries) return;
@@ -503,6 +516,8 @@ angular.module('argus.directives.charts.lineChart', [])
 						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
 					});
 				});
+				console.timeEnd("concatenation");
+				console.log('first time rendered');
 
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
@@ -511,23 +526,34 @@ angular.module('argus.directives.charts.lineChart', [])
 			//this function add the overlay element to the graph when mouse interaction takes place
 			//need to call this after drawing the lines in order to put mouse interaction overlay on top
 			function addOverlay() {
+				console.time("concatenation");
+				// Mouseover focus and crossline
+				focus = ChartElementService.appendFocus(mainChart);
+				crossLine = ChartElementService.appendCrossLine(focus);
+				currSeries.forEach(function (metric) {
+					if (metric.data.length === 0) return;
+					var tempColor = metric.color === null ? z(metric.name) : metric.color;
+					ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName);
+				});
 				//the graph rectangle area
 				chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
 				// the brush overlay
 				brushG = ChartElementService.appendBrushOverlay(context, brush, x.range());
 				brushMainG = ChartElementService.appendMainBrushOverlay(mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom, brushMain);
+				console.timeEnd("concatenation");
+				console.log('added overlay');
 			}
 
 			function mouseMove() {
 				if (!currSeries || currSeries.length === 0) return;
 				var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
-				var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
+				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
+					ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+						currSeries, scope.sources, x, y, mousePositionData, chartType === 'stackarea');
+				}
+				ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 
-				ChartElementService.updateFocusCirclesToolTipsCrossLines(allSize, dateFormatter,
-					scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-					series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
-
-				if(chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
+				if (chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
 			}
 
 			function mouseOverChart() {
@@ -557,9 +583,14 @@ angular.module('argus.directives.charts.lineChart', [])
 						positionX: x(mouseX),
 						positionY: focus.select('[name=crossLineTipX]').node().getBBox().height + 3  // crossLineTipPadding
 					};
-					ChartElementService.updateFocusCirclesToolTipsCrossLines(
-						allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-						series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
+					// ChartElementService.updateFocusCirclesToolTipsCrossLines(
+					// 	allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+					// 	series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
+					if (brushInNonEmptyRange) {
+						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+							currSeries, scope.sources, x, y, mousePositionData, chartType === 'stackarea');
+					}
+					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 				}
 			}
 
@@ -581,6 +612,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//brushed
 			function brushed() {
+				console.time("concatenation");
 				// ignore the case when it is called by the zoomed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'zoom' )) return;
 				var s = d3.event.selection || x2.range();
@@ -607,6 +639,8 @@ angular.module('argus.directives.charts.lineChart', [])
 						.scale(allSize.width / (s[1] - s[0]))
 						.translate(-s[0], 0));
 				}
+				console.timeEnd("concatenation");
+				console.log('brushed');
 			}
 
 			function brushedMain() {
@@ -624,6 +658,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//zoomed
 			function zoomed() {
+				console.time("concatenation");
 				// ignore the case when it is called by the brushed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'brush' || d3.event.sourceEvent.type === 'end'))return;
 				var t = d3.event.transform;
@@ -646,18 +681,26 @@ angular.module('argus.directives.charts.lineChart', [])
 				var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 				ChartElementService.updateFocusCirclesPositionWithZoom(x, y, focus, brushInNonEmptyRange);
 				ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
+				console.timeEnd("concatenation");
+				console.log('zoomed');
 			}
 
 			//redraw the line with restrict
 			function redraw() {
+				console.time("concatenation");
 				//redraw
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
+					console.time("concatenation");
 					ChartElementService.redrawGraphs(currSeries, scope.sources, chartType, graph, mainChart);
+					console.timeEnd("concatenation");
+					console.log('redrew the actual graphs');
 				}
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+				console.timeEnd("concatenation");
+				console.log('redrew');
 			}
 
 			//have to register this as scope function cause toggleGraphOnOff is outside link function
@@ -670,6 +713,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//precise resize without removing and recreating everything
 			function resize () {
+				console.time("concatenation");
 				if (series === 'series' || !series) {
 					return;
 				}
@@ -717,6 +761,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				} else {
 					svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
 				}
+				console.timeEnd("concatenation");
+				console.log('resized');
 			}
 
 			function setupMenu () {
