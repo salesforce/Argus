@@ -81,6 +81,8 @@ public class TransformFactory {
         switch (function) {
             case DIVIDE:
                 return new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
+            case DEDUCT:
+                return new DeductReduceTransform();
             case SUM:
                 return new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
             case MULTIPLY:
@@ -203,6 +205,7 @@ public class TransformFactory {
         SUM("SUM", "Performs an addition of the input metrics"),
         DIFF("DIFF", "Difference between timeseries"),
         DIVIDE("DIVIDE", "Divides one timeseries by another"),
+        DEDUCT("DEDUCT","Perform duction on mulitple Metrics on each timestamp value pair"),
         ABOVE("ABOVE", "Calculates all input metrics whose set of data point values, when evaluated, are above the limit."),
         BELOW("BELOW", "Calculates all input metrics whose set of data point values, when evaluated, are below the limit."),
         HIGHEST("HIGHEST",

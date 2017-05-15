@@ -144,6 +144,7 @@ TOKEN : { < SUM : "SUM" > }
 TOKEN : { < SUM_V : "SUM_V" > }
 TOKEN : { < DIVIDE : "DIVIDE" > }
 TOKEN : { < DIVIDE_V : "DIVIDE_V" > }
+TOKEN : { < DEDUCT : "DEDUCT" > }
 TOKEN : { < DIFF : "DIFF" > }
 TOKEN : { < DIFF_V : "DIFF_V" > }
 TOKEN : { < MULTIPLY : "MULTIPLY" > }
@@ -371,6 +372,9 @@ private String functionName() :
 	t = <DIVIDE_V>
 	{ return t.image; }
 	|
+	t = <DEDUCT>
+	{ return t.image; }			
+	|
 	t = <ALIAS>
 	{ return t.image; }
 	|
@@ -479,7 +483,8 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
 	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	      	constants.add(String.valueOf(relativeTo));
+	  	  	    }
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}

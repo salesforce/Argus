@@ -12,6 +12,7 @@ argus-build.properties
 .settings/
 .DS_Store
 /config
+*.properties
 
 # Eclipse ignore
 .metadata
