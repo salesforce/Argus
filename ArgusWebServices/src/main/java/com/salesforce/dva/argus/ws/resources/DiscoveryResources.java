@@ -35,12 +35,15 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.dto.MetricDiscoveryQueryDto;
+import com.salesforce.dva.argus.ws.dto.MetricDiscoveryResultDto;
 
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -81,7 +84,7 @@ public class DiscoveryResources extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/metrics/schemarecords")
     @Description("Discover metric schema records. If type is specified, then records of that particular type are returned.")
-    public List<? extends Object> getRecords(@Context HttpServletRequest req,
+    public List<? extends Object> getRecordsByPage(@Context HttpServletRequest req,
     	@DefaultValue("*") @QueryParam("namespace") final String namespaceRegex,
         @QueryParam("scope") final String scopeRegex,
         @QueryParam("metric") final String metricRegex,
@@ -92,32 +95,109 @@ public class DiscoveryResources extends AbstractResource {
         @QueryParam("type") String type) {
         
         if (type == null) {
-            List<MetricSchemaRecord> schemaRecords = _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit,
-                page);
+            List<MetricSchemaRecord> schemaRecords = _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, page*limit,
+                null);
             
             boolean format = req.getParameterMap().containsKey("format") && 
             		(req.getParameter("format") == null || Boolean.parseBoolean(req.getParameter("format")));
             if(format) {
             	List<String> records = new ArrayList<>(schemaRecords.size()); 
                 _formatToString(schemaRecords, records);
-                return records;
+                return _getSubList(records,limit*(page-1), records.size());
             }
             
-            return schemaRecords;
+            return _getSubList(schemaRecords,limit*(page-1),schemaRecords.size());
         } else {
-            List<String> records = _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex,
-                RecordType.fromName(type), limit, page);
+            List<MetricSchemaRecord> records = _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex,
+                RecordType.fromName(type), page*limit, null);
 
-            return records;
+            return _getValueForType(_getSubList(records, limit*(page-1), records.size()), RecordType.fromName(type)); 
         }
     }
+    
+    /**
+     * Discover metric schema records. If type is specified, then records of that particular type are returned.
+     *
+     * @param   req             The HTTP request.
+     * @param   MetricDiscoveryQueryDto This contains metric query parameters along with scanner starting schema record
+     *
+     * @return  The filtered set of schema records or unique values if a specific field is requested.
+     */
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/metrics/schemarecords")
+    @Description("Discover metric schema records. If type is specified, then records of that particular type are returned.")
+    public MetricDiscoveryResultDto getRecordsByStartRow(@Context HttpServletRequest req,
+    	MetricDiscoveryQueryDto metricDiscoveryQueryDto) {
+        
+        if (metricDiscoveryQueryDto.getType() == null) {
+            List<MetricSchemaRecord> schemaRecords = _discoveryService.filterRecords(metricDiscoveryQueryDto.getNamespace(), metricDiscoveryQueryDto.getScope(), 
+            		metricDiscoveryQueryDto.getMetric(), metricDiscoveryQueryDto.getTagKey(), metricDiscoveryQueryDto.getTagValue(), metricDiscoveryQueryDto.getLimit(),
+            		metricDiscoveryQueryDto.getScanStartSchemaRecord());
+            
+            boolean format = req.getParameterMap().containsKey("format") && 
+            		(req.getParameter("format") == null || Boolean.parseBoolean(req.getParameter("format")));
+            if(format) {
+            	List<String> records = new ArrayList<>(schemaRecords.size()); 
+                _formatToString(schemaRecords, records);
+                return  new MetricDiscoveryResultDto(records, schemaRecords.get(schemaRecords.size()-1));
+            }
+            
+            return  new MetricDiscoveryResultDto(schemaRecords, schemaRecords.get(schemaRecords.size()-1));
+        } else {
+            List<MetricSchemaRecord> records = _discoveryService.getUniqueRecords(metricDiscoveryQueryDto.getNamespace(), metricDiscoveryQueryDto.getScope(), 
+            		metricDiscoveryQueryDto.getMetric(), metricDiscoveryQueryDto.getTagKey(), metricDiscoveryQueryDto.getTagValue(),
+                RecordType.fromName(metricDiscoveryQueryDto.getType()), metricDiscoveryQueryDto.getLimit(), metricDiscoveryQueryDto.getScanStartSchemaRecord());
 
+            return  new MetricDiscoveryResultDto(_getValueForType(records, RecordType.fromName(metricDiscoveryQueryDto.getType())), records.get(records.size()-1));
+            
+        }
+    }
+    
+    private static List<String> _getValueForType(List<MetricSchemaRecord> records, RecordType type) {
+    	
+    	List<String> result=new ArrayList<>();
+    	
+    	for(MetricSchemaRecord record:records){
+        	result.add(_getValueForType(record, type));
+        }
+    	
+    	return result;
+    }
+    
+
+    private static String _getValueForType(MetricSchemaRecord record, RecordType type) {
+        switch (type) {
+            case NAMESPACE:
+                return record.getNamespace();
+            case SCOPE:
+                return record.getScope();
+            case METRIC:
+                return record.getMetric();
+            case TAGK:
+                return record.getTagKey();
+            case TAGV:
+                return record.getTagValue();
+            default:
+                return null;
+        }
+    }
+    
 	private static void _formatToString(List<MetricSchemaRecord> schemaRecords, List<String> records) {
 		
 		for(MetricSchemaRecord msr : schemaRecords) {
 			records.add(MetricSchemaRecord.print(msr));
 		}
 	}
-    
+	
+	private static <T> List<T> _getSubList(List<T> list, int from, int to){
+		
+		if(list.size()<from){
+			return new ArrayList<T>();
+		}else{
+			return list.subList(from, to);
+		}
+		
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

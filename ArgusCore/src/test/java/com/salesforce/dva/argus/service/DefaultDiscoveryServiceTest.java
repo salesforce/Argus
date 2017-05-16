@@ -60,8 +60,7 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         List<MetricSchemaRecord> records = new ArrayList<>();
         records.add(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest"));
         records.add(new MetricSchemaRecord(null, "scope1", "metric1", "source", "unittest"));
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(1))).thenReturn(records);
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), any(MetricSchemaRecord.class))).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
 
         Map<String, String> tags = new HashMap<String, String>();
@@ -89,8 +88,8 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         
         MetricSchemaRecordQuery queryForTag1 = new MetricSchemaRecordQuery(null, "scope0", "metric0", "source", "unittest0");
         MetricSchemaRecordQuery queryForTag2 = new MetricSchemaRecordQuery(null, "scope0", "metric0", "device", "device[1]");
-        when(schemaServiceMock.get(queryForTag1, 500, 1)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0")));
-        when(schemaServiceMock.get(queryForTag2, 500, 1)).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(queryForTag1, 500, null)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0")));
+        when(schemaServiceMock.get(queryForTag2, 500, null)).thenReturn(new ArrayList<>());
         
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
 
@@ -120,8 +119,8 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         
         MetricSchemaRecordQuery queryForTag1 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "source", "unittest0");
         MetricSchemaRecordQuery queryForTag2 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "device", "device[1]");
-        when(schemaServiceMock.get(queryForTag1, 500, 1)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"), new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
-        when(schemaServiceMock.get(queryForTag2, 500, 1)).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(queryForTag1, 500, null)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"), new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
+        when(schemaServiceMock.get(queryForTag2, 500, null)).thenReturn(new ArrayList<>());
         
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
 
@@ -171,8 +170,7 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         records.add(new MetricSchemaRecord(null, "scope", "metric28", "source", "unittest"));
         records.add(new MetricSchemaRecord(null, "scope", "metric29", "source", "unittest"));
         
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(1))).thenReturn(records);
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), any(MetricSchemaRecord.class))).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
         
         Map<String, String> tags = new HashMap<String, String>();
@@ -219,8 +217,8 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         records.add(new MetricSchemaRecord(null, "scope", "metric28", "source", "unittest"));
         records.add(new MetricSchemaRecord(null, "scope", "metric29", "source", "unittest"));
         
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(1))).thenReturn(records);
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), any(MetricSchemaRecord.class))).thenReturn(records);
+        //when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), eq(2))).thenReturn(new ArrayList<>());
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
         
         Map<String, String> tags = new HashMap<String, String>();
@@ -238,7 +236,7 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
     	
     	SchemaService schemaServiceMock = mock(SchemaService.class);
         List<MetricSchemaRecord> records = new ArrayList<>();
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), anyInt())).thenReturn(records);
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), any(MetricSchemaRecord.class))).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
 
         Map<String, String> tags = new HashMap<String, String>();
@@ -255,7 +253,7 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
     	
     	SchemaService schemaServiceMock = mock(SchemaService.class);
         List<MetricSchemaRecord> records = new ArrayList<>();
-        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), anyInt())).thenReturn(records);
+        when(schemaServiceMock.get(any(MetricSchemaRecordQuery.class), anyInt(), any(MetricSchemaRecord.class))).thenReturn(records);
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
     	
         Map<String, String> tags = new HashMap<String, String>();

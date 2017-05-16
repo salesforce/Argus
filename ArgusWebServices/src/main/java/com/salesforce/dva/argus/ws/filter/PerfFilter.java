@@ -31,12 +31,6 @@
 	 
 package com.salesforce.dva.argus.ws.filter;
 
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
-
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +43,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.LoggerFactory;
+
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
 /**
  * Servlet filter to push end point performance numbers to monitoring service.
@@ -120,9 +120,8 @@ public class PerfFilter implements Filter {
             }
             
             Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-            String username = user != null ? String.class.cast(user) : null;
-            
-            if(username != null && !username.isEmpty()) {
+            String username = user != null ? String.class.cast(user) : "NULLUSER";
+            if(!username.isEmpty()) {
             	tags.put(TAGS_USER_KEY, username);
             }
 

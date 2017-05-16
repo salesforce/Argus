@@ -144,6 +144,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         return key;
     }
 
+    private static String _constructRowKey(MetricSchemaRecord schema, String tableName){
+    	return _constructRowKey(schema.getNamespace(), schema.getScope(), schema.getMetric(), schema.getTagKey(), schema.getTagValue(), tableName);
+    }
+    
     private static MetricSchemaRecord _constructMetricSchemaRecord(String rowKey, String tableName) {
         SystemAssert.requireArgument(rowKey != null && !rowKey.isEmpty(), "This should never happen. Rowkey should never be null or empty.");
 
@@ -169,6 +173,30 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             record.setNamespace(parts[4]);
         }
         return record;
+    }
+    
+    private  String _plusOneNConstructRowKey(MetricSchemaRecord record, String tableName, RecordType type){
+    	if(type==null){
+    		return  _plusOne(_constructRowKey(record, tableName));
+    	}else{
+    		switch (type) {
+            case NAMESPACE:
+                 record.setNamespace(_plusOne(record.getNamespace()));
+                 break;
+            case SCOPE:
+                record.setScope(_plusOne(record.getScope()));
+                break;
+            case METRIC:
+                record.setMetric(_plusOne(record.getMetric()));
+                break;
+            case TAGK:
+                record.setTagKey(_plusOne(record.getTagKey()));
+                break;
+            case TAGV:
+                record.setTagValue(_plusOne(record.getTagValue()));
+    		}
+    	}
+    	return _constructRowKey(record, tableName);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -201,11 +229,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
     }
 
     @Override
-    public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, final int limit, final int page) {
+    public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, final int limit, MetricSchemaRecord scanFrom) {
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric Schema Record query cannot be null.");
         SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
-        SystemAssert.requireArgument(page > 0, "Page must be a positive integer.");
 
         final List<MetricSchemaRecord> records = new ArrayList<MetricSchemaRecord>(limit);
         final ScanMetadata metadata = _constructScanMetadata(query);
@@ -216,10 +243,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
+        String scanRowStart=scanFrom==null?Bytes.toString(metadata.startRow):_plusOneNConstructRowKey(scanFrom, metadata.tableName,null);
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
-        _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
-        _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
+        
+        _logger.debug("Scan startRow: " + scanRowStart);
+        _logger.debug("Scan stopRow: " + metadata.stopRow.toString());
         
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
 
@@ -230,10 +259,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
         final Scanner scanner = _client.newScanner(metadata.tableName);
 
-        scanner.setStartKey(metadata.startRow);
+        scanner.setStartKey(scanRowStart.getBytes());
         scanner.setStopKey(metadata.stopRow);
         scanner.setFilter(fl);
-        scanner.setMaxNumRows(Math.min((limit * page), 10000));
+        scanner.setMaxNumRows(Math.min(limit, 10000));
 
         final Deferred<List<MetricSchemaRecord>> results = new Deferred<List<MetricSchemaRecord>>();
 
@@ -244,7 +273,6 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
          */
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
-            int recordsToSkip = limit * (page - 1);
 
             /**
              * Scans rows.
@@ -267,20 +295,15 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                     }
                     
                     _logger.debug("Retrieved " + rows.size() + " rows.");
-                    if (recordsToSkip >= rows.size()) {
-                        recordsToSkip -= rows.size();
-                    } else {
-                        for (int i = recordsToSkip; i < rows.size(); i++) {
-                            ArrayList<KeyValue> row = rows.get(i);
-                            byte[] rowkey = row.get(0).key();
-                            MetricSchemaRecord record = _constructMetricSchemaRecord(Bytes.toString(rowkey), metadata.tableName);
-
-                            records.add(record);
-                            if (records.size() == limit) {
-                                results.callback(records);
-                                scanner.close();
-                                return null;
-                            }
+                   
+                    for(ArrayList<KeyValue> row:rows){
+                    	byte[] rowKey=row.get(0).key();
+                    	MetricSchemaRecord record = _constructMetricSchemaRecord(Bytes.toString(rowKey), metadata.tableName);
+                    	records.add(record);
+                        if (records.size() == limit) {
+                            results.callback(records);
+                            scanner.close();
+                            return null;
                         }
                     }
                     return scan();
@@ -332,14 +355,14 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
      * jump to scopu and return that. 
      * 
      */
-    private List<String> _getUniqueFastScan(MetricSchemaRecordQuery query, final int limit, final RecordType type) {
+    private List<MetricSchemaRecord> _getUniqueFastScan(MetricSchemaRecordQuery query, final int limit, final RecordType type,MetricSchemaRecord scanFrom) {
     	requireNotDisposed();
     	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
     			"This method is only for use with metric or scope.");
     	
     	_logger.info("Using FastScan. Will skip rows while scanning.");
     	
-    	final List<String> records = new ArrayList<>();
+    	final List<MetricSchemaRecord> records = new ArrayList<>();
     	
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
@@ -356,7 +379,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
     	
         
-        String start = Bytes.toString(metadata.startRow);
+        String start = scanFrom==null?Bytes.toString(metadata.startRow): _plusOneNConstructRowKey(scanFrom, metadata.tableName,type);
         String end = Bytes.toString(metadata.stopRow);
         ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, metadata.tableName);
         while(rows != null && !rows.isEmpty()) {
@@ -364,7 +387,9 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         	String splits[] = rowKey.split(String.valueOf(ROWKEY_SEPARATOR));
         	String record = (RecordType.METRIC.equals(type) && metadata.tableName.equals(METRIC_SCHEMA_TABLENAME)) || 
         			(RecordType.SCOPE.equals(type) && metadata.tableName.equals(SCOPE_SCHEMA_TABLENAME)) ? splits[0] : splits[1];
-        	records.add(record);
+        	
+        	MetricSchemaRecord schemaRecord = _constructMetricSchemaRecord(rowKey, metadata.tableName);
+        	records.add(schemaRecord);
         	if(records.size() == limit) {
     			break;
     		}
@@ -452,25 +477,18 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 	
 
     @Override
-    public List<String> getUnique(MetricSchemaRecordQuery query, final int limit, final int page, final RecordType type) {
+    public List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, final int limit, final RecordType type,MetricSchemaRecord scanFrom) {
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric Schema Record query cannot be null.");
         SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
-        SystemAssert.requireArgument(page > 0, "Page must be a positive integer.");
         SystemAssert.requireArgument(type != null, "Must specify a valid record type.");
         SystemAssert.requireArgument(!query.getScope().startsWith("*") || !query.getMetric().startsWith("*"), "Must specify at least some filtering criteria on either scope or metric name.");
         
         if(_canSkipWhileScanning(query, type)) {
-        	List<String> results = _getUniqueFastScan(query, limit * page, type);
-        	if(results.size() <= limit * (page-1))  {
-        		return Collections.emptyList();
-        	} else {
-        		return results.subList(limit * (page-1), results.size());
-        	}
+        	return _getUniqueFastScan(query, limit, type,scanFrom);
         }
         
         final Set<String> records = new TreeSet<String>();
-        final Set<String> skip = new HashSet<String>();
         final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
         String scope = SchemaService.convertToRegex(query.getScope());
@@ -479,9 +497,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
+        String scanStartRow=scanFrom==null?Bytes.toString(metadata.startRow): _plusOneNConstructRowKey(scanFrom, metadata.tableName,type);
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
-        _logger.debug("Scan startRow: " + Bytes.toString(metadata.startRow));
+        _logger.debug("Scan startRow: " + scanStartRow);
         _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
 
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
@@ -493,16 +512,17 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
         final Scanner scanner = _client.newScanner(metadata.tableName);
 
-        scanner.setStartKey(metadata.startRow);
+        scanner.setStartKey(scanStartRow);
         scanner.setStopKey(metadata.stopRow);
         scanner.setFilter(filterList);
         scanner.setMaxNumRows(10000);
 
-        final Deferred<Set<String>> results = new Deferred<Set<String>>();
+        final Deferred<List<MetricSchemaRecord>> results = new Deferred<List<MetricSchemaRecord>>();
+        
+        List<MetricSchemaRecord> listMetricSchemarecords = new ArrayList<>();
+        
         
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
-
-            int recordsToSkip = limit * (page - 1);
 
             /**
              * Scans rows.
@@ -517,7 +537,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
             public Object call(ArrayList<ArrayList<KeyValue>> rows) throws Exception {
                 try {
                     if (rows == null) {
-                        results.callback(records);
+                        results.callback(listMetricSchemarecords);
                         scanner.close();
                         return null;
                     }
@@ -525,16 +545,11 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
                         String rowKey = Bytes.toString(row.get(0).key());
                         MetricSchemaRecord record = _constructMetricSchemaRecord(rowKey, metadata.tableName);
 
-                        if (skip.size() < recordsToSkip) {
-                            skip.add(_getValueForType(record, type));
-                            continue;
+                        if(records.add(_getValueForType(record, type))){
+                        	listMetricSchemarecords.add(record);
                         }
-                        if (records.isEmpty() && skip.contains(record)) {
-                            continue;
-                        }
-                        records.add(_getValueForType(record, type));
                         if (records.size() == limit) {
-                            results.callback(records);
+                            results.callback(listMetricSchemarecords);
                             scanner.close();
                             return null;
                         }
