@@ -84,15 +84,15 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	@Override
 	public List<MetricSchemaRecord> filterRecords(String namespaceRegex,
 			String scopeRegex, String metricRegex, String tagkRegex,
-			String tagvRegex, int limit, int page) {
-		return _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit, page);
+			String tagvRegex, int limit, MetricSchemaRecord metricSchemaRecord) {
+		return _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit, metricSchemaRecord);
 	}
 
 	@Override
-	public List<String> getUniqueRecords(String namespaceRegex,
+	public List<MetricSchemaRecord> getUniqueRecords(String namespaceRegex,
 			String scopeRegex, String metricRegex, String tagkRegex,
-			String tagvRegex, RecordType type, int limit, int page) {
-		return _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, type, limit, page);
+			String tagvRegex, RecordType type, int limit, MetricSchemaRecord scanFrom) {
+		return _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, type, limit, scanFrom);
 	}
 
 	@Override

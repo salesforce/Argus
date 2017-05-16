@@ -18,24 +18,25 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
+/*global angular:false */
 
 angular.module('argus.directives')
 .directive('ngLoading', function ($compile) {
-    // get the spinning icon
-    var loadingSpinner = '<div class="loadingSpinner"></div>';
-    return {
-        restrict: 'A',
-        link: function (scope, element, attrs) {
-            var originalContent = element.html();
-            element.html(loadingSpinner);
-            scope.$watch(attrs.ngLoading, function (val) {
-                if(val) {
-                    element.html(originalContent);
-                    $compile(element.contents())(scope);
-                } else {
-                    element.html(loadingSpinner);
-                }
-            });
-        }
-    };
+	// get the spinning icon
+	var loadingSpinner = '<div class="loadingSpinner"></div>';
+	return {
+		restrict: 'A',
+		link: function (scope, element, attrs) {
+			var originalContent = element.html();
+			element.html(loadingSpinner);
+			scope.$watch(attrs.ngLoading, function (val) {
+				if(val) {
+					element.html(originalContent);
+					$compile(element.contents())(scope);
+				} else {
+					element.html(loadingSpinner);
+				}
+			});
+		}
+	};
 });

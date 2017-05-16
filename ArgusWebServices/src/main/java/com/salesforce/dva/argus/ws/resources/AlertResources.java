@@ -626,6 +626,8 @@ public class AlertResources extends AbstractResource {
 
 			Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 					notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
+			notification.setSRActionable(notificationDto.getSRActionable());
+			notification.setSeverityLevel(notificationDto.getSeverityLevel());
 			notification.setCustomText(notificationDto.getCustomText());
 
 			// TODO: 14.12.16 validate notification

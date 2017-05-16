@@ -102,8 +102,12 @@
                     <td><input class="form-control" type="text" ng-model="trigger.secondaryThreshold" /></td>
                     <td><input class="form-control" type="text" ng-model="trigger.inertia" /></td>
                     <td>
-                        <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
-                                ng-confirm='Delete "{{trigger.name}}"?' ng-confirm-action='removeTrigger(trigger)'>
+                        <button class="btn btn-warning btn-sm" type="button"
+                                confirm-click
+                                ng-disabled="alertNotEditable"
+                                confirm-title="Delete Trigger"
+                                confirm-message='Delete "{{trigger.name}}"?'
+                                confirm-call='removeTrigger(trigger)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
                     </td>
@@ -183,8 +187,10 @@
                     </td>
                     <td>
                         <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
-                                ng-confirm='Delete "{{notification.name}}"?'
-                                ng-confirm-action='removeNotification(notification)'>
+                                confirm-click
+                                confirm-title="Delete Notification"
+                                confirm-message='Delete "{{notification.name}}"?'
+                                confirm-call='removeNotification(notification)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
                     </td>
