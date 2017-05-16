@@ -50,18 +50,18 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 	}
 
 	@Override
-	public List<MetricSchemaRecord> filterRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, int limit, int page) {
+	public List<MetricSchemaRecord> filterRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, int limit, MetricSchemaRecord scanFrom) {
 		return _discoveryService.filterRecords(namespaceRegex,
 				scopeRegex,
 				metricRegex,
 				tagkRegex,
 				tagvRegex,
 				limit,
-				page);
+				scanFrom);
 	}
 
 	@Override
-	public List<String> getUniqueRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, SchemaService.RecordType type, int limit, int page) {
+	public List<MetricSchemaRecord> getUniqueRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, SchemaService.RecordType type, int limit, MetricSchemaRecord scanFrom) {
 		return _discoveryService.getUniqueRecords(namespaceRegex,
 				scopeRegex,
 				metricRegex,
@@ -69,7 +69,7 @@ public class TSDBAwareDiscoveryService extends DefaultService implements Discove
 				tagvRegex,
 				type,
 				limit,
-				page);
+				scanFrom);
 	}
 
 	/**
