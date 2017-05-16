@@ -18,150 +18,152 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
+/*global angular:false */
 
 angular.module('argus.controllers.alerts', ['ngResource'])
 .controller('Alerts', ['Auth', '$scope', 'growl', 'Alerts', '$sessionStorage', 'TableListService', function (Auth, $scope, growl, Alerts, $sessionStorage, TableListService) {
 
-    $scope.colName = {
-        id:'ID',
-        name:'Name',
-        cronEntry:'CRON Entry',
-        createdDate:'Created',
-        modifiedDate:'Last Modified',
-        ownerName:'Owner',
-        state: "State"
-    };
-    $scope.properties = {
-        title: "Alert",
-        type: "alerts"
-    };
-    $scope.tabNames = {
-        userPrivileged: Auth.isPrivileged(),
-        firstTab: Auth.getUsername() + "'s Alerts",
-        secondTab: 'Shared Alerts',
-        thirdTab: 'All Other Alerts'
-    };
-    $scope.alerts = [];
-    $scope.alertsLoaded = false;
+	$scope.colName = {
+		id:'ID',
+		name:'Name',
+		cronEntry:'CRON Entry',
+		createdDate:'Created',
+		modifiedDate:'Last Modified',
+		ownerName:'Owner',
+		state: 'State'
+	};
+	$scope.properties = {
+		title: 'Alert',
+		type: 'alerts'
+	};
+	$scope.tabNames = {
+		userPrivileged: Auth.isPrivileged(),
+		firstTab: Auth.getUsername() + '\'s Alerts',
+		secondTab: 'Shared Alerts',
+		thirdTab: 'All Other Alerts'
+	};
+	$scope.alerts = [];
+	$scope.alertsLoaded = false;
 
-    var alertLists = {
-        sharedList: [],
-        usersList: [],
-        privilegedList: []
-    };
-    var remoteUsername = Auth.getUsername();
-    var userPrivileged = Auth.isPrivileged();
+	var alertLists = {
+		sharedList: [],
+		usersList: [],
+		privilegedList: []
+	};
+	var remoteUsername = Auth.getUsername();
+	var userPrivileged = Auth.isPrivileged();
 
-    $scope.getAlerts = function (selectedTab) {
-        if ($scope.alertsLoaded) {
-            // when only user's alerts are loaded but shared tab is chosen: need to start a new API call
-            if (selectedTab === 2 && !$sessionStorage.alerts.loadedEverything) {
-                delete $scope.alerts;
-                $scope.alertsLoaded = false;
-                getAllAlerts();
-            } else {
-                switch (selectedTab) {
-                    case 2:
-                        $scope.alerts = alertLists.sharedList;
-                        break;
-                    case 3:
-                        if (userPrivileged) {
-                            $scope.alerts = alertLists.privilegedList;
-                            break;
-                        }
-                    default:
-                        $scope.alerts = alertLists.usersList;
-                }
-            }
-        }
-    };
-
-    function setAlertsAfterLoading (selectedTab) {
-        $scope.alertsLoaded = true;
-        $scope.getAlerts(selectedTab);
-    }
-
-    function getAllAlerts () {
-        Alerts.getMeta().$promise.then(function(alerts) {
-            alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
-            $sessionStorage.alerts.cachedData = alertLists;
-            $sessionStorage.alerts.loadedEverything = true;
-            setAlertsAfterLoading($scope.selectedTab);
-        });
-    }
-
-    function getUsersAlerts () {
-        Alerts.getUsers().$promise.then(function(alerts) {
-            alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
-            $sessionStorage.alerts.cachedData = alertLists;
-            $sessionStorage.alerts.loadedEverything = false;
-            setAlertsAfterLoading(1);
-        });
-    }
-
-    function updateList () {
-        $sessionStorage.alerts.cachedData = alertLists;
-        $scope.getAlerts($scope.selectedTab);
-    }
-
-	$scope.refreshAlerts = function () {
-        delete $sessionStorage.alerts.cachedData;
-        delete $scope.alerts;
-        $scope.alertsLoaded = false;
-        $scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
+	$scope.getAlerts = function (selectedTab) {
+		if ($scope.alertsLoaded) {
+			// when only user's alerts are loaded but shared tab is chosen: need to start a new API call
+			if (selectedTab === 2 && !$sessionStorage.alerts.loadedEverything) {
+				delete $scope.alerts;
+				$scope.alertsLoaded = false;
+				getAllAlerts();
+			} else {
+				switch (selectedTab) {
+					case 2:
+						$scope.alerts = alertLists.sharedList;
+						break;
+					case 3:
+						if (userPrivileged) {
+							$scope.alerts = alertLists.privilegedList;
+							break;
+						}
+						break;
+					default:
+						$scope.alerts = alertLists.usersList;
+				}
+			}
+		}
 	};
 
-    $scope.addAlert = function () {
-        var alert = {
-            name: 'new-alert-' + Date.now(),
-            expression: "-1h:scope:metric{tagKey=tagValue}:avg",
-            cronEntry: "0 */4 * * *",
-            shared: $scope.selectedTab === 2
-        };
-        Alerts.save(alert, function (result) {
-            // update both scope and session alerts
-            result.expression = "";
-            alertLists = TableListService.addItemToTableList(alertLists, 'alerts', result, remoteUsername, userPrivileged);
-            updateList();
-            growl.success('Created "' + alert.name + '"');
-        }, function (error) {
-            growl.error('Failed to create "' + alert.name + '"');
-        });
-    };
+	function setAlertsAfterLoading (selectedTab) {
+		$scope.alertsLoaded = true;
+		$scope.getAlerts(selectedTab);
+	}
 
-    $scope.removeAlert = function (alert) {
-        Alerts.delete({alertId: alert.id}, function (result) {
-            alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUsername, userPrivileged);
-            updateList();
-            growl.success('Deleted "' + alert.name + '"');
-        }, function (error) {
-            growl.error('Failed to delete "' + alert.name + '"');
-        });
-    };
+	function getAllAlerts () {
+		Alerts.getMeta().$promise.then(function(alerts) {
+			alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
+			$sessionStorage.alerts.cachedData = alertLists;
+			$sessionStorage.alerts.loadedEverything = true;
+			setAlertsAfterLoading($scope.selectedTab);
+		});
+	}
 
-    $scope.enableAlert = function (alert, enabled) {
-        if (alert.enabled !== enabled) {
-            Alerts.get({alertId: alert.id}, function(updated) {
-                updated.enabled = enabled;
-                Alerts.update({alertId: alert.id}, updated, function (result) {
-                    alert.enabled = enabled;
-                    updateList();
-                    growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
-                }, function (error) {
-                    growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
-                });
-            });
-        }
-    };
+	function getUsersAlerts () {
+		Alerts.getUsers().$promise.then(function(alerts) {
+			alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
+			$sessionStorage.alerts.cachedData = alertLists;
+			$sessionStorage.alerts.loadedEverything = false;
+			setAlertsAfterLoading(1);
+		});
+	}
 
-    if ($sessionStorage.alerts === undefined) $sessionStorage.alerts = {};
-    if ($sessionStorage.alerts.cachedData !== undefined && $sessionStorage.alerts.selectedTab !== undefined) {
-        alertLists = $sessionStorage.alerts.cachedData;
-        $scope.selectedTab = $sessionStorage.alerts.selectedTab;
-        setAlertsAfterLoading($scope.selectedTab);
-    } else {
-        $scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
-    }
+	function updateList () {
+		$sessionStorage.alerts.cachedData = alertLists;
+		$scope.getAlerts($scope.selectedTab);
+	}
+
+	$scope.refreshAlerts = function () {
+		delete $sessionStorage.alerts.cachedData;
+		delete $scope.alerts;
+		$scope.alertsLoaded = false;
+		$scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
+	};
+
+	$scope.addAlert = function () {
+		var alert = {
+			name: 'new-alert-' + Date.now(),
+			expression: '-1h:scope:metric{tagKey=tagValue}:avg',
+			cronEntry: '0 */4 * * *',
+			shared: $scope.selectedTab === 2
+		};
+		Alerts.save(alert, function (result) {
+			// update both scope and session alerts
+			result.expression = '';
+			alertLists = TableListService.addItemToTableList(alertLists, 'alerts', result, remoteUsername, userPrivileged);
+			updateList();
+			growl.success('Created "' + alert.name + '"');
+		}, function () {
+			growl.error('Failed to create "' + alert.name + '"');
+		});
+	};
+
+	$scope.removeAlert = function (alert) {
+		Alerts.delete({alertId: alert.id}, function () {
+			alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUsername, userPrivileged);
+			updateList();
+			growl.success('Deleted "' + alert.name + '"');
+		}, function () {
+			growl.error('Failed to delete "' + alert.name + '"');
+		});
+	};
+
+	$scope.enableAlert = function (alert, enabled) {
+		if (alert.enabled !== enabled) {
+			Alerts.get({alertId: alert.id}, function(updated) {
+				updated.enabled = enabled;
+				Alerts.update({alertId: alert.id}, updated, function () {
+					alert.enabled = enabled;
+					updateList();
+					growl.success((enabled ? 'Enabled "' : 'Disabled "') + alert.name + '"');
+				}, function () {
+					growl.error('Failed to ' + (enabled ? 'enable "' : 'disable "') + alert.name + '"');
+				});
+			});
+		}
+	};
+
+	if ($sessionStorage.alerts === undefined) $sessionStorage.alerts = {};
+	if ($sessionStorage.alerts.cachedData !== undefined && $sessionStorage.alerts.selectedTab !== undefined) {
+		alertLists = $sessionStorage.alerts.cachedData;
+		$scope.selectedTab = $sessionStorage.alerts.selectedTab;
+		setAlertsAfterLoading($scope.selectedTab);
+	} else {
+		$scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
+	}
 
 
 }]);

@@ -9,7 +9,7 @@
 			ng-show="!chartConfig.smallChart">
 
 			<li class="toolbarItemPreview">
-				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(sources[0])}"></span>
+				<span class="glyphicon glyphicon-minus {{sources[0].graphClassName}}_legend" ng-style="{color: labelTextColor(sources[0])}"></span>
 				<a>{{sources[0].name}}</a>
 			</li>
 
@@ -19,7 +19,7 @@
 
 				<ul style="padding-left:0;">
 				<li ng-repeat="source in sources track by $index">
-					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
+					<span class="glyphicon glyphicon-minus {{source.graphClassName}}_legend" ng-style="{color: labelTextColor(source)}"></span>
 					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
 					<a class="eyeIcon" title="Hide all other(s)"
 						ng-show="source.displaying && sources.length > 1"

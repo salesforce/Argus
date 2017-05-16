@@ -17,111 +17,109 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
 'use strict';
+/*global angular:false, require:false */
 
-/* Core Argus module */
-
-/*global angular:false, $:false */
 angular.module('argus', [
-  // Dependencies
-  'ngRoute',
-  'ngAnimate',
-  'ngStorage',
-  'angular-growl',
-  'angularUtils.directives.dirPagination',
-  'angulartics',
-  'ui.bootstrap',
-  'ui.bootstrap.datetimepicker',
-  'angularScreenfull',
-  'argus.urlConfig',
-  'argus.config',
-  'argus.filters',
-  'argus.constants',
-  'argus.services',
-  'argus.controllers',
-  'argus.directives',
-  'argus.directives.breadcrumbs',
-  'argus.directives.confirm',
-  'argus.directives.dashboardResource',
-  'argus.directives.controls.dashboard',
-  'argus.directives.controls.date',
-  'argus.directives.controls.dropdown',
-  'argus.directives.controls.submit',
-  'argus.directives.controls.text',
-  'argus.directives.charts.chart',
-  'argus.directives.charts.lineChart',
-  'argus.directives.charts.flags',
-  'argus.directives.charts.heatmap',
-  'argus.directives.charts.metric',
-  'argus.directives.charts.option',
-  'argus.directives.charts.statusIndicator',
-  'argus.directives.charts.table',
-  'argus.directives.headerMenu'
+	// Dependencies
+	'ngRoute',
+	'ngAnimate',
+	'ngStorage',
+	'angular-growl',
+	'angularUtils.directives.dirPagination',
+	'angulartics',
+	'ui.bootstrap',
+	'ui.bootstrap.datetimepicker',
+	'angularScreenfull',
+	'argus.urlConfig',
+	'argus.config',
+	'argus.filters',
+	'argus.constants',
+	'argus.services',
+	'argus.controllers',
+	'argus.directives',
+	'argus.directives.breadcrumbs',
+	'argus.directives.confirm',
+	'argus.directives.dashboardResource',
+	'argus.directives.controls.dashboard',
+	'argus.directives.controls.date',
+	'argus.directives.controls.submit',
+	'argus.directives.controls.text',
+	'argus.directives.controls.select',
+	'argus.directives.charts.chart',
+	'argus.directives.charts.lineChart',
+	'argus.directives.charts.flags',
+	'argus.directives.charts.heatmap',
+	'argus.directives.charts.metric',
+	'argus.directives.charts.option',
+	'argus.directives.charts.statusIndicator',
+	'argus.directives.charts.table',
+	'argus.directives.headerMenu',
+	'argus.directives.modals.confirmClick'
 ]).run(['$http', '$templateCache', function ($http, $templateCache) {
-  "use strict";
-  // template caching
-  $http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
-  $http.get('js/templates/login.html', {cache: $templateCache});
-  $http.get('js/templates/alert-list.html', {cache: $templateCache});
-  $http.get('js/templates/alert-detail.html', {cache: $templateCache});
-  $http.get('js/templates/dashboard-list.html', {cache: $templateCache});
-  $http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
-  $http.get('js/templates/viewmetrics.html', {cache: $templateCache});
-  $http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
+	// template caching
+	$http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
+	$http.get('js/templates/login.html', {cache: $templateCache});
+	$http.get('js/templates/alert-list.html', {cache: $templateCache});
+	$http.get('js/templates/alert-detail.html', {cache: $templateCache});
+	$http.get('js/templates/dashboard-list.html', {cache: $templateCache});
+	$http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
+	$http.get('js/templates/viewmetrics.html', {cache: $templateCache});
+	$http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
 }]);
 
 // Services
 angular.module('argus.services', [
-  'argus.services.admin.reinstateuser',
-  'argus.services.alerts',
-  'argus.services.annotations',
-  'argus.services.asyncMetrics',
-  'argus.services.auth',
-  'argus.services.batches',
-  'argus.services.breadcrumbs',
-  'argus.services.charts.options',
-  'argus.services.charts.rendering',
-  'argus.services.charts.tools',
-  'argus.services.charts.dataProcessing',
-  'argus.services.charts.dateHandler',
-  'argus.services.dashboard',
-  'argus.services.dashboards',
-  'argus.services.history',
-  'argus.services.interceptor',
-  'argus.services.inputTracker',
-  'argus.services.jobexecutiondetails',
-  'argus.services.metrics',
-  'argus.services.namespace',
-  'argus.services.notifications',
-  'argus.services.search',
-  'argus.services.storage',
-  'argus.services.tags',
-  'argus.services.triggers',
-  'argus.services.triggersmap',
-  'argus.services.utils',
-  'argus.services.jsonFlatten',
-  'argus.services.tableListService',
-  'argus.services.downloadHelper',
-  'argus.services.agTableService'
+	'argus.services.admin.reinstateuser',
+	'argus.services.alerts',
+	'argus.services.annotations',
+	'argus.services.asyncMetrics',
+	'argus.services.auth',
+	'argus.services.batches',
+	'argus.services.breadcrumbs',
+	'argus.services.charts.options',
+	'argus.services.charts.rendering',
+	'argus.services.charts.tools',
+	'argus.services.charts.dataProcessing',
+	'argus.services.charts.dateHandler',
+	'argus.services.charts.elements',
+	'argus.services.dashboard',
+	'argus.services.dashboards',
+	'argus.services.history',
+	'argus.services.interceptor',
+	'argus.services.inputTracker',
+	'argus.services.jobexecutiondetails',
+	'argus.services.metrics',
+	'argus.services.namespace',
+	'argus.services.notifications',
+	'argus.services.search',
+	'argus.services.storage',
+	'argus.services.tags',
+	'argus.services.triggers',
+	'argus.services.triggersmap',
+	'argus.services.utils',
+	'argus.services.jsonFlatten',
+	'argus.services.tableListService',
+	'argus.services.downloadHelper',
+	'argus.services.agTableService'
 ]);
 
 // Controllers
 angular.module('argus.controllers', [
-  'argus.services',
-  'argus.controllers.about',
-  'argus.controllers.admin',
-  'argus.controllers.alerts',
-  'argus.controllers.alerts.detail',
-  'argus.controllers.batches',
-  'argus.controllers.dashboards',
-  'argus.controllers.dashboards.detail',
-  'argus.controllers.login',
-  'argus.controllers.main',
-  'argus.controllers.metricelements',
-  'argus.controllers.namespace',
-  'argus.controllers.viewelements',
-  'argus.controllers.viewMetrics'
+	'argus.services',
+	'argus.controllers.about',
+	'argus.controllers.admin',
+	'argus.controllers.alerts',
+	'argus.controllers.alerts.detail',
+	'argus.controllers.batches',
+	'argus.controllers.dashboards',
+	'argus.controllers.dashboards.detail',
+	'argus.controllers.login',
+	'argus.controllers.main',
+	'argus.controllers.metricelements',
+	'argus.controllers.namespace',
+	'argus.controllers.viewelements',
+	'argus.controllers.viewMetrics'
 ]);
 
 // Directives
@@ -133,89 +131,90 @@ angular.module('argus.filters', [
 ]);
 
 // Argus module
-require("./config");
-require("./argusConfig");
+require('./config');
+require('./argusConfig');
 
 // utils
-require("./utils/constants");
-require("./utils/filters");
+require('./utils/constants');
+require('./utils/filters');
 
 // controllers
-require("./controllers/about");
-require("./controllers/admin");
-require("./controllers/alerts");
-require("./controllers/alertsDetail");
-require("./controllers/batches");
-require("./controllers/dashboards");
-require("./controllers/dashboardsDetail");
-require("./controllers/login");
-require("./controllers/main");
-require("./controllers/metricElements");
-require("./controllers/namespace");
-require("./controllers/viewElements");
-require("./controllers/viewMetrics");
+require('./controllers/about');
+require('./controllers/admin');
+require('./controllers/alerts');
+require('./controllers/alertsDetail');
+require('./controllers/batches');
+require('./controllers/dashboards');
+require('./controllers/dashboardsDetail');
+require('./controllers/login');
+require('./controllers/main');
+require('./controllers/metricElements');
+require('./controllers/namespace');
+require('./controllers/viewElements');
+require('./controllers/viewMetrics');
 
 // services
-require("./services/auth");
-require("./services/breadcrumbs");
-require("./services/controls");
-require("./services/dashboard");
-require("./services/inputTracker");
-require("./services/search");
-require("./services/storage");
-require("./services/tags");
-require("./services/unauthorizedInterceptor");
-require("./services/utilService");
-require("./services/jsonUnflatten");
-require("./services/tableListService");
-require("./services/downloadHelper");
-require("./services/agTableService")
+require('./services/auth');
+require('./services/breadcrumbs');
+require('./services/controls');
+require('./services/dashboard');
+require('./services/inputTracker');
+require('./services/search');
+require('./services/storage');
+require('./services/tags');
+require('./services/unauthorizedInterceptor');
+require('./services/utilService');
+require('./services/jsonUnflatten');
+require('./services/tableListService');
+require('./services/downloadHelper');
+require('./services/agTableService');
 
-require("./services/charts/chartOptions");
-require("./services/charts/chartRendering");
-require("./services/charts/chartTools");
-require("./services/charts/dataProcessing");
-require("./services/charts/dateHandler");
+require('./services/charts/chartOptions');
+require('./services/charts/chartRendering');
+require('./services/charts/chartTools');
+require('./services/charts/dataProcessing');
+require('./services/charts/dateHandler');
+require('./services/charts/chartElements');
 
-require("./services/factories/alerts");
-require("./services/factories/asyncMetrics");
-require("./services/factories/annotations");
-require("./services/factories/batches");
-require("./services/factories/dashboards");
-require("./services/factories/history");
-require("./services/factories/jobExecutionDetails");
-require("./services/factories/metrics");
-require("./services/factories/namespace");
-require("./services/factories/notifications");
-require("./services/factories/reinstateUser");
-require("./services/factories/triggers");
-require("./services/factories/triggersMap");
+require('./services/factories/alerts');
+require('./services/factories/asyncMetrics');
+require('./services/factories/annotations');
+require('./services/factories/batches');
+require('./services/factories/dashboards');
+require('./services/factories/history');
+require('./services/factories/jobExecutionDetails');
+require('./services/factories/metrics');
+require('./services/factories/namespace');
+require('./services/factories/notifications');
+require('./services/factories/reinstateUser');
+require('./services/factories/triggers');
+require('./services/factories/triggersMap');
 
 // directives
-require("./directives/headerMenu");
-require("./directives/tableList");
-require("./directives/tableTabs");
-require("./directives/breadcrumbs");
-require("./directives/dashboardResource");
-require("./directives/controls/dashboard");
-require("./directives/controls/date");
-require("./directives/controls/dropdown");
-require("./directives/controls/submit");
-require("./directives/controls/text");
-require("./directives/charts/chart");
-require("./directives/charts/lineChart");
-require("./directives/charts/flags");
-require("./directives/charts/heatmap");
-require("./directives/charts/metric");
-require("./directives/charts/option");
-require("./directives/charts/statusIndicator");
-require("./directives/charts/table");
-require("./directives/UItools/autoFocus");
-require("./directives/UItools/stopEvent");
-require("./directives/UItools/ngConfirm");
-require("./directives/UItools/ngLoading");
-require("./directives/UItools/ngEnter");
+require('./directives/headerMenu');
+require('./directives/tableList');
+require('./directives/tableTabs');
+require('./directives/breadcrumbs');
+require('./directives/dashboardResource');
+require('./directives/controls/dashboard');
+require('./directives/controls/date');
+require('./directives/controls/submit');
+require('./directives/controls/text');
+require('./directives/controls/select');
+require('./directives/charts/chart');
+require('./directives/charts/lineChart');
+require('./directives/charts/flags');
+require('./directives/charts/heatmap');
+require('./directives/charts/metric');
+require('./directives/charts/option');
+require('./directives/charts/statusIndicator');
+require('./directives/charts/table');
+require('./directives/UItools/autoFocus');
+require('./directives/UItools/stopEvent');
+require('./directives/UItools/ngConfirm');
+require('./directives/UItools/ngLoading');
+require('./directives/UItools/ngEnter');
+require('./directives/modals/confirmClick');
 
 // css
-require("../css/main.css");
-
+require('../css/main.css');
