@@ -94,7 +94,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createBushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
+	this.createBrushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
 		// axis and ticks
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
@@ -126,7 +126,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createMainBush = function (sizeInfo, brushFunction) {
+	this.createMainBrush = function (sizeInfo, brushFunction) {
 		var brushMain = d3.brushX()
 			.extent([[0, 0], [sizeInfo.width, sizeInfo.height]])
 			.on('end', brushFunction);
@@ -973,37 +973,18 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	// TODO: need to separate these 2 since it's a mix of modifying the view and data
-	this.adjustSeriesAndTooltips = function (series, sources, x, tipItems, containerWidth, downSampleMethod, stack) {
+	this.adjustTooltipItemsBasedOnDisplayingSeries = function (series, sources, x, tipItems, isDataStacked) {
 		var xDomain = x.domain();
-		// deep copy series object
-		var newCurrSeries = angular.copy(series);
 		series.forEach(function (metric, index) {
 			var source = sources[index];
 			// metric with no data
-			if (metric === null || metric.data === undefined || metric.data.length === 0){
+			if (metric === null || metric.data === undefined || metric.data.length === 0 ||
+				ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
 				tipItems.selectAll('.' + source.graphClassName).style('display', 'none');
-				return;
+			} else {
+				tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
 			}
-			// metric out of x domain
-			// series is still in its original form here; convert to stack form later
-			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain, false)) {
-				newCurrSeries[index].data = [];
-				tipItems.selectAll('.'+ source.graphClassName).style('display', 'none');
-				return;
-			}
-			tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
-			//if this metric time range is within the x domain
-			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
-			if (start > 0) start -= 1; //to avoid cut off issue on the edge
-			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
-			newCurrSeries[index].data = metric.data.slice(start, end + 1);
 		});
-		newCurrSeries = ChartToolService.downSample(newCurrSeries, containerWidth, downSampleMethod);
-		if (stack !== undefined) {
-			newCurrSeries = ChartToolService.addStackedDataToSeries(newCurrSeries, stack);
-		}
-		return newCurrSeries;
 	};
 
 	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG) {
@@ -1046,8 +1027,6 @@ angular.module('argus.services.charts.elements', [])
 	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax, isDataStacked) {
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
-
-		console.time("concatenation");
 		var xDomain = x.domain();
 		var datapoints = [];
 
@@ -1080,8 +1059,6 @@ angular.module('argus.services.charts.elements', [])
 		// for area chart types to not have buffer at the bottom
 		if (resultYMin < 0 && yMin === 0) resultYMin = 0;
 		y.domain([resultYMin, resultYMax]);
-		console.timeEnd("concatenation");
-		console.log('rescaled Y');
 	};
 
 	this.resizeMainChartElements = function (sizeInfo, svg, svg_g, needToAdjustHeight) {

@@ -82,10 +82,12 @@ angular.module('argus.services.charts.tools', [])
 	this.bisectDate = d3.bisector(function (d) {
 		return d[0];
 	}).left;
+	var bisectDate = this.bisectDate;
 
 	this.bisectDateStackedData = d3.bisector(function (d) {
 		return d.data.timestamp;
 	}).left;
+	var bisectDateStackedData = this.bisectDateStackedData;
 
 	// menu option
 	var sampleCustomFormat = '0,.8';     // scientific notation
@@ -234,9 +236,10 @@ angular.module('argus.services.charts.tools', [])
 
 	var downsampleThreshold = 1/2; // datapoints per pixel
 	this.downSample = function (series, containerWidth, downSampleMethod) {
-		var temp = angular.copy(series);
+
 		if (!series) return temp;
-		if (downSampleMethod === '' || downSampleMethod === undefined) return series;
+		var temp = angular.copy(series);
+		if (downSampleMethod === '' || downSampleMethod === undefined) return temp;
 
 		// Create the sampler
 		var sampler;
@@ -329,6 +332,7 @@ angular.module('argus.services.charts.tools', [])
 		}
 		return startPoint > xDomain[1].getTime() || endPoint < xDomain[0].getTime();
 	};
+	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
 	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen) {
 		var containerWidth, containerHeight;
@@ -443,12 +447,40 @@ angular.module('argus.services.charts.tools', [])
 	};
 
 	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
-		var newSeries = angular.copy(series);
-		var stackedData = stack(this.convertSeriesToTimeBasedFormat(newSeries, metricsToIgnore));
-		newSeries = newSeries.map(function (metric, index) {
+		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
+		var newSeries = series.map(function (metric, index) {
 			metric.data = stackedData[index];
 			return metric;
 		});
 		return newSeries
+	};
+
+	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {
+		var xDomain = x.domain();
+		var newDisplayingSeries = angular.copy(series);
+		series.forEach(function (metric, index) {
+			if (isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
+				newDisplayingSeries[index].data = [];
+				return;
+			}
+			var start, end;
+			if (isDataStacked) {
+				start = bisectDateStackedData(metric.data, xDomain[0]);
+				if (start > 0) start -= 1; //to avoid cut off issue on the edge
+				end = bisectDateStackedData(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
+			} else {
+				start = bisectDate(metric.data, xDomain[0]);
+				if (start > 0) start -= 1;
+				end = bisectDate(metric.data, xDomain[1], start) + 1;
+			}
+			newDisplayingSeries[index].data = metric.data.slice(start, end + 1);
+			if (newDisplayingSeries[index].data === undefined) {
+				console.log('abc');
+			}
+		});
+		if (newDisplayingSeries[0].data.length === 0) {
+			console.log('abc');
+		}
+		return newDisplayingSeries;
 	};
 }]);
