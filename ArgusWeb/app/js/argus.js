@@ -86,7 +86,6 @@ angular.module('argus.services', [
 	'argus.services.dashboard',
 	'argus.services.dashboards',
 	'argus.services.history',
-	'argus.services.interceptor',
 	'argus.services.inputTracker',
 	'argus.services.jobexecutiondetails',
 	'argus.services.metrics',
@@ -101,7 +100,9 @@ angular.module('argus.services', [
 	'argus.services.jsonFlatten',
 	'argus.services.tableListService',
 	'argus.services.downloadHelper',
-	'argus.services.agTableService'
+	'argus.services.agTableService',
+	'argus.services.tokenAuthInterceptor',
+	'argus.services.users'
 ]);
 
 // Controllers
@@ -162,12 +163,12 @@ require('./services/inputTracker');
 require('./services/search');
 require('./services/storage');
 require('./services/tags');
-require('./services/unauthorizedInterceptor');
 require('./services/utilService');
 require('./services/jsonUnflatten');
 require('./services/tableListService');
 require('./services/downloadHelper');
 require('./services/agTableService');
+require("./services/tokenAuthInterceptor");
 
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
@@ -189,6 +190,7 @@ require('./services/factories/notifications');
 require('./services/factories/reinstateUser');
 require('./services/factories/triggers');
 require('./services/factories/triggersMap');
+require("./services/factories/users");
 
 // directives
 require('./directives/headerMenu');
