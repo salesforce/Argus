@@ -168,9 +168,9 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     if (records.size() < limit) {
                         break;
                     }
-		    
-		    expandedQueryList = new ArrayList<>(queries.values());
                 }
+		
+		expandedQueryList = new ArrayList<>(queries.values());		
             } else {
             	Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
