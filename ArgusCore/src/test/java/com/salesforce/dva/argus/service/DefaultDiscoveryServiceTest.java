@@ -120,8 +120,8 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         
         MetricSchemaRecordQuery queryForTag1 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "source", "unittest0");
         MetricSchemaRecordQuery queryForTag2 = new MetricSchemaRecordQuery(null, "scope?", "metric0", "device", "device[1]");
-        when(schemaServiceMock.get(queryForTag1, 500, null)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"), new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
-        when(schemaServiceMock.get(queryForTag2, 500, null)).thenReturn(new ArrayList<>());
+        when(schemaServiceMock.get(queryForTag1, 500, 1)).thenReturn(Arrays.asList(new MetricSchemaRecord(null, "scope0", "metric0", "source", "unittest0"), new MetricSchemaRecord(null, "scope1", "metric0", "source", "unittest0")));
+        when(schemaServiceMock.get(queryForTag2, 500, 1)).thenReturn(new ArrayList<>());
         
         DefaultDiscoveryService discoveryService = new DefaultDiscoveryService(schemaServiceMock, system.getConfiguration());
 
