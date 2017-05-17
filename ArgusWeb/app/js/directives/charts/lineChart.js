@@ -574,9 +574,6 @@ angular.module('argus.directives.charts.lineChart', [])
 						positionX: x(mouseX),
 						positionY: focus.select('[name=crossLineTipX]').node().getBBox().height + 3  // crossLineTipPadding
 					};
-					// ChartElementService.updateFocusCirclesToolTipsCrossLines(
-					// 	allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-					// 	series, scope.sources, x, y, mousePositionData, brushInNonEmptyRange);
 					if (brushInNonEmptyRange) {
 						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
 							seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked);

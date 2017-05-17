@@ -516,8 +516,7 @@ angular.module('argus.services.charts.elements', [])
 		// add the info box while hovering over
 		label.on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
-				var newValue = label.attr('clicked') !== 'Yes';
-				if (newValue) {
+				if (label.attr('clicked') !== 'Yes';) {
 					label.attr('clicked', 'Yes');
 					label.select('circle').attr('r', 16);
 				} else {
@@ -1056,8 +1055,8 @@ angular.module('argus.services.charts.elements', [])
 
 		var resultYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
 		var resultYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
-		// for area chart types to not have buffer at the bottom
-		if (resultYMin < 0 && yMin === 0) resultYMin = 0;
+		// for stackarea chart types to not have buffer at the bottom for negative values
+		// if (isDataStacked && resultYMin < 0 && yMin === 0) resultYMin = 0;
 		y.domain([resultYMin, resultYMax]);
 	};
 

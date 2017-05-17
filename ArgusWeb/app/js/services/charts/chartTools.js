@@ -201,12 +201,16 @@ angular.module('argus.services.charts.tools', [])
 	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
 		var extent;
 		if (isDataStacked) {
-			var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
-			dataPoints.map(function (d) {
-				if (d[0] < yMin) yMin = d[0];
-				if (d[1] > yMax) yMax = d[1];
-			});
-			extent = [yMin, yMax];
+			if (dataPoints === undefined || dataPoints.length === 0) {
+				extent = [0, 0]
+			} else {
+				var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
+				dataPoints.map(function (d) {
+					if (d[0] < yMin) yMin = d[0];
+					if (d[1] > yMax) yMax = d[1];
+				});
+				extent = [yMin, yMax];
+			}
 		} else {
 			extent = d3.extent(dataPoints, function (d) { return d[1]; });
 		}
@@ -236,8 +240,7 @@ angular.module('argus.services.charts.tools', [])
 
 	var downsampleThreshold = 1/2; // datapoints per pixel
 	this.downSample = function (series, containerWidth, downSampleMethod) {
-
-		if (!series) return temp;
+		if (!series) return series;
 		var temp = angular.copy(series);
 		if (downSampleMethod === '' || downSampleMethod === undefined) return temp;
 
@@ -357,43 +360,6 @@ angular.module('argus.services.charts.tools', [])
 	this.calculateGradientOpacity = function (num, tot) {
 		return 0.9 - 0.7 * (num / tot);
 	};
-
-	// keep this just in case going back to old version
-	// this.convertSeriesToTimeBasedFormat = function (series, metricsToIgnore) {
-	// 	var result = [];
-	// 	var allTimestamps = [];
-	// 	var needToIgnoreSomeMetrics = metricsToIgnore !== undefined && metricsToIgnore.length !== 0;
-	 //    series.map(function(metric) {
-	// 		if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
-	// 		for (var key in metric.rawData) {
-	// 			var timestamp = parseInt(key);
-	// 			if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
-	// 		}
-	// 	});
-	// 	// sort the timestamps and add values from each source
-	// 	var valuesAtPreviousTimestamp = {};
-	// 	allTimestamps.sort(function(a, b) { return a - b; });
-	// 	allTimestamps.map(function(timestamp) {
-	// 		var valuesAtThisTimestamp = {timestamp: timestamp};
-	// 		series.map(function(metric) {
-	 //            if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
-	// 			var tempValue = metric.rawData[timestamp];
-	// 			// use previous value when there is no data for this timestamp
-	// 			if (tempValue === undefined) {
-	// 				if (valuesAtPreviousTimestamp[metric.name] !== undefined) {
-	 //                    tempValue = valuesAtPreviousTimestamp[metric.name];
-	// 				} else {
-	// 					tempValue = 0;
-	// 				}
-	// 			} else {
-	 //                valuesAtPreviousTimestamp[metric.name] = tempValue;
-	// 			}
-	// 			valuesAtThisTimestamp[metric.name] = tempValue;
-	// 		});
-	// 		result.push(valuesAtThisTimestamp);
-	// 	});
-	// 	return result;
-	// };
 
 	var findValueAtAGivenTimestamp = function (metric, timestamp, startingIndex) {
 		for (var i = startingIndex; i < metric.data.length; i++) {
