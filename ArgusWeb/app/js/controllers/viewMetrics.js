@@ -95,7 +95,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				type: 'scope'
 			};
 
-			var newParams = JSON.parse(JSON.stringify(defaultParams));
+			var newParams = angular.copy(defaultParams);
 
 			// update params with values in $scope if they exist
 			newParams.scope = ($scope.scope) ? $scope.scope : '*';

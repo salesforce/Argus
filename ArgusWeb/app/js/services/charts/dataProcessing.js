@@ -2,7 +2,7 @@
 /*global angular:false */
 
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, JsonFlattenService) {
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', 'UtilService', function(ChartOptionService, Annotations, JsonFlattenService, UtilService) {
 	// Private methods
 	function copySeries(data) {
 		var result = [];
@@ -25,7 +25,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 	}
 
 	function createSeriesName(metric) {
-		if(metric.displayName != null) {
+		if (metric.displayName !== null && metric.displayName !== undefined) {
 			return metric.displayName;
 		}
 
@@ -248,10 +248,11 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		copySeriesDataNSetOptions: function(data, metricItem) {
 			var result = [];
-			if (data) {
+			if (data && data.length !== 0) {
 				for (var i = 0; i < data.length; i++) {
-					var series = [];
-
+					var series;
+					// converts json to 2D array
+					series = [];
 					for (var key in data[i].datapoints) {
 						var timestamp = parseInt(key);
 						if (data[i].datapoints[key] !== null) {
@@ -259,7 +260,6 @@ angular.module('argus.services.charts.dataProcessing', [])
 							series.push([timestamp, value]);
 						}
 					}
-
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
 					var objSeries = {

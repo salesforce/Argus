@@ -24,6 +24,7 @@ angular.module('argus.services.charts.elements', [])
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		switch (chartType) {
+			case 'stackarea':
 			case 'area':
 				graph.style('fill', color).style('opacity', opacity);
 				break;
@@ -93,7 +94,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createBushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
+	this.createBrushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
 		// axis and ticks
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
@@ -125,7 +126,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createMainBush = function (sizeInfo, brushFunction) {
+	this.createMainBrush = function (sizeInfo, brushFunction) {
 		var brushMain = d3.brushX()
 			.extent([[0, 0], [sizeInfo.width, sizeInfo.height]])
 			.on('end', brushFunction);
@@ -154,6 +155,20 @@ angular.module('argus.services.charts.elements', [])
 		area.y0(y(0));
 		return area;
 	};
+
+	this.createStackArea = function (x, y) {
+		return d3.area()
+			.x(function (d) {
+				return UtilService.validNumberChecker(x(d.data.timestamp));
+			})
+			.y0(function (d) {
+				return UtilService.validNumberChecker(y(d[0]));
+			})
+			.y1(function (d) {
+				return UtilService.validNumberChecker(y(d[1]));
+			});
+	};
+
 	this.createScatter = function (x, y) {
 		// does not actually create a graph element
 		return {x: x, y: y};
@@ -167,6 +182,9 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'area':
 				graphElement = this.createArea(x, y);
+				break;
+			case 'stackarea':
+				graphElement = this.createStackArea(x, y);
 				break;
 			// case 'line':
 			default:
@@ -269,14 +287,14 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.appendGridElements = function (sizeInfo, chart, grids) {
+	this.appendGridElements = function (sizeInfo, chart, xGrid, yGrid) {
 		var xGridG = chart.append('g')
 			.attr('class', 'x grid')
 			.attr('transform', 'translate(0,' + sizeInfo.height + ')')
-			.call(grids.xGrid);
+			.call(xGrid);
 		var yGridG = chart.append('g')
 			.attr('class', 'y grid')
-			.call(grids.yGrid);
+			.call(yGrid);
 		return {
 			xGridG: xGridG,
 			yGridG: yGridG
@@ -390,6 +408,15 @@ angular.module('argus.services.charts.elements', [])
 			.attr('d', area);
 	};
 
+	this.renderStackareaGraph = function (chart, color, metric, stackarea, chartId) {
+		chart.append('path')
+			.attr('class', 'stackarea ' + metric.graphClassName)
+			.style('fill', color)
+			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.datum(metric.stackedData)
+			.attr('d', stackarea);
+	};
+
 	this.renderScatterGraph = function (chart, color, metric) {
 		chart.selectAll('.dot')
 			.data(metric.data)
@@ -467,21 +494,11 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint, dateFormatter) {
-		// add the info box while hovering over
 		var label = flags.append('g')
 			.attr('class', 'flagItem ' + className)
 			.attr('id', className + dataPoint.flagID)
 			.style('stroke', color)
-			.on('mouseover', function() {
-				// add timestamp to the annotation label
-				var tempTimestamp = dateFormatter(dataPoint.x);
-				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
-				labelTip.style('border-color', color).html(tempTimestamp);
-				labelTip.show();
-				// prevent annotation label goes outside of the view on the  side
-				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
-			})
-			.on('mouseout', labelTip.hide);
+			.attr('clicked', 'No');
 
 		// add the pin on the graph
 		label.append('line')
@@ -495,6 +512,30 @@ angular.module('argus.services.charts.elements', [])
 			.style('text-anchor', 'middle')
 			.style('stroke', 'black')
 			.text(dataPoint.title);
+
+		// add the info box while hovering over
+		label.on('click', function () {
+				// click to make the label tip stay while hovering over and enlarge the annotation's circle
+				if (label.attr('clicked') !== 'Yes';) {
+					label.attr('clicked', 'Yes');
+					label.select('circle').attr('r', 16);
+				} else {
+					label.attr('clicked', 'No');
+					label.select('circle').attr('r', 8);
+				}
+			})
+			.on('mouseover', function () {
+				// add timestamp to the annotation label
+				var tempTimestamp = dateFormatter(dataPoint.x);
+				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
+				labelTip.style('border-color', color).html(tempTimestamp);
+				labelTip.show();
+				// prevent annotation label goes outside of the view on the  side
+				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
+			})
+			.on('mouseout', function () {
+				if (label.attr('clicked') !== 'Yes') labelTip.hide();
+			});
 	};
 
 	// add overlay stuff (do this last during the rendering process since these will be on top)
@@ -569,8 +610,8 @@ angular.module('argus.services.charts.elements', [])
 					d = d1;
 				} else if (!d1) {
 					d = d0;
-					// if both data points lives in the domain, choose the closer one to the mouse position
 				} else {
+					// if both data points lives in the domain, choose the closer one to the mouse position
 					d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
 				}
 
@@ -595,6 +636,59 @@ angular.module('argus.services.charts.elements', [])
 				if (displayProperty !== 'none') {
 					datapoints.push({
 						data: d,
+						graphClassName: metric.graphClassName,
+						name: metric.name
+					});
+				}
+			}
+		});
+		return datapoints;
+	};
+
+	this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mouseX) {
+		var datapoints = [];
+		series.forEach(function (metric, index) {
+			var circle = focus.select('.' + metric.graphClassName);
+			if (metric.data.length === 0 || !sources[index].displaying) {
+				circle.style('display', 'none');
+				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+			} else {
+				var data = metric.data;
+				var i = ChartToolService.bisectDateStackedData(metric.data, mouseX, 1);
+				var d0 = data[i - 1];
+				var d1 = data[i];
+				var d;
+
+				if (!d0) {
+					d = d1;
+				} else if (!d1) {
+					d = d0;
+				} else {
+					d = mouseX - d0.data.timestamp > d1.data.timestamp - mouseX ? d1 : d0;
+				}
+
+				var tempX = d.data.timestamp;
+				var tempY = d.data[metric.name];
+				var tempYStacked = d[1];
+
+				var notInSnappingRange = Math.abs(mouseX - tempX) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
+				var displayProperty = circle.attr('displayProperty');
+				if (ChartToolService.isNotInTheDomain(tempX, x.domain()) ||
+					ChartToolService.isNotInTheDomain(tempYStacked, y.domain()) ||
+					notInSnappingRange) {
+					circle.style('display', 'none');
+					displayProperty = 'none';
+				} else {
+					circle.style('display', null);
+				}
+				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
+				var newX = UtilService.validNumberChecker(x(tempX));
+				var newY = UtilService.validNumberChecker(y(tempYStacked));
+				circle.attr('dataX', d[0]).attr('dataY', d[1])
+					.attr('transform', 'translate(' + newX + ',' + newY + ')');
+				if (displayProperty !== 'none') {
+					datapoints.push({
+						data: [tempX, tempY],
 						graphClassName: metric.graphClassName,
 						name: metric.name
 					});
@@ -711,19 +805,20 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateFocusCirclesToolTipsCrossLines = function (sizeInfo, dateFormatter, formatYaxis, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, brushInNonEmptyRange) {
+	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, isDataStacked) {
 		var datapoints;
-		if (brushInNonEmptyRange) {
+		if (isDataStacked) {
+			datapoints = this.updateFocusCirclesAndTooltipItemsWithStackedData(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
+		} else {
 			datapoints = this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
-			// sort items in tooltip if needed
-			if (tooltipConfig.isTooltipSortOn) {
-				datapoints = datapoints.sort(function (a, b) {
-					return b.data[1] - a.data[1];
-				});
-			}
-			this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
 		}
-		this.updateCrossLines(sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData);
+		// sort items in tooltip if needed
+		if (tooltipConfig.isTooltipSortOn) {
+			datapoints = datapoints.sort(function (a, b) {
+				return b.data[1] - a.data[1];
+			});
+		}
+		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
 	};
 
 	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange) {
@@ -846,8 +941,10 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.toggleElementShowAndHide = function (elementOn, elementName) {
-		var display = elementOn? null: 'none';
-		elementName.style('display', display);
+		if (elementName !== undefined) {
+			var display = elementOn? null: 'none';
+			elementName.style('display', display);
+		}
 	};
 
 	this.updateColors = function (colorPalette, names, colors, graphClassNames, chartType) {
@@ -875,32 +972,18 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	// TODO: need to separate these 2 since it's a mix of modifying the view and data
-	this.adjustSeriesAndTooltips = function (series, sources, x, tipItems, containerWidth, downSampleMethod) {
+	this.adjustTooltipItemsBasedOnDisplayingSeries = function (series, sources, x, tipItems, isDataStacked) {
 		var xDomain = x.domain();
-		var newCurrSeries = JSON.parse(JSON.stringify(series));
 		series.forEach(function (metric, index) {
 			var source = sources[index];
 			// metric with no data
-			if (metric === null || metric.data === undefined || metric.data.length === 0){
+			if (metric === null || metric.data === undefined || metric.data.length === 0 ||
+				ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
 				tipItems.selectAll('.' + source.graphClassName).style('display', 'none');
-				return;
+			} else {
+				tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
 			}
-			// metric out of x domain
-			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain)) {
-				newCurrSeries[index].data = [];
-				tipItems.selectAll('.'+ source.graphClassName).style('display', 'none');
-				return;
-			}
-			tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
-			//if this metric time range is within the x domain
-			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
-			if (start > 0) start -= 1; //to avoid cut off issue on the edge
-			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
-			newCurrSeries[index].data = metric.data.slice(start, end + 1);
 		});
-		newCurrSeries = ChartToolService.downSample(newCurrSeries, containerWidth, downSampleMethod);
-		return newCurrSeries;
 	};
 
 	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG) {
@@ -940,10 +1023,9 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	//rescale YAxis based on XAxis Domain
-	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax) {
+	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax, isDataStacked) {
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
-
 		var xDomain = x.domain();
 		var datapoints = [];
 
@@ -951,13 +1033,19 @@ angular.module('argus.services.charts.elements', [])
 			// metric with no data or hidden
 			if (metric === null || metric.data === undefined || metric.data.length === 0 || !sources[index].displaying) return;
 			// metric out of x domain
-			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain)) return;
-
-			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
-			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
+			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) return;
+			var start, end;
+			if (isDataStacked) {
+				start = ChartToolService.bisectDateStackedData(metric.data, xDomain[0]);
+				end = ChartToolService.bisectDateStackedData(metric.data, xDomain[1], start);
+			} else {
+				start = ChartToolService.bisectDate(metric.data, xDomain[0]);
+				end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
+			}
 			datapoints = datapoints.concat(metric.data.slice(start, end + 1));
 		});
-		var extent = d3.extent(datapoints, function (d) { return d[1]; });
+		var extent = ChartToolService.getYDomainOfSeries(datapoints, isDataStacked);
+
 		// TODO: still buggy with log scale when it try to calculate log(0)
 		var yMin = UtilService.validNumberChecker(yScalePlain(extent[0]));
 		var yMax = UtilService.validNumberChecker(yScalePlain(extent[1]));
@@ -965,9 +1053,11 @@ angular.module('argus.services.charts.elements', [])
 		var buffer = (yMax - yMin) * bufferRatio;
 		if (buffer === 0) buffer = ChartToolService.yAxisPadding;
 
-		yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
-		yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
-		y.domain([yMin, yMax]);
+		var resultYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
+		var resultYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
+		// for stackarea chart types to not have buffer at the bottom for negative values
+		// if (isDataStacked && resultYMin < 0 && yMin === 0) resultYMin = 0;
+		y.domain([resultYMin, resultYMax]);
 	};
 
 	this.resizeMainChartElements = function (sizeInfo, svg, svg_g, needToAdjustHeight) {

@@ -2,8 +2,8 @@
 /*global angular:false, $:false, console:false */
 
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
-	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
+.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService',
+	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService) {
 		var chartNameIndex = 1;
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
@@ -17,7 +17,6 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			lineChartScope.series = series;
 			// when there is no agDate
 			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
 				if (series[0].data && series[0].data.length > 0) {
@@ -26,22 +25,17 @@ angular.module('argus.directives.charts.chart', [])
 				}
 			}
 			lineChartScope.dateConfig = dateConfig;
+			scope.seriesDataLoaded = true;
+			lineChartScope.series= series;
 
-			// give each series an unique ID if it has data
 			for (var i = 0; i < series.length; i++) {
 				// use graphClassName to bind all the graph element of a metric together
 				lineChartScope.series[i].graphClassName = newChartId + '_graph' + (i + 1);
 			}
 			// sort series alphabetically
-			lineChartScope.series = lineChartScope.series.sort(function(a, b) {
-				var textA = a.name.toUpperCase();
-				var textB = b.name.toUpperCase();
-				return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
-			});
-
-			scope.seriesDataLoaded = true;
-			//TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
+			lineChartScope.series.sort(UtilService.alphabeticalSort);
 			// append, compile, & attach new scope to line-chart directive
+			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
 			angular.element('#' + newChartId).append(
 				$compile(
 					'<div ngsf-fullscreen>' +
@@ -56,9 +50,11 @@ angular.module('argus.directives.charts.chart', [])
 					var forName = ChartDataProcessingService.createSeriesName(data[0]);
 					var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
 					flagSeries.linkedTo = forName;
-
-					// add flagSeries if any data exists
-					series[0].flagSeries = (flagSeries) ? flagSeries: null;
+					// bind series with its annotations(flag series)
+					series = series.map(function (item) {
+						if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+						return item;
+					});
 				}
 
 				// append, compile, & attach new scope to line-chart directive
@@ -78,7 +74,7 @@ angular.module('argus.directives.charts.chart', [])
 				compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
 			} else {
 				// check annotations & add to series data for line-chart
-				for (var i=0; i < updatedAnnotationList.length; i++) {
+				for (var i = 0; i < updatedAnnotationList.length; i++) {
 					var annotationItem = updatedAnnotationList[i];
 					queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList);
 				}
@@ -105,8 +101,10 @@ angular.module('argus.directives.charts.chart', [])
 						// add 'smallChart' flag to scope
 						scope.chartOptions = {smallChart: smallChart};
 					}
+
 					// metric item attributes are assigned to the data (i.e. name, color, etc.)
 					tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+
 					// keep metric expression info if the query succeeded
 					metricCount.expressions.push(metricItem.expression);
 				} else {
@@ -132,12 +130,23 @@ angular.module('argus.directives.charts.chart', [])
 			}, function (error) {
 				// growl.error(error.message);
 				console.log('Metric expression does not exist in database');
-				var tempSeries = [{
-					invalidMetric: true,
-					errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
-					name: error.config.params.expression,
-					color: 'Black'
-				}];
+				var tempSeries = [];
+				if (error.message !== undefined) {
+					growl.error(error.message);
+					tempSeries.push({
+						noData: true,
+						errorMessage: 'Unknown error occured',
+						name: '',
+						color: 'Maroon'
+					});
+				} else {
+					tempSeries.push({
+						invalidMetric: true,
+						errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+						name: error.config.params.expression,
+						color: 'Black'
+					});
+				}
 				Array.prototype.push.apply(series, tempSeries);
 
 				metricCount.tot -= 1;
@@ -161,7 +170,7 @@ angular.module('argus.directives.charts.chart', [])
 			var chartType = attributes.type ? attributes.type : 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
-			var supportedChartTypes = ['line', 'area', 'scatter'];
+			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
