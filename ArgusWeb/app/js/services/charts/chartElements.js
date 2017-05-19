@@ -21,6 +21,7 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipPadding = 3;
 	var bufferRatio = 0.2; // the ratio of buffer above/below max/min on yAxis for better showing experience
 	var snappingFactor = 0.1;
+	var yAxisRightOffSet = 25;
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		switch (chartType) {
@@ -67,6 +68,13 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
+	this.createExtraYAxisRElements = function (y, yAxisConfig) {
+		return d3.axisRight()
+			.scale(y)
+			.ticks(yAxisConfig.numTicksYaxis)
+			.tickFormat(d3.format(yAxisConfig.formatYaxis));
+	};
+
 	this.createGridElements = function (x, y, sizeInfo, isSmallChart, numTicksYaxis) {
 		var currentnGridX, currentnGridY;
 
@@ -93,7 +101,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createBushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
+	this.createBrushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
 		// axis and ticks
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
@@ -125,7 +133,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createMainBush = function (sizeInfo, brushFunction) {
+	this.createMainBrush = function (sizeInfo, brushFunction) {
 		var brushMain = d3.brushX()
 			.extent([[0, 0], [sizeInfo.width, sizeInfo.height]])
 			.on('end', brushFunction);
@@ -267,6 +275,15 @@ angular.module('argus.services.charts.elements', [])
 			yAxisG: yAxisG,
 			yAxisRG: yAxisRG
 		};
+	};
+
+	this.appendExtraYAxisElement = function (widthOffSet, chart, yAxisR) {
+		var yAxisRG = chart.append('g')
+			.attr('class', 'y axis extra')
+			.attr('transform', 'translate(' + widthOffSet + ')')
+			.call(yAxisR);
+		return yAxisRG;
+		//not adding the axis label now, not enough space for that
 	};
 
 	this.appendGridElements = function (sizeInfo, chart, grids) {
@@ -443,7 +460,7 @@ angular.module('argus.services.charts.elements', [])
 			this.renderBrushScatterGraph(context, color, metric, graph2);
 		} else {
 			var newGraph = context.append('path')
-				.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr)
+				.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr + ' extraYAxis_' + (metric.extraYAxis || ''))
 				.datum(metric.data)
 				.attr('d', graph2);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
@@ -547,10 +564,16 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y, mouseX) {
+	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, mouseX, extraY_) {
 		var datapoints = [];
 		series.forEach(function (metric, index) {
 			var circle = focus.select('.' + metric.graphClassName);
+			var y;
+			if(metric.extraYAxis){
+				y = extraY_[metric.extraYAxis];
+			}else{
+				y = y_;
+			}
 			if (metric.data.length === 0 || !sources[index].displaying) {
 				// if the metric has no data or is toggled to hide
 				circle.style('display', 'none');
@@ -711,10 +734,10 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateFocusCirclesToolTipsCrossLines = function (sizeInfo, dateFormatter, formatYaxis, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, brushInNonEmptyRange) {
+	this.updateFocusCirclesToolTipsCrossLines = function (sizeInfo, dateFormatter, formatYaxis, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, brushInNonEmptyRange, extraY) {
 		var datapoints;
 		if (brushInNonEmptyRange) {
-			datapoints = this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
+			datapoints = this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, mousePositionData.mouseX, extraY);
 			// sort items in tooltip if needed
 			if (tooltipConfig.isTooltipSortOn) {
 				datapoints = datapoints.sort(function (a, b) {
@@ -903,10 +926,15 @@ angular.module('argus.services.charts.elements', [])
 		return newCurrSeries;
 	};
 
-	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG) {
+	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet) {
 		xAxisG.call(xAxis);  //redraw xAxis
 		yAxisG.call(yAxis);  //redraw yAxis
 		yAxisRG.call(yAxisR); //redraw yAxis right
+		if(extraYAxisSet){
+			for(var iSet of extraYAxisSet){
+				extraYAxisRG[iSet].call(extraYAxisR[iSet]);
+			} //redraw extra yAxis
+		}
 	};
 
 	this.redrawGrid = function (xGrid, xGridG, yGrid, yGridG) {
@@ -914,39 +942,51 @@ angular.module('argus.services.charts.elements', [])
 		yGridG.call(yGrid);
 	};
 
-	this.redrawGraphs = function (series, sources, chartType, graph, mainChart) {
+	this.redrawGraph = function (metric, source, chartType, graph, mainChart) {
+		// metric with no defined data or hidden
+		if (metric === null || metric.data === undefined || !source.displaying) return;
+		if (chartType === 'scatter') {
+			mainChart.selectAll('circle.dot.' + metric.graphClassName)
+				.attr('transform', function (d) {
+					return 'translate(' + graph.x(d[0]) + ',' + graph.y(d[1]) + ')';
+				})
+				.style('display', function (d) {
+					if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
+						ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
+						return 'none';
+					} else {
+						return null;
+					}
+				});
+		} else {
+			mainChart.select('path.' + chartType + '.' + metric.graphClassName)
+				.datum(metric.data)
+				.attr('d', graph);
+		}
+	};
+
+	this.redrawGraphs = function (series, sources, chartType, graph, mainChart, extraGraph) {
+		 var chartElementService = this;
 		series.forEach(function (metric, index) {
-			// metric with no defined data or hidden
-			if (metric === null || metric.data === undefined || !sources[index].displaying) return;
-			if (chartType === 'scatter') {
-				mainChart.selectAll('circle.dot.' + metric.graphClassName)
-					.attr('transform', function (d) {
-						return 'translate(' + graph.x(d[0]) + ',' + graph.y(d[1]) + ')';
-					})
-					.style('display', function (d) {
-						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-							return 'none';
-						} else {
-							return null;
-						}
-					});
-			} else {
-				mainChart.select('path.' + chartType + '.' + metric.graphClassName)
-					.datum(metric.data)
-					.attr('d', graph);
+			if(!metric.extraYAxis){
+				chartElementService.redrawGraph(metric, sources[index], chartType, graph, mainChart);
+			}else{
+				chartElementService.redrawGraph(metric, sources[index], chartType, extraGraph[metric.extraYAxis], mainChart)
 			}
 		});
 	};
 
 	//rescale YAxis based on XAxis Domain
-	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax) {
+	this.reScaleYAxis = function (series, sources, x, y, yScalePlain, agYMin, agYMax, extraY, extraYScalePlain, extraYAxisSet) {
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
 
 		var xDomain = x.domain();
 		var datapoints = [];
-
+		var extraDatapoints = {};
+		for(var iSet of extraYAxisSet){
+			extraDatapoints[iSet] = [];
+		}
 		series.forEach(function (metric, index) {
 			// metric with no data or hidden
 			if (metric === null || metric.data === undefined || metric.data.length === 0 || !sources[index].displaying) return;
@@ -955,19 +995,34 @@ angular.module('argus.services.charts.elements', [])
 
 			var start = ChartToolService.bisectDate(metric.data, xDomain[0]);
 			var end = ChartToolService.bisectDate(metric.data, xDomain[1], start);
-			datapoints = datapoints.concat(metric.data.slice(start, end + 1));
-		});
-		var extent = d3.extent(datapoints, function (d) { return d[1]; });
-		// TODO: still buggy with log scale when it try to calculate log(0)
-		var yMin = UtilService.validNumberChecker(yScalePlain(extent[0]));
-		var yMax = UtilService.validNumberChecker(yScalePlain(extent[1]));
-		// make sure the domain has more than one value
-		var buffer = (yMax - yMin) * bufferRatio;
-		if (buffer === 0) buffer = ChartToolService.yAxisPadding;
 
-		yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
-		yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
-		y.domain([yMin, yMax]);
+			if(metric.extraYAxis){
+				extraDatapoints[metric.extraYAxis] = extraDatapoints[metric.extraYAxis].concat(metric.data.slice(start, end + 1));
+			}else{
+				datapoints = datapoints.concat(metric.data.slice(start, end + 1));
+			}
+		});
+
+		function processYDomain(datapoints, y, yScalePlain, agYMin, agYMax){
+			var extent = d3.extent(datapoints, function (d) { return d[1]; });
+
+			// TODO: still buggy with log scale when it try to calculate log(0)
+			var yMin = UtilService.validNumberChecker(yScalePlain(extent[0]));
+			var yMax = UtilService.validNumberChecker(yScalePlain(extent[1]));
+			// make sure the domain has more than one value
+			var buffer = (yMax - yMin) * bufferRatio;
+			if (buffer === 0) buffer = ChartToolService.yAxisPadding;
+
+			yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
+			yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
+			y.domain([yMin, yMax]);
+		}
+
+		processYDomain(datapoints, y, yScalePlain, agYMin, agYMax);
+
+		for(iSet of extraYAxisSet){
+			processYDomain(extraDatapoints[iSet], extraY[iSet], extraYScalePlain[iSet], undefined, undefined);
+		}
 	};
 
 	this.resizeMainChartElements = function (sizeInfo, svg, svg_g, needToAdjustHeight) {
@@ -994,12 +1049,21 @@ angular.module('argus.services.charts.elements', [])
 		chartRect.attr('width', sizeInfo.width);
 	};
 
-	this.resizeAxis = function (sizeInfo, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, xAxisConfig) {
+	this.resizeAxis = function (sizeInfo, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, xAxisConfig, extraYAxisR, extraYAxisRG, extraYAxisSet) {
 		if (needToAdjustHeight) {
 			xAxisG.attr('transform', 'translate(0,' + sizeInfo.height + ')');
 		}
 		yAxisRG.attr('transform', 'translate(' + sizeInfo.width + ')');
-		this.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
+
+		if(extraYAxisRG){
+			var index = 1;
+			for(var iSet of extraYAxisSet){
+				extraYAxisRG[iSet].attr('transform', 'translate(' + (sizeInfo.width + index++ * yAxisRightOffSet) + ')');
+			}
+		}
+
+		this.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+
 		if (xAxisConfig!== undefined && xAxisConfig.title !== undefined) {
 			mainChart.select('.xAxisLabel')
 				.attr('transform', 'translate(' + (sizeInfo.width / 2) + ' ,' + (sizeInfo.height + sizeInfo.margin.top + xAxisLabelHeightFactor) + ')');
@@ -1015,11 +1079,14 @@ angular.module('argus.services.charts.elements', [])
 		this.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 	};
 
-	this.resizeBrush = function (sizeInfo, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight) {
+	this.resizeBrush = function (sizeInfo, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight, extraY2, extraYAxisSet) {
 		if (needToAdjustHeight) {
 			context.attr('transform', 'translate(0,' + sizeInfo.margin2.top + ')');
 			xAxisG2.attr('transform', 'translate(0,' + sizeInfo.height2 + ')');
 			y2.range([sizeInfo.height2, 0]);
+			for(var iSet of extraYAxisSet){
+				extraY2[iSet].range([sizeInfo.height2, 0]);
+			}
 		}
 		x2.range([0, sizeInfo.width]);
 		brush.extent([
@@ -1079,11 +1146,11 @@ angular.module('argus.services.charts.elements', [])
 					}
 				});
 		} else {
-			svg_g.selectAll('.' + chartType).attr('d', graph);
+			//svg_g.selectAll('.' + chartType).attr('d', graph);   //do not need this
 		}
 	};
 
-	this.resizeBrushGraphs = function (svg_g, graph2, chartType) {
+	this.resizeBrushGraph = function (svg_g, graph2, chartType, extraYAxis){
 		if (chartType === 'scatter') {
 			svg_g.selectAll('.brushDot')
 				.attr('transform', function (d) {
@@ -1098,7 +1165,50 @@ angular.module('argus.services.charts.elements', [])
 					}
 				});
 		} else {
-			svg_g.selectAll('.brush' + UtilService.capitalizeString(chartType)).attr('d', graph2);
+			svg_g.selectAll('.brush' + UtilService.capitalizeString(chartType) + '.extraYAxis_' + extraYAxis).attr('d', graph2);
 		}
 	};
+
+	this.resizeBrushGraphs = function (svg_g, graph2, chartType, extraGraph2, extraYAxisSet) {
+		this.resizeBrushGraph(svg_g, graph2, chartType, '');
+		for(var iSet of extraYAxisSet){
+			this.resizeBrushGraph(svg_g, extraGraph2[iSet], chartType, iSet);
+		}
+	};
+
+	this.createExtraYAxisRelatedElements = function (x, x2, extraYAxisSet, sizeInfo, yScaleType, yScaleConfigValue, yAxisConfig, chart){
+		//every extra YAxis related elements
+		if(extraYAxisSet.size > 0){
+			var extraY = {};
+			var extraY2 = {};
+			var extraYScalePlain = {};
+			var extraYAxisR = {};
+			var extraGraph = {};
+			var extraGraph2 = {};
+			var extraYAxisRG = {};
+			var iSetIndex = 1;
+			for(var iSet of extraYAxisSet){
+				var extraYObj = ChartToolService.getY(sizeInfo, yScaleType, yScaleConfigValue);
+				extraY[iSet] = extraYObj.y;
+				var extraYObj2 = ChartToolService.getY({height: sizeInfo.height2}, yScaleType, yScaleConfigValue);
+				extraY2[iSet] = extraYObj2.y;
+				extraYScalePlain[iSet] = extraYObj.yScalePlain;
+				extraYAxisR[iSet] = this.createExtraYAxisRElements(extraY[iSet], yAxisConfig);
+				extraGraph[iSet] = this.createGraph(x, extraY[iSet]); //default chart type line chart TODO support dot chart?
+				extraGraph2[iSet] = this.createGraph(x2, extraY2[iSet]);
+				extraYAxisRG[iSet] = this.appendExtraYAxisElement(sizeInfo.width + yAxisRightOffSet * iSetIndex++, chart, extraYAxisR[iSet]);
+			}
+			return {
+				extraY: extraY,
+				extraYScalePlain: extraYScalePlain,
+				extraYAxisR: extraYAxisR,
+				extraGraph: extraGraph,
+				extraYAxisRG: extraYAxisRG,
+				extraY2: extraY2,
+				extraGraph2: extraGraph2
+			}
+		}else{
+			return null;
+		}
+	}
 }]);

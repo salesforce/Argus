@@ -262,7 +262,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
-					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.color : null;
+					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.extraYAxis : null;
 					var objSeries = {
 						name: metricName,
 						color: metricColor,

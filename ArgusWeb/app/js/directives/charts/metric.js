@@ -25,7 +25,7 @@ angular.module('argus.directives.charts.metric', [])
 			// 'color' & 'name' are used to supplement the 'series' data when rendering a chart
 			seriesData.color = attributes.seriescolor;
 			seriesData.name = attributes.seriesname;
-			seriesData.extraYAxis = attributes.extrayaxis;
+			seriesData.extraYAxis = attributes.extraYaxis;
 
 			if (attributes.value && attributes.value.length > 0) {
 				value = attributes.value;

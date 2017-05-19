@@ -142,6 +142,15 @@ angular.module('argus.services.charts.tools', [])
 
 	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
 		var xScale = timeInfo.GMTon? d3.scaleUtc(): d3.scaleTime();
+		var y = this.getY(sizeInfo, yScaleType, yScaleConfigValue);
+		return {
+			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
+			y: y.y,
+			yScalePlain: y.yScalePlain
+		};
+	};
+
+	this.getY = function (sizeInfo, yScaleType, yScaleConfigValue){
 		var yScale, yScalePlain;
 		if (yScaleConfigValue === undefined || isNaN(yScaleConfigValue)) yScaleConfigValue = 10;
 		switch (yScaleType) {
@@ -160,26 +169,46 @@ angular.module('argus.services.charts.tools', [])
 		}
 
 		return {
-			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
 			y: yScale.range([sizeInfo.height, 0]),
 			yScalePlain: yScalePlain
 		};
 	};
 
-	this.getXandYDomainsOfSeries = function (series) {
-		var allDatapoints = [];
+	this.getXandYDomainsOfSeries = function (series, extraYAxisSet) {
+		var datapoints = [];
+		var extraDatapoints = {};
+
+		for(var iSet of extraYAxisSet){
+			extraDatapoints[iSet] = [];
+		}
+
 		series.forEach(function (metric) {
-			allDatapoints = allDatapoints.concat(metric.data);
+			if(metric.extraYAxis){
+				extraDatapoints[metric.extraYAxis] = extraDatapoints[metric.extraYAxis].concat(metric.data);
+			}else{
+				datapoints = datapoints.concat(metric.data)
+			}
 		});
-		var xDomain = d3.extent(allDatapoints, function (d) {
+
+		var xDomain = d3.extent(datapoints, function (d) {
 			return d[0];
 		});
-		var yDomain = d3.extent(allDatapoints, function (d) {
+		var yDomain = d3.extent(datapoints, function (d) {
 			return d[1];
 		});
+
+		var extraYDomain = {};
+
+		for(iSet of extraYAxisSet){
+			extraYDomain[iSet] = d3.extent(extraDatapoints[iSet], function (d) {
+				return d[1];
+			});
+		}
+
 		return {
 			xDomain: xDomain,
-			yDomain: yDomain
+			yDomain: yDomain,
+			extraYDomain: extraYDomain
 		};
 	};
 
@@ -188,6 +217,14 @@ angular.module('argus.services.charts.tools', [])
 			y.range([sizeInfo.height, 0]);
 		}
 		x.range([0, sizeInfo.width]);
+	};
+
+	this.updateExtraYRange = function (sizeInfo, extraY, extraYAxisSet){
+		if (extraYAxisSet){
+			for(var iSet of extraYAxisSet){
+				extraY[iSet].range([sizeInfo.height, 0]);
+			}
+		}
 	};
 
 	this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
