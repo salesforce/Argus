@@ -147,7 +147,7 @@ angular.module('argus.services.charts.tools', [])
 	this.defaultEmptyGraphMessage = 'No graph available';
 
 	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
-		var xScale = timeInfo.GMTon? d3.scaleUtc(): d3.scaleTime();
+		var xScale = timeInfo.gmt? d3.scaleUtc(): d3.scaleTime();
 		var yScale, yScalePlain;
 		if (yScaleConfigValue === undefined || isNaN(yScaleConfigValue)) yScaleConfigValue = 10;
 		switch (yScaleType) {
