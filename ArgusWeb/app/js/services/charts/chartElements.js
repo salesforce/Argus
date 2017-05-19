@@ -312,7 +312,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.appendFlagsElements = function (svg_g, chartId) {
-		var flags = svg_g.append('g').attr('class', 'flags');
+		// var flags = svg_g.append('g').attr('class', 'flags');
 		var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
 		var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
 		d3.select('#' + chartId).select('svg').call(labelTip);
@@ -394,7 +394,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'line ' + metric.graphClassName)
 			.style('stroke', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
 			.datum(metric.data)
 			.attr('d', line);
 	};
@@ -403,7 +403,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'area ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
 			.datum(metric.data)
 			.attr('d', area);
 	};
@@ -412,7 +412,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'stackarea ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
 			.datum(metric.stackedData)
 			.attr('d', stackarea);
 	};
@@ -431,7 +431,7 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
-				.style('clip-path', "url('#clip_" + chartId + "')")
+				.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
 				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
@@ -516,7 +516,7 @@ angular.module('argus.services.charts.elements', [])
 		// add the info box while hovering over
 		label.on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
-				if (label.attr('clicked') !== 'Yes';) {
+				if (label.attr('clicked') !== 'Yes') {
 					label.attr('clicked', 'Yes');
 					label.select('circle').attr('r', 16);
 				} else {

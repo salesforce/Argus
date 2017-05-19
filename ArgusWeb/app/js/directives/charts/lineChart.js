@@ -266,7 +266,9 @@ angular.module('argus.directives.charts.lineChart', [])
 					hiddenSourceNames.push(source.name);
 				} else {
 					displayProperty = null;
-					var index = hiddenSourceNames.findIndex(function(i){ return i === source.name });
+					var index = hiddenSourceNames.findIndex(function(i){
+						return i === source.name;
+					});
 					if (index !== -1) hiddenSourceNames.splice(index, 1);
 				}
 				source.displaying = !source.displaying;

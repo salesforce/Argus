@@ -168,7 +168,7 @@ require('./services/jsonUnflatten');
 require('./services/tableListService');
 require('./services/downloadHelper');
 require('./services/agTableService');
-require("./services/tokenAuthInterceptor");
+require('./services/tokenAuthInterceptor');
 
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
@@ -190,7 +190,7 @@ require('./services/factories/notifications');
 require('./services/factories/reinstateUser');
 require('./services/factories/triggers');
 require('./services/factories/triggersMap');
-require("./services/factories/users");
+require('./services/factories/users');
 
 // directives
 require('./directives/headerMenu');
