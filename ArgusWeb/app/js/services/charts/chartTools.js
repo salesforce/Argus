@@ -82,6 +82,12 @@ angular.module('argus.services.charts.tools', [])
 	this.bisectDate = d3.bisector(function (d) {
 		return d[0];
 	}).left;
+	var bisectDate = this.bisectDate;
+
+	this.bisectDateStackedData = d3.bisector(function (d) {
+		return d.data.timestamp;
+	}).left;
+	var bisectDateStackedData = this.bisectDateStackedData;
 
 	// menu option
 	var sampleCustomFormat = '0,.8';     // scientific notation
@@ -166,21 +172,49 @@ angular.module('argus.services.charts.tools', [])
 		};
 	};
 
-	this.getXandYDomainsOfSeries = function (series) {
+	this.getXandYDomainsOfSeries = function (series, isDataStacked) {
 		var allDatapoints = [];
 		series.forEach(function (metric) {
 			allDatapoints = allDatapoints.concat(metric.data);
 		});
-		var xDomain = d3.extent(allDatapoints, function (d) {
-			return d[0];
-		});
-		var yDomain = d3.extent(allDatapoints, function (d) {
-			return d[1];
-		});
+
 		return {
-			xDomain: xDomain,
-			yDomain: yDomain
+			xDomain: this.getXDomainOfSeries(allDatapoints, isDataStacked),
+			yDomain: this.getYDomainOfSeries(allDatapoints, isDataStacked)
 		};
+	};
+
+	this.getXDomainOfSeries = function (dataPoints, isDataStacked) {
+		var extent;
+		if (isDataStacked) {
+			extent = d3.extent(dataPoints, function (d) {
+				return d.data.timestamp;
+			});
+		} else {
+			extent = d3.extent(dataPoints, function (d) {
+				return d[0];
+			});
+		}
+		return extent;
+	};
+
+	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
+		var extent;
+		if (isDataStacked) {
+			if (dataPoints === undefined || dataPoints.length === 0) {
+				extent = [0, 0]
+			} else {
+				var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
+				dataPoints.map(function (d) {
+					if (d[0] < yMin) yMin = d[0];
+					if (d[1] > yMax) yMax = d[1];
+				});
+				extent = [yMin, yMax];
+			}
+		} else {
+			extent = d3.extent(dataPoints, function (d) { return d[1]; });
+		}
+		return extent;
 	};
 
 	this.updateXandYRange = function (sizeInfo, x, y, needToAdjustHeight) {
@@ -206,11 +240,11 @@ angular.module('argus.services.charts.tools', [])
 
 	var downsampleThreshold = 1/2; // datapoints per pixel
 	this.downSample = function (series, containerWidth, downSampleMethod) {
-		if (!series) return;
-		if (downSampleMethod === '' || downSampleMethod === undefined) return series;
+		if (!series) return series;
+		var temp = angular.copy(series);
+		if (downSampleMethod === '' || downSampleMethod === undefined) return temp;
 
 		// Create the sampler
-		var temp = JSON.parse(JSON.stringify(series));
 		var sampler;
 		switch (downSampleMethod){
 			case 'largest-triangle-one-bucket':
@@ -289,10 +323,19 @@ angular.module('argus.services.charts.tools', [])
 		return value < domainArray[0] || value > domainArray[1];
 	};
 
-	this.isMetricNotInTheDomain = function (metric, xDomain) {
+	this.isMetricNotInTheDomain = function (metric, xDomain, isDataStacked) {
 		var len = metric.data.length;
-		return metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime();
+		var startPoint, endPoint;
+		if (isDataStacked) {
+			startPoint = metric.data[0].data.timestamp;
+			endPoint = metric.data[len - 1].data.timestamp;
+		} else {
+			startPoint = metric.data[0][0];
+			endPoint = metric.data[len - 1][0];
+		}
+		return startPoint > xDomain[1].getTime() || endPoint < xDomain[0].getTime();
 	};
+	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
 	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen) {
 		var containerWidth, containerHeight;
@@ -312,5 +355,98 @@ angular.module('argus.services.charts.tools', [])
 			containerWidth: containerWidth,
 			containerHeight: containerHeight
 		};
+	};
+
+	this.calculateGradientOpacity = function (num, tot) {
+		return 0.9 - 0.7 * (num / tot);
+	};
+
+	var findValueAtAGivenTimestamp = function (metric, timestamp, startingIndex) {
+		for (var i = startingIndex; i < metric.data.length; i++) {
+			if (metric.data[i][0] === timestamp) {
+				return {
+					index: i,
+					value: metric.data[i][1]
+				}
+			}
+		}
+	};
+
+	this.convertSeriesToTimeBasedFormat = function (series, metricsToIgnore) {
+		var result = [];
+		var allTimestamps = [];
+		var valuesAtPreviousTimestampWithIndex = {};
+
+		var needToIgnoreSomeMetrics = metricsToIgnore !== undefined && metricsToIgnore.length !== 0;
+		series.map(function(metric) {
+			if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
+			valuesAtPreviousTimestampWithIndex[metric.name] = {value: 0, index: 0};
+			metric.data.map(function(d) {
+				var timestamp = d[0];
+				if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
+			})
+		});
+
+		// sort the timestamps and add values from each source
+		allTimestamps.sort(function(a, b) { return a - b; });
+		allTimestamps.map(function(timestamp) {
+			var valuesAtThisTimestamp = {timestamp: timestamp};
+			series.map(function(metric) {
+				if (needToIgnoreSomeMetrics && metricsToIgnore.includes(metric.name)) return;
+				var tempValueWithIndex = findValueAtAGivenTimestamp(metric, timestamp, valuesAtPreviousTimestampWithIndex[metric.name].index);
+				// use previous value when there is no data for this timestamp
+				if (tempValueWithIndex === undefined) {
+					if (valuesAtPreviousTimestampWithIndex[metric.name] !== undefined) {
+						tempValueWithIndex = valuesAtPreviousTimestampWithIndex[metric.name];
+					} else {
+						tempValueWithIndex = { value: 0, index: 0 };
+						valuesAtPreviousTimestampWithIndex[metric.name] = tempValueWithIndex;
+					}
+				} else {
+					valuesAtPreviousTimestampWithIndex[metric.name] = tempValueWithIndex;
+				}
+				valuesAtThisTimestamp[metric.name] = tempValueWithIndex.value;
+			});
+			result.push(valuesAtThisTimestamp);
+		});
+		return result;
+	};
+
+	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
+		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
+		var newSeries = series.map(function (metric, index) {
+			metric.data = stackedData[index];
+			return metric;
+		});
+		return newSeries
+	};
+
+	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {
+		var xDomain = x.domain();
+		var newDisplayingSeries = angular.copy(series);
+		series.forEach(function (metric, index) {
+			if (isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
+				newDisplayingSeries[index].data = [];
+				return;
+			}
+			var start, end;
+			if (isDataStacked) {
+				start = bisectDateStackedData(metric.data, xDomain[0]);
+				if (start > 0) start -= 1; //to avoid cut off issue on the edge
+				end = bisectDateStackedData(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
+			} else {
+				start = bisectDate(metric.data, xDomain[0]);
+				if (start > 0) start -= 1;
+				end = bisectDate(metric.data, xDomain[1], start) + 1;
+			}
+			newDisplayingSeries[index].data = metric.data.slice(start, end + 1);
+			if (newDisplayingSeries[index].data === undefined) {
+				console.log('abc');
+			}
+		});
+		if (newDisplayingSeries[0].data.length === 0) {
+			console.log('abc');
+		}
+		return newDisplayingSeries;
 	};
 }]);
