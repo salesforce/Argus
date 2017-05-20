@@ -394,7 +394,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'line ' + metric.graphClassName)
 			.style('stroke', color)
-			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\')')
 			.datum(metric.data)
 			.attr('d', line);
 	};
@@ -403,7 +403,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'area ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\')')
 			.datum(metric.data)
 			.attr('d', area);
 	};
@@ -412,7 +412,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'stackarea ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
+			.style('clip-path', 'url(\'#clip_\'' + chartId + '\')')
 			.datum(metric.stackedData)
 			.attr('d', stackarea);
 	};
@@ -431,7 +431,7 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
-				.style('clip-path', 'url(\'#clip_\'' + chartId + '\'\')')
+				.style('clip-path', 'url(\'#clip_\'' + chartId + '\')')
 				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
