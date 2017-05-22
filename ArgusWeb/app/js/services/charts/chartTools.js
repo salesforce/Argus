@@ -298,6 +298,9 @@ angular.module('argus.services.charts.tools', [])
 					// Configure the size of the buckets used to downsample the data.
 					sampler.bucketSize(bucketSize);
 					temp[index].data  = sampler(metric.data);
+				} else {
+					// no need to downsample; just copy over the data
+					temp[index].data  = angular.copy(metric.data);
 				}
 			});
 		}
