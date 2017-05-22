@@ -2,7 +2,7 @@
 /*global angular:false */
 
 angular.module('argus.services.charts.dataProcessing', [])
-.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', 'UtilService', function(ChartOptionService, Annotations, JsonFlattenService, UtilService) {
+.service('ChartDataProcessingService', ['ChartOptionService', 'Annotations', 'JsonFlattenService', function(ChartOptionService, Annotations, JsonFlattenService) {
 	// Private methods
 	function copySeries(data) {
 		var result = [];
