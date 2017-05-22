@@ -260,14 +260,15 @@ angular.module('argus.directives.charts.lineChart', [])
 			function toggleGraphOnOff (source) {
 				// d3 select with dot in ID name: http://stackoverflow.com/questions/33502614/d3-how-to-select-element-by-id-when-there-is-a-dot-in-id
 				// var graphID = source.name.replace(/\s+/g, '');
-				var displayProperty = source.displaying? 'none' : null;
+				var displayProperty;
 				if (source.displaying) {
 					displayProperty = 'none';
 					hiddenSourceNames.push(source.name);
 				} else {
 					displayProperty = null;
-					var index = hiddenSourceNames.findIndex(function(i){ return i === source.name });
-					if (index !== -1) hiddenSourceNames.splice(index, 1);
+					hiddenSourceNames = hiddenSourceNames.filter(function(i) {
+						return i !== source.name;
+					});
 				}
 				source.displaying = !source.displaying;
 				d3.selectAll('.' + source.graphClassName)
@@ -826,11 +827,11 @@ angular.module('argus.directives.charts.lineChart', [])
 						for (i = 0; i < scope.invalidSeries.length; i ++) {
 							messagesToDisplay.push(scope.invalidSeries[i].errorMessage);
 						}
-						messagesToDisplay.push('(Failed metrics are black in the legend)');
+						messagesToDisplay.push('(Failed metrics are black in the legend, unless another color is preset)');
 					}
 					if (emptyReturn) {
 						messagesToDisplay.push('No data returned from TSDB');
-						messagesToDisplay.push('(Empty metrics are labeled maroon)');
+						messagesToDisplay.push('(Empty metrics are labeled maroon, unless another color is preset)');
 					}
 					if (hasNoData) {
 						messagesToDisplay.push('No data found for metric expressions');

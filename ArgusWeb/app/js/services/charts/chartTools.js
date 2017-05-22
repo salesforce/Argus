@@ -465,4 +465,10 @@ angular.module('argus.services.charts.tools', [])
 		});
 		return newDisplayingSeries;
 	};
+
+	this.findMatchingMetricInSources = function (metric, sources) {
+		return sources.filter(function(source) {
+			return source.name === metric.name;
+		})[0];
+	}
 }]);
