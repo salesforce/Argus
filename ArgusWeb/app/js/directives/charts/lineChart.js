@@ -359,7 +359,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 			var defaultContainerHeight = containerHeight;
 			// calculate width, height and margin for both brush and graphs
-			var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, scope.menuOption.isBrushOn);
+			var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, scope.menuOption.isBrushOn, extraYAxisSet.size);
 
 			//setup graph variables
 			var x, x2, y, y2, yScalePlain, extraY, extraYScalePlain, extraY2,
@@ -697,7 +697,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (series === 'series' || !series) {
 					return;
 				}
-				var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, scope.menuOption.isBrushOn, scope.changeToFullscreen);
+				var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, scope.menuOption.isBrushOn, scope.changeToFullscreen, extraYAxisSet.size);
 				allSize = tempSizeInfo.newSize;
 				containerHeight = tempSizeInfo.containerHeight;
 				containerWidth = tempSizeInfo.containerWidth;

@@ -29,8 +29,13 @@ angular.module('argus.services.charts.tools', [])
 		marginRight= 60;
 	var mainChartRatio = 0.8, //ratio of height
 		brushChartRatio = 0.15;
+	var extraYAxisPadding = 35;
 
-	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn) {
+	this.getExtraYAxisPadding = function(){
+		return extraYAxisPadding;
+	};
+
+	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn, extraYAxisNum) {
 		var currentMarginTop = isSmallChart? marginTopSmall: marginTop;
 		var currentMarginRight = isSmallChart? marginRightSmall: marginRight;
 		var newWidth = newContainerWidth - marginLeft - currentMarginRight;
@@ -56,7 +61,8 @@ angular.module('argus.services.charts.tools', [])
 			left: marginLeft
 		};
 		return {
-			width: newWidth,
+			width: newWidth - extraYAxisNum * extraYAxisPadding,
+			width2: newWidth,
 			height: newHeight,
 			height2: newHeight2,
 			margin: newMargin,
@@ -331,7 +337,7 @@ angular.module('argus.services.charts.tools', [])
 		return metric.data[0][0] > xDomain[1].getTime() || metric.data[len - 1][0] < xDomain[0].getTime();
 	};
 
-	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen) {
+	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen, extraYAxisNum) {
 		var containerWidth, containerHeight;
 		if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && changeToFullscreen) {
 			// set the graph size to be the same as the screen
@@ -343,7 +349,7 @@ angular.module('argus.services.charts.tools', [])
 			// no width defined via chart option: window width will be used
 			containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
 		}
-		var newSize = this.calculateDimensions(containerWidth, containerHeight, isSmallChart, isBrushOn);
+		var newSize = this.calculateDimensions(containerWidth, containerHeight, isSmallChart, isBrushOn, extraYAxisNum);
 		return {
 			newSize: newSize,
 			containerWidth: containerWidth,

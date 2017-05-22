@@ -21,7 +21,7 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipPadding = 3;
 	var bufferRatio = 0.2; // the ratio of buffer above/below max/min on yAxis for better showing experience
 	var snappingFactor = 0.1;
-	var yAxisRightOffSet = 25;
+	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		switch (chartType) {
@@ -106,7 +106,7 @@ angular.module('argus.services.charts.elements', [])
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
 		var brushSizeInfo = {
-			width: sizeInfo.width,
+			width: sizeInfo.width2,
 			height: sizeInfo.height2
 		};
 		var xy = ChartToolService.getXandY(timeInfo, brushSizeInfo, yScaleType, yScaleConfigValue);
@@ -121,7 +121,7 @@ angular.module('argus.services.charts.elements', [])
 
 		// actual brush
 		var brush = d3.brushX()
-			.extent([[0, 0], [sizeInfo.width, sizeInfo.height2]])
+			.extent([[0, 0], [sizeInfo.width2, sizeInfo.height2]])
 			.on('brush end', brushFunction);
 
 		return {
@@ -1030,7 +1030,7 @@ angular.module('argus.services.charts.elements', [])
 			svg.attr('height', sizeInfo.height + sizeInfo.margin.top + sizeInfo.margin.bottom);
 			svg_g.attr('height', sizeInfo.height);
 		}
-		svg.attr('width', sizeInfo.width + sizeInfo.margin.left + sizeInfo.margin.right);
+		svg.attr('width', sizeInfo.width2 + sizeInfo.margin.left + sizeInfo.margin.right);
 		svg_g.attr('width', sizeInfo.width)
 			.attr('transform', 'translate(' + sizeInfo.margin.left + ',' + sizeInfo.margin.top + ')');
 	};
@@ -1058,7 +1058,7 @@ angular.module('argus.services.charts.elements', [])
 		if(extraYAxisRG){
 			var index = 1;
 			for(var iSet of extraYAxisSet){
-				extraYAxisRG[iSet].attr('transform', 'translate(' + (sizeInfo.width + index++ * yAxisRightOffSet) + ')');
+				extraYAxisRG[iSet].attr('transform', 'translate(' + (sizeInfo.width + index++ * extraYAxisPadding) + ')');
 			}
 		}
 
@@ -1088,10 +1088,10 @@ angular.module('argus.services.charts.elements', [])
 				extraY2[iSet].range([sizeInfo.height2, 0]);
 			}
 		}
-		x2.range([0, sizeInfo.width]);
+		x2.range([0, sizeInfo.width2]);
 		brush.extent([
 			[0, 0],
-			[sizeInfo.width, sizeInfo.height2]
+			[sizeInfo.width2, sizeInfo.height2]
 		]);
 		brushG.call(brush);
 		xAxisG2.call(xAxis2);
@@ -1196,7 +1196,7 @@ angular.module('argus.services.charts.elements', [])
 				extraYAxisR[iSet] = this.createExtraYAxisRElements(extraY[iSet], yAxisConfig);
 				extraGraph[iSet] = this.createGraph(x, extraY[iSet]); //default chart type line chart TODO support dot chart?
 				extraGraph2[iSet] = this.createGraph(x2, extraY2[iSet]);
-				extraYAxisRG[iSet] = this.appendExtraYAxisElement(sizeInfo.width + yAxisRightOffSet * iSetIndex++, chart, extraYAxisR[iSet]);
+				extraYAxisRG[iSet] = this.appendExtraYAxisElement(sizeInfo.width + extraYAxisPadding * iSetIndex++, chart, extraYAxisR[iSet]);
 			}
 			return {
 				extraY: extraY,
