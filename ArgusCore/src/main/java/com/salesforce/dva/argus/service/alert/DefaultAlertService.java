@@ -444,7 +444,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
 					Map<String, String> tags = new HashMap<>();
 					tags.put(USERTAG, trigger.getAlert().getOwner().getUserName());
-					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, null);
+					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, tags);
 				}
 			}
 			triggerFiredTimesAndMetricsByTrigger.put(trigger.getId(), triggerFiredTimesForMetrics);

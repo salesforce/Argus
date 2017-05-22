@@ -202,7 +202,7 @@ angular.module('argus.services.charts.tools', [])
 		var extent;
 		if (isDataStacked) {
 			if (dataPoints === undefined || dataPoints.length === 0) {
-				extent = [0, 0]
+				extent = [0, 0];
 			} else {
 				var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
 				dataPoints.map(function (d) {
@@ -385,7 +385,7 @@ angular.module('argus.services.charts.tools', [])
 				return {
 					index: i,
 					value: metric.data[i][1]
-				}
+				};
 			}
 		}
 	};
@@ -402,7 +402,7 @@ angular.module('argus.services.charts.tools', [])
 			metric.data.map(function(d) {
 				var timestamp = d[0];
 				if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
-			})
+			});
 		});
 
 		// sort the timestamps and add values from each source
@@ -437,7 +437,7 @@ angular.module('argus.services.charts.tools', [])
 			newMetric.data = stackedData[index];
 			return newMetric;
 		});
-		return newSeries
+		return newSeries;
 	};
 
 	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {

@@ -25,7 +25,7 @@ angular.module('argus.config', [])
 .config(['$routeProvider', '$httpProvider', 'growlProvider', 'paginationTemplateProvider', '$analyticsProvider',
 	function ($routeProvider, $httpProvider, growlProvider, paginationTemplateProvider, $analyticsProvider) {
 		$httpProvider.defaults.withCredentials = true;
-		$httpProvider.interceptors.push('UnauthorizedInterceptor');
+		$httpProvider.interceptors.push('TokenAuthInterceptor');
 		paginationTemplateProvider.setPath('node_modules/angular-utils-pagination/dirPagination.tpl.html');
 		$routeProvider.
 			when('/viewmetrics', {
@@ -98,6 +98,7 @@ angular.module('argus.config', [])
 		growlProvider.globalPosition('top-center');
 		growlProvider.globalDisableIcons(true);
 		growlProvider.globalTimeToLive(3000);
+
 
 		$analyticsProvider.firstPageview(true); /* Records pages that don't use $state or $route */
 		$analyticsProvider.withAutoBase(true);  /* Records full path */
