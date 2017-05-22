@@ -504,7 +504,8 @@ angular.module('argus.directives.charts.lineChart', [])
 					}
 
 					ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
-					ChartElementService.renderBrushGraph(context, tempColor, metric, graph2, chartType, chartOpacity);
+					var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, graph2, chartType, chartOpacity);
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// annotations
 					if (!metric.flagSeries) return;
@@ -807,7 +808,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					}
 				}
 				series = tempSeries;
-
 				if (series.length > 0) {
 					scope.hideMenu = false;
 					// Update graph on new metric results

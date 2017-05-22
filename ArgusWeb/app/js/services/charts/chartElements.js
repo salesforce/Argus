@@ -394,7 +394,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'line ' + metric.graphClassName)
 			.style('stroke', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', "url('#clip_'" + chartId + "')")
 			.datum(metric.data)
 			.attr('d', line);
 	};
@@ -403,7 +403,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'area ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', "url('#clip_'" + chartId + "')")
 			.datum(metric.data)
 			.attr('d', area);
 	};
@@ -516,7 +516,7 @@ angular.module('argus.services.charts.elements', [])
 		// add the info box while hovering over
 		label.on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
-				if (label.attr('clicked') !== 'Yes';) {
+				if (label.attr('clicked') !== 'Yes') {
 					label.attr('clicked', 'Yes');
 					label.select('circle').attr('r', 16);
 				} else {

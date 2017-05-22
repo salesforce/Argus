@@ -94,6 +94,16 @@ angular.module('argus.services.utils', [])
 			var textA = a.name.toUpperCase();
 			var textB = b.name.toUpperCase();
 			return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+		},
+
+		objectWithoutProperties: function (obj, keys) {
+			var target = {};
+			for (var i in obj) {
+				if (keys.indexOf(i) >= 0) continue;
+				if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+				target[i] = obj[i];
+			}
+			return target;
 		}
 	};
 	return options;
