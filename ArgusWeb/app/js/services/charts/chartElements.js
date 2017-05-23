@@ -412,7 +412,8 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'line ' + metric.graphClassName)
 			.style('stroke', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			// please keep this line as it is
+			.style('clip-path', 'url(\'#clip_' + chartId + '\')')
 			.datum(metric.data)
 			.attr('d', line);
 	};
@@ -421,7 +422,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'area ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', 'url(\'#clip_' + chartId + '\')')
 			.datum(metric.data)
 			.attr('d', area);
 	};
@@ -430,7 +431,7 @@ angular.module('argus.services.charts.elements', [])
 		chart.append('path')
 			.attr('class', 'stackarea ' + metric.graphClassName)
 			.style('fill', color)
-			.style('clip-path', "url('#clip_'" + chartId + "'')")
+			.style('clip-path', 'url(\'#clip_' + chartId + '\')')
 			.datum(metric.stackedData)
 			.attr('d', stackarea);
 	};
@@ -449,7 +450,7 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			var newGraph = chart.append('path')
 				.attr('class', chartType + ' ' + metric.graphClassName)
-				.style('clip-path', "url('#clip_" + chartId + "')")
+				.style('clip-path', 'url(\'#clip_' + chartId + '\')')
 				.datum(metric.data)
 				.attr('d', graph);
 			setGraphColorStyle(newGraph, color, chartType, opacity);
@@ -608,15 +609,19 @@ angular.module('argus.services.charts.elements', [])
 
 	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, mouseX, extraY_) {
 		var datapoints = [];
-		series.forEach(function (metric, index) {
+		series.forEach(function (metric) {
 			var circle = focus.select('.' + metric.graphClassName);
+
 			var y;
 			if(metric.extraYAxis){
 				y = extraY_[metric.extraYAxis];
 			}else{
 				y = y_;
 			}
-			if (metric.data.length === 0 || !sources[index].displaying) {
+
+			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+			if (metric.data.length === 0 || !displayingInLegend) {
+
 				// if the metric has no data or is toggled to hide
 				circle.style('display', 'none');
 				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
@@ -671,9 +676,10 @@ angular.module('argus.services.charts.elements', [])
 
 	this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mouseX) {
 		var datapoints = [];
-		series.forEach(function (metric, index) {
+		series.forEach(function (metric) {
 			var circle = focus.select('.' + metric.graphClassName);
-			if (metric.data.length === 0 || !sources[index].displaying) {
+			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+			if (metric.data.length === 0 || !displayingInLegend) {
 				circle.style('display', 'none');
 				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 			} else {
@@ -870,7 +876,7 @@ angular.module('argus.services.charts.elements', [])
 
 	this.updateAnnotations = function (series, sources, x, flagsG, height) {
 		if (series === undefined) return;
-		series.forEach(function(metric, index) {
+		series.forEach(function(metric) {
 			if (metric.flagSeries === undefined) return;
 			var flagSeries = metric.flagSeries.data;
 			flagSeries.forEach(function(d) {
@@ -883,7 +889,8 @@ angular.module('argus.services.charts.elements', [])
 				if (ChartToolService.isNotInTheDomain(dx, x.domain())) {
 					label.style('display', 'none');
 				} else {
-					var displayProperty = sources[index].displaying? null: 'none';
+					var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+					var displayProperty = displayingInLegend? null: 'none';
 					label.style('display', displayProperty);
 					label.attr('transform', 'translate(' + x_Val + ', ' + y_Val + ')');
 				}
@@ -999,8 +1006,8 @@ angular.module('argus.services.charts.elements', [])
 
 	this.adjustTooltipItemsBasedOnDisplayingSeries = function (series, sources, x, tipItems, isDataStacked) {
 		var xDomain = x.domain();
-		series.forEach(function (metric, index) {
-			var source = sources[index];
+		series.forEach(function (metric) {
+			var source = ChartToolService.findMatchingMetricInSources(metric, sources);
 			// metric with no data
 			if (metric === null || metric.data === undefined || metric.data.length === 0 ||
 				ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
@@ -1029,7 +1036,8 @@ angular.module('argus.services.charts.elements', [])
 
 	this.redrawGraph = function (metric, source, chartType, graph, mainChart) {
 		// metric with no defined data or hidden
-		if (metric === null || metric.data === undefined || !source.displaying) return;
+		var displayingInLegend = source.displaying;
+		if (metric === null || metric.data === undefined || !displayingInLegend) return;
 		if (chartType === 'scatter') {
 			mainChart.selectAll('circle.dot.' + metric.graphClassName)
 				.attr('transform', function (d) {
@@ -1051,12 +1059,13 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.redrawGraphs = function (series, sources, chartType, graph, mainChart, extraGraph) {
-		 var chartElementService = this;
+		var chartElementService = this;
 		series.forEach(function (metric, index) {
+			var source = ChartToolService.findMatchingMetricInSources(metric, sources)
 			if(!metric.extraYAxis){
-				chartElementService.redrawGraph(metric, sources[index], chartType, graph, mainChart);
+				chartElementService.redrawGraph(metric, source, chartType, graph, mainChart);
 			}else{
-				chartElementService.redrawGraph(metric, sources[index], chartType, extraGraph[metric.extraYAxis], mainChart)
+				chartElementService.redrawGraph(metric, source, chartType, extraGraph[metric.extraYAxis], mainChart)
 			}
 		});
 	};
@@ -1074,7 +1083,8 @@ angular.module('argus.services.charts.elements', [])
 		}
 		series.forEach(function (metric, index) {
 			// metric with no data or hidden
-			if (metric === null || metric.data === undefined || metric.data.length === 0 || !sources[index].displaying) return;
+			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+			if (metric === null || metric.data === undefined || metric.data.length === 0 || !displayingInLegend) return;
 			// metric out of x domain
 			if (ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) return;
 

@@ -30,6 +30,7 @@
     "react": "^0.14.6",
     "react-dom": "^0.14.6",
     "screenfull": "^3.0.2",
+    "jwt-decode": "^2.2.0",
     "selectize": "0.12.4"
   },
   "devDependencies": {
