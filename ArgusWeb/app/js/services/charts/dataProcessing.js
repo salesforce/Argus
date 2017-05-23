@@ -104,6 +104,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		augmentExpressionWithControlsData: function(expression, controls) {
 			var result = expression;
+
 			for (var controlIndex in controls) {
 				var controlName = controls[controlIndex].name;
 				var controlValue = controls[controlIndex].value;
@@ -217,7 +218,6 @@ angular.module('argus.services.charts.dataProcessing', [])
 						processedMetric['expression'] = processedExpression;
 						processedMetric['name'] = metrics.name;
 						processedMetric['color'] = metrics.color;
-						processedMetric['extraYAxis'] = metrics.extraYAxis;
 						processedMetric['metricSpecificOptions'] = this.getMetricSpecificOptionsInArray(metricSpecificOptions);
 
 						// update metric list with new processed metric object
@@ -262,11 +262,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 					}
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
-					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.extraYAxis : null;
 					var objSeries = {
 						name: metricName,
 						color: metricColor,
-						extraYAxis: metricExtraYAxis,
 						data: series
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
