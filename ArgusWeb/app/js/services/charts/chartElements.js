@@ -107,7 +107,7 @@ angular.module('argus.services.charts.elements', [])
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
 		var brushSizeInfo = {
-			width: sizeInfo.width2,
+			width: sizeInfo.width,
 			height: sizeInfo.height2
 		};
 		var xy = ChartToolService.getXandY(timeInfo, brushSizeInfo, yScaleType, yScaleConfigValue);
@@ -122,7 +122,7 @@ angular.module('argus.services.charts.elements', [])
 
 		// actual brush
 		var brush = d3.brushX()
-			.extent([[0, 0], [sizeInfo.width2, sizeInfo.height2]])
+			.extent([[0, 0], [sizeInfo.width, sizeInfo.height2]])
 			.on('brush end', brushFunction);
 
 		return {
@@ -1137,8 +1137,8 @@ angular.module('argus.services.charts.elements', [])
 			svg.attr('height', sizeInfo.height + sizeInfo.margin.top + sizeInfo.margin.bottom);
 			svg_g.attr('height', sizeInfo.height);
 		}
-		svg.attr('width', sizeInfo.width2 + sizeInfo.margin.left + sizeInfo.margin.right);
-		svg_g.attr('width', sizeInfo.width)
+		svg.attr('width', sizeInfo.widthFull + sizeInfo.margin.left + sizeInfo.margin.right);
+		svg_g.attr('width', sizeInfo.widthFull)
 			.attr('transform', 'translate(' + sizeInfo.margin.left + ',' + sizeInfo.margin.top + ')');
 	};
 
@@ -1195,10 +1195,10 @@ angular.module('argus.services.charts.elements', [])
 				extraY2[iSet].range([sizeInfo.height2, 0]);
 			}
 		}
-		x2.range([0, sizeInfo.width2]);
+		x2.range([0, sizeInfo.width]);
 		brush.extent([
 			[0, 0],
-			[sizeInfo.width2, sizeInfo.height2]
+			[sizeInfo.width, sizeInfo.height2]
 		]);
 		brushG.call(brush);
 		xAxisG2.call(xAxis2);

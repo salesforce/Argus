@@ -62,7 +62,7 @@ angular.module('argus.services.charts.tools', [])
 		};
 		return {
 			width: newWidth - extraYAxisNum * extraYAxisPadding,
-			width2: newWidth,
+			widthFull: newWidth,
 			height: newHeight,
 			height2: newHeight2,
 			margin: newMargin,
