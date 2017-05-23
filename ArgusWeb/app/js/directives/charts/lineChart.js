@@ -68,15 +68,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			$scope.invalidSeries = [];
 			var hiddenSourceNames = [];
 
-
-			$scope.extraYAxisSet = new Set();
-			$scope.series.forEach(function(e){
-				if(e.extraYAxis){
-					$scope.extraYAxisSet.add(e.extraYAxis);
-				}
-			});
-
-            $scope.updateStorage = function () {
+			$scope.updateStorage = function () {
 				Storage.set('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId, $scope.menuOption);
 			};
 			// read menuOption from local storage; use default one if there is none
@@ -287,7 +279,7 @@ angular.module('argus.directives.charts.lineChart', [])
 		// compile: function (iElement, iAttrs, transclude) {},
 		link: function (scope, element) {
 			/**
-			 * not using chartIdIndex because when reload the chart by 'sumbit' button
+			 * not using chartId because when reload the chart by 'sumbit' button
 			 * or other single page app navigate button the chartId is not reset
 			 * to 1, only by refreshing the page would the chartId be reset to 0
 			 */
@@ -299,7 +291,6 @@ angular.module('argus.directives.charts.lineChart', [])
 			var endTime = scope.dateConfig.endTime;
 			var GMTon = scope.dateConfig.gmt;
 			var chartOptions = scope.chartConfig;
-			var extraYAxisSet = scope.extraYAxisSet;
 
 			/** 'smallChart' settings:
 				height: 150
@@ -366,14 +357,14 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 			var defaultContainerHeight = containerHeight;
 			// calculate width, height and margin for both brush and graphs
-			var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, scope.menuOption.isBrushOn, extraYAxisSet.size);
+			var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, scope.menuOption.isBrushOn);
 
 			//setup graph variables
-			var x, x2, y, y2, yScalePlain, extraY, extraYScalePlain, extraY2,
-				xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid, extraYAxisR,
-				graph, graph2, extraGraph, extraGraph2,
+			var x, x2, y, y2, yScalePlain,
+				xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid,
+				graph, graph2,
 				brush, brushMain, zoom,
-				svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG,//g
+				svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, //g
 				focus, context, clip, brushG, brushMainG, chartRect,//g
 				tooltip, tipBox, tipItems,
 				crossLine,
@@ -427,19 +418,6 @@ angular.module('argus.directives.charts.lineChart', [])
 				xGridG = gridsElement.xGridG;
 				yGridG = gridsElement.yGridG;
 
-				//extra YAxis setup
-				if(extraYAxisSet.size > 0){
-					var extraYAxisRelatedElements = ChartElementService.createExtraYAxisRelatedElements(x, x2, extraYAxisSet, allSize, yScaleType, yScaleConfigValue, scope.menuOption.yAxisConfig, mainChart);
-					extraY = extraYAxisRelatedElements.extraY;
-					extraYScalePlain = extraYAxisRelatedElements.extraYScalePlain;
-					extraYAxisR = extraYAxisRelatedElements.extraYAxisR;
-					extraYAxisRG = extraYAxisRelatedElements.extraYAxisRG;
-					extraGraph = extraYAxisRelatedElements.extraGraph;
-					extraY2 = extraYAxisRelatedElements.extraY2;
-					extraGraph2 = extraYAxisRelatedElements.extraGraph2;
-				}
-
-
 				//Brush, zoom, pan
 				//clip path
 				clip = ChartElementService.appendClip(allSize, svg_g, chartId);
@@ -478,44 +456,36 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 				seriesBeingDisplayed = currSeries;
 
-				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, isDataStacked, extraYAxisSet);
+				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, isDataStacked);
 				var xDomain = xyDomain.xDomain;
 				var yDomain = xyDomain.yDomain;
-				var extraYDomain = xyDomain.extraYDomain;
 
 				//startTime/endTime will not be 0
 				if(!startTime) startTime = xDomain[0];
 				if(!endTime) endTime = xDomain[1];
 				x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
-				function processYDomain(y, yDomain, agYMin, agYMax){
-					// if only a straight line is plotted
-					if (yDomain[0] === yDomain[1]) {
-						yDomain[0] -= ChartToolService.yAxisPadding;
-						yDomain[1] += 3 * ChartToolService.yAxisPadding;
-					}
 
-					// check if user has provide any y domain requirement
-					var mainChartYDomain = yDomain.slice();
-					if (agYMin !== undefined) mainChartYDomain[0] = agYMin;
-					if (agYMax !== undefined) mainChartYDomain[1] = agYMax;
-					if (yScaleType === 'log') {
-						// log(0) does not exist
-						if (mainChartYDomain[0] === 0) mainChartYDomain[0] = 1;
-						if (mainChartYDomain[1] === 0) mainChartYDomain[1] = 1;
-						if (yDomain[0] === 0) yDomain[0] = 1;
-						if (yDomain[1] === 0) yDomain[1] = 1;
-
-					}
-					y.domain(mainChartYDomain);
+				// if only a straight line is plotted
+				if (yDomain[0] === yDomain[1]) {
+					yDomain[0] -= ChartToolService.yAxisPadding;
+					yDomain[1] += 3 * ChartToolService.yAxisPadding;
 				}
+				// check if user has provide any y domain requirement
+				var mainChartYDomain = yDomain.slice();
+				if (agYMin !== undefined) mainChartYDomain[0] = agYMin;
+				if (agYMax !== undefined) mainChartYDomain[1] = agYMax;
+				if (yScaleType === 'log') {
+					// log(0) does not exist
+					if (mainChartYDomain[0] === 0) mainChartYDomain[0] = 1;
+					if (mainChartYDomain[1] === 0) mainChartYDomain[1] = 1;
+					if (yDomain[0] === 0) yDomain[0] = 1;
+					if (yDomain[1] === 0) yDomain[1] = 1;
+				}
+				y.domain(mainChartYDomain);
 
 				// update brush's x and y
-				processYDomain(y, yDomain, agYMin, agYMax);
 				x2.domain(xDomain);
 				y2.domain(yDomain);
-				for(var iSet of extraYAxisSet){
-					processYDomain(extraY2[iSet], extraYDomain[iSet], undefined, undefined); //TODO add agmin/max for extra yAxis
-				}
 
 				dateExtent = xDomain;
 
@@ -534,16 +504,9 @@ angular.module('argus.directives.charts.lineChart', [])
 							chartOpacity = 1;
 					}
 
-					if(!metric.extraYAxis){
-						ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
-						var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, graph2, chartType, chartOpacity);
-					}else{
-						ChartElementService.renderGraph(mainChart, tempColor, metric, extraGraph[metric.extraYAxis], chartId, chartType, chartOpacity);
-						var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, extraGraph2[metric.extraYAxis], chartType, chartOpacity);
-					}
-
+					ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
+					var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, graph2, chartType, chartOpacity);
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// annotations
 					if (!metric.flagSeries) return;
@@ -579,7 +542,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
 					ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-						seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked, extraY);
+						seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked);
 				}
 				ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 
@@ -615,7 +578,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					};
 					if (brushInNonEmptyRange) {
 						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-							seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked, extraY);
+							seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked);
 					}
 					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 				}
@@ -645,7 +608,6 @@ angular.module('argus.directives.charts.lineChart', [])
 				x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
 													//invert the x value in brush axis range to the
 													//value in domain
-
 
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
@@ -685,7 +647,6 @@ angular.module('argus.directives.charts.lineChart', [])
 				x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
 													//invert the x value in brush axis range to the
 													//value in domain
-
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
 				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, isDataStacked);
@@ -703,13 +664,11 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//redraw the line with restrict
 			function redraw() {
-				//many functions will result in redraw: first render, resize(triggers brush), toggleOn/Off series
 				//redraw
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
-					ChartElementService.redrawGraphs(seriesBeingDisplayed, scope.sources, chartType, graph, mainChart, extraGraph);
-
+					ChartElementService.redrawGraphs(seriesBeingDisplayed, scope.sources, chartType, graph, mainChart);
 				}
-				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
@@ -723,7 +682,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack, hiddenSourceNames);
 					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
 				}
-				ChartElementService.reScaleYAxis(seriesBeingDisplayed, scope.sources, x, y, yScalePlain, agYMin, agYMax, isDataStacked, extraY, extraYScalePlain, extraYAxisSet);
+				ChartElementService.reScaleYAxis(seriesBeingDisplayed, scope.sources, x, y, yScalePlain, agYMin, agYMax, isDataStacked);
 				redraw();
 			};
 
@@ -732,7 +691,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (series === 'series' || !series) {
 					return;
 				}
-				var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, scope.menuOption.isBrushOn, scope.changeToFullscreen, extraYAxisSet.size);
+				var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, scope.menuOption.isBrushOn, scope.changeToFullscreen);
 				allSize = tempSizeInfo.newSize;
 				containerHeight = tempSizeInfo.containerHeight;
 				containerWidth = tempSizeInfo.containerWidth;
@@ -748,8 +707,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeClip(allSize, clip, needToAdjustHeight);
 					ChartElementService.resizeChartRect(allSize, chartRect, needToAdjustHeight);
 					ChartToolService.updateXandYRange(allSize, x, y, needToAdjustHeight);
-					needToAdjustHeight && ChartToolService.updateExtraYRange(allSize, extraY, extraYAxisSet);
-					ChartElementService.resizeBrush(allSize, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight, extraY2, extraYAxisSet);
+					ChartElementService.resizeBrush(allSize, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight);
 					ChartElementService.resizeMainBrush(allSize, brushMain, brushMainG);
 					ChartElementService.resizeZoom(allSize, zoom);
 					ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
@@ -760,11 +718,11 @@ angular.module('argus.directives.charts.lineChart', [])
 						graph2.x = x2;
 						graph2.y = y2;
 					}
-					//ChartElementService.resizeGraphs(svg_g, graph, chartType); //This is not needed, since resize calls redraw and they both apply the graph method
-				//	ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType);
-					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
+					ChartElementService.resizeGraphs(svg_g, graph, chartType);
+					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType);
 
-					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
+
+					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis);
 
 					if (tempX[0].getTime() === x2.domain()[0].getTime() &&
 						tempX[1].getTime() === x2.domain()[1].getTime()) {
@@ -933,16 +891,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					yGrid.ticks(newValue.numTicksYaxis);
 					yAxisG.call(yAxis);
 					yGridG.call(yGrid);
-
-					yAxisR.ticks(newValue.numTicksYaxis)
-						.tickFormat(d3.format(newValue.formatYaxis));
-					yAxisRG.call(yAxisR);
-
-					for (var iSet of extraYAxisSet) {
-						extraYAxisR[iSet].ticks(newValue.numTicksYaxis)
-							.tickFormat(d3.format(newValue.formatYaxis));
-						extraYAxisRG[iSet].call(extraYAxisR[iSet]);
-					}
 				}
 			}, true);
 
