@@ -29,8 +29,13 @@ angular.module('argus.services.charts.tools', [])
 		marginRight= 60;
 	var mainChartRatio = 0.8, //ratio of height
 		brushChartRatio = 0.15;
+	var extraYAxisPadding = 35;
 
-	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn) {
+	this.getExtraYAxisPadding = function(){
+		return extraYAxisPadding;
+	};
+
+	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn, extraYAxisNum) {
 		var currentMarginTop = isSmallChart? marginTopSmall: marginTop;
 		var currentMarginRight = isSmallChart? marginRightSmall: marginRight;
 		var newWidth = newContainerWidth - marginLeft - currentMarginRight;
@@ -56,7 +61,8 @@ angular.module('argus.services.charts.tools', [])
 			left: marginLeft
 		};
 		return {
-			width: newWidth,
+			width: newWidth - extraYAxisNum * extraYAxisPadding,
+			widthFull: newWidth,
 			height: newHeight,
 			height2: newHeight2,
 			margin: newMargin,
@@ -148,6 +154,15 @@ angular.module('argus.services.charts.tools', [])
 
 	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
 		var xScale = timeInfo.gmt? d3.scaleUtc(): d3.scaleTime();
+		var y = this.getY(sizeInfo, yScaleType, yScaleConfigValue);
+		return {
+			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
+			y: y.y,
+			yScalePlain: y.yScalePlain
+		};
+	};
+
+	this.getY = function (sizeInfo, yScaleType, yScaleConfigValue){
 		var yScale, yScalePlain;
 		if (yScaleConfigValue === undefined || isNaN(yScaleConfigValue)) yScaleConfigValue = 10;
 		switch (yScaleType) {
@@ -166,21 +181,32 @@ angular.module('argus.services.charts.tools', [])
 		}
 
 		return {
-			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
 			y: yScale.range([sizeInfo.height, 0]),
 			yScalePlain: yScalePlain
 		};
 	};
 
-	this.getXandYDomainsOfSeries = function (series, isDataStacked) {
-		var allDatapoints = [];
+
+	this.getXandYDomainsOfSeries = function (series, isDataStacked, extraYAxisSet) {
+		var datapoints = [];
+		var extraDatapoints = {};
+
+		for(var iSet of extraYAxisSet){
+			extraDatapoints[iSet] = [];
+		}
+
 		series.forEach(function (metric) {
-			allDatapoints = allDatapoints.concat(metric.data);
+			if(metric.extraYAxis){
+				extraDatapoints[metric.extraYAxis] = extraDatapoints[metric.extraYAxis].concat(metric.data);
+			}else{
+				datapoints = datapoints.concat(metric.data)
+			}
 		});
 
 		return {
-			xDomain: this.getXDomainOfSeries(allDatapoints, isDataStacked),
-			yDomain: this.getYDomainOfSeries(allDatapoints, isDataStacked)
+			xDomain: this.getXDomainOfSeries(datapoints, isDataStacked),
+			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
+			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
 	};
 
@@ -217,11 +243,31 @@ angular.module('argus.services.charts.tools', [])
 		return extent;
 	};
 
+	this.getExtraYDomainOfSeries = function (extraDatapoints, extraYAxisSet){
+		var extraYDomain = {};
+
+		for(var iSet of extraYAxisSet){
+			extraYDomain[iSet] = d3.extent(extraDatapoints[iSet], function (d) {
+				return d[1];
+			});
+		}
+
+		return extraYDomain;
+	};
+
 	this.updateXandYRange = function (sizeInfo, x, y, needToAdjustHeight) {
 		if (needToAdjustHeight) {
 			y.range([sizeInfo.height, 0]);
 		}
 		x.range([0, sizeInfo.width]);
+	};
+
+	this.updateExtraYRange = function (sizeInfo, extraY, extraYAxisSet){
+		if (extraYAxisSet){
+			for(var iSet of extraYAxisSet){
+				extraY[iSet].range([sizeInfo.height, 0]);
+			}
+		}
 	};
 
 	this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
@@ -313,7 +359,7 @@ angular.module('argus.services.charts.tools', [])
 			// var result = angular.copy(metric);
 			var result = UtilService.objectWithoutProperties(metric, ['data']);
 			var sampler = everyNthPoint();
-			var bucketSize = Math.ceil(metric.data.length / (0.1 * containerWidth));
+			var bucketSize = Math.ceil(metric.data.length / (0.5 * containerWidth));
 			sampler.bucketSize(bucketSize);
 			result.data = sampler(metric.data);
 			return result
@@ -358,7 +404,7 @@ angular.module('argus.services.charts.tools', [])
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
-	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen) {
+	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen, extraYAxisNum) {
 		var containerWidth, containerHeight;
 		if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && changeToFullscreen) {
 			// set the graph size to be the same as the screen
@@ -370,7 +416,7 @@ angular.module('argus.services.charts.tools', [])
 			// no width defined via chart option: window width will be used
 			containerWidth = defaultContainerWidth < 0 ? container.offsetWidth : defaultContainerWidth;
 		}
-		var newSize = this.calculateDimensions(containerWidth, containerHeight, isSmallChart, isBrushOn);
+		var newSize = this.calculateDimensions(containerWidth, containerHeight, isSmallChart, isBrushOn, extraYAxisNum);
 		return {
 			newSize: newSize,
 			containerWidth: containerWidth,
