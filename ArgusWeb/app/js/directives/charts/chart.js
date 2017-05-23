@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false, $:false, console:false */
+/*global angular:false, $:false, console:false, growl:false */
 
 angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl',
@@ -113,8 +113,8 @@ angular.module('argus.directives.charts.chart', [])
 					tempSeries = [{
 						noData: true,
 						errorMessage: 'Empty result returned for the metric expression',
-						name: JSON.stringify(metricItem.expression).slice(1, -1),
-						color: 'Maroon'
+						name: metricItem.name? metricItem.name: JSON.stringify(metricItem.expression).slice(1, -1),
+						color: (metricItem.color) ? metricItem.color: 'Maroon'
 					}];
 				}
 
@@ -129,22 +129,23 @@ angular.module('argus.directives.charts.chart', [])
 				}
 			}, function (error) {
 				// growl.error(error.message);
-				console.log('Metric expression does not exist in database');
 				var tempSeries = [];
 				if (error.message !== undefined) {
+					console.log('an unexpected error is caught');
 					growl.error(error.message);
 					tempSeries.push({
 						noData: true,
 						errorMessage: 'Unknown error occured',
-						name: '',
-						color: 'Maroon'
+						name: metricItem.name? metricItem.name: '',
+						color: metricItem.color? metricItem.color: 'Maroon'
 					});
 				} else {
+					console.log('Metric expression does not exist in database');
 					tempSeries.push({
 						invalidMetric: true,
 						errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
-						name: error.config.params.expression,
-						color: 'Black'
+						name: metricItem.name? metricItem.name: error.config.params.expression,
+						color: metricItem.color? metricItem.color: 'Black'
 					});
 				}
 				Array.prototype.push.apply(series, tempSeries);

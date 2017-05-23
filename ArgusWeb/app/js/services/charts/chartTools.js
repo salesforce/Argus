@@ -2,7 +2,7 @@
 /*global angular:false, d3:false, fc:false, window:false, screen:false, console:false */
 
 angular.module('argus.services.charts.tools', [])
-.service('ChartToolService', [function() {
+.service('ChartToolService', ['UtilService', function(UtilService) {
 
 	this.getTimeAxis = function(timeSpan) {
 		var hours = [
@@ -147,7 +147,7 @@ angular.module('argus.services.charts.tools', [])
 	this.defaultEmptyGraphMessage = 'No graph available';
 
 	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
-		var xScale = timeInfo.GMTon? d3.scaleUtc(): d3.scaleTime();
+		var xScale = timeInfo.gmt? d3.scaleUtc(): d3.scaleTime();
 		var yScale, yScalePlain;
 		if (yScaleConfigValue === undefined || isNaN(yScaleConfigValue)) yScaleConfigValue = 10;
 		switch (yScaleType) {
@@ -238,11 +238,30 @@ angular.module('argus.services.charts.tools', [])
 		return tmpSources;
 	};
 
-	var downsampleThreshold = 1/2; // datapoints per pixel
-	this.downSample = function (series, containerWidth, downSampleMethod) {
+	var everyNthPoint = function () {
+		var bucketSize = 1;
+		var everyNthPoint = function(data){
+			var temp = [];
+			for(var i = 0; i < data.length; i+=bucketSize){
+				temp.push(data[i]);
+			}
+			return temp;
+		};
+		everyNthPoint.bucketSize = function(size){
+			bucketSize = size;
+		};
+		return everyNthPoint;
+	};
+
+	// var downsampleThreshold = 1/2; // datapoints per pixel
+	this.downSample = function (series, containerWidth, downSampleMethod, downSampleThreshold) {
+		if (downSampleThreshold === undefined) downSampleThreshold = 0.5;
 		if (!series) return series;
-		var temp = angular.copy(series);
-		if (downSampleMethod === '' || downSampleMethod === undefined) return temp;
+		if (downSampleMethod === '' || downSampleMethod === undefined) return series;
+		// var temp = angular.copy(series);
+		var temp = series.map(function(metric) {
+			return UtilService.objectWithoutProperties(metric, ['data']);
+		});
 
 		// Create the sampler
 		var sampler;
@@ -268,37 +287,39 @@ angular.module('argus.services.charts.tools', [])
 				break;
 		}
 
-		function everyNthPoint(){
-			var bucketSize = 1;
-			var everyNthPoint = function(data){
-				var temp = [];
-				for(var i = 0; i < data.length; i+=bucketSize){
-					temp.push(data[i]);
-				}
-				return temp;
-			};
-			everyNthPoint.bucketSize = function(size){
-				bucketSize = size;
-			};
-			return everyNthPoint;
-		}
-
 		// Run the sampler
 		if (sampler) {
 			series.forEach(function(metric, index){
 				//determine whether to downsample or not
 				//downsample if there are too many datapoints per pixel
-				if (metric.data.length / containerWidth > downsampleThreshold) {
+				if (metric.data.length / containerWidth > downSampleThreshold) {
 					//determine bucket size
-					var bucketSize = Math.ceil(metric.data.length / (downsampleThreshold * containerWidth));
+					var bucketSize = Math.ceil(metric.data.length / (downSampleThreshold * containerWidth));
 					// Configure the size of the buckets used to downsample the data.
 					sampler.bucketSize(bucketSize);
 					temp[index].data  = sampler(metric.data);
+				} else {
+					// no need to downsample; just copy over the data
+					temp[index].data  = angular.copy(metric.data);
 				}
 			});
 		}
 
 		return temp;
+	};
+
+	this.downSampleASingleMetricsDataEveryTenPoints = function (metric, containerWidth) {
+		if (metric.data.length / containerWidth > 0.1) {
+			// var result = angular.copy(metric);
+			var result = UtilService.objectWithoutProperties(metric, ['data']);
+			var sampler = everyNthPoint();
+			var bucketSize = Math.ceil(metric.data.length / (0.1 * containerWidth));
+			sampler.bucketSize(bucketSize);
+			result.data = sampler(metric.data);
+			return result
+		} else {
+			return metric
+		}
 	};
 
 	this.setZoomExtent = function (series, zoom, k) {
@@ -415,15 +436,19 @@ angular.module('argus.services.charts.tools', [])
 	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
 		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
 		var newSeries = series.map(function (metric, index) {
-			metric.data = stackedData[index];
-			return metric;
+			var newMetric = UtilService.objectWithoutProperties(metric, ['data']);
+			newMetric.data = stackedData[index];
+			return newMetric;
 		});
 		return newSeries;
 	};
 
 	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {
 		var xDomain = x.domain();
-		var newDisplayingSeries = angular.copy(series);
+		// var newDisplayingSeries = angular.copy(series);
+		var newDisplayingSeries = series.map(function(metric) {
+			return UtilService.objectWithoutProperties(metric, ['data']);
+		});
 		series.forEach(function (metric, index) {
 			if (isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
 				newDisplayingSeries[index].data = [];
@@ -440,13 +465,13 @@ angular.module('argus.services.charts.tools', [])
 				end = bisectDate(metric.data, xDomain[1], start) + 1;
 			}
 			newDisplayingSeries[index].data = metric.data.slice(start, end + 1);
-			if (newDisplayingSeries[index].data === undefined) {
-				console.log('abc');
-			}
 		});
-		if (newDisplayingSeries[0].data.length === 0) {
-			console.log('abc');
-		}
 		return newDisplayingSeries;
 	};
+
+	this.findMatchingMetricInSources = function (metric, sources) {
+		return sources.filter(function(source) {
+			return source.name === metric.name;
+		})[0];
+	}
 }]);
