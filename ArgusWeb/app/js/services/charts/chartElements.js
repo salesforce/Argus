@@ -1113,22 +1113,17 @@ angular.module('argus.services.charts.elements', [])
 			// make sure the domain has more than one value
 			var buffer = (yMax - yMin) * bufferRatio;
 			if (buffer === 0) buffer = ChartToolService.yAxisPadding;
-
-			yMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
-			yMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
-			y.domain([yMin, yMax]);
-
-			var resultYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
-			var resultYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + buffer)): agYMax;
+			var resultYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - 0.5*buffer)): agYMin;
+			var resultYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.5*buffer)): agYMax;
 			// for stackarea chart types to not have buffer at the bottom for negative values
-			// if (isDataStacked && resultYMin < 0 && yMin === 0) resultYMin = 0;
+			if (isDataStacked && resultYMin < 0 && yMin !== yMax) resultYMin = 0;
 			y.domain([resultYMin, resultYMax]);
 		}
 
 		processYDomain(datapoints, y, yScalePlain, agYMin, agYMax);
 
 		for(iSet of extraYAxisSet){
-			processYDomain(extraDatapoints[iSet], extraY[iSet], extraYScalePlain[iSet], undefined, undefined);
+			processYDomain(extraDatapoints[iSet], extraY[iSet], extraYScalePlain[iSet]);
 		}
 	};
 
