@@ -230,7 +230,7 @@ angular.module('argus.services.charts.tools', [])
 			if (dataPoints === undefined || dataPoints.length === 0) {
 				extent = [0, 0];
 			} else {
-				var yMin = Number.MAX_VALUE, yMax = Number.MIN_VALUE;
+				var yMin = Number.MAX_VALUE, yMax = Number.MAX_VALUE * (-1);
 				dataPoints.map(function (d) {
 					if (d[0] < yMin) yMin = d[0];
 					if (d[1] > yMax) yMax = d[1];

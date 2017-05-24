@@ -522,7 +522,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					var chartOpacity;
+					var chartOpacity, downSampledMetric;
 					switch (chartType) {
 						case 'area':
 							chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
@@ -534,15 +534,18 @@ angular.module('argus.directives.charts.lineChart', [])
 							chartOpacity = 1;
 					}
 
-					if(!metric.extraYAxis){
-						ChartElementService.renderGraph(mainChart, tempColor, metric, graph, chartId, chartType, chartOpacity);
-						var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, graph2, chartType, chartOpacity);
-					}else{
-						ChartElementService.renderGraph(mainChart, tempColor, metric, extraGraph[metric.extraYAxis], chartId, chartType, chartOpacity);
-						var downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, extraGraph2[metric.extraYAxis], chartType, chartOpacity);
+					var tempGraph, tempGraph2;
+					if (!metric.extraYAxis) {
+						tempGraph = graph;
+						tempGraph2 = graph2;
+					} else {
+						tempGraph = extraGraph[metric.extraYAxis];
+						tempGraph2 = extraGraph2[metric.extraYAxis];
 					}
+
+					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+					downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// annotations
