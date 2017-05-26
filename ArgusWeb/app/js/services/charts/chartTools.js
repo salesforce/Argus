@@ -406,7 +406,7 @@ angular.module('argus.services.charts.tools', [])
 
 	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen, extraYAxisNum) {
 		var containerWidth, containerHeight;
-		if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && changeToFullscreen) {
+		if (changeToFullscreen && (window.innerHeight === screen.height || container.offsetHeight === window.innerHeight)) {
 			// set the graph size to be the same as the screen
 			containerWidth = screen.width;
 			containerHeight = screen.height * 0.95;

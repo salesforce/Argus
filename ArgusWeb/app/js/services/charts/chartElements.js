@@ -937,10 +937,10 @@ angular.module('argus.services.charts.elements', [])
 		svg_g.selectAll(brushClassName).call(brush.move, null);
 	};
 
-	this.resetBothBrushes = function (svg_g, brushClassNames, brush) {
+	this.resetBothBrushes = function (svg_g, brushes) {
 		var resetBrush = this.resetBrush;
-		brushClassNames.map(function (brushClassName) {
-			resetBrush(svg_g, brushClassName, brush);
+		brushes.map(function (item) {
+			resetBrush(svg_g, item.name, item.brush);
 		});
 	};
 

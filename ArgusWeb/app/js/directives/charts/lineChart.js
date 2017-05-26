@@ -645,10 +645,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				// ignore the case when it is called by the zoomed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'zoom' )) return;
 				var s = d3.event.selection || x2.range();
+				if (angular.equals(x.domain(), s.map(x2.invert, x2))) return;
 				x.domain(s.map(x2.invert, x2));     //rescale the domain of x axis
 													//invert the x value in brush axis range to the
 													//value in domain
-
 
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
@@ -771,7 +771,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 					if (tempX[0].getTime() === x2.domain()[0].getTime() &&
 						tempX[1].getTime() === x2.domain()[1].getTime()) {
-						ChartElementService.resetBothBrushes(svg_g, ['.brush', '.brushMain'], brush);
+						ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 					} else {
 						//restore the zoom&brush
 						context.select('.brush').call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
@@ -863,7 +863,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 					// dont need to setup everything for a small chart
 					ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
-					ChartElementService.resetBothBrushes(svg_g, ['.brush', '.brushMain'], brush); //to remove the brush cover first for user the drag
+					ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 					setupMenu();
 				} else {
 					// generate content for no graph message
@@ -904,32 +904,37 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 
 			// watch changes from chart options modal to update graph
-			scope.$watch('menuOption.colorPalette', function (newValue) {
+			scope.$watch('menuOption.colorPalette', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType);
 				}
 			}, true);
 
-			scope.$watch('menuOption.dateFormat', function (newValue) {
+			scope.$watch('menuOption.dateFormat', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					dateFormatter = ChartToolService.generateDateFormatter(GMTon, newValue, isSmallChart);
 					ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 				}
 			}, true);
 
-			scope.$watch('menuOption.isBrushMainOn', function (newValue) {
+			scope.$watch('menuOption.isBrushMainOn', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					ChartElementService.toggleElementShowAndHide(newValue, brushMainG);
 				}
 			}, true);
 
-			scope.$watch('menuOption.isWheelOn', function (newValue) {
+			scope.$watch('menuOption.isWheelOn', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					ChartElementService.toggleWheel(newValue, zoom, chartRect, brushMainG);
 				}
 			}, true);
 
-			scope.$watch('menuOption.yAxisConfig', function (newValue) {
+			scope.$watch('menuOption.yAxisConfig', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					yAxis.ticks(newValue.numTicksYaxis)
 						.tickFormat(d3.format(newValue.formatYaxis));
@@ -949,23 +954,26 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}, true);
 
-			scope.$watch('menuOption.isBrushOn', function (newValue) {
+			scope.$watch('menuOption.isBrushOn', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					ChartElementService.toggleElementShowAndHide(newValue, context);
 					resize();
 				}
 			}, true);
 
-			scope.$watch('menuOption.isTooltipOn', function (newValue) {
+			scope.$watch('menuOption.isTooltipOn', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					ChartElementService.toggleElementShowAndHide(newValue, tooltip);
 					if (scope.menuOption.isTooltipOn) mouseOutChart(); // hide the left over tooltip on the chart
 				}
 			}, true);
 
-			scope.$watch('menuOption.isSyncChart', function (newValues) {
+			scope.$watch('menuOption.isSyncChart', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
-					if (newValues) {
+					if (newValue) {
 						addToSyncCharts();
 					} else {
 						removeFromSyncCharts();
@@ -973,7 +981,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}, true);
 
-			scope.$watch('menuOption.downSampleMethod', function (newValue) {
+			scope.$watch('menuOption.downSampleMethod', function (newValue, oldValue) {
+				if (newValue === oldValue) return;
 				if (!scope.hideMenu) {
 					currSeries = ChartToolService.downSample(series, containerWidth, newValue);
 					if (isDataStacked) {
