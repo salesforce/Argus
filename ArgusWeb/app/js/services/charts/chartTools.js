@@ -359,7 +359,7 @@ angular.module('argus.services.charts.tools', [])
 			// var result = angular.copy(metric);
 			var result = UtilService.objectWithoutProperties(metric, ['data']);
 			var sampler = everyNthPoint();
-			var bucketSize = Math.ceil(metric.data.length / (0.5 * containerWidth));
+			var bucketSize = Math.ceil(metric.data.length / (0.1 * containerWidth));
 			sampler.bucketSize(bucketSize);
 			result.data = sampler(metric.data);
 			return result

@@ -496,11 +496,11 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.renderFocusCircle = function (focus, color, className) {
+	this.renderFocusCircle = function (focus, color, className, extraYAxis) {
 		focus.append('circle')
 			.attr('r', circleRadius * 1.1)
 			.attr('fill', color)
-			.attr('class', className);
+			.attr('class', className + ' extraYAxis_' + extraYAxis);
 	};
 
 	this.renderTooltip = function (tipItems, color, className) {
@@ -852,26 +852,35 @@ angular.module('argus.services.charts.elements', [])
 		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
 	};
 
-	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange) {
-		if (brushInNonEmptyRange) {
-			focus.selectAll('circle')
-				.each(function () {
-					var circle = d3.select(this);
-					var displayProperty = circle.attr('displayProperty');
-					var dataX = circle.attr('dataX');
-					var dataY = circle.attr('dataY');
+	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange, extraY, extraYAxisSet) {
+		function processCircle(y, extraYAxis){
+			if (brushInNonEmptyRange) {
+				focus.selectAll('circle.extraYAxis_'+extraYAxis)
+					.each(function () {
+						var circle = d3.select(this);
+						var displayProperty = circle.attr('displayProperty');
+						var dataX = circle.attr('dataX');
+						var dataY = circle.attr('dataY');
 
-					circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')')
-						.style('display', displayProperty);
+						circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')')
+							.style('display', displayProperty);
 
-					if (ChartToolService.isNotInTheDomain(dataX, x.domain())) {
-						circle.style('display', 'none');
-					}
-				});
-		} else {
-			// nothing needs to be shown
-			focus.selectAll('circle').style('display', 'none');
+						if (ChartToolService.isNotInTheDomain(dataX, x.domain())) {
+							circle.style('display', 'none');
+						}
+					});
+			} else {
+				// nothing needs to be shown
+				focus.selectAll('circle.extraYAxis_').style('display', 'none');
+			}
 		}
+
+		processCircle(y, '');
+
+		for(var iSet of extraYAxisSet){
+			processCircle(extraY[iSet], iSet);
+		}
+
 	};
 
 	this.updateAnnotations = function (series, sources, x, flagsG, height) {
@@ -1062,10 +1071,10 @@ angular.module('argus.services.charts.elements', [])
 		var chartElementService = this;
 		series.forEach(function (metric, index) {
 			var source = ChartToolService.findMatchingMetricInSources(metric, sources)
-			if(!metric.extraYAxis){
-				chartElementService.redrawGraph(metric, source, chartType, graph, mainChart);
-			}else{
+			if(metric.extraYAxis){
 				chartElementService.redrawGraph(metric, source, chartType, extraGraph[metric.extraYAxis], mainChart)
+			}else{
+				chartElementService.redrawGraph(metric, source, chartType, graph, mainChart);
 			}
 		});
 	};

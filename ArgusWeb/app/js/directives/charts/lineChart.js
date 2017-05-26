@@ -568,7 +568,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				currSeries.forEach(function (metric) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName);
+					if(metric.extraYAxis){
+						ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, metric.extraYAxis);
+					}else{
+						ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, '');
+					}
 				});
 				//the graph rectangle area
 				chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
@@ -700,7 +704,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				// sync the crossLine
 				var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
 				var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
-				ChartElementService.updateFocusCirclesPositionWithZoom(x, y, focus, brushInNonEmptyRange);
+				ChartElementService.updateFocusCirclesPositionWithZoom(x, y, focus, brushInNonEmptyRange, extraY, extraYAxisSet);
 				ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 			}
 
