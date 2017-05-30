@@ -32,8 +32,10 @@
 package com.salesforce.dva.argus.service.schema;
 
 import com.google.inject.Inject;
+import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -56,7 +58,7 @@ import java.util.Map.Entry;
 /**
  * The default implementation of the discover service. 
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com)
  */
 public class DefaultDiscoveryService extends DefaultService implements DiscoveryService {
 
@@ -82,38 +84,33 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<MetricSchemaRecord> filterRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex,
-        int limit, MetricSchemaRecord scanFrom) {
+    public List<MetricSchemaRecord> filterRecords(SchemaQuery query) {
         requireNotDisposed();
-        SystemAssert.requireArgument(scopeRegex != null && !scopeRegex.isEmpty(), "Scope regex cannot be null or empty.");
-        SystemAssert.requireArgument(metricRegex != null && !metricRegex.isEmpty(), "Metric regex cannot be null or empty.");
-        SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer");
-
-        MetricSchemaRecordQuery query = new MetricSchemaRecordQuery(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex);
-
+        
         _logger.debug(query.toString());
-
-        long start = System.nanoTime();
-        List<MetricSchemaRecord> result = _schemaService.get(query, limit, scanFrom);
-
-        _logger.debug("Time to filter records in ms: " + (System.nanoTime() - start) / 1000000);
-        return result;
+        
+        if(query instanceof MetricSchemaRecordQuery) {
+        	long start = System.nanoTime();
+        	List<MetricSchemaRecord> result = _schemaService.get(MetricSchemaRecordQuery.class.cast(query));
+            _logger.debug("Time to filter records in ms: " + (System.nanoTime() - start) / 1000000);
+            return result;
+        } else {
+        	long start = System.nanoTime();
+        	List<MetricSchemaRecord> result = _schemaService.keywordSearch(KeywordQuery.class.cast(query));
+            _logger.debug("Time to filter records in ms: " + (System.nanoTime() - start) / 1000000);
+            return result;
+        }
+        
     }
 
     @Override
-    public List<MetricSchemaRecord> getUniqueRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex,
-        RecordType type, int limit, MetricSchemaRecord scanFrom) {
+    public List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type) {
         requireNotDisposed();
-        SystemAssert.requireArgument(scopeRegex != null && !scopeRegex.isEmpty(), "Scope regex cannot be null or empty.");
-        SystemAssert.requireArgument(metricRegex != null && !metricRegex.isEmpty(), "Metric regex cannot be null or empty.");
-        SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer");
-
-        MetricSchemaRecordQuery query = new MetricSchemaRecordQuery(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex);
 
         _logger.debug(query.toString());
 
         long start = System.nanoTime();
-        List<MetricSchemaRecord> records = _schemaService.getUnique(query, limit, type, scanFrom);
+        List<MetricSchemaRecord> records = _schemaService.getUnique(query, type);
 
         _logger.debug("Time to get Unique Records in ms: " + (System.nanoTime() - start) / 1000000);
         return records;
@@ -128,7 +125,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         List<MetricQuery> expandedQueryList = null;
         
         long start = System.nanoTime();
-        MetricSchemaRecord scanStartRow=null;
+        //MetricSchemaRecord scanStartRow = null;
         
 
         if (DiscoveryService.isWildcardQuery(query)) {
@@ -141,11 +138,17 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             
             Map<String, MetricQuery> queries = new HashMap<>();
             if (query.getTags() == null || query.getTags().isEmpty()) {
-                MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), 
-                		query.getScope(), query.getMetric(), "*", "*");
+                
+            	MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().namespace(query.getNamespace())
+																						            			  .scope(query.getScope())
+																						            			  .metric(query.getMetric())
+																						            			  .tagKey("*")
+																						            			  .tagValue("*")
+																						            			  .limit(limit)
+																						            			  .build();
 
                 while (true) {
-                	List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, scanStartRow);
+                	List<MetricSchemaRecord> records = _schemaService.get(schemaQuery);
                     for (MetricSchemaRecord record : records) {
                         String identifier = _getIdentifier(record);
 
@@ -166,15 +169,22 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                     
-                    scanStartRow = records.get(records.size() - 1);
+                    //scanStartRow = records.get(records.size() - 1);
+                    schemaQuery.setScanFrom(records.get(records.size() - 1));
                 }
                 
                 expandedQueryList = new ArrayList<>(queries.values());
             } else {
             	Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
-                    MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
-                        tag.getKey(), tag.getValue());
+                	
+                    MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().namespace(query.getNamespace())
+																							            			  .scope(query.getScope())
+																							            			  .metric(query.getMetric())
+																							            			  .tagKey(tag.getKey())
+																							            			  .tagValue(tag.getValue())
+																							            			  .limit(limit)
+																							            			  .build();
                     
                     boolean containsWildcard = SchemaService.containsWildcard(query.getScope())
                 							|| SchemaService.containsWildcard(query.getMetric())
@@ -189,7 +199,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     		records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(), 
                     				tag.getKey(), tag.getValue()));
                     	} else {
-                    		records = _schemaService.get(schemaQuery, limit, scanStartRow);
+                    		records = _schemaService.get(schemaQuery);
                     	}
 
                         for (MetricSchemaRecord record : records) {
@@ -228,7 +238,9 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         if (records.size() < limit) {
                             break;
                         }
-                        scanStartRow = records.get(records.size() - 1);
+                        
+                        //scanStartRow = records.get(records.size() - 1);
+                        schemaQuery.setScanFrom(records.get(records.size() - 1));
                     }
                 }
                 
