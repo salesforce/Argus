@@ -18,6 +18,15 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
 
+
+/**
+ * This test suite tests the trie-based caching in the AbstractSchemaService class. Although we are instantiating 
+ * ElasticSearchSchemaService object, the implemtationSpecificPut (which is part of ES Schema Service) has been 
+ * mocked out. In essence, these tests only test the caching functionality. 
+ * 
+ * @author bhinav.sura
+ *
+ */
 public class AbstractSchemaServiceTest extends AbstractTest {
 	
 	@Test
