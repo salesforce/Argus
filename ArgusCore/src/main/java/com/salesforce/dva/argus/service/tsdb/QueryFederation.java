@@ -13,13 +13,18 @@ public abstract class QueryFederation{
 	/**
 	 *  Federate queries to obtain a new queries list 
 	 *
-	 * @param   queries        The list of queries to federate.
+	 * @param   queries  The list of queries to federate.
 	 * @return  The federated list of queries
 	 */
-
 	public abstract Map<MetricQuery, List<MetricQuery>> federateQueries(List<MetricQuery> queries);
-	
-	/* Merge metrics from smaller time queries */
+
+	/**
+	 *  Merge metrics from smaller sub queries 
+	 *
+	 * @param   mapQuerySubQueries  Mapping from original query to list of sub queries
+	 * @param   subQueryMetricsMap  Result map of sub queries to metric
+	 * @return  Map from original query to merged metrics
+	 */
 	public Map<MetricQuery, List<Metric>> join(Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries, Map<MetricQuery, List<Metric>> subQueryMetricsMap) {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = new HashMap<>();
 		Map<String, Metric> metricMergeMap = new HashMap<>();
@@ -51,5 +56,5 @@ public abstract class QueryFederation{
 		}
 		return queryMetricsMap;
 	}
-	
+
 }
