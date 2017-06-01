@@ -102,7 +102,8 @@ angular.module('argus.services', [
 	'argus.services.downloadHelper',
 	'argus.services.agTableService',
 	'argus.services.tokenAuthInterceptor',
-	'argus.services.users'
+	'argus.services.users',
+    'argus.services.browsing'
 ]);
 
 // Controllers
@@ -120,7 +121,8 @@ angular.module('argus.controllers', [
 	'argus.controllers.metricelements',
 	'argus.controllers.namespace',
 	'argus.controllers.viewelements',
-	'argus.controllers.viewMetrics'
+	'argus.controllers.viewMetrics',
+    'argus.controllers.metricsBrowsing'
 ]);
 
 // Directives
@@ -153,6 +155,7 @@ require('./controllers/metricElements');
 require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
+require('./controllers/metricsBrowsing');
 
 // services
 require('./services/auth');
@@ -190,7 +193,8 @@ require('./services/factories/notifications');
 require('./services/factories/reinstateUser');
 require('./services/factories/triggers');
 require('./services/factories/triggersMap');
-require("./services/factories/users");
+require('./services/factories/users');
+require('./services/factories/browsing');
 
 // directives
 require('./directives/headerMenu');
