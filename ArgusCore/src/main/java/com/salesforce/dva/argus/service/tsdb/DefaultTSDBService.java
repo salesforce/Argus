@@ -183,11 +183,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 				if (!readBackupEndpoint.isEmpty())
 					_readPortMap.put(readBackupEndpoint, getClient(readBackupEndpoint, connCount / 2, connTimeout, socketTimeout));
 			}
-			for (String readEndpoint : _readEndPoints) {
-
-
-				_readPortMap.put(readEndpoint, getClient(readEndpoint, connCount / 2, connTimeout, socketTimeout));
-			}
 
 			for(String writeEndpoint : _writeEndpoints) {
 				CloseableHttpClient writeHttpClient = getClient(writeEndpoint, connCount / 2, connTimeout, socketTimeout);
@@ -436,7 +431,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
 		for (AnnotationQuery query : queries) {
 			long start = System.currentTimeMillis();
-			int index = 0;
 			for (String readEndPoint : _readEndPoints) {
 				String pattern = readEndPoint + "/api/query?{0}";
 				String requestUrl = MessageFormat.format(pattern, query.toString());
@@ -448,22 +442,19 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 				} catch (Exception ex) {
 					_logger.warn("Failed to get annotations from TSDB. Reason: " + ex.getMessage());
 					try {
-						if (!_readBackupEndPointsMap.get(index).isEmpty()) {
+						if (!_readBackupEndPointsMap.get(readEndPoint).isEmpty()) {
 							_logger.warn("Trying to read from Backup endpoint");
-							pattern = _readBackupEndPointsMap.get(index) + "/api/query?{0}";
+							pattern = _readBackupEndPointsMap.get(readEndPoint) + "/api/query?{0}";
 							requestUrl = MessageFormat.format(pattern, query.toString());							
-							HttpResponse response = executeHttpRequest(HttpMethod.GET, requestUrl, _readPortMap.get( _readBackupEndPointsMap.get(index)), null);
+							HttpResponse response = executeHttpRequest(HttpMethod.GET, requestUrl, _readPortMap.get( _readBackupEndPointsMap.get(readEndPoint)), null);
 							wrappers = toEntity(extractResponse(response), new TypeReference<AnnotationWrappers>() {
 							});
 						}
 					} catch (Exception e) {
 						_logger.warn("Failed to get annotations from Backup TSDB. Reason: " + e.getMessage());
-						index++;
 						continue;
 					}					
 				} 
-
-				index++;
 
 				if (wrappers != null) {
 					for (AnnotationWrapper wrapper : wrappers) {
