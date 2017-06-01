@@ -172,7 +172,6 @@ public class MetricQuery extends AnnotationQuery {
 		_downsamplingPeriod = downsamplingPeriod;
 	}
 
-
 	/**
 	 * Returns the endpoint for this query
 	 *
@@ -190,8 +189,6 @@ public class MetricQuery extends AnnotationQuery {
 	public void setReadEndPoint(String readEndPoint) {
 		_readEndPoint = readEndPoint;
 	}
-
-
 
 	/**
 	 * Returns the TSDB metric name.
