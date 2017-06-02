@@ -371,7 +371,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
 
-		QueryFederation queryFederation1 = new TimeFederationService();
+		QueryFederation queryFederation1 = new TimeQueryFederation();
 		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation1.federateQueries(queries);
 
 		List<MetricQuery> queriesSplit = new ArrayList<>();
@@ -379,7 +379,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			queriesSplit.addAll(subQueries);
 		}
 
-		QueryFederation queryFederation2 = new EndPointFederationService(_readEndPoints);
+		QueryFederation queryFederation2 = new EndPointQueryFederation(_readEndPoints);
 		Map<MetricQuery, List<MetricQuery>> mapQueryEndPointSubQueries = queryFederation2.federateQueries(queriesSplit);
 
 		List<MetricQuery> queriesSplit2 = new ArrayList<>();

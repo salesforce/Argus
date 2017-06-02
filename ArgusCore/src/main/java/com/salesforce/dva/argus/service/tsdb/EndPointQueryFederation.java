@@ -10,10 +10,10 @@ import java.util.Map;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class EndPointFederationService extends QueryFederation{
+public class EndPointQueryFederation extends QueryFederation{
 	private final List<String> _readEndPoints;
 
-	EndPointFederationService(List<String> readEndPoints) {
+	EndPointQueryFederation(List<String> readEndPoints) {
 		_readEndPoints = readEndPoints;
 	}
 

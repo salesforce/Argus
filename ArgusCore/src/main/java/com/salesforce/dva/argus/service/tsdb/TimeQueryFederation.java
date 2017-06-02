@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
-public class TimeFederationService extends QueryFederation{
+public class TimeQueryFederation extends QueryFederation{
 
 	private static final long TIME_FEDERATE_LIMIT_MILLIS = 86400000L;
 
