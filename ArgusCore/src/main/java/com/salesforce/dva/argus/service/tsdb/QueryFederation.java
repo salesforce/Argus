@@ -8,7 +8,11 @@ import java.util.Map;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
-
+/**
+ * The base class for performing query federations/forks and metric result merge/join.
+ *
+ * @author  Dilip Devaraj (ddevaraj@salesforce.com)
+ */
 public abstract class QueryFederation{
 	/**
 	 *  Federate queries to obtain a new queries list 

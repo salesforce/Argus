@@ -5,6 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Federation by forking large range queries into smaller range sub queries
+ *
+ * @author  Dilip Devaraj (ddevaraj@salesforce.com)
+ */
 public class TimeFederationService extends QueryFederation{
 
 	private static final long TIME_FEDERATE_LIMIT_MILLIS = 86400000L;

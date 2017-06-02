@@ -5,6 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Federation across multiple endpoints
+ *
+ * @author  Dilip Devaraj (ddevaraj@salesforce.com)
+ */
 public class EndPointFederationService extends QueryFederation{
 	private final List<String> _readEndPoints;
 

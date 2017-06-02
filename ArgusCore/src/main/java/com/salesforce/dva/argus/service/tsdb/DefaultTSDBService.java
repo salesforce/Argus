@@ -743,23 +743,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		return result;
 	}
 
-	/* Federate query to list of Read TSDB endpoints by using an executor service future */
-	/*	private Map<MetricQuery, List<Future<List<Metric>>>> endPointFederateQueries(List<MetricQuery> queries) {
-		Map<MetricQuery, List<Future<List<Metric>>>> queryFuturesMap = new HashMap<>();
-		for (MetricQuery query : queries) {
-			String requestBody = fromEntity(query);
-			List<Future<List<Metric>>> futures = new ArrayList<>();
-			for (String readEndpoint : _readEndPoints) {
-				String requestUrl = readEndpoint + "/api/query";
-				futures.add(_executorService.submit(new QueryWorker(requestUrl, readEndpoint, requestBody)));
-			}
-			queryFuturesMap.put(query, futures);
-		}
-		return queryFuturesMap;
-	}
-	 */
-
-	/* Merge metrics from different endpoints for each query, by reading from future */
+	/* Gets metrics for a list of queries */
 	private Map<MetricQuery, List<Metric>> getSubQueryMetrics(List<MetricQuery> queries) {
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
 
