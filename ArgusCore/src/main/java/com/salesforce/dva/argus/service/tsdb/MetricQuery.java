@@ -56,7 +56,7 @@ public class MetricQuery extends AnnotationQuery {
 	private Aggregator _aggregator;
 	private Aggregator _downsampler;
 	private Long _downsamplingPeriod;
-	private String _readEndPoint;
+	private MetricQueryContext _metricQueryContext;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -76,7 +76,7 @@ public class MetricQuery extends AnnotationQuery {
 		setAggregator(clone.getAggregator());
 		setDownsampler(clone.getDownsampler());
 		setDownsamplingPeriod(clone.getDownsamplingPeriod());
-		setReadEndPoint(clone.getReadEndPoint());
+		setMetricQueryContext(clone.getMetricQueryContext());
 	}
 
 	/**
@@ -173,21 +173,21 @@ public class MetricQuery extends AnnotationQuery {
 	}
 
 	/**
-	 * Returns the endpoint for this query
+	 * Returns the context for this query
 	 *
-	 * @return  The endpoint for query
+	 * @return  The context for query
 	 */
-	public String getReadEndPoint() {
-		return _readEndPoint;
+	public MetricQueryContext getMetricQueryContext() {
+		return _metricQueryContext;
 	}
 
 	/**
-	 * Sets the endpoint for this query
+	 * Sets any extra context for this query
 	 *
-	 * @param  readEndPoint  The endpoint for query
+	 * @param  readEndPoint  The context for query
 	 */
-	public void setReadEndPoint(String readEndPoint) {
-		_readEndPoint = readEndPoint;
+	public void setMetricQueryContext(MetricQueryContext metricQueryContext) {
+		_metricQueryContext = metricQueryContext;
 	}
 
 	/**
@@ -206,7 +206,7 @@ public class MetricQuery extends AnnotationQuery {
 		}
 		return sb.toString();
 	}
-
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -216,7 +216,7 @@ public class MetricQuery extends AnnotationQuery {
 		result = prime * result + ((_downsampler == null) ? 0 : _downsampler.hashCode());
 		result = prime * result + ((_downsamplingPeriod == null) ? 0 : _downsamplingPeriod.hashCode());
 		result = prime * result + ((_namespace == null) ? 0 : _namespace.hashCode());
-		result = prime * result + ((_readEndPoint == null) ? 0 : _readEndPoint.hashCode());
+		result = prime * result + ((_metricQueryContext == null) ? 0 : _metricQueryContext.hashCode());
 		return result;
 	}
 
@@ -253,7 +253,7 @@ public class MetricQuery extends AnnotationQuery {
 			}
 		} else if (!_namespace.equals(other._namespace)) {
 			return false;
-		} else if (!_readEndPoint.equals(other._readEndPoint)) {
+		} else if (!_metricQueryContext.equals(other._metricQueryContext)) {
 			return false;
 		}
 		return true;
@@ -339,6 +339,63 @@ public class MetricQuery extends AnnotationQuery {
 		 */
 		public String getDescription() {
 			return _description;
+		}
+	}
+
+	/**
+	 * Encapsulates parameters used to provide additional context to a metric query if needed
+	 *
+	 * @author  Dilip Devaraj(ddevaraj@salesforce.com)
+	 */	
+	class MetricQueryContext {
+		private String _readEndPoint;
+		
+		/**
+		 * Returns the endpoint for this query
+		 *
+		 * @return  The endpoint for query
+		 */
+		public String getReadEndPoint() {
+			return _readEndPoint;
+		}
+
+		/**
+		 * Sets the endpoint for this query
+		 *
+		 * @param  readEndPoint  The endpoint for query
+		 */
+		public void setReadEndPoint(String readEndPoint) {
+			_readEndPoint = readEndPoint;
+		}
+		
+		@Override
+		public String toString() {
+			return "MetricQueryContext [_readEndPoint=" + _readEndPoint + "]";
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((_readEndPoint == null) ? 0 : _readEndPoint.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			MetricQueryContext other = (MetricQueryContext) obj;
+			if (_readEndPoint == null) {
+				if (other._readEndPoint != null)
+					return false;
+			} else if (!_readEndPoint.equals(other._readEndPoint))
+				return false;
+			return true;
 		}
 	}
 }

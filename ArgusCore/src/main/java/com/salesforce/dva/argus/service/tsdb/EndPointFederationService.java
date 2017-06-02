@@ -20,7 +20,9 @@ public class EndPointFederationService extends QueryFederation{
 			List<MetricQuery> subQueries = new ArrayList<>();
 			for (String readEndPoint : _readEndPoints) {
 				MetricQuery mq = new MetricQuery(query);
-				mq.setReadEndPoint(readEndPoint);
+				MetricQuery.MetricQueryContext metricQueryContext = mq.new MetricQueryContext();
+				metricQueryContext.setReadEndPoint(readEndPoint);
+				mq.setMetricQueryContext(metricQueryContext);
 				subQueries.add(mq);
 			}
 			mapQuerySubQueries.put(query, subQueries);

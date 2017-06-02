@@ -765,8 +765,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
 		for (MetricQuery query : queries) {
 			String requestBody = fromEntity(query);
-			String requestUrl = query.getReadEndPoint() + "/api/query";
-			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getReadEndPoint(), requestBody)));
+			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
+			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
 		}
 
 		Map<MetricQuery, List<Metric>> subQueryMetricsMap = new HashMap<>();
@@ -779,7 +779,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			} catch (InterruptedException | ExecutionException e) {
 				_logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
 				try {
-					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getReadEndPoint()); 
+					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getMetricQueryContext().getReadEndPoint()); 
 					if (!readBackupEndPoint.isEmpty()) {
 						_logger.warn("Trying to read from Backup endpoint");
 						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(entry.getKey())).call();
