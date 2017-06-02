@@ -88,7 +88,15 @@ angular.module('argus.services.utils', [])
 			} else {
 				return timestampNum;
 			}
-		}
+		},
+
+        removeDataResponseOverhead: function (rawData) {
+            var data = angular.copy(rawData);
+            delete data.$promise;
+            delete data.$resolved;
+            delete data.$cancelRequest;
+            return data;
+        }
 	};
 	return options;
 }]);
