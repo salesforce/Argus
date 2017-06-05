@@ -13,7 +13,7 @@ import java.util.Map;
 public class EndPointQueryFederation extends QueryFederation{
 	private final List<String> _readEndPoints;
 
-	EndPointQueryFederation(List<String> readEndPoints) {
+	public EndPointQueryFederation(List<String> readEndPoints) {
 		_readEndPoints = readEndPoints;
 	}
 
