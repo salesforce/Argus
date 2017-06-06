@@ -388,7 +388,6 @@ ag-select > div {min-width: 152px;}
 
 .node circle {
   fill: #fff;
-  stroke: steelblue;
   stroke-width: 2px;
 }
 
@@ -399,5 +398,10 @@ ag-select > div {min-width: 152px;}
 .link {
   fill: none;
   stroke: #ccc;
-  stroke-width: 2px;
+  stroke-width: 1.5px;
+}
+
+.highlight {
+    stroke: khaki;
+    stroke-width: 3px;
 }
