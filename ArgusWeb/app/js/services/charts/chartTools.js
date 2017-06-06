@@ -30,6 +30,7 @@ angular.module('argus.services.charts.tools', [])
 	var mainChartRatio = 0.8, //ratio of height
 		brushChartRatio = 0.15;
 	var extraYAxisPadding = 35;
+	var bufferRatio = 0.2; // the ratio of buffer above/below max/min on yAxis for better showing experience
 
 	this.getExtraYAxisPadding = function(){
 		return extraYAxisPadding;
@@ -406,7 +407,7 @@ angular.module('argus.services.charts.tools', [])
 
 	this.updateContainerSize = function (container, defaultContainerHeight, defaultContainerWidth, isSmallChart, isBrushOn, changeToFullscreen, extraYAxisNum) {
 		var containerWidth, containerHeight;
-		if ((window.innerHeight === screen.height || container.offsetHeight === window.innerHeight) && changeToFullscreen) {
+		if (changeToFullscreen && (window.innerHeight === screen.height || container.offsetHeight === window.innerHeight)) {
 			// set the graph size to be the same as the screen
 			containerWidth = screen.width;
 			containerHeight = screen.height * 0.95;
@@ -519,5 +520,25 @@ angular.module('argus.services.charts.tools', [])
 		return sources.filter(function(source) {
 			return source.name === metric.name;
 		})[0];
-	}
+	};
+
+	this.processYDomain = function (currentExtent, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked) {
+		var yMin, yMax, buffer, finalYMin, finalYMax;
+		yMin = UtilService.validNumberChecker(yScalePlain(currentExtent[0]));
+		yMax = UtilService.validNumberChecker(yScalePlain(currentExtent[1]));
+		buffer = (yMax - yMin) * bufferRatio;
+		if (buffer === 0) buffer = this.yAxisPadding;
+
+		finalYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
+		finalYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.2 * buffer)): agYMax;
+
+		if (isDataStacked && finalYMin < 0 && yMin !== yMax) finalYMin = 0;
+		// TODO: still need to handle log(0) better
+		if (yScaleType === 'log') {
+			if (finalYMin === 0) finalYMin = 1;
+			if (finalYMax === 0) finalYMax = 1;
+		}
+
+		return [finalYMin, finalYMax];
+	};
 }]);
