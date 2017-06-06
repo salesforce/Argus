@@ -488,7 +488,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				x2.domain(xDomain);
 				y2.domain(yDomain);
 				for (var iSet of extraYAxisSet){
-					extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked));
+					extraY2[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked));
 				}
 
 				dateExtent = xDomain;
@@ -735,7 +735,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						graph2.x = x2;
 						graph2.y = y2;
 					}
-					ChartElementService.resizeGraphs(svg_g, graph, chartType);
+					ChartElementService.resizeGraphs(svg_g, graph, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
