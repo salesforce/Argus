@@ -483,7 +483,9 @@ angular.module('argus.directives.charts.lineChart', [])
 
 				x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
 				y.domain(ChartToolService.processYDomain(yDomain, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked));
-
+				for (var iSet of extraYAxisSet){
+					extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked));
+				}
 				// update brush's x and y
 				x2.domain(xDomain);
 				y2.domain(yDomain);
