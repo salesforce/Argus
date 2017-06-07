@@ -28,19 +28,16 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		return result;
 	};
 	// TODO: work on call backs
-	var queryUntilMultipleReturns = function (expression) {
-		console.log(expression);
-		Browsing.query({query: expression}).$promise.then(function(data) {
+	var queryUntilMultipleOrNoReturns = function (Browsing, expression) {
+		return Browsing.query({query: expression}).$promise.then(function(data) {
 			if (data.length === 1) {
-				queryUntilMultipleReturns(expression + data[0] + '.');
-			} else if (data.length > 0) {
-				return data;
-			} else {
-				return;
+				return queryUntilMultipleOrNoReturns(Browsing, expression + data[0] + '.');
 			}
-		}, function (error) {
-			growl.error(error.data.message);
-			console.log(error);
+			console.log(expression, data);
+			return {
+				data: data,
+				expression: expression
+			};
 		});
 	};
 
@@ -65,7 +62,10 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 	// declares a tree layout and assigns the size
 	var treemap = d3.tree().size([height, width])
 					.separation(function(a, b) {
-						return (a.parent == b.parent ? 1 : 2) * a.depth * 0.8;
+						var result = a.parent == b.parent ? 1 : 2;
+						// give more separation when its really deep in the tree
+						if (a.depth > 3) result *= (a.depth * 0.4);
+						return result;
 					});
 
 	Browsing.query({query: ''}).$promise.then(function(data) {
@@ -117,7 +117,7 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 					var longestNameLength = peers.reduce(function(currentMax, node) {
 						return node.displayName.length > currentMax ? node.displayName.length : currentMax;
 					}, 0);
-					if (longestNameLength > 10) d.y += longestNameLength * 4;
+					if (longestNameLength > 8) d.y += longestNameLength * 4;
 				} else if (d.parent.displayName && d.parent.displayName.length > 10) {
 					// this does not really happen
 					d.y += d.parent.displayName.length * 4;
@@ -253,39 +253,22 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		// Toggle children on click.
 		function click(d) {
 			if (d.children) {
+				// collapse if there are known children
 				d._children = d.children;
 				d.children = null;
 				update(d);
 			} else if (d._children) {
+				// expand if there are known children
 				d.children = d._children;
 				d._children = null;
 				update(d);
+			} else if (d.noChildren) {
+				// do nothing if its known that there are no children
+				return;
 			} else {
+				// send new query to see if there are children
 				var queryExpression;
 				queryExpression = d.data.name.length > 1 > 0 ? d.data.name + '.' : d.data.name;
-				// console.log(queryUntilMultipleReturns(queryExpression));
-
-				// var data = queryUntilMultipleReturns(queryExpression);
-				// if (data !== undefined) {
-				//     if (d.depth + 1 > treeHeight) {
-				//         treeHeight += 1;
-				//         updateHeight(root);
-				//     }
-				//     if (d.data.name.length > 1) {
-				//         d.data.children = createHierarchicalDataWithExpression(data, queryExpression);
-				//     } else {
-				//         d.data.children = createHierarchicalData(data);
-				//     }
-				//     var additionalTree = d3.hierarchy(d.data, function(d) { return d.children; });
-				//     d.children = additionalTree.children;
-				//     additionalTree.children.forEach(function(child) {
-				//         child.depth += d.depth;
-				//         child.parent = d;
-				//     });
-				//     d.children.forEach(collapse);
-				// } else {
-				//     d.noChildren = true;
-				// }
 				Browsing.query({query: queryExpression}).$promise.then(function(data) {
 					if (data.length > 0) {
 						if (d.depth + 1 > treeHeight) {
