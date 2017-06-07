@@ -214,7 +214,7 @@ angular.module('argus.services.charts.elements', [])
 	// generate main containers
 	this.generateMainChartElements = function (sizeInfo, container) {
 		var svg = d3.select(container).append('svg')
-			.attr('width', sizeInfo.width + sizeInfo.margin.left + sizeInfo.margin.right)
+			.attr('width', sizeInfo.widthFull + sizeInfo.margin.left + sizeInfo.margin.right)
 			.attr('height', sizeInfo.height + sizeInfo.margin.top + sizeInfo.margin.bottom);
 
 		var svg_g = svg.append('g')
@@ -442,7 +442,7 @@ angular.module('argus.services.charts.elements', [])
 			this.renderScatterGraph(chart, color, metric, graph, chartId);
 		} else {
 			var newGraph = chart.append('path')
-				.attr('class', chartType + ' ' + metric.graphClassName)
+				.attr('class', chartType + ' ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 				.style('clip-path', 'url(\'#clip_' + chartId + '\')')
 				.datum(metric.data)
 				.attr('d', graph);
@@ -472,7 +472,7 @@ angular.module('argus.services.charts.elements', [])
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
 			.attr("cy", function (d) { return graph.y(d[1]); } )
-			.attr('class', 'brushDot ' + metric.graphClassName + '_brushDot')
+			.attr('class', 'brushDot ' + metric.graphClassName + '_brushDot' +' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
 			.attr('r', 1.5);
 	};
@@ -1212,9 +1212,9 @@ angular.module('argus.services.charts.elements', [])
 		svg_g.selectAll('.brushArea').attr('d', area2);
 	};
 
-	this.resizeGraphs = function (svg_g, graph, chartType) {
+	this.resizeGraph = function (svg_g, graph, chartType, extraYAxis) {
 		if (chartType === 'scatter') {
-			svg_g.selectAll('.dot')
+			svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
 				.attr("cx", function (d) { return graph.x(d[0]); } )
 				.attr("cy", function (d) { return graph.y(d[1]); } )
 				.style('display', function (d) {
@@ -1226,13 +1226,20 @@ angular.module('argus.services.charts.elements', [])
 					}
 				});
 		} else {
-			svg_g.selectAll('.' + chartType).attr('d', graph);
+			svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
+		}
+	};
+
+	this.resizeGraphs = function (svg_g, graph, chartType, extraGraph, extraYAxisSet) {
+		this.resizeGraph(svg_g, graph, chartType, '');
+		for(var iSet of extraYAxisSet){
+			this.resizeGraph(svg_g, extraGraph[iSet], chartType, iSet);
 		}
 	};
 
 	this.resizeBrushGraph = function (svg_g, graph2, chartType, extraYAxis){
 		if (chartType === 'scatter') {
-			svg_g.selectAll('.brushDot')
+			svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
 				.attr("cx", function (d) { return graph2.x(d[0]); } )
 				.attr("cy", function (d) { return graph2.y(d[1]); } )
 				.style('display', function (d) {
