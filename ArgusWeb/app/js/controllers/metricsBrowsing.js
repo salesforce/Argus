@@ -16,7 +16,6 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		});
 		return result;
 	};
-	// TODO: move to a service
 	var createHierarchicalDataWithExpression = function (array, existingExpression) {
 		var result = [];
 		array.map(function(item) {
@@ -27,17 +26,26 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		});
 		return result;
 	};
-	// TODO: work on call backs
-	var queryUntilMultipleOrNoReturns = function (Browsing, expression) {
+
+	var queryUntilMultipleOrNoReturns = function (Browsing, expression, firstCall) {
 		return Browsing.query({query: expression}).$promise.then(function(data) {
 			if (data.length === 1) {
-				return queryUntilMultipleOrNoReturns(Browsing, expression + data[0] + '.');
+				// keep querying since there is only one new param
+				return queryUntilMultipleOrNoReturns(Browsing, expression + data[0] + '.', false);
+			} else if (data.length === 0) {
+				// the end of the query is reached
+				return {
+					endOfQuery: true,
+					data: firstCall ? [] : [expression.slice(0, -1)],
+					expression: expression
+				};
+			} else {
+				// multiple nwe params are returned from query
+				return {
+					data: data,
+					expression: expression
+				};
 			}
-			console.log(expression, data);
-			return {
-				data: data,
-				expression: expression
-			};
 		});
 	};
 
@@ -46,9 +54,10 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		'name': 'Start',
 		'children': []
 	};
-	var margin = {top: 20, right: 50, bottom: 20, left: 50},
+	var defaultHeight = window.innerHeight < 850 ? 550 : 750;
+	var margin = {top: 5, right: 5, bottom: 5, left: 40},
 		width = angular.element('#treeDiagram').width() - margin.left - margin.right,
-		height = 650 - margin.top - margin.bottom;
+		height = defaultHeight - margin.top - margin.bottom;
 
 	var svg = d3.select('#treeDiagram').append('svg')
 		.attr('width', width + margin.right + margin.left)
@@ -64,16 +73,17 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 					.separation(function(a, b) {
 						var result = a.parent == b.parent ? 1 : 2;
 						// give more separation when its really deep in the tree
-						if (a.depth > 3) result *= (a.depth * 0.4);
+						if (a.depth > 2) result *= (a.depth * 0.4);
 						return result;
 					});
 
 	Browsing.query({query: ''}).$promise.then(function(data) {
 		treeData.children = createHierarchicalData(data);
 		root = d3.hierarchy(treeData, function(d) { return d.children; });
+		root.displayName = root.data.name;
 		root.x0 = height / 2;
 		root.y0 = 0;
-		root.children.forEach(collapse);
+		root.children.forEach(function(d) { d.displayName = d.data.name; });
 		update(root);
 	}, function (error) {
 		growl.error(error.data.message);
@@ -97,18 +107,7 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		var nodes = treeData.descendants(),
 		links = treeData.descendants().slice(1);
 
-
 		nodes.forEach(function(d){
-			// add a field of display name
-			if (d.displayName === undefined) {
-				var indexCutOff = d.data.name.lastIndexOf('.');
-				if (indexCutOff === -1) {
-					d.displayName = d.data.name;
-				} else {
-					d.displayName = d.data.name.substr(indexCutOff);
-				}
-			}
-			// Normalize for fixed-depth.
 			if (d.parent) {
 				d.y = d.parent.y + 80;
 				if (d.parent.parent) {
@@ -212,7 +211,7 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		var linkEnter = link.enter().insert('path', 'g')
 							.attr('class', 'link')
 							.attr('d', function(d){
-								var o = {x: source.x0, y: source.y0}
+								var o = {x: source.x0, y: source.y0};
 								return diagonal(o, o);
 							});
 
@@ -222,14 +221,14 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		// Transition back to the parent element position
 		linkUpdate.transition()
 					.duration(duration)
-					.attr('d', function(d){ return diagonal(d, d.parent) });
+					.attr('d', function(d){ return diagonal(d, d.parent); });
 
 		// Remove any exiting links
 		var linkExit = link.exit().transition()
 							.duration(duration)
 							.attr('d', function(d) {
-								var o = {x: source.x, y: source.y}
-								return diagonal(o, o)
+								var o = {x: source.x, y: source.y};
+								return diagonal(o, o);
 							})
 							.remove();
 
@@ -245,9 +244,9 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 			var path = `M ${s.y} ${s.x}
 			C ${(s.y + d.y) / 2} ${s.x},
 			${(s.y + d.y) / 2} ${d.x},
-			${d.y} ${d.x}`
+			${d.y} ${d.x}`;
 
-			return path
+			return path;
 		}
 
 		// Toggle children on click.
@@ -263,42 +262,70 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 				d._children = null;
 				update(d);
 			} else if (d.noChildren) {
-				// do nothing if its known that there are no children
+				// do nothing on the tree diagram if it's known that there are no children
+				// maybe redirect to a another page or print out the expression or something
 				return;
 			} else {
 				// send new query to see if there are children
-				var queryExpression;
-				queryExpression = d.data.name.length > 1 > 0 ? d.data.name + '.' : d.data.name;
-				Browsing.query({query: queryExpression}).$promise.then(function(data) {
-					if (data.length > 0) {
-						if (d.depth + 1 > treeHeight) {
-							treeHeight += 1;
-							updateHeight(root);
-						}
-						// creat a new tree using current node as the root with new data
-						if (d.data.name.length > 1) {
-							d.data.children = createHierarchicalDataWithExpression(data, queryExpression);
-						} else {
-							d.data.children = createHierarchicalData(data);
-						}
-						var additionalTree = d3.hierarchy(d.data, function(d) { return d.children; });
-						// append new tree to the existing one
-						d.children = additionalTree.children;
-						additionalTree.children.forEach(function(child) {
-							child.depth += d.depth;
-							child.parent = d;
-						});
-						d.children.forEach(collapse);
-					} else {
-						// there is the end of the expression: no query results
-						d.noChildren = true;
-					}
-					update(d);
-				}, function (error) {
-					growl.error(error.data.message);
-					console.log(error);
-				});
+				if (d.depth === 1) {
+					Browsing.query({query: d.data.name}).$promise.then(function(data) {
+						var queryResult = {
+							data: data,
+							expression: d.data.name
+						};
+						addQueryDataToTree(d, queryResult, true);
+					}, function (error) {
+						growl.error(error.data.message);
+						console.log(error);
+					});
+				} else {
+					queryUntilMultipleOrNoReturns(Browsing, d.data.name + '.', true).then(function(queryResult) {
+						addQueryDataToTree(d, queryResult, false);
+					}, function (error) {
+						growl.error(error.data.message);
+						console.log(error);
+					});
+				}
 			}
+		}
+
+		function addQueryDataToTree(d, queryResult, depth1) {
+			var data = queryResult.data;
+			var expression = queryResult.expression;
+			// console.log(expression);
+			if (data.length > 0) {
+				var initialLevels = d.depth === 1;
+				if (d.depth + 1 > treeHeight) {
+					treeHeight += 1;
+					updateHeight(root);
+				}
+				if (depth1 || queryResult.endOfQuery) {
+					d.data.children = createHierarchicalData(data);
+				} else {
+					d.data.children = createHierarchicalDataWithExpression(data, expression);
+				}
+				var additionalTree = d3.hierarchy(d.data, function(d) { return d.children; });
+				// append new tree to the existing one
+				d.children = additionalTree.children;
+				additionalTree.children.forEach(function(child) {
+					child.depth += d.depth;
+					child.parent = d;
+				});
+				d.children.forEach(function(child){
+					if (queryResult.endOfQuery) child.noChildren = true;
+					// create a short name to display
+					if (depth1) {
+						child.displayName = child.data.name;
+					} else {
+						// only show the new params
+						child.displayName = child.data.name.replace(d.data.name, '');
+					}
+				});
+			} else {
+				// there is the end of the expression: no query results
+				d.noChildren = true;
+			}
+			update(d);
 		}
 
 		function updateHeight(d) {
@@ -307,7 +334,7 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 		}
 	}
 
-	// search text box
+	// TODO: search text box, including hint box for auto complete
 	$scope.$watch('expression', function (newValue, oldValue) {
 		if (newValue === oldValue) return;
 		Browsing.query({query: newValue}).$promise.then(function (data) {
@@ -317,4 +344,30 @@ angular.module('argus.controllers.metricsBrowsing', ['ngResource'])
 			console.log(error);
 		});
 	});
+
+	// TODO: go to a particular node based on the input box
+	$scope.goToNode = function () {
+		// need to have a dot at the end
+		if ($scope.expression[$scope.expression.length - 1] !== '.') {
+			growl.error('Incomplete parameter in the expression');
+			return;
+		}
+		var firstLetter = $scope.expression[0];
+		var startingNode = root.children.filter(function(d) {
+			return d.displayName === firstLetter;
+		});
+		// first letter must be one of the given ones
+		if (startingNode.length === 0) {
+			growl.error('Invalid parameter in the expression');
+			return;
+		}
+		startingNode = startingNode[0];
+		// TODO: need to run query for all the params and add it to the startingNode
+		// Browsing.query({query: $scope.expression}).$promise.then(function(data) {
+		//     update(root);
+		// }, function (error) {
+		//     growl.error(error.data.message);
+		//     console.log(error);
+		// });
+	};
 }]);
