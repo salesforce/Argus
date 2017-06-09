@@ -19,7 +19,7 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-    version: '2.5.0',
+    version: '2.7.1',
     wsUrl: '@@wsUrl',
     emailUrl: '@@emailUrl',
     feedUrl: '@@feedUrl',
