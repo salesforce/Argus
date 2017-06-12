@@ -102,7 +102,8 @@ angular.module('argus.services', [
 	'argus.services.downloadHelper',
 	'argus.services.agTableService',
 	'argus.services.tokenAuthInterceptor',
-	'argus.services.users'
+	'argus.services.users',
+	'argus.services.confirmClick'
 ]);
 
 // Controllers
@@ -169,7 +170,7 @@ require('./services/tableListService');
 require('./services/downloadHelper');
 require('./services/agTableService');
 require('./services/tokenAuthInterceptor');
-
+require('./services/ConfirmClickService')
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
 require('./services/charts/chartTools');
