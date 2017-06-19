@@ -4,7 +4,7 @@
 </div>
 
 <div class="modal-body">
-    <p>{{confirmMessage}}</p>
+    <p ng-bind-html="toTrustedHTML(confirmMessage)"></p>
 </div>
 
 <div class="modal-footer">
