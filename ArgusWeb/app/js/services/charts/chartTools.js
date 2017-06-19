@@ -121,7 +121,8 @@ angular.module('argus.services.charts.tools', [])
 		yAxisConfig: {
 			formatYaxis: defaultYaxis,
 			numTicksYaxis: defaultTicksYaxis
-		}
+		},
+		isSnapCrosslineOn: true
 	};
 
 	// color

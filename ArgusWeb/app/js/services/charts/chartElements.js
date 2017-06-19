@@ -602,9 +602,14 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, mouseX, extraY_) {
+	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, isDataStacked) {
 		var datapoints = [];
+		var minDistanceVertical = Number.MAX_VALUE;
+		var minDistanceHorizontal = Number.MAX_VALUE;
+		var snapPoint;
+
 		series.forEach(function (metric) {
+
 			var circle = focus.select('.' + metric.graphClassName);
 
 			var y;
@@ -622,7 +627,8 @@ angular.module('argus.services.charts.elements', [])
 				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 			} else {
 				var data = metric.data;
-				var i = ChartToolService.bisectDate(metric.data, mouseX, 1);
+				var i = isDataStacked ?  ChartToolService.bisectDateStackedData(metric.data, mousePositionData.mouseX, 1) :
+						ChartToolService.bisectDate(metric.data, mousePositionData.mouseX, 1);
 				var d0 = data[i - 1];
 				var d1 = data[i];
 				var d;
@@ -636,14 +642,23 @@ angular.module('argus.services.charts.elements', [])
 					d = d0;
 				} else {
 					// if both data points lives in the domain, choose the closer one to the mouse position
-					d = mouseX - d0[0] > d1[0] - mouseX ? d1 : d0;
+					d = mousePositionData.mouseX - (isDataStacked ? d0.data.timestamp : d0[0]) >
+					(isDataStacked ? d1.data.timestamp : d1[0]) - mousePositionData.mouseX ? d1 : d0;
 				}
 
+				if(isDataStacked){
+					var tempX = d.data.timestamp;
+					var tempY = d.data[metric.name];
+					var tempYStacked = d[1];
+				}
+
+
 				// set a snapping limit for graph
-				var notInSnappingRange = Math.abs(mouseX - d[0]) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
+				var notInSnappingRange = Math.abs(mousePositionData.mouseX - (isDataStacked? tempX: d[0])) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
 				var displayProperty = circle.attr('displayProperty');
-				if (ChartToolService.isNotInTheDomain(d[0], x.domain()) ||
-					ChartToolService.isNotInTheDomain(d[1], y.domain()) ||
+
+				if (ChartToolService.isNotInTheDomain((isDataStacked ? tempX : d[0]), x.domain()) ||
+					ChartToolService.isNotInTheDomain((isDataStacked ? tempYStacked : d[1]), y.domain()) ||
 					notInSnappingRange) {
 					//outside domain
 					circle.style('display', 'none');
@@ -652,76 +667,139 @@ angular.module('argus.services.charts.elements', [])
 					circle.style('display', null);
 				}
 				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
+
 				// update circle's position on each graph
-				var newX = UtilService.validNumberChecker(x(d[0]));
-				var newY = UtilService.validNumberChecker(y(d[1]));
+				var newX = UtilService.validNumberChecker(x((isDataStacked ? tempX : d[0])));
+				var newY = UtilService.validNumberChecker(y((isDataStacked ? tempYStacked : d[1])));
+
 				circle.attr('dataX', d[0]).attr('dataY', d[1]) //store the data
 					.attr('transform', 'translate(' + newX + ',' + newY + ')');
 				if (displayProperty !== 'none') {
 					datapoints.push({
-						data: d,
+						data: isDataStacked ?[tempX, tempY]: d,
 						graphClassName: metric.graphClassName,
 						name: metric.name
 					});
 				}
-			}
-		});
-		return datapoints;
-	};
 
-	this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mouseX) {
-		var datapoints = [];
-		series.forEach(function (metric) {
-			var circle = focus.select('.' + metric.graphClassName);
-			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
-			if (metric.data.length === 0 || !displayingInLegend) {
-				circle.style('display', 'none');
-				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
-			} else {
-				var data = metric.data;
-				var i = ChartToolService.bisectDateStackedData(metric.data, mouseX, 1);
-				var d0 = data[i - 1];
-				var d1 = data[i];
-				var d;
+				//decide the crossline focus
+				if(!notInSnappingRange){
+					var distanceHorizontal = Math.abs(UtilService.validNumberChecker(mousePositionData.positionX - newX));
+					var distanceVertical = Math.abs(UtilService.validNumberChecker(mousePositionData.positionY - newY));
 
-				if (!d0) {
-					d = d1;
-				} else if (!d1) {
-					d = d0;
-				} else {
-					d = mouseX - d0.data.timestamp > d1.data.timestamp - mouseX ? d1 : d0;
-				}
+					if(distanceHorizontal < minDistanceHorizontal){
+						snapPoint = {
+							positionX : newX,
+							positionY : newY,
+							mouseX : d[0],
+							mouseY : d[1]
+						};
+						minDistanceHorizontal = distanceHorizontal;
+						minDistanceVertical = distanceVertical;
 
-				var tempX = d.data.timestamp;
-				var tempY = d.data[metric.name];
-				var tempYStacked = d[1];
-
-				var notInSnappingRange = Math.abs(mouseX - tempX) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
-				var displayProperty = circle.attr('displayProperty');
-				if (ChartToolService.isNotInTheDomain(tempX, x.domain()) ||
-					ChartToolService.isNotInTheDomain(tempYStacked, y.domain()) ||
-					notInSnappingRange) {
-					circle.style('display', 'none');
-					displayProperty = 'none';
-				} else {
-					circle.style('display', null);
-				}
-				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
-				var newX = UtilService.validNumberChecker(x(tempX));
-				var newY = UtilService.validNumberChecker(y(tempYStacked));
-				circle.attr('dataX', d[0]).attr('dataY', d[1])
-					.attr('transform', 'translate(' + newX + ',' + newY + ')');
-				if (displayProperty !== 'none') {
-					datapoints.push({
-						data: [tempX, tempY],
-						graphClassName: metric.graphClassName,
-						name: metric.name
-					});
+					}else if(distanceHorizontal === minDistanceHorizontal && distanceVertical < minDistanceVertical){
+						snapPoint = {
+							positionX : newX,
+							positionY : newY,
+							mouseX : d[0],
+							mouseY : d[1]
+						};
+						minDistanceVertical = distanceVertical;
+					}
 				}
 			}
 		});
-		return datapoints;
+		return	{
+			datapoints: datapoints,
+			snapPoint: snapPoint
+		};
 	};
+	//
+	// this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mousePositionData) {
+	// 	var datapoints = [];
+	//
+	// 	var minDistanceVertical = Number.MAX_VALUE;
+	// 	var minDistanceHorizontal = Number.MAX_VALUE;
+	// 	var snapPoint;
+	//
+	// 	series.forEach(function (metric) {
+	// 		var circle = focus.select('.' + metric.graphClassName);
+	// 		var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+	// 		if (metric.data.length === 0 || !displayingInLegend) {
+	// 			circle.style('display', 'none');
+	// 			tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+	// 		} else {
+	// 			var data = metric.data;
+	// 			var i = ChartToolService.bisectDateStackedData(metric.data, mousePositionData.mouseX, 1);
+	// 			var d0 = data[i - 1];
+	// 			var d1 = data[i];
+	// 			var d;
+	//
+	// 			if (!d0) {
+	// 				d = d1;
+	// 			} else if (!d1) {
+	// 				d = d0;
+	// 			} else {
+	// 				d = mousePositionData.mouseX - d0.data.timestamp > d1.data.timestamp - mousePositionData.mouseX ? d1 : d0;
+	// 			}
+	//
+	// 			var tempX = d.data.timestamp;
+	// 			var tempY = d.data[metric.name];
+	// 			var tempYStacked = d[1];
+	//
+	// 			var notInSnappingRange = Math.abs(mousePositionData.mouseX - tempX) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
+	// 			var displayProperty = circle.attr('displayProperty');
+	// 			if (ChartToolService.isNotInTheDomain(tempX, x.domain()) ||
+	// 				ChartToolService.isNotInTheDomain(tempYStacked, y.domain()) ||
+	// 				notInSnappingRange) {
+	// 				circle.style('display', 'none');
+	// 				displayProperty = 'none';
+	// 			} else {
+	// 				circle.style('display', null);
+	// 			}
+	// 			tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
+	// 			var newX = UtilService.validNumberChecker(x(tempX));
+	// 			var newY = UtilService.validNumberChecker(y(tempYStacked));
+	//
+	// 			var distanceHorizontal = Math.abs(UtilService.validNumberChecker(mousePositionData.positionX - newX));
+	// 			var distanceVertical = Math.abs(UtilService.validNumberChecker(mousePositionData.positionY - newY));
+	//
+	// 			if(distanceHorizontal < minDistanceHorizontal){
+	// 				snapPoint = {
+	// 					positionX : newX,
+	// 					positionY : newY,
+	// 					mouseX : d[0],
+	// 					mouseY : d[1]
+	// 				};
+	// 				minDistanceHorizontal = distanceHorizontal;
+	// 				minDistanceVertical = distanceVertical;
+	//
+	// 			}else if(distanceHorizontal === minDistanceHorizontal && distanceVertical < minDistanceVertical){
+	// 				snapPoint = {
+	// 					positionX : newX,
+	// 					positionY : newY,
+	// 					mouseX : d[0],
+	// 					mouseY : d[1]
+	// 				};
+	// 				minDistanceVertical = distanceVertical;
+	// 			}
+	//
+	// 			circle.attr('dataX', d[0]).attr('dataY', d[1])
+	// 				.attr('transform', 'translate(' + newX + ',' + newY + ')');
+	// 			if (displayProperty !== 'none') {
+	// 				datapoints.push({
+	// 					data: [tempX, tempY],
+	// 					graphClassName: metric.graphClassName,
+	// 					name: metric.name
+	// 				});
+	// 			}
+	// 		}
+	// 	});
+	// 	return	{
+	// 		datapoints: datapoints,
+	// 		snapPoint: snapPoint
+	// 	};
+	// };
 
 	this.updateTooltipItemsContent = function (sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData) {
 		var XOffset = 0;
@@ -830,21 +908,20 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, mousePositionData, isDataStacked, extraY) {
+	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, isDataStacked) {
 		var datapoints;
-		if (isDataStacked) {
-			datapoints = this.updateFocusCirclesAndTooltipItemsWithStackedData(focus, tipItems, series, sources, x, y, mousePositionData.mouseX);
-		} else {
-			datapoints = this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, mousePositionData.mouseX, extraY);
+		var datapointsAndSnapPoint;
 
-		}
+		datapointsAndSnapPoint =  this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, extraY, mousePositionData, isDataStacked);
+		datapoints = datapointsAndSnapPoint.datapoints;
 		// sort items in tooltip if needed
 		if (tooltipConfig.isTooltipSortOn) {
-			datapoints = datapoints.sort(function (a, b) {
+			datapoints = datapointsAndSnapPoint.datapoints.sort(function (a, b) {
 				return b.data[1] - a.data[1];
 			});
 		}
 		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
+		return datapointsAndSnapPoint.snapPoint;
 	};
 
 	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange, extraY, extraYAxisSet) {
