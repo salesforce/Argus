@@ -114,6 +114,7 @@ angular.module('argus.controllers', [
 	'argus.controllers.alerts',
 	'argus.controllers.alerts.detail',
 	'argus.controllers.batches',
+	'argus.controllers.beta',
 	'argus.controllers.dashboards',
 	'argus.controllers.dashboards.detail',
 	'argus.controllers.login',
@@ -146,6 +147,7 @@ require('./controllers/admin');
 require('./controllers/alerts');
 require('./controllers/alertsDetail');
 require('./controllers/batches');
+require('./controllers/beta');
 require('./controllers/dashboards');
 require('./controllers/dashboardsDetail');
 require('./controllers/login');

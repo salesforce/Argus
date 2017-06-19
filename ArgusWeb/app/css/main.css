@@ -69,6 +69,24 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
 #navbar li a.glyphicon {font-size:20px; color:#777;}
+#navbar li a.betaTab {color:#ECF1F6; font-weight:700;
+	/* #599AD9 - Argus light blue */
+	/* #2D4486 - Argus dark blue */
+	background: #599AD9; /* For browsers that do not support gradients */
+	background: linear-gradient(top, #ACD6FF, #599AD9); /* Standard (Chrome) syntax */
+	background: -webkit-linear-gradient(top, #ACD6FF, #599AD9); /* For Safari 5.1 to 6.0 */
+	background: -o-linear-gradient(top, #ACD6FF, #599AD9); /* For Opera 11.1 to 12.0 */
+	background: -moz-linear-gradient(top, #ACD6FF, #599AD9); /* For Firefox 3.6 to 15 */
+}
+#navbar li.activeTab a.betaTab {
+	/* #599AD9 - Argus light blue */
+	/* #2D4486 - Argus dark blue */
+	background: #599AD9; /* For browsers that do not support gradients */
+	background: linear-gradient(top, #ACD6FF, #2D4486); /* Standard (Chrome) syntax */
+	background: -webkit-linear-gradient(top, #ACD6FF, #2D4486); /* For Safari 5.1 to 6.0 */
+	background: -o-linear-gradient(top, #ACD6FF, #2D4486); /* For Opera 11.1 to 12.0 */
+	background: -moz-linear-gradient(top, #ACD6FF, #2D4486); /* For Firefox 3.6 to 15 */
+}
 
 /* Common drop down menu */
 .topMenu {position:relative; margin-right:.5em;}
