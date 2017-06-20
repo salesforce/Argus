@@ -101,6 +101,9 @@ angular.module('argus.directives.charts.lineChart', [])
 					numTicksYaxis: $scope.menuOption.numTicksYaxis
 				};
 			}
+			if ($scope.menuOption.isSnapCrosslineOn === undefined){
+				$scope.menuOption.isSnapCrosslineOn = true;
+			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 			$scope.openChartOptions = function(chartId, chartTitle) {
@@ -557,10 +560,19 @@ angular.module('argus.directives.charts.lineChart', [])
 			function mouseMove() {
 				if (!seriesBeingDisplayed || seriesBeingDisplayed.length === 0) return;
 				var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
+
+				var snapPoint;
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
-					ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-						seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked, extraY);
+					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 				}
+
+				var crossPositionData;
+
+				if(snapPoint && scope.menuOption.isSnapCrosslineOn){
+					mousePositionData = snapPoint;
+				}
+
 				ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 
 				if (chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
@@ -595,7 +607,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					};
 					if (brushInNonEmptyRange) {
 						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-							seriesBeingDisplayed, scope.sources, x, y, mousePositionData, isDataStacked, extraY);
+							seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 					}
 					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 				}
@@ -958,6 +970,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					scope.updateGraphAndScale();
 				}
 			}, true);
+
 		}
 	};
 }]);
