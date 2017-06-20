@@ -28,6 +28,13 @@ angular.module('argus.config', [])
 		$httpProvider.interceptors.push('TokenAuthInterceptor');
 		paginationTemplateProvider.setPath('node_modules/angular-utils-pagination/dirPagination.tpl.html');
 		$routeProvider.
+			when('/beta', {
+				templateUrl: 'js/templates/beta.html',
+				controller: 'BetaFeatures',
+				label: 'Beta',
+				activeTab: 'beta',
+				reloadOnSearch: false
+			}).
 			when('/viewmetrics', {
 				templateUrl: 'js/templates/viewmetrics.html',
 				controller: 'ViewMetrics',
