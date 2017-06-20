@@ -894,7 +894,7 @@ angular.module('argus.services.charts.elements', [])
 				.attr('x1', 0).attr('y1', mousePositionData.positionY)
 				.attr('x2', sizeInfo.width).attr('y2', mousePositionData.positionY);
 			var textY = isNaN(mousePositionData.mouseY) ? 'No Data' : d3.format(formatYaxis)(mousePositionData.mouseY);
-			focus.select('[name=crossLineTipY')
+			focus.select('[name=crossLineTipY]')
 				.attr('x', 0)
 				.attr('y', mousePositionData.positionY)
 				.attr('dx', -crossLineTipWidth)
