@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <div class="h3">Metrics</div>
 <section>
 <form novalidate class="form-horizontal" ng-enter="getMetricData()" name="search_metrics">
@@ -57,7 +58,7 @@
 
     <div class="metricFields">
         <label>Metric</label><span ng-if="noMetricResults" class="error"> &nbsp; No results</span>
-        <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric" 
+        <input type="text" class="form-control" placeholder="Metric" autocomplete="off" ng-model="metric"
         ng-class="{'loading': (loadingMetric) ? true : false, 'cancel': (noMetricResults) ? true : false}"
         typeahead-min-length="1"
         typeahead-wait-ms="500"
@@ -74,10 +75,10 @@
     </div>
 
     <div ng-show="enterTagsErr" style="color:red;">You must enter both a <strong>Tag key AND Tag value</strong>!</div>
-    
+
     <div class="metricFields">
         <label>Tag key</label><span ng-if="noTagkResults" class="error"> &nbsp; No results</span>
-        <input type="text" class="form-control" placeholder="Tag key" autocomplete="off" ng-model="tagk" 
+        <input type="text" class="form-control" placeholder="Tag key" autocomplete="off" ng-model="tagk"
         ng-class="{'loading': (loadingTagk) ? true : false, 'cancel': (noTagkResults) ? true : false}"
         typeahead-min-length="0"
         typeahead-wait-ms="250"
@@ -93,10 +94,10 @@
           </a>
         </script>
     </div>
-    
+
     <div class="metricFields">
         <label>Tag value</label><span ng-if="noTagvResults" class="error"> &nbsp; No results</span>
-        <input type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="tagv" 
+        <input type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="tagv"
         ng-class="{'loading': (loadingTagv) ? true : false, 'cancel': (noTagvResults) ? true : false}"
         typeahead-min-length="0"
         typeahead-wait-ms="250"
@@ -115,7 +116,7 @@
 
     <div class="metricFields">
         <label>Namespace</label><span ng-if="noNamespaceResults" class="error"> &nbsp; No results</span>
-        <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace" 
+        <input type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="namespace"
         ng-class="{'loading': (loadingNamespace) ? true : false, 'cancel': (noNamespaceResults) ? true : false}"
         typeahead-min-length="3"
         typeahead-wait-ms="500"

@@ -1,5 +1,5 @@
-'use strict';
 /*global angular:false, $:false, console:false */
+'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
