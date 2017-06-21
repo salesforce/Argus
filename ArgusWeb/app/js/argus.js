@@ -103,7 +103,8 @@ angular.module('argus.services', [
 	'argus.services.agTableService',
 	'argus.services.tokenAuthInterceptor',
 	'argus.services.users',
-	'argus.services.confirmClick'
+	'argus.services.confirmClick',
+	'argus.services.browsing'
 ]);
 
 // Controllers
@@ -122,7 +123,8 @@ angular.module('argus.controllers', [
 	'argus.controllers.metricelements',
 	'argus.controllers.namespace',
 	'argus.controllers.viewelements',
-	'argus.controllers.viewMetrics'
+	'argus.controllers.viewMetrics',
+	'argus.controllers.metricsBrowsing'
 ]);
 
 // Directives
@@ -156,6 +158,7 @@ require('./controllers/metricElements');
 require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
+require('./controllers/metricsBrowsing');
 
 // services
 require('./services/auth');
@@ -172,7 +175,7 @@ require('./services/tableListService');
 require('./services/downloadHelper');
 require('./services/agTableService');
 require('./services/tokenAuthInterceptor');
-require('./services/ConfirmClickService')
+require('./services/ConfirmClickService');
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
 require('./services/charts/chartTools');
@@ -194,6 +197,7 @@ require('./services/factories/reinstateUser');
 require('./services/factories/triggers');
 require('./services/factories/triggersMap');
 require('./services/factories/users');
+require('./services/factories/browsing');
 
 // directives
 require('./directives/headerMenu');
