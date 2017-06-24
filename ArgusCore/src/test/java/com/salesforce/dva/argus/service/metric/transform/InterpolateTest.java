@@ -46,7 +46,7 @@ import com.salesforce.dva.argus.entity.Metric;
 public class InterpolateTest {
 
 	@Test
-	public void transformWithTwoTimeSeries() {
+	public void interpolateWithTwoTimeSeries() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -79,7 +79,7 @@ public class InterpolateTest {
 		metric.setTag("host", "host2");
 		metrics.add(metric);
 
-		Interpolate interpolate = new Interpolate();
+		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics);
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
@@ -112,7 +112,7 @@ public class InterpolateTest {
 
 
 	@Test
-	public void transformWithOneTimeSeries() {
+	public void interpolateWithOneTimeSeries() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -128,7 +128,7 @@ public class InterpolateTest {
 		List<Metric> metrics = new ArrayList<Metric>();
 		metrics.add(metric);
 
-		Interpolate interpolate = new Interpolate();
+		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics);
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
@@ -140,7 +140,7 @@ public class InterpolateTest {
 	}
 
 	@Test
-	public void transformWithTwoTimeSeriesStartEndDontAlign() {
+	public void interpolateWithTwoTimeSeriesStartEndDontAlign() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -171,7 +171,7 @@ public class InterpolateTest {
 		metric.setTag("host", "host2");
 		metrics.add(metric);
 
-		Interpolate interpolate = new Interpolate();
+		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics);
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();

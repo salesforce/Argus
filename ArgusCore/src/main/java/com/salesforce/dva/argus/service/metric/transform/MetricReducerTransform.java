@@ -97,11 +97,6 @@ public class MetricReducerTransform implements Transform {
 
 		distiller.distill(metrics);
 
-		// interpolate metrics
-		Interpolate interpolate  = new Interpolate();
-		metrics = interpolate.transform(metrics);
-		
-
 		Map<Long, List<Double>> collated = collate(metrics);
 		Map<Long, Double> minDatapoints = reduce(collated);
 		String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
