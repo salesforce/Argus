@@ -29,6 +29,64 @@ public class InterpolateTransform implements Transform {
 	private Map<Long, Double>[] addedDatapointsArray;
 	private static final long MARK_END_TIME_SERIES  = Long.MAX_VALUE;
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Metric> transform(List<Metric> metrics) {
+		int size = metrics.size();
+		timestamps = new Long[size * 2];
+		values = new Double[size * 2];
+		iterators = new Iterator[size];
+		addedDatapointsArray =  (Map<Long, Double>[]) new Map[size];
+
+		for(int i=0; i<size;  i++){
+			addedDatapointsArray[i] = new TreeMap<Long, Double>();
+		}
+
+		/*
+		 * Add data points to internal buffer so we can interpolate
+		 */
+		for (int i = 0; i < size; i++) {
+			iterators[i] = metrics.get(i).getDatapoints().entrySet().iterator();
+			if (!iterators[i].hasNext()) {
+				markEndTimeSeries(i);
+				continue;
+			}
+
+			Entry<Long, Double> datapoint = (Entry<Long, Double>) iterators[i].next();
+			putDataPoint(size + i, datapoint);
+		}
+
+		while(doesAnyTimeSeriesHaveData()){
+			updateBufferChronologically();
+			indexToInterpolate = -1;
+			fillInterpolatedValues();
+			while (shouldDoInterpolation()) {
+				fillInterpolatedValues();
+			}
+		}
+
+		for(int i=0; i<size;  i++){
+			metrics.get(i).addDatapoints(addedDatapointsArray[i]);
+		}
+
+		return metrics;
+	}
+
+	@Override
+	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
+	}
+
+	@Override
+	public List<Metric> transform(List<Metric>... listOfList) {
+		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
+	}
+
+	@Override
+	public String getResultScopeName() {
+		return TransformFactory.Function.INTERPOLATE.name();
+	}
+	
 	/**
 	 * Puts the next data point of an iterator in the next section of internal buffer.
 	 * @param i The index of the iterator.
@@ -171,63 +229,5 @@ public class InterpolateTransform implements Transform {
 			interpolatedValue = (y2 - y1) / (x2 - x1) * (x - x1) + y1;
 			addedDatapointsArray[indexToInterpolate].put(x, interpolatedValue);
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public List<Metric> transform(List<Metric> metrics) {
-		int size = metrics.size();
-		timestamps = new Long[size * 2];
-		values = new Double[size * 2];
-		iterators = new Iterator[size];
-		addedDatapointsArray =  (Map<Long, Double>[]) new Map[size];
-
-		for(int i=0; i<size;  i++){
-			addedDatapointsArray[i] = new TreeMap<Long, Double>();
-		}
-
-		/*
-		 * Add data points to internal buffer so we can interpolate
-		 */
-		for (int i = 0; i < size; i++) {
-			iterators[i] = metrics.get(i).getDatapoints().entrySet().iterator();
-			if (!iterators[i].hasNext()) {
-				markEndTimeSeries(i);
-				continue;
-			}
-
-			Entry<Long, Double> datapoint = (Entry<Long, Double>) iterators[i].next();
-			putDataPoint(size + i, datapoint);
-		}
-
-		while(doesAnyTimeSeriesHaveData()){
-			updateBufferChronologically();
-			indexToInterpolate = -1;
-			fillInterpolatedValues();
-			while (shouldDoInterpolation()) {
-				fillInterpolatedValues();
-			}
-		}
-
-		for(int i=0; i<size;  i++){
-			metrics.get(i).addDatapoints(addedDatapointsArray[i]);
-		}
-
-		return metrics;
-	}
-
-	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
-	}
-
-	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
-	}
-
-	@Override
-	public String getResultScopeName() {
-		return TransformFactory.Function.INTERPOLATE.name();
 	}
 }
