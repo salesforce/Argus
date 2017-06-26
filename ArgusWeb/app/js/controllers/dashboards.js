@@ -58,18 +58,24 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 	// TODO: refactor to DashboardService
 	$scope.getDashboards = function (selectedTab) {
 		if ($scope.dashboardsLoaded) {
-			switch (selectedTab) {
-				case 2: //shared
-					$scope.dashboards = dashboardLists.sharedList;
-					break;
-				case 3: //privileged
-					if (userPrivileged) {
-						$scope.dashboards = dashboardLists.privilegedList;
+			if (selectedTab !== 1 && !$sessionStorage.dashboards.loadedEverything) {
+				delete $scope.dashboards;
+				$scope.dashboardsLoaded = false;
+				getAllDashboards();
+			} else {
+				switch (selectedTab) {
+					case 2: //shared
+						$scope.dashboards = dashboardLists.sharedList;
 						break;
-					}
-					break;
-				default: //personal
-					$scope.dashboards = dashboardLists.usersList;
+					case 3: //privileged
+						if (userPrivileged) {
+							$scope.dashboards = dashboardLists.privilegedList;
+							break;
+						}
+						break;
+					default: //personal
+						$scope.dashboards = dashboardLists.usersList;
+				}
 			}
 		}
 	};
@@ -79,11 +85,21 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 		$scope.getDashboards(selectedTab);
 	}
 
-	function getNewDashboards () {
+	function getAllDashboards () {
 		Dashboards.getMeta().$promise.then(function(dashboards) {
 			dashboardLists = TableListService.getListUnderTab(dashboards, remoteUsername, userPrivileged);
 			$sessionStorage.dashboards.cachedData = dashboardLists;
+			$sessionStorage.dashboards.loadedEverything = true;
 			setDashboardsAfterLoading($scope.selectedTab);
+		});
+	}
+
+	function getUsersDashboards () {
+		Dashboards.getPersonalDashboards().$promise.then(function (dashboards) {
+			dashboardLists = TableListService.getListUnderTab(dashboards, remoteUsername, userPrivileged);
+			$sessionStorage.dashboards.cachedData = dashboardLists;
+			$sessionStorage.dashboards.loadedEverything = false;
+			setDashboardsAfterLoading(1);
 		});
 	}
 
@@ -97,7 +113,11 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 		delete $sessionStorage.dashboards.cachedData;
 		delete $scope.dashboards;
 		$scope.dashboardsLoaded = false;
-		getNewDashboards();
+		if ($scope.selectedTab === 1) {
+			getUsersDashboards();
+		} else {
+			getAllDashboards();
+		}
 	};
 
 	// TODO: refactor to DashboardService
@@ -191,7 +211,10 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 		$scope.selectedTab = $sessionStorage.dashboards.selectedTab;
 		setDashboardsAfterLoading($scope.selectedTab);
 	} else {
-		// trigger API call if there is no data in cache
-		getNewDashboards();
+		if ($scope.selectedTab === undefined || $scope.selectedTab === 1) {
+			getUsersDashboards();
+		} else {
+			getAllDashboards();
+		}
 	}
 }]);
