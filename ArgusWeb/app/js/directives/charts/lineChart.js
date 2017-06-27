@@ -2,7 +2,7 @@
 /*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, ChartToolService, ChartElementService, UtilService) {
+.directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
 	var resizeTimeout = 250; //the time for resize function to fire
 	var resizeJobs = [];
@@ -499,6 +499,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					}
 
 					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+					// redener brush line in a downsample manner
 					downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
 					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 
@@ -545,8 +546,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
 						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 				}
-
-				var crossPositionData;
 
 				if(snapPoint && scope.menuOption.isSnapCrosslineOn){
 					mousePositionData = snapPoint;
@@ -643,7 +642,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					var range = end - start;
 					brushMainG.call(brushMain.move, null);
 					if (range * maxScaleExtent < x2.domain()[1] - x2.domain()[0]) return;
-					x.domain([start, end]);
 					brushG.call(brush.move, [x2(start), x2(end)]);
 				}
 			}
