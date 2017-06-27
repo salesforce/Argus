@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false */
+/*global angular:false, console:false */
 
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
 .controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',

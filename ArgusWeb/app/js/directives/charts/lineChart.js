@@ -227,28 +227,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			};
 
 			$scope.labelTextColor = function(source) {
-				var color;
-				var chartType = $scope.chartConfig.chartType;
-				if (source.displaying) {
-					var elementWithColor = d3.select('.' + source.graphClassName + '_brush' + UtilService.capitalizeString(chartType));
-					if (elementWithColor.empty()) {
-						// have a default color
-						color = source.color;
-					} else {
-						switch (chartType) {
-							case 'stackarea':
-							case 'area':
-								color = elementWithColor.style('fill');
-								break;
-							// case 'line':
-							default:
-								color = elementWithColor.style('stroke');
-						}
-					}
-				} else {
-					color = '#FFF';
-				}
-				return color;
+				return source.displaying? source.color: '#FFF';
 			};
 
 			$scope.toggleSource = function(source) {
@@ -893,7 +872,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			// watch changes from chart options modal to update graph
 			scope.$watch('menuOption.colorPalette', function (newValue, oldValue) {
 				if (!scope.hideMenu && newValue !== oldValue) {
-					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType);
+					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType, scope.sources);
 				}
 			}, true);
 
