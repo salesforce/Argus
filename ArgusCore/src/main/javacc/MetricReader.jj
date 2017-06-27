@@ -195,6 +195,7 @@ TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
 TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
+TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -202,7 +203,7 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" > }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "minmin" | "minmax" | "none" > }
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
@@ -466,6 +467,9 @@ private String functionName() :
     | 
     t = <GROUPBY>
     { return t.image; }
+    |
+    t = <INTERPOLATE>
+    { return t.image; }    
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz) :

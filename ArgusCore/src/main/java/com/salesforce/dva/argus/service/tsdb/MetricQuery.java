@@ -306,7 +306,8 @@ public class MetricQuery extends AnnotationQuery {
 		ZIMSUM("zimsum"),
 		COUNT("count"),
 		MIMMIN("mimmin"),
-		MIMMAX("mimmax");
+		MIMMAX("mimmax"),
+		NONE("none");
 
 		private final String _description;
 
