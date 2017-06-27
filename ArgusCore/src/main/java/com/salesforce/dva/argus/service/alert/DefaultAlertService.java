@@ -237,10 +237,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	@Override
 	@Transactional
-	public List<Alert> findAlertsByOwner(PrincipalUser owner) {
+	public List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
-		return Alert.findByOwner(_emProvider.get(), owner);
+		
+		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
 
 	@Override
@@ -604,9 +605,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	@Override
 	@Transactional
-	public List<Alert> findAllAlerts() {
+	public List<Alert> findAllAlerts(boolean metadataOnly) {
 		requireNotDisposed();
-		return Alert.findAll(_emProvider.get());
+		
+		return metadataOnly ? Alert.findAllMeta(_emProvider.get()) : Alert.findAll(_emProvider.get());
 	}
 
 	@Override
@@ -659,9 +661,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	@Override
 	@Transactional
-	public List<Alert> findSharedAlerts() {
+	public List<Alert> findSharedAlerts(boolean metadataOnly) {
 		requireNotDisposed();
-		return Alert.findSharedAlerts(_emProvider.get());
+		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get()) : Alert.findSharedAlerts(_emProvider.get());
 	}
 
 	/**

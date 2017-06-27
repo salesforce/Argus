@@ -83,16 +83,73 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard.getId());
         owner = uService.findUserByUsername("owner1");
 
-        List<Dashboard> dashboardRetrieved = dService.findDashboardsByOwner(owner);
+        List<Dashboard> dashboardRetrieved = dService.findDashboardsByOwner(owner, false);
 
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
-        dashboardRetrieved = dService.findSharedDashboards();
+        dashboardRetrieved = dService.findSharedDashboards(false);
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
         dService.deleteDashboard(dashboard.getId());
         assertNull(dService.findDashboardByPrimaryKey(dashboard.getId()));
     }
+    
+    @Test
+    public void testFindDashboardsMeta() {
+    	
+    	PrincipalUser owner = new PrincipalUser("owner1", "owner1@mycompany.abc");
+        Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
+
+        dashboard.setShared(true);
+        dashboard = dService.updateDashboard(dashboard);
+        assertNotNull(dashboard.getId());
+        
+        List<Dashboard> retrieved = dService.findDashboards(1, true);
+        assertEquals(1, retrieved.size());
+        assertEquals(dashboard.getId(), retrieved.get(0).getId());
+    }
+    
+    @Test
+    public void testFindDashboardsByOwnerMeta() {
+        PrincipalUser owner1 = new PrincipalUser("owner1", "owner1@mycompany.abc");
+        PrincipalUser owner2 = new PrincipalUser("owner2", "owner2@mycompany.abc");
+        
+        Dashboard dashboard1 = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner1);
+        dashboard1 = dService.updateDashboard(dashboard1);
+        assertNotNull(dashboard1.getId());
+        
+        Dashboard dashboard2 = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner2);
+        dashboard2 = dService.updateDashboard(dashboard2);
+        assertNotNull(dashboard2.getId());
+        
+        owner1 = uService.findUserByUsername("owner1");
+
+        List<Dashboard> dashboardsRetrieved = dService.findDashboardsByOwner(owner1, true);
+        assertEquals(1, dashboardsRetrieved.size());
+        assertEquals(dashboard1.getId(), dashboardsRetrieved.get(0).getId());
+    }
+    
+    @Test
+    public void testFindSharedDashboardsMeta() {
+        PrincipalUser owner = new PrincipalUser("owner1", "owner1@mycompany.abc");
+        
+        Dashboard dashboard1 = new Dashboard(uService.findAdminUser(), "Test Dashboard1", owner);
+        dashboard1.setShared(true);
+        dashboard1 = dService.updateDashboard(dashboard1);
+        
+        owner = uService.findUserByUsername("owner1");
+        
+        Dashboard dashboard2 = new Dashboard(uService.findAdminUser(), "Test Dashboard2", owner);
+        dashboard2 = dService.updateDashboard(dashboard2);
+        
+        assertNotNull(dashboard1.getId());
+        assertNotNull(dashboard2.getId());
+        
+        List<Dashboard> dashboardsRetrieved = dService.findSharedDashboards(true);
+        assertEquals(1, dashboardsRetrieved.size());
+        assertEquals(dashboard1.getId(), dashboardsRetrieved.get(0).getId());
+    }
+    
 
     private void testReadDashboard(PrincipalUser owner, String dashboardName) {
         Dashboard dashboard = dService.findDashboardByNameAndOwner("Test Dashboard", owner);

@@ -79,6 +79,14 @@ public interface AlertService extends Service {
      * @param  owner  The owner of the alert. Cannot be null.
      */
     void markAlertForDeletion(String name, PrincipalUser owner);
+    
+    /**
+     * Marks the given alert for deletion. Subsequent reads for this alert would result in null entity. All alerts marked for deletion will be
+     * periodically/eventually removed from the system.
+     *
+     * @param  alert  The alert to mark for deletion. Cannot be null.
+     */
+    void markAlertForDeletion(Alert alert);
 
     /**
      * Deletes a trigger from the alert.
@@ -100,6 +108,24 @@ public interface AlertService extends Service {
      * @param  alert  The alert to delete. Cannot be null.
      */
     void deleteAlert(Alert alert);
+    
+    /**
+     * Dequeues scheduled alerts from the alert evaluation queue and evaluates the triggers sending notifications if required. The number of alerts
+     * evaluated will be determined by the number of alerts dequeued within the timeout period, not to exceed the specified alert count.
+     *
+     * @param   alertCount  The maximum number of alerts to dequeue.
+     * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
+     *
+     * @return  returns Job history of alerts executed.
+     */
+    List<History> executeScheduledAlerts(int alertCount, int timeout);
+
+    /**
+     * Enqueues alerts to be executed by the next available alert client.
+     *
+     * @param  alerts  The alerts to enqueue. Cannot be null, but may be empty.
+     */
+    void enqueueAlerts(List<Alert> alerts);
 
     /**
      * Returns a list of alerts for an owner.
@@ -108,7 +134,7 @@ public interface AlertService extends Service {
      *
      * @return  The list of alerts. Will never be null, but may be empty.
      */
-    List<Alert> findAlertsByOwner(PrincipalUser owner);
+    List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly);
 
     /**
      * Returns a list of alerts that have been marked for deletion.
@@ -125,14 +151,6 @@ public interface AlertService extends Service {
      * @return  The list of alerts marked for deletion.
      */
     List<Alert> findAlertsMarkedForDeletion(int limit);
-    
-    /**
-     * Marks the given alert for deletion. Subsequent reads for this alert would result in null entity. All alerts marked for deletion will be
-     * periodically/eventually removed from the system.
-     *
-     * @param  alert  The alert to mark for deletion. Cannot be null.
-     */
-    void markAlertForDeletion(Alert alert);
 
     /**
      * Finds an alert by its primary key.
@@ -163,29 +181,11 @@ public interface AlertService extends Service {
     Alert findAlertByNameAndOwner(String name, PrincipalUser owner);
 
     /**
-     * Dequeues scheduled alerts from the alert evaluation queue and evaluates the triggers sending notifications if required. The number of alerts
-     * evaluated will be determined by the number of alerts dequeued within the timeout period, not to exceed the specified alert count.
-     *
-     * @param   alertCount  The maximum number of alerts to dequeue.
-     * @param   timeout     The maximum amount of time in milliseconds to attempt to dequeue alerts.
-     *
-     * @return  returns Job history of alerts executed.
-     */
-    List<History> executeScheduledAlerts(int alertCount, int timeout);
-
-    /**
-     * Enqueues alerts to be executed by the next available alert client.
-     *
-     * @param  alerts  The alerts to enqueue. Cannot be null, but may be empty.
-     */
-    void enqueueAlerts(List<Alert> alerts);
-
-    /**
      * Returns a list of all alerts.
      *
      * @return  The list of all alerts. Will never be null, but may be empty.
      */
-    List<Alert> findAllAlerts();
+    List<Alert> findAllAlerts(boolean metadataOnly);
     
     /**
      * Returns a list of alerts by status (enabled alerts or disabled alerts).
@@ -235,18 +235,18 @@ public interface AlertService extends Service {
     List<Alert> findAlertsByNameWithPrefix(String prefix);
 
     /**
+     * Returns a list of shared alerts.
+     *
+     * @return  The list of all alerts. Will never be null, but may be empty.
+     */
+    List<Alert> findSharedAlerts(boolean metadataOnly);
+    
+    /**
      * Returns the list of supported notifiers.
      *
      * @return  The list of supported notifiers. Cannot be null, but may be empty.
      */
     List<String> getSupportedNotifiers();
-
-    /**
-     * Returns a list of shared alerts.
-     *
-     * @return  The list of all alerts. Will never be null, but may be empty.
-     */
-    List<Alert> findSharedAlerts();
     
     /**
      * Returns the notifier instance corresponding to the supported notifier type.
@@ -367,5 +367,6 @@ public interface AlertService extends Service {
          */
         Properties getNotifierProperties();
     }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
