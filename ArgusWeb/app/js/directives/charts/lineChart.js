@@ -360,7 +360,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				names, colors, graphClassNames,
 				flagsG, labelTip,
 				stack;
-			var isDataStacked = chartType === 'stackarea';
+			var isDataStacked = chartType.includes('stack');
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
@@ -481,8 +481,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				xAxisG2.call(xAxis2);
-				var chartOpacity = chartType === 'stackarea'? 0.8: 1;
-
+				// var chartOpacity = chartType === 'stackarea'? 0.8: 1;
+				var chartOpacity = chartType.includes('stack')? 0.8: 1;
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;

@@ -426,7 +426,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderScatterGraph = function (chart, color, metric, graph, chartId) {
-		chart.selectAll('.dot')
+		chart.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
@@ -467,7 +467,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderBrushScatterGraph = function (context, color, metric, graph, chartId) {
-		context.selectAll('.dot')
+		context.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
@@ -493,7 +493,7 @@ angular.module('argus.services.charts.elements', [])
 
 	this.renderFocusCircle = function (focus, color, className, extraYAxis) {
 		focus.append('circle')
-			.attr('r', circleRadius * 1.1)
+			.attr('r', circleRadius * 1.25)
 			.attr('fill', color)
 			.attr('class', className + ' extraYAxis_' + extraYAxis);
 	};
@@ -977,7 +977,6 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.updateColors = function (colorPalette, names, colors, graphClassNames, chartType, sources) {
-		var colorMatcher = {};
 		var newColorZ = ChartToolService.setColorScheme(colorPalette);
 		ChartToolService.bindDefaultColorsWithSources(newColorZ, names);
 		for (var i = 0; i < names.length; i++) {
