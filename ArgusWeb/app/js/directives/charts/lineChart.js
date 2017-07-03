@@ -361,6 +361,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				flagsG, labelTip,
 				stack;
 			var isDataStacked = chartType.includes('stack');
+			var isChartDiscrete = chartType.includes('bar');
+			var timestampSelector = ChartToolService.generateTimestampSelector(isDataStacked);
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
@@ -447,6 +449,11 @@ angular.module('argus.directives.charts.lineChart', [])
 						.order(d3.stackOrderNone)
 						.offset(d3.stackOffsetNone);
 				}
+				// set domain for bandwidth if its a bar chart
+				if (chartType.includes('bar')) {
+					graph.x1.domain(names);
+					graph2.x1.domain(names);
+				}
 			}
 
 			function renderGraphs (series) {
@@ -458,21 +465,21 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 				seriesBeingDisplayed = currSeries;
 
-				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, isDataStacked, extraYAxisSet);
+				var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet);
 				var xDomain = xyDomain.xDomain;
 				var yDomain = xyDomain.yDomain;
 				var extraYDomain = xyDomain.extraYDomain;
 
 				x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
-				y.domain(ChartToolService.processYDomain(yDomain, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked));
+				y.domain(ChartToolService.processYDomain(yDomain, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete));
 				for (var iSet of extraYAxisSet){
-					extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked));
+					extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
 				}
 				// update brush's x and y
 				x2.domain(xDomain);
 				y2.domain(yDomain);
 				for (var iSet of extraYAxisSet){
-					extraY2[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked));
+					extraY2[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
 				}
 
 				dateExtent = xDomain;
@@ -481,8 +488,17 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				xAxisG2.call(xAxis2);
-				// var chartOpacity = chartType === 'stackarea'? 0.8: 1;
+
+				// minior adjustments based on chart type
 				var chartOpacity = chartType.includes('stack')? 0.8: 1;
+				if (isChartDiscrete) {
+                    // update band scale domain from the time scale
+                    graph.x0.domain(xyDomain.discreteXDomain);
+                    graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+                    graph2.x0.domain(xyDomain.discreteXDomain);
+                    graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+				}
+
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
@@ -500,7 +516,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
 					// redener brush line in a downsample manner
-					downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+					downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
 					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
@@ -616,6 +632,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				// don't do anything if the domain does not change (initial loading phase)
 				if (angular.equals(x.domain(), newDomain)) return;
 				x.domain(newDomain); //rescale the domain of x axis
+				// update band scale domain if bar chart is plotted
+                // TODO: create new discrete domain
+                if (isChartDiscrete) graph.x0.domain(newDomain);
+
 
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
@@ -651,11 +671,13 @@ angular.module('argus.directives.charts.lineChart', [])
 				// ignore the case when it is called by the brushed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'brush' || d3.event.sourceEvent.type === 'end'))return;
 				var t = d3.event.transform;
-				x.domain(t.rescaleX(x2).domain());  //rescale the domain of x axis
-													//invert the x value in brush axis range to the
-													//value in domain
+                // rescale the domain of x axis, invert the x value in brush axis range to the, value in domain
+				var tempNewDomain = t.rescaleX(x2).domain();
+				x.domain(tempNewDomain);
+				// TODO: create new discrete domain
+                if (isChartDiscrete) graph.x0.domain(tempNewDomain);
 
-				//adjust displaying series to the brushed period
+				// adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
 				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, isDataStacked);
 				scope.updateGraphAndScale();
@@ -689,7 +711,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack, hiddenSourceNames);
 					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
 				}
-				ChartElementService.reScaleYAxis(seriesBeingDisplayed, scope.sources, y, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, extraY, extraYScalePlain, extraYAxisSet);
+				ChartElementService.reScaleYAxis(seriesBeingDisplayed, scope.sources, y, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete, extraY, extraYScalePlain, extraYAxisSet);
 				redraw();
 			};
 
@@ -714,17 +736,16 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeClip(allSize, clip, needToAdjustHeight);
 					ChartElementService.resizeChartRect(allSize, chartRect, needToAdjustHeight);
 					ChartToolService.updateXandYRange(allSize, x, y, needToAdjustHeight);
-					//TODO: why a boolean is && with a function call
 					needToAdjustHeight && ChartToolService.updateExtraYRange(allSize, extraY, extraYAxisSet);
 					ChartElementService.resizeBrush(allSize, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight, extraY2, extraYAxisSet);
 					ChartElementService.resizeMainBrush(allSize, brushMain, brushMainG);
 					ChartElementService.resizeZoom(allSize, zoom);
 					ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
-					if (chartType === 'scatter') {
-						graph.x = x;
-						graph.y = y;
-						graph2.x = x2;
-						graph2.y = y2;
+					if (isChartDiscrete) {
+						graph.x0.range(x.range());
+                        graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+						graph2.x0.range(x2.range());
+                        graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 					}
 					ChartElementService.resizeGraphs(svg_g, graph, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);

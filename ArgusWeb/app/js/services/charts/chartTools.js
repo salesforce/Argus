@@ -188,8 +188,11 @@ angular.module('argus.services.charts.tools', [])
 		};
 	};
 
+	this.generateTimestampSelector = function (isDataStacked) {
+    	return isDataStacked? function (d) {return d.data.timestamp;}: function (d) {return d[0];};
+    };
 
-	this.getXandYDomainsOfSeries = function (series, isDataStacked, extraYAxisSet) {
+	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
 		var extraDatapoints = {};
 
@@ -198,33 +201,52 @@ angular.module('argus.services.charts.tools', [])
 		}
 
 		series.forEach(function (metric) {
-			if(metric.extraYAxis){
+			if (metric.extraYAxis) {
 				extraDatapoints[metric.extraYAxis] = extraDatapoints[metric.extraYAxis].concat(metric.data);
-			}else{
-				datapoints = datapoints.concat(metric.data)
+			} else {
+				datapoints = datapoints.concat(metric.data);
 			}
 		});
 
-		return {
-			xDomain: this.getXDomainOfSeries(datapoints, isDataStacked),
+		var result = {
+			xDomain: this.getXDomainOfSeries(datapoints, timestampSelector),
 			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
 			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
+
+		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(datapoints, timestampSelector);
+
+		return result;
 	};
 
-	this.getXDomainOfSeries = function (dataPoints, isDataStacked) {
-		var extent;
-		if (isDataStacked) {
-			extent = d3.extent(dataPoints, function (d) {
-				return d.data.timestamp;
-			});
-		} else {
-			extent = d3.extent(dataPoints, function (d) {
-				return d[0];
-			});
-		}
-		return extent;
+	this.getXDomainOfSeries = function (dataPoints, timestampSelector) {
+		// var extent;
+		// if (isDataStacked) {
+		// 	extent = d3.extent(dataPoints, function (d) {
+		// 		return d.data.timestamp;
+		// 	});
+		// } else {
+		// 	extent = d3.extent(dataPoints, function (d) {
+		// 		return d[0];
+		// 	});
+		// }
+		// return extent;
+
+        var extent;
+        extent = d3.extent(dataPoints, function (d) {
+            return timestampSelector(d);
+        });
+        return extent;
 	};
+
+	this.getDiscreteXDomainOfSeries = function (datapoints, timestampSelector) {
+		var result = [];
+		datapoints.map(function (d) {
+			var newTimestamp = timestampSelector(d);
+			if (!result.includes(newTimestamp)) result.push(newTimestamp);
+		});
+		return result;
+    };
 
 	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
 		var extent;
@@ -523,7 +545,7 @@ angular.module('argus.services.charts.tools', [])
 		})[0];
 	};
 
-	this.processYDomain = function (currentExtent, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked) {
+	this.processYDomain = function (currentExtent, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete) {
 		var yMin, yMax, buffer, finalYMin, finalYMax;
 		yMin = UtilService.validNumberChecker(yScalePlain(currentExtent[0]));
 		yMax = UtilService.validNumberChecker(yScalePlain(currentExtent[1]));
@@ -534,6 +556,7 @@ angular.module('argus.services.charts.tools', [])
 		finalYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.2 * buffer)): agYMax;
 
 		if (isDataStacked && finalYMin < 0 && yMin !== yMax) finalYMin = 0;
+		if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
 		// TODO: still need to handle log(0) better
 		if (yScaleType === 'log') {
 			if (finalYMin === 0) finalYMin = 1;
