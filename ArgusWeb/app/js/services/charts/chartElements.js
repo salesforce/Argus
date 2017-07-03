@@ -431,7 +431,7 @@ angular.module('argus.services.charts.elements', [])
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
 			.attr("cy", function (d) { return graph.y(d[1]); } )
-			.attr('class', 'dot ' + metric.graphClassName)
+			.attr('class', 'dot ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
 			.style('opacity', 0.7)
 			.attr('r', circleRadius * 0.7);
