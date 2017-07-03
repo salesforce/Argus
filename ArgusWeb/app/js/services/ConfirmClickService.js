@@ -20,11 +20,15 @@ angular.module('argus.services.confirmClick', [])
 					$scope.confirmCall = confirmCall;
 					$scope.cancelCall = cancelCall;
 					$scope.confirm = function () {
-						$scope.confirmCall();
+						if($scope.confirmCall){
+							$scope.confirmCall();
+						}
 						$scope.close();
 					};
 					$scope.close = function () {
-						$scope.cancelCall();
+						if($scope.cancelCall){
+							$scope.cancelCall();
+						}
 						confirmModal.close();
 					};
 				}]

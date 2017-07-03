@@ -39,7 +39,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 				//find all option tags in the ag-select tag, and add their contents
 				element.find('ng-transclude option').each(function(){
 					selectize.addOption({
-						text: this.innerHTML,
+						text: this.innerText,
 						value: this.value
 					});
 					optionSet.add(this.value);
