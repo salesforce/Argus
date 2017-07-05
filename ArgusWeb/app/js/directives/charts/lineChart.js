@@ -362,7 +362,9 @@ angular.module('argus.directives.charts.lineChart', [])
 				stack;
 			var isDataStacked = chartType.includes('stack');
 			var isChartDiscrete = chartType.includes('bar');
+
 			var timestampSelector = ChartToolService.generateTimestampSelector(isDataStacked);
+			var dateBisector = isDataStacked ? ChartToolService.bisectDateStackedData : ChartToolService.bisectDate;
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
@@ -492,11 +494,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				// minior adjustments based on chart type
 				var chartOpacity = chartType.includes('stack')? 0.8: 1;
 				if (isChartDiscrete) {
-                    // update band scale domain from the time scale
-                    graph.x0.domain(xyDomain.discreteXDomain);
-                    graph.x1.rangeRound([0, graph.x0.bandwidth()]);
-                    graph2.x0.domain(xyDomain.discreteXDomain);
-                    graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+					// update band scale domain from the time scale
+					graph.x0.domain(xyDomain.discreteXDomain);
+					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+					graph2.x0.domain(xyDomain.discreteXDomain);
+					graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 				}
 
 				currSeries.forEach(function (metric, index) {
@@ -560,7 +562,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				var snapPoint;
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
 					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
+						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked);
 				}
 
 				if(snapPoint && scope.menuOption.isSnapCrosslineOn){
@@ -601,7 +603,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					};
 					if (brushInNonEmptyRange) {
 						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
-							seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
+							seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked);
 					}
 					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
 				}
@@ -633,13 +635,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (angular.equals(x.domain(), newDomain)) return;
 				x.domain(newDomain); //rescale the domain of x axis
 				// update band scale domain if bar chart is plotted
-                // TODO: create new discrete domain
-                if (isChartDiscrete) graph.x0.domain(newDomain);
-
-
+				// TODO: create new discrete domain
+				if (isChartDiscrete) graph.x0.domain(newDomain);
 				//adjust displaying series to the brushed period
-				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
-				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, isDataStacked);
+				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
+				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
 				scope.updateGraphAndScale();
 
 				//sync with zoom
@@ -671,15 +671,15 @@ angular.module('argus.directives.charts.lineChart', [])
 				// ignore the case when it is called by the brushed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'brush' || d3.event.sourceEvent.type === 'end'))return;
 				var t = d3.event.transform;
-                // rescale the domain of x axis, invert the x value in brush axis range to the, value in domain
+				// rescale the domain of x axis, invert the x value in brush axis range to the, value in domain
 				var tempNewDomain = t.rescaleX(x2).domain();
 				x.domain(tempNewDomain);
 				// TODO: create new discrete domain
-                if (isChartDiscrete) graph.x0.domain(tempNewDomain);
+				if (isChartDiscrete) graph.x0.domain(tempNewDomain);
 
 				// adjust displaying series to the brushed period
-				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
-				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, isDataStacked);
+				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
+				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
 				scope.updateGraphAndScale();
 
 				// sync the brush
@@ -709,7 +709,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					//need to recalculate currSeries since some series are hidden
 					currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack, hiddenSourceNames);
-					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
+					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
 				}
 				ChartElementService.reScaleYAxis(seriesBeingDisplayed, scope.sources, y, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete, extraY, extraYScalePlain, extraYAxisSet);
 				redraw();
@@ -743,9 +743,9 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
 					if (isChartDiscrete) {
 						graph.x0.range(x.range());
-                        graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+						graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 						graph2.x0.range(x2.range());
-                        graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+						graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 					}
 					ChartElementService.resizeGraphs(svg_g, graph, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
@@ -762,7 +762,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						//restore the zoom&brush
 						context.select('.brush').call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
 					}
-					ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, isDataStacked);
+					ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
 				} else {
 					svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
 				}
@@ -964,7 +964,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					if (isDataStacked) {
 						currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack);
 					}
-					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, isDataStacked);
+					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
 					scope.updateGraphAndScale();
 				}
 			}, true);

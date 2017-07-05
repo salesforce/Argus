@@ -89,12 +89,10 @@ angular.module('argus.services.charts.tools', [])
 	this.bisectDate = d3.bisector(function (d) {
 		return d[0];
 	}).left;
-	var bisectDate = this.bisectDate;
 
 	this.bisectDateStackedData = d3.bisector(function (d) {
 		return d.data.timestamp;
 	}).left;
-	var bisectDateStackedData = this.bisectDateStackedData;
 
 	// menu option
 	var sampleCustomFormat = '0,.8';     // scientific notation
@@ -189,8 +187,8 @@ angular.module('argus.services.charts.tools', [])
 	};
 
 	this.generateTimestampSelector = function (isDataStacked) {
-    	return isDataStacked? function (d) {return d.data.timestamp;}: function (d) {return d[0];};
-    };
+		return isDataStacked ? function (d) {return d.data.timestamp;} : function (d) {return d[0];};
+	};
 
 	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
@@ -220,23 +218,11 @@ angular.module('argus.services.charts.tools', [])
 	};
 
 	this.getXDomainOfSeries = function (dataPoints, timestampSelector) {
-		// var extent;
-		// if (isDataStacked) {
-		// 	extent = d3.extent(dataPoints, function (d) {
-		// 		return d.data.timestamp;
-		// 	});
-		// } else {
-		// 	extent = d3.extent(dataPoints, function (d) {
-		// 		return d[0];
-		// 	});
-		// }
-		// return extent;
-
-        var extent;
-        extent = d3.extent(dataPoints, function (d) {
-            return timestampSelector(d);
-        });
-        return extent;
+		var extent;
+		extent = d3.extent(dataPoints, function (d) {
+			return timestampSelector(d);
+		});
+		return extent;
 	};
 
 	this.getDiscreteXDomainOfSeries = function (datapoints, timestampSelector) {
@@ -246,7 +232,7 @@ angular.module('argus.services.charts.tools', [])
 			if (!result.includes(newTimestamp)) result.push(newTimestamp);
 		});
 		return result;
-    };
+	};
 
 	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
 		var extent;
@@ -386,9 +372,9 @@ angular.module('argus.services.charts.tools', [])
 			var bucketSize = Math.ceil(metric.data.length / (0.1 * containerWidth));
 			sampler.bucketSize(bucketSize);
 			result.data = sampler(metric.data);
-			return result
+			return result;
 		} else {
-			return metric
+			return metric;
 		}
 	};
 
@@ -414,16 +400,10 @@ angular.module('argus.services.charts.tools', [])
 		return value < domainArray[0] || value > domainArray[1];
 	};
 
-	this.isMetricNotInTheDomain = function (metric, xDomain, isDataStacked) {
+	this.isMetricNotInTheDomain = function (metric, xDomain, timestampSelector) {
 		var len = metric.data.length;
-		var startPoint, endPoint;
-		if (isDataStacked) {
-			startPoint = metric.data[0].data.timestamp;
-			endPoint = metric.data[len - 1].data.timestamp;
-		} else {
-			startPoint = metric.data[0][0];
-			endPoint = metric.data[len - 1][0];
-		}
+		var startPoint = timestampSelector(metric.data[0]);
+		var endPoint = timestampSelector(metric.data[len - 1]);
 		return startPoint > xDomain[1].getTime() || endPoint < xDomain[0].getTime();
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
@@ -513,27 +493,21 @@ angular.module('argus.services.charts.tools', [])
 		return newSeries;
 	};
 
-	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {
+	this.adjustSeriesBeingDisplayed = function (series, x, timestampSelector, dateBisector) {
 		var xDomain = x.domain();
 		// var newDisplayingSeries = angular.copy(series);
 		var newDisplayingSeries = series.map(function(metric) {
 			return UtilService.objectWithoutProperties(metric, ['data']);
 		});
 		series.forEach(function (metric, index) {
-			if (isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
+			if (isMetricNotInTheDomain(metric, xDomain, timestampSelector)) {
 				newDisplayingSeries[index].data = [];
 				return;
 			}
 			var start, end;
-			if (isDataStacked) {
-				start = bisectDateStackedData(metric.data, xDomain[0]);
-				if (start > 0) start -= 1; //to avoid cut off issue on the edge
-				end = bisectDateStackedData(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
-			} else {
-				start = bisectDate(metric.data, xDomain[0]);
-				if (start > 0) start -= 1;
-				end = bisectDate(metric.data, xDomain[1], start) + 1;
-			}
+			start = dateBisector(metric.data, xDomain[0]);
+			if (start > 0) start -= 1; //to avoid cut off issue on the edge
+			end = dateBisector(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
 			newDisplayingSeries[index].data = metric.data.slice(start, end + 1);
 		});
 		return newDisplayingSeries;

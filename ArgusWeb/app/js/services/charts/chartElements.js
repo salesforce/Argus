@@ -178,15 +178,15 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.createBar = function (x, y) {
-        // does not actually create a graph element
-        // y.interpolate(d3.interpolateRound);
-        return {
-        	x: x,
+		// does not actually create a graph element
+		// y.interpolate(d3.interpolateRound);
+		return {
+			x: x,
 			y: y.rangeRound(y.range()),
 			x0: d3.scaleBand().range(x.range()).paddingInner(0.1),
 			x1: d3.scaleBand().padding(0.05)
-        };
-    };
+		};
+	};
 
 	this.createGraph = function (x, y, chartType) {
 		var graphElement;
@@ -456,40 +456,30 @@ angular.module('argus.services.charts.elements', [])
 		chart.selectAll('.bars')
 			.data(metric.data)
 			.enter().append('rect')
-            .attr("transform", function(d) { return "translate(" + graph.x0(d[0]) + ",0)"; })
+			.attr("transform", function(d) { return "translate(" + graph.x0(d[0]) + ",0)"; })
 			.attr('x', function (d) { return graph.x1(metric.name); })
 			.attr('y', function (d) { return graph.y(d[1]); })
-            .attr('width', graph.x1.bandwidth())
-            .attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-            .attr('class', 'bar ' + metric.graphClassName)
-            .style('fill', color);
-    };
+			.attr('width', graph.x1.bandwidth())
+			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
+			.attr('class', 'bar ' + metric.graphClassName)
+			.style('fill', color);
+	};
 
 	this.renderGraph = function (chart, color, metric, graph, chartId, chartType, opacity) {
-		// if (chartType === 'scatter') {
-		// 	this.renderScatterGraph(chart, color, metric, graph, chartId);
-		// } else {
-		// 	var newGraph = chart.append('path')
-		// 		.attr('class', chartType + ' ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
-		// 		.style('clip-path', 'url(\'#clip_' + chartId + '\')')
-		// 		.datum(metric.data)
-		// 		.attr('d', graph);
-		// 	setGraphColorStyle(newGraph, color, chartType, opacity);
-		// }
 		switch (chartType) {
 			case 'scatter':
-                this.renderScatterGraph(chart, color, metric, graph, chartId);
+				this.renderScatterGraph(chart, color, metric, graph, chartId);
 				break;
 			case 'bar':
 				this.renderBarGraph(chart, color, metric, graph, chartId);
 				break;
 			default:
-                var newGraph = chart.append('path')
-                    .attr('class', chartType + ' ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
-                    .style('clip-path', 'url(\'#clip_' + chartId + '\')')
-                    .datum(metric.data)
-                    .attr('d', graph);
-                setGraphColorStyle(newGraph, color, chartType, opacity);
+				var newGraph = chart.append('path')
+					.attr('class', chartType + ' ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
+					.style('clip-path', 'url(\'#clip_' + chartId + '\')')
+					.datum(metric.data)
+					.attr('d', graph);
+				setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
 	};
 
@@ -521,43 +511,34 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderBrushBarGraph = function (context, color, metric, graph) {
-        var tempHeight = graph.y.range()[0];
-        context.selectAll('.bars')
-            .data(metric.data)
-            .enter().append('rect')
-            .attr("transform", function(d) { return "translate(" + graph.x0(d[0]) + ",0)"; })
-            .attr('x', function (d) { return graph.x1(metric.name); })
-            .attr('y', function (d) { return graph.y(d[1]); })
-            .attr('width', graph.x1.bandwidth())
-            .attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-            .attr('class', 'brushBar ' + metric.graphClassName + '_brushBar' +' extraYAxis_' + (metric.extraYAxis || ''))
-            .style('fill', color);
-    };
+		var tempHeight = graph.y.range()[0];
+		context.selectAll('.bars')
+			.data(metric.data)
+			.enter().append('rect')
+			.attr("transform", function(d) { return "translate(" + graph.x0(d[0]) + ",0)"; })
+			.attr('x', function (d) { return graph.x1(metric.name); })
+			.attr('y', function (d) { return graph.y(d[1]); })
+			.attr('width', graph.x1.bandwidth())
+			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
+			.attr('class', 'brushBar ' + metric.graphClassName + '_brushBar' +' extraYAxis_' + (metric.extraYAxis || ''))
+			.style('fill', color);
+	};
 
 	this.renderBrushGraph = function (context, color, metric, graph2, chartType, opacity) {
 		var cappedChartTypeStr = UtilService.capitalizeString(chartType);
-		// if (chartType === 'scatter') {
-		// 	this.renderBrushScatterGraph(context, color, metric, graph2);
-		// } else {
-		// 	var newGraph = context.append('path')
-		// 		.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr + ' extraYAxis_' + (metric.extraYAxis || ''))
-		// 		.datum(metric.data)
-		// 		.attr('d', graph2);
-		// 	setGraphColorStyle(newGraph, color, chartType, opacity);
-		// }
 		switch (chartType) {
 			case 'scatter':
-                this.renderBrushScatterGraph(context, color, metric, graph2);
-                break;
+				this.renderBrushScatterGraph(context, color, metric, graph2);
+				break;
 			case 'bar':
 				this.renderBrushBarGraph(context, color, metric, graph2);
 				break;
 			default:
-                var newGraph = context.append('path')
-                    .attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr + ' extraYAxis_' + (metric.extraYAxis || ''))
-                    .datum(metric.data)
-                    .attr('d', graph2);
-                setGraphColorStyle(newGraph, color, chartType, opacity);
+				var newGraph = context.append('path')
+					.attr('class', 'brush' + cappedChartTypeStr + ' ' + metric.graphClassName + '_brush' + cappedChartTypeStr + ' extraYAxis_' + (metric.extraYAxis || ''))
+					.datum(metric.data)
+					.attr('d', graph2);
+				setGraphColorStyle(newGraph, color, chartType, opacity);
 		}
 	};
 
@@ -672,14 +653,13 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, isDataStacked) {
+	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
 		var datapoints = [];
 		var minDistanceVertical = Number.MAX_VALUE;
 		var minDistanceHorizontal = Number.MAX_VALUE;
 		var snapPoint;
 
 		series.forEach(function (metric) {
-
 			var circle = focus.select('.' + metric.graphClassName);
 
 			var y;
@@ -697,8 +677,7 @@ angular.module('argus.services.charts.elements', [])
 				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 			} else {
 				var data = metric.data;
-				var i = isDataStacked ?  ChartToolService.bisectDateStackedData(metric.data, mousePositionData.mouseX, 1) :
-						ChartToolService.bisectDate(metric.data, mousePositionData.mouseX, 1);
+				var i = dateBisector(metric.data, mousePositionData.mouseX, 1);
 				var d0 = data[i - 1];
 				var d1 = data[i];
 				var d;
@@ -712,24 +691,18 @@ angular.module('argus.services.charts.elements', [])
 					d = d0;
 				} else {
 					// if both data points lives in the domain, choose the closer one to the mouse position
-					d = mousePositionData.mouseX - (isDataStacked ? d0.data.timestamp : d0[0]) >
-					(isDataStacked ? d1.data.timestamp : d1[0]) - mousePositionData.mouseX ? d1 : d0;
+					d = mousePositionData.mouseX - (timestampSelector(d0)) >
+					(timestampSelector(d1)) - mousePositionData.mouseX ? d1 : d0;
 				}
 
-				var tempX, tempY, tempYStacked;
-				if (isDataStacked){
-					tempX = d.data.timestamp;
-					tempY = d.data[metric.name];
-					tempYStacked = d[1];
-				}
-
+				var currentDatapoint = isDataStacked ? [d.data.timestamp, d.data[metric.name]] : d;
 
 				// set a snapping limit for graph
-				var notInSnappingRange = Math.abs(mousePositionData.mouseX - (isDataStacked? tempX: d[0])) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
+				var notInSnappingRange = Math.abs(mousePositionData.mouseX - currentDatapoint[0]) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
 				var displayProperty = circle.attr('displayProperty');
 
-				if (ChartToolService.isNotInTheDomain((isDataStacked ? tempX : d[0]), x.domain()) ||
-					ChartToolService.isNotInTheDomain((isDataStacked ? tempYStacked : d[1]), y.domain()) ||
+				if (ChartToolService.isNotInTheDomain(currentDatapoint[0], x.domain()) ||
+					ChartToolService.isNotInTheDomain(d[1], y.domain()) ||
 					notInSnappingRange) {
 					//outside domain
 					circle.style('display', 'none');
@@ -740,14 +713,14 @@ angular.module('argus.services.charts.elements', [])
 				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
 
 				// update circle's position on each graph
-				var newX = UtilService.validNumberChecker(x((isDataStacked ? tempX : d[0])));
-				var newY = UtilService.validNumberChecker(y((isDataStacked ? tempYStacked : d[1])));
+				var newX = UtilService.validNumberChecker(x(currentDatapoint[0]));
+				var newY = UtilService.validNumberChecker(y(d[1]));
 
 				circle.attr('dataX', d[0]).attr('dataY', d[1]) //store the data
 					.attr('transform', 'translate(' + newX + ',' + newY + ')');
 				if (displayProperty !== 'none') {
 					datapoints.push({
-						data: isDataStacked ?[tempX, tempY]: d,
+						data: currentDatapoint,
 						graphClassName: metric.graphClassName,
 						name: metric.name
 					});
@@ -893,11 +866,10 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, isDataStacked) {
+	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
 		var datapoints;
 		var datapointsAndSnapPoint;
-
-		datapointsAndSnapPoint =  this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, extraY, mousePositionData, isDataStacked);
+		datapointsAndSnapPoint =  this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked);
 		datapoints = datapointsAndSnapPoint.datapoints;
 		// sort items in tooltip if needed
 		if (tooltipConfig.isTooltipSortOn) {
@@ -1058,18 +1030,18 @@ angular.module('argus.services.charts.elements', [])
 					allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushArea').style('fill', tempColor);
 					break;
-                case 'stackarea':
-                    allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
-                    d3.select('.' + graphClassNames[i] + '_brushStackarea').style('fill', tempColor);
-                    break;
+				case 'stackarea':
+					allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
+					d3.select('.' + graphClassNames[i] + '_brushStackarea').style('fill', tempColor);
+					break;
 				case 'scatter':
 					allElementsLinkedWithThisSeries.filter('dot').style('fill', tempColor);
 					d3.selectAll('.' + graphClassNames[i] + '_brushDot').style('fill', tempColor);
 					break;
 				case 'bar':
-                    allElementsLinkedWithThisSeries.filter('bar').style('fill', tempColor);
-                    d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
-                    break;
+					allElementsLinkedWithThisSeries.filter('bar').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
+					break;
 				// case "line":
 				default:
 					allElementsLinkedWithThisSeries.filter('path').style('stroke', tempColor);
@@ -1081,13 +1053,13 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.adjustTooltipItemsBasedOnDisplayingSeries = function (series, sources, x, tipItems, isDataStacked) {
+	this.adjustTooltipItemsBasedOnDisplayingSeries = function (series, sources, x, tipItems, timestampSelector) {
 		var xDomain = x.domain();
 		series.forEach(function (metric) {
 			var source = ChartToolService.findMatchingMetricInSources(metric, sources);
 			// metric with no data
 			if (metric === null || metric.data === undefined || metric.data.length === 0 ||
-				ChartToolService.isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
+				ChartToolService.isMetricNotInTheDomain(metric, xDomain, timestampSelector)) {
 				tipItems.selectAll('.' + source.graphClassName).style('display', 'none');
 			} else {
 				tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
@@ -1115,54 +1087,36 @@ angular.module('argus.services.charts.elements', [])
 		// metric with no defined data or hidden
 		var displayingInLegend = source.displaying;
 		if (metric === null || metric.data === undefined || !displayingInLegend) return;
-		// if (chartType === 'scatter') {
-		// 	mainChart.selectAll('circle.dot.' + metric.graphClassName)
-		// 		.attr("cx", function (d) { return graph.x(d[0]); } )
-		// 		.attr("cy", function (d) { return graph.y(d[1]); } )
-		// 		.style('display', function (d) {
-		// 			if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-		// 				ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-		// 				return 'none';
-		// 			} else {
-		// 				return null;
-		// 			}
-		// 		});
-		// } else {
-		// 	mainChart.select('path.' + chartType + '.' + metric.graphClassName)
-		// 		.datum(metric.data)
-		// 		.attr('d', graph);
-		// }
 		switch (chartType) {
 			case 'scatter':
-                mainChart.selectAll('circle.dot.' + metric.graphClassName)
-                    .attr("cx", function (d) { return graph.x(d[0]); } )
-                    .attr("cy", function (d) { return graph.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-                            ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
-                break;
+				mainChart.selectAll('circle.dot.' + metric.graphClassName)
+					.attr("cx", function (d) { return graph.x(d[0]); } )
+					.attr("cy", function (d) { return graph.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
+							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
+				break;
 			case 'bar':
-                mainChart.selectAll('rect.bar.' + metric.graphClassName)
-                    .attr("x", function (d) { return graph.x0(new Date(d[0])); } )
-                    .attr("y", function (d) { return graph.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
-                break;
+				mainChart.selectAll('rect.bar.' + metric.graphClassName)
+					.attr("x", function (d) { return graph.x0(new Date(d[0])); } )
+					.attr("y", function (d) { return graph.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
 				break;
 			default:
-                mainChart.select('path.' + chartType + '.' + metric.graphClassName)
-                    .datum(metric.data)
-                    .attr('d', graph);
+				mainChart.select('path.' + chartType + '.' + metric.graphClassName)
+					.datum(metric.data)
+					.attr('d', graph);
 		}
 	};
 
@@ -1317,49 +1271,34 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.resizeGraph = function (svg_g, graph, chartType, extraYAxis) {
-		// if (chartType === 'scatter') {
-		// 	svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
-		// 		.attr("cx", function (d) { return graph.x(d[0]); } )
-		// 		.attr("cy", function (d) { return graph.y(d[1]); } )
-		// 		.style('display', function (d) {
-		// 			if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-		// 				ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-		// 				return 'none';
-		// 			} else {
-		// 				return null;
-		// 			}
-		// 		});
-		// } else {
-		// 	svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
-		// }
 		switch (chartType) {
 			case 'scatter':
-                svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
-                    .attr("cx", function (d) { return graph.x(d[0]); } )
-                    .attr("cy", function (d) { return graph.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
-                            ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
+				svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
+					.attr("cx", function (d) { return graph.x(d[0]); } )
+					.attr("cy", function (d) { return graph.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
+							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
 				break;
 			case 'bar':
-                svg_g.selectAll('.bar' + '.extraYAxis_' + extraYAxis)
-                    .attr("x", function (d) { return graph.x0(new Date(d[0])); } )
-                    .attr("y", function (d) { return graph.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
-                break;
+				svg_g.selectAll('.bar' + '.extraYAxis_' + extraYAxis)
+					.attr("x", function (d) { return graph.x0(new Date(d[0])); } )
+					.attr("y", function (d) { return graph.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
+				break;
 			default:
-                svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
+				svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
 		}
 	};
 
@@ -1371,49 +1310,34 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.resizeBrushGraph = function (svg_g, graph2, chartType, extraYAxis){
-		// if (chartType === 'scatter') {
-		// 	svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
-		// 		.attr("cx", function (d) { return graph2.x(d[0]); } )
-		// 		.attr("cy", function (d) { return graph2.y(d[1]); } )
-		// 		.style('display', function (d) {
-		// 			if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
-		// 				ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
-		// 				return 'none';
-		// 			} else {
-		// 				return null;
-		// 			}
-		// 		});
-		// } else {
-		// 	svg_g.selectAll('.brush' + UtilService.capitalizeString(chartType) + '.extraYAxis_' + extraYAxis).attr('d', graph2);
-		// }
 		switch (chartType) {
 			case 'scatter':
-                svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
-                    .attr("cx", function (d) { return graph2.x(d[0]); } )
-                    .attr("cy", function (d) { return graph2.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
-                            ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
+				svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
+					.attr("cx", function (d) { return graph2.x(d[0]); } )
+					.attr("cy", function (d) { return graph2.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
+							ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
 				break;
 			case 'bar':
-                svg_g.selectAll('.bar' + '.extraYAxis_' + extraYAxis)
-                    .attr("x", function (d) { return graph2.x0(new Date(d[0])); } )
-                    .attr("y", function (d) { return graph2.y(d[1]); } )
-                    .style('display', function (d) {
-                        if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain())) {
-                            return 'none';
-                        } else {
-                            return null;
-                        }
-                    });
-                break;
+				svg_g.selectAll('.bar' + '.extraYAxis_' + extraYAxis)
+					.attr("x", function (d) { return graph2.x0(new Date(d[0])); } )
+					.attr("y", function (d) { return graph2.y(d[1]); } )
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
+				break;
 			default:
-                svg_g.selectAll('.brush' + UtilService.capitalizeString(chartType) + '.extraYAxis_' + extraYAxis).attr('d', graph2);
+				svg_g.selectAll('.brush' + UtilService.capitalizeString(chartType) + '.extraYAxis_' + extraYAxis).attr('d', graph2);
 		}
 	};
 
