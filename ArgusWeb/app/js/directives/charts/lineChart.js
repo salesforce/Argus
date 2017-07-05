@@ -850,6 +850,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 					setupMenu();
+					if (!scope.menuOption.isBrushOn) ChartElementService.toggleElementShowAndHide(false, context);
 				} else {
 					// generate content for no graph message
 					if (invalidExpression) {

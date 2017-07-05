@@ -78,7 +78,7 @@
 		<input class="chkBox pointer" id="toggleBrush-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushOn" title="Show bottom brush" />
 		<label class="chkBoxLbl" for="toggleBrush-{{chartId}}">Show timeline of graphs at the bottom.</label>
 
-		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" />
+		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" ng-disabled="!menuOption.isBrushOn" />
 		<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
 
 		<br /><input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;
@@ -97,7 +97,7 @@
 		<div style="margin-left:23px;" title="Uncheck raw data point to use">
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.tooltipConfig.customTooltipFormat" ng-disabled="menuOption.tooltipConfig.rawTooltip" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
-		
+
 		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
 		<label>Select a color palette: </label>&nbsp;
 		<select ng-model="menuOption.colorPalette" name="color-palette">
