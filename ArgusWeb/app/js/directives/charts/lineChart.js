@@ -2,7 +2,7 @@
 /*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
 
 angular.module('argus.directives.charts.lineChart', [])
-.directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', 'UtilService', function($timeout, Storage, ChartToolService, ChartElementService, UtilService) {
+.directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
 	var resizeTimeout = 250; //the time for resize function to fire
 	var resizeJobs = [];
@@ -227,28 +227,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			};
 
 			$scope.labelTextColor = function(source) {
-				var color;
-				var chartType = $scope.chartConfig.chartType;
-				if (source.displaying) {
-					var elementWithColor = d3.select('.' + source.graphClassName + '_brush' + UtilService.capitalizeString(chartType));
-					if (elementWithColor.empty()) {
-						// have a default color
-						color = source.color;
-					} else {
-						switch (chartType) {
-							case 'stackarea':
-							case 'area':
-								color = elementWithColor.style('fill');
-								break;
-							// case 'line':
-							default:
-								color = elementWithColor.style('stroke');
-						}
-					}
-				} else {
-					color = '#FFF';
-				}
-				return color;
+				return source.displaying? source.color: '#FFF';
 			};
 
 			$scope.toggleSource = function(source) {
@@ -381,7 +360,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				names, colors, graphClassNames,
 				flagsG, labelTip,
 				stack;
-			var isDataStacked = chartType === 'stackarea';
+			var isDataStacked = chartType.includes('stack');
 
 			// setup: initialize all the graph variables
 			function setUpGraphs() {
@@ -502,8 +481,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				xAxisG2.call(xAxis2);
-				var chartOpacity = chartType === 'stackarea'? 0.8: 1;
-
+				// var chartOpacity = chartType === 'stackarea'? 0.8: 1;
+				var chartOpacity = chartType.includes('stack')? 0.8: 1;
 				currSeries.forEach(function (metric, index) {
 					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
@@ -520,6 +499,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					}
 
 					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+					// redener brush line in a downsample manner
 					downSampledMetric = ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
 					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 
@@ -566,8 +546,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
 						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 				}
-
-				var crossPositionData;
 
 				if(snapPoint && scope.menuOption.isSnapCrosslineOn){
 					mousePositionData = snapPoint;
@@ -664,7 +642,6 @@ angular.module('argus.directives.charts.lineChart', [])
 					var range = end - start;
 					brushMainG.call(brushMain.move, null);
 					if (range * maxScaleExtent < x2.domain()[1] - x2.domain()[0]) return;
-					x.domain([start, end]);
 					brushG.call(brush.move, [x2(start), x2(end)]);
 				}
 			}
@@ -893,7 +870,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			// watch changes from chart options modal to update graph
 			scope.$watch('menuOption.colorPalette', function (newValue, oldValue) {
 				if (!scope.hideMenu && newValue !== oldValue) {
-					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType);
+					ChartElementService.updateColors(newValue, names, colors, graphClassNames, chartType, scope.sources);
 				}
 			}, true);
 

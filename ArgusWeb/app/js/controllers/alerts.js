@@ -93,7 +93,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 	}
 
 	function getUsersAlerts () {
-		Alerts.getUsers().$promise.then(function(alerts) {
+		Alerts.getNonSharedAlerts().$promise.then(function(alerts) {
 			alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
 			$sessionStorage.alerts.cachedData = alertLists;
 			$sessionStorage.alerts.loadedEverything = false;
@@ -110,7 +110,11 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 		delete $sessionStorage.alerts.cachedData;
 		delete $scope.alerts;
 		$scope.alertsLoaded = false;
-		$scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
+		if ($scope.selectedTab === 2) {
+			getAllAlerts();
+		} else {
+			getUsersAlerts();
+		}
 	};
 
 	$scope.addAlert = function () {
@@ -162,8 +166,10 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 		$scope.selectedTab = $sessionStorage.alerts.selectedTab;
 		setAlertsAfterLoading($scope.selectedTab);
 	} else {
-		$scope.selectedTab === 2? getAllAlerts(): getUsersAlerts();
+		if ($scope.selectedTab === 2) {
+			getAllAlerts();
+		} else {
+			getUsersAlerts();
+		}
 	}
-
-
 }]);
