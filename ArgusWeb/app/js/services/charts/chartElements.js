@@ -426,12 +426,12 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderScatterGraph = function (chart, color, metric, graph, chartId) {
-		chart.selectAll('.dot')
+		chart.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
 			.attr("cy", function (d) { return graph.y(d[1]); } )
-			.attr('class', 'dot ' + metric.graphClassName)
+			.attr('class', 'dot ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
 			.style('opacity', 0.7)
 			.attr('r', circleRadius * 0.7);
@@ -467,7 +467,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.renderBrushScatterGraph = function (context, color, metric, graph, chartId) {
-		context.selectAll('.dot')
+		context.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
 			.attr("cx", function (d) { return graph.x(d[0]); } )
@@ -493,7 +493,7 @@ angular.module('argus.services.charts.elements', [])
 
 	this.renderFocusCircle = function (focus, color, className, extraYAxis) {
 		focus.append('circle')
-			.attr('r', circleRadius * 1.1)
+			.attr('r', circleRadius * 1.25)
 			.attr('fill', color)
 			.attr('class', className + ' extraYAxis_' + extraYAxis);
 	};
@@ -646,10 +646,11 @@ angular.module('argus.services.charts.elements', [])
 					(isDataStacked ? d1.data.timestamp : d1[0]) - mousePositionData.mouseX ? d1 : d0;
 				}
 
-				if(isDataStacked){
-					var tempX = d.data.timestamp;
-					var tempY = d.data[metric.name];
-					var tempYStacked = d[1];
+				var tempX, tempY, tempYStacked;
+				if (isDataStacked){
+					tempX = d.data.timestamp;
+					tempY = d.data[metric.name];
+					tempYStacked = d[1];
 				}
 
 
@@ -714,92 +715,6 @@ angular.module('argus.services.charts.elements', [])
 			snapPoint: snapPoint
 		};
 	};
-	//
-	// this.updateFocusCirclesAndTooltipItemsWithStackedData = function (focus, tipItems, series, sources, x, y, mousePositionData) {
-	// 	var datapoints = [];
-	//
-	// 	var minDistanceVertical = Number.MAX_VALUE;
-	// 	var minDistanceHorizontal = Number.MAX_VALUE;
-	// 	var snapPoint;
-	//
-	// 	series.forEach(function (metric) {
-	// 		var circle = focus.select('.' + metric.graphClassName);
-	// 		var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
-	// 		if (metric.data.length === 0 || !displayingInLegend) {
-	// 			circle.style('display', 'none');
-	// 			tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
-	// 		} else {
-	// 			var data = metric.data;
-	// 			var i = ChartToolService.bisectDateStackedData(metric.data, mousePositionData.mouseX, 1);
-	// 			var d0 = data[i - 1];
-	// 			var d1 = data[i];
-	// 			var d;
-	//
-	// 			if (!d0) {
-	// 				d = d1;
-	// 			} else if (!d1) {
-	// 				d = d0;
-	// 			} else {
-	// 				d = mousePositionData.mouseX - d0.data.timestamp > d1.data.timestamp - mousePositionData.mouseX ? d1 : d0;
-	// 			}
-	//
-	// 			var tempX = d.data.timestamp;
-	// 			var tempY = d.data[metric.name];
-	// 			var tempYStacked = d[1];
-	//
-	// 			var notInSnappingRange = Math.abs(mousePositionData.mouseX - tempX) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
-	// 			var displayProperty = circle.attr('displayProperty');
-	// 			if (ChartToolService.isNotInTheDomain(tempX, x.domain()) ||
-	// 				ChartToolService.isNotInTheDomain(tempYStacked, y.domain()) ||
-	// 				notInSnappingRange) {
-	// 				circle.style('display', 'none');
-	// 				displayProperty = 'none';
-	// 			} else {
-	// 				circle.style('display', null);
-	// 			}
-	// 			tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
-	// 			var newX = UtilService.validNumberChecker(x(tempX));
-	// 			var newY = UtilService.validNumberChecker(y(tempYStacked));
-	//
-	// 			var distanceHorizontal = Math.abs(UtilService.validNumberChecker(mousePositionData.positionX - newX));
-	// 			var distanceVertical = Math.abs(UtilService.validNumberChecker(mousePositionData.positionY - newY));
-	//
-	// 			if(distanceHorizontal < minDistanceHorizontal){
-	// 				snapPoint = {
-	// 					positionX : newX,
-	// 					positionY : newY,
-	// 					mouseX : d[0],
-	// 					mouseY : d[1]
-	// 				};
-	// 				minDistanceHorizontal = distanceHorizontal;
-	// 				minDistanceVertical = distanceVertical;
-	//
-	// 			}else if(distanceHorizontal === minDistanceHorizontal && distanceVertical < minDistanceVertical){
-	// 				snapPoint = {
-	// 					positionX : newX,
-	// 					positionY : newY,
-	// 					mouseX : d[0],
-	// 					mouseY : d[1]
-	// 				};
-	// 				minDistanceVertical = distanceVertical;
-	// 			}
-	//
-	// 			circle.attr('dataX', d[0]).attr('dataY', d[1])
-	// 				.attr('transform', 'translate(' + newX + ',' + newY + ')');
-	// 			if (displayProperty !== 'none') {
-	// 				datapoints.push({
-	// 					data: [tempX, tempY],
-	// 					graphClassName: metric.graphClassName,
-	// 					name: metric.name
-	// 				});
-	// 			}
-	// 		}
-	// 	});
-	// 	return	{
-	// 		datapoints: datapoints,
-	// 		snapPoint: snapPoint
-	// 	};
-	// };
 
 	this.updateTooltipItemsContent = function (sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData) {
 		var XOffset = 0;
@@ -825,7 +740,7 @@ angular.module('argus.services.charts.elements', [])
 			var name = UtilService.trimMetricName(datapoints[i].name, tooltipConfig.leadingNum, tooltipConfig.trailingNum);
 			var tempData = datapoints[i].data[1];
 			textLine.text(name + ' -- ' + d3.format(dataFormat)(tempData));
-			// update XOffset if existing offset is smaller than texLine
+			// update XOffset if existing offset is smaller than textLine
 			var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
 			if (tempXOffset > newXOffset) {
 				newXOffset = tempXOffset;
@@ -1061,7 +976,7 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateColors = function (colorPalette, names, colors, graphClassNames, chartType) {
+	this.updateColors = function (colorPalette, names, colors, graphClassNames, chartType, sources) {
 		var newColorZ = ChartToolService.setColorScheme(colorPalette);
 		ChartToolService.bindDefaultColorsWithSources(newColorZ, names);
 		for (var i = 0; i < names.length; i++) {
@@ -1082,7 +997,9 @@ angular.module('argus.services.charts.elements', [])
 					allElementsLinkedWithThisSeries.filter('path').style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushLine').style('stroke', tempColor);
 			}
+			// update color info for legend
 			d3.select('.' + graphClassNames[i] + '_legend').style('color', tempColor);
+			sources[i].color = tempColor;
 		}
 	};
 
@@ -1142,9 +1059,9 @@ angular.module('argus.services.charts.elements', [])
 	this.redrawGraphs = function (series, sources, chartType, graph, mainChart, extraGraph) {
 		var chartElementService = this;
 		series.forEach(function (metric, index) {
-			var source = ChartToolService.findMatchingMetricInSources(metric, sources)
+			var source = ChartToolService.findMatchingMetricInSources(metric, sources);
 			if (metric.extraYAxis) {
-				chartElementService.redrawGraph(metric, source, chartType, extraGraph[metric.extraYAxis], mainChart)
+				chartElementService.redrawGraph(metric, source, chartType, extraGraph[metric.extraYAxis], mainChart);
 			} else {
 				chartElementService.redrawGraph(metric, source, chartType, graph, mainChart);
 			}
@@ -1369,9 +1286,9 @@ angular.module('argus.services.charts.elements', [])
 				extraYAxisRG: extraYAxisRG,
 				extraY2: extraY2,
 				extraGraph2: extraGraph2
-			}
+			};
 		}else{
 			return null;
 		}
-	}
+	};
 }]);
