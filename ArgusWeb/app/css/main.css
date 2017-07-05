@@ -424,3 +424,9 @@ ag-select > div {min-width: 152px;}
     stroke: khaki;
     stroke-width: 3px;
 }
+
+/* for view metric ul */
+.viewMetricsUl {
+    max-height: 350px;
+    overflow: auto;
+}
