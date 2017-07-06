@@ -149,7 +149,7 @@ require('./controllers/admin');
 require('./controllers/alerts');
 require('./controllers/alertsDetail');
 require('./controllers/batches');
-require('./controllers/beta');
+require('./controllers/betaFeatures');
 require('./controllers/dashboards');
 require('./controllers/dashboardsDetail');
 require('./controllers/login');
@@ -224,6 +224,6 @@ require('./directives/UItools/ngConfirm');
 require('./directives/UItools/ngLoading');
 require('./directives/UItools/ngEnter');
 require('./directives/modals/confirmClick');
-
+require('./directives/agRequest')
 // css
 require('../css/main.css');

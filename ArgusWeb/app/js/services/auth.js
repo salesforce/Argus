@@ -7,6 +7,16 @@ angular.module('argus.services.auth', [])
 	var refreshPath = 'v2/auth/token/refresh';
 
 	return {
+		isUrlValid: function isUrlValid(url){
+			if(!url) return false;
+			url = url.trim();
+			if(url.indexOf("/") == 0) return true;
+			//remove port number and compare
+			var urlWithOutPort = url.replace(/:[0-9]+/, "");
+			var wsWithOutPort = CONFIG.wsUrl.replace(/:[0-9]+/, "");
+			return urlWithOutPort.indexOf(wsWithOutPort) == 0;
+		},
+
 		login: function (username, password) {
 			var creds = {
 				username: username,
