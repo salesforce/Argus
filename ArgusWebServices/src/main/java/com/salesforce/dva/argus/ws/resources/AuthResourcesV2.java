@@ -35,10 +35,13 @@ import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.AuthService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.CredentialsDto;
-import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.filter.AuthFilter;
+
+import io.jsonwebtoken.ExpiredJwtException;
+
+import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -54,10 +57,10 @@ import javax.ws.rs.core.Response;
  *
  * @author  Bhinav Sura (bsura@salesforce.com)
  */
-@Path("/auth")
+@Path("/v2/auth")
 @Description("Provides methods to authenticate users.")
-public class AuthResources extends AbstractResource {
-
+public class AuthResourcesV2 extends AbstractResource {
+	
     //~ Instance fields ******************************************************************************************************************************
 
     private AuthService authService = system.getServiceFactory().getAuthService();
@@ -65,40 +68,61 @@ public class AuthResources extends AbstractResource {
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Authenticates a user session.
+     * Authenticates a user and return JsonWebTokens (AccessToken and RefreshToken).
      *
      * @param   req    The HTTP request.
      * @param   creds  The credentials with which to authenticate.
      *
-     * @return  The authenticated user or null if authentication fails.
+     * @return  The tokens (access and refresh) or Exception if authentication fails.
      *
      * @throws  WebApplicationException  If the user is not authenticated.
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @Description("Authenticates a user session.")
+    @Description("Authenticates a user and returns access and refresh tokens.")
     @Path("/login")
-    public PrincipalUserDto login(@Context HttpServletRequest req, final CredentialsDto creds) {
+    public Response login(@Context HttpServletRequest req, final CredentialsDto creds) {
         try {
-            PrincipalUserDto result = null;
             PrincipalUser user = authService.getUser(creds.getUsername(), creds.getPassword());
 
             if (user != null) {
+                JWTUtils.Tokens tokens = JWTUtils.generateTokens(user.getUserName());
 		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
-                result = PrincipalUserDto.transformToDto(user);
+                return Response.ok(tokens).build();
             } else {
-                throw new WebApplicationException(Response.Status.UNAUTHORIZED.getReasonPhrase(), Response.Status.UNAUTHORIZED);
+                throw new WebApplicationException("User does not exist. Please provide valid credentials.", Response.Status.UNAUTHORIZED);
             }
-            req.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, result);
-            return result;
         } catch (Exception ex) {
-            throw new WebApplicationException(ex.getMessage(), Response.Status.UNAUTHORIZED);
+            throw new WebApplicationException("Exception: " + ex.getMessage(), Response.Status.UNAUTHORIZED);
         }
     }
-
+    
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Description("Authenticates a user and returns access and refresh tokens.")
+    @Path("/token/refresh")
+    public Response refreshAccessToken(@Context HttpServletRequest req, final Map<String, String> map) {
+    	
+    	String username = null;
+    	String refreshToken = map.get("refreshToken");
+    	try {
+    		username = JWTUtils.validateTokenAndGetSubj(refreshToken, JWTUtils.TokenType.REFRESH);
+    		JWTUtils.Tokens tokens = new JWTUtils.Tokens(JWTUtils.generateAccessToken(username), refreshToken);
+		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, username);
+        	return Response.ok(tokens).build();
+    	} catch(ExpiredJwtException ex) {
+    		throw new WebApplicationException("Your Refresh token has expired. You can no longer use it to obtain a new Access token. "
+    				+ "Please authenticate with the /login endpoint to obtain a new pair of tokens.", Response.Status.UNAUTHORIZED);
+    	} catch(Exception ex) {
+    		throw new WebApplicationException("Exception: " + ex.getMessage(), Response.Status.BAD_REQUEST);
+    	}
+    	
+    }
+    
     /**
-     * Terminates a user session
+     * Does not do anything. Is only supported for backwards compatibility. 
      *
      * @param   req  The HTTP request.
      *
@@ -106,14 +130,11 @@ public class AuthResources extends AbstractResource {
      */
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Description("Terminates a user session.")
+    @Description("Does not do anything. Is only supported for backwards compatibility.")
     @Path("/logout")
-    public String logout(@Context HttpServletRequest req) {
-        HttpSession session = req.getSession(true);
-
-        session.removeAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-        session.invalidate();
-        return "You have logged out.";
+    public Response logout(@Context HttpServletRequest req) {
+        return Response.ok("You have logged out.").build();
     }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

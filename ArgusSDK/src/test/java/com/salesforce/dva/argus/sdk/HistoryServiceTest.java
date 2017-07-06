@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.History;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -42,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 public class HistoryServiceTest extends AbstractTest {
 
     @Test
-    public void testGetHistoryForEntity() throws IOException {
+    public void testGetHistoryForEntity() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/HistoryServiceTest.json"))) {
             HistoryService historyService = argusService.getHistoryService();
             List<History> result = historyService.getHistoryForEntity(BigInteger.ONE, 1);

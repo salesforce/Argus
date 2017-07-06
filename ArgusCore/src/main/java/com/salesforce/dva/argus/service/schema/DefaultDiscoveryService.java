@@ -127,12 +127,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
         int limit = 500;
-        List<MetricQuery> expandedQueryList = null;
-        
+        List<MetricQuery> expandedQueryList = null;        
         Map<String, MetricQuery> queries = new HashMap<>();
         long start = System.nanoTime();
         
-
         if (DiscoveryService.isWildcardQuery(query)) {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             
@@ -169,17 +167,31 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         break;
                     }
                 }
-                
-                expandedQueryList = new ArrayList<>(queries.values());
+		
+		expandedQueryList = new ArrayList<>(queries.values());		
+
             } else {
                 Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery(query.getNamespace(), query.getScope(), query.getMetric(),
                         tag.getKey(), tag.getValue());
                     int page = 1;
+                    
+                    boolean containsWildcard = SchemaService.containsWildcard(query.getScope())
+                							|| SchemaService.containsWildcard(query.getMetric())
+                							|| SchemaService.containsWildcard(query.getNamespace())
+                							|| SchemaService.containsWildcard(tag.getKey())
+                							|| SchemaService.containsWildcard(tag.getValue());
 
                     while (true) {
-                        List<MetricSchemaRecord> records = _schemaService.get(schemaQuery, limit, page++);
+                        List<MetricSchemaRecord> records;
+                        
+                        if(!containsWildcard) {
+                    		records = Arrays.asList(new MetricSchemaRecord(query.getNamespace(), query.getScope(), query.getMetric(), 
+                    				tag.getKey(), tag.getValue()));
+                    	} else {
+                    		records = _schemaService.get(schemaQuery, limit, page++);
+                    	}
 
                         for (MetricSchemaRecord record : records) {
                             if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
@@ -227,7 +239,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         expandedQueryList.add(q);
                     }
                 }
-                
+
             } // end if-else
         } else {
             _logger.debug(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
