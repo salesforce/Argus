@@ -57,7 +57,7 @@ import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
-import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
+import com.salesforce.dva.argus.service.tsdb.WriteThroughCachedTSDBService;
 import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
 
@@ -238,7 +238,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
 
         // static binding
-        bindConcreteClass(CachedTSDBService.class, TSDBService.class);
+        bindConcreteClass(WriteThroughCachedTSDBService.class, TSDBService.class);
         bindConcreteClass(DefaultUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);
@@ -254,6 +254,8 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
+        
+        //bind(TSDBService.class).annotatedWith(DefaultTSDBServiceNamedBinding.class).to(DefaultTSDBService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {

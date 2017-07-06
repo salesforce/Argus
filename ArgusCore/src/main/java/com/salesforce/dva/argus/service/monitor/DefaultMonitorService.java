@@ -47,6 +47,7 @@ import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
@@ -124,7 +125,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
      * @param _sysConfig Service properties.
      */
     @Inject
-    public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
+    public DefaultMonitorService(@NamedBinding TSDBService tsdbService, UserService userService, AlertService alertService,
         ServiceManagementService serviceManagementService, DashboardService dashboardService, SystemConfiguration _sysConfig) {
         super(null, _sysConfig);
         requireArgument(tsdbService != null, "TSDB service cannot be null.");

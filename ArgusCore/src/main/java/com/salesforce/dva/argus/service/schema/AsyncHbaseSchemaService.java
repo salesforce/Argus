@@ -70,7 +70,6 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Map.Entry;
@@ -243,12 +242,12 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
-        String scanRowStart=scanFrom==null?Bytes.toString(metadata.startRow):_plusOneNConstructRowKey(scanFrom, metadata.tableName,null);
+        String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow) 
+        									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName, null);
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
-        
-        _logger.debug("Scan startRow: " + scanRowStart);
-        _logger.debug("Scan stopRow: " + metadata.stopRow.toString());
+        _logger.debug("Scan startRow: " + scanStartRow);
+        _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
         
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
 
@@ -259,7 +258,7 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         FilterList fl = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
         final Scanner scanner = _client.newScanner(metadata.tableName);
 
-        scanner.setStartKey(scanRowStart.getBytes());
+        scanner.setStartKey(scanStartRow.getBytes());
         scanner.setStopKey(metadata.stopRow);
         scanner.setFilter(fl);
         scanner.setMaxNumRows(Math.min(limit, 10000));
@@ -437,10 +436,10 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
 			throw new SystemException("Interrupted while waiting to obtain results for query", e);
 		} catch (TimeoutException e) {
 			_logger.warn("Timed out while waiting to obtain results.");
+			return null;
 		} catch (Exception e) {
 			throw new SystemException("Exception occurred in getting results for query", e);
 		}
-		return null;
 	}
 
 	//TSDB allowed characteers are: [A-Za-z0-9./-_]. The lowest ASCII value (45) out of these is for hyphen (-). 
@@ -497,7 +496,8 @@ public class AsyncHbaseSchemaService extends DefaultService implements SchemaSer
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
-        String scanStartRow=scanFrom==null?Bytes.toString(metadata.startRow): _plusOneNConstructRowKey(scanFrom, metadata.tableName,type);
+        String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow)
+        									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName,type);
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
         _logger.debug("Scan startRow: " + scanStartRow);

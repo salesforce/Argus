@@ -112,8 +112,8 @@ public abstract class WardenNotifier extends DefaultNotifier {
      * @param  config             The system configuration. Cannot be null.
      */
     @Inject
-    protected WardenNotifier(MetricService metricService, AnnotationService annotationService, WardenService wardenService, TSDBService tsdbService,
-        MailService mailService, SystemConfiguration config) {
+    protected WardenNotifier(MetricService metricService, AnnotationService annotationService, WardenService wardenService, 
+    		@NamedBinding TSDBService tsdbService, MailService mailService, SystemConfiguration config) {
         super(metricService, annotationService, config);
         requireArgument(wardenService != null, "Warden service cannot be null.");
         requireArgument(tsdbService != null, "TSDB service cannot be null.");

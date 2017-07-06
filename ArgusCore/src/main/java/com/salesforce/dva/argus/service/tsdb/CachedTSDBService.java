@@ -79,6 +79,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     private static final String QUERY_LATENCY_COUNTER = "query.latency";
     private static final String QUERY_COUNT_COUNTER = "query.count"; 
 
+    
     //~ Instance fields ******************************************************************************************************************************
 
     protected Logger _logger = LoggerFactory.getLogger(getClass());
@@ -129,10 +130,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
         // Copy the metric query since the passed in list may be a
         // fixed length array backed list, and we cannot remove queries from that list.
-        List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries);
-        Map<MetricQuery, List<Metric>> result = new HashMap<MetricQuery, List<Metric>>();
-        List<MetricQuery> filterMetricQueries = new ArrayList<MetricQuery>();
-        Map<MetricQuery, MetricQueryTimestamp> map = new HashMap<MetricQuery, MetricQueryTimestamp>();
+        List<MetricQuery> queryList = new ArrayList<>(queries);
+        Map<MetricQuery, List<Metric>> result = new HashMap<>();
+        List<MetricQuery> filterMetricQueries = new ArrayList<>();
+        Map<MetricQuery, MetricQueryTimestamp> map = new HashMap<>();
 
         for (MetricQuery query : queryList) {
             if (compulsoryCacheMiss(query)) {
@@ -140,7 +141,9 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                 filterMetricQueries.add(query);
             }
         }
+        
         queryList.removeAll(filterMetricQueries);
+        
         if (!queryList.isEmpty()) {
             long beforeTime = System.currentTimeMillis();
             List<MetricQueryTimestamp> uncached = _getCachedMetricValues(queryList, result);
@@ -716,7 +719,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             try {
                 for (Map.Entry<String, List<Metric>> entry : cacheMap.entrySet()) {
                     for (Metric metric : entry.getValue()) {
-                        _cacheService.append(entry.getKey(), _mapper.writeValueAsString(metric), _cacheService.getCacheExpirationTime());
+                        _cacheService.append(entry.getKey().getBytes(), _mapper.writeValueAsString(metric).getBytes(), _cacheService.getCacheExpirationTime());
                         _cacheService.expire(entry.getKey(), getTimeUntilEndOfHour(System.currentTimeMillis()));
                     }
                 }

@@ -104,7 +104,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		List<MetricQuery> queries = new ArrayList<>();
 		
 		if(DiscoveryService.isWildcardQuery(query)) {
-			String value = _cacheService.get(_getKey(query));
+			byte[] value = _cacheService.get(_getKey(query));
 			if(value == null) { // Cache Miss
 				_logger.info(MessageFormat.format("CACHE MISS for Wildcard Query: '{'{0}'}'. Will read from persistent storage.", query));
 				queries = _discoveryService.getMatchingQueries(query);
@@ -183,7 +183,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 				if(key != null) {
 					_logger.debug("CacheInsertThread: Inserting key = {}, value = {}", _wildcardQuery, _matchedQueries);
 					String value = MAPPER.writeValueAsString(_matchedQueries);
-					_cacheService.put(key, value, EXPIRY_TIME_SECS);
+					_cacheService.put(key, value.getBytes(), EXPIRY_TIME_SECS);
 				}
 			} catch (JsonProcessingException e) {
 				_logger.warn("CacheInsertThread: Failed to serialize list of metric queries.", e);

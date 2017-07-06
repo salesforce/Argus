@@ -222,21 +222,6 @@ public class Metric extends TSDBEntity implements Serializable {
         return _query;
     }
 
-    /**
-     * Constructs a native TSDB metric name for this metric.
-     * @todo This is implementation specific and should be moved to a service interface method.
-     *
-     * @return  The native TSDB metric name for this metric.  This method should never return null.
-     */
-    public String constructTSDBMetricName() {
-        StringBuilder sb = new StringBuilder(getScope());
-
-        if (_namespace != null && !_namespace.isEmpty()) {
-            sb.append(getNamespace());
-        }
-        return sb.toString();
-    }
-
     @Override
     public String toString() {
         Object[] params = {getNamespace(), getScope(), getMetric(), getTags(), getDatapoints() };
@@ -271,6 +256,61 @@ public class Metric extends TSDBEntity implements Serializable {
         String format = "{0}{1}:{2}" + "{3}";
 
         return MessageFormat.format(format, params);
+    }
+    
+    @JsonIgnore
+    public static Metric getMetricFromIdentifier(String identifier) {
+    	
+    	String[] parts = identifier.split(":");
+    	
+    	String tagsStr = "";
+    	
+    	int tagStrIndex = parts.length == 3 ? 2 : 1;
+    	int tagsStartPosition = parts[tagStrIndex].indexOf('{');
+    	if(tagsStartPosition != -1) {
+    		tagsStr = parts[tagStrIndex].substring(tagsStartPosition);
+    	}
+    	
+    	Metric metric;
+    	if(parts.length == 3) {
+    		String metricName = tagsStartPosition == -1 ? parts[2] : parts[2].substring(0, tagsStartPosition);
+    		metric = new Metric(parts[1], metricName);
+    		metric.setNamespace(parts[0]);
+    	} else {
+    		String metricName = tagsStartPosition == -1 ? parts[1] : parts[1].substring(0, tagsStartPosition);
+    		metric = new Metric(parts[0], metricName);
+    	}
+    	
+    	if(tagsStartPosition != -1) {
+    		//Strip off { and } from {tags}
+        	tagsStr = tagsStr.substring(1, tagsStr.length() - 1);
+        	
+        	String tags[] = tagsStr.split(",");
+        	for(String tag : tags) {
+        		String key = tag.split("=")[0];
+        		String value = tag.split("=")[1];
+        		metric.setTag(key, value);
+        	}
+    	}
+    	
+    	return metric;
+    }
+    
+    public static void main(String args[]) {
+    	
+    	Metric m = Metric.getMetricFromIdentifier("scope:metric{tagk=tagv}");
+    	System.out.println(m);
+    	m = Metric.getMetricFromIdentifier("scope:metric{tagk1=tagv1,tagk2=tagv2}");
+    	System.out.println(m);
+    	m = Metric.getMetricFromIdentifier("scope:metric");
+    	System.out.println(m);
+    	m = Metric.getMetricFromIdentifier("namespace:scope:metric{tagk=tagv}");
+    	System.out.println(m);
+    	m = Metric.getMetricFromIdentifier("namespace:scope:metric{tagk1=tagv1,tagk2=tagv2}");
+    	System.out.println(m);
+    	m = Metric.getMetricFromIdentifier("namespace:scope:metric");
+    	System.out.println(m);
+    	
     }
     
 }

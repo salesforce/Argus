@@ -67,7 +67,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
 
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final SystemConfiguration _config;
-    private JedisCluster _jedisClusterClient;
+    public JedisCluster _jedisClusterClient;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -93,39 +93,41 @@ public class RedisCacheService extends DefaultService implements CacheService {
             jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
         }
         _jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
+        
     }
 
     //~ Methods **************************************************************************************************************************************
-
-    @SuppressWarnings("unchecked")
+    
     @Override
-    public <V> V get(String key) {
-        V returnValue = null;
-        returnValue = (V) _jedisClusterClient.get(key);
-        return returnValue;
+    public byte[] get(String key) {
+        return _jedisClusterClient.get(key.getBytes());
     }
-
-    @SuppressWarnings("unchecked")
+    
     @Override
-    public <V> Map<String, V> get(Set<String> keySet) {
-        Map<String, V> map = new HashMap<String, V>();
+    public Map<String, byte[]> get(Set<String> keySet) {
+        Map<String, byte[]> map = new HashMap<>();
 
         try {
+        	long total = System.nanoTime();
             for (String key : keySet) {
-                map.put(key, (V) get(key));
+            	long start = System.nanoTime();
+                map.put(key, get(key));
+                _logger.info("Time to get data for key (" + key + ") in nanos: " + (System.nanoTime() - start));
             }
+            _logger.info("Total Time to get data in nanos: " + (System.nanoTime() - total));
+            
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
             map = null;
         }
         return map;
     }
-
+    
     @Override
-    public <V> void put(String key, V value, int ttl) {
+    public void put(String key, byte[] value, int ttl) {
 
     	try {
-            _jedisClusterClient.set(key, (String) value);
+            _jedisClusterClient.set(key.getBytes(), value);
             _jedisClusterClient.expire(key, ttl);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
@@ -133,8 +135,8 @@ public class RedisCacheService extends DefaultService implements CacheService {
     }
 
     @Override
-    public <V> void put(Map<String, V> entries, int ttl) {
-        for (Map.Entry<String, V> entry : entries.entrySet()) {
+    public void put(Map<String, byte[]> keyValueMap, int ttl) {
+        for (Map.Entry<String, byte[]> entry : keyValueMap.entrySet()) {
             put(entry.getKey(), entry.getValue(), ttl);
         }
     }
@@ -207,7 +209,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     }
 
     @Override
-    public <V> Map<String, V> getByPattern(String pattern) {
+    public Map<String, byte[]> getByPattern(String pattern) {
         return get(getKeysByPattern(pattern));
     }
 
@@ -228,9 +230,9 @@ public class RedisCacheService extends DefaultService implements CacheService {
     }
 
     @Override
-    public <V> void append(String key, V value) {
+    public void append(byte[] key, byte[] value) {
         try {
-            _jedisClusterClient.rpush(key, (String) value);
+        	_jedisClusterClient.append(key, value);
         } catch (Exception ex) {
             _logger.error("Exception in cache service: {} ", ex.getMessage());
         }
@@ -251,7 +253,7 @@ public class RedisCacheService extends DefaultService implements CacheService {
     }
 
     @Override
-    public <V> void append(String key, V value, int ttl) {
+    public <V> void append(byte[] key, byte[] value, int ttl) {
         try {
             append(key, value);
             _jedisClusterClient.expire(key, ttl);
