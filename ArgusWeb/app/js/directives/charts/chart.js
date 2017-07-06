@@ -93,10 +93,10 @@ angular.module('argus.directives.charts.chart', [])
 					// check to update statusIndicator with correct status color
 					if (smallChart) {
 						// get the last data point
-						var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
+						// var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
 
 						// update status indicator
-						ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+						// ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
 
 						// add 'smallChart' flag to scope
 						scope.chartOptions = {smallChart: smallChart};

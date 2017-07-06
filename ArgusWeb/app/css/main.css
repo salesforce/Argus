@@ -44,6 +44,8 @@ button[disabled], .disabled {color:#CCC !important;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
 .pointer {cursor:pointer;}
 .clearAll {clear:both;}
+.bold {font-weight:bold;}
+.inlineBlock {display:inline-block;}
 
 .btmBdr {padding-bottom:.25em; border-bottom:solid 1px #CCC;}
 
@@ -158,7 +160,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 /* Dashboard related **/
 
 .rowIndicator {position:relative; margin-bottom:.5em;}
-.serviceItem {position:absolute; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
+.serviceItem {position:absolute; z-index:9; padding:1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
 .rowIndicator.largeLabel .serviceItem {padding:.5em 1em;}
 
 .serviceItem .serviceName {margin-bottom:.5em; font-size:14px; font-weight:bold;}
@@ -167,6 +169,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .serviceItem .serviceName p {word-wrap: break-word;}
+
+.serviceItem.small {padding:.25em; width:65px;}
 
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
