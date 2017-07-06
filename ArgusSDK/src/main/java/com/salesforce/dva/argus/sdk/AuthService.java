@@ -76,7 +76,7 @@ public class AuthService extends EndpointService {
      * @throws TokenExpiredException 
      * @throws  
      */
-    public void login(String username, String password) throws IOException, TokenExpiredException {
+    public void login(String username, String password) throws IOException {
         String requestUrl = RESOURCE + "/login";
         Credentials creds = new Credentials();
 
@@ -85,7 +85,12 @@ public class AuthService extends EndpointService {
 
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, creds);
 
-        assertValidResponse(response, requestUrl);
+        try {
+		assertValidResponse(response, requestUrl);
+	} catch (TokenExpiredException e) {
+		//This should never happen
+		throw new RuntimeException("This should never happen. login() method should never throw a TokenExpiredException", e);
+	}
         
         Map<String, String> tokens = fromJson(response.getResult(), new TypeReference<Map<String, String>>() {});
         getClient().accessToken = tokens.get("accessToken");
