@@ -73,7 +73,6 @@ public class AuthService extends EndpointService {
      * @param   password  The password.
      *
      * @throws  IOException  If the server is unavailable.
-     * @throws TokenExpiredException 
      * @throws  
      */
     public void login(String username, String password) throws IOException {
