@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.WardenService;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;

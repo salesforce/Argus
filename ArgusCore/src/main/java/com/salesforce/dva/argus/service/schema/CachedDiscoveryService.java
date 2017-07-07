@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DiscoveryService;
@@ -82,17 +84,13 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	}
 
 	@Override
-	public List<MetricSchemaRecord> filterRecords(String namespaceRegex,
-			String scopeRegex, String metricRegex, String tagkRegex,
-			String tagvRegex, int limit, MetricSchemaRecord metricSchemaRecord) {
-		return _discoveryService.filterRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, limit, metricSchemaRecord);
+	public List<MetricSchemaRecord> filterRecords(SchemaQuery query) {
+		return _discoveryService.filterRecords(query);
 	}
 
 	@Override
-	public List<MetricSchemaRecord> getUniqueRecords(String namespaceRegex,
-			String scopeRegex, String metricRegex, String tagkRegex,
-			String tagvRegex, RecordType type, int limit, MetricSchemaRecord scanFrom) {
-		return _discoveryService.getUniqueRecords(namespaceRegex, scopeRegex, metricRegex, tagkRegex, tagvRegex, type, limit, scanFrom);
+	public List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type) {
+		return _discoveryService.getUniqueRecords(query, type);
 	}
 
 	@Override

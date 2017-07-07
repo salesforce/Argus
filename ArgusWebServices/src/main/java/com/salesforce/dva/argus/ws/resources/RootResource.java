@@ -51,6 +51,7 @@ public class RootResource extends AbstractResource {
 
         result.add(AuditResources.class);
         result.add(AuthResources.class);
+        result.add(AuthResourcesV2.class);
         result.add(AlertResources.class);
         result.add(AnnotationResources.class);
         result.add(CollectionResources.class);
