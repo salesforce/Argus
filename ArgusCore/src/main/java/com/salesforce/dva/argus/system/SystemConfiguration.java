@@ -236,13 +236,19 @@ public final class SystemConfiguration extends Properties {
         CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "argus.properties"),
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
+        AUTH_FILTER_AUTO_LOGIN("service.config.auth.auto.login","false"),
+        AUTH_FILTER_AUTO_LOGIN_USER("service.config.auth.auto.login.user","autoLoginUser"),
+        AUTH_FILTER_AUTO_LOGIN_PWD("service.config.auth.auto.login.pwd","autoLoginUserPwd"),
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
-        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties");
+        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+		DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
+		DISCOVERY_SERVICE_PROPERTY_FILE("service.config.discovery","argus.properties");
+
 
         private final String _name;
         private final String _defaultValue;
