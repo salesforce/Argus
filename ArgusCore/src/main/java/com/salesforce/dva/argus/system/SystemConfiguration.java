@@ -242,7 +242,10 @@ public final class SystemConfiguration extends Properties {
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
-        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties");
+        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+		DISCOVERY_SERVICE_IMPL_CLASS("service.binding.discovery", "com.salesforce.dva.argus.service.schema.CachedDiscoveryService"),
+		DISCOVERY_SERVICE_PROPERTY_FILE("service.config.discovery","argus.properties");
+
 
         private final String _name;
         private final String _defaultValue;
