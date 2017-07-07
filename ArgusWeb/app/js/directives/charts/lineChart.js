@@ -453,8 +453,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 				// set domain for bandwidth if its a bar chart
 				if (chartType.includes('bar')) {
-					graph.x1.domain(names);
-					graph2.x1.domain(names);
+					graph.x1.domain(graphClassNames);
+					graph2.x1.domain(graphClassNames);
 				}
 			}
 
@@ -635,8 +635,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (angular.equals(x.domain(), newDomain)) return;
 				x.domain(newDomain); //rescale the domain of x axis
 				// update band scale domain if bar chart is plotted
-				// TODO: create new discrete domain
-				if (isChartDiscrete) graph.x0.domain(newDomain);
+				if (isChartDiscrete) {
+					graph.x0.domain(ChartToolService.getSubDiscreteXDomain(graph2.x0.domain(), newDomain));
+					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+				}
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
 				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
@@ -674,9 +676,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				// rescale the domain of x axis, invert the x value in brush axis range to the, value in domain
 				var tempNewDomain = t.rescaleX(x2).domain();
 				x.domain(tempNewDomain);
-				// TODO: create new discrete domain
-				if (isChartDiscrete) graph.x0.domain(tempNewDomain);
-
+				// update band scale domain if bar chart is plotted
+				if (isChartDiscrete) {
+					graph.x0.domain(ChartToolService.getSubDiscreteXDomain(graph2.x0.domain(), tempNewDomain));
+					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+				}
 				// adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
 				ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
@@ -747,7 +751,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						graph2.x0.range(x2.range());
 						graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 					}
-					ChartElementService.resizeGraphs(svg_g, graph, chartType, extraGraph, extraYAxisSet);
+					ChartElementService.resizeGraphs(svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);

@@ -231,7 +231,7 @@ angular.module('argus.services.charts.tools', [])
 			var newTimestamp = timestampSelector(d);
 			if (!result.includes(newTimestamp)) result.push(newTimestamp);
 		});
-		return result;
+		return result.sort();
 	};
 
 	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
@@ -278,6 +278,16 @@ angular.module('argus.services.charts.tools', [])
 				extraY[iSet].range([sizeInfo.height, 0]);
 			}
 		}
+	};
+
+	this.getSubDiscreteXDomain = function (discreteXDomain, newExtent) {
+		var startTime = typeof newExtent[0] === 'number' ? newExtent[0] : newExtent[0].getTime();
+		var endTime = typeof newExtent[1] === 'number' ? newExtent[1] : newExtent[1].getTime();
+		var startIndex = discreteXDomain.indexOf(startTime);
+		var endIndex = discreteXDomain.indexOf(endTime);
+		if (startIndex === -1) startIndex = UtilService.findClosestValuesIndexInArray(discreteXDomain, startTime);
+		if (endIndex === -1) endIndex = UtilService.findClosestValuesIndexInArray(discreteXDomain, endTime);
+		return discreteXDomain.slice(startIndex, endIndex + 1);
 	};
 
 	this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
@@ -495,7 +505,6 @@ angular.module('argus.services.charts.tools', [])
 
 	this.adjustSeriesBeingDisplayed = function (series, x, timestampSelector, dateBisector) {
 		var xDomain = x.domain();
-		// var newDisplayingSeries = angular.copy(series);
 		var newDisplayingSeries = series.map(function(metric) {
 			return UtilService.objectWithoutProperties(metric, ['data']);
 		});

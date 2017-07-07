@@ -112,6 +112,18 @@ angular.module('argus.services.utils', [])
 			delete data.$resolved;
 			delete data.$cancelRequest;
 			return data;
+		},
+
+		findClosestValuesIndexInArray: function (numArray, num) {
+			var index, diff = Number.MAX_SAFE_INTEGER;
+			numArray.map(function (d, i) {
+				var newDiff = Math.abs(d - num);
+				if (newDiff < diff) {
+					diff = newDiff;
+					index = i;
+				}
+			});
+			return index;
 		}
 	};
 	return options;

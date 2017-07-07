@@ -460,7 +460,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('y', function (d) { return graph.y(d[1]); })
 			.attr('width', graph.x1.bandwidth())
 			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-			.attr("transform", function() { return "translate(" + graph.x1(metric.name) + ",0)"; })
+			.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
 			.attr('class', 'bar ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color);
 	};
@@ -503,8 +503,8 @@ angular.module('argus.services.charts.elements', [])
 		context.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
-			.attr("cx", function (d) { return graph.x(d[0]); } )
-			.attr("cy", function (d) { return graph.y(d[1]); } )
+			.attr('cx', function (d) { return graph.x(d[0]); } )
+			.attr('cy', function (d) { return graph.y(d[1]); } )
 			.attr('class', 'brushDot ' + metric.graphClassName + '_brushDot' +' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
 			.attr('r', 1.5);
@@ -519,7 +519,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('y', function (d) { return graph.y(d[1]); })
 			.attr('width', graph.x1.bandwidth())
 			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-			.attr("transform", function() { return "translate(" + graph.x1(metric.name) + ",0)"; })
+			.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
 			.attr('class', 'brushBar ' + metric.graphClassName + '_brushBar' +' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color);
 	};
@@ -1042,7 +1042,7 @@ angular.module('argus.services.charts.elements', [])
 					allElementsLinkedWithThisSeries.filter('bar').style('fill', tempColor);
 					d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
 					break;
-				// case "line":
+				// case 'line':
 				default:
 					allElementsLinkedWithThisSeries.filter('path').style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushLine').style('stroke', tempColor);
@@ -1090,8 +1090,8 @@ angular.module('argus.services.charts.elements', [])
 		switch (chartType) {
 			case 'scatter':
 				mainChart.selectAll('circle.dot.' + metric.graphClassName)
-					.attr("cx", function (d) { return graph.x(d[0]); } )
-					.attr("cy", function (d) { return graph.y(d[1]); } )
+					.attr('cx', function (d) { return graph.x(d[0]); } )
+					.attr('cy', function (d) { return graph.y(d[1]); } )
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
@@ -1102,9 +1102,16 @@ angular.module('argus.services.charts.elements', [])
 					});
 				break;
 			case 'bar':
+				var tempHeight = graph.y.range()[0];
 				mainChart.selectAll('rect.bar.' + metric.graphClassName)
-					.attr("x", function (d) { return graph.x0(new Date(d[0])); } )
-					.attr("y", function (d) { return graph.y(d[1]); } )
+					.attr('x', function (d) { return graph.x0(d[0]); } )
+					.attr('y', function (d) { return graph.y(d[1]); } )
+					.attr('width', graph.x1.bandwidth())
+					.attr('height', function(d) {
+						var newHeight = tempHeight - graph.y(d[1]);
+						return newHeight < 0 ? 0 : newHeight;
+					})
+					.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
 							return 'none';
@@ -1270,12 +1277,12 @@ angular.module('argus.services.charts.elements', [])
 		svg_g.selectAll('.brushArea').attr('d', area2);
 	};
 
-	this.resizeGraph = function (svg_g, graph, chartType, extraYAxis) {
+	this.resizeGraph = function (svg_g, graph, graphClassNames, chartType, extraYAxis) {
 		switch (chartType) {
 			case 'scatter':
 				svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
-					.attr("cx", function (d) { return graph.x(d[0]); } )
-					.attr("cy", function (d) { return graph.y(d[1]); } )
+					.attr('cx', function (d) { return graph.x(d[0]); } )
+					.attr('cy', function (d) { return graph.y(d[1]); } )
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
@@ -1287,28 +1294,31 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'bar':
 				var tempHeight = graph.y.range()[0];
-				svg_g.selectAll('.bar' + '.extraYAxis_' + extraYAxis)
-					.attr("x", function (d) { return graph.x0(d[0]); } )
-					.attr("y", function (d) { return graph.y(d[1]); } )
-					.attr('width', graph.x1.bandwidth())
-					.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-					.style('display', function (d) {
-						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
-							return 'none';
-						} else {
-							return null;
-						}
-					});
+				graphClassNames.map(function (className) {
+					svg_g.selectAll('.bar' + '.' + className + '.extraYAxis_' + extraYAxis)
+						.attr('x', function (d) { return graph.x0(d[0]); } )
+						.attr('y', function (d) { return graph.y(d[1]); } )
+						.attr('width', graph.x1.bandwidth())
+						.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
+						.attr('transform', function() { return 'translate(' + graph.x1(className) + ',0)'; })
+						.style('display', function (d) {
+							if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
+								return 'none';
+							} else {
+								return null;
+							}
+						});
+				});
 				break;
 			default:
 				svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
 		}
 	};
 
-	this.resizeGraphs = function (svg_g, graph, chartType, extraGraph, extraYAxisSet) {
-		this.resizeGraph(svg_g, graph, chartType, '');
+	this.resizeGraphs = function (svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet) {
+		this.resizeGraph(svg_g, graph, graphClassNames, chartType, '');
 		for(var iSet of extraYAxisSet){
-			this.resizeGraph(svg_g, extraGraph[iSet], chartType, iSet);
+			this.resizeGraph(svg_g, extraGraph[iSet], graphClassNames, chartType, iSet);
 		}
 	};
 
@@ -1316,8 +1326,8 @@ angular.module('argus.services.charts.elements', [])
 		switch (chartType) {
 			case 'scatter':
 				svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
-					.attr("cx", function (d) { return graph2.x(d[0]); } )
-					.attr("cy", function (d) { return graph2.y(d[1]); } )
+					.attr('cx', function (d) { return graph2.x(d[0]); } )
+					.attr('cy', function (d) { return graph2.y(d[1]); } )
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
@@ -1330,8 +1340,8 @@ angular.module('argus.services.charts.elements', [])
 			case 'bar':
 				var tempHeight = graph2.y.range()[0];
 				svg_g.selectAll('.brushBar' + '.extraYAxis_' + extraYAxis)
-					.attr("x", function (d) { return graph2.x0(d[0]); } )
-					.attr("y", function (d) { return graph2.y(d[1]); } )
+					.attr('x', function (d) { return graph2.x0(d[0]); } )
+					.attr('y', function (d) { return graph2.y(d[1]); } )
 					.attr('width', graph2.x1.bandwidth())
 					.attr('height', function(d) { return tempHeight - graph2.y(d[1]); })
 					.style('display', function (d) {
