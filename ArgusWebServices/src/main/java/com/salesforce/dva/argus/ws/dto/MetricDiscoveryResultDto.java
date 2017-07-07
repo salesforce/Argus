@@ -11,9 +11,10 @@ public class MetricDiscoveryResultDto extends BaseDto{
 	private MetricSchemaRecord lastSchemaRecord;
 	
 	public MetricDiscoveryResultDto(List<?extends Object> data, MetricSchemaRecord lastSchemaRecord){
-		this.data=data;
-		this.lastSchemaRecord=lastSchemaRecord;
+		this.data = data;
+		this.lastSchemaRecord = lastSchemaRecord;
 	}
+	
 	@Override
 	public Object createExample() {
 		List<String> data=new ArrayList<String>();
@@ -23,15 +24,19 @@ public class MetricDiscoveryResultDto extends BaseDto{
 		
 		return null;
 	}
+	
 	public List<? extends Object> getData() {
 		return data;
 	}
+	
 	public void setData(List<? extends Object> data) {
 		this.data = data;
 	}
+	
 	public MetricSchemaRecord getLastSchemaRecord() {
 		return lastSchemaRecord;
 	}
+	
 	public void setLastSchemaRecord(MetricSchemaRecord lastSchemaRecord) {
 		this.lastSchemaRecord = lastSchemaRecord;
 	}
