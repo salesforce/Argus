@@ -4,7 +4,8 @@
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
 	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
-
+		var lastParams;
+		var noMorePages = false;
 		$scope.expression = $routeParams.expression ? $routeParams.expression : null;
 		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
 		$scope.$watch('includeAnnotations', function (newValue) {
@@ -24,6 +25,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				$scope.showChart = false;
 			}
 		};
+
 		$scope.checkMetricExpression();
 
 		//sync the expression to URL param
@@ -34,7 +36,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		});
 
 		$scope.getMetricData = function () {
-			var tempSeries = [];
+			var tempSeries = []
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
 				// clear old chart
@@ -84,6 +86,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 		$scope.searchMetrics = function(value, category) {
 			// TODO: move param processing to search service
+			noMorePages = false;
 			var defaultParams = {
 				namespace: '*',
 				scope: '*',
@@ -121,12 +124,41 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			} else {
 				newParams.scope = newParams.scope + '*';
 			}
-			// end TODO
 
-			return SearchService.search(newParams)
+			lastParams = newParams;
+			// end TODO
+			//return a promise for template but later assign the data to the variable
+			var result = SearchService.search(newParams)
 				.then(function(response) {
+					if(response.data.length < newParams.limit){
+						noMorePages = true;
+					}
 					return response.data;
 				});
+			return result;
+		};
+
+		$scope.loadMore = function(matches, loadingAttr){
+			if(noMorePages) return;
+
+			lastParams.page = lastParams.page + 1;
+			eval('$scope.'+loadingAttr +'= true;');
+			SearchService.search(lastParams)
+				.then(function(response) {
+						if(response.data.length < lastParams.limit){
+							noMorePages = true;
+						}
+						response.data.forEach(function(name){
+							matches.push({
+							model: name
+							});
+						});
+						eval('$scope.'+loadingAttr +'= false;');
+
+				}, function(){
+						eval('$scope.'+loadingAttr +'= false;');
+				});
+
 		};
 
 		$scope.isSearchMetricDisabled = function () {

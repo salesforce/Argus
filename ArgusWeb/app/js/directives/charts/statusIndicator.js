@@ -18,9 +18,10 @@ angular.module('argus.directives.charts.statusIndicator', [])
 			link: function(scope, element, attributes, dashboardCtrl) {
 				var metricExpression;
 				var indicatorHTML =
-					'<div class="serviceItem">' +
+					'<div id="'+ attributes.name + '-container" class="serviceItem">' +
 						'<div class="serviceName"><p>' + attributes.name + '</p></div>' +
-						'<div id="'+ attributes.name + '-status" class="statusIndicator"></div>' +
+						'<div id="'+ attributes.name + '-light" class="statusIndicator"></div>' +
+						'<span id="'+ attributes.name + '-numVal" class="hide inlineBlock bold" style="vertical-align:inherit;padding-left:.5em;"></span>' +
 					'</div>';
 
 				// render status indicator
@@ -46,7 +47,7 @@ angular.module('argus.directives.charts.statusIndicator', [])
 							.then(function( result ) {
 								if (result !== undefined) {
 									// get the last data point from the result data
-									var lastStatusVal = ChartDataProcessingService.getLastDataPoint(result.data[0].datapoints);
+									var lastStatusVal = (result.data[0]) ? ChartDataProcessingService.getLastDataPoint(result.data[0].datapoints) : null;
 
 									// update status indicator
 									ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);

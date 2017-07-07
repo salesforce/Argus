@@ -39,6 +39,7 @@
     <div class="fullBox">
 
     <div class="metricFields">
+        {{searchResults}}
         <label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>
         <input type="text" class="form-control" placeholder="Scope" autocomplete="off" ng-model="scope"
         ng-class="{'loading': (loadingScope) ? true : false, 'cancel': (noScopeResults) ? true : false}"
@@ -47,12 +48,25 @@
         typeahead-no-results="noScopeResults"
         typeahead-loading="loadingScope"
         uib-typeahead="result for result in searchMetrics($viewValue, 'scope')"
-        typeahead-template-url="scopeTemplate.html"
+        typeahead-popup-template-url="scopeTemplate.html"
         />
         <script type="text/ng-template" id="scopeTemplate.html">
-          <a class="autoComplete">
-              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
-          </a>
+            <ul class="dropdown-menu viewMetricsUl"
+                ng-show="isOpen() && !moveInProgress"
+                ng-style="{top: position().top+'px', left: position().left+'px'}"
+                role="listbox" aria-hidden="false"
+                ag-infinite-scroll="scope.$parent.$parent.loadMore(scope.matches, 'loadingScope')"
+                >
+                <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+                    ng-class="{active: isActive($index) }"
+                    ng-mouseenter="selectActive($index)"
+                    ng-click="selectMatch($index)"
+                    id="{{::match.id}}">
+                    <a class="autoComplete">
+                        <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+                    </a>
+                </li>
+            </ul>
         </script>
     </div>
 
@@ -65,12 +79,25 @@
         typeahead-no-results="noMetricResults"
         typeahead-loading="loadingMetric"
         uib-typeahead="result for result in searchMetrics($viewValue, 'metric')"
-        typeahead-template-url="metricTemplate.html"
+        typeahead-popup-template-url="metricTemplate.html"
         />
         <script type="text/ng-template" id="metricTemplate.html">
-          <a class="autoComplete">
-              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
-          </a>
+            <ul class="dropdown-menu viewMetricsUl"
+                ng-show="isOpen() && !moveInProgress"
+                ng-style="{top: position().top+'px', left: position().left+'px'}"
+                role="listbox" aria-hidden="false"
+                ag-infinite-scroll="scope.$parent.$parent.loadMore(scope.matches, 'loadingMetric')"
+            >
+                <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+                    ng-class="{active: isActive($index) }"
+                    ng-mouseenter="selectActive($index)"
+                    ng-click="selectMatch($index)"
+                    id="{{::match.id}}">
+                    <a class="autoComplete">
+                        <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+                    </a>
+                </li>
+            </ul>
         </script>
     </div>
 
@@ -85,13 +112,26 @@
         typeahead-no-results="noTagkResults"
         typeahead-loading="loadingTagk"
         uib-typeahead="result for result in searchMetrics($viewValue, 'tagk')"
-        typeahead-template-url="tagkTemplate.html"
+        typeahead-popup-template-url="tagkTemplate.html"
         ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="tagkTemplate.html">
-          <a class="autoComplete">
-              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
-          </a>
+            <ul class="dropdown-menu viewMetricsUl"
+                ng-show="isOpen() && !moveInProgress"
+                ng-style="{top: position().top+'px', left: position().left+'px'}"
+                role="listbox" aria-hidden="false"
+                ag-infinite-scroll="scope.$parent.$parent.loadMore(scope.matches, 'loadingTagk')"
+            >
+                <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+                    ng-class="{active: isActive($index) }"
+                    ng-mouseenter="selectActive($index)"
+                    ng-click="selectMatch($index)"
+                    id="{{::match.id}}">
+                    <a class="autoComplete">
+                        <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+                    </a>
+                </li>
+            </ul>
         </script>
     </div>
 
@@ -104,13 +144,26 @@
         typeahead-no-results="noTagvResults"
         typeahead-loading="loadingTagv"
         uib-typeahead="result for result in searchMetrics($viewValue, 'tagv')"
-        typeahead-template-url="tagvTemplate.html"
+        typeahead-popup-template-url="tagvTemplate.html"
         ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="tagvTemplate.html">
-          <a class="autoComplete">
-              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
-          </a>
+            <ul class="dropdown-menu viewMetricsUl"
+                ng-show="isOpen() && !moveInProgress"
+                ng-style="{top: position().top+'px', left: position().left+'px'}"
+                role="listbox" aria-hidden="false"
+                ag-infinite-scroll="scope.$parent.$parent.loadMore(scope.matches, 'loadingTagv')"
+            >
+                <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+                    ng-class="{active: isActive($index) }"
+                    ng-mouseenter="selectActive($index)"
+                    ng-click="selectMatch($index)"
+                    id="{{::match.id}}">
+                    <a class="autoComplete">
+                        <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+                    </a>
+                </li>
+            </ul>
         </script>
     </div>
 
@@ -123,13 +176,26 @@
         typeahead-no-results="noNamespaceResults"
         typeahead-loading="loadingNamespace"
         uib-typeahead="result for result in searchMetrics($viewValue, 'namespace')"
-        typeahead-template-url="namespaceTemplate.html"
+        typeahead-popup-template-url="namespaceTemplate.html"
         ng-disabled="isSearchMetricDisabled()"
         />
         <script type="text/ng-template" id="namespaceTemplate.html">
-          <a class="autoComplete">
-              <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
-          </a>
+            <ul class="dropdown-menu viewMetricsUl"
+                ng-show="isOpen() && !moveInProgress"
+                ng-style="{top: position().top+'px', left: position().left+'px'}"
+                role="listbox" aria-hidden="false"
+                ag-infinite-scroll="scope.$parent.$parent.loadMore(scope.matches, 'loadingNamespace')"
+            >
+                <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+                    ng-class="{active: isActive($index) }"
+                    ng-mouseenter="selectActive($index)"
+                    ng-click="selectMatch($index)"
+                    id="{{::match.id}}">
+                    <a class="autoComplete">
+                        <span ng-bind-html="match.model | uibTypeaheadHighlight:query"></span>
+                    </a>
+                </li>
+            </ul>
         </script>
     </div>
 

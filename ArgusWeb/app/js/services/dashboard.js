@@ -25,13 +25,15 @@ angular.module('argus.services.dashboard', [])
 				success(function(data) {
 					if ( data && data.length > 0 ) {
 						return data[0];
-					} else{
+					} else {
 						growl.info('No data found for the metric expression: ' + JSON.stringify(metricExpression));
 						return;
 					}
 				}).
 				error(function(data) {
-					growl.error(data.message);
+					if (data) {
+						growl.error(data.message);
+					}
 					return;
 				});
 
