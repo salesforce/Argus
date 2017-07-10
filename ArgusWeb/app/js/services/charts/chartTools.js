@@ -285,8 +285,8 @@ angular.module('argus.services.charts.tools', [])
 		var endTime = typeof newExtent[1] === 'number' ? newExtent[1] : newExtent[1].getTime();
 		var startIndex = discreteXDomain.indexOf(startTime);
 		var endIndex = discreteXDomain.indexOf(endTime);
-		if (startIndex === -1) startIndex = UtilService.findClosestValuesIndexInArray(discreteXDomain, startTime);
-		if (endIndex === -1) endIndex = UtilService.findClosestValuesIndexInArray(discreteXDomain, endTime);
+		if (startIndex === -1) startIndex = d3.bisectLeft(discreteXDomain, startTime) - 1;
+		if (endIndex === -1) endIndex = d3.bisectRight(discreteXDomain, endTime);
 		return discreteXDomain.slice(startIndex, endIndex + 1);
 	};
 

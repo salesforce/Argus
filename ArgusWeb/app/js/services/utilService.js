@@ -104,26 +104,6 @@ angular.module('argus.services.utils', [])
 				target[i] = obj[i];
 			}
 			return target;
-		},
-
-		removeDataResponseOverhead: function (rawData) {
-			var data = angular.copy(rawData);
-			delete data.$promise;
-			delete data.$resolved;
-			delete data.$cancelRequest;
-			return data;
-		},
-
-		findClosestValuesIndexInArray: function (numArray, num) {
-			var index, diff = Number.MAX_SAFE_INTEGER;
-			numArray.map(function (d, i) {
-				var newDiff = Math.abs(d - num);
-				if (newDiff < diff) {
-					diff = newDiff;
-					index = i;
-				}
-			});
-			return index;
 		}
 	};
 	return options;

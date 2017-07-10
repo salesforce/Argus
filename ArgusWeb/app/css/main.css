@@ -145,7 +145,6 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 /* modal specific */
 
-
 /* chart options */
 .modal .mainContent {padding:0 0 1em 0;}
 .modal .mainContent .title {margin-bottom:.5em; padding-bottom:.25em; border-bottom:solid 1px #CCC;}
@@ -155,7 +154,6 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .modal .mainContent pre {overflow-x:auto; margin-top:1em;}
 .modal .mainContent label {max-width:90%; font-weight:normal; color:#666;}
 .modal .glyphicon-ban-circle {margin-top:5px; line-height:20px; color:#999; font-size:20px;}
-
 
 /* Dashboard related **/
 
@@ -171,7 +169,6 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .serviceName p {word-wrap: break-word;}
 
 .serviceItem.small {padding:.25em; width:65px;}
-
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
 
@@ -349,6 +346,11 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 }
 .crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
 .crossLineTip {font-size:12px;}
+
+.highlightBar {
+    fill: lightskyblue;
+    opacity: 0.2;
+}
 
 .tick {will-change: transform;}
 .tick line {stroke: lightgrey;}

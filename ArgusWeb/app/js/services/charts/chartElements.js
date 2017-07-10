@@ -19,8 +19,6 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipWidth = 35;
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
-	var bufferRatio = 0.2; // the ratio of buffer above/below max/min on yAxis for better showing experience
-	var snappingFactor = 0.1;
 	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
@@ -172,14 +170,15 @@ angular.module('argus.services.charts.elements', [])
 			});
 	};
 
+	/**
+		the following chart types are not pre defined in d3.
+		No elements is created, but x and y are passed down
+	*/
 	this.createScatter = function (x, y) {
-		// does not actually create a graph element
 		return {x: x, y: y};
 	};
 
 	this.createBar = function (x, y) {
-		// does not actually create a graph element
-		// y.interpolate(d3.interpolateRound);
 		return {
 			x: x,
 			y: y.rangeRound(y.range()),
@@ -301,7 +300,6 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-
 	this.appendExtraYAxisElement = function (widthOffSet, chart, yAxisR) {
 		var yAxisRG = chart.append('g')
 			.attr('class', 'y axis extra')
@@ -370,10 +368,12 @@ angular.module('argus.services.charts.elements', [])
 			.attr('name', 'crossLine');
 		crossLine.append('line')
 			.attr('name', 'crossLineX')
-			.attr('class', 'crossLine');
+			.attr('class', 'crossLine')
+			.attr('y1', 0);
 		crossLine.append('line')
 			.attr('name', 'crossLineY')
-			.attr('class', 'crossLine crossLineY');
+			.attr('class', 'crossLine crossLineY')
+			.attr('x1', 0);
 		// axis label background
 		crossLine.append('rect')
 			.attr('name', 'crossLineTipRectX')
@@ -384,12 +384,36 @@ angular.module('argus.services.charts.elements', [])
 		// axis label text
 		crossLine.append('text')
 			.attr('name', 'crossLineTipX')
-			.attr('class', 'crossLineTip');
+			.attr('class', 'crossLineTip')
+			.attr('y', 0)
+			.attr('dy', crossLineTipHeight);
 		crossLine.append('text')
 			.attr('name', 'crossLineTipY')
-			.attr('class', 'crossLineTip crossLineY');
+			.attr('class', 'crossLineTip crossLineY')
+			.attr('x', 0)
+			.attr('dx', -crossLineTipWidth);
 
 		return crossLine;
+	};
+
+	this.appendMouseOverhighlightBar = function (chart, height, width) {
+		var mouseOverhighlightBar = chart.append('g')
+			.attr('class', 'mouseOverHighlight')
+			.style('display', 'none');
+		mouseOverhighlightBar.append('rect')
+			.attr('class', 'highlightBar')
+			.attr('height', height)
+			.attr('width', width);
+		mouseOverhighlightBar.append('rect')
+			.attr('name', 'crossLineTipRectX')
+			.attr('class', 'crossLineTipRect');
+		mouseOverhighlightBar.append('text')
+			.attr('name', 'crossLineTipX')
+			.attr('class', 'crossLineTip')
+			.attr('y', 0)
+			.attr('dy', crossLineTipHeight);
+
+		return mouseOverhighlightBar;
 	};
 
 	this.appendTooltipElements = function (svg_g) {
@@ -410,7 +434,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	// add new elements for each sources
+	// add new element for each source
 	this.renderLineGraph = function (chart, color, metric, line, chartId) {
 		chart.append('path')
 			.attr('class', 'line ' + metric.graphClassName)
@@ -653,25 +677,23 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateFocusCirclesAndTooltipItems = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
-		var datapoints = [];
+	var calculateSnappingRange = function (rangeArray) {
+		return (rangeArray[1] - rangeArray[0]) * 0.1;
+	};
+
+	this.updateFocusCirclesAndObtainDataPoints = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
+		var snapPoint, datapoints = [];
 		var minDistanceVertical = Number.MAX_VALUE;
 		var minDistanceHorizontal = Number.MAX_VALUE;
-		var snapPoint;
+		var snappingRange = calculateSnappingRange(x.range());
+		var xDomain = x.domain();
 
 		series.forEach(function (metric) {
 			var circle = focus.select('.' + metric.graphClassName);
-
-			var y;
-			if(metric.extraYAxis){
-				y = extraY_[metric.extraYAxis];
-			}else{
-				y = y_;
-			}
+			var y = metric.extraYAxis ? extraY_[metric.extraYAxis] : y_;
 
 			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
 			if (metric.data.length === 0 || !displayingInLegend) {
-
 				// if the metric has no data or is toggled to hide
 				circle.style('display', 'none');
 				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
@@ -691,62 +713,54 @@ angular.module('argus.services.charts.elements', [])
 					d = d0;
 				} else {
 					// if both data points lives in the domain, choose the closer one to the mouse position
-					d = mousePositionData.mouseX - (timestampSelector(d0)) >
-					(timestampSelector(d1)) - mousePositionData.mouseX ? d1 : d0;
+					d = mousePositionData.mouseX - (timestampSelector(d0)) > (timestampSelector(d1)) - mousePositionData.mouseX ? d1 : d0;
 				}
-
 				var currentDatapoint = isDataStacked ? [d.data.timestamp, d.data[metric.name]] : d;
 
 				// set a snapping limit for graph
-				var notInSnappingRange = Math.abs(mousePositionData.mouseX - currentDatapoint[0]) > ((x.domain()[1] - x.domain()[0]) * snappingFactor);
-				var displayProperty = circle.attr('displayProperty');
+				var notInSnappingRange = Math.abs(mousePositionData.positionX - x(currentDatapoint[0])) > snappingRange;
+				// var displayProperty = circle.attr('displayProperty');
 
-				if (ChartToolService.isNotInTheDomain(currentDatapoint[0], x.domain()) ||
+				if (ChartToolService.isNotInTheDomain(currentDatapoint[0], xDomain) ||
 					ChartToolService.isNotInTheDomain(d[1], y.domain()) ||
 					notInSnappingRange) {
 					//outside domain
 					circle.style('display', 'none');
-					displayProperty = 'none';
+					// displayProperty = 'none';
+					tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 				} else {
-					circle.style('display', null);
-				}
-				tipItems.selectAll('.' + metric.graphClassName).style('display', displayProperty);
-
-				// update circle's position on each graph
-				var newX = UtilService.validNumberChecker(x(currentDatapoint[0]));
-				var newY = UtilService.validNumberChecker(y(d[1]));
-
-				circle.attr('dataX', d[0]).attr('dataY', d[1]) //store the data
-					.attr('transform', 'translate(' + newX + ',' + newY + ')');
-				if (displayProperty !== 'none') {
+					// update circle's position on each graph
+					var newX = UtilService.validNumberChecker(x(currentDatapoint[0]));
+					var newY = UtilService.validNumberChecker(y(d[1]));
+					circle.attr('dataX', currentDatapoint[0]).attr('dataY', d[1]) //store the data
+						.attr('transform', 'translate(' + newX + ',' + newY + ')')
+						.style('display', null);
+					tipItems.selectAll('.' + metric.graphClassName).style('display', null);
 					datapoints.push({
 						data: currentDatapoint,
 						graphClassName: metric.graphClassName,
 						name: metric.name
 					});
-				}
-
-				//decide the crossline focus
-				if(!notInSnappingRange){
+					// calculate snapping point
 					var distanceHorizontal = Math.abs(UtilService.validNumberChecker(mousePositionData.positionX - newX));
 					var distanceVertical = Math.abs(UtilService.validNumberChecker(mousePositionData.positionY - newY));
 
-					if(distanceHorizontal < minDistanceHorizontal){
+					if (distanceHorizontal < minDistanceHorizontal) {
 						snapPoint = {
+							mouseX : new Date(currentDatapoint[0]),
+							mouseY : d[1],
 							positionX : newX,
-							positionY : newY,
-							mouseX : d[0],
-							mouseY : d[1]
+							positionY : newY
 						};
 						minDistanceHorizontal = distanceHorizontal;
 						minDistanceVertical = distanceVertical;
 
-					}else if(distanceHorizontal === minDistanceHorizontal && distanceVertical < minDistanceVertical){
+					} else if (distanceHorizontal === minDistanceHorizontal && distanceVertical < minDistanceVertical) {
 						snapPoint = {
+							mouseX : new Date(currentDatapoint[0]),
+							mouseY : d[1],
 							positionX : newX,
-							positionY : newY,
-							mouseX : d[0],
-							mouseY : d[1]
+							positionY : newY
 						};
 						minDistanceVertical = distanceVertical;
 					}
@@ -754,9 +768,74 @@ angular.module('argus.services.charts.elements', [])
 			}
 		});
 		return	{
-			datapoints: datapoints,
+			dataPoints: datapoints,
 			snapPoint: snapPoint
 		};
+	};
+
+	this.updateHighlightRangeAndObtainDataPoints = function (graph, mouseOverhighlightBar, tipItems, series, sources, extraY, mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked) {
+		var datapoints = [];
+		var bandOffset = graph.x0.bandwidth() + graph.x0.paddingInner()/2;
+		var xDomain = graph.x.domain();
+		var displayHighlightBar = false;
+
+		var xDiscreteDomain = graph.x0.domain();
+		var matchingTimestamp, i = d3.bisectLeft(xDiscreteDomain, mousePositionData.mouseX.getTime());
+		if (!xDiscreteDomain[i - 1]) {
+			// i === 0
+			matchingTimestamp = xDiscreteDomain[i];
+		} else if (!xDiscreteDomain[i]) {
+			// i === xDiscreteDomain.length
+			matchingTimestamp = xDiscreteDomain[i - 1];
+		} else {
+			matchingTimestamp = mousePositionData.positionX > graph.x0(xDiscreteDomain[i - 1]) + bandOffset ? xDiscreteDomain[i] : xDiscreteDomain[i - 1];
+		}
+		series.forEach(function (metric) {
+			var y = metric.extraYAxis ? extraY[metric.extraYAxis] : graph.y;
+			var displayingInLegend = ChartToolService.findMatchingMetricInSources(metric, sources).displaying;
+			if (metric.data.length === 0 || !displayingInLegend) {
+				// if the metric has no data or is toggled to hide
+				tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+			} else {
+				var d = metric.data.find(function (d0) {
+					return timestampSelector(d0) === matchingTimestamp;
+				});
+				if (d === undefined) {
+					tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+				} else {
+					var currentDatapoint = isDataStacked ? [d.data.timestamp, d.data[metric.name]] : d;
+					if (ChartToolService.isNotInTheDomain(currentDatapoint[0], xDomain) ||
+						ChartToolService.isNotInTheDomain(currentDatapoint[1], y.domain())) {
+						tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
+					} else {
+						tipItems.selectAll('.' + metric.graphClassName).style('display', null);
+						displayHighlightBar = true;
+						datapoints.push({
+							data: currentDatapoint,
+							graphClassName: metric.graphClassName,
+							name: metric.name
+						});
+					}
+				}
+			}
+		});
+
+		if (displayHighlightBar) {
+			var dateText = mouseOverhighlightBar.select('.crossLineTip');
+			var startingPosition = graph.x0(matchingTimestamp);
+			var date = dateFormatter(matchingTimestamp);
+
+			mouseOverhighlightBar.select('.highlightBar').attr('x', startingPosition);
+			dateText.attr('x', startingPosition).text(date);
+
+			var boxX = dateText.node().getBBox();
+			mouseOverhighlightBar.select('.crossLineTipRect').attr('x', boxX.x - crossLineTipPadding)
+				.attr('y', boxX.y - crossLineTipPadding)
+				.attr('width', boxX.width + 2 * crossLineTipPadding)
+				.attr('height', boxX.height + 2 * crossLineTipPadding);
+		}
+
+		return datapoints;
 	};
 
 	this.updateTooltipItemsContent = function (sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData) {
@@ -812,13 +891,11 @@ angular.module('argus.services.charts.elements', [])
 			tipBox.attr('width', tipBounds.width + 4 * tipPadding);
 			tipBox.attr('height', tipBounds.height + 2 * tipPadding);
 		}
-		// move tooltip on the right if there is not enough to display it on the right
-		var transformAttr;
+		// flip the tooltip if there is no space to display it on one side
+		var transformAttr = null;
 		if (mousePositionData.positionX + Number(tipBox.attr('width')) > (sizeInfo.width + sizeInfo.margin.right) &&
 			mousePositionData.positionX - Number(tipBox.attr('width')) > 0) {
 			transformAttr = 'translate(-' + (Number(tipBox.attr('width')) + 2 * tipOffset) + ')';
-		} else {
-			transformAttr = null;
 		}
 		tipItems.attr('transform', transformAttr);
 		tipBox.attr('transform', transformAttr);
@@ -831,31 +908,35 @@ angular.module('argus.services.charts.elements', [])
 		//if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
 
 		// update crossLineX
+		//TODO: maybe use transform instead of reassign x and y?
 		focus.select('[name=crossLineX]')
-			.attr('x1', mousePositionData.positionX).attr('y1', 0)
+			.attr('x1', mousePositionData.positionX)
 			.attr('x2', mousePositionData.positionX).attr('y2', sizeInfo.height);
 		var date = dateFormatter(mousePositionData.mouseX);
-		focus.select('[name=crossLineTipX]')
+		var dateText = focus.select('[name=crossLineTipX]')
 			.attr('x', mousePositionData.positionX)
-			.attr('y', 0)
-			.attr('dy', crossLineTipHeight)
 			.text(date);
-		var boxX = focus.select('[name=crossLineTipX]').node().getBBox(); // add background
-		focus.select('[name=crossLineTipRectX]')
+		var boxX = dateText.node().getBBox(); // add background
+		var boxXRect = focus.select('[name=crossLineTipRectX]')
 			.attr('x', boxX.x - crossLineTipPadding)
 			.attr('y', boxX.y - crossLineTipPadding)
 			.attr('width', boxX.width + 2 * crossLineTipPadding)
 			.attr('height', boxX.height + 2 * crossLineTipPadding);
+		// move box to the left if there is not enough space to display it on the right
+		var transformAttr = null;
+		if (boxX.x + boxX.width + crossLineTipPadding > sizeInfo.width + sizeInfo.margin.right) {
+			transformAttr = 'translate(-' + boxX.width + 2 * crossLineTipPadding + ')';
+		}
+		dateText.attr('transform', transformAttr);
+		boxXRect.attr('transform', transformAttr);
 		// update crossLineY if needed
-		if(mousePositionData.mouseY !==  undefined && mousePositionData.positionY !== undefined) {
+		if (mousePositionData.mouseY !==  undefined && mousePositionData.positionY !== undefined) {
 			focus.select('[name=crossLineY]')
-				.attr('x1', 0).attr('y1', mousePositionData.positionY)
+				.attr('y1', mousePositionData.positionY)
 				.attr('x2', sizeInfo.width).attr('y2', mousePositionData.positionY);
 			var textY = isNaN(mousePositionData.mouseY) ? 'No Data' : d3.format(formatYaxis)(mousePositionData.mouseY);
 			focus.select('[name=crossLineTipY]')
-				.attr('x', 0)
 				.attr('y', mousePositionData.positionY)
-				.attr('dx', -crossLineTipWidth)
 				.text(textY);
 			var boxY = focus.select('[name=crossLineTipY]').node().getBBox(); // add a background
 			focus.select('[name=crossLineTipRectY]')
@@ -864,21 +945,6 @@ angular.module('argus.services.charts.elements', [])
 				.attr('width', boxY.width + 2 * crossLineTipPadding)
 				.attr('height', boxY.height + 2 * crossLineTipPadding);
 		}
-	};
-
-	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
-		var datapoints;
-		var datapointsAndSnapPoint;
-		datapointsAndSnapPoint =  this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, extraY, mousePositionData, timestampSelector, dateBisector, isDataStacked);
-		datapoints = datapointsAndSnapPoint.datapoints;
-		// sort items in tooltip if needed
-		if (tooltipConfig.isTooltipSortOn) {
-			datapoints = datapointsAndSnapPoint.datapoints.sort(function (a, b) {
-				return b.data[1] - a.data[1];
-			});
-		}
-		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
-		return datapointsAndSnapPoint.snapPoint;
 	};
 
 	this.updateFocusCirclesPositionWithZoom = function (x, y, focus, brushInNonEmptyRange, extraY, extraYAxisSet) {
@@ -906,7 +972,7 @@ angular.module('argus.services.charts.elements', [])
 
 		processCircle(y, '');
 
-		for(var iSet of extraYAxisSet){
+		for(var iSet of extraYAxisSet) {
 			processCircle(extraY[iSet], iSet);
 		}
 
@@ -955,7 +1021,6 @@ angular.module('argus.services.charts.elements', [])
 			//the unit of time value is millisecond
 			//x2.domain is the domain of total
 			var interval = k * 60000; //one minute is 60000 millisecond
-
 			//take current x domain value and extend it
 			var start = x.domain()[0].getTime();
 			var end = x.domain()[1].getTime();
@@ -984,20 +1049,19 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	// show and hide stuff
-	this.showFocusAndTooltip = function (focus, tooltip, isTooltipOn, brushInNonEmptyRange) {
-		focus.style('display', null);
+	this.showFocusAndTooltip = function (mouseMoveElement, tooltip, isTooltipOn, brushInNonEmptyRange) {
+		mouseMoveElement.style('display', null);
 		if (brushInNonEmptyRange) {
-			// if (isTooltipOn) tooltip.style('display', null);
 			this.toggleElementShowAndHide(isTooltipOn, tooltip);
 		} else {
 			//no need to show the circle or tooltip
-			focus.selectAll('circle').style('display', 'none');
+			if (!mouseMoveElement.select('circle').empty()) mouseMoveElement.selectAll('circle').style('display', 'none');
 			tooltip.style('display', 'none');
 		}
 	};
 
-	this.hideFocusAndTooltip = function (focus, tooltip) {
-		focus.style('display', 'none');
+	this.hideFocusAndTooltip = function (mouseMoveElement, tooltip) {
+		mouseMoveElement.style('display', 'none');
 		tooltip.style('display', 'none');
 	};
 
@@ -1366,7 +1430,7 @@ angular.module('argus.services.charts.elements', [])
 
 	this.createExtraYAxisRelatedElements = function (x, x2, extraYAxisSet, sizeInfo, yScaleType, yScaleConfigValue, yAxisConfig, chart){
 		//every extra YAxis related elements
-		if(extraYAxisSet.size > 0){
+		if (extraYAxisSet.size > 0) {
 			var extraY = {};
 			var extraY2 = {};
 			var extraYScalePlain = {};
@@ -1395,7 +1459,7 @@ angular.module('argus.services.charts.elements', [])
 				extraY2: extraY2,
 				extraGraph2: extraGraph2
 			};
-		}else{
+		} else {
 			return null;
 		}
 	};
