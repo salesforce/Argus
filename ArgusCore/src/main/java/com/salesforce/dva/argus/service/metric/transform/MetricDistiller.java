@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +71,15 @@ public class MetricDistiller {
         result.setUnits(distiller.getUnits());
         result.setTags(distiller.getTags());
     }
+	
+    public static void setCommonScannerAttributes(List<MetricScanner> scanners, Metric result) {
+    		MetricDistiller distiller = new MetricDistiller();
+    		
+    		distiller.distillScanner(scanners);
+    		result.setDisplayName(distiller.getDisplayName());
+    		result.setUnits(distiller.getUnits());
+    		result.setTags(distiller.getTags());
+    }
 
     //~ Methods **************************************************************************************************************************************
 
@@ -82,6 +92,12 @@ public class MetricDistiller {
         for (Metric m : metrics) {
             distill(m);
         }
+    }
+	
+    public void distillScanner(List<MetricScanner> scanners) {
+    		for (MetricScanner ms : scanners) {
+    			distill(ms.getMetric());
+    		}
     }
 
     private void distill(Metric m) {
