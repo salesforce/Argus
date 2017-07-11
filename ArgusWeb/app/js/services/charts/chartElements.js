@@ -692,7 +692,7 @@ angular.module('argus.services.charts.elements', [])
 						snapPoint = {
 							positionX : newX,
 							positionY : newY,
-							mouseX : d[0],
+							mouseX : isDataStacked?  d.data.timestamp : d[0] ,
 							mouseY : d[1]
 						};
 						minDistanceHorizontal = distanceHorizontal;
@@ -702,7 +702,7 @@ angular.module('argus.services.charts.elements', [])
 						snapPoint = {
 							positionX : newX,
 							positionY : newY,
-							mouseX : d[0],
+							mouseX : isDataStacked? d.data.timestamp : d[0],
 							mouseY : d[1]
 						};
 						minDistanceVertical = distanceVertical;
