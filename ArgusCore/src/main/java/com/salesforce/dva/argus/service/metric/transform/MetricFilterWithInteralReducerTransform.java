@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.apache.commons.math.stat.descriptive.moment.Mean;
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
@@ -44,6 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Filter transform is used by transform functions which cull the metric based on the result of evaluation against their datapoints.
@@ -87,7 +89,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
      */
     public static String internalReducer(Metric metric, String reducerType) {
-        Map<Long, Double> sortedDatapoints = new HashMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(metric.getDatapoints());
 
@@ -127,6 +129,59 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
             default:
                 throw new UnsupportedOperationException(reducerType);
         }
+    }
+	
+	/**
+     * Reduces the given metric scanner to a single value based on the specified reducer.
+     * 
+     * @param scanner 		The Metric scanner to reduce.
+     * @param reducerType	The type of reduction to perform.
+     * 
+     * @return The reduced value.
+     * 
+     * @throws UnsupportedOperationException	If an unknown reducer type is specified.
+     */
+    public static String internalReducerScanner(MetricScanner scanner, String reducerType, Map<Long, Double> sortedDatapoints) {
+    	List<Double> operands = new ArrayList<Double>();
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		if (reducerType.equals("name")) {
+	    			break;
+	    		}
+	    		
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		
+	    		if (dp.getValue() == null) {
+	    			operands.add(0.0);
+	    		} else {
+	    			operands.add(dp.getValue());
+	    		}
+	    	}
+    	}
+    	
+    	InternalReducerType type = InternalReducerType.fromString(reducerType);
+    	
+    	switch(type) {
+	    	case AVG:
+	    		return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
+	    	case MIN:
+	    		return String.valueOf(Collections.min(operands));
+	    	case MAX:
+	    		return String.valueOf(Collections.max(operands));
+	    	case RECENT:
+	    		return String.valueOf(operands.get(operands.size() - 1));
+	    	case MAXIMA:
+	    		return String.valueOf(Collections.max(operands));
+	    	case MINIMA:
+	    		return String.valueOf(Collections.min(operands));
+	    	case NAME:
+	    		return scanner.getMetricName();
+	    	case DEVIATION:
+	    		return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+	    	default:
+	    		throw new UnsupportedOperationException(reducerType);
+    	}
     }
 
     /**
@@ -172,6 +227,11 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Filter transform need constant input!");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Filter transform need constant input!");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -191,6 +251,25 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
         return filteredMetricList;
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform emtpy metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(!constants.isEmpty(), "Filter Transform must provide at least limit");
+    	if (constants.size() == 1) {
+    		constants.add(InternalReducerType.AVG.reducerName);
+    	}
+    	
+    	String limit = constants.get(0);
+    	String type = constants.get(1);
+    	Map<Metric, String> extendedSortedMap = createExtendedMapScanner(scanners, type);
+    	List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
+    	
+    	return filteredMetricList;
+    }
 
     private Map<Metric, String> createExtendedMap(List<Metric> metrics, String type) {
         Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
@@ -202,9 +281,26 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
         }
         return sortByValue(extendedSortedMap, type);
     }
+	
+	private Map<Metric, String> createExtendedMapScanner(List<MetricScanner> scanners, String type) {
+    	Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> dps = new HashMap<>();
+    		String extendedEvaluation = internalReducerScanner(scanner, type, dps);
+    		
+    		extendedSortedMap.put(scanner.getMetric(), extendedEvaluation);
+    	}
+    	return sortByValue(extendedSortedMap, type);
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Filter doesn't need list of list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Filter doesn't need list of list!");
     }
 }
