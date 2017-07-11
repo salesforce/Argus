@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,6 +76,12 @@ public class MetricZipperTransform implements Transform {
         SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
         return transform(metrics);
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
+        return transformScanner(scanners);
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
@@ -85,6 +92,17 @@ public class MetricZipperTransform implements Transform {
         SystemAssert.requireArgument(metrics.size() >= 2 && metrics.get(metrics.size() - 1) != null,
             "Cannot transform without a base metric as second param!");
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(scanners.size() >= 2 && scanners.get(scanners.size() - 1) != null,
+    	            "Cannot transform without a base metric scanner as second param!");
+    	return zipScanner(scanners.subList(0, scanners.size() - 1), scanners.get(scanners.size() - 1));
     }
 
     /**
@@ -109,6 +127,37 @@ public class MetricZipperTransform implements Transform {
             zippedMetrics.add(metric);
         }
         return zippedMetrics;
+    }
+	
+	public List<Metric> zipScanner(List<MetricScanner> scanners, MetricScanner baseScanner) {
+    	SystemAssert.requireArgument(baseScanner != null, "Zipper transform requires a base metric scanner as second param!");
+    	
+    	List<Metric> zippedMetrics = new ArrayList<Metric>();
+    	Map<Long, Double> baseDatapoints = new HashMap<>();
+    	synchronized(baseScanner) {
+	    	while (baseScanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = baseScanner.getNextDP();
+	    		baseDatapoints.put(dp.getKey(), dp.getValue());
+	    	}
+    	}
+    	
+    	Map<Long, Double> zippedDP = new HashMap<>();
+     	for (MetricScanner scanner : scanners) {
+     		synchronized(scanner) {
+	     		while (scanner.hasNextDP()) {
+	     			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
+	     			
+	     			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
+	     			
+	     			zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
+	     		}
+     		}
+     		
+     		Metric m = new Metric(scanner.getMetric());
+     		m.setDatapoints(zippedDP);
+     		zippedMetrics.add(m);
+    	}
+     	return zippedMetrics;
     }
 
     /**
@@ -139,6 +188,11 @@ public class MetricZipperTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Zipper doesn't need list of list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Zipper doesn't need list of list!");
     }
 }
