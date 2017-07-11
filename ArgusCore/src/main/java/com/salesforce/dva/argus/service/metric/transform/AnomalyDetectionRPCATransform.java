@@ -31,7 +31,9 @@
 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
@@ -93,10 +95,55 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         resultMetrics.add(predictionsNormalized);
         return resultMetrics;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric/metrics");
+        SystemAssert.requireState(scanners.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(scanners.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
+                "metric.");
+        SystemAssert.requireState(constants.size() == 1, "Anomaly Detection RPCA Transform can only be used with " +
+                "one constant for the length of a season");
+        
+        //Map<Long, Double> completeDatapoints = new HashMap<>();
+        List<Long> times = new ArrayList<>();
+        SystemAssert.requireState(scanners.get(0).hasNextDP(), "Cannot transform metric scanner with no data point.");
+        
+        String seasonLengthInput = constants.get(0);
+        long seasonLengthInMilliseconds = super.getTimePeriodInSeconds(seasonLengthInput) * 1000;
+        
+        List<Double> metricVals = new ArrayList<>();
+        
+        synchronized(scanners.get(0)) {
+	        while (scanners.get(0).hasNextDP()) {
+	        	Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+	        	times.add(dp.getKey());
+	        	metricVals.add(dp.getValue());
+	        }
+        }
+        
+        timestamps = times.toArray(new Long[times.size()]);
+        frequency = calculateFrequency(seasonLengthInMilliseconds);
+        metricValues = Doubles.toArray(metricVals);
+        standardize(metricValues);
+        
+        trainModel();
+        Metric predictions = predictAnomalies();
+        Metric predictionsNormalized = normalizePredictions(predictions);
+        
+        List<Metric> resultMetrics = new ArrayList<>();
+        resultMetrics.add(predictionsNormalized);
+        return resultMetrics;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanner) {
+    	throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
     }
 
     /*
