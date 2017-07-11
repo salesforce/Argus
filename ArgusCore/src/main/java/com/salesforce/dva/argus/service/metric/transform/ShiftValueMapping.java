@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,11 @@ public class ShiftValueMapping implements ValueMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Shift transform requires an offset input!");
     }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Shift transform requires an offset input!");
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
@@ -65,6 +71,26 @@ public class ShiftValueMapping implements ValueMapping {
             SystemAssert.requireArgument((newTimestamp <= Long.MAX_VALUE && newTimestamp >= Long.MIN_VALUE),
                 "You are not allowed to shift like this, be nice to me!");
             shiftDatapoints.put(newTimestamp, entry.getValue());
+        }
+        return shiftDatapoints;
+    }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+        SystemAssert.requireArgument(constants.size() == 1, "Shift Transform can only have one constant which is offset.");
+        
+        Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
+        Map<Long, Double> shiftDatapoints = new TreeMap<>();
+        
+        synchronized(scanner) {
+	        while (scanner.hasNextDP()) {
+	        	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	        	Long newTimestamp = dp.getKey() + offset;
+	        	
+	        	SystemAssert.requireArgument(newTimestamp <= Long.MAX_VALUE && newTimestamp >= Long.MIN_VALUE, 
+	        			"You are not allowed to shift like this, be nice to me!");
+	        	shiftDatapoints.put(newTimestamp, dp.getValue());
+	        }
         }
         return shiftDatapoints;
     }
