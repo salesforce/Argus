@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,9 +64,23 @@ public class RangeTransformWrap implements Transform {
             return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(metrics);
         }
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	if (scanners.size() == 1) {
+    		return rangeOfOneMetricScanner(scanners.get(0));
+    	} else {
+    		return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transformScanner(scanners);
+    	}
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+        throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
         throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
     }
 
@@ -116,9 +132,60 @@ public class RangeTransformWrap implements Transform {
         result.add(metric);
         return result;
     }
+	
+	private List<Metric> rangeOfOneMetricScanner(MetricScanner scanner) {
+    	Map<Long, Double> cleanDPs = new HashMap<>();
+    	List<Metric> result = new ArrayList<>();
+    	final List<Double> dpNum = new ArrayList<>();
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		if (dp.getValue() == null) {
+	    			cleanDPs.put(dp.getKey(), 0.0);
+	    			dpNum.add(0.0);
+	    		}
+	    		else {
+	    			cleanDPs.put(dp.getKey(), dp.getValue());
+	    			dpNum.add(dp.getValue());
+	    		}
+	    	}
+    	}
+    	    		
+    	Collections.sort(dpNum);
+    	
+    	@SuppressWarnings("serial")
+    	final Set<Double> minMaxSet = new HashSet<Double>() {
+    		{
+    			add(dpNum.get(0));
+    			add(dpNum.get(dpNum.size() - 1));
+    		}
+    	};
+    	
+    	Predicate<Map.Entry<Long, Double>> isMinMax = new Predicate<Map.Entry<Long, Double>>() {
+    		
+    		@Override
+    		public boolean apply(Map.Entry<Long, Double> datapoint) {
+    			return minMaxSet.contains(datapoint.getValue());
+    		}
+    	};
+    	
+    	Map<Long, Double> resultDatapoints = new HashMap<>();
+    	
+    	resultDatapoints.putAll(Maps.filterEntries(cleanDPs, isMinMax));
+    	Metric m = new Metric(scanner.getMetric());
+    	m.setDatapoints(resultDatapoints);
+    	result.add(m);
+    	return result;
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
     }
 }
