@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.apache.commons.math.stat.descriptive.moment.Mean;
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
@@ -97,6 +98,44 @@ public class DownsampleTransform implements Transform {
                 throw new UnsupportedOperationException(reducerType);
         }
     }
+	
+    public static Double downsampleReducerScanner(MetricScanner scanner, String reducerType) {
+    	
+    	List<Double> operands = new ArrayList<>();
+    	int nonNull = 0;
+    	    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		Double pt = scanner.getNextDP().getValue();
+	    		if (pt == null) {
+	    			operands.add(0.0);
+	    		}
+	    		else {
+	    			operands.add(pt);
+	    			nonNull++;
+	    		}
+	    	}
+    	}
+  
+    	InternalReducerType type = InternalReducerType.fromString(reducerType);
+
+    	switch(type) {
+    		case AVG:
+    			return new Mean().evaluate(Doubles.toArray(operands));
+    		case MIN:
+    			return Collections.min(operands);
+    		case MAX:
+    			return Collections.max(operands);
+    		case SUM:
+    			return new Sum().evaluate(Doubles.toArray(operands), 0, operands.size());
+    		case DEVIATION:
+    			return new StandardDeviation().evaluate(Doubles.toArray(operands));
+    		case COUNT:
+    			return (double) nonNull;
+    		default:
+    			throw new UnsupportedOperationException(reducerType);
+    	}
+    }
 
     /**
      * Creating timestamp for downsampling in order to be consistent with TSDB downsampling func on hour/minute level
@@ -121,6 +160,11 @@ public class DownsampleTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
+        throw new UnsupportedOperationException("Downsample transform need constant input!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
         throw new UnsupportedOperationException("Downsample transform need constant input!");
     }
 
@@ -151,6 +195,39 @@ public class DownsampleTransform implements Transform {
             metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType, windowUnit));
         }
         return metrics;
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	List<Metric> result = new ArrayList<>();
+    	if (scanners.isEmpty()) {
+    		return result;
+    	}
+    	SystemAssert.requireArgument(constants.size() == 1,
+                "Downsampler Transform can only have exactly one constant which is downsampler expression");
+        SystemAssert.requireArgument(constants.get(0).contains("-"), "This downsampler expression is not valid.");
+
+        String[] expArr = constants.get(0).split("-");
+
+        SystemAssert.requireArgument(expArr.length == 2, "This downsampler expression need both unit and type.");
+
+        // init windowSize
+        String windowSizeStr = expArr[0];
+        Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
+        String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
+        // init downsample type
+        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev", "count"));
+        String downsampleType = expArr[1];
+
+        SystemAssert.requireArgument(typeSet.contains(downsampleType), "Please input a valid type.");
+        
+        for (MetricScanner scanner : scanners) {
+        		Metric m = new Metric(scanner.getMetric());
+        		m.setDatapoints(createDownsampleDatapointsScanner(scanner, windowSize, downsampleType, windowUnit));
+        		result.add(m);
+        }
+        return result;
     }
 
     private Map<Long, Double> createDownsampleDatapoints(Map<Long, Double> originalDatapoints, long windowSize, String type, String windowUnit) {
@@ -186,6 +263,46 @@ public class DownsampleTransform implements Transform {
         }
         return downsampleDatapoints;
     }
+	
+    private Map<Long, Double> createDownsampleDatapointsScanner(MetricScanner scanner, long windowSize, String type, String windowUnit) {
+	    	Map<Long, Double> downsampleDatapoints = new HashMap<>();
+	    	Map.Entry<Long, Double>  firstDP = null;
+	    	
+	    	synchronized(scanner) {
+		    	if (!scanner.hasNextDP()) {
+		    		return downsampleDatapoints;
+		    	}
+		    	
+		    	firstDP = scanner.getNextDP();
+	    	}
+	    	
+	    	Long windowStart = downsamplerTimestamp(firstDP.getKey(), windowSize);
+	    	List<Double> values = new ArrayList<>();
+	    	values.add(firstDP.getValue());	// just add the first one ,  we know it will be empty this time
+	    	
+	    	synchronized(scanner) {
+		    	while (scanner.hasNextDP()) {
+		    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+		    		if (values.isEmpty()) {
+		    			values.add(dp.getValue());
+		    		}
+		    		else {
+			    		if (dp.getKey() >= windowStart + windowSize) {
+			    			Double fillingValue = downsamplerReducer(values, type);
+			    			downsampleDatapoints.put(windowStart, fillingValue);
+			    			values.clear();
+			    			windowStart = downsamplerTimestamp(dp.getKey(), windowSize);
+			    		}
+			    		values.add(dp.getValue());
+		    		}
+		    	}
+	    	}
+	    	if (!values.isEmpty()) {
+	    		Double fillingValue = downsamplerReducer(values, type);
+	    		downsampleDatapoints.put(windowStart, fillingValue);
+	    	}
+	    	return downsampleDatapoints;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -206,6 +323,11 @@ public class DownsampleTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Downsample doesn't need list of list!");
+    }
+
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Downsample doesn't need list of list!");
     }
 }
