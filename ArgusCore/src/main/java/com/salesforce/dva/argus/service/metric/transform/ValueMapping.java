@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * This interface is used to map datapoint values.
  *
@@ -51,6 +53,15 @@ public interface ValueMapping {
      * @return  The value after mapping.
      */
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints);
+	
+	/**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner);
 
     /**
      * Apply function to every datapoint of a datapoint map and return a new datapoint.
@@ -61,6 +72,16 @@ public interface ValueMapping {
      * @return  The value after mapping.
      */
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants);
+	
+	/**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * @param constants The input constants for the specific mapping implementation.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants);
 
     /**
      * Returns the name of the value mapping.
