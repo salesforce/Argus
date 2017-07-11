@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Reducer or mapping for range transform.
  *
@@ -64,20 +66,60 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return max - min;
     }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner) {
+    	double min = Double.MAX_VALUE;
+    	double max = Double.MIN_VALUE;
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		Double value = scanner.getNextDP().getValue();
+	    		if (value == null) {
+	    			value = 0.0;
+	    		}
+	    		
+	    		double candidate = value;
+	    		
+	    		if (candidate < min) {
+	    			min = candidate;
+	    		}
+	    		if (candidate > max) {
+	    			max = candidate;
+	    		}
+	    	}
+    	}
+    	return max - min;
+     }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
-        throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
+        throw new UnsupportedOperationException("Range transform doesn't support mapping");
+    }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Range transform doesn't support mapping");
     }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+        throw new UnsupportedOperationException("Range transform doesn't support mapping");
+    }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
-        throw new UnsupportedOperationException("Range transform doesn't suppport reduce with constant");
+        throw new UnsupportedOperationException("Range transform doesn't support reduce with constant");
+    }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
+    	throw new UnsupportedOperationException("Range transform doesn't support reduce with constant");
     }
 
     @Override
