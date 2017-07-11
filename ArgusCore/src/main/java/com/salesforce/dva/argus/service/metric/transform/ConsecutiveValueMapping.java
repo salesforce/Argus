@@ -33,10 +33,12 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 /**
@@ -62,8 +64,8 @@ public class ConsecutiveValueMapping implements ValueMapping {
      *	
      * @return	resultMetric	A new time series that has been transformed.
      */
-	@Override
-	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    @Override
+    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
 		SystemAssert.requireArgument(constants != null, "This transform needs constants");
         SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");    
         
@@ -84,7 +86,32 @@ public class ConsecutiveValueMapping implements ValueMapping {
 			resultMetric.put(resultKey, originalDatapoints.get(resultKey));
 		}
 		return resultMetric;
-	}
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+		SystemAssert.requireArgument(constants != null, "This transform needs constants");
+        SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");
+        
+        this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
+        this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
+        
+        Map<Long, Double> resultMetric = new TreeMap<>();
+        Map<Long, Double> dps = new HashMap<>();
+        this.keyList = new ArrayList<Long>();
+        this.resultKeyList = new ArrayList<Long>();
+        
+        synchronized(scanner) {
+	        if (scanner.hasNextDP()) {
+	        	connectScanner(scanner, dps);
+	        }
+        }
+        
+        for (Long resultKey : resultKeyList) {
+        	resultMetric.put(resultKey, dps.get(resultKey));
+        }
+        return resultMetric;
+    }
 	
 	private Object connect(int current, ArrayList<Long> carryList){		
 		if (current + 2 == keyList.size()){
@@ -105,6 +132,33 @@ public class ConsecutiveValueMapping implements ValueMapping {
 			resultKeyList.addAll(carryList);
 		}
 		return connect(current+1, new ArrayList<>(Arrays.asList(keyList.get(current+1)))); 
+	}
+	
+	private void connectScanner(MetricScanner scanner, Map<Long, Double> dps) {    	
+    	Map.Entry<Long, Double> dp = scanner.getNextDP();
+    	this.keyList.add(dp.getKey());
+    	dps.put(dp.getKey(), dp.getValue());
+    	
+    	List<Long> carryList = new ArrayList<>(Arrays.asList(keyList.get(0)));
+    	int current = 0;
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {	// know that we then have a datapoint at current + 1
+	    		dp = scanner.getNextDP();
+	    		this.keyList.add(dp.getKey());
+	    		dps.put(dp.getKey(), dp.getValue());
+	    		
+	    		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance) {
+	    			carryList.add(keyList.get(current + 1));
+	    		}
+	    		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+	    			resultKeyList.addAll(carryList);
+	    		}
+	    		
+	    		current += 1;
+	    		carryList = new ArrayList<>(Arrays.asList(keyList.get(current)));
+	    	}
+    	}
 	}
 	
 	private long getOffsetInSeconds(String offset) {
@@ -128,6 +182,11 @@ public class ConsecutiveValueMapping implements ValueMapping {
 
 	@Override
 	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+		throw new UnsupportedOperationException("Consective Transform needs a threshold and type.");
+	}
+	
+	@Override
+	public Map<Long, Double> mappingScanner(MetricScanner scanner) {
 		throw new UnsupportedOperationException("Consective Transform needs a threshold and type.");
 	}
 	
