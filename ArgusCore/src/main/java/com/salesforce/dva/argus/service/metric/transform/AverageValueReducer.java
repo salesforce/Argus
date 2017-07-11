@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Calculates the average of all values at each timestamp across all the metrics.
  *
@@ -53,6 +55,24 @@ public class AverageValueReducer implements ValueReducer {
             sum += value;
         }
         return (sum / values.size());
+    }
+	
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		Double sum = 0.0;
+    		int dpCount = 0;
+    		
+    		synchronized(scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			dpCount++;
+	    			Double val = scanner.getNextDP().getValue();
+	    			if (val != null) {
+	    				sum += val;
+	    			}
+	    		}
+    		}
+    		
+    		return (sum / dpCount);
     }
 
     @Override
