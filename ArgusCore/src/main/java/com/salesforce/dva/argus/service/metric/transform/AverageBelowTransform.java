@@ -32,8 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,11 @@ public class AverageBelowTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("This Transform cannot be used without a constant");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	throw new UnsupportedOperationException("This Transform cannot be used without a constant");
     }
 
     @Override
@@ -77,6 +84,32 @@ public class AverageBelowTransform implements Transform {
         }
         return result;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics");
+    	List<Metric> result = new ArrayList<Metric>();
+    	if (scanners.isEmpty()) {
+    		return result;
+    	}
+    	
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, "Average Below Transform must provide exactly 1 constant.");
+    	
+    	Double value = 0.0;
+    	
+    	try {
+    		value = Double.parseDouble(constants.get(0));
+    	} catch (NumberFormatException nfe) {
+    		throw new SystemException("Illegal constant value supplied to average below transform" , nfe);
+    	}
+    	    	
+    	for (MetricScanner scanner : scanners) {
+    		if (calculateScannerAverage(scanner) < value) {
+    			result.add(scanner.getMetric());
+    		}
+    	}
+    	return result;
+    }
 
     private Double calculateAverage(Map<Long, Double> datapoints) {
         Double sum = 0.0;
@@ -86,6 +119,19 @@ public class AverageBelowTransform implements Transform {
         }
         return sum / datapoints.size();
     }
+	
+    private Double calculateScannerAverage(MetricScanner scanner) {
+    	Double sum = 0.0;
+    	int dpNumber = 0;
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		dpNumber++;
+	    		sum += scanner.getNextDP().getValue();
+	    	}
+    	}
+    	return sum / dpNumber;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -94,6 +140,11 @@ public class AverageBelowTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 }
