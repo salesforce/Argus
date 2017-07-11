@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,6 +87,79 @@ public abstract class AbstractArithmeticTransform implements Transform {
 
         Collections.addAll(resultMetrics, result);
         return resultMetrics;
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	if (scanners == null) {
+    		throw new MissingDataException("The metric scanners list cannot be null or empty while performing arithmetic transformations.");
+    	}
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
+    	Map<Long, Double> resultDatapoints = new HashMap<>();
+    	List<MetricScanner> remainingScanners = scanners.subList(1, scanners.size());
+    	List<Map<Long, Double>> datapoints = new ArrayList<>(remainingScanners.size());
+    	for (int i = 0; i < remainingScanners.size(); i++) {
+    		datapoints.add(new HashMap<>());
+    	}
+    	
+    	synchronized(scanners.get(0)) {
+	    	while (scanners.get(0).hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+	    		List<Double> operands = new ArrayList<>();
+	    		
+	    		try {
+	    			for (MetricScanner scanner : remainingScanners) {
+	    				synchronized(scanner) {
+		    				if (scanner.hasNextDP()) {
+		    					Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+		    					datapoints.get(remainingScanners.indexOf(scanner)).put(nextDP.getKey(), nextDP.getValue());
+		    				}
+	    				}
+	    				if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
+	    					operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey())); // add the value associated with this timestamp
+	    				}
+	    				else if (Collections.max(datapoints.get(remainingScanners.indexOf(scanner)).keySet()) > dp.getKey()) { // that metric doesn't have this
+	    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+	    							scanner.getMetric()));
+	    				}
+	    				else {
+	    					Map.Entry<Long, Double> opDp = null;
+	    					do {
+	    						synchronized(scanner) {
+				    				if (!scanner.hasNextDP()) {
+				    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+				    							scanner.getMetric()));
+				    				}
+	    						}
+			    				opDp = scanner.getNextDP();
+			    				datapoints.get(remainingScanners.indexOf(scanner)).put(opDp.getKey(), opDp.getValue());
+	    					} while (opDp.getKey() < dp.getKey());
+	    					if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
+	    						operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey()));
+	    					}
+	    					else {	// we know it doesn't exist at this point
+	    						throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+	    								scanner.getMetric()));
+	    					}
+	    				}
+	    				
+	    			}
+	    		} catch (MissingDataException mde) {
+	    			continue;
+	    		}
+	    		resultDatapoints.put(dp.getKey(), performOperation(operands));
+	    	}
+    	}
+    	result.setDatapoints(resultDatapoints);
+    	MetricDistiller.setCommonScannerAttributes(scanners, result); // can still use this here, don't need any datapoints
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	Collections.addAll(resultMetrics, result);
+    	return resultMetrics;
     }
 
     private List<Double> getOperands(Long timestamp, List<Metric> metrics) {
