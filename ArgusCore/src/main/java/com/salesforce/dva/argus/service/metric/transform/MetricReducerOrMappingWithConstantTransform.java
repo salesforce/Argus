@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +68,11 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("This Transform cannot be used without a constant");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanner) {
+        throw new UnsupportedOperationException("This Transform cannot be used without a constant");
+    }
 
     /**
      * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
@@ -90,6 +96,24 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
             result = Arrays.asList(reduce(metrics, constants));
         } else if (constants.size() > 1) {
             result = mapping(metrics, constants);
+        }
+        return result;
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Metric Scanners List cannot be null");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
+        if (scanners.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Metric> result = new ArrayList<Metric>();
+        
+        if (constants.size() == 1) {
+        	result = Arrays.asList(reduceScanner(scanners, constants));
+        } else if (constants.size() > 1) {
+        	result = mappingScanner(scanners, constants);
         }
         return result;
     }
@@ -121,6 +145,25 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         newMetric.setDatapoints(reducedDatapoints);
         return newMetric;
     }
+	
+	protected Metric reduceScanner(List<MetricScanner> scanners, List<String> constants) {
+        SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+        
+        MetricDistiller distiller = new MetricDistiller();
+        
+        distiller.distillScanner(scanners);
+        
+        Map<Long, Double> reducedDatapoints = collateAndReduceScanner(scanners, constants);
+        String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
+        String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
+        Metric newMetric = new Metric(newScopeName, newMetricName);
+        
+        newMetric.setDisplayName(distiller.getDisplayName());
+        newMetric.setUnits(distiller.getUnits());
+        newMetric.setTags(distiller.getTags());
+        newMetric.setDatapoints(reducedDatapoints);
+        return newMetric;
+    }
 
     private Map<Long, List<Double>> collate(List<Metric> metrics) {
         Map<Long, List<Double>> collated = new HashMap<>();
@@ -146,6 +189,31 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
             reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue(), constants));
         }
         return reducedDatapoints;
+    }
+	
+	private Map<Long, Double> collateAndReduceScanner(List<MetricScanner> scanners, List<String> constants) {
+    	Map<Long, List<Double>> collated = new HashMap<>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		synchronized(scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			if (!collated.containsKey(dp.getKey())) {
+	    				collated.put(dp.getKey(), new ArrayList<Double>());
+	    			}
+	    			collated.get(dp.getKey()).add(dp.getValue());
+	    		}
+    		}
+    	}
+    	
+    	Map<Long, Double> reducedDatapoints = new HashMap<>();
+    	for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+    		if (entry.getValue().size() < scanners.size()) {
+    			continue;
+    		}
+    		reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue(), constants));
+    	}
+    	return reducedDatapoints;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
