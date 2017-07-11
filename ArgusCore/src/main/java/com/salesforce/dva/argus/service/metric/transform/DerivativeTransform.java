@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,6 +79,35 @@ public class DerivativeTransform implements Transform {
         }
         return result;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner / scanners");
+    	
+    	List<Metric> result = new ArrayList<>(scanners.size());
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Double prev = null;
+    		Map<Long, Double> derivativeDatapoints = new HashMap<>();
+    		
+    		synchronized(scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			
+	    			if (prev == null) {
+	    				derivativeDatapoints.put(dp.getKey(), dp.getValue());
+	    			} else {
+	    				derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
+	    			}
+	    			prev = dp.getValue();
+	    		}
+    		}
+    		Metric metric = new Metric(scanner.getMetric());
+    		metric.setDatapoints(derivativeDatapoints);
+    		result.add(metric);
+    	}
+    	return result;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -88,9 +118,19 @@ public class DerivativeTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 }
