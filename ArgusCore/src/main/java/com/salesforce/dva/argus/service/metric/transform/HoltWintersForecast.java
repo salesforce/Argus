@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,6 +69,11 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("HoltWinters Transform needs 4 constants. 3 parameters(alpha, beta and gamma) and season length.");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	throw new UnsupportedOperationException("HoltWinters Transform needs 4 constants. 3 parameters(alpha, beta and gamma) and season length.");
     }
 
     @Override
@@ -111,12 +117,72 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
         }
         return result;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Metric Scanners list cannot be null.");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 4, "Constants List cannot be null and its size must be equal to 4.");
+    	
+    	double alpha = Double.parseDouble(constants.get(0));
+    	double beta = Double.parseDouble(constants.get(1));
+    	double gamma = Double.parseDouble(constants.get(2));
+    	int seasonLength = Integer.parseInt(constants.get(3));
+    	List<Metric> result = new ArrayList<Metric>(scanners.size());
+    	
+    	for (MetricScanner scanner : scanners) {
+    		MetricQuery oneWeekBeforeQuery = new MetricQuery(scanner.getQuery());
+    		
+    		oneWeekBeforeQuery.setEndTimestamp(oneWeekBeforeQuery.getStartTimestamp());
+    		oneWeekBeforeQuery.setStartTimestamp(oneWeekBeforeQuery.getStartTimestamp() - ONE_WEEK_IN_MILLIS);
+    		
+    		List<MetricScanner> scannersList = _tsdbService.getMetricScanners(Arrays.asList(new MetricQuery[] { oneWeekBeforeQuery })).get(oneWeekBeforeQuery);
+    		MetricScanner oneWeekBeforeScanner = null;
+    		
+    		for (MetricScanner s : scannersList) {
+    			if (scanner.getMetric().equals(s.getMetric())) {
+    				oneWeekBeforeScanner = s;
+    				break;
+    			}
+    		}
+    		
+    		Map<Long, Double> bootstrappedDps = new TreeMap<>();
+    		synchronized(scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			bootstrappedDps.put(dp.getKey(), dp.getValue());
+	    		}
+    		}
+    	    			
+    		if (oneWeekBeforeScanner != null) {
+    			synchronized(oneWeekBeforeScanner) {
+	    			while (oneWeekBeforeScanner.hasNextDP()) {
+	    				Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
+	    				bootstrappedDps.put(dp.getKey(), dp.getValue());
+	    			}
+    			}
+    		}
+    		
+    		Metric resultMetric = new Metric(scanner.getMetric());
+    		
+    		resultMetric.setDatapoints(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
+    				scanner.getQuery().getStartTimestamp().longValue()).getForecastedDatapoints());
+    		result.add(resultMetric);
+    	}
+    	return result;
+    }
 
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         // TODO Auto-generated method stub
         return null;
+    }
+	
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	// TODO Auto-generated method stub
+    	return null;
     }
 
     @Override
