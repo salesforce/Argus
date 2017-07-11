@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
@@ -59,9 +60,30 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return product;
     }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		Double product = 1.0;
+    		
+    		synchronized(scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			Double value = scanner.getNextDP().getValue();
+	    			if (value == null) {
+	    				continue;
+	    			}
+	    			product *= value;
+	    		}
+    		}
+    		return product;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
+    }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
     }
 
@@ -85,9 +107,40 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return scaleDatapoints;
     }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    		SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+    				"If constants provided for scale transform, only exactly one constant allowed.");
+    		
+    		Map<Long, Double> scaleDatapoints = new HashMap<>();
+    		
+    		try {
+    			double multiplicand = Double.parseDouble(constants.get(0));
+    			
+    			synchronized(scanner) {
+	    			while (scanner.hasNextDP()) {
+	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    				if (dp.getValue() == null) {
+	    					continue; // skip the missing data
+	    				}
+	    				double productValue = multiplicand * dp.getValue();
+	    				scaleDatapoints.put(dp.getKey(), productValue);
+	    			}
+    			}
+    		}catch (NumberFormatException nfe) {
+    			throw new SystemException("Illegal constant value supplied to scale transform" , nfe);
+    		}
+    		return scaleDatapoints;
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
+        throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
+    }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
     }
 
