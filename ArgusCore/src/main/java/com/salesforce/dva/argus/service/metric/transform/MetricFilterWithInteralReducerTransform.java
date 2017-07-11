@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -87,7 +88,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
      */
     public static String internalReducer(Metric metric, String reducerType) {
-        Map<Long, Double> sortedDatapoints = new HashMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(metric.getDatapoints());
 
