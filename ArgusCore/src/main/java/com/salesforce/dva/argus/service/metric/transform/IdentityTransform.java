@@ -32,7 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,9 +52,29 @@ public class IdentityTransform implements Transform {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         return metrics;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        List<Metric> metrics = new ArrayList<>();
+        for (MetricScanner scanner : scanners) {   
+        	synchronized(scanner) {
+	        	while (scanner.hasNextDP()) {
+	        		scanner.getNextDP();
+	        	}
+        	}
+        	metrics.add(scanner.getMetric());
+        }
+        return metrics;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+        throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
     }
 
@@ -62,6 +85,11 @@ public class IdentityTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 }
