@@ -33,10 +33,13 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.collect.TreeMultiset;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -66,11 +69,22 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     public Double reduce(List<Double> values) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
         parseConstants(constants);
         return _calculateNthPercentile(values, percentile);
+    }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
+    	parseConstants(constants);
+    	return _calculateNthPercentileScanner(scanner, percentile);
     }
 
     private void parseConstants(List<String> constants) {
@@ -106,11 +120,22 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         parseConstants(constants);
         return _calculateNthPercentileForOneMetric(originalDatapoints, percentile, getWindowInSeconds(windowSize));
+    }
+	
+	@Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    	parseConstants(constants);
+    	return _calculateNthPercentileForOneMetricScanner(scanner, percentile, getWindowInSeconds(windowSize));
     }
 
     @Override
@@ -179,6 +204,65 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         _logger.debug("Time to calculate percentile = " + (System.currentTimeMillis() - start) + "ms");
         return percentileDatapoints;
     }
+	
+	private Map<Long, Double> _calculateNthPercentileForOneMetricScanner(MetricScanner scanner, Double percentileValue, long windowInSeconds) {
+    	Map<Long, Double> percentileDatapoints = new TreeMap<>();
+    	Map<Long, Double> originalDatapoints = new TreeMap<>();
+    	List<Long> times = new ArrayList<>();
+    	
+    	synchronized(scanner) {
+	    	while(scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		if (dp.getValue() == null) {
+	    			dp.setValue(0.0);
+	    		}
+	    		originalDatapoints.put(dp.getKey(), dp.getValue());
+	    		times.add(dp.getKey());
+	    	}
+    	}
+    	    	
+    	Long[] timestamps = new Long[times.size()];
+    	times.toArray(timestamps);
+ 
+    	TreeMultiset<Double> values = TreeMultiset.create(new Comparator<Double>() {
+    		
+    		@Override
+    		public int compare(Double d1, Double d2) {
+    			return d1.compareTo(d2);
+    		}
+    	});
+    	
+    	long start = System.currentTimeMillis();
+    	
+    	values.add(originalDatapoints.get(timestamps[0]));
+    	if (timestamps.length == 1) {
+    		percentileDatapoints.put(timestamps[0], _calculateNthPercentile(values, percentileValue));
+    	}
+    	
+    	Long firstTimestamp = timestamps[0];
+    	
+    	for (int head = 1, tail = 0; head < timestamps.length; head++) {
+    		if (tail == 0) {
+    			while (timestamps[head] - windowInSeconds * 1000 < firstTimestamp) {
+    				if (head >= timestamps.length - 1) {
+    					break;
+    				}
+    				percentileDatapoints.put(timestamps[head - 1], _calculateNthPercentile(values, percentileValue));
+        			values.add(originalDatapoints.get(timestamps[head]));
+        			head++;
+    			}
+    			percentileDatapoints.put(timestamps[head - 1], _calculateNthPercentile(values, percentileValue));
+    		}
+    		values.add(originalDatapoints.get(timestamps[head]));
+    		while (timestamps[tail] <= timestamps[head] - windowInSeconds * 1000) {
+    			values.remove(originalDatapoints.get(timestamps[tail]));
+    			tail++;
+    		}
+    		percentileDatapoints.put(timestamps[head], _calculateNthPercentile(values, percentileValue));
+    	}
+    	_logger.debug("Time to calculate percentile = " + (System.currentTimeMillis() - start) + "ms");
+    	return percentileDatapoints;
+    }
 
     private Double _calculateNthPercentile(List<Double> values, Double percentileValue) {
         Collections.sort(values, new Comparator<Double>() {
@@ -192,6 +276,19 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
 
         return values.get(ordinalRank - 1);
+    }
+	
+	private Double _calculateNthPercentileScanner(MetricScanner scanner, Double percentileValue) {
+    	List<Double> values = new ArrayList<>();
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		values.add(scanner.getNextDP().getValue());
+	    	}
+    	}
+    	Collections.sort(values);
+    	
+    	int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
+    	return values.get(ordinalRank - 1);
     }
 
     // O(n) operation to return percentile value from a sorted list.
