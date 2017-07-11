@@ -32,8 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -74,6 +76,11 @@ public class MetricMappingTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         return mapping(metrics);
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	return mappingScanner(scanners);
+    }
 
     /**
      * Mapping a list of metric, only massage its datapoints.
@@ -98,10 +105,30 @@ public class MetricMappingTransform implements Transform {
         }
         return newMetricsList;
     }
+	
+	private List<Metric> mappingScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	List<Metric> newMetricsList = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> cleanDatapoints = cleanDPScanner(scanner);
+    		
+    		Metric m = new Metric(scanner.getMetric());
+    		m.setDatapoints(cleanDatapoints);
+    		newMetricsList.add(m);
+    	}
+    	
+    	return newMetricsList;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         return mapping(metrics, constants);
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	return mappingScanner(scanners, constants);
     }
 
     private List<Metric> mapping(List<Metric> metrics, List<String> constants) {
@@ -120,6 +147,24 @@ public class MetricMappingTransform implements Transform {
         }
         return newMetricsList;
     }
+	
+	private List<Metric> mappingScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	
+    	List<Metric> newMetricsList = new ArrayList<Metric>();
+    	
+    	if(scanners.isEmpty()) {
+    		return newMetricsList;
+    	}
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> cleanDatapoints = cleanDPScanner(scanner);
+    		Metric m = new Metric(scanner.getMetric());
+    		m.setDatapoints(this.valueMapping.mapping(cleanDatapoints, constants));
+    		newMetricsList.add(m);
+    	}
+    	return newMetricsList;
+    }
 
     private Map<Long, Double> cleanDPs(Map<Long, Double> originalDPs) {
         Map<Long, Double> cleanDPs = new TreeMap<>();
@@ -133,9 +178,30 @@ public class MetricMappingTransform implements Transform {
         }
         return cleanDPs;
     }
+	
+	private Map<Long, Double> cleanDPScanner(MetricScanner scanner) {
+    	Map<Long, Double> cleanDPs = new HashMap<>();
+    	
+    	synchronized(scanner) {
+    		while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		if (dp.getValue() == null) {
+	    			cleanDPs.put(dp.getKey(), 0.0);
+	    		} else {
+	    			cleanDPs.put(dp.getKey(), dp.getValue());
+	    		}
+	    	}
+    	}
+    	return cleanDPs;
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Mapping doesn't need list of list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Mapping doesn't need list of list!");
     }
 }
