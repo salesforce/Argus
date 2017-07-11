@@ -33,8 +33,12 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Doubles;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.apache.commons.math.stat.descriptive.rank.Percentile;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +62,11 @@ public class CullAboveValueMapping implements ValueMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Cull Above Transform needs a limit and a type.");
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    		throw new UnsupportedOperationException("Cull Above Transform needs a limit and a type.");
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
@@ -67,7 +76,7 @@ public class CullAboveValueMapping implements ValueMapping {
         final Double limit = Double.parseDouble(constants.get(0));
         String type = constants.get(1);
 
-        SystemAssert.requireArgument(type.equals(PERCENTILE) || type.equals(VALUE), "Only percentil and value is allowed for type input.");
+        SystemAssert.requireArgument(type.equals(PERCENTILE) || type.equals(VALUE), "Only percentile and value is allowed for type input.");
         if (type.equals(PERCENTILE)) {
             SystemAssert.requireArgument(limit > 0 && limit <= 100, "Percentile number must in (0,100] !");
         }
@@ -85,6 +94,43 @@ public class CullAboveValueMapping implements ValueMapping {
 
         result.putAll(Maps.filterEntries(originalDatapoints, isAbove));
         return result;
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    		SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
+    		SystemAssert.requireArgument(constants.size() == 2, "Cull Above Transform must provide exactly 2 constants which are limit and type.");
+    		
+    		final Double limit = Double.parseDouble(constants.get(0));
+    		String type = constants.get(1);
+    		
+    		SystemAssert.requireArgument(type.equals(PERCENTILE) || type.equals(VALUE), "Only percentile and value is allowed for type input");
+    		if (type.equals(PERCENTILE)) {
+    			SystemAssert.requireArgument(limit > 0 && limit <= 100, "Percentile number must be in (0, 100] !");
+    		}
+    		    		
+    		final Double pivot = type.equals(PERCENTILE) ? findPivotScanner(scanner, limit) : limit;
+    		if (type.equals(VALUE)) {
+    			findDps(scanner);
+    		}
+    		Predicate<Map.Entry<Long, Double>> isAbove = new Predicate<Map.Entry<Long, Double>>() {
+    			@Override
+    			public boolean apply(Map.Entry<Long, Double> datapoint) {
+    				return datapoint.getValue() <= pivot;
+    			}
+    		};
+    		
+    		Map<Long, Double> result = new HashMap<>();
+    		result.putAll(Maps.filterEntries(scanner.getMetric().getDatapoints(), isAbove));
+    		return result;
+    	}
+	
+    private void findDps(MetricScanner scanner) {    		
+	synchronized(scanner) {
+    		while (scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+	}
     }
 
     @Override
@@ -114,6 +160,31 @@ public class CullAboveValueMapping implements ValueMapping {
             throw new IllegalArgumentException("Please provide a valid percentile number!");
         }
         return pivotValue;
+    }
+	
+    /*
+     * If type is percentile, find out the estimate of the limit(th) percentile in the datapoints encapsulated by the scanner.
+     * The execute the same as if the type was value, culling the elements greater than value of pivotValue. The array must be sorted.
+     */
+    private Double findPivotScanner(MetricScanner scanner, Double limit) {
+    	List<Double> doubleValuesList = new ArrayList<Double>();
+    	
+    	synchronized(scanner) {
+    		while(scanner.hasNextDP()) {
+    			doubleValuesList.add(scanner.getNextDP().getValue());
+    		}
+    	}
+    	double[] doubleValues = Doubles.toArray(doubleValuesList);
+    	Arrays.sort(doubleValues);
+    	
+    	double pivotValue = Double.MAX_VALUE;
+    	
+    	try {
+    		pivotValue = new Percentile().evaluate(doubleValues, (double) limit);
+    	} catch (IllegalArgumentException e) {
+    		throw new IllegalArgumentException("Please provide a valid percentile number!");
+    	}
+    	return pivotValue;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
