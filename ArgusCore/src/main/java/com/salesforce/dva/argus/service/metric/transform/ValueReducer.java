@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Reduces a set of values into a single value.
  *
@@ -50,6 +52,15 @@ public interface ValueReducer {
      * @return  The reduced value.
      */
 	Double reduce(List<Double> values);
+	
+	/**
+	 * Reduce the datapoint value set of a metric scanner to a single value.
+	 * 
+	 * @param scanner The metric scanner whose datapoint values to reduce.
+	 * 
+	 * @return The reduced value.
+	 */
+	Double reduceScanner(MetricScanner scanner);
 
     /**
      * Returns the name of the reducer.
