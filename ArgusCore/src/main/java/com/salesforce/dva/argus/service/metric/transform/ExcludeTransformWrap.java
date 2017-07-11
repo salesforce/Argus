@@ -32,6 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,6 +55,11 @@ public class ExcludeTransformWrap implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Exclude Transform cannot be performed without a regular expression.");
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Exclude Transform cannot be performed without a regular expression.");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -63,6 +72,33 @@ public class ExcludeTransformWrap implements Transform {
         }
         return metrics;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        SystemAssert.requireArgument(constants != null && constants.size() == 1,
+            "Include transform require regex, only exactly one constant allowed.");
+        SystemAssert.requireArgument(!constants.get(0).equals(""), "Expression can't be an empty string");
+        
+        List<Metric> excludeMetricList = new ArrayList<Metric>();
+        String expr = constants.get(0);
+        
+        for (MetricScanner scanner : scanners) {
+	        	if (!scanner.getMetric().getIdentifier().matches(expr)) {
+	        		setMetricData(scanner); // only do this if there is not a match, generate stored datapoints
+	        		excludeMetricList.add(scanner.getMetric());
+	        	}
+        }
+        return excludeMetricList;
+    }
+	
+    private void setMetricData(MetricScanner scanner) {	    	
+	    synchronized(scanner) {
+    		while (scanner.hasNextDP()) {
+	    		scanner.getNextDP();
+	    	}
+	    }
+    }
 
     @Override
     public String getResultScopeName() {
@@ -71,6 +107,11 @@ public class ExcludeTransformWrap implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Exclude doesn't need list of list!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Exclude doesn't need list of list!");
     }
 }
