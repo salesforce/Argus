@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.ArrayList;
@@ -76,6 +77,11 @@ public class PercentileTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Percentile Transform needs a constant window.");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Percentile Transform needs a constant window.");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -100,6 +106,34 @@ public class PercentileTransform implements Transform {
             metric.setDatapoints(_calculatePercenTileSeries(metric.getDatapoints(), n, windowInSeconds));
         }
         return metrics;
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners");
+        if (scanners.isEmpty()) {
+            return new ArrayList<>();
+        }
+        SystemAssert.requireArgument(constants != null && constants.size() == 2,
+            "Percentile Transform must provide exactly 2 constants. n -> The nth percentile to calculate, windowSize -> Window size in seconds");
+
+        long windowInSeconds = 0;
+        int n = 0;
+        List<Metric> result = new ArrayList<>();
+        
+        try {
+        	n = Integer.parseInt(constants.get(0));
+        	SystemAssert.requireArgument(n > 0 && n < 100, "For Percentile Transform, 0 < n < 100.");
+        	windowInSeconds = getWindowInSeconds(constants.get(1));
+        } catch (NumberFormatException nfe) {
+            throw new SystemException("Illegal window size supplied to percentile transform", nfe);
+        }
+        for (MetricScanner scanner : scanners) {
+        	Metric m = new Metric(scanner.getMetric());
+        	m.setDatapoints(_calculatePercenTileSeriesScanner(scanner, n, windowInSeconds));
+        	result.add(m);
+        }
+        return result;
     }
 
     private long getWindowInSeconds(String window) {
@@ -145,6 +179,38 @@ public class PercentileTransform implements Transform {
         
         return transformedDatapoints;
     }
+	
+	private Map<Long, Double> _calculatePercenTileSeriesScanner(MetricScanner scanner, int n, long windowInSeconds) {
+    	Map<Long, Double> transformedDatapoints = new HashMap<>();
+    	List<Double> values = new ArrayList<>();
+    	Long windowStart = 0L;
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		Long timestamp = dp.getKey();
+	    		Double value = dp.getValue();
+	    		
+	    		if (values.isEmpty()) {
+	    			values.add(value);
+	    			windowStart = timestamp;
+	    		} else {
+	    			if (timestamp > windowStart + windowInSeconds * 1000) {
+	    				transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
+	    				values.clear();
+	    				windowStart = timestamp;
+	    			}
+	    			values.add(value);
+	    		}
+	    	}
+    	}
+    	
+    	if (!values.isEmpty()) {
+    		transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
+    	}
+    	
+    	return transformedDatapoints;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -153,6 +219,11 @@ public class PercentileTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated.");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated.");
     }
 }
