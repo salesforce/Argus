@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,11 +78,51 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         resultMetrics.add(predictionsNormalized);
         return resultMetrics;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	if (scanners == null) {
+    		throw new MissingDataException("The metric scanners list cannot be null or empty while performing transforms.");
+    	}
+    	if (scanners.size() != 1) {
+    		throw new UnsupportedOperationException("Anomaly DetectionTransform can only be used with one metric.");
+    	}
+    	
+    	MetricScanner scanner = scanners.get(0);
+    	if (!scanner.hasNextDP()) {
+    		throw new MissingDataException("Metric scanner must contain data points to perform transforms.");
+    	}
+    	
+    	Map<Long, Double> datapoints = fitParametersScanner(scanner);
+    	Metric predictions = predictAnomalies(datapoints);
+    	Metric predictionsNormalized = normalizePredictions(predictions);
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	resultMetrics.add(predictionsNormalized);
+    	return resultMetrics;
+    }
 
     //Fits the mean and variance parameters to the data
     private void fitParameters(Map<Long, Double> metricData) {
         mean = getMetricMean(metricData);
         variance = getMetricVariance(metricData);
+    }
+    
+    private Map<Long, Double> fitParametersScanner(MetricScanner scanner) {
+    	double sum = 0;
+    	Map<Long, Double> datapoints = new HashMap<>();
+    	
+    	synchronized(scanner) {
+	    	while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		sum += dp.getValue();
+	    		datapoints.put(dp.getKey(), dp.getValue());
+	    	}
+    	}
+    	mean = sum / datapoints.size();
+    	variance = getMetricVariance(datapoints);
+    	
+    	return datapoints;
     }
 
     /**
