@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,17 @@ public interface TSDBService extends Service {
      */
     Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries);
 
+    /**
+     * Read metric data as scanner objects.
+     * 
+     * @param queries The list of queries to execute. Cannot be null, but may be empty.
+     * 
+     * @return The query results as a map of query to the corresponding metric scanners containing the data it returns. Will never be null, but may be empty.
+     * 
+     * @author Addie Chambers (adelaide.chambers@salesforce.com)
+     */
+    Map<MetricQuery, List<MetricScanner>> getMetricScanners(List<MetricQuery> queries);
+	
     /**
      * Writes annotation data. Any existing data is overwritten.
      *
