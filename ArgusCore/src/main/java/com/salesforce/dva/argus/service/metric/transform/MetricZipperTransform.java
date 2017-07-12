@@ -129,7 +129,7 @@ public class MetricZipperTransform implements Transform {
         return zippedMetrics;
     }
 	
-	public List<Metric> zipScanner(List<MetricScanner> scanners, MetricScanner baseScanner) {
+    public List<Metric> zipScanner(List<MetricScanner> scanners, MetricScanner baseScanner) {
     	SystemAssert.requireArgument(baseScanner != null, "Zipper transform requires a base metric scanner as second param!");
     	
     	List<Metric> zippedMetrics = new ArrayList<Metric>();
@@ -141,8 +141,8 @@ public class MetricZipperTransform implements Transform {
 	    	}
     	}
     	
-    	Map<Long, Double> zippedDP = new HashMap<>();
      	for (MetricScanner scanner : scanners) {
+		Map<Long, Double> zippedDP = new HashMap<>();
      		synchronized(scanner) {
 	     		while (scanner.hasNextDP()) {
 	     			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
