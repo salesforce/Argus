@@ -298,4 +298,52 @@ public class NormalizeTransformWrapScannerTest extends AbstractTest {
 		
 		assert(expected.equals(actual));
 	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		for (Metric m : metrics) {
+			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
+			Long timestamp = Collections.min(dps.keySet()) + (Collections.max(dps.keySet()) - Collections.min(dps.keySet())) / 2;
+			dps.put(timestamp, null);
+			m.setDatapoints(dps);
+		}
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+		}
+		
+		Transform transform = new NormalizeTransformWrap();
+		List<String> constants = new ArrayList<>();
+		constants.add("" + random.nextDouble() * 100);
+		
+		List<Metric> expected = transform.transform(metrics, constants);
+		List<Metric> actual = transform.transformScanner(scanners, constants);
+		
+		for (int i = 0; i < expected.size(); i++) {
+			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
+		}
+		for (int i = 0; i < metrics.size(); i++) {
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
 }
