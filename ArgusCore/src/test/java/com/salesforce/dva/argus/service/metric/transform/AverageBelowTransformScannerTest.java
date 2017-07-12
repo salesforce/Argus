@@ -190,4 +190,49 @@ public class AverageBelowTransformScannerTest extends AbstractTest {
 		assert(actual.equals(expected));
 	}
 	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		List<String> constant = new ArrayList<>();
+		
+		int perc = random.nextInt(50);
+		constant.add("" + findValue(perc, metrics.get(0)));
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(metrics.get(i), bound), queries.get(i), serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(metrics.get(i), bound, highQuery.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		AverageBelowTransform transform = new AverageBelowTransform();
+		
+		List<Metric> expected = transform.transform(metrics, constant);
+		List<Metric> actual = transform.transformScanner(scanners, constant);
+		
+		assert(actual.equals(expected));
+		
+		for (int i = 0; i < expected.size(); i++) {
+			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
+		}
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+		
+	}
+	
 }
