@@ -1,0 +1,134 @@
+package com.salesforce.dva.argus.service.schema;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+
+public class MetricSchemaRecordList {
+	
+	private List<MetricSchemaRecord> _records;
+	private String _scrollID;
+	
+	public MetricSchemaRecordList(List<MetricSchemaRecord> records) {
+		setRecords(records);
+	}
+	
+	private MetricSchemaRecordList(List<MetricSchemaRecord> records, String scrollID) {
+		setRecords(records);
+		setScrollID(scrollID);
+	}
+
+	public List<MetricSchemaRecord> getRecords() {
+		return _records;
+	}
+
+	public void setRecords(List<MetricSchemaRecord> records) {
+		this._records = records;
+	}
+	
+	public String getScrollID() {
+		return _scrollID;
+	}
+
+	public void setScrollID(String scrollID) {
+		this._scrollID = scrollID;
+	}
+
+
+
+	static class Serializer extends JsonSerializer<MetricSchemaRecordList> {
+
+		@Override
+		public void serialize(MetricSchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+				throws IOException, JsonProcessingException {
+			
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.setSerializationInclusion(Include.NON_NULL);
+			List<MetricSchemaRecord> records = list.getRecords();
+			for(MetricSchemaRecord record : records) {
+				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + MetricSchemaRecord.print(record) + "\"}}");
+				jgen.writeRaw(System.lineSeparator());
+				
+				jgen.writeRaw(mapper.writeValueAsString(record));
+				jgen.writeRaw(System.lineSeparator());
+			}
+		}
+    	
+    }
+	
+	static class Deserializer extends JsonDeserializer<MetricSchemaRecordList> {
+
+		@Override
+		public MetricSchemaRecordList deserialize(JsonParser jp, DeserializationContext context)
+				throws IOException, JsonProcessingException {
+			
+			String scrollID = null;
+			List<MetricSchemaRecord> records = Collections.emptyList();
+			
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			if(rootNode.has("_scroll_id")) {
+				scrollID = rootNode.get("_scroll_id").asText();
+			}
+			JsonNode hits = rootNode.get("hits").get("hits");
+			
+			if(JsonNodeType.ARRAY.equals(hits.getNodeType())) {
+				records = new ArrayList<>(hits.size());
+				Iterator<JsonNode> iter = hits.elements();
+				while(iter.hasNext()) {
+					JsonNode hit = iter.next();
+					JsonNode source = hit.get("_source");
+					records.add(new MetricSchemaRecord(source.get("namespace") == null ? null : source.get("namespace").asText(), 
+													   source.get("scope").asText(), 
+													   source.get("metric").asText(), 
+													   source.get("tagKey") == null ? null : source.get("tagKey").asText(), 
+													   source.get("tagValue") == null ? null : source.get("tagValue").asText()));
+				}
+			}
+			
+			return new MetricSchemaRecordList(records, scrollID);
+		}
+		
+	}
+	
+	static class AggDeserializer extends JsonDeserializer<List<String>> {
+
+		@Override
+		public List<String> deserialize(JsonParser jp, DeserializationContext context)
+				throws IOException, JsonProcessingException {
+			
+			List<String> values = Collections.emptyList();
+			
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			JsonNode buckets = rootNode.get("aggregations").get("distinct_values").get("buckets");
+			
+			if(JsonNodeType.ARRAY.equals(buckets.getNodeType())) {
+				values = new ArrayList<>(buckets.size());
+				Iterator<JsonNode> iter = buckets.elements();
+				while(iter.hasNext()) {
+					JsonNode bucket = iter.next();
+					String value  = bucket.get("key").asText();
+					values.add(value);
+				}
+			}
+			
+			return values;
+		}
+		
+	}
+
+}
