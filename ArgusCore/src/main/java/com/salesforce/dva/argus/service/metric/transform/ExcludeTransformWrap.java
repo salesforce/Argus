@@ -88,6 +88,9 @@ public class ExcludeTransformWrap implements Transform {
 	        		setMetricData(scanner); // only do this if there is not a match, generate stored datapoints
 	        		excludeMetricList.add(scanner.getMetric());
 	        	}
+				else {
+	        		scanner.dispose();
+	        	}
         }
         return excludeMetricList;
     }
