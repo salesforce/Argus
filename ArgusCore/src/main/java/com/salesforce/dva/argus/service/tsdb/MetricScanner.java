@@ -97,6 +97,38 @@ public class MetricScanner {
 		inUse = true;
 	}
 	
+	/**
+	 * Creates a copy of a metric scanner object.
+	 * 
+	 * @param scanner The valid Metric Scanner to clone.
+	 */
+	public MetricScanner(MetricScanner scanner) {
+		this.metric = scanner.getMetric();
+		this.query = scanner.getQuery();
+		this.metric.setQuery(this.query);
+		this.service = scanner.service;
+		if (scanners.containsKey(metric) && scanners.get(metric).containsKey(query)) {
+			scanners.get(metric).get(query).add(this);
+		} else if (scanners.containsKey(metric)) {
+			Set<MetricScanner> s = new HashSet<>();
+			s.add(this);
+			scanners.get(metric).put(query, s);
+		} else {
+			Set<MetricScanner> s = new HashSet<>();
+			s.add(this);
+			Map<MetricQuery, Set<MetricScanner>> entry = new HashMap<>();
+			entry.put(query, s);
+			scanners.put(metric, entry);
+		}
+		datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
+		this.lastEndTimestamp = scanner.getLastEndTimestamp();
+		lastStartTimestamp = datapoints.isEmpty() ? query.getStartTimestamp() : Collections.min(datapoints.keySet());
+		pointer = datapoints.isEmpty() ? null : Collections.min(datapoints.keySet());
+		chunkSize = Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * CHUNK_PERCENTAGE);
+		SystemAssert.requireArgument(!chunkSize.equals(0L) || query.getEndTimestamp().equals(query.getStartTimestamp()), "The start and end times of the query are too far apart. Don't do this to me!");
+		inUse = true;
+	}
+	
 	//~ Methods ********************************************************************************************************************************************************************************
 	
 	/**
