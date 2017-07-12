@@ -291,4 +291,68 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		
 		assert(expected.equals(actual));
 	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
+		
+		List<Metric> metrics = new ArrayList<>();
+		Metric metric1 = new Metric("system.WAS.na1", "metric1");
+        metric1.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.WAS.na2", "metric1");
+        metric2.setDatapoints(datapoints);
+        Metric metric3 = new Metric("system.CHI.na1", "metric1");
+        metric3.setDatapoints(datapoints);
+        Metric metric4 = new Metric("system.CHI.na2", "metric1");
+        metric4.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric2);
+        metrics.add(metric3);
+        metrics.add(metric4);
+        
+        
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+		}
+		
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		List<String> constants1 = new ArrayList<>();
+		constants1.add("system\\.([A-Z]+)\\.na.");
+		constants1.add("SUM");
+		
+		List<String> constants2 = new ArrayList<>();
+		constants2.add("system\\.([A-Z]+)\\.na.");
+		constants2.add("SUM");
+		
+		List<Metric> expected = transform.transform(metrics, constants1);
+		List<Metric> actual = transform.transformScanner(scanners, constants2);
+		
+		for (int i = 0; i < expected.size(); i++) {
+			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
+		}
+		for (int i = 0; i < metrics.size(); i++) {
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
 }
