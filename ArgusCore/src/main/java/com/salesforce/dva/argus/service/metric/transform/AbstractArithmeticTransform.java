@@ -154,6 +154,15 @@ public abstract class AbstractArithmeticTransform implements Transform {
 	    		resultDatapoints.put(dp.getKey(), performOperation(operands));
 	    	}
     	}
+	    
+	for (MetricScanner scanner : remainingScanners) {
+		synchronized(scanner) {
+			if (scanner.hasNextDP()) {
+				scanner.dispose();
+			}
+		}
+	}
+	    
     	result.setDatapoints(resultDatapoints);
     	MetricDistiller.setCommonScannerAttributes(scanners, result); // can still use this here, don't need any datapoints
     	
