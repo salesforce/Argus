@@ -95,7 +95,7 @@ public class DerivativeTransform implements Transform {
 	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
 	    			
 	    			if (prev == null) {
-	    				derivativeDatapoints.put(dp.getKey(), dp.getValue());
+	    				derivativeDatapoints.put(dp.getKey(), null);
 	    			} else {
 	    				derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
 	    			}
