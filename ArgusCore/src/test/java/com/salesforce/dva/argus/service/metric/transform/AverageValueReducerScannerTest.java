@@ -173,4 +173,49 @@ public class AverageValueReducerScannerTest extends AbstractTest {
 			assert(expected.equals(actual));
 		}
 	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		
+		for (Metric m : metrics) {
+			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
+			Long timestamp = Collections.min(dps.keySet()) + (Collections.max(dps.keySet()) - Collections.min(dps.keySet())) / 2;
+			dps.put(timestamp, null);
+			m.setDatapoints(dps);
+		}
+		
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(lowElems(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(metrics.get(i), bound, highQuery.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		AverageValueReducer reducer = new AverageValueReducer();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<Double> values = new ArrayList<Double>(metrics.get(i).getDatapoints().values());
+			Double expected = reducer.reduce(values);
+			Double actual = reducer.reduceScanner(scanners.get(i));
+			
+			assert(expected.equals(actual));
+			
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
+}
 }
