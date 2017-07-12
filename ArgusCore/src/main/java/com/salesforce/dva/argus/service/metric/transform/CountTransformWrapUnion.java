@@ -125,7 +125,7 @@ public class CountTransformWrapUnion implements Transform {
 	    				if (!collated.containsKey(dp.getKey())) {
 	    					collated.put(dp.getKey(), 1.0);
 	    				} else {
-	    					collated.put(dp.getKey(), dp.getValue() + 1.0);
+	    					collated.put(dp.getKey(), collated.get(dp.getKey()) + 1.0);
 	    				}
 	    			}
     			}
