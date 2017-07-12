@@ -84,7 +84,7 @@ public class IntegralTransform implements Transform {
 	    			while (scanner.hasNextDP()) {
 	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
 	    				prevSum += dp.getValue();
-	    				integralDP.put(dp.getKey(), dp.getValue());
+	    				integralDP.put(dp.getKey(), prevSum);
 	    			}
     			}
     			
