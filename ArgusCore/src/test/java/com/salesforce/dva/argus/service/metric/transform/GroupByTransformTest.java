@@ -9,15 +9,14 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 
-public class GroupByTransformTest extends AbstractTest {
+public class GroupByTransformTest {
 	
 	@Test
 	public void testGroupByDC() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -55,7 +54,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testGroupByDCAndUncapturedGroup() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -93,7 +92,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testGroupByDCAndPodPrefix() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -147,7 +146,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testGroupByDCAndPodNumber() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -199,7 +198,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testWeightedAvgUsingGroupBy() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -259,7 +258,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testGroupByPod() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);
@@ -313,7 +312,7 @@ public class GroupByTransformTest extends AbstractTest {
 	@Test
 	public void testGroupByWithFunctionTakingConstants() {
 		
-		GroupByTransform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
         datapoints.put(1000L, 1.0);

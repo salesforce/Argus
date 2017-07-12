@@ -114,6 +114,10 @@ public interface SchemaService extends Service {
     }
     
     static boolean containsFilter(String str) {
+    	if(str == null || str.isEmpty()) {
+    		return false;
+    	}
+    	
 		Pattern pattern = Pattern.compile("\\**");
 		Matcher matcher = pattern.matcher(str);
 		
