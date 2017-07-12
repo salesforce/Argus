@@ -184,4 +184,65 @@ public class ZeroIfMissingSumScannerTest extends AbstractTest {
 		
 		assert(resultFromMetrics.equals(resultFromScanners));
 	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			metrics.get(i).setNamespace(createRandomName());
+			metrics.get(i).setDisplayName(createRandomName());
+			metrics.get(i).setUnits("" + (double) i);
+			//Long randTime = random.nextLong();
+			Long dpStart = Collections.min(metrics.get(i).getDatapoints().keySet());
+			Long dpEnd = Collections.max(metrics.get(i).getDatapoints().keySet());
+			Long randTime = dpStart + (dpStart / dpEnd);	// still put within this range or will take forever and be an outlier
+			assert(randTime != null);
+			//System.out.println(randTime);
+			Map<Long, Double> dps = new HashMap<>(metrics.get(i).getDatapoints());
+			//System.out.println("old dps were " + dps.toString());
+			dps.put(randTime, null);
+			//System.out.println("Got here");
+			metrics.get(i).setDatapoints(dps);
+			//System.out.println(metrics.get(i).getDatapoints());
+		}
+		
+		
+		List<MetricQuery> queries = toQueries(metrics);
+		List<Long> boundaries = new ArrayList<>();
+		
+		for (int i = 0; i < queries.size(); i++) {
+			//System.out.println("Metric #" + i + " had dps " + metrics.get(i).getDatapoints().toString());
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			boundaries.add(bound);
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, queries.get(i)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		List<MetricScanner> scanners = new ArrayList<>();
+		for (int i = 0; i < queries.size(); i++) {
+			scanners.add(new MetricScanner(metrics.get(i), queries.get(i), serviceMock, boundaries.get(i)));
+		}
+		
+		ZeroIfMissingSum transform1 = new ZeroIfMissingSum();
+		List<Metric> resultFromMetrics = transform1.transform(metrics);
+		
+		ZeroIfMissingSum transform2 = new ZeroIfMissingSum();
+		List<Metric> resultFromScanners = transform2.transformScanner(scanners);
+		
+		for (int i = 0; i < resultFromMetrics.size(); i++) {
+			assert(resultFromMetrics.get(i).getDatapoints().equals(resultFromScanners.get(i).getDatapoints()));
+		}
+		for (int i = 0; i < metrics.size(); i++) {
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
 }
