@@ -174,6 +174,7 @@ public class AliasTransform implements Transform {
         
         List<Metric> result = new ArrayList<>();
         for (MetricScanner scanner : scanners) {
+		buildMetric(scanner);
         	Metric m = new Metric(scanner.getMetric());
         	String newMetricName = scanner.getMetricName().replaceAll(metricSearchRegex, metricReplaceText);
         	m.setMetric(newMetricName);
@@ -187,6 +188,14 @@ public class AliasTransform implements Transform {
         }
         
         return result;
+    }
+	
+	private void buildMetric(MetricScanner scanner) {
+    	synchronized(scanner) {
+    		while (scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+    	}
     }
 
     @Override
