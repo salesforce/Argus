@@ -141,6 +141,7 @@ public class FillTransform implements Transform {
 	    			index++;
 	    		}
 	    	}
+		filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
     	}
     	
     	int newLength = filledDatapoints.size();
