@@ -148,7 +148,7 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
 	    			}
 	    		}
 	    		
-	    		Map<Long, Double> bootstrappedDps = new HashMap<>();
+	    		Map<Long, Double> bootstrappedDps = new TreeMap<>();
 	    		
 	    		synchronized(scanner) {
 		    		while (scanner.hasNextDP()) {
