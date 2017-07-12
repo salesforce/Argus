@@ -193,4 +193,71 @@ public class JoinTransformScannerTest extends AbstractTest {
 		assert(expected.equals(actual));
 	}
 	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<List<Metric>> metrics = new ArrayList<>();
+		List<List<MetricQuery>> queries = new ArrayList<>();
+		List<Metric> metrics1 = createRandomMetrics(null, null, 10);
+		List<MetricQuery> queries1 = toQueries(metrics1);
+		metrics.add(metrics1);
+		queries.add(queries1);
+		List<Metric> metrics2 = createRandomMetrics(null, null, 10);
+		List<MetricQuery> queries2 = toQueries(metrics2);
+		metrics.add(metrics2);
+		queries.add(queries2);
+		List<Metric> metrics3 = createRandomMetrics(null, null, 10);
+		List<MetricQuery> queries3 = toQueries(metrics3);
+		metrics.add(metrics3);
+		queries.add(queries3);
+		
+		List<List<MetricScanner>> scanners = new ArrayList<>();
+		List<MetricScanner> scanners1 = new ArrayList<>();
+		List<MetricScanner> scanners2 = new ArrayList<>();
+		List<MetricScanner> scanners3 = new ArrayList<>();
+		scanners.add(scanners1);
+		scanners.add(scanners2);
+		scanners.add(scanners3);
+		
+		for (int j = 0; j < metrics.size(); j++) {
+			for (int i = 0; i < metrics.get(j).size(); i++) {
+				//System.out.println("i, j is " + i + ", " + j);
+				//System.out.println(metrics.get(j).size());
+				Metric m = metrics.get(j).get(i);
+				MetricQuery q = queries.get(j).get(i);
+							
+				Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+				List<MetricQuery> highQuery = new ArrayList<>();
+				highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+				List<MetricQuery> tooHigh = new ArrayList<>();
+				tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+				
+				MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+				scanners.get(j).add(s);
+				
+				when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+				when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+			}
+		}
+		
+		//System.out.println(metrics1.toString());
+		//System.out.println(scanners1.toString());
+		
+		JoinTransform transform = new JoinTransform();
+		
+		List<Metric> expected = transform.transform(metrics1, metrics2, metrics3);
+		List<Metric> actual = transform.transformScanner(scanners1, scanners2, scanners3);
+				
+		for (int i = 0; i < expected.size(); i++) {
+			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
+		}
+		for (int i = 0; i < metrics.size(); i++) {
+			for (int j = 0; j < metrics.get(i).size(); j++) {
+				assert(!MetricScanner.existingScanner(metrics.get(i).get(j), queries.get(i).get(j)));
+			}
+		}
+	}
+	
 }
