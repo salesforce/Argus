@@ -166,6 +166,10 @@ public class PercentileTransformScannerTest extends AbstractTest {
 		constants.add("" + (int) (random.nextDouble() * 50));
 		constants.add("1h");
 		
+		if(!(Integer.parseInt(constants.get(0)) > 0)) {
+			constants.set(0, "14");
+		}
+		
 		assert(Integer.parseInt(constants.get(0)) > 0);
 		
 		List<Metric> expected = transform.transform(metrics, constants);
