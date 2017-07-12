@@ -103,7 +103,7 @@ public class PropagateTransform implements Transform {
         metric.setDatapoints(propagateDatapoints);
     }
 	
-	private void _propagateMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, List<Metric> result) {
+    private void _propagateMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, List<Metric> result) {
     	Metric m = new Metric(scanner.getMetric());
     	Map.Entry<Long, Double> dp = null;
     	synchronized(scanner) {
@@ -147,6 +147,7 @@ public class PropagateTransform implements Transform {
 	    			index++;
 	    		}
 	    	} while (scanner.hasNextDP());
+		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
     	}
     	
     	int newLength = propagateDatapoints.size();
