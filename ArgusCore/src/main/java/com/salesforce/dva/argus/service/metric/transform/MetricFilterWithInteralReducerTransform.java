@@ -253,7 +253,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
         return filteredMetricList;
     }
 	
-	@Override
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform emtpy metric scanner/scanners");
     	if (scanners.isEmpty()) {
@@ -277,7 +277,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
         for (Metric metric : metrics) {
             String extendedEvaluation = internalReducer(metric, type);
-
+	
             extendedSortedMap.put(metric, extendedEvaluation);
         }
         return sortByValue(extendedSortedMap, type);
@@ -289,10 +289,21 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
     	for (MetricScanner scanner : scanners) {
     		Map<Long, Double> dps = new HashMap<>();
     		String extendedEvaluation = internalReducerScanner(scanner, type, dps);
-    		
+    		if (type.equals("name")) {
+    			buildMetric(scanner);
+    		}
+			
     		extendedSortedMap.put(scanner.getMetric(), extendedEvaluation);
     	}
     	return sortByValue(extendedSortedMap, type);
+    }
+	
+	private void buildMetric(MetricScanner scanner) {
+    	synchronized(scanner) {
+    		while(scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+    	}
     }
 
     @Override
