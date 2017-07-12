@@ -175,7 +175,7 @@ public class DiffValueReducerOrMappingScannerTest extends AbstractTest {
 			Double expected = redMap.reduce(new ArrayList<>(metrics.get(i).getDatapoints().values()));
 			Double actual = redMap.reduceScanner(scanners.get(i));
 			
-			assert(expected.equals(actual));
+			assert((expected == null && actual == null) || expected.equals(actual));
 		}
 	}
 	
@@ -216,6 +216,84 @@ public class DiffValueReducerOrMappingScannerTest extends AbstractTest {
 			
 			assert(expected.equals(actual));
 			constants.set(0, "" + random.nextDouble());
+		}
+	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+		}
+		
+		DiffValueReducerOrMapping redMap = new DiffValueReducerOrMapping();
+		List<String> constants = new ArrayList<>();
+		constants.add("" + random.nextDouble());
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Map<Long, Double> expected = redMap.mapping(metrics.get(i).getDatapoints(), constants);
+			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
+			
+			assert(expected.equals(actual));
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			constants.set(0, "" + random.nextDouble());
+		}
+				
+		metrics = createRandomMetrics(null, null, 10);
+		
+		for (Metric m : metrics) {
+			Long timestamp = Collections.min(m.getDatapoints().keySet()) + (Collections.max(m.getDatapoints().keySet()) - Collections.min(m.getDatapoints().keySet())) / 2;
+			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
+			dps.put(timestamp, null);
+			m.setDatapoints(dps);
+		}
+		
+		queries = toQueries(metrics);
+		scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+		}
+				
+		for (int i = 0; i < metrics.size(); i++) {
+			Double expected = redMap.reduce(new ArrayList<>(metrics.get(i).getDatapoints().values()));
+			Double actual = redMap.reduceScanner(scanners.get(i));
+
+			assert((expected == null && actual == null) || expected.equals(actual));
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
 		}
 	}
 }
