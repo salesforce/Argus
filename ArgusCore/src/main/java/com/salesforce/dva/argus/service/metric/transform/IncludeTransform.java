@@ -96,6 +96,9 @@ public class IncludeTransform implements Transform {
         		Metric m = setMetricData(scanner); // only do this if there is a match, generate all of the datapoints to store
         		includeMetricList.add(m);
         	}
+		else {
+        		scanner.dispose();
+        	}
         }
         return includeMetricList;
     }
