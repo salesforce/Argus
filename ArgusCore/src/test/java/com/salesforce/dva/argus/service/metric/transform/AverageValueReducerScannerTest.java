@@ -218,4 +218,3 @@ public class AverageValueReducerScannerTest extends AbstractTest {
 		}
 	}
 }
-}
