@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Calculate all the absolute value for all datapoints in every metric.
  *
@@ -56,9 +58,28 @@ public class AbsoluteValueMapping implements ValueMapping {
         }
         return absDatapoints;
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    		Map<Long, Double> absDatapoints = new HashMap<>();
+    		
+    		synchronized (scanner) {
+	    		while (scanner.hasNextDP()) {
+	    			Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+	    			absDatapoints.put(nextDP.getKey(), nextDP.getValue());
+	    		}
+    		}
+    		
+    		return absDatapoints;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+        throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
     }
 
