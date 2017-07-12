@@ -184,7 +184,7 @@ public class DivideValueReducerOrMappingScannerTest extends AbstractTest {
 		}
 	}
 	
-	@Test
+	@Test(expected = ArithmeticException.class)
 	public void testDivideValueReducerWithZero() {
 		
 		MetricScanner.setChunkPercentage(0.50);
@@ -226,13 +226,7 @@ public class DivideValueReducerOrMappingScannerTest extends AbstractTest {
 			//System.out.println("Testing number " + i);
 			//System.out.println(metrics.get(i).getDatapoints().toString());
 			if (metrics.get(i).getDatapoints().size() > 1) {	// if there is only one datapoint, which is zero, that's fine
-				try {
-					redMap.reduceScanner(scanners.get(i));
-					//System.out.println("about to fail");
-					assert(false);
-				} catch (ArithmeticException e) {
-					assert(true);	// should throw an error here
-				}
+				redMap.reduceScanner(scanners.get(i));
 			}
 		}
 	}
@@ -275,7 +269,59 @@ public class DivideValueReducerOrMappingScannerTest extends AbstractTest {
 			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
 			
 			assert(expected.equals(actual));
+			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
 			constants.set(0, "" + random.nextDouble());
+		}
+	}
+	
+	@Test
+	public void testDPIntegrityAndDisposal() {
+		
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 10);
+		
+		for (Metric m : metrics) {
+			Long timestamp = Collections.min(m.getDatapoints().keySet()) + (Collections.max(m.getDatapoints().keySet()) - Collections.min(m.getDatapoints().keySet())) / 2;
+			if (m.getDatapoints().size() == 1) {
+				timestamp = Collections.min(m.getDatapoints().keySet()) + 1000L;	// set it to something else so the first time is not null
+			}
+			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
+			dps.put(timestamp, null);
+			m.setDatapoints(dps);
+		}
+		
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+		}
+		
+		DivideValueReducerOrMapping redMap = new DivideValueReducerOrMapping();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Double expected = redMap.reduce(new ArrayList<>(metrics.get(i).getDatapoints().values()));
+			Double actual = redMap.reduceScanner(scanners.get(i));
+			
+			if (metrics.get(i).getDatapoints().size() > 1) {
+				assert(expected.equals(actual));
+				assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			}
 		}
 	}
 	
