@@ -174,7 +174,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     		attributes.addElement(value);
     		
     		trainingData = new Instances("metric_value_data", attributes, 0);
-    		Map<Long, Double> datapoints = new HashMap<>();
+    		Map<Long, Double> datapoints = new TreeMap<>();
     		
     		synchronized(scanner) {
 	    		while (scanner.hasNextDP()) {
