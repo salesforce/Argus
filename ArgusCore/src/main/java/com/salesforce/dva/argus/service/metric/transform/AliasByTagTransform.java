@@ -38,6 +38,7 @@ public class AliasByTagTransform implements Transform {
 		List<Metric> result = new ArrayList<>();
 		for (MetricScanner scanner : scanners) {
 			String displayName = "";
+			buildMetric(scanner);
 			Metric m = new Metric(scanner.getMetric());
 			
 			for (Map.Entry<String, String> entry : scanner.getMetricTags().entrySet()) {
@@ -52,6 +53,14 @@ public class AliasByTagTransform implements Transform {
 			result.add(m);
 		}
 		return result;
+	}
+	
+	private void buildMetric(MetricScanner scanner) {
+		synchronized(scanner) {
+			while (scanner.hasNextDP()) {
+				scanner.getNextDP();
+			}
+		}
 	}
 
 	@Override
@@ -89,6 +98,7 @@ public class AliasByTagTransform implements Transform {
 		
 		for (MetricScanner scanner : scanners) {
 			String displayName = "";
+			buildMetric(scanner);
 			Metric m = new Metric(scanner.getMetric());
 			
 			Map<String, String> tags = scanner.getMetricTags();
