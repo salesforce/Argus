@@ -91,6 +91,10 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
+import com.salesforce.dva.argus.service.metric.transform.Transform;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -119,6 +123,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 	private final List<String> _readEndPoints;
 	private final List<String> _readBackupEndPoints;
 	private final Map<String, String> _readBackupEndPointsMap = new HashMap<>();
+	private final TransformFactory _transformFactory;
 
 	/** Round robin iterator for write endpoints. 
 	 * We will cycle through this iterator to select an endpoint from the set of available endpoints  */
@@ -134,15 +139,17 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @param   config               The system _configuration used to configure the service.
 	 * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
+	 * @param   transformFactory     Transform Factory
 	 *
 	 * @throws  SystemException  If an error occurs configuring the service.
 	 */
 	@Inject
-	public DefaultTSDBService(SystemConfiguration config, MonitorService monitorService) {
+	public DefaultTSDBService(SystemConfiguration config, MonitorService monitorService, TransformFactory transformFactory) {
 		super(config);
 		requireArgument(config != null, "System configuration cannot be null.");
 		requireArgument(monitorService != null, "Monitor service cannot be null.");
 		_monitorService = monitorService;
+		_transformFactory = transformFactory;
 
 		_mapper = getMapper();
 		int connCount = Integer.parseInt(config.getValue(Property.TSD_CONNECTION_COUNT.getName(),
@@ -366,7 +373,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		_logger.trace("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
-
+		
 		for (MetricQuery query : queries) {
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
@@ -391,6 +398,20 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
 		Map<MetricQuery, List<Metric>> subQueryMetricsMap1 = queryFederation2.join(mapQueryEndPointSubQueries, subQueryMetricsMap2);
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation1.join(mapQuerySubQueries, subQueryMetricsMap1);
+
+		for(Entry<MetricQuery, List<Metric>> entry : queryMetricsMap.entrySet()){
+			MetricQuery metricQuery = entry.getKey();
+			Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
+			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
+
+			Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
+			InterpolateTransform interpolate = new InterpolateTransform();
+			for(List<Metric> metrics : groupedMetricsMap.values()){
+				interpolate.transform(metrics);
+			}
+			Transform transform = Aggregator.correspondingTransform(metricQuery.getAggregator(), _transformFactory);
+			queryMetricsMap.put(metricQuery, TSDBService.aggregate(groupedMetricsMap, transform));
+		}
 
 		for (MetricQuery query : queries) {
 			instrumentQueryLatency(_monitorService, query, queryStartExecutionTime.get(query), "metrics");
@@ -748,7 +769,9 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
 
 		for (MetricQuery query : queries) {
-			String requestBody = fromEntity(query);
+			MetricQuery queryNoneAgg = new MetricQuery(query);
+			queryNoneAgg.setAggregator(Aggregator.NONE);
+			String requestBody = fromEntity(queryNoneAgg);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
 		}
@@ -766,7 +789,9 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getMetricQueryContext().getReadEndPoint()); 
 					if (!readBackupEndPoint.isEmpty()) {
 						_logger.warn("Trying to read from Backup endpoint");
-						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(entry.getKey())).call();
+						MetricQuery queryNoneAgg = new MetricQuery(entry.getKey());
+						queryNoneAgg.setAggregator(Aggregator.NONE);
+						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(queryNoneAgg)).call();
 					}
 				} catch (Exception ex) {
 					_logger.warn("Failed to get metrics from Backup TSDB. Reason: " + ex.getMessage());
