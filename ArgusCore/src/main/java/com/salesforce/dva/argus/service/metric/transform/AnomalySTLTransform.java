@@ -70,7 +70,7 @@ public class AnomalySTLTransform implements Transform {
     	List<Metric> mList = new ArrayList<>();
     	
     	int dpCount = 0;
-    	Map<Long, Double> dps = new HashMap<>();
+    	Map<Long, Double> dps = new TreeMap<>();
     	
     	synchronized(scanners.get(0)) {
 	    	while (scanners.get(0).hasNextDP()) {
@@ -189,7 +189,7 @@ public class AnomalySTLTransform implements Transform {
         int season = Integer.parseInt(constants.get(0));
         
         MetricScanner scanner = scanners.get(0);
-        Map<Long, Double> datapoints = new HashMap<>();
+        Map<Long, Double> datapoints = new TreeMap<>();
         List<Long> timestamps = new ArrayList<>();
         
         int dpCount = 0; // make sure we have enough points -> need at least 4
