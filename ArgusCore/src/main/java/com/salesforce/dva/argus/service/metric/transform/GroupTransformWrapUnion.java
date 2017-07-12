@@ -137,7 +137,9 @@ public class GroupTransformWrapUnion implements Transform {
     			matchScannerList.add(scanner);
     		} else if (!isMatch && type.equals(EXCLUSIVE)) {
     			matchScannerList.add(scanner);
-    		}
+    		} else {
+			scanner.dispose();
+		}
     	}
     	return matchScannerList;
     }
