@@ -311,7 +311,21 @@ public abstract class AnomalyDetectionTransform implements Transform {
 	    		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
 	    		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
 	    		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
-	    	}
+	    	
+			i++;
+		}
+		
+		// complete the final datapoint
+	    	long timestampAtCurrentIndex = timestamps.get(i);
+    		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
+    		
+    		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
+    		List<Metric> intervalRawDataMetrics = new ArrayList<>();
+    		intervalRawDataMetrics.add(intervalMetric);
+    		
+    		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
+    		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+    		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
     	}
     }
 
