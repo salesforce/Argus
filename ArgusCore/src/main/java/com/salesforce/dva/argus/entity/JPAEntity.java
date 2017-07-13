@@ -115,23 +115,34 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     @GeneratedValue(generator = "IDGEN")
     @Id
     @TableGenerator(name = "IDGEN", initialValue = 100001)
+    @Metadata
     protected BigInteger id;
+    
     @JoinColumn(updatable = false)
     @ManyToOne
+    @Metadata
     protected PrincipalUser createdBy;
+    
     @Basic(optional = false)
     @Column(nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
+    @Metadata
     protected Date createdDate;
+    
     @JoinColumn(updatable = true)
     @ManyToOne
+    @Metadata
     protected PrincipalUser modifiedBy;
+    
     @Basic(optional = false)
     @Column(nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
+    @Metadata
     protected Date modifiedDate;
+    
     @OneToMany(mappedBy = "entity", orphanRemoval = false)
     List<Audit> audits;
+    
     protected boolean deleted = false;
 
     //~ Constructors *********************************************************************************************************************************

@@ -31,9 +31,13 @@
 	 
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +45,7 @@ import java.util.regex.Pattern;
 /**
  * Provides methods to update metric schema records for use in wildcard expansion and metric discovery.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public interface SchemaService extends Service {
 	
@@ -67,12 +71,10 @@ public interface SchemaService extends Service {
      * Returns a list of schema records matched by the given query.
      *
      * @param   query  The query to evaluate.  Cannot be null.
-     * @param   limit  The maximum number of records to return.  Must be a positive integer.
-     * @param   scanFrom   String representing the scanner start row
      *
      * @return  The list of matching schema records.
      */
-    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, int limit, MetricSchemaRecord scanFrom);
+    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query);
 
     /**
      * Returns a list of unique names for the given record type.
@@ -84,7 +86,9 @@ public interface SchemaService extends Service {
      *
      * @return  A list of MetricSchemaRecords for the give record type.  Will never return null, but may be empty.
      */
-    List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, int limit, RecordType type, MetricSchemaRecord scanFrom);
+    List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
+    
+    List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
     
     static boolean containsWildcard(String str) {
         if (str == null || str.isEmpty()) {
@@ -110,6 +114,10 @@ public interface SchemaService extends Service {
     }
     
     static boolean containsFilter(String str) {
+    	if(str == null || str.isEmpty()) {
+    		return false;
+    	}
+    	
 		Pattern pattern = Pattern.compile("\\**");
 		Matcher matcher = pattern.matcher(str);
 		
@@ -169,6 +177,43 @@ public interface SchemaService extends Service {
         }
         dest[destIndex] = orig[origIndex];
         return destIndex;
+    }
+    
+    static MetricSchemaRecord constructMetricSchemaRecordForType(String str, RecordType type) {
+    	SystemAssert.requireArgument(type != null, "type cannot be null.");
+    	
+    	MetricSchemaRecord record = new MetricSchemaRecord();
+    	switch(type) {
+    		case SCOPE:
+    			record.setScope(str);
+    			break;
+    		case METRIC:
+    			record.setMetric(str);
+    			break;
+    		case TAGK:
+    			record.setTagKey(str);
+    			break;
+    		case TAGV:
+    			record.setTagValue(str);
+    			break;
+    		case NAMESPACE:
+    			record.setNamespace(str);
+    			break;
+    		default:
+    			throw new IllegalArgumentException("Invalid record type: " + type);	
+    	}
+    	
+    	return record;
+    }
+    
+    static List<MetricSchemaRecord> constructMetricSchemaRecordsForType(List<String> values, RecordType type) {
+    	
+    	List<MetricSchemaRecord> records = new ArrayList<>(values.size());
+		for(String value : values) {
+			records.add(SchemaService.constructMetricSchemaRecordForType(value, type));
+		}
+		
+		return records;
     }
 
     //~ Enums ****************************************************************************************************************************************

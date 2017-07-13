@@ -1,8 +1,10 @@
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.schema;
 
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.service.CacheService;
+import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;

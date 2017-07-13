@@ -157,25 +157,27 @@ public class DefaultDashboardService extends DefaultJPAService implements Dashbo
 
     @Override
     @Transactional
-    public List<Dashboard> findSharedDashboards() {
+    public List<Dashboard> findSharedDashboards(boolean metadataOnly) {
         requireNotDisposed();
-        return Dashboard.findSharedDashboards(emf.get());
+        return metadataOnly ? Dashboard.findSharedDashboardsMeta(emf.get()) : Dashboard.findSharedDashboards(emf.get());
     }
 
     @Override
     @Transactional
-    public List<Dashboard> findDashboardsByOwner(PrincipalUser user) {
+    public List<Dashboard> findDashboardsByOwner(PrincipalUser user, boolean metadataOnly) {
         requireNotDisposed();
         requireArgument(user != null, "Owner cannot be null");
-        return Dashboard.findDashboardsByOwner(emf.get(), user);
+        
+        return metadataOnly ? Dashboard.findDashboardsByOwnerMeta(emf.get(), user) : Dashboard.findDashboardsByOwner(emf.get(), user);
     }
 
     @Override
     @Transactional
-    public List<Dashboard> findDashboards(Integer limit) {
+    public List<Dashboard> findDashboards(Integer limit, boolean metadataOnly) {
         requireNotDisposed();
-        requireArgument(limit == null || limit > 0, "Cannot get 0 or negative number of dashboards.");
-        return Dashboard.findDashboards(emf.get(), limit);
+        requireArgument(limit == null || limit > 0, "Limit must either be null or a positive integer.");
+        
+        return metadataOnly ? Dashboard.findDashboardsMeta(emf.get(), limit) : Dashboard.findDashboards(emf.get(), limit);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
