@@ -154,7 +154,7 @@ public class CullBelowValueMapping implements ValueMapping {
     }
 	
     /*
-     * If type is percentile, find out the estimate of the limit(th) percentil in the datapoints encapsulated by the scanner.
+     * If type is percentile, find out the estimate of the limit(th) percentile in the datapoints encapsulated by the scanner.
      * The execute the same as if the type was value, culling the elements greater than value or pivotValue. The array
      * must be sorted.
      */
