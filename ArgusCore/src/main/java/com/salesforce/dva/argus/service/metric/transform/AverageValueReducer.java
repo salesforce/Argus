@@ -46,6 +46,7 @@ public class AverageValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
+		SystemAssert.requireArgument(values.size() != 0, "There must be values to reduce.");
         Double sum = 0.0;
 
         for (Double value : values) {
@@ -59,6 +60,7 @@ public class AverageValueReducer implements ValueReducer {
 	
     @Override
     public Double reduceScanner(MetricScanner scanner) {
+			SystemAssert.requireArgument(scanner.hasNextDP(), "There must be datapoints to reduce.");
     		Double sum = 0.0;
     		int dpCount = 0;
     		
