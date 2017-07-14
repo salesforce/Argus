@@ -88,6 +88,7 @@
 		<h4 class="sectionTitle btmBdr">Tooltips</h4>
 
 		<input class="chkBox pointer" id="tooltip-on-{{chartId}}" name="tooltip-on" type="checkbox" ng-model="menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-on-{{chartId}}" title="Show tooltip">Show tooltip</label>
+		<br /><input class="chkBox pointer" id="snap-crossline-on-{{chartId}}" name="snap-crossline-on" type="checkbox" ng-model="menuOption.isSnapCrosslineOn" />&nbsp;<label class="chkBoxLbl" for="snap-crossline-on-{{chartId}}" title="Snap crossline to dot">Snap crosshair to datapoint</label>
 
 		<br /><input class="chkBox pointer" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.tooltipConfig.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
 
