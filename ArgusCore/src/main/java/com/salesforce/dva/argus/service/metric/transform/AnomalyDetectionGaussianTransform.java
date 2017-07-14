@@ -58,13 +58,19 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing transforms.");
-        SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
-
+        if (metrics == null) {
+    		throw new MissingDataException("The metrics list cannot be null or empty while performing transforms.");
+    	}
+    	if (metrics.size() != 1) {
+    		throw new UnsupportedOperationException("Anomaly Detection Transform can only be used with one metric.");
+    	}
+	    
         Metric metric = metrics.get(0);
         Map<Long, Double> metricData = metric.getDatapoints();
-        SystemAssert.requireArgument(metricData.size() != 0, "Metric must contain data points to perform transforms.");
-
+	if (metricData.size() == 0) {
+        	throw new MissingDataException("Metric must contain data points to perform transforms.");
+        }
+	    
         fitParameters(metricData);
         Metric predictions = predictAnomalies(metricData);
         Metric predictionsNormalized = normalizePredictions(predictions);
