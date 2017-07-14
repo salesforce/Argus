@@ -56,8 +56,8 @@ public class MetricReducerOrMappingTransform implements Transform {
     protected final ValueReducerOrMapping valueReducerOrMapping;
     protected final String defaultScope;
     protected final String defaultMetricName;
-    private static final String FULLJOIN = "UNION";
-    private Boolean fulljoinIndicator=false;
+    protected static final String FULLJOIN = "UNION";
+    protected Boolean fulljoinIndicator=false;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -81,12 +81,12 @@ public class MetricReducerOrMappingTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        return Arrays.asList(reduce(metrics));
+        return Arrays.asList(reduce(metrics, null));
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
-    	return Arrays.asList(reduceScanner(scanners));
+    	return Arrays.asList(reduceScanner(scanners, null));
     }
 
     /**
@@ -110,8 +110,8 @@ public class MetricReducerOrMappingTransform implements Transform {
         
         return mapping(metrics, constants);
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	if (constants == null || constants.isEmpty()) {
     		return transformScanner(scanners);
@@ -148,8 +148,8 @@ public class MetricReducerOrMappingTransform implements Transform {
         }
         return newMetricsList;
     }
-	
-	protected List<Metric> mappingScanner(List<MetricScanner> scanners, List<String> constants) {
+    
+    protected List<Metric> mappingScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners");
     	
     	if (scanners.isEmpty()) {
@@ -173,7 +173,7 @@ public class MetricReducerOrMappingTransform implements Transform {
      *
      * @return  The reduced metric.
      */
-    protected Metric reduce(List<Metric> metrics) {
+    protected Metric reduce(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
         if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
     		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
@@ -184,7 +184,7 @@ public class MetricReducerOrMappingTransform implements Transform {
         distiller.distill(metrics);
 
         Map<Long, List<Double>> collated = collate(metrics);
-        Map<Long, Double> minDatapoints = reduce(collated, metrics);
+        Map<Long, Double> minDatapoints = reduce(collated, constants, metrics);
         String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
         String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
         Metric newMetric = new Metric(newScopeName, newMetricName);
@@ -195,8 +195,8 @@ public class MetricReducerOrMappingTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
-	
-	protected Metric reduceScanner(List<MetricScanner> scanners) {
+    
+    protected Metric reduceScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners");
     	if (valueReducerOrMapping instanceof DivideValueReducerOrMapping && scanners.size() < 2) {
     		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
@@ -206,7 +206,7 @@ public class MetricReducerOrMappingTransform implements Transform {
     	
     	distiller.distillScanner(scanners);
     	
-    	Map<Long, Double> minDatapoints = collateAndReduceScanner(scanners);
+    	Map<Long, Double> minDatapoints = collateAndReduceScanner(scanners, constants);
     	String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
     	String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
     	Metric newMetric = new Metric(newScopeName, newMetricName);
@@ -218,6 +218,7 @@ public class MetricReducerOrMappingTransform implements Transform {
     	return newMetric;
     }
     
+    /*
     private Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<Metric> metrics) {
         Map<Long, Double> reducedDatapoints = new HashMap<>();
         for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
@@ -227,8 +228,23 @@ public class MetricReducerOrMappingTransform implements Transform {
             reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue()));
         }
         return reducedDatapoints;
-    }
+    } */
     
+    protected Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
+    	Map<Long, Double> reducedDatapoints = new HashMap<>();
+    	
+    	for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+    		if (entry.getValue().size() < metrics.size() && !fulljoinIndicator) {
+    			continue;
+    		}
+    		Double reducedValue = constants == null || constants.isEmpty() ? 
+    				this.valueReducerOrMapping.reduce(entry.getValue()) :
+    				this.valueReducerOrMapping.reduce(entry.getValue(), constants);
+    		reducedDatapoints.put(entry.getKey(), reducedValue);
+    	}
+    	return reducedDatapoints;
+    }
+            
     private Map<Long, List<Double>> collate(List<Metric> metrics) {
         Map<Long, List<Double>> collated = new HashMap<>();
 
@@ -242,8 +258,8 @@ public class MetricReducerOrMappingTransform implements Transform {
         }
         return collated;
     }
-	
-	private Map<Long, Double> collateAndReduceScanner(List<MetricScanner> scanners) {
+    
+    private Map<Long, Double> collateAndReduceScanner(List<MetricScanner> scanners, List<String> constants) {
     	Map<Long, List<Double>> collated = new HashMap<>();
     	
     	for (MetricScanner scanner : scanners) {
@@ -263,7 +279,10 @@ public class MetricReducerOrMappingTransform implements Transform {
     		if (entry.getValue().size() < scanners.size() && !fulljoinIndicator) {
     			continue;
     		}
-    		reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue()));
+    		Double reducedValue = constants == null || constants.isEmpty() ?
+    				this.valueReducerOrMapping.reduce(entry.getValue()) :
+    				this.valueReducerOrMapping.reduce(entry.getValue(), constants);
+    		reducedDatapoints.put(entry.getKey(), reducedValue);
     	}
     	return reducedDatapoints;
     }
@@ -273,8 +292,8 @@ public class MetricReducerOrMappingTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
     }
