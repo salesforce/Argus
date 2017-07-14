@@ -175,9 +175,8 @@ public class MetricReducerOrMappingTransform implements Transform {
      */
     protected Metric reduce(List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
-        if(valueReducerOrMapping instanceof DivideValueReducerOrMapping && metrics.size() < 2) {
-    		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
-    	}
+        SystemAssert.requireArgument(!(valueReducerOrMapping instanceof DivideValueReducerOrMapping) || metrics.size() >= 2, 
+				     "DIVIDE Transform needs at least 2 metrics to perform the operation.");
         
         MetricDistiller distiller = new MetricDistiller();
 
@@ -198,9 +197,8 @@ public class MetricReducerOrMappingTransform implements Transform {
     
     protected Metric reduceScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners");
-    	if (valueReducerOrMapping instanceof DivideValueReducerOrMapping && scanners.size() < 2) {
-    		throw new IllegalArgumentException("DIVIDE Transform needs at least 2 metrics to perform the operation.");
-    	}
+    	SystemAssert.requireArgument(!(valueReducerOrMapping instanceof DivideValueReducerOrMapping) || scanners.size() >= 2, 
+    			"DIVIDE Transform needs at least 2 metric scanners to perform the operation.");
     	
     	MetricDistiller distiller = new MetricDistiller();
     	
