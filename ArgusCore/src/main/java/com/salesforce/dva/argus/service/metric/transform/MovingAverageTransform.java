@@ -102,7 +102,7 @@ public class MovingAverageTransform implements Transform {
     }
 	
 	public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
-    		SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics");
+    		SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners");
     		List<Metric> result = new ArrayList<>();
         if (scanners.isEmpty()) {
             return result;
@@ -245,8 +245,7 @@ public class MovingAverageTransform implements Transform {
 	        				
 	        			}
 	        		} catch (NumberFormatException | NullPointerException e) {
-	        			//_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)));
-	        			System.out.println("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)));
+	        			_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)));
 	        		}
 	        		count++;
 	        		transformedDatapoints.put(timestamps.get(i), (sum / count));
