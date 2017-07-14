@@ -1,4 +1,5 @@
 /*global angular:false */
+'use strict';
 
 angular.module('argus.services.metrics', [])
 .factory('Metrics', ['$resource', 'CONFIG', function ($resource, CONFIG) {

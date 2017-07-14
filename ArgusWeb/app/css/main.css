@@ -44,6 +44,8 @@ button[disabled], .disabled {color:#CCC !important;}
 .error, .error:focus {color:#C10101; border-color:#C10101; box-shadow:none;}
 .pointer {cursor:pointer;}
 .clearAll {clear:both;}
+.bold {font-weight:bold;}
+.inlineBlock {display:inline-block;}
 
 .btmBdr {padding-bottom:.25em; border-bottom:solid 1px #CCC;}
 
@@ -69,6 +71,24 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
 #navbar li a.glyphicon {font-size:20px; color:#777;}
+#navbar li a.betaTab {color:#ECF1F6; font-weight:700;
+	/* #599AD9 - Argus light blue */
+	/* #2D4486 - Argus dark blue */
+	background: #599AD9; /* For browsers that do not support gradients */
+	background: linear-gradient(top, #ACD6FF, #599AD9); /* Standard (Chrome) syntax */
+	background: -webkit-linear-gradient(top, #ACD6FF, #599AD9); /* For Safari 5.1 to 6.0 */
+	background: -o-linear-gradient(top, #ACD6FF, #599AD9); /* For Opera 11.1 to 12.0 */
+	background: -moz-linear-gradient(top, #ACD6FF, #599AD9); /* For Firefox 3.6 to 15 */
+}
+#navbar li.activeTab a.betaTab {
+	/* #599AD9 - Argus light blue */
+	/* #2D4486 - Argus dark blue */
+	background: #599AD9; /* For browsers that do not support gradients */
+	background: linear-gradient(top, #ACD6FF, #2D4486); /* Standard (Chrome) syntax */
+	background: -webkit-linear-gradient(top, #ACD6FF, #2D4486); /* For Safari 5.1 to 6.0 */
+	background: -o-linear-gradient(top, #ACD6FF, #2D4486); /* For Opera 11.1 to 12.0 */
+	background: -moz-linear-gradient(top, #ACD6FF, #2D4486); /* For Firefox 3.6 to 15 */
+}
 
 /* Common drop down menu */
 .topMenu {position:relative; margin-right:.5em;}
@@ -140,7 +160,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 /* Dashboard related **/
 
 .rowIndicator {position:relative; margin-bottom:.5em;}
-.serviceItem {position:absolute; z-index:9; padding:1em 1em 1.5em 1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
+.serviceItem {position:absolute; z-index:9; padding:1em; width:110px; border:solid 1px #CCC; border-radius:5px; text-align:center; vertical-align:top}
 .rowIndicator.largeLabel .serviceItem {padding:.5em 1em;}
 
 .serviceItem .serviceName {margin-bottom:.5em; font-size:14px; font-weight:bold;}
@@ -149,6 +169,8 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .serviceItem .statusIndicator.orange {background-color:orange; border-color:orange;}
 .serviceItem .statusIndicator.green {background-color:green; border-color:green;}
 .serviceItem .serviceName p {word-wrap: break-word;}
+
+.serviceItem.small {padding:.25em; width:65px;}
 
 
 .loadingSpinner {position:relative; margin:100px auto; width:80px; height:80px; content:url(../img/ajax-loader.gif);}
@@ -302,6 +324,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .axis path,
 .axis line {fill:none; stroke:#FFF; shape-rendering:crispEdges;}
 
+.axis.extra path{fill:none; stroke:lightgrey; shape-rendering:crispEdges;}
 .x.axis path {display:none;}
 .xBrush.axis path {display:none;}
 
@@ -314,13 +337,19 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .chartOverlay {fill:none; stroke:#CCC; pointer-events:all; cursor:crosshair;}
 
-/*.focus circle {opacity:0.5;}*/
+.focus circle {opacity:0.7; will-change: transform;}
 
 /* dotted line on main line graph */
-.crossLine {fill:none; stroke:#000000; stroke-width:1px; stroke-dasharray:3,3;}
+.crossLine {
+	fill:none;
+	stroke:#000000;
+	stroke-width:1px;
+	stroke-dasharray:3,3;
+}
 .crossLineTipRect {fill:#FFF; stroke:#066EEA; stroke-width:1px;}
 .crossLineTip {font-size:12px;}
 
+.tick {will-change: transform;}
 .tick line {stroke: lightgrey;}
 .tick text {fill:#606060;}
 
@@ -345,7 +374,12 @@ g.brush rect.handle {fill:#999; stroke:#333;}
 }
 
 /* tooltip stuff */
-.tooltip rect {fill:#F1F1F1; stroke:steelblue; opacity:0.9;}
+.tooltip rect {
+	fill:#F1F1F1;
+	stroke:steelblue;
+	opacity:0.9;
+	will-change: transform;
+}
 g.tooltip-items text {color: #444; font-size: 12px;}
 g.tooltip-items circle {opacity: 0.7;}
 g.tooltip-items text .timestamp {font-variant: small-caps;}
@@ -361,7 +395,7 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
 }
 
 /* for ag-table */
-.agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; display: block; overflow: scroll;}
+.agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; overflow: scroll;}
 .agTableHead {position:absolute; background-color: #eee;}
 .agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; width: 50px;}
 .agTable td {min-width: 180px; max-width: 180px; height: 40px;  word-wrap: break-word; width: 50px;}
@@ -375,3 +409,40 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
 /* for ag-select */
 ag-select .selectize-input{top: 7px; height: 25px; padding-top: 3px; padding-left: 5px; font-size: 14px;}
 ag-select > div {min-width: 152px;}
+
+/* for metrics discovery browsing */
+#browsingSearch {
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+.node {
+  cursor: pointer;
+  will-change: transform;
+}
+
+.node circle {
+  fill: #fff;
+  stroke-width: 2px;
+}
+
+.node text {
+  font: 12px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+.highlight {
+    stroke: khaki;
+    stroke-width: 3px;
+}
+
+/* for view metric ul */
+.viewMetricsUl {
+    max-height: 350px;
+    overflow: auto;
+}

@@ -58,17 +58,35 @@ angular.module('argus.services.charts.rendering', [])
 			var lowValNum = Number(attributes.lo);
 			var highValNum = Number(attributes.hi);
 
-			var errorMsg = 'value in ag-status-indicator is not defined correctly';
-			if (isNaN(lowValNum)) console.log(attributes.name + '\'s lo ' + errorMsg);
-			if (isNaN(highValNum)) console.log(attributes.name + '\'s hi ' + errorMsg);
+			// display options
+			var showNum = (attributes.shownum == 'true') ? true : false;
+			var showLight = (attributes.showlight == 'false') ? false : true;
 
-			if (lastStatusValNum < lowValNum) {
-				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('red');
-			} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
-				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('orange');
-			} else if (lastStatusValNum > highValNum) {
-				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-status').removeClass('red orange green').addClass('green');
+			var errorMsg = 'value in ag-status-indicator is not defined correctly';
+			if (isNaN(lowValNum)) console.log(attributes.name + '\'s lo - ' + lowValNum + ' : ' + isNaN(lowValNum) + ' ' + errorMsg);
+			if (isNaN(highValNum)) console.log(attributes.name + '\'s hi - ' + highValNum + ' : ' + isNaN(highValNum) + ' ' + errorMsg);
+
+			// show light indicator if set
+			if (showLight) {
+				if (lastStatusValNum < lowValNum) {
+					$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-light').removeClass('red orange green').addClass('red');
+				} else if (lastStatusValNum >= lowValNum && lastStatusVal <= highValNum) {
+					$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-light').removeClass('red orange green').addClass('orange');
+				} else if (lastStatusValNum > highValNum) {
+					$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-light').removeClass('red orange green').addClass('green');
+				}
+			} else {
+				// hide light indicator
+				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-light').addClass('hide');
 			}
+
+			// show numerical value if set
+			if (showNum) {
+				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-numVal').removeClass('hide').addClass('inlineBlock').html(lastStatusVal);
+			}
+
+			// add custom css class if set
+			$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-container').addClass(attributes.cssclass);
 		}
 	};
 	return service;

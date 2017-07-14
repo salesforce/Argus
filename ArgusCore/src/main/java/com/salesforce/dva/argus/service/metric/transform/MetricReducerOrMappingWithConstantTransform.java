@@ -36,9 +36,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
@@ -94,7 +92,7 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
 
         if (constants.size() == 1) {
             result = Arrays.asList(reduce(metrics, constants));
-		} else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+        } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
         	fulljoinIndicator = true;
         	constants.remove(1);
         	result = Arrays.asList(reduce(metrics, constants));
@@ -103,7 +101,7 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         }
         return result;
     }
-	
+  
 	@Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Metric Scanners List cannot be null");
@@ -116,7 +114,7 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         
         if (constants.size() == 1) {
         	result = Arrays.asList(reduceScanner(scanners, constants));
-		} else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+		    } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
         	fulljoinIndicator = true;
         	constants.remove(1);
         	result = Arrays.asList(reduceScanner(scanners, constants));

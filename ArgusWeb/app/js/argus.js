@@ -102,7 +102,9 @@ angular.module('argus.services', [
 	'argus.services.downloadHelper',
 	'argus.services.agTableService',
 	'argus.services.tokenAuthInterceptor',
-	'argus.services.users'
+	'argus.services.users',
+	'argus.services.confirmClick',
+	'argus.services.browsing'
 ]);
 
 // Controllers
@@ -113,6 +115,7 @@ angular.module('argus.controllers', [
 	'argus.controllers.alerts',
 	'argus.controllers.alerts.detail',
 	'argus.controllers.batches',
+	'argus.controllers.beta',
 	'argus.controllers.dashboards',
 	'argus.controllers.dashboards.detail',
 	'argus.controllers.login',
@@ -120,7 +123,8 @@ angular.module('argus.controllers', [
 	'argus.controllers.metricelements',
 	'argus.controllers.namespace',
 	'argus.controllers.viewelements',
-	'argus.controllers.viewMetrics'
+	'argus.controllers.viewMetrics',
+	'argus.controllers.metricsBrowsing'
 ]);
 
 // Directives
@@ -145,6 +149,7 @@ require('./controllers/admin');
 require('./controllers/alerts');
 require('./controllers/alertsDetail');
 require('./controllers/batches');
+require('./controllers/betaFeatures');
 require('./controllers/dashboards');
 require('./controllers/dashboardsDetail');
 require('./controllers/login');
@@ -153,6 +158,7 @@ require('./controllers/metricElements');
 require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
+require('./controllers/metricsBrowsing');
 
 // services
 require('./services/auth');
@@ -168,8 +174,8 @@ require('./services/jsonUnflatten');
 require('./services/tableListService');
 require('./services/downloadHelper');
 require('./services/agTableService');
-require("./services/tokenAuthInterceptor");
-
+require('./services/tokenAuthInterceptor');
+require('./services/ConfirmClickService');
 require('./services/charts/chartOptions');
 require('./services/charts/chartRendering');
 require('./services/charts/chartTools');
@@ -190,7 +196,8 @@ require('./services/factories/notifications');
 require('./services/factories/reinstateUser');
 require('./services/factories/triggers');
 require('./services/factories/triggersMap');
-require("./services/factories/users");
+require('./services/factories/users');
+require('./services/factories/browsing');
 
 // directives
 require('./directives/headerMenu');
@@ -217,6 +224,7 @@ require('./directives/UItools/ngConfirm');
 require('./directives/UItools/ngLoading');
 require('./directives/UItools/ngEnter');
 require('./directives/modals/confirmClick');
-
+require('./directives/agRequest');
+require('./directives/agInfiniteScroll');
 // css
 require('../css/main.css');

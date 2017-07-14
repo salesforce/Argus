@@ -1,3 +1,4 @@
+<!doctype html>
 <nav class="navbar navbar-default navbar-fixed-top">
     <div style="width: 93%;" class="container">
         <div class="navbar-header">
@@ -7,17 +8,19 @@
 
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right" ng-show="isLoggedIn()">
-                <li ng-class="{'activeTab': activeTab == 'dashboards'}">
+                <li ng-class="{'activeTab': activeTab === 'dashboards'}">
                     <a class="glyphicon glyphicon-dashboard" href="#dashboards" title="Dashboards"></a>
                 </li>
-                <li ng-class="{'activeTab': activeTab == 'alerts'}">
+                <li ng-class="{'activeTab': activeTab === 'alerts'}">
                     <a class="glyphicon glyphicon-bell" href="#alerts" title="Alerts"></a>
                 </li>
-                <li ng-class="{'activeTab': activeTab == 'metrics'}">
+                <li ng-class="{'activeTab': activeTab === 'metrics'}">
                     <a class="glyphicon glyphicon-stats" href="#viewmetrics" title="Metrics"></a>
                 </li>
-
-                <li class="topMenu" ng-class="{'activeTab': activeTab == 'about' || activeTab == 'namespace'}">
+                <li ng-class="{'activeTab': activeTab === 'beta', 'hide': true}">
+                    <a class="betaTab" href="#beta" title="Features currently in Beta testing">Beta</a>
+                </li>
+                <li class="topMenu" ng-class="{'activeTab': activeTab === 'about' || activeTab === 'namespace'}">
                     <a class="glyphicon glyphicon-menu-hamburger"></a>
                     <ul class="subMenu menuPanel">
                         <li><a href="#namespace">Namespace</a></li>

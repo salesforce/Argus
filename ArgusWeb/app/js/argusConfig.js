@@ -18,7 +18,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
-/*global angular:false */
+/*global angular:false, console:false */
 
 /* App Module */
 angular.module('argus.config', [])
@@ -28,6 +28,13 @@ angular.module('argus.config', [])
 		$httpProvider.interceptors.push('TokenAuthInterceptor');
 		paginationTemplateProvider.setPath('node_modules/angular-utils-pagination/dirPagination.tpl.html');
 		$routeProvider.
+			when('/beta', {
+				templateUrl: 'js/templates/beta.html',
+				controller: 'BetaFeatures',
+				label: 'Beta',
+				activeTab: 'beta',
+				reloadOnSearch: false
+			}).
 			when('/viewmetrics', {
 				templateUrl: 'js/templates/viewmetrics.html',
 				controller: 'ViewMetrics',
@@ -87,6 +94,13 @@ angular.module('argus.config', [])
 				controller: 'Namespace',
 				label: 'Namespace',
 				activeTab: 'namespace'
+			}).
+			when('/metricsBrowsing', {
+				templateUrl: 'js/templates/metricsBrowsing.html',
+				controller: 'MetricsBrowsing',
+				label: 'Browsing',
+				activeTab: 'browsing',
+				reloadOnSearch: false
 			}).
 			otherwise({
 				redirectTo: '/dashboards'
