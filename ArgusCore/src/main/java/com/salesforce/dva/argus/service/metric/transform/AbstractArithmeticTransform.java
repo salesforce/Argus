@@ -58,9 +58,7 @@ public abstract class AbstractArithmeticTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        if (metrics == null) {
-            throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
-        }
+        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing arithmetic transformations.");
         if (metrics.isEmpty()) {
             return metrics;
         }
@@ -91,9 +89,7 @@ public abstract class AbstractArithmeticTransform implements Transform {
 	
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
-    	if (scanners == null) {
-    		throw new MissingDataException("The metric scanners list cannot be null or empty while performing arithmetic transformations.");
-    	}
+    	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing arithmetic transformations.");
     	if (scanners.isEmpty()) {
     		return new ArrayList<>();
     	}
