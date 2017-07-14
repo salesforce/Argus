@@ -232,22 +232,6 @@ public class MetricReducerOrMappingTransform implements Transform {
     	return reducedDatapoints;
     }
     
-    protected Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
-        Map<Long, Double> reducedDatapoints = new HashMap<>();
-
-        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
-            if (entry.getValue().size() < metrics.size()  && !fulljoinIndicator) {
-                continue;
-            }
-            
-            Double reducedValue = constants == null || constants.isEmpty() ? 
-										            		this.valueReducerOrMapping.reduce(entry.getValue()) :
-										            		this.valueReducerOrMapping.reduce(entry.getValue(), constants);
-            reducedDatapoints.put(entry.getKey(), reducedValue);
-        }
-        return reducedDatapoints;
-    }
-    
     protected Map<Long, List<Double>> collate(List<Metric> metrics) {
         Map<Long, List<Double>> collated = new HashMap<>();
 
