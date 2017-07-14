@@ -58,9 +58,7 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
             if (value == null) {
                 continue;
             }
-            if (value == 0.0) { // Sys Require argument
-                throw new ArithmeticException("this datapoints sets have a value of zero!");
-            }
+            SystemAssert.requireArgument(value != 0.0, "these datapoint sets have a value of zero!");
             quotient /= value;
         }
         return quotient;
@@ -80,9 +78,7 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
 	    		if (value == null) {
 	    			continue;
 	    		}
-	    		if (value == 0.0) {
-	    			throw new ArithmeticException("This datapoint set has a value of zero!");
-	    		}
+	    		SystemAssert.requireArgument(value != 0.0, "This scanner datapoint set has a value of zero!");
 	    		quotient /= value;
 	    	}
     	}
