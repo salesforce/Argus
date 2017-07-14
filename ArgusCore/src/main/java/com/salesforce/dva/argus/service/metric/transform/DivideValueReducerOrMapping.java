@@ -58,7 +58,9 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
             if (value == null) {
                 continue;
             }
-            SystemAssert.requireArgument(value != 0.0, "these datapoint sets have a value of zero!");
+            if (value == 0.0) { // Sys Require argument
+                throw new ArithmeticException("this datapoints sets have a value of zero!");
+            }
             quotient /= value;
         }
         return quotient;
