@@ -184,7 +184,7 @@ public class DivideValueReducerOrMappingScannerTest extends AbstractTest {
 		}
 	}
 	
-	@Test(expected = ArithmeticException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testDivideValueReducerWithZero() {
 		
 		MetricScanner.setChunkPercentage(0.50);
