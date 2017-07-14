@@ -57,9 +57,7 @@ public class ZeroIfMissingSum implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        if (metrics == null) {
-            throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
-        }
+        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing arithmetic transformations.");
 
         List<Metric> resultMetrics = new ArrayList<>();
 
@@ -89,11 +87,9 @@ public class ZeroIfMissingSum implements Transform {
         return resultMetrics;
     }
 	
-	@Override
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
-    		if (scanners == null) {
-    			throw new MissingDataException("The metric scanners list cannot be null or empty while performing arithmetic transformations.");
-    		}
+    		SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing arithmetic transformations.");
     		
     		List<Metric> resultMetrics = new ArrayList<>();
     		
@@ -110,10 +106,6 @@ public class ZeroIfMissingSum implements Transform {
 	    				if (scanner.hasNextDP()) {
 	    					done = false;
 	    					Entry<Long, Double> entry = scanner.getNextDP();
-	    					
-	    					if (entry == null) {
-	    						System.out.println("Entry is null");
-	    					}
 	    					
 	    					if (resultDatapoints.containsKey(entry.getKey())) {
 	    						resultDatapoints.put(entry.getKey(), performOperation(resultDatapoints.get(entry.getKey()), entry.getValue()));
@@ -135,7 +127,7 @@ public class ZeroIfMissingSum implements Transform {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
     }
 	
-	@Override
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
     }
@@ -162,7 +154,7 @@ public class ZeroIfMissingSum implements Transform {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
     }
 	
-	@Override
+    @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
     }
