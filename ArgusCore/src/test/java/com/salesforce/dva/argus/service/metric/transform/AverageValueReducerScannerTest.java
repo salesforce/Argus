@@ -18,8 +18,6 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
-
-
 public class AverageValueReducerScannerTest extends AbstractTest {
 
 	protected static MetricQuery toQuery(Metric metric) {
