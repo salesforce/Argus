@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
 
 /**
  * Calculates the average of all values at each timestamp across all the metrics.
