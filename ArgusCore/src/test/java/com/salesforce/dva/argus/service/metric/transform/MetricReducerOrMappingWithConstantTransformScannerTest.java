@@ -37,32 +37,6 @@ public class MetricReducerOrMappingWithConstantTransformScannerTest extends Abst
 		return queries;
 	}
 	
-	protected List<Metric> createRandomMetrics(String scope, String metric, int count) {
-		List<Metric> result = new ArrayList<>(count);
-		
-		scope = scope == null ? createRandomName() : scope;
-		
-		String tag = createRandomName();
-		
-		for (int i = 0; i < count; i++) {
-			String metricName = metric == null ? createRandomName() : metric;
-			Metric met = new Metric(scope, metricName);
-			int datapointCount = random.nextInt(25) + 1;
-			Map<Long, Double> datapoints = new HashMap<>();
-			long start = System.currentTimeMillis() - 60000L;
-			
-			for (int j = 0; j < datapointCount; j++) {
-				datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
-			}
-			
-			met.setDatapoints(datapoints);
-			met.setDisplayName(createRandomName());
-			met.setTag(tag, String.valueOf(i));
-			result.add(met);
-		}
-		return result;
-	}
-	
 	private Map<MetricQuery, List<Metric>> filterOver(Metric m, Long startTime, MetricQuery query) {
 		Metric mini = new Metric(m);
 		Map<Long, Double> filteredDP = new TreeMap<>();
