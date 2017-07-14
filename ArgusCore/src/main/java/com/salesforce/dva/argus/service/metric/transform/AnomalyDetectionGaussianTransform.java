@@ -57,18 +57,12 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        if (metrics == null) {
-            throw new MissingDataException("The metrics list cannot be null or empty while performing transforms.");
-        }
-        if (metrics.size() != 1) {
-            throw new UnsupportedOperationException("Anomaly Detection Transform can only be used with one metric.");
-        }
+        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing transforms.");
+        SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
 
         Metric metric = metrics.get(0);
         Map<Long, Double> metricData = metric.getDatapoints();
-        if (metricData.size() == 0) {
-            throw new MissingDataException("Metric must contain data points to perform transforms.");
-        }
+        SystemAssert.requireArgument(metricData.size() != 0, "Metric must contain data points to perform transforms.");
 
         fitParameters(metricData);
         Metric predictions = predictAnomalies(metricData);
@@ -81,17 +75,11 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
     
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
-    	if (scanners == null) {
-    		throw new MissingDataException("The metric scanners list cannot be null or empty while performing transforms.");
-    	}
-    	if (scanners.size() != 1) {
-    		throw new UnsupportedOperationException("Anomaly DetectionTransform can only be used with one metric.");
-    	}
+    	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing transforms.");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly DetectionTransform can only be used with one metric.");
     	
     	MetricScanner scanner = scanners.get(0);
-    	if (!scanner.hasNextDP()) {
-    		throw new MissingDataException("Metric scanner must contain data points to perform transforms.");
-    	}
+    	SystemAssert.requireArgument(scanner.hasNextDP(), "Metric scanner must contain data points to perform transforms.");
     	
     	Map<Long, Double> datapoints = fitParametersScanner(scanner);
     	Metric predictions = predictAnomalies(datapoints);
