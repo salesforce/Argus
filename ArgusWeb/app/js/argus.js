@@ -224,6 +224,7 @@ require('./directives/UItools/ngConfirm');
 require('./directives/UItools/ngLoading');
 require('./directives/UItools/ngEnter');
 require('./directives/modals/confirmClick');
-require('./directives/agRequest')
+require('./directives/agRequest');
+require('./directives/agInfiniteScroll');
 // css
 require('../css/main.css');
