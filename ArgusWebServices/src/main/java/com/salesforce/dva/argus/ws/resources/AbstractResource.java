@@ -206,9 +206,9 @@ public abstract class AbstractResource {
     protected PrincipalUser validateAndGetOwner(HttpServletRequest req, String ownerName) {
         PrincipalUser remoteUser = getRemoteUser(req);
 
-        if (ownerName == null || ownerName.isEmpty()) {
-            return remoteUser;
-        } else if (ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
+        
+        if (ownerName == null || ownerName.isEmpty() || ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
+        	//If ownerName is not present or if it is present and equal to remote username, then return remoteUser.
             return remoteUser;
         } else if (remoteUser.isPrivileged()) {
             PrincipalUser owner;

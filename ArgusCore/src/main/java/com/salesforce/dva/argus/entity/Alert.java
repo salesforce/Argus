@@ -35,9 +35,11 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.util.Cron;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
@@ -54,8 +56,15 @@ import javax.persistence.NoResultException;
 import javax.persistence.OneToMany;
 import javax.persistence.Query;
 import javax.persistence.Table;
+import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Selection;
+
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -122,19 +131,33 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 	@Basic(optional = false)
 	@Column(name = "name")
+	@Metadata
 	private String name;
+	
 	@Column(length = 2048)
+	@Metadata
 	private String expression;
+	
+	@Metadata
 	private String cronEntry;
+	
+	@Metadata
 	private boolean enabled = false;
+	
 	private boolean missingDataNotificationEnabled;
+	
 	@OneToMany(mappedBy = "alert", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Notification> notifications = new ArrayList<>(0);
+	
 	@OneToMany(mappedBy = "alert", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<Trigger> triggers = new ArrayList<>(0);
+	
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "owner_id", nullable = false)
+	@Metadata
 	private PrincipalUser owner;
+	
+	@Metadata
 	private boolean shared;
 
 	//~ Constructors *********************************************************************************************************************************
@@ -232,6 +255,48 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			return new ArrayList<>(0);
 		}
 	}
+	
+	public static List<Alert> findByOwnerMeta(EntityManager em, PrincipalUser owner) {
+		requireArgument(em != null, "Entity manager can not be null.");
+
+		try {
+        	CriteriaBuilder cb = em.getCriteriaBuilder();
+        	CriteriaQuery<Tuple> cq = cb.createTupleQuery();
+        	Root<Alert> e = cq.from(Alert.class);
+        	
+        	List<Selection<?>> fieldsToSelect = new ArrayList<>();
+        	for(Field field : FieldUtils.getFieldsListWithAnnotation(Alert.class, Metadata.class)) {
+        		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
+        	}
+        	cq.multiselect(fieldsToSelect);
+        	cq.where(cb.equal(e.get("deleted"), false), cb.equal(e.get("owner"), owner));
+        	
+        	TypedQuery<Tuple> query = em.createQuery(cq);
+        	
+        	List<Tuple> result = query.getResultList();
+        	
+            List<Alert> alerts = new ArrayList<>();
+            for(Tuple tuple : result) {
+            	
+            	Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")), PrincipalUser.class.cast(tuple.get("owner")), 
+            			String.class.cast(tuple.get("name")), String.class.cast(tuple.get("expression")), 
+            			String.class.cast(tuple.get("cronEntry")));
+            	
+            	a.id = BigInteger.class.cast(tuple.get("id"));
+            	a.enabled = Boolean.class.cast(tuple.get("enabled"));
+            	a.createdDate = Date.class.cast(tuple.get("createdDate"));
+            	a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+            	a.shared = Boolean.class.cast(tuple.get("shared"));
+            	a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+            	
+            	alerts.add(a);
+            }
+            
+            return alerts;
+        } catch (NoResultException ex) {
+            return new ArrayList<>(0);
+        }
+	}
 
 	/**
 	 * Finds all alerts.
@@ -251,6 +316,55 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
+	}
+	
+	/**
+	 * Finds all alerts.
+	 *
+	 * @param   em  The entity manager to user. Cannot be null.
+	 *
+	 * @return  The list of all alerts. Will never be null but may be empty.
+	 */
+	public static List<Alert> findAllMeta(EntityManager em) {
+		requireArgument(em != null, "Entity manager can not be null.");
+
+		try {
+        	CriteriaBuilder cb = em.getCriteriaBuilder();
+        	CriteriaQuery<Tuple> cq = cb.createTupleQuery();
+        	Root<Alert> e = cq.from(Alert.class);
+        	
+        	List<Selection<?>> fieldsToSelect = new ArrayList<>();
+        	for(Field field : FieldUtils.getFieldsListWithAnnotation(Alert.class, Metadata.class)) {
+        		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
+        	}
+        	cq.multiselect(fieldsToSelect);
+        	
+        	cq.where(cb.equal(e.get("deleted"), false));
+        	TypedQuery<Tuple> query = em.createQuery(cq);
+        	
+        	List<Tuple> result = query.getResultList();
+        	
+            List<Alert> alerts = new ArrayList<>();
+            for(Tuple tuple : result) {
+            	
+            	Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")), PrincipalUser.class.cast(tuple.get("owner")), 
+            			String.class.cast(tuple.get("name")), String.class.cast(tuple.get("expression")), 
+            			String.class.cast(tuple.get("cronEntry")));
+            	
+            	a.id = BigInteger.class.cast(tuple.get("id"));
+            	a.enabled = Boolean.class.cast(tuple.get("enabled"));
+            	a.createdDate = Date.class.cast(tuple.get("createdDate"));
+            	a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+            	a.shared = Boolean.class.cast(tuple.get("shared"));
+            	a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+            	
+            	alerts.add(a);
+            }
+            
+            return alerts;
+        } catch (NoResultException ex) {
+            return new ArrayList<>(0);
+        }
 	}
 
 	/**
@@ -360,6 +474,48 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
+	}
+	
+	public static List<Alert> findSharedAlertsMeta(EntityManager em) {
+		requireArgument(em != null, "Entity manager can not be null.");
+
+		try {
+        	CriteriaBuilder cb = em.getCriteriaBuilder();
+        	CriteriaQuery<Tuple> cq = cb.createTupleQuery();
+        	Root<Alert> e = cq.from(Alert.class);
+        	
+        	List<Selection<?>> fieldsToSelect = new ArrayList<>();
+        	for(Field field : FieldUtils.getFieldsListWithAnnotation(Alert.class, Metadata.class)) {
+        		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
+        	}
+        	cq.multiselect(fieldsToSelect);
+        	
+        	cq.where(cb.equal(e.get("deleted"), false), cb.equal(e.get("shared"), true));
+        	TypedQuery<Tuple> query = em.createQuery(cq);
+        	
+        	List<Tuple> result = query.getResultList();
+        	
+            List<Alert> alerts = new ArrayList<>();
+            for(Tuple tuple : result) {
+            	
+            	Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")), PrincipalUser.class.cast(tuple.get("owner")), 
+            			String.class.cast(tuple.get("name")), String.class.cast(tuple.get("expression")), 
+            			String.class.cast(tuple.get("cronEntry")));
+            	
+            	a.id = BigInteger.class.cast(tuple.get("id"));
+            	a.enabled = Boolean.class.cast(tuple.get("enabled"));
+            	a.createdDate = Date.class.cast(tuple.get("createdDate"));
+            	a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+            	a.shared = Boolean.class.cast(tuple.get("shared"));
+            	a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+            	
+            	alerts.add(a);
+            }
+            
+            return alerts;
+        } catch (NoResultException ex) {
+            return new ArrayList<>(0);
+        }
 	}
 
 	/**

@@ -36,18 +36,14 @@
 
 		<h4 class="sectionTitle btmBdr">Truncate metric name</h4>
 
-		<div style="display:inline-block; margin:.5em 0 .5em 1em;">
+		<div style="display:inline-block; margin:0 0 .5em 1em;">
 			<label for="leadingNum-{{chartId}}">Leading 'n' #:</label> &nbsp;
 			<input id="leadingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.leadingNum" style="width:3.5em;" />
 		</div>
 
-		<div style="display:inline-block; margin:.5em 0 .5em 1em;">
+		<div style="display:inline-block; margin:0 0 .5em 1em;">
 			<label for="trailingNum-{{chartId}}">Trailing 'n' #:</label> &nbsp;
 			<input id="trailingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.trailingNum" style="width:3.5em;" />
-		</div>
-
-		<div class="hide" style="margin-left:1em;">
-			<label>output:</label>&nbsp;<span>argus.jvm:mem.nonheap.used</span>
 		</div>
 
 		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank" title="Custom d3 downsample data options"></a></h4>
@@ -88,16 +84,17 @@
 		<h4 class="sectionTitle btmBdr">Tooltips</h4>
 
 		<input class="chkBox pointer" id="tooltip-on-{{chartId}}" name="tooltip-on" type="checkbox" ng-model="menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-on-{{chartId}}" title="Show tooltip">Show tooltip</label>
-		<br /><input class="chkBox pointer" id="snap-crossline-on-{{chartId}}" name="snap-crossline-on" type="checkbox" ng-model="menuOption.isSnapCrosslineOn" />&nbsp;<label class="chkBoxLbl" for="snap-crossline-on-{{chartId}}" title="Snap crossline to dot">Snap crosshair to datapoint</label>
 
-		<br /><input class="chkBox pointer" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.tooltipConfig.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
+		<input class="chkBox pointer" style="margin-left:6em;" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.tooltipConfig.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
+
+		<br /><input class="chkBox pointer" id="snap-crossline-on-{{chartId}}" name="snap-crossline-on" type="checkbox" ng-model="menuOption.isSnapCrosslineOn" />&nbsp;<label class="chkBoxLbl" for="snap-crossline-on-{{chartId}}" title="Snap crossline to dot">Snap crosshair to datapoint</label>
 
 		<br /><input class="chkBox pointer" id="tooltips-raw-{{chartId}}" type="checkbox" ng-model="menuOption.tooltipConfig.rawTooltip" title="Display raw data inside tooltips" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltips-raw-{{chartId}}">Display raw data point value. <span style="font-weight:normal;">No formatting applied.</span></label>
 
 		<div style="margin-left:23px;" title="Uncheck raw data point to use">
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.tooltipConfig.customTooltipFormat" ng-disabled="menuOption.tooltipConfig.rawTooltip" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
-		
+
 		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
 		<label>Select a color palette: </label>&nbsp;
 		<select ng-model="menuOption.colorPalette" name="color-palette">
@@ -114,11 +111,11 @@
 
 		<div class="col-md-6">
 			<a id="reset" class="glyphicon glyphicon-ban-circle floatL"
-			   confirm-click
-			   confirm-title="Reset to default settings"
-			   confirm-message="Are you sure you want reset all your current chart settings?"
-			   confirm-call="resetSettings()"
-			   ><span class="glyphIconTxt">Reset to default</span>
+				confirm-click
+				confirm-title="Reset to default settings"
+				confirm-message="Are you sure you want reset all your current chart settings?"
+				confirm-call="resetSettings()">
+					<span class="glyphIconTxt">Reset to default</span>
 			</a>
 		</div>
 

@@ -208,4 +208,23 @@ angular.module('argus.filters', [])
 		}
 		return newArray;
 	};
+})
+
+.filter('truncateMetricName', function() {
+	// truncate the metric name for presentation
+	return function(metricName, menuOption) {
+		if (!metricName) return;
+
+		var startVal, endVal;
+		startVal = (menuOption.tooltipConfig.leadingNum > 0) ? menuOption.tooltipConfig.leadingNum : null;
+		endVal = (menuOption.tooltipConfig.trailingNum > 0) ? menuOption.tooltipConfig.trailingNum : null;
+
+		if (startVal && !endVal) {
+			return metricName.slice(startVal);
+		} else if (endVal) {
+			return metricName.slice(startVal, -endVal);
+		} else {
+			return metricName;
+		}
+	};
 });
