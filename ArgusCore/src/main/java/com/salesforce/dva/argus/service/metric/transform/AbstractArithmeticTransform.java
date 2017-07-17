@@ -103,60 +103,52 @@ public abstract class AbstractArithmeticTransform implements Transform {
     		datapoints.add(new HashMap<>());
     	}
     	
-    	synchronized(scanners.get(0)) {
-	    	while (scanners.get(0).hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
-	    		List<Double> operands = new ArrayList<>();
-	    		
-	    		try {
-	    			for (MetricScanner scanner : remainingScanners) {
-	    				synchronized(scanner) {
-		    				if (scanner.hasNextDP()) {
-		    					Map.Entry<Long, Double> nextDP = scanner.getNextDP();
-		    					datapoints.get(remainingScanners.indexOf(scanner)).put(nextDP.getKey(), nextDP.getValue());
-		    				}
-	    				}
-	    				if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
-	    					operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey())); // add the value associated with this timestamp
-	    				}
-	    				else if (Collections.max(datapoints.get(remainingScanners.indexOf(scanner)).keySet()) > dp.getKey()) { // that metric doesn't have this
-	    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
-	    							scanner.getMetric()));
-	    				}
-	    				else {
-	    					Map.Entry<Long, Double> opDp = null;
-	    					do {
-	    						synchronized(scanner) {
-				    				if (!scanner.hasNextDP()) {
-				    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
-				    							scanner.getMetric()));
-				    				}
-	    						}
-			    				opDp = scanner.getNextDP();
-			    				datapoints.get(remainingScanners.indexOf(scanner)).put(opDp.getKey(), opDp.getValue());
-	    					} while (opDp.getKey() < dp.getKey());
-	    					if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
-	    						operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey()));
-	    					}
-	    					else {	// we know it doesn't exist at this point
-	    						throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
-	    								scanner.getMetric()));
-	    					}
-	    				}
-	    				
+    	while (scanners.get(0).hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+    		List<Double> operands = new ArrayList<>();
+    		
+    		try {
+    			for (MetricScanner scanner : remainingScanners) {
+	    			if (scanner.hasNextDP()) {
+	    				Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+	    				datapoints.get(remainingScanners.indexOf(scanner)).put(nextDP.getKey(), nextDP.getValue());
 	    			}
-	    		} catch (MissingDataException mde) {
-	    			continue;
-	    		}
-	    		resultDatapoints.put(dp.getKey(), performOperation(operands));
-	    	}
+    				if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
+    					operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey())); // add the value associated with this timestamp
+    				}
+    				else if (Collections.max(datapoints.get(remainingScanners.indexOf(scanner)).keySet()) > dp.getKey()) { // that metric doesn't have this
+    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+    							scanner.getMetric()));
+    				}
+    				else {
+    					Map.Entry<Long, Double> opDp = null;
+    					do {
+		    				if (!scanner.hasNextDP()) {
+		    					throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+		    							scanner.getMetric()));
+    						}
+		    				opDp = scanner.getNextDP();
+		    				datapoints.get(remainingScanners.indexOf(scanner)).put(opDp.getKey(), opDp.getValue());
+    					} while (opDp.getKey() < dp.getKey());
+    					if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
+    						operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey()));
+    					}
+    					else {	// we know it doesn't exist at this point
+    						throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", dp.getKey(),
+    								scanner.getMetric()));
+    					}
+    				}
+    				
+    			}
+    		} catch (MissingDataException mde) {
+    			continue;
+    		}
+    		resultDatapoints.put(dp.getKey(), performOperation(operands));
     	}
 	    
 	for (MetricScanner scanner : remainingScanners) {
-		synchronized(scanner) {
-			if (scanner.hasNextDP()) {
-				scanner.dispose();
-			}
+		if (scanner.hasNextDP()) {
+			scanner.dispose();
 		}
 	}
 	    
