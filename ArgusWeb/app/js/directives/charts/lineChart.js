@@ -543,7 +543,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 				var snapPoint;
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
-					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+					snapPoint = ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption, focus, tipItems, tipBox,
 						seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 				}
 
@@ -584,7 +584,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						positionY: focus.select('[name=crossLineTipX]').node().getBBox().height + 3  // crossLineTipPadding
 					};
 					if (brushInNonEmptyRange) {
-						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption.tooltipConfig, focus, tipItems, tipBox,
+						ChartElementService.updateMouseRelatedElements(allSize, scope.menuOption, focus, tipItems, tipBox,
 							seriesBeingDisplayed, scope.sources, x, y, extraY, mousePositionData, isDataStacked);
 					}
 					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);

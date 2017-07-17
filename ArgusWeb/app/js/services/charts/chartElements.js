@@ -716,7 +716,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateTooltipItemsContent = function (sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData) {
+	this.updateTooltipItemsContent = function (sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData) {
 		var XOffset = 0;
 		var YOffset = 0;
 		var newXOffset = 0;
@@ -736,8 +736,8 @@ angular.module('argus.services.charts.elements', [])
 			var textLine = tipItems.select('text.' + datapoints[i].graphClassName)
 				.attr('dy', 20 * (1 + i - YOffset) + mousePositionData.positionY)
 				.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + circleLen + 2 + XOffset);
-			var dataFormat = tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : tooltipConfig.customTooltipFormat;
-			var name = UtilService.trimMetricName(datapoints[i].name, tooltipConfig.leadingNum, tooltipConfig.trailingNum);
+			var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
+			var name = UtilService.trimMetricName(datapoints[i].name, menuOption);
 			var tempData = datapoints[i].data[1];
 			textLine.text(name + ' -- ' + d3.format(dataFormat)(tempData));
 			// update XOffset if existing offset is smaller than textLine
@@ -823,19 +823,19 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateMouseRelatedElements = function (sizeInfo, tooltipConfig, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, isDataStacked) {
+	this.updateMouseRelatedElements = function (sizeInfo, menuOption, focus, tipItems, tipBox, series, sources, x, y, extraY, mousePositionData, isDataStacked) {
 		var datapoints;
 		var datapointsAndSnapPoint;
 
 		datapointsAndSnapPoint =  this.updateFocusCirclesAndTooltipItems(focus, tipItems, series, sources, x, y, extraY, mousePositionData, isDataStacked);
 		datapoints = datapointsAndSnapPoint.datapoints;
 		// sort items in tooltip if needed
-		if (tooltipConfig.isTooltipSortOn) {
+		if (menuOption.tooltipConfig.isTooltipSortOn) {
 			datapoints = datapointsAndSnapPoint.datapoints.sort(function (a, b) {
 				return b.data[1] - a.data[1];
 			});
 		}
-		this.updateTooltipItemsContent(sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData);
+		this.updateTooltipItemsContent(sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData);
 		return datapointsAndSnapPoint.snapPoint;
 	};
 
@@ -867,7 +867,6 @@ angular.module('argus.services.charts.elements', [])
 		for(var iSet of extraYAxisSet){
 			processCircle(extraY[iSet], iSet);
 		}
-
 	};
 
 	this.updateAnnotations = function (series, sources, x, flagsG, height) {
