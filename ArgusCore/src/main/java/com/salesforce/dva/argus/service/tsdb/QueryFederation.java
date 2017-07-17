@@ -33,9 +33,10 @@ public abstract class QueryFederation{
 		Map<MetricQuery, List<Metric>> queryMetricsMap = new HashMap<>();
 		Map<String, Metric> metricMergeMap = new HashMap<>();
 		String metricIdentifier = null;
-		for (MetricQuery query : mapQuerySubQueries.keySet()) {
+		for (Map.Entry<MetricQuery, List<MetricQuery>> entry : mapQuerySubQueries.entrySet()) {
 			List<Metric> metrics = new ArrayList<>();
-			List<MetricQuery> subQueries = mapQuerySubQueries.get(query);
+			MetricQuery query = entry.getKey();
+			List<MetricQuery> subQueries = entry.getValue();
 			for (MetricQuery subQuery : subQueries) {
 				List<Metric> metricsFromSubQuery = subQueryMetricsMap.get(subQuery);
 				if (metricsFromSubQuery != null) {
@@ -53,9 +54,7 @@ public abstract class QueryFederation{
 					}
 				}
 			}
-			for (Metric finalMetric : metricMergeMap.values()) {
-				metrics.add(finalMetric);
-			}
+			metrics.addAll(metricMergeMap.values());
 			queryMetricsMap.put(query, metrics);
 		}
 		return queryMetricsMap;
