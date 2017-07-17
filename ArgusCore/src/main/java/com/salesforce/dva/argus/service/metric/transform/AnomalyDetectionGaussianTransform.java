@@ -107,12 +107,10 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
     	double sum = 0;
     	Map<Long, Double> datapoints = new HashMap<>();
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		sum += dp.getValue();
-	    		datapoints.put(dp.getKey(), dp.getValue());
-	    	}
+		while (scanner.hasNextDP()) {
+	   		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   		sum += dp.getValue();
+	   		datapoints.put(dp.getKey(), dp.getValue());
     	}
     	mean = sum / datapoints.size();
     	variance = getMetricVariance(datapoints);
