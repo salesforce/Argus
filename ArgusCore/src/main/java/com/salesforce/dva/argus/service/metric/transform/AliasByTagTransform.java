@@ -56,10 +56,8 @@ public class AliasByTagTransform implements Transform {
 	}
 	
 	private void buildMetric(MetricScanner scanner) {
-		synchronized(scanner) {
-			while (scanner.hasNextDP()) {
-				scanner.getNextDP();
-			}
+		while (scanner.hasNextDP()) {
+			scanner.getNextDP();
 		}
 	}
 
