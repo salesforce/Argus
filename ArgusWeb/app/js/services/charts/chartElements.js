@@ -28,6 +28,20 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
+	var calculateSnappingRange = function (rangeArray) {
+		return (rangeArray[1] - rangeArray[0]) * 0.1;
+	};
+
+	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
+		var transformAttr = null;
+		if ((startingX + width > totalWidth + marginRight) && (startingX - width > 0)) {
+			transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+		}
+		elements.map(function(element) {
+			element.attr('transform', transformAttr);
+		});
+	};
+
 	// pre populate the elements
 	this.createAxisElements = function (x, y, isSmallChart, yAxisConfig) {
 		var xAxis, yAxis, yAxisR,
@@ -396,24 +410,24 @@ angular.module('argus.services.charts.elements', [])
 		return crossLine;
 	};
 
-	this.appendMouseOverhighlightBar = function (chart, height, width) {
-		var mouseOverhighlightBar = chart.append('g')
+	this.appendMouseOverHighlightBar = function (chart, height, width) {
+		var mouseOverHighlightBar = chart.append('g')
 			.attr('class', 'mouseOverHighlight')
 			.style('display', 'none');
-		mouseOverhighlightBar.append('rect')
+		mouseOverHighlightBar.append('rect')
 			.attr('class', 'highlightBar')
 			.attr('height', height)
 			.attr('width', width);
-		mouseOverhighlightBar.append('rect')
+		mouseOverHighlightBar.append('rect')
 			.attr('name', 'crossLineTipRectX')
 			.attr('class', 'crossLineTipRect');
-		mouseOverhighlightBar.append('text')
+		mouseOverHighlightBar.append('text')
 			.attr('name', 'crossLineTipX')
 			.attr('class', 'crossLineTip')
 			.attr('y', 0)
 			.attr('dy', crossLineTipHeight);
 
-		return mouseOverhighlightBar;
+		return mouseOverHighlightBar;
 	};
 
 	this.appendTooltipElements = function (svg_g) {
@@ -677,10 +691,6 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	var calculateSnappingRange = function (rangeArray) {
-		return (rangeArray[1] - rangeArray[0]) * 0.1;
-	};
-
 	this.updateFocusCirclesAndObtainDataPoints = function (focus, tipItems, series, sources, x, y_, extraY_, mousePositionData, timestampSelector, dateBisector, isDataStacked) {
 		var snapPoint, datapoints = [];
 		var minDistanceVertical = Number.MAX_VALUE;
@@ -773,7 +783,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.updateHighlightRangeAndObtainDataPoints = function (graph, mouseOverhighlightBar, tipItems, series, sources, extraY, mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked) {
+	this.updateHighlightRangeAndObtainDataPoints = function (graph, mouseOverHighlightBar, tipItems, series, sources, extraY, mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked, distanceToRight) {
 		var datapoints = [];
 		var bandOffset = graph.x0.bandwidth() + graph.x0.paddingInner()/2;
 		var xDomain = graph.x.domain();
@@ -821,18 +831,23 @@ angular.module('argus.services.charts.elements', [])
 		});
 
 		if (displayHighlightBar) {
-			var dateText = mouseOverhighlightBar.select('.crossLineTip');
+			var dateText = mouseOverHighlightBar.select('.crossLineTip');
+			var boxXRect = mouseOverHighlightBar.select('.crossLineTipRect');
 			var startingPosition = graph.x0(matchingTimestamp);
 			var date = dateFormatter(matchingTimestamp);
 
-			mouseOverhighlightBar.select('.highlightBar').attr('x', startingPosition);
+			mouseOverHighlightBar.select('.highlightBar')
+				.attr('x', startingPosition)
+				.attr('dataX', matchingTimestamp)
+				.style('display', null);
 			dateText.attr('x', startingPosition).text(date);
 
 			var boxX = dateText.node().getBBox();
-			mouseOverhighlightBar.select('.crossLineTipRect').attr('x', boxX.x - crossLineTipPadding)
+			boxXRect.attr('x', boxX.x - crossLineTipPadding)
 				.attr('y', boxX.y - crossLineTipPadding)
 				.attr('width', boxX.width + 2 * crossLineTipPadding)
 				.attr('height', boxX.height + 2 * crossLineTipPadding);
+			flipAnElementHorizontally([dateText, boxXRect], boxX.width, distanceToRight, 0, boxX.x, crossLineTipPadding);
 		}
 
 		return datapoints;
@@ -891,24 +906,14 @@ angular.module('argus.services.charts.elements', [])
 			tipBox.attr('width', tipBounds.width + 4 * tipPadding);
 			tipBox.attr('height', tipBounds.height + 2 * tipPadding);
 		}
-		// flip the tooltip if there is no space to display it on one side
-		var transformAttr = null;
-		if (mousePositionData.positionX + Number(tipBox.attr('width')) > (sizeInfo.width + sizeInfo.margin.right) &&
-			mousePositionData.positionX - Number(tipBox.attr('width')) > 0) {
-			transformAttr = 'translate(-' + (Number(tipBox.attr('width')) + 2 * tipOffset) + ')';
-		}
-		tipItems.attr('transform', transformAttr);
-		tipBox.attr('transform', transformAttr);
+		// move tooltip to the left if there is not enough space to display it on the right
+		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
 	};
 
 	this.updateCrossLines = function (sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData) {
 		/*  Generate cross lines at the point/cursor
 		 */
-
-		//if (!mouseY) return; comment this to avoid some awkwardness when there is no data in selected range
-
 		// update crossLineX
-		//TODO: maybe use transform instead of reassign x and y?
 		focus.select('[name=crossLineX]')
 			.attr('x1', mousePositionData.positionX)
 			.attr('x2', mousePositionData.positionX).attr('y2', sizeInfo.height);
@@ -923,12 +928,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('width', boxX.width + 2 * crossLineTipPadding)
 			.attr('height', boxX.height + 2 * crossLineTipPadding);
 		// move box to the left if there is not enough space to display it on the right
-		var transformAttr = null;
-		if (boxX.x + boxX.width + crossLineTipPadding > sizeInfo.width + sizeInfo.margin.right) {
-			transformAttr = 'translate(-' + boxX.width + 2 * crossLineTipPadding + ')';
-		}
-		dateText.attr('transform', transformAttr);
-		boxXRect.attr('transform', transformAttr);
+		flipAnElementHorizontally([dateText, boxXRect], boxX.width, sizeInfo.width, sizeInfo.margin.right, boxX.x, crossLineTipPadding);
 		// update crossLineY if needed
 		if (mousePositionData.mouseY !==  undefined && mousePositionData.positionY !== undefined) {
 			focus.select('[name=crossLineY]')
@@ -960,9 +960,7 @@ angular.module('argus.services.charts.elements', [])
 						circle.attr('transform', 'translate(' + x(dataX) + ',' + y(dataY) + ')')
 							.style('display', displayProperty);
 
-						if (ChartToolService.isNotInTheDomain(dataX, x.domain())) {
-							circle.style('display', 'none');
-						}
+						if (ChartToolService.isNotInTheDomain(dataX, x.domain())) circle.style('display', 'none');
 					});
 			} else {
 				// nothing needs to be shown
@@ -976,6 +974,21 @@ angular.module('argus.services.charts.elements', [])
 			processCircle(extraY[iSet], iSet);
 		}
 
+	};
+
+	this.updateHighlightBarWithZoom = function (graph, mouseOverHighlightBar, highlightBar, brushInNonEmptyRange) {
+		var currentTimestamp = Number(highlightBar.attr('dataX'));
+		if (brushInNonEmptyRange) {
+			var dateText = mouseOverHighlightBar.select('.crossLineTip');
+			var boxXRect = mouseOverHighlightBar.select('.crossLineTipRect');
+			var startingPosition = graph.x0(currentTimestamp);
+			highlightBar.attr('x', startingPosition);
+			dateText.attr('x', startingPosition);
+			boxXRect.attr('x', startingPosition - crossLineTipPadding);
+			if (ChartToolService.isNotInTheDomain(currentTimestamp, graph.x.domain())) highlightBar.style('display', 'none');
+		} else {
+			highlightBar.style('display', 'none');
+		}
 	};
 
 	this.updateAnnotations = function (series, sources, x, flagsG, height) {
@@ -1125,8 +1138,6 @@ angular.module('argus.services.charts.elements', [])
 			if (metric === null || metric.data === undefined || metric.data.length === 0 ||
 				ChartToolService.isMetricNotInTheDomain(metric, xDomain, timestampSelector)) {
 				tipItems.selectAll('.' + source.graphClassName).style('display', 'none');
-			} else {
-				tipItems.selectAll('.' + source.graphClassName).style('display', source.displaying? null: 'none');
 			}
 		});
 	};

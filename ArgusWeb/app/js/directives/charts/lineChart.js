@@ -355,7 +355,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG,//g
 				context, clip, brushG, brushMainG, chartRect,//g
 				tooltip, tipBox, tipItems,
-				focus, crossLine, mouseOverhighlightBar, highlightBar, mouseMoveElement,
+				focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement,
 				names, colors, graphClassNames,
 				flagsG, labelTip,
 				stack;
@@ -549,9 +549,9 @@ angular.module('argus.directives.charts.lineChart', [])
 					});
 					mouseMoveElement = focus;
 				} else {
-					mouseOverhighlightBar = ChartElementService.appendMouseOverhighlightBar(mainChart, allSize.height, graph.x0.bandwidth());
-					highlightBar = mouseOverhighlightBar.select('.highlightBar');
-					mouseMoveElement = mouseOverhighlightBar;
+					mouseOverHighlightBar = ChartElementService.appendMouseOverHighlightBar(mainChart, allSize.height, graph.x0.bandwidth());
+					highlightBar = mouseOverHighlightBar.select('.highlightBar');
+					mouseMoveElement = mouseOverHighlightBar;
 				}
 				//the graph rectangle area
 				chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
@@ -569,8 +569,9 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (isChartDiscrete) {
 					// use highlight bar
 					if (brushInNonEmptyRange) {
-						dataPoints = ChartElementService.updateHighlightRangeAndObtainDataPoints(graph, mouseOverhighlightBar, tipItems, seriesBeingDisplayed, scope.sources, extraY,
-																	mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked);
+						var distanceToRight = allSize.width + allSize.margin.right;
+						dataPoints = ChartElementService.updateHighlightRangeAndObtainDataPoints(graph, mouseOverHighlightBar, tipItems, seriesBeingDisplayed, scope.sources, extraY,
+																	mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked, distanceToRight);
 						// there is no snap point for bar chart
 						newMousePositionData = mousePositionData;
 					}
@@ -719,11 +720,13 @@ angular.module('argus.directives.charts.lineChart', [])
 				context.select('.brush').call(brush.move, x.range().map(t.invertX, t));
 
 				// sync the crossLine
+				var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 				if (!isChartDiscrete) {
 					var mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
-					var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 					ChartElementService.updateFocusCirclesPositionWithZoom(x, y, focus, brushInNonEmptyRange, extraY, extraYAxisSet);
 					ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, mousePositionData);
+				} else {
+					ChartElementService.updateHighlightBarWithZoom(graph, mouseOverHighlightBar, highlightBar, brushInNonEmptyRange);
 				}
 			}
 

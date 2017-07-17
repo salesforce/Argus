@@ -403,18 +403,18 @@ angular.module('argus.services.charts.tools', [])
 	};
 
 	this.isBrushInNonEmptyRange = function (xDomain, dateExtent) {
-		return xDomain[0].getTime() <= dateExtent[1] &&  xDomain[1].getTime()>= dateExtent[0];
+		return xDomain[0] <= dateExtent[1] && xDomain[xDomain.length - 1] >= dateExtent[0];
 	};
 
 	this.isNotInTheDomain = function (value, domainArray) {
-		return value < domainArray[0] || value > domainArray[1];
+		return value < domainArray[0] || value > domainArray[domainArray.length - 1];
 	};
 
 	this.isMetricNotInTheDomain = function (metric, xDomain, timestampSelector) {
 		var len = metric.data.length;
 		var startPoint = timestampSelector(metric.data[0]);
 		var endPoint = timestampSelector(metric.data[len - 1]);
-		return startPoint > xDomain[1].getTime() || endPoint < xDomain[0].getTime();
+		return startPoint > xDomain[1] || endPoint < xDomain[xDomain.length - 1];
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
