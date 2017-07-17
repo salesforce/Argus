@@ -10,7 +10,7 @@
 
 			<li class="toolbarItemPreview">
 				<span class="glyphicon glyphicon-minus {{sources[0].graphClassName}}_legend" ng-style="{color: labelTextColor(sources[0])}"></span>
-				<a>{{sources[0].name}}</a>
+				<a>{{sources[0].name | truncateMetricName:menuOption}}</a>
 			</li>
 
 			<li class="toolbarItem legend floatPanel"
