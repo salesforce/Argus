@@ -68,7 +68,7 @@ public class ShiftValueMapping implements ValueMapping {
         for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
             Long newTimestamp = entry.getKey() + offset;
 
-            SystemAssert.requireArgument((entry.getKey() <= Long.MAX_VALUE - offset && newTimestamp >= Long.MIN_VALUE),
+            SystemAssert.requireArgument((entry.getKey() + offset <= Long.MAX_VALUE && entry.getKey() + offset >= Long.MIN_VALUE),
                 "You are not allowed to shift like this, be nice to me!");
             shiftDatapoints.put(newTimestamp, entry.getValue());
         }
@@ -87,7 +87,7 @@ public class ShiftValueMapping implements ValueMapping {
 	        	Map.Entry<Long, Double> dp = scanner.getNextDP();
 	        	Long newTimestamp = dp.getKey() + offset;
 	        	
-	        	SystemAssert.requireArgument((dp.getKey() <= Long.MAX_VALUE - offset && newTimestamp >= Long.MIN_VALUE),
+	        	SystemAssert.requireArgument((dp.getKey() + offset <= Long.MAX_VALUE && dp.getKey() + offset >= Long.MIN_VALUE),
 	                    "You are not allowed to shift like this, be nice to me!");
 	        	shiftDatapoints.put(newTimestamp, dp.getValue());
 	        }
