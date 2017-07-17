@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -33,21 +35,21 @@ import static com.salesforce.dva.argus.system.SystemAssert.*;
 public class MetricScanner {
 	//~ Static fields ***************************************************************************************************************************************************************************
 	
-	private static Map<Metric, Map<MetricQuery, Set<MetricScanner>>> scanners = new HashMap<>();
+	private static Map<Metric, Map<MetricQuery, Set<MetricScanner>>> scanners = Collections.synchronizedMap(new HashMap<>());
 	private static Double CHUNK_PERCENTAGE = 0.1;
 	private static Double FETCH_PERCENTAGE = 0.5;
 	
 	//~ Instance fields *************************************************************************************************************************************************************************
 	
-	private Long pointer;
-	private Map<Long, Double> datapoints = new HashMap<>();
+	private AtomicLong pointer;
+	private Map<Long, Double> datapoints = Collections.synchronizedMap(new HashMap<>());
 	private Long chunkSize;
-	private Long lastStartTimestamp;
-	private Long lastEndTimestamp;
+	private AtomicLong lastStartTimestamp;
+	private AtomicLong lastEndTimestamp;
 	private MetricQuery query;
 	private TSDBService service;
 	private Metric metric;
-	private Boolean inUse;
+	private AtomicBoolean inUse;
 	private int callsToFetch = 0;
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
 	
@@ -88,13 +90,15 @@ public class MetricScanner {
 			entry.put(query, s);
 			scanners.put(metric, entry);
 		}
-		datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
-		this.lastEndTimestamp = lastEndTimestamp != null ? lastEndTimestamp : datapoints.isEmpty() ? null : Collections.max(datapoints.keySet());
-		lastStartTimestamp = datapoints.isEmpty() ? query.getStartTimestamp() : Collections.min(datapoints.keySet());
-		pointer = datapoints.isEmpty() ? null : Collections.min(datapoints.keySet());
+		synchronized(this) {
+			datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
+			this.lastEndTimestamp = lastEndTimestamp != null ? new AtomicLong(lastEndTimestamp) : datapoints.isEmpty() ? null : new AtomicLong(Collections.max(datapoints.keySet()));
+			lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
+			pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+			inUse = new AtomicBoolean(true);
+		}
 		chunkSize = Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * CHUNK_PERCENTAGE);
 		SystemAssert.requireArgument(!chunkSize.equals(0L) || query.getEndTimestamp().equals(query.getStartTimestamp()), "The start and end times of the query are too far apart. Don't do this to me!");
-		inUse = true;
 	}
 	
 	/**
@@ -120,13 +124,15 @@ public class MetricScanner {
 			entry.put(query, s);
 			scanners.put(metric, entry);
 		}
-		datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
-		this.lastEndTimestamp = scanner.getLastEndTimestamp();
-		lastStartTimestamp = datapoints.isEmpty() ? query.getStartTimestamp() : Collections.min(datapoints.keySet());
-		pointer = datapoints.isEmpty() ? null : Collections.min(datapoints.keySet());
+		synchronized(this) {
+			datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
+			this.lastEndTimestamp = new AtomicLong(scanner.getLastEndTimestamp());
+			lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
+			pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+			inUse = new AtomicBoolean(true);
+		}
 		chunkSize = Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * CHUNK_PERCENTAGE);
 		SystemAssert.requireArgument(!chunkSize.equals(0L) || query.getEndTimestamp().equals(query.getStartTimestamp()), "The start and end times of the query are too far apart. Don't do this to me!");
-		inUse = true;
 	}
 	
 	//~ Methods ********************************************************************************************************************************************************************************
@@ -219,6 +225,7 @@ public class MetricScanner {
 		if (scanners.get(metric).isEmpty()) {
 			scanners.remove(metric);
 		}
+		inUse.set(false);
 	}
 	
 	/**
@@ -232,7 +239,7 @@ public class MetricScanner {
 			SystemAssert.requireState(this.hasNextDP(), "The Scanner must contain more datapoints in order to return the next datapoint.");
 			Map<Long, Double> dpMap = new HashMap<Long, Double>();
 			if (pointer != null) {
-				dpMap.put(pointer, datapoints.get(pointer));
+				dpMap.put(pointer.get(), datapoints.get(pointer.get()));
 			}
 			Map.Entry<Long, Double> dp = null;
 			for (Map.Entry<Long, Double> elem : dpMap.entrySet()) {
@@ -294,7 +301,7 @@ public class MetricScanner {
 	 * @return The last timestamp currently reached by this metric scanner object.
 	 */
 	private Long getLastEndTimestamp() {
-		return lastEndTimestamp;
+		return lastEndTimestamp.get();
 	}
 	
 	/**
@@ -304,25 +311,26 @@ public class MetricScanner {
 	 * @return If there are more data points as part of the result of the query.
 	 */
 	public boolean hasNextDP() {
-		if (!inUse) {
-			return false;
-		}
-		if (pointer == null) {
-			asyncFetch();
-			
-			while (pointer == null && lastEndTimestamp < query.getEndTimestamp()) {
-				asyncFetch();
-			}
-			
-			if (pointer == null) {
-				inUse = false;
-				dispose();
+		synchronized(this) {
+			if (!inUse.get()) {
 				return false;
 			}
-			
+			if (pointer == null) {
+				asyncFetch();
+				
+				while (pointer == null && lastEndTimestamp.get() < query.getEndTimestamp()) {
+					asyncFetch();
+				}
+				
+				if (pointer == null) {
+					inUse.set(false);
+					dispose();
+					return false;
+				}
+				return true;
+			}
 			return true;
 		}
-		return true;
 	}
 	
 	/**
@@ -330,14 +338,14 @@ public class MetricScanner {
 	 * 
 	 * @return The timestamp of the next data point in the metric scanner, or null if there are no later data points.
 	 */
-	private Long nextTime() {
+	private AtomicLong nextTime() {
 		Long next = null;
 		for (Long time : datapoints.keySet()) {
-			if ((pointer != null) && (time > pointer) && ((next == null) || (time < next))) {
+			if ((pointer != null) && (time > pointer.get()) && ((next == null) || (time < next))) {
 				next = time;
 			}
 		}
-		return next;
+		return next != null ? new AtomicLong(next) : null;
 	}
 	
 	/**
@@ -345,13 +353,13 @@ public class MetricScanner {
 	 * completed the query window, or if we are FETCH_PERCENTAGE through our latest fetched data.
 	 */
 	private void asyncFetch() {
-		if (pointer != null && lastEndTimestamp < query.getEndTimestamp()) {	
-			if (pointer > Math.round((FETCH_PERCENTAGE * (lastEndTimestamp - lastStartTimestamp))) + lastStartTimestamp) {
+		if (pointer != null && lastEndTimestamp.get() < query.getEndTimestamp()) {	
+			if (pointer.get() > Math.round((FETCH_PERCENTAGE * (lastEndTimestamp.get() - lastStartTimestamp.get()))) + lastStartTimestamp.get()) {
 				fetch();
 			}
 		}
 		else {
-			if (!lastEndTimestamp.equals(query.getEndTimestamp())) {	
+			if (!query.getEndTimestamp().equals(lastEndTimestamp.get())) {	
 				fetch();
 			}
 		}
@@ -362,7 +370,7 @@ public class MetricScanner {
 	 * 
 	 * @param lastEndTimestamp The timestamp of the final data point contained by this metric scanner.
 	 */
-	private void setEndTimestamp(Long lastEndTimestamp) {
+	private void setEndTimestamp(AtomicLong lastEndTimestamp) {
 		this.lastEndTimestamp = lastEndTimestamp;
 	}
 	
@@ -373,18 +381,20 @@ public class MetricScanner {
 	 * @param datapoints The data points contained in the slice of time returned by the query.
 	 */
 	private void pushDatapoints(Map<Long, Double> datapoints) {
-		if (pointer == null) {
-			Set<Long> possiblePointers = new HashSet<>();
-			for (Long newTime : datapoints.keySet()) {
-				if (!this.datapoints.containsKey(newTime)) {
-					possiblePointers.add(newTime);
+		synchronized(this) {
+			if (pointer == null) {
+				Set<Long> possiblePointers = new HashSet<>();
+				for (Long newTime : datapoints.keySet()) {
+					if (!this.datapoints.containsKey(newTime)) {
+						possiblePointers.add(newTime);
+					}
 				}
+				pointer = possiblePointers.size() == 0 ? null : new AtomicLong(Collections.min(possiblePointers));
 			}
-			pointer = possiblePointers.size() == 0 ? null : Collections.min(possiblePointers);
+			this.datapoints.putAll(datapoints);
+			this.metric.addDatapoints(datapoints);
+			lastStartTimestamp = datapoints.size() != 0 ? new AtomicLong(Collections.min(datapoints.keySet())) : null;
 		}
-		this.datapoints.putAll(datapoints);
-		this.metric.addDatapoints(datapoints);
-		lastStartTimestamp = datapoints.size() != 0 ? Collections.min(datapoints.keySet()) : null;
 	}
 	
 	/**
@@ -415,7 +425,7 @@ public class MetricScanner {
 	 */
 	private void fetch() {
 		callsToFetch++;
-		Long startTime = lastEndTimestamp;
+		Long startTime = lastEndTimestamp.get();
 		Long endTime = Math.min(query.getEndTimestamp(), startTime + chunkSize);
 		if (Long.MAX_VALUE - chunkSize < startTime) {
 			endTime = Long.MAX_VALUE;
@@ -449,16 +459,17 @@ public class MetricScanner {
 								Metric gapMetric = gaps.get(gaps.indexOf(miniMetric));
 								s.pushDatapoints(gapMetric.getDatapoints());
 							}
-							
-							s.pushDatapoints(miniMetric.getDatapoints());
-							s.setEndTimestamp(endTime);
-							s.updateMetric(miniMetric);
+							synchronized(this) {
+								s.pushDatapoints(miniMetric.getDatapoints());
+								s.setEndTimestamp(new AtomicLong(endTime));
+								s.updateMetric(miniMetric);
+							}
 						}
 					}
 				}
 			}
 		}
-		setEndTimestamp(endTime); // regardless of whether new data was received, update the time
+		setEndTimestamp(new AtomicLong(endTime)); // regardless of whether new data was received, update the time
 	}
 	
 	/**
