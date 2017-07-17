@@ -66,7 +66,7 @@ public class AbsoluteValueMapping implements ValueMapping {
     		synchronized (scanner) {
 	    		while (scanner.hasNextDP()) {
 	    			Map.Entry<Long, Double> nextDP = scanner.getNextDP();
-	    			absDatapoints.put(nextDP.getKey(), nextDP.getValue());
+	    			absDatapoints.put(nextDP.getKey(), Math.abs(nextDP.getValue()));
 	    		}
     		}
     		
