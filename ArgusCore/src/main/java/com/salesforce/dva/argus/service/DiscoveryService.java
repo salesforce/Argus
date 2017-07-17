@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
@@ -83,8 +85,7 @@ public interface DiscoveryService extends Service {
      *
      * @return  A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
      */
-    List<MetricSchemaRecord> filterRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex,
-        int limit, MetricSchemaRecord scanFrom);
+    List<MetricSchemaRecord> filterRecords(SchemaQuery query);
 
     /**
      * @param   namespaceRegex  A regular expression to match against the namespace field. Can be null.
@@ -98,8 +99,7 @@ public interface DiscoveryService extends Service {
      *
      * @return  A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
      */
-    List<MetricSchemaRecord> getUniqueRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, RecordType type,
-        int limit, MetricSchemaRecord scanFrom);
+    List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type);
 
     /**
      * Expands a given wildcard query into a list of distinct queries.

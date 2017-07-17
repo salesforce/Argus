@@ -85,9 +85,14 @@ public class MetricResources extends AbstractResource {
     @Description("Performs a metric query using the given expression.")
     public List<MetricDto> getMetricsJSON(@Context HttpServletRequest req,
         @QueryParam("expression") List<String> expressions) {
-        List<Metric> metrics = _getMetrics(req, expressions);
+        
+    	try {
+    		List<Metric> metrics = _getMetrics(req, expressions);
 
-        return MetricDto.transformToDto(metrics);
+            return MetricDto.transformToDto(metrics);
+    	} catch(Exception ex) {
+    		throw new WebApplicationException(ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+    	}
     }
 
     /**

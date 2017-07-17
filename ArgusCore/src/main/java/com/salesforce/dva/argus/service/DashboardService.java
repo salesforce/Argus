@@ -71,14 +71,14 @@ public interface DashboardService extends Service {
      *
      * @return  A list of Dashboards owner by this user or an empty list if none are owned.
      */
-    List<Dashboard> findDashboardsByOwner(PrincipalUser owner);
+    List<Dashboard> findDashboardsByOwner(PrincipalUser owner, boolean metadataOnly);
 
     /**
      * Retrieves a list of Dashboards shared globally.
      *
      * @return  A list of Dashboards shared globally or an empty list if no global dashboards.
      */
-    List<Dashboard> findSharedDashboards();
+    List<Dashboard> findSharedDashboards(boolean metadataOnly);
 
     /**
      * Retrieves a list of all dashboards.
@@ -87,7 +87,7 @@ public interface DashboardService extends Service {
      *
      * @return  The list of dashboards.
      */
-    List<Dashboard> findDashboards(Integer limit);
+    List<Dashboard> findDashboards(Integer limit, boolean metadataOnly);
 
     /**
      * Updates a dashboard, creating it if necessary.
@@ -119,5 +119,6 @@ public interface DashboardService extends Service {
      * @param  id  The primary key ID. Cannot be null and must be a positive non-zero number.
      */
     void deleteDashboard(BigInteger id);
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
