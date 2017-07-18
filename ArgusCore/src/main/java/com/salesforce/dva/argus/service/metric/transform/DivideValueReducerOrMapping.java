@@ -73,17 +73,15 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
     	Double quotient = scanner.getNextDP().getValue();
     	SystemAssert.requireArgument(quotient != null, "The Metric Scanner must contain a non-null first datapoint.");
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Double value = scanner.getNextDP().getValue();
+	    while (scanner.hasNextDP()) {
+	    	Double value = scanner.getNextDP().getValue();
 	    		
-	    		if (value == null) {
-	    			continue;
-	    		}
-	    		SystemAssert.requireArgument(value != 0.0, "This scanner datapoint set has a value of zero!");
-	    		quotient /= value;
-	    	}
-    	}
+    		if (value == null) {
+	   			continue;
+	   		}
+	   		SystemAssert.requireArgument(value != 0.0, "This scanner datapoint set has a value of zero!");
+	   		quotient /= value;
+	    }
     	return quotient;
     }
 
@@ -131,12 +129,10 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
     		double divisor = Double.parseDouble(constants.get(0));   		
     		SystemAssert.requireArgument(divisor != 0, "The constant divisor cannot be zero.");
     		
-    		synchronized(scanner) {
-	       		while (scanner.hasNextDP()) {
-	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    			divideDatapoints.put(dp.getKey(), dp.getValue() / divisor);
-	    		}
-    		}
+	      	while (scanner.hasNextDP()) {
+	   			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		divideDatapoints.put(dp.getKey(), dp.getValue() / divisor);
+	    	}
     	} catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to divide transform", nfe);
     	}
