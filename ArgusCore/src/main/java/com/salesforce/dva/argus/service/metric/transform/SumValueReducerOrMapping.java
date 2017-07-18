@@ -97,15 +97,13 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     		try {
     			double addend = Double.parseDouble(constants.get(0));
     			
-    			synchronized(scanner) {
-	    			while (scanner.hasNextDP()) {
-	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    				if (dp.getValue() == null) {
-	    					continue;
-	    				}
-	    				mappedDatapoints.put(dp.getKey(), dp.getValue() + addend);
+	   			while (scanner.hasNextDP()) {
+	   				Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   				if (dp.getValue() == null) {
+	   					continue;
 	    			}
-    			}
+	    			mappedDatapoints.put(dp.getKey(), dp.getValue() + addend);
+	    		}
     		} catch (NullPointerException | NumberFormatException nfe)  {
     			throw new SystemException("Illegal constant value supplied to sum transform", nfe);
     		}
