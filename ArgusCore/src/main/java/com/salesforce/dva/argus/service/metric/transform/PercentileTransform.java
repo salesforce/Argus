@@ -185,25 +185,23 @@ public class PercentileTransform implements Transform {
     	List<Double> values = new ArrayList<>();
     	Long windowStart = 0L;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		Long timestamp = dp.getKey();
-	    		Double value = dp.getValue();
+		while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   		Long timestamp = dp.getKey();
+	   		Double value = dp.getValue();
 	    		
-	    		if (values.isEmpty()) {
-	    			values.add(value);
-	    			windowStart = timestamp;
-	    		} else {
-	    			if (timestamp > windowStart + windowInSeconds * 1000) {
-	    				transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
-	    				values.clear();
-	    				windowStart = timestamp;
-	    			}
-	    			values.add(value);
-	    		}
-	    	}
-    	}
+	   		if (values.isEmpty()) {
+	   			values.add(value);
+	    		windowStart = timestamp;
+	    	} else {
+	    		if (timestamp > windowStart + windowInSeconds * 1000) {
+					transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
+    				values.clear();
+	   				windowStart = timestamp;
+	   			}
+	   			values.add(value);
+	   		}
+	    }
     	
     	if (!values.isEmpty()) {
     		transformedDatapoints.put(windowStart, calculateNthPercentile(values, n));
