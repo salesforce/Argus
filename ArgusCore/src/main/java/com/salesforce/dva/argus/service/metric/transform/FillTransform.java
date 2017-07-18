@@ -127,22 +127,20 @@ public class FillTransform implements Transform {
     	
     	Long startTimestamp = dp.getKey();
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		dp = scanner.getNextDP();
-	    		dps.put(dp.getKey(), dp.getValue());
-	    		timestamps.add(dp.getKey());
+	   	while (scanner.hasNextDP()) {
+	   		dp = scanner.getNextDP();
+	   		dps.put(dp.getKey(), dp.getValue());
+	   		timestamps.add(dp.getKey());
 	    		
-	    		filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
-	    		if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
-	    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
-	    		} else {
-	    			startTimestamp = timestamps.get(index);
-	    			index++;
-	    		}
-	    	}
+	    	filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
+			if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
+	   		} else {
+	   			startTimestamp = timestamps.get(index);
+	   			index++;
+	   		}
+	    }
 		filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
-    	}
     	
     	int newLength = filledDatapoints.size();
     	List<Long> newTimestamps = new ArrayList<Long>();
