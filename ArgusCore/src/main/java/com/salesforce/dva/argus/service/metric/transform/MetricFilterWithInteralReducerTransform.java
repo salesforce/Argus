@@ -132,7 +132,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
         }
     }
 	
-	/**
+    /**
      * Reduces the given metric scanner to a single value based on the specified reducer.
      * 
      * @param scanner 		The Metric scanner to reduce.
