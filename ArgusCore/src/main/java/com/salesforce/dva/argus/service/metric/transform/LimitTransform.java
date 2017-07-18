@@ -112,11 +112,9 @@ public class LimitTransform implements Transform {
         Long count = 0L;
         for (MetricScanner scanner : scanners) {
         	if (count < limit) {
-        		synchronized(scanner) {
-	        		while (scanner.hasNextDP()) {
-	        			scanner.getNextDP();
-	        		}
-        		}
+	       		while (scanner.hasNextDP()) {
+	        		scanner.getNextDP();
+	        	}
         		count++;
         		result.add(scanner.getMetric());
         	} else {
