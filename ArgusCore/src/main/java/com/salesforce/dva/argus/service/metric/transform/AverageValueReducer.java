@@ -65,15 +65,13 @@ public class AverageValueReducer implements ValueReducer {
     		Double sum = 0.0;
     		int dpCount = 0;
     		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			dpCount++;
-	    			Double val = scanner.getNextDP().getValue();
-	    			if (val != null) {
-	    				sum += val;
-	    			}
+    		while (scanner.hasNextDP()) {
+	   			dpCount++;
+	   			Double val = scanner.getNextDP().getValue();
+	   			if (val != null) {
+	   				sum += val;
 	    		}
-    		}
+	    	}
     		
     		return (sum / dpCount);
     }
