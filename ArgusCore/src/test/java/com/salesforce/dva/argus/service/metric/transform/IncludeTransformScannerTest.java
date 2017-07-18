@@ -20,14 +20,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 public class IncludeTransformScannerTest extends AbstractTest {
 	
-    private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
-    private static final String TEST_NAMESPACE = "test-namespace";
-    
-    private static final String TEST_TAG_1 = "tag1";
-    private static final String TEST_TAG_2 = "tag2";
-    
-    private static final String TEST_INCLUDE_LITERAL = "Everyday is a holiday.";
     private static final String TEST_INCLUDE_REGEX = ".*test-metric[1-2].*";
 
 	protected static MetricQuery toQuery(Metric metric) {
