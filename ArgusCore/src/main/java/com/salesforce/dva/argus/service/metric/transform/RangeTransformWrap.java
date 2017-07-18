@@ -138,19 +138,17 @@ public class RangeTransformWrap implements Transform {
     	List<Metric> result = new ArrayList<>();
     	final List<Double> dpNum = new ArrayList<>();
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		if (dp.getValue() == null) {
-	    			cleanDPs.put(dp.getKey(), 0.0);
-	    			dpNum.add(0.0);
-	    		}
-	    		else {
-	    			cleanDPs.put(dp.getKey(), dp.getValue());
-	    			dpNum.add(dp.getValue());
-	    		}
-	    	}
-    	}
+	   	while (scanner.hasNextDP()) {
+	   		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    	if (dp.getValue() == null) {
+	    		cleanDPs.put(dp.getKey(), 0.0);
+				dpNum.add(0.0);
+    		}
+	   		else {
+	   			cleanDPs.put(dp.getKey(), dp.getValue());
+	   			dpNum.add(dp.getValue());
+	   		}
+	    }
     	    		
     	Collections.sort(dpNum);
     	
