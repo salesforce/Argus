@@ -93,10 +93,8 @@ public abstract class AnomalyDetectionTransform implements Transform {
     	long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
     	
     	Map.Entry<Long, Double> dp = null;
-    	synchronized(scanners.get(0)) {
-    		SystemAssert.requireArgument(scanners.get(0).hasNextDP(), "Cannot operate on a scanner with no metric data.");
-    		dp = scanners.get(0).getNextDP();
-    	}
+    	SystemAssert.requireArgument(scanners.get(0).hasNextDP(), "Cannot operate on a scanner with no metric data.");
+    	dp = scanners.get(0).getNextDP();
     	timestamps.add(dp.getKey());
     	completeDatapoints.put(dp.getKey(), dp.getValue());
     	
@@ -246,15 +244,13 @@ public abstract class AnomalyDetectionTransform implements Transform {
     	long firstIntervalEndTime = timestamps.get(0) + detectionIntervalInSeconds;
     	Map.Entry<Long, Double> dp = null;
     	
-    	synchronized(scanner) {
-	       	while (scanner.hasNextDP() && timestamps.get(currentIndex) <= firstIntervalEndTime) {
-	    		dp = scanner.getNextDP();
-	    		timestamps.add(dp.getKey());
-	    		predictionDatapoints.put(timestamps.get(currentIndex), 0.0);
-	    		completeDatapoints.put(dp.getKey(), dp.getValue());
-	    		currentIndex += 1;
-	    	}
-    	}
+	    while (scanner.hasNextDP() && timestamps.get(currentIndex) <= firstIntervalEndTime) {
+	   		dp = scanner.getNextDP();
+	   		timestamps.add(dp.getKey());
+	   		predictionDatapoints.put(timestamps.get(currentIndex), 0.0);
+	    	completeDatapoints.put(dp.getKey(), dp.getValue());
+	    	currentIndex += 1;
+	    }
     	return currentIndex;
     }
 
@@ -295,28 +291,12 @@ public abstract class AnomalyDetectionTransform implements Transform {
     													int currentIndex, long detectionIntervalInSeconds) {
     	Map.Entry<Long, Double> dp = null;
     	int i = currentIndex; // looping variable
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		dp = scanner.getNextDP();
-	    		timestamps.add(dp.getKey());
-	    		completeDatapoints.put(dp.getKey(), dp.getValue());
-	    		
-	    		long timestampAtCurrentIndex = timestamps.get(i);
-	    		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
-	    		
-	    		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
-	    		List<Metric> intervalRawDataMetrics = new ArrayList<>();
-	    		intervalRawDataMetrics.add(intervalMetric);
-	    		
-	    		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
-	    		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
-	    		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
-	    	
-			i++;
-		}
-		
-		// complete the final datapoint
-	    	long timestampAtCurrentIndex = timestamps.get(i);
+    	while (scanner.hasNextDP()) {
+    		dp = scanner.getNextDP();
+    		timestamps.add(dp.getKey());
+    		completeDatapoints.put(dp.getKey(), dp.getValue());
+    		
+    		long timestampAtCurrentIndex = timestamps.get(i);
     		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
     		
     		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
@@ -326,7 +306,21 @@ public abstract class AnomalyDetectionTransform implements Transform {
     		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
     		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
     		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
+    		
+    		i++;
     	}
+    	
+    	// complete the final datapoint
+    	long timestampAtCurrentIndex = timestamps.get(i);
+		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
+		
+		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
+		List<Metric> intervalRawDataMetrics = new ArrayList<>();
+		intervalRawDataMetrics.add(intervalMetric);
+		
+		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
+		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
     }
 
     /**
