@@ -19,13 +19,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 public class AliasTransformScannerTest extends AbstractTest {
-	
-	private static final String TEST_SCOPE = "test-scope";
-    private static final String TEST_METRIC = "test-metric";
-    private static final String TEST_METRIC_NAME_1 = "TGIF, Yeah!!!!!!";
-    private static final String TEST_METRIC_NAME_2 = "Sat is awesome:)";
-    private static final String TEST_METRIC_NAME_3 = "Sun is my big appetite day:(";
-    private static final String TEST_BAD_STRING = "It is Mon again:(";
+
     private static final String TEST_TYPE_LITERAL = "literal";
     private static final String TEST_TYPE_REGEX = "regex";
     private static final String TEST_ALIAS_LITERAL = "Everyday is a holiday.";
