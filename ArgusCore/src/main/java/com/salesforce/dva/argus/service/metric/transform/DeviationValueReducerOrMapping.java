@@ -126,16 +126,14 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     private Double calculateDeviationScanner(MetricScanner scanner, List<Double> values, Double tolerance) {
     	double missingPointNumber = 0;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		if (dp.getValue() == null) {
-	    			missingPointNumber++;
-	    		} else {
-	        		values.add(dp.getValue());
-	    		}
-	    	}
-    	}
+	    while (scanner.hasNextDP()) {
+			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		if (dp.getValue() == null) {
+	   			missingPointNumber++;
+	   		} else {
+	       		values.add(dp.getValue());
+	   		}
+	    }
     	if (missingPointNumber / values.size() > tolerance) {
     		return null;
     	}
@@ -212,13 +210,11 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     	
     	Map.Entry<Long, Double> dp = null;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) { 
-	    		dp = scanner.getNextDP();
-	    		values.add(dp.getValue());
-	    		count++;
-	    	}
-    	}
+	    while (scanner.hasNextDP()) { 
+	   		dp = scanner.getNextDP();
+	   		values.add(dp.getValue());
+	   		count++;
+	    }
     	Long lastTimestamp = dp.getKey();	// will be the last key
     	
     	if (values.size() > pointNum) {
