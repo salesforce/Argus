@@ -96,13 +96,11 @@ public class LogValueMapping implements ValueMapping {
         Double base = Double.parseDouble(constants.get(0));
         Map<Long, Double> logDatapoints = new HashMap<>();
         
-        synchronized(scanner) {
-	        while (scanner.hasNextDP()) {
-	        	Map.Entry<Long, Double> dp = scanner.getNextDP();
-	        	Double logValue = Math.log(dp.getValue()) / Math.log(base);
-	        	logDatapoints.put(dp.getKey(), logValue);
-	        }
-        }
+	    while (scanner.hasNextDP()) {
+	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	       	Double logValue = Math.log(dp.getValue()) / Math.log(base);
+	       	logDatapoints.put(dp.getKey(), logValue);
+	    }
         
         return logDatapoints;
     }
