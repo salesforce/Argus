@@ -198,7 +198,6 @@ public class SumValueReducerOrMappingScannerTest extends AbstractTest {
 		constants.add("" + random.nextDouble() * 10);
 		
 		for (int i = 0; i < metrics.size(); i++) {
-			// Map<Long, Double> expected = redMap.mapping(metrics.get(i).getDatapoints(), constants); -> metrics version has no null tolerance
 			Map<Long, Double> expected = mappingWithNullTolerance(metrics.get(i), constants);
 			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
 			
