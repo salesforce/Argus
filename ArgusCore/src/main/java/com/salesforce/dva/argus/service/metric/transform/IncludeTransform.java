@@ -104,11 +104,9 @@ public class IncludeTransform implements Transform {
     }
 	
     private Metric setMetricData(MetricScanner scanner) {
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		scanner.getNextDP();
-	    	}
-    	}
+	   	while (scanner.hasNextDP()) {
+	   		scanner.getNextDP();
+	    }
        	return scanner.getMetric();
     }
 
