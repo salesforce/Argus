@@ -117,20 +117,18 @@ public class CountTransformWrapUnion implements Transform {
 	
     private Map<Long, Double> _collateScanners(List<MetricScanner> scanners) {
     		Map<Long, Double> collated = new HashMap<>();
-    		
-    		for (MetricScanner scanner : scanners) {
-    			synchronized(scanner) {
-	    			while (scanner.hasNextDP()) {
-	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    				if (!collated.containsKey(dp.getKey())) {
-	    					collated.put(dp.getKey(), 1.0);
-	    				} else {
-	    					collated.put(dp.getKey(), collated.get(dp.getKey()) + 1.0);
-	    				}
-	    			}
-    			}
-    		}
-    		return collated;
+		
+		for (MetricScanner scanner : scanners) {
+			while (scanner.hasNextDP()) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				if (!collated.containsKey(dp.getKey())) {
+					collated.put(dp.getKey(), 1.0);
+				} else {
+					collated.put(dp.getKey(), collated.get(dp.getKey()) + 1.0);
+				}
+			}
+		}
+		return collated;
     }
 
     @Override
