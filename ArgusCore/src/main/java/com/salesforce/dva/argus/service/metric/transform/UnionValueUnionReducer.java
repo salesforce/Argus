@@ -52,12 +52,10 @@ public class UnionValueUnionReducer implements ValueReducer {
 	
 	@Override
     public Double reduceScanner(MetricScanner scanner) {
-    	synchronized(scanner) {
-	    	SystemAssert.requireArgument(scanner.hasNextDP(), "Cannot reduce an empty scanner");
-	    	Double val = scanner.getNextDP().getValue();
-	    	scanner.dispose();
-	    	return val;
-    	}
+	   	SystemAssert.requireArgument(scanner.hasNextDP(), "Cannot reduce an empty scanner");
+	   	Double val = scanner.getNextDP().getValue();
+	   	scanner.dispose();
+	    return val;
     }
 
     @Override
