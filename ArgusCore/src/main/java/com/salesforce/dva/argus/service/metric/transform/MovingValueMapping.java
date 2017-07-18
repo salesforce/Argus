@@ -226,17 +226,15 @@ public class MovingValueMapping implements ValueMapping {
         Map<Long, Double> sortedDatapoints = new TreeMap<>();
         List<Long> times = new ArrayList<>();
         
-        synchronized(scanner) {
-	        while (scanner.hasNextDP()) {
-	        		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	        		if (dp.getValue() == null) {
-	        			sortedDatapoints.put(dp.getKey(), 0.0);
-	        		} else {
-	        			sortedDatapoints.put(dp.getKey(), dp.getValue());
-	        		}
-	        		times.add(dp.getKey());
-	        }
-        }
+        while (scanner.hasNextDP()) {
+	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   		if (dp.getValue() == null) {
+	       		sortedDatapoints.put(dp.getKey(), 0.0);
+	      	} else {
+	       		sortedDatapoints.put(dp.getKey(), dp.getValue());
+	       	}
+	   		times.add(dp.getKey());
+	    }
         
         Long[] timestamps = new Long[times.size()];
         times.toArray(timestamps);
