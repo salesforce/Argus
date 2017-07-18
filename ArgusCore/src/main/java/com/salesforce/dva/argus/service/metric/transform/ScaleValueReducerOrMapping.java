@@ -65,15 +65,13 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
     public Double reduceScanner(MetricScanner scanner) {
     		Double product = 1.0;
     		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Double value = scanner.getNextDP().getValue();
-	    			if (value == null) {
-	    				continue;
-	    			}
-	    			product *= value;
-	    		}
-    		}
+    		while (scanner.hasNextDP()) {
+	   			Double value = scanner.getNextDP().getValue();
+	   			if (value == null) {
+	   				continue;
+	   			}
+	    		product *= value;
+	    	}
     		return product;
     }
 
@@ -118,16 +116,14 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
     		try {
     			double multiplicand = Double.parseDouble(constants.get(0));
     			
-    			synchronized(scanner) {
-	    			while (scanner.hasNextDP()) {
-	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    				if (dp.getValue() == null) {
-	    					continue; // skip the missing data
-	    				}
-	    				double productValue = multiplicand * dp.getValue();
-	    				scaleDatapoints.put(dp.getKey(), productValue);
-	    			}
-    			}
+    			while (scanner.hasNextDP()) {
+	   				Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   				if (dp.getValue() == null) {
+	   					continue; // skip the missing data
+	   				}
+	    			double productValue = multiplicand * dp.getValue();
+	    			scaleDatapoints.put(dp.getKey(), productValue);
+	    		}
     		}catch (NumberFormatException nfe) {
     			throw new SystemException("Illegal constant value supplied to scale transform" , nfe);
     		}
