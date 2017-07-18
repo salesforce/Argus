@@ -96,9 +96,7 @@ public class MetricDistillerScannerTest extends AbstractTest {
 			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
 			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 		}
-		
-		//MetricDistiller distiller = new MetricDistiller();
-		
+				
 		Metric expected = createRandomMetrics(null, null, 1).get(0);
 		Metric actual = new Metric(expected);
 		
