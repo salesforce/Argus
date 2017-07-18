@@ -182,16 +182,14 @@ public class MetricMappingTransform implements Transform {
 	private Map<Long, Double> cleanDPScanner(MetricScanner scanner) {
     	Map<Long, Double> cleanDPs = new HashMap<>();
     	
-    	synchronized(scanner) {
-    		while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		if (dp.getValue() == null) {
-	    			cleanDPs.put(dp.getKey(), 0.0);
-	    		} else {
-	    			cleanDPs.put(dp.getKey(), dp.getValue());
-	    		}
-	    	}
-    	}
+    	while (scanner.hasNextDP()) {
+			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		if (dp.getValue() == null) {
+	   			cleanDPs.put(dp.getKey(), 0.0);
+	   		} else {
+	   			cleanDPs.put(dp.getKey(), dp.getValue());
+	   		}
+	    }
     	return cleanDPs;
     }
 
