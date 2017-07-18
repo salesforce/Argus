@@ -77,7 +77,6 @@ public class AbsoluteValueMappingScannerTest extends AbstractTest {
 		List<Long> boundaries = new ArrayList<>();
 		
 		for (int i = 0; i < queries.size(); i++) {
-			//System.out.println("Metric #" + i + " had dps " + metrics.get(i).getDatapoints().toString());
 			List<MetricQuery> upperHalf = new ArrayList<>();
 			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
 			boundaries.add(bound);
