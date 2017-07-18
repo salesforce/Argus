@@ -66,13 +66,11 @@ public class IntegralValueMapping implements ValueMapping {
     		Map<Long, Double> integralDP = new TreeMap<>();
     		Double prevSum = 0.0;
     		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    			prevSum += dp.getValue();
-	    			integralDP.put(dp.getKey(), prevSum);
-	    		}
-    		}
+	   		while (scanner.hasNextDP()) {
+	   			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   			prevSum += dp.getValue();
+	    		integralDP.put(dp.getKey(), prevSum);
+	    	}
     		return integralDP;
     }
 
