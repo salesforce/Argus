@@ -104,18 +104,16 @@ public class DownsampleTransform implements Transform {
     	List<Double> operands = new ArrayList<>();
     	int nonNull = 0;
     	    	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Double pt = scanner.getNextDP().getValue();
-	    		if (pt == null) {
-	    			operands.add(0.0);
-	    		}
-	    		else {
-	    			operands.add(pt);
-	    			nonNull++;
-	    		}
+	   	while (scanner.hasNextDP()) {
+	   		Double pt = scanner.getNextDP().getValue();
+	   		if (pt == null) {
+	    		operands.add(0.0);
 	    	}
-    	}
+	   		else {
+	   			operands.add(pt);
+	   			nonNull++;
+	   		}
+	    }
   
     	InternalReducerType type = InternalReducerType.fromString(reducerType);
 
@@ -268,35 +266,31 @@ public class DownsampleTransform implements Transform {
 	    	Map<Long, Double> downsampleDatapoints = new HashMap<>();
 	    	Map.Entry<Long, Double>  firstDP = null;
 	    	
-	    	synchronized(scanner) {
-		    	if (!scanner.hasNextDP()) {
-		    		return downsampleDatapoints;
-		    	}
+		   	if (!scanner.hasNextDP()) {
+		   		return downsampleDatapoints;
+		   	}
 		    	
-		    	firstDP = scanner.getNextDP();
-	    	}
+		    firstDP = scanner.getNextDP();
 	    	
 	    	Long windowStart = downsamplerTimestamp(firstDP.getKey(), windowSize);
 	    	List<Double> values = new ArrayList<>();
 	    	values.add(firstDP.getValue());	// just add the first one ,  we know it will be empty this time
 	    	
-	    	synchronized(scanner) {
-		    	while (scanner.hasNextDP()) {
-		    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-		    		if (values.isEmpty()) {
-		    			values.add(dp.getValue());
+		    while (scanner.hasNextDP()) {
+		    	Map.Entry<Long, Double> dp = scanner.getNextDP();
+		   		if (values.isEmpty()) {
+		   			values.add(dp.getValue());
+		   		}
+		    	else {
+			   		if (dp.getKey() >= windowStart + windowSize) {
+			   			Double fillingValue = downsamplerReducer(values, type);
+			    		downsampleDatapoints.put(windowStart, fillingValue);
+			    		values.clear();
+			    		windowStart = downsamplerTimestamp(dp.getKey(), windowSize);
 		    		}
-		    		else {
-			    		if (dp.getKey() >= windowStart + windowSize) {
-			    			Double fillingValue = downsamplerReducer(values, type);
-			    			downsampleDatapoints.put(windowStart, fillingValue);
-			    			values.clear();
-			    			windowStart = downsamplerTimestamp(dp.getKey(), windowSize);
-			    		}
-			    		values.add(dp.getValue());
-		    		}
-		    	}
-	    	}
+		    		values.add(dp.getValue());
+		   		}
+		    }
 	    	if (!values.isEmpty()) {
 	    		Double fillingValue = downsamplerReducer(values, type);
 	    		downsampleDatapoints.put(windowStart, fillingValue);
