@@ -82,16 +82,14 @@ public class ShiftValueMapping implements ValueMapping {
         Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
         Map<Long, Double> shiftDatapoints = new TreeMap<>();
         
-        synchronized(scanner) {
-	        while (scanner.hasNextDP()) {
-	        	Map.Entry<Long, Double> dp = scanner.getNextDP();
-	        	Long newTimestamp = dp.getKey() + offset;
+	    while (scanner.hasNextDP()) {
+	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
+			Long newTimestamp = dp.getKey() + offset;
 	        	
-	        	SystemAssert.requireArgument((dp.getKey() + offset <= Long.MAX_VALUE && dp.getKey() + offset >= Long.MIN_VALUE),
-	                    "You are not allowed to shift like this, be nice to me!");
-	        	shiftDatapoints.put(newTimestamp, dp.getValue());
-	        }
-        }
+        	SystemAssert.requireArgument((dp.getKey() + offset <= Long.MAX_VALUE && dp.getKey() + offset >= Long.MIN_VALUE),
+	                 "You are not allowed to shift like this, be nice to me!");
+	       	shiftDatapoints.put(newTimestamp, dp.getValue());
+	    }
         return shiftDatapoints;
     }
 
