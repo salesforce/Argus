@@ -80,13 +80,11 @@ public class IntegralTransform implements Transform {
     			Double prevSum = 0.0;
     			Map<Long, Double> integralDP = new TreeMap<>();
     			
-    			synchronized(scanner) {
-	    			while (scanner.hasNextDP()) {
-	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    				prevSum += dp.getValue();
-	    				integralDP.put(dp.getKey(), prevSum);
-	    			}
-    			}
+	   			while (scanner.hasNextDP()) {
+	   				Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			prevSum += dp.getValue();
+	    			integralDP.put(dp.getKey(), prevSum);
+	    		}
     			
     			Metric m = new Metric(scanner.getMetric());
     			m.setDatapoints(integralDP);
