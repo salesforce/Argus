@@ -141,11 +141,9 @@ public class FillCalculateTransform implements Transform {
     	if (matcher.matches()) {
     		Integer target = Integer.valueOf(matcher.group(1));
     		List<Double> values = new ArrayList<>();
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			values.add(scanner.getNextDP().getValue());
-	    		}
-    		}
+	   		while (scanner.hasNextDP()) {
+	    		values.add(scanner.getNextDP().getValue());
+	    	}
     		result = PercentileTransform.calculateNthPercentile(values, target);
     	} else {
     		switch (calculationType) {
