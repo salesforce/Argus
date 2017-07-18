@@ -101,7 +101,6 @@ public class DeviationValueReducerOrMappingScannerTest extends AbstractTest {
 		DeviationValueReducerOrMapping redMap = new DeviationValueReducerOrMapping();
 		List<String> constants = new ArrayList<>();
 		constants.add("" + 0.1);
-		//Double epsilon = Math.pow(1, -6);
 		
 		for (int i = 0; i < metrics.size(); i++) {
 			List<Double> vals = new ArrayList<>(metrics.get(i).getDatapoints().values());
