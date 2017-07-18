@@ -248,14 +248,12 @@ public class NormalizeTransformWrap implements Transform {
         public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         	Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
         	
-        	synchronized(scanner) {
-	        	while (scanner.hasNextDP()) {
-	        		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	       	while (scanner.hasNextDP()) {
+	       		Map.Entry<Long, Double> dp = scanner.getNextDP();
 	        		
-	        		Double val = dp.getValue() == null ? 0.0 : dp.getValue();
-	        		divideByConstantDatapoints.put(dp.getKey(), val);
-	        	}
-        	}
+	       		Double val = dp.getValue() == null ? 0.0 : dp.getValue();
+	       		divideByConstantDatapoints.put(dp.getKey(), val);
+	        }
         	return divideByConstantDatapoints;
         }
 
