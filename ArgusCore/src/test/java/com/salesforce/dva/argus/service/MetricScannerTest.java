@@ -1,6 +1,5 @@
 package com.salesforce.dva.argus.service;
 
-//import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -8,7 +7,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.HashMap;
 
-//import org.apache.jasper.tagplugins.jstl.core.Set;
 import org.junit.Test;
 import org.mockito.Matchers;
 
@@ -56,9 +54,7 @@ public class MetricScannerTest extends AbstractTest {
 			Map.Entry<Long, Double> dp = ms.getNextDP();
 			actual.put(dp.getKey(), dp.getValue());
 		}
-		
-		//System.out.println(actual + " is actual");
-		//System.out.println(expected + " is expected");
+
 		assert(actual.equals(expected));
 	}
 	
@@ -210,7 +206,6 @@ public class MetricScannerTest extends AbstractTest {
 		highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
 		List<MetricQuery> tooHigh = new ArrayList<>();
 		
-		// have to do this up here so it knows to return the updated version of this metric
 		when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
 		when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 		
@@ -402,7 +397,6 @@ public class MetricScannerTest extends AbstractTest {
 		
 		when(serviceMock.getMetrics(miniQueriesHigher)).thenReturn(filterOver(metric, boundary, miniQueriesHigher.get(0)));
 		when(serviceMock.getMetrics(highQuery)).thenReturn(outOfBounds());
-		//when(serviceMock.getMetrics(Matchers.anyListOf(MetricQuery.class))).thenReturn(filterOver(metric, boundary, miniQueriesHigher.get(0)));
 		
 		MetricScanner scanner = new MetricScanner(lowElems(metric, boundary), query, serviceMock, boundary);
 		MetricScanner scannerCopy = new MetricScanner(lowElems(metric, boundary), query, serviceMock, boundary);
@@ -470,16 +464,11 @@ public class MetricScannerTest extends AbstractTest {
 		when(serviceMock.getMetrics(highQ1)).thenReturn(outOfBounds());
 		when(serviceMock.getMetrics(highQ2)).thenReturn(outOfBounds());
 		
-		//System.out.println("About to make the scanners");
 		MetricScanner scanner1 = new MetricScanner(lowElems(metrics.get(0), bound1), mq1, serviceMock, bound1);
-		//System.out.println("Made the first scanner");
 		MetricScanner scanner2 = new MetricScanner(lowElems(metrics.get(0), bound2), mq2, serviceMock, bound2);
 		
 		Map<Long, Double> dps = metrics.get(0).getDatapoints();
-		//System.out.println("Original datapoints are " + dps.toString());
-		//System.out.println("Starting on scanner 1");
 		checkDatapointMatch(dps, scanner1);
-		//System.out.println("Starting on scanner 2");
 		checkDatapointMatch(dps, scanner2);
 	}
 	
@@ -540,16 +529,13 @@ public class MetricScannerTest extends AbstractTest {
 		List<Long> boundaries = new ArrayList<>();
 				
 		for (int i = 0; i < n; i++) {
-			//System.out.println("Metric #" + i + " had dps " + metrics.get(i).getDatapoints().toString());
 			List<MetricQuery> upperHalf = new ArrayList<>();
 			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
 			boundaries.add(bound);
 			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
 			List<MetricQuery> tooHigh = new ArrayList<>();
 			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
-			
-			//System.out.println(metrics.get(i).getDatapoints().toString());
-			
+						
 			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, queries.get(i)));
 			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
 		}
@@ -885,7 +871,7 @@ public class MetricScannerTest extends AbstractTest {
 		
 		Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
 		
-		MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+		new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
@@ -947,9 +933,6 @@ public class MetricScannerTest extends AbstractTest {
 		
 		q.setStartTimestamp(0L);
 		q.setEndTimestamp(Long.MAX_VALUE - 1000L);
-		
-		//System.out.println("end time is " + q.getEndTimestamp());
-		//System.out.println(q + " is original query \n\n");
 		
 		Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
 		MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
