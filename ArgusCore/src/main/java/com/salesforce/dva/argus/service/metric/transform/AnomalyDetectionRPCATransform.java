@@ -114,13 +114,11 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         
         List<Double> metricVals = new ArrayList<>();
         
-        synchronized(scanners.get(0)) {
-	        while (scanners.get(0).hasNextDP()) {
-	        	Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
-	        	times.add(dp.getKey());
-	        	metricVals.add(dp.getValue());
-	        }
-        }
+	while (scanners.get(0).hasNextDP()) {
+	    Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+	    times.add(dp.getKey());
+	    metricVals.add(dp.getValue());
+	}
         
         timestamps = times.toArray(new Long[times.size()]);
         frequency = calculateFrequency(seasonLengthInMilliseconds);
