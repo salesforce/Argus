@@ -69,12 +69,10 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
     		
     		Double difference = scanner.getNextDP().getValue();
     		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Double value = scanner.getNextDP().getValue();
-	    			difference -= value == null ? 0.0 : value;
-	    		}
-    		}
+	   		while (scanner.hasNextDP()) {
+	   			Double value = scanner.getNextDP().getValue();
+	    		difference -= value == null ? 0.0 : value;
+	    	}
     		return difference;
     }
 
@@ -120,12 +118,10 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         try {
     		double subtrahend = Double.parseDouble(constants.get(0));
     		
-    		synchronized(scanner) {
-        		while (scanner.hasNextDP()) {
-            		Map.Entry<Long, Double> dp = scanner.getNextDP();
-            		diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
-        		}
-            }
+       		while (scanner.hasNextDP()) {
+           		Map.Entry<Long, Double> dp = scanner.getNextDP();
+           		diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
+        	}
         		
         } catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to diff transform", nfe);
