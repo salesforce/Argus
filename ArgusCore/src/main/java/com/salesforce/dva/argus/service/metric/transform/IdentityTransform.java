@@ -58,11 +58,9 @@ public class IdentityTransform implements Transform {
         SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
         List<Metric> metrics = new ArrayList<>();
         for (MetricScanner scanner : scanners) {   
-        	synchronized(scanner) {
-	        	while (scanner.hasNextDP()) {
-	        		scanner.getNextDP();
-	        	}
-        	}
+	       	while (scanner.hasNextDP()) {
+	       		scanner.getNextDP();
+	        }
         	metrics.add(scanner.getMetric());
         }
         return metrics;
