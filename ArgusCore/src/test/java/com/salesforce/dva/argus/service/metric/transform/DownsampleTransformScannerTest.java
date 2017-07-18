@@ -98,7 +98,6 @@ public class DownsampleTransformScannerTest extends AbstractTest {
 			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 		}
 		
-		//DownsampleTransform transform = new DownsampleTransform();
 		List<String> types = new ArrayList<>();
 		types.add("avg");
 		types.add("dev");
@@ -107,12 +106,10 @@ public class DownsampleTransformScannerTest extends AbstractTest {
 		for (int i = 0; i < metrics.size(); i++) {
 			String type = types.get(random.nextInt(types.size()));
 			
-			//System.out.println(type);
 			List<Double> values = new ArrayList<>(metrics.get(i).getDatapoints().values());
 			Double expected = DownsampleTransform.downsamplerReducer(values, type);
 			Double actual = DownsampleTransform.downsampleReducerScanner(scanners.get(i), type);
 			
-			//System.out.println("actual was " + actual.toString() + " and expected was " + expected.toString());
 			assert(expected.equals(actual));
 		}
 	}
@@ -152,7 +149,6 @@ public class DownsampleTransformScannerTest extends AbstractTest {
 			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 		}
 		
-		//DownsampleTransform transform = new DownsampleTransform();
 		List<String> types = new ArrayList<>();
 		types.add("avg");
 		types.add("dev");
@@ -161,12 +157,10 @@ public class DownsampleTransformScannerTest extends AbstractTest {
 		for (int i = 0; i < metrics.size(); i++) {
 			String type = types.get(random.nextInt(types.size()));
 			
-			//System.out.println(type);
 			List<Double> values = new ArrayList<>(metrics.get(i).getDatapoints().values());
 			Double expected = DownsampleTransform.downsamplerReducer(values, type);
 			Double actual = DownsampleTransform.downsampleReducerScanner(scanners.get(i), type);
 			
-			//System.out.println("actual was " + actual.toString() + " and expected was " + expected.toString());
 			assert(expected.equals(actual));
 		}
 	}
