@@ -246,15 +246,13 @@ public class MetricUnionTransform implements Transform {
     	Map<Long, List<Double>> collated = new HashMap<>();
     	
     	for (MetricScanner scanner : scanners) {
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-		    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-		    		if (!collated.containsKey(dp.getKey())) {
-		    			collated.put(dp.getKey(), new ArrayList<Double>());
-		    		}
-		    		collated.get(dp.getKey()).add(dp.getValue());
-	    		}
-    		}
+    		while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+		   		if (!collated.containsKey(dp.getKey())) {
+		   			collated.put(dp.getKey(), new ArrayList<Double>());
+		   		}
+		   		collated.get(dp.getKey()).add(dp.getValue());
+	    	}
     	}
     	
     	Map<Long, Double> reducedDatapoints = new HashMap<>();
