@@ -128,7 +128,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
-    		SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics");
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics");
         SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
         SystemAssert.requireArgument(constants.size() > 0, "K-means anomaly detection transform requires a k constant.");
         SystemAssert.requireArgument(constants.size() < 2, "K-means anomaly detection transform does not support " +
@@ -176,15 +176,13 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     		trainingData = new Instances("metric_value_data", attributes, 0);
     		Map<Long, Double> datapoints = new TreeMap<>();
     		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    			datapoints.put(dp.getKey(), dp.getValue());
-	    			double[] valArray = new double[] { dp.getValue() };
-	    			Instance instance = new Instance(1.0, valArray);
-	    			trainingData.add(instance);
-	    		}
-    		}
+	    	while (scanner.hasNextDP()) {
+	   		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		datapoints.put(dp.getKey(), dp.getValue());
+	    		double[] valArray = new double[] { dp.getValue() };
+	   		Instance instance = new Instance(1.0, valArray);
+	    		trainingData.add(instance);
+	    	}
     		
     		metricDataValues = new ArrayList<>(datapoints.values());
     		
