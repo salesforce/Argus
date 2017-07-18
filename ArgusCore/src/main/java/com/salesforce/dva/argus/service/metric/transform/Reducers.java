@@ -56,12 +56,10 @@ public class Reducers {
 	
 	public static Double sumReducerScanner(MetricScanner scanner) {
     		double result = 0.0;
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Double value = scanner.getNextDP().getValue();
-	    			result += value == null ? 0.0 : value;
-	    		}
-    		}
+	   		while (scanner.hasNextDP()) {
+	   			Double value = scanner.getNextDP().getValue();
+	    		result += value == null ? 0.0 : value;
+	    	}
     		return result;
     }
 	
