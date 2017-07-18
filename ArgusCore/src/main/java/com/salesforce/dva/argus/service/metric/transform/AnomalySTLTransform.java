@@ -72,13 +72,11 @@ public class AnomalySTLTransform implements Transform {
     	int dpCount = 0;
     	Map<Long, Double> dps = new TreeMap<>();
     	
-    	synchronized(scanners.get(0)) {
-	    	while (scanners.get(0).hasNextDP()) {
-	    		dpCount++;
-	    		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
-	    		dps.put(dp.getKey(), dp.getValue());
-	    	}
-    	}
+	   	while (scanners.get(0).hasNextDP()) {
+	   		dpCount++;
+	    	Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+	    	dps.put(dp.getKey(), dp.getValue());
+	    }
     	
     	if (dpCount >= 52 * 2) {
     		l.add(0, "52");
@@ -194,14 +192,12 @@ public class AnomalySTLTransform implements Transform {
         
         int dpCount = 0; // make sure we have enough points -> need at least 4
         
-        synchronized(scanner) {
-		    while (scanner.hasNextDP()) {
-		    	dpCount++;
-		    	Map.Entry<Long, Double> dp = scanner.getNextDP();
-		    	datapoints.put(dp.getKey(), dp.getValue());
-		    	timestamps.add(dp.getKey());
-		    }
-        }
+		while (scanner.hasNextDP()) {
+		   	dpCount++;
+		   	Map.Entry<Long, Double> dp = scanner.getNextDP();
+		   	datapoints.put(dp.getKey(), dp.getValue());
+		    timestamps.add(dp.getKey());
+		}
         
         SystemAssert.requireState(dpCount >= 4, "STL Anomaly Detection Transform can " +
                 "only be used if there are at least 4 points.");
