@@ -72,23 +72,21 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
     	double min = Double.MAX_VALUE;
     	double max = Double.MIN_VALUE;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Double value = scanner.getNextDP().getValue();
-	    		if (value == null) {
-	    			value = 0.0;
-	    		}
+    	while (scanner.hasNextDP()) {
+	   		Double value = scanner.getNextDP().getValue();
+	   		if (value == null) {
+	   			value = 0.0;
+	   		}
 	    		
-	    		double candidate = value;
+	    	double candidate = value;
 	    		
-	    		if (candidate < min) {
-	    			min = candidate;
-	    		}
-	    		if (candidate > max) {
-	    			max = candidate;
-	    		}
-	    	}
-    	}
+			if (candidate < min) {
+    			min = candidate;
+	   		}
+	   		if (candidate > max) {
+	   			max = candidate;
+	   		}
+	    }
     	return max - min;
      }
 
