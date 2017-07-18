@@ -86,7 +86,6 @@ public class AverageBelowTransformScannerTest extends AbstractTest {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
-		//System.out.println("Up here");
 		TSDBService serviceMock = mock(TSDBService.class);
 		List<Metric> metrics = createRandomMetrics(null, null, 10);
 		List<MetricQuery> queries = toQueries(metrics);
@@ -95,14 +94,11 @@ public class AverageBelowTransformScannerTest extends AbstractTest {
 		
 		int perc = 50 + random.nextInt(50); // just try to find a high percentage
 		constant.add("" + findValue(perc, metrics.get(0)));
-		//System.out.println("Entering first loop");
 		
 		for (int i = 0; i < metrics.size(); i++) {
 			Metric m = metrics.get(i);
 			MetricQuery q = queries.get(i);
-			
-			//System.out.println(m.getDatapoints().toString());
-			
+						
 			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
 			List<MetricQuery> highQuery = new ArrayList<>();
 			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
@@ -116,15 +112,11 @@ public class AverageBelowTransformScannerTest extends AbstractTest {
 			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 		}
 		
-		//System.out.println("Done with the first loop");
 		AverageBelowTransform transform = new AverageBelowTransform();
 		
-		//System.out.println("Metric transforming");
 		List<Metric> expected = transform.transform(metrics, constant);
-		//System.out.println("Scanner transforming");
 		List<Metric> actual = transform.transformScanner(scanners, constant);
 		
-		//System.out.println("Asserting equality");
 		assert(actual.equals(expected));
 	}
 	
