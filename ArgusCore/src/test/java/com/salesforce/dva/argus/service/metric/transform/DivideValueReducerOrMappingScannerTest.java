@@ -197,8 +197,6 @@ public class DivideValueReducerOrMappingScannerTest extends AbstractTest {
 		DivideValueReducerOrMapping redMap = new DivideValueReducerOrMapping();
 		
 		for (int i = 0; i < metrics.size(); i++) {
-			//System.out.println("Testing number " + i);
-			//System.out.println(metrics.get(i).getDatapoints().toString());
 			if (metrics.get(i).getDatapoints().size() > 1) {	// if there is only one datapoint, which is zero, that's fine
 				redMap.reduceScanner(scanners.get(i));
 			}
