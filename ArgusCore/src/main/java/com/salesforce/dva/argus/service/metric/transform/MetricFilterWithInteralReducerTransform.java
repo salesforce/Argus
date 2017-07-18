@@ -145,21 +145,19 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
     public static String internalReducerScanner(MetricScanner scanner, String reducerType, Map<Long, Double> sortedDatapoints) {
     	List<Double> operands = new ArrayList<Double>();
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		if (reducerType.equals("name")) {
-	    			break;
-	    		}
-	    		
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		
-	    		if (dp.getValue() == null) {
-	    			operands.add(0.0);
-	    		} else {
-	    			operands.add(dp.getValue());
-	    		}
-	    	}
-    	}
+	   	while (scanner.hasNextDP()) {
+	   		if (reducerType.equals("name")) {
+	   			break;
+	   		}
+	    	
+	    	Map.Entry<Long, Double> dp = scanner.getNextDP();	    		
+				
+    		if (dp.getValue() == null) {
+	   			operands.add(0.0);
+	   		} else {
+	   			operands.add(dp.getValue());
+	   		}
+	    }
     	
     	InternalReducerType type = InternalReducerType.fromString(reducerType);
     	
@@ -299,10 +297,8 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
     }
 	
 	private void buildMetric(MetricScanner scanner) {
-    	synchronized(scanner) {
-    		while(scanner.hasNextDP()) {
-    			scanner.getNextDP();
-    		}
+   		while(scanner.hasNextDP()) {
+    		scanner.getNextDP();
     	}
     }
 
