@@ -134,24 +134,20 @@ public class MetricZipperTransform implements Transform {
     	
     	List<Metric> zippedMetrics = new ArrayList<Metric>();
     	Map<Long, Double> baseDatapoints = new HashMap<>();
-    	synchronized(baseScanner) {
-	    	while (baseScanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = baseScanner.getNextDP();
-	    		baseDatapoints.put(dp.getKey(), dp.getValue());
-	    	}
-    	}
+	   	while (baseScanner.hasNextDP()) {
+	   		Map.Entry<Long, Double> dp = baseScanner.getNextDP();
+	   		baseDatapoints.put(dp.getKey(), dp.getValue());
+	    }
     	
      	for (MetricScanner scanner : scanners) {
-		Map<Long, Double> zippedDP = new HashMap<>();
-     		synchronized(scanner) {
-	     		while (scanner.hasNextDP()) {
-	     			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
+			Map<Long, Double> zippedDP = new HashMap<>();
+     		while (scanner.hasNextDP()) {
+	   			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
 	     			
-	     			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
-	     			
-	     			zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
-	     		}
-     		}
+	   			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
+	    			
+	     		zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
+	     	}
      		
      		Metric m = new Metric(scanner.getMetric());
      		m.setDatapoints(zippedDP);
