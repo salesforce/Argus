@@ -106,18 +106,16 @@ public class PropagateTransform implements Transform {
     private void _propagateMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, List<Metric> result) {
     	Metric m = new Metric(scanner.getMetric());
     	Map.Entry<Long, Double> dp = null;
-    	synchronized(scanner) {
-	    	if (!scanner.hasNextDP()) {
-	    		result.add(m);
-	    		return;
-	    	}
-	    	
-	    	dp = scanner.getNextDP();
-	    	if (!scanner.hasNextDP()) {
-	    		result.add(m);
-	    		return;
-	    	}
+	   	if (!scanner.hasNextDP()) {
+	    	result.add(m);
+			return;
     	}
+	    	
+	   	dp = scanner.getNextDP();
+	   	if (!scanner.hasNextDP()) {
+	   		result.add(m);
+	   		return;
+	    }
     	
     	Map<Long, Double> propagateDatapoints = new TreeMap<>();
     	Map<Long, Double> datapoints = new TreeMap<>();
@@ -128,27 +126,25 @@ public class PropagateTransform implements Transform {
     	Long startTimestamp = timestamps.get(0);
     	int index = 1;
     	
-    	synchronized(scanner) {
-    		if (!scanner.hasNextDP()) {
-    			result.add(m);
-    			return;
-    		}
-	    	do {
-	    		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
+   		if (!scanner.hasNextDP()) {
+   			result.add(m);
+   			return;
+   		}
+	   	do {
+	   		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
 	    		
-	    		dp = scanner.getNextDP();
-	    		datapoints.put(dp.getKey(), dp.getValue());
-	    		timestamps.add(dp.getKey());
+	   		dp = scanner.getNextDP();
+	   		datapoints.put(dp.getKey(), dp.getValue());
+	    	timestamps.add(dp.getKey());
 	    		
-	    		if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
-	    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
-	    		} else {
-	    			startTimestamp = timestamps.get(index);
-	    			index++;
-	    		}
-	    	} while (scanner.hasNextDP());
+			if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
+	   		} else {
+	   			startTimestamp = timestamps.get(index);
+	   			index++;
+	   		}
+	    } while (scanner.hasNextDP());
 		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
-    	}
     	
     	int newLength = propagateDatapoints.size();
     	List<Long> newTimestamps = new ArrayList<Long>();
