@@ -68,12 +68,10 @@ public class JoinTransform implements Transform {
     		for (MetricScanner scanner : list) {
     			Metric m = new Metric(scanner.getMetric());
     			Map<Long, Double> dps = new HashMap<>();
-    			synchronized(scanner) {
-	    			while (scanner.hasNextDP()) {
-	    				Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    				dps.put(dp.getKey(), dp.getValue());
-	    			}
-    			}
+	   			while (scanner.hasNextDP()) {
+	    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			dps.put(dp.getKey(), dp.getValue());
+	    		}
     			m.setDatapoints(dps);
     			result.add(m);
     		}
@@ -105,11 +103,9 @@ public class JoinTransform implements Transform {
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
     	List<Metric> result = new ArrayList<>();
     	for (MetricScanner scanner : scanners) {    		
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			scanner.getNextDP();
-	    		}
-    		}
+	   		while (scanner.hasNextDP()) {
+	    		scanner.getNextDP();
+	    	}
        		result.add(scanner.getMetric());
     	}
     	return result;
