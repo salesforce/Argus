@@ -150,20 +150,16 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
 	    		
 	    		Map<Long, Double> bootstrappedDps = new TreeMap<>();
 	    		
-	    		synchronized(scanner) {
-		    		while (scanner.hasNextDP()) {
-		    			Map.Entry<Long, Double> dp = scanner.getNextDP();
-		    			bootstrappedDps.put(dp.getKey(), dp.getValue());
-		    		}
-	    		}
+		   		while (scanner.hasNextDP()) {
+		   			Map.Entry<Long, Double> dp = scanner.getNextDP();
+		    		bootstrappedDps.put(dp.getKey(), dp.getValue());
+		    	}
 	    		
 	    		if (oneWeekBeforeScanner != null) {
-	    			synchronized(oneWeekBeforeScanner) {
-		    			while (oneWeekBeforeScanner.hasNextDP()) {
-		    				Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
-		    				bootstrappedDps.put(dp.getKey(), dp.getValue());
-		    			}
-	    			}
+		   			while (oneWeekBeforeScanner.hasNextDP()) {
+		    			Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
+		    			bootstrappedDps.put(dp.getKey(), dp.getValue());
+		    		}
 	    		}
 	    		
 	    		Metric resultMetric = new Metric(scanner.getMetric());
