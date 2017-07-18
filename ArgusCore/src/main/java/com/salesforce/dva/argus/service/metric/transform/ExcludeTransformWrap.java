@@ -96,11 +96,9 @@ public class ExcludeTransformWrap implements Transform {
     }
 	
     private void setMetricData(MetricScanner scanner) {	    	
-	    synchronized(scanner) {
-    		while (scanner.hasNextDP()) {
-	    		scanner.getNextDP();
-	    	}
-	    }
+    	while (scanner.hasNextDP()) {
+	   scanner.getNextDP();
+	}
     }
 
     @Override
