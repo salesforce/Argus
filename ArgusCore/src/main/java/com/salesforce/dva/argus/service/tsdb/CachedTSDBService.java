@@ -219,7 +219,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     			
     			additionalChunkTime++;
     			startTime = query.getStartTimestamp() + chunkTime * additionalChunkTime;
-    			stopTime = Math.max(query.getEndTimestamp(), startTime + chunkTime);
+    			stopTime = Math.min(query.getEndTimestamp(), startTime + chunkTime);
     			
     			miniQuery = new MetricQuery(query.getScope(), query.getMetric(), query.getTags(), startTime, stopTime);
     			List<MetricQuery> miniQueries = new ArrayList<>();
