@@ -103,18 +103,16 @@ public class ZeroIfMissingSum implements Transform {
     		while (!done) {
     			done = true;
     			for (MetricScanner scanner : scanners) {
-    				synchronized(scanner) {
-	    				if (scanner.hasNextDP()) {
-	    					done = false;
-	    					Entry<Long, Double> entry = scanner.getNextDP();
+    				if (scanner.hasNextDP()) {
+	   					done = false;
+	   					Entry<Long, Double> entry = scanner.getNextDP();
 	    					
-	    					if (resultDatapoints.containsKey(entry.getKey())) {
-	    						resultDatapoints.put(entry.getKey(), performOperation(resultDatapoints.get(entry.getKey()), entry.getValue()));
-	    					} else {
-	    						resultDatapoints.put(entry.getKey(), entry.getValue());
-	    					}
+	   					if (resultDatapoints.containsKey(entry.getKey())) {
+	   						resultDatapoints.put(entry.getKey(), performOperation(resultDatapoints.get(entry.getKey()), entry.getValue()));
+	    				} else {
+	    					resultDatapoints.put(entry.getKey(), entry.getValue());
 	    				}
-    				}
+	    			}
     			}
     		}
     		result.setDatapoints(resultDatapoints);
