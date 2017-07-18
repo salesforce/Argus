@@ -312,8 +312,6 @@ public class MetricZipperTransformScannerTest extends AbstractTest {
 		List<Metric> actual = transform.zipScanner(scanners, baseScanner);
 		
 		for (int i = 0; i < expected.size(); i++) {
-			//ystem.out.println(expected.get(i).getDatapoints());
-			//System.out.println(actual.get(i).getDatapoints());
 			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
 		}
 		for (int i = 0; i < metrics.size(); i++) {
