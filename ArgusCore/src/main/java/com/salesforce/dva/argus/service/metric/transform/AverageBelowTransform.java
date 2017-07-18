@@ -124,12 +124,10 @@ public class AverageBelowTransform implements Transform {
     	Double sum = 0.0;
     	int dpNumber = 0;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		dpNumber++;
-	    		sum += scanner.getNextDP().getValue();
-	    	}
-    	}
+	   	while (scanner.hasNextDP()) {
+	   		dpNumber++;
+	   		sum += scanner.getNextDP().getValue();
+	    }
     	return sum / dpNumber;
     }
 
