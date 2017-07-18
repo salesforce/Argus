@@ -126,11 +126,9 @@ public class CullAboveValueMapping implements ValueMapping {
     	}
 	
     private void findDps(MetricScanner scanner) {    		
-	synchronized(scanner) {
-    		while (scanner.hasNextDP()) {
-    			scanner.getNextDP();
-    		}
-	}
+   		while (scanner.hasNextDP()) {
+    		scanner.getNextDP();
+    	}
     }
 
     @Override
@@ -169,10 +167,8 @@ public class CullAboveValueMapping implements ValueMapping {
     private Double findPivotScanner(MetricScanner scanner, Double limit) {
     	List<Double> doubleValuesList = new ArrayList<Double>();
     	
-    	synchronized(scanner) {
-    		while(scanner.hasNextDP()) {
-    			doubleValuesList.add(scanner.getNextDP().getValue());
-    		}
+    	while(scanner.hasNextDP()) {
+    		doubleValuesList.add(scanner.getNextDP().getValue());
     	}
     	double[] doubleValues = Doubles.toArray(doubleValuesList);
     	Arrays.sort(doubleValues);
