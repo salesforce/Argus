@@ -103,10 +103,8 @@ public class SortTransformWrapAboveAndBelow implements Transform {
 
         if (order.equals(ASC)) {
             sortTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-            // sortTransform = transformFactory.createMetricFilterWithInternalReducerTransform(Function.LOWEST);
         } else if (order.equals(DES)) {
             sortTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
-            // sortTransform = transformFactory.createMetricFilterWithInternalReducerTransform(Function.HIGHEST);
         } else {
             throw new UnsupportedOperationException("Only ASC or DES are suppored for ordering option.");
         }
