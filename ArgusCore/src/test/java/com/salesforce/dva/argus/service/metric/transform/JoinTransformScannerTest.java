@@ -136,8 +136,6 @@ public class JoinTransformScannerTest extends AbstractTest {
 		
 		for (int j = 0; j < metrics.size(); j++) {
 			for (int i = 0; i < metrics.get(j).size(); i++) {
-				//System.out.println("i, j is " + i + ", " + j);
-				//System.out.println(metrics.get(j).size());
 				Metric m = metrics.get(j).get(i);
 				MetricQuery q = queries.get(j).get(i);
 							
@@ -154,10 +152,7 @@ public class JoinTransformScannerTest extends AbstractTest {
 				when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 			}
 		}
-		
-		//System.out.println(metrics1.toString());
-		//System.out.println(scanners1.toString());
-		
+	
 		JoinTransform transform = new JoinTransform();
 		
 		List<Metric> expected = transform.transform(metrics1, metrics2, metrics3);
@@ -197,8 +192,6 @@ public class JoinTransformScannerTest extends AbstractTest {
 		
 		for (int j = 0; j < metrics.size(); j++) {
 			for (int i = 0; i < metrics.get(j).size(); i++) {
-				//System.out.println("i, j is " + i + ", " + j);
-				//System.out.println(metrics.get(j).size());
 				Metric m = metrics.get(j).get(i);
 				MetricQuery q = queries.get(j).get(i);
 							
@@ -215,9 +208,6 @@ public class JoinTransformScannerTest extends AbstractTest {
 				when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
 			}
 		}
-		
-		//System.out.println(metrics1.toString());
-		//System.out.println(scanners1.toString());
 		
 		JoinTransform transform = new JoinTransform();
 		
