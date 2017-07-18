@@ -82,19 +82,17 @@ public class MinValueReducer implements ValueReducer {
     		double min = Double.MAX_VALUE;
     		boolean unchanged = true;
     	
-    		synchronized(scanner) {
-	    		while (scanner.hasNextDP()) {
-	    			Double value = scanner.getNextDP().getValue();
-	    			if (value == null) {
-	    				continue;
-	    			}
-	    			double candidate = value;
-	    			if (unchanged || candidate < min) {
-	    				min = candidate;
-	    				unchanged = false;
-	    			}
+	    	while (scanner.hasNextDP()) {
+	    		Double value = scanner.getNextDP().getValue();
+	    		if (value == null) {
+					continue;
+    			}
+	   			double candidate = value;
+	   			if (unchanged || candidate < min) {
+	   				min = candidate;
+	   				unchanged = false;
 	    		}
-    		}
+	    	}
     		return !unchanged ? min : null;
     }
 
