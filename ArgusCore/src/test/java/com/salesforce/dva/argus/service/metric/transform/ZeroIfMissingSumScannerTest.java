@@ -114,18 +114,13 @@ public class ZeroIfMissingSumScannerTest extends AbstractTest {
 			metrics.get(i).setNamespace(createRandomName());
 			metrics.get(i).setDisplayName(createRandomName());
 			metrics.get(i).setUnits("" + (double) i);
-			//Long randTime = random.nextLong();
 			Long dpStart = Collections.min(metrics.get(i).getDatapoints().keySet());
 			Long dpEnd = Collections.max(metrics.get(i).getDatapoints().keySet());
 			Long randTime = dpStart + (dpStart / dpEnd);	// still put within this range or will take forever and be an outlier
 			assert(randTime != null);
-			//System.out.println(randTime);
 			Map<Long, Double> dps = new HashMap<>(metrics.get(i).getDatapoints());
-			//System.out.println("old dps were " + dps.toString());
 			dps.put(randTime, null);
-			//System.out.println("Got here");
 			metrics.get(i).setDatapoints(dps);
-			//System.out.println(metrics.get(i).getDatapoints());
 		}
 		
 		
@@ -133,7 +128,6 @@ public class ZeroIfMissingSumScannerTest extends AbstractTest {
 		List<Long> boundaries = new ArrayList<>();
 		
 		for (int i = 0; i < queries.size(); i++) {
-			//System.out.println("Metric #" + i + " had dps " + metrics.get(i).getDatapoints().toString());
 			List<MetricQuery> upperHalf = new ArrayList<>();
 			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
 			boundaries.add(bound);
@@ -170,18 +164,13 @@ public class ZeroIfMissingSumScannerTest extends AbstractTest {
 			metrics.get(i).setNamespace(createRandomName());
 			metrics.get(i).setDisplayName(createRandomName());
 			metrics.get(i).setUnits("" + (double) i);
-			//Long randTime = random.nextLong();
 			Long dpStart = Collections.min(metrics.get(i).getDatapoints().keySet());
 			Long dpEnd = Collections.max(metrics.get(i).getDatapoints().keySet());
 			Long randTime = dpStart + (dpStart / dpEnd);	// still put within this range or will take forever and be an outlier
 			assert(randTime != null);
-			//System.out.println(randTime);
 			Map<Long, Double> dps = new HashMap<>(metrics.get(i).getDatapoints());
-			//System.out.println("old dps were " + dps.toString());
 			dps.put(randTime, null);
-			//System.out.println("Got here");
 			metrics.get(i).setDatapoints(dps);
-			//System.out.println(metrics.get(i).getDatapoints());
 		}
 		
 		
@@ -189,7 +178,6 @@ public class ZeroIfMissingSumScannerTest extends AbstractTest {
 		List<Long> boundaries = new ArrayList<>();
 		
 		for (int i = 0; i < queries.size(); i++) {
-			//System.out.println("Metric #" + i + " had dps " + metrics.get(i).getDatapoints().toString());
 			List<MetricQuery> upperHalf = new ArrayList<>();
 			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
 			boundaries.add(bound);
