@@ -82,19 +82,17 @@ public class MaxValueReducer implements ValueReducer {
     		double max = Double.NEGATIVE_INFINITY;
     		boolean unchanged = true;
     		
-    	synchronized(scanner) {
     		while (scanner.hasNextDP()) {
-	    			Double value = scanner.getNextDP().getValue();
-	    			if (value == null) {
-	    				continue;
-	    			}
-	    			double candidate = value;
-	    			if (unchanged || candidate > max) {
-	    				unchanged = false;
-	    				max = candidate;
-	    			}
+	    		Double value = scanner.getNextDP().getValue();
+	    		if (value == null) {
+					continue;
+    			}
+	   			double candidate = value;
+	   			if (unchanged || candidate > max) {
+	   				unchanged = false;
+	   				max = candidate;
 	    		}
-    	}
+	    	}
     	return !unchanged ? max : null;
     }
 
