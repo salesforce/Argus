@@ -161,10 +161,8 @@ public class CullBelowValueMapping implements ValueMapping {
     private Double findPivotScanner(MetricScanner scanner, Double limit) {
     	List<Double> doubleValueList = new ArrayList<Double>();
     	
-    	synchronized(scanner) {
-    		while(scanner.hasNextDP()) {
-    			doubleValueList.add(scanner.getNextDP().getValue());
-    		}
+   	while(scanner.hasNextDP()) {
+   		doubleValueList.add(scanner.getNextDP().getValue());
     	}
     	double[] doubleValues = Doubles.toArray(doubleValueList);
     	Arrays.sort(doubleValues);
