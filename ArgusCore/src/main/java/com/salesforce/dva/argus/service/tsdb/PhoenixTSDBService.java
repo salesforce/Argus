@@ -136,7 +136,7 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 				
 				additionalChunks++;
 				startTime = query.getStartTimestamp() + chunkTime * additionalChunks;
-				stopTime = Math.max(query.getEndTimestamp(), startTime + chunkTime);
+				stopTime = Math.min(query.getEndTimestamp(), startTime + chunkTime);
 				
 				miniQuery = new MetricQuery(query.getScope(), query.getMetric(), query.getTags(), startTime, stopTime);
 				List<MetricQuery> miniQueries = new ArrayList<>();
