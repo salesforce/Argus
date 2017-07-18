@@ -210,16 +210,14 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     	Map<Long, Double> originalDatapoints = new TreeMap<>();
     	List<Long> times = new ArrayList<>();
     	
-    	synchronized(scanner) {
-	    	while(scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		if (dp.getValue() == null) {
-	    			dp.setValue(0.0);
-	    		}
-	    		originalDatapoints.put(dp.getKey(), dp.getValue());
-	    		times.add(dp.getKey());
-	    	}
-    	}
+	    while(scanner.hasNextDP()) {
+			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		if (dp.getValue() == null) {
+	   			dp.setValue(0.0);
+	   		}
+	   		originalDatapoints.put(dp.getKey(), dp.getValue());
+	   		times.add(dp.getKey());
+	    }
     	    	
     	Long[] timestamps = new Long[times.size()];
     	times.toArray(timestamps);
@@ -280,11 +278,9 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
 	
 	private Double _calculateNthPercentileScanner(MetricScanner scanner, Double percentileValue) {
     	List<Double> values = new ArrayList<>();
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		values.add(scanner.getNextDP().getValue());
-	    	}
-    	}
+	   	while (scanner.hasNextDP()) {
+	   		values.add(scanner.getNextDP().getValue());
+	    }
     	Collections.sort(values);
     	
     	int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
