@@ -105,7 +105,6 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         SystemAssert.requireState(constants.size() == 1, "Anomaly Detection RPCA Transform can only be used with " +
                 "one constant for the length of a season");
         
-        //Map<Long, Double> completeDatapoints = new HashMap<>();
         List<Long> times = new ArrayList<>();
         SystemAssert.requireState(scanners.get(0).hasNextDP(), "Cannot transform metric scanner with no data point.");
         
