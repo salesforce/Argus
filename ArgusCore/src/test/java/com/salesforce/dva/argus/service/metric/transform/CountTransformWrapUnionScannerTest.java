@@ -76,7 +76,6 @@ public class CountTransformWrapUnionScannerTest extends AbstractTest {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
-		//System.out.println("Up here");
 		TSDBService serviceMock = mock(TSDBService.class);
 		List<Metric> metrics = createRandomMetrics(null, null, 10);
 		List<MetricQuery> queries = toQueries(metrics);
@@ -85,9 +84,7 @@ public class CountTransformWrapUnionScannerTest extends AbstractTest {
 		for (int i = 0; i < metrics.size(); i++) {
 			Metric m = metrics.get(i);
 			MetricQuery q = queries.get(i);
-			
-			//System.out.println(m.getDatapoints().toString());
-			
+						
 			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
 			List<MetricQuery> highQuery = new ArrayList<>();
 			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
@@ -113,7 +110,6 @@ public class CountTransformWrapUnionScannerTest extends AbstractTest {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
-		//System.out.println("Up here");
 		TSDBService serviceMock = mock(TSDBService.class);
 		List<Metric> metrics = createRandomMetrics(null, null, 10);
 		List<MetricQuery> queries = toQueries(metrics);
@@ -122,9 +118,7 @@ public class CountTransformWrapUnionScannerTest extends AbstractTest {
 		for (int i = 0; i < metrics.size(); i++) {
 			Metric m = metrics.get(i);
 			MetricQuery q = queries.get(i);
-			
-			//System.out.println(m.getDatapoints().toString());
-			
+						
 			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
 			List<MetricQuery> highQuery = new ArrayList<>();
 			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
