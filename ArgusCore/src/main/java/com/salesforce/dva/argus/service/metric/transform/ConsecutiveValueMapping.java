@@ -101,11 +101,9 @@ public class ConsecutiveValueMapping implements ValueMapping {
         this.keyList = new ArrayList<Long>();
         this.resultKeyList = new ArrayList<Long>();
         
-        synchronized(scanner) {
-	        if (scanner.hasNextDP()) {
-	        	connectScanner(scanner, dps);
-	        }
-        }
+	    if (scanner.hasNextDP()) {
+	       	connectScanner(scanner, dps);
+	    }
         
         for (Long resultKey : resultKeyList) {
         	resultMetric.put(resultKey, dps.get(resultKey));
@@ -142,23 +140,21 @@ public class ConsecutiveValueMapping implements ValueMapping {
     	List<Long> carryList = new ArrayList<>(Arrays.asList(keyList.get(0)));
     	int current = 0;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {	// know that we then have a datapoint at current + 1
-	    		dp = scanner.getNextDP();
-	    		this.keyList.add(dp.getKey());
-	    		dps.put(dp.getKey(), dp.getValue());
+    	while (scanner.hasNextDP()) {	// know that we then have a datapoint at current + 1
+	   		dp = scanner.getNextDP();
+	   		this.keyList.add(dp.getKey());
+	   		dps.put(dp.getKey(), dp.getValue());
 	    		
-	    		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance) {
-	    			carryList.add(keyList.get(current + 1));
-	    		}
-	    		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
-	    			resultKeyList.addAll(carryList);
-	    		}
+	   		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance) {
+	    		carryList.add(keyList.get(current + 1));
+			}
+    		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+	   			resultKeyList.addAll(carryList);
+	   		}
 	    		
-	    		current += 1;
-	    		carryList = new ArrayList<>(Arrays.asList(keyList.get(current)));
-	    	}
-    	}
+	   		current += 1;
+	   		carryList = new ArrayList<>(Arrays.asList(keyList.get(current)));
+	    }
 	}
 	
 	private long getOffsetInSeconds(String offset) {
