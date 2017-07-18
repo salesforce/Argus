@@ -79,16 +79,14 @@ public class DerivativeValueMapping implements ValueMapping {
     	Map<Long, Double> derivativeDatapoints = new HashMap<>();
     	Double prev = null;
     	
-    	synchronized(scanner) {
-	    	while (scanner.hasNextDP()) {
-	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    while (scanner.hasNextDP()) {
+	    	Map.Entry<Long, Double> dp = scanner.getNextDP();
 	    		
-	    		if (prev != null) {
-	    			derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
-	    		}
-	    		prev = dp.getValue();
-	    	}
-    	}
+	   		if (prev != null) {
+	   			derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
+	   		}
+	   		prev = dp.getValue();
+	    }
     	return derivativeDatapoints;
     }
 
