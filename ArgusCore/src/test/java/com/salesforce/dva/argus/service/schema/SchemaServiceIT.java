@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
      
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.schema;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.IntegrationTest;

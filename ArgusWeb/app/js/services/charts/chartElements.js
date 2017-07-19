@@ -853,7 +853,7 @@ angular.module('argus.services.charts.elements', [])
 		return datapoints;
 	};
 
-	this.updateTooltipItemsContent = function (sizeInfo, tooltipConfig, tipItems, tipBox, datapoints, mousePositionData) {
+	this.updateTooltipItemsContent = function (sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData) {
 		var XOffset = 0;
 		var YOffset = 0;
 		var newXOffset = 0;
@@ -873,8 +873,8 @@ angular.module('argus.services.charts.elements', [])
 			var textLine = tipItems.select('text.' + datapoints[i].graphClassName)
 				.attr('dy', 20 * (1 + i - YOffset) + mousePositionData.positionY)
 				.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + circleLen + 2 + XOffset);
-			var dataFormat = tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : tooltipConfig.customTooltipFormat;
-			var name = UtilService.trimMetricName(datapoints[i].name, tooltipConfig.leadingNum, tooltipConfig.trailingNum);
+			var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
+			var name = UtilService.trimMetricName(datapoints[i].name, menuOption);
 			var tempData = datapoints[i].data[1];
 			textLine.text(name + ' -- ' + d3.format(dataFormat)(tempData));
 			// update XOffset if existing offset is smaller than textLine
@@ -973,7 +973,6 @@ angular.module('argus.services.charts.elements', [])
 		for(var iSet of extraYAxisSet) {
 			processCircle(extraY[iSet], iSet);
 		}
-
 	};
 
 	this.updateHighlightBarWithZoom = function (graph, mouseOverHighlightBar, highlightBar, brushInNonEmptyRange) {

@@ -296,7 +296,7 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 .toolbarItemPreview {overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
 
 /* legend & other graph menus */
-.legendPanel {display:inline-block; padding-left:0; width:50%;}
+.legendPanel {display:inline-block; padding-left:0; width:auto;}
 
 .toolbarItem.legend {padding:5px 5px 5px 8px; height:28px;}
 .legend.floatPanel {display:none; overflow:hidden; width:95%;}

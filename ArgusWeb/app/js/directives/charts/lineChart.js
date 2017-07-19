@@ -69,7 +69,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			$scope.extraYAxisSet = new Set();
 			$scope.series.forEach(function(e){
-				if(e.extraYAxis) $scope.extraYAxisSet.add(e.extraYAxis);
+				if (e.extraYAxis) $scope.extraYAxisSet.add(e.extraYAxis);
 			});
 
 			$scope.updateStorage = function () {
@@ -593,7 +593,7 @@ angular.module('argus.directives.charts.lineChart', [])
 						return b.data[1] - a.data[1];
 					});
 				}
-				ChartElementService.updateTooltipItemsContent(allSize, scope.menuOption.tooltipConfig, tipItems, tipBox, dataPoints, mousePositionData);
+				ChartElementService.updateTooltipItemsContent(allSize, scope.menuOption, tipItems, tipBox, dataPoints, mousePositionData);
 
 				if (!noSync) {
 					// if current chart is snapping mouse position to data point, so will the synced charts
