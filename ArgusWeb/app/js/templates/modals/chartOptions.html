@@ -74,7 +74,7 @@
 		<input class="chkBox pointer" id="toggleBrush-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushOn" title="Show bottom brush" />
 		<label class="chkBoxLbl" for="toggleBrush-{{chartId}}">Show timeline of graphs at the bottom.</label>
 
-		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" />
+		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" ng-disabled="!menuOption.isBrushOn" />
 		<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
 
 		<br /><input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;
