@@ -8,8 +8,15 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import javax.annotation.concurrent.ThreadSafe;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -20,7 +27,8 @@ import org.slf4j.LoggerFactory;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
 
 /**
- * Encapsulates information about metric data resulting from a query that is returned to the client while asynchronously gathering more metric data.
+ * Encapsulates information about metric data resulting from a query that is returned to the client while a
+ * synchronously gathering more metric data. Thread-safe class.
  * 
  * <p>Fields that determine uniqueness are:</p>
  * 
@@ -32,6 +40,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.*;
  * @author Addie Chambers (adelaide.chambers@salesforce.com)
  *
  */
+@ThreadSafe
 public class MetricScanner {
 	//~ Static fields ***************************************************************************************************************************************************************************
 	
@@ -42,7 +51,8 @@ public class MetricScanner {
 	//~ Instance fields *************************************************************************************************************************************************************************
 	
 	private AtomicLong pointer;
-	private Map<Long, Double> datapoints = Collections.synchronizedMap(new HashMap<>());
+	private Map<Long, Double> datapoints = new HashMap<>();
+	private ReentrantReadWriteLock lock;
 	private Long chunkSize;
 	private AtomicLong lastStartTimestamp;
 	private AtomicLong lastEndTimestamp;
@@ -52,6 +62,8 @@ public class MetricScanner {
 	private AtomicBoolean inUse;
 	private int callsToFetch = 0;
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
+	private ScheduledExecutorService _scheduledExecutorService;
+	private AtomicBoolean fetching = new AtomicBoolean(false);
 	
 	//~ Constructors ****************************************************************************************************************************************************************************
 	
@@ -73,6 +85,7 @@ public class MetricScanner {
 		requireState((CHUNK_PERCENTAGE > 0) && (CHUNK_PERCENTAGE <= 1) , "Chunk_percentage c must lie in the range 0 < c <= 1");
 		requireState((FETCH_PERCENTAGE >= 0) && (FETCH_PERCENTAGE <= 1) , "Fetch_percentage f must lie in the range 0 <= f <= 1");
 		
+		lock = new ReentrantReadWriteLock();
 		this.metric = new Metric(metric);
 		this.query = new MetricQuery(query);
 		this.metric.setQuery(this.query);
@@ -90,15 +103,18 @@ public class MetricScanner {
 			entry.put(query, s);
 			scanners.put(metric, entry);
 		}
-		synchronized(this) {
-			datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
-			this.lastEndTimestamp = lastEndTimestamp != null ? new AtomicLong(lastEndTimestamp) : datapoints.isEmpty() ? null : new AtomicLong(Collections.max(datapoints.keySet()));
-			lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
-			pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
-			inUse = new AtomicBoolean(true);
-		}
+
+		lock.writeLock().lock();
+		datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
+		this.lastEndTimestamp = lastEndTimestamp != null ? new AtomicLong(lastEndTimestamp) : datapoints.isEmpty() ? null : new AtomicLong(Collections.max(datapoints.keySet()));
+		lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
+		pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+		inUse = new AtomicBoolean(true);
+		lock.writeLock().unlock();
+		
 		chunkSize = Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * CHUNK_PERCENTAGE);
 		SystemAssert.requireArgument(!chunkSize.equals(0L) || query.getEndTimestamp().equals(query.getStartTimestamp()), "The start and end times of the query are too far apart. Don't do this to me!");
+		_scheduledExecutorService = _createScheduledExecutorService();
 	}
 	
 	/**
@@ -107,6 +123,7 @@ public class MetricScanner {
 	 * @param scanner The valid Metric Scanner to clone.
 	 */
 	public MetricScanner(MetricScanner scanner) {
+		lock = new ReentrantReadWriteLock();
 		this.metric = scanner.getMetric();
 		this.query = scanner.getQuery();
 		this.metric.setQuery(this.query);
@@ -124,15 +141,18 @@ public class MetricScanner {
 			entry.put(query, s);
 			scanners.put(metric, entry);
 		}
-		synchronized(this) {
-			datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
-			this.lastEndTimestamp = new AtomicLong(scanner.getLastEndTimestamp());
-			lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
-			pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
-			inUse = new AtomicBoolean(true);
-		}
+		
+		lock.writeLock().lock();
+		datapoints.putAll(this.metric.getDatapoints() == null ? datapoints : this.metric.getDatapoints());
+		this.lastEndTimestamp = new AtomicLong(scanner.getLastEndTimestamp());
+		lastStartTimestamp = datapoints.isEmpty() ? new AtomicLong(query.getStartTimestamp()) : new AtomicLong(Collections.min(datapoints.keySet()));
+		pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+		inUse = new AtomicBoolean(true);
+		lock.writeLock().unlock();
+		
 		chunkSize = Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * CHUNK_PERCENTAGE);
 		SystemAssert.requireArgument(!chunkSize.equals(0L) || query.getEndTimestamp().equals(query.getStartTimestamp()), "The start and end times of the query are too far apart. Don't do this to me!");
+		_scheduledExecutorService = _createScheduledExecutorService();
 	}
 	
 	//~ Methods ********************************************************************************************************************************************************************************
@@ -226,6 +246,7 @@ public class MetricScanner {
 			scanners.remove(metric);
 		}
 		inUse.set(false);
+		_shutdownScheduledExecutorService();
 	}
 	
 	/**
@@ -235,19 +256,19 @@ public class MetricScanner {
 	 */
 	public Map.Entry<Long, Double> getNextDP() {
 		asyncFetch();
-		synchronized (this) {
-			SystemAssert.requireState(this.hasNextDP(), "The Scanner must contain more datapoints in order to return the next datapoint.");
-			Map<Long, Double> dpMap = new HashMap<Long, Double>();
-			if (pointer != null) {
-				dpMap.put(pointer.get(), datapoints.get(pointer.get()));
-			}
-			Map.Entry<Long, Double> dp = null;
-			for (Map.Entry<Long, Double> elem : dpMap.entrySet()) {
-				dp = elem;
-			}
-			pointer = nextTime();
-			return dp;
+		lock.readLock().lock();
+		SystemAssert.requireState(this.hasNextDP(), "The Scanner must contain more datapoints in order to return the next datapoint.");
+		Map<Long, Double> dpMap = new HashMap<Long, Double>();
+		if (pointer != null) {
+			dpMap.put(pointer.get(), datapoints.get(pointer.get()));
 		}
+		Map.Entry<Long, Double> dp = null;
+		for (Map.Entry<Long, Double> elem : dpMap.entrySet()) {
+			dp = elem;
+		}
+		lock.readLock().unlock();
+		pointer = nextTime();
+		return dp;
 	}
 	
 	/**
@@ -265,7 +286,14 @@ public class MetricScanner {
 	 * @return The Metric representing a clone of this scanner's metric.
 	 */
 	public Metric getMetric() {
-		return new Metric(metric);
+		lock.readLock().lock();
+		Metric m = null;
+		try {
+			m = new Metric(metric);
+		} finally {
+			lock.readLock().unlock();
+		}
+		return m;
 	}
 	
 	/**
@@ -301,7 +329,10 @@ public class MetricScanner {
 	 * @return The last timestamp currently reached by this metric scanner object.
 	 */
 	private Long getLastEndTimestamp() {
-		return lastEndTimestamp.get();
+		lock.readLock().lock();
+		Long time = lastEndTimestamp.get();
+		lock.readLock().unlock();
+		return time;
 	}
 	
 	/**
@@ -311,26 +342,23 @@ public class MetricScanner {
 	 * @return If there are more data points as part of the result of the query.
 	 */
 	public boolean hasNextDP() {
-		synchronized(this) {
-			if (!inUse.get()) {
-				return false;
+		if (!inUse.get()) {
+			return false;
+		}
+		if (pointer == null) {
+			asyncFetch();
+			
+			while (pointer == null && lastEndTimestamp.get() < query.getEndTimestamp()) {
+				asyncFetch();
 			}
 			if (pointer == null) {
-				asyncFetch();
-				
-				while (pointer == null && lastEndTimestamp.get() < query.getEndTimestamp()) {
-					asyncFetch();
-				}
-				
-				if (pointer == null) {
-					inUse.set(false);
-					dispose();
-					return false;
-				}
-				return true;
+				inUse.set(false);
+				dispose();
+				return false;
 			}
 			return true;
 		}
+		return true;
 	}
 	
 	/**
@@ -340,11 +368,13 @@ public class MetricScanner {
 	 */
 	private AtomicLong nextTime() {
 		Long next = null;
+		lock.readLock().lock();
 		for (Long time : datapoints.keySet()) {
 			if ((pointer != null) && (time > pointer.get()) && ((next == null) || (time < next))) {
 				next = time;
 			}
 		}
+		lock.readLock().unlock();
 		return next != null ? new AtomicLong(next) : null;
 	}
 	
@@ -353,14 +383,31 @@ public class MetricScanner {
 	 * completed the query window, or if we are FETCH_PERCENTAGE through our latest fetched data.
 	 */
 	private void asyncFetch() {
-		if (pointer != null && lastEndTimestamp.get() < query.getEndTimestamp()) {	
-			if (pointer.get() > Math.round((FETCH_PERCENTAGE * (lastEndTimestamp.get() - lastStartTimestamp.get()))) + lastStartTimestamp.get()) {
-				fetch();
+		lock.readLock().lock();
+		Long point = null;
+		Long lastEnd = null;
+		Long lastStart = null;
+		boolean fetch = true;
+		try {
+			point = pointer == null ? null : pointer.get();
+			lastEnd = lastEndTimestamp.get();
+			lastStart = lastStartTimestamp.get();
+			fetch = fetching.get();
+		} finally {
+			lock.readLock().unlock();
+		}
+		if (point != null && lastEnd < query.getEndTimestamp()) {	
+			if (point > Math.round((FETCH_PERCENTAGE * (lastEnd - lastStart))) + lastStart) {
+				if (!fetch) {
+					_startScheduledExecutorService();
+				}
 			}
 		}
 		else {
-			if (!query.getEndTimestamp().equals(lastEndTimestamp.get())) {	
-				fetch();
+			if (!query.getEndTimestamp().equals(lastEnd)) {
+				if (!fetch) {
+					_startScheduledExecutorService();
+				}
 			}
 		}
 	}
@@ -371,30 +418,30 @@ public class MetricScanner {
 	 * @param lastEndTimestamp The timestamp of the final data point contained by this metric scanner.
 	 */
 	private void setEndTimestamp(AtomicLong lastEndTimestamp) {
+		SystemAssert.requireState(lock.writeLock().isHeldByCurrentThread(), "This thread must have the writing lock to change the end timestamp!");
 		this.lastEndTimestamp = lastEndTimestamp;
 	}
 	
 	/**
 	 * Updates the data points associated with this metric as a result of fetching more data.
 	 * Also updates the pointer to the final timestamp included in the provided data points if it has changed.
+	 * Must be called from a method where the write lock is invoked to maintain thread safety.
 	 * 
 	 * @param datapoints The data points contained in the slice of time returned by the query.
 	 */
 	private void pushDatapoints(Map<Long, Double> datapoints) {
-		synchronized(this) {
-			if (pointer == null) {
-				Set<Long> possiblePointers = new HashSet<>();
-				for (Long newTime : datapoints.keySet()) {
-					if (!this.datapoints.containsKey(newTime)) {
-						possiblePointers.add(newTime);
-					}
+		SystemAssert.requireState(lock.writeLock().isHeldByCurrentThread(), "This thread must have the writing lock to push more datapoints!");
+		if (pointer == null) {
+			Set<Long> possiblePointers = new HashSet<>();
+			for (Long newTime : datapoints.keySet()) {
+				if (!this.datapoints.containsKey(newTime)) {
+					possiblePointers.add(newTime);
 				}
-				pointer = possiblePointers.size() == 0 ? null : new AtomicLong(Collections.min(possiblePointers));
 			}
-			this.datapoints.putAll(datapoints);
-			this.metric.addDatapoints(datapoints);
-			lastStartTimestamp = datapoints.size() != 0 ? new AtomicLong(Collections.min(datapoints.keySet())) : null;
+			pointer = possiblePointers.size() == 0 ? null : new AtomicLong(Collections.min(possiblePointers));
 		}
+		this.datapoints.putAll(datapoints);
+		this.metric.addDatapoints(datapoints);
 	}
 	
 	/**
@@ -425,17 +472,19 @@ public class MetricScanner {
 	 */
 	private void fetch() {
 		callsToFetch++;
+		lock.readLock().lock();
 		Long startTime = lastEndTimestamp.get();
 		Long endTime = Math.min(query.getEndTimestamp(), startTime + chunkSize);
 		if (Long.MAX_VALUE - chunkSize < startTime) {
 			endTime = Long.MAX_VALUE;
 		}
-		
+		lock.readLock().unlock();
+
 		MetricQuery miniQuery = new MetricQuery(query.getScope(), query.getMetric(), query.getTags(), startTime, endTime);
 		List<MetricQuery> miniQueries = new ArrayList<MetricQuery>();
 		miniQueries.add(miniQuery);		
 				
-		Map<MetricQuery, List<Metric>> miniMetricMap = service.getMetrics(miniQueries);	
+		Map<MetricQuery, List<Metric>> miniMetricMap = service.getMetrics(miniQueries);
 		for (List<Metric> metrics : miniMetricMap.values()) {
 			for (Metric miniMetric : metrics) {
 				if (!scanners.containsKey(miniMetric) || !scanners.get(miniMetric).containsKey(query)) {	
@@ -459,17 +508,20 @@ public class MetricScanner {
 								Metric gapMetric = gaps.get(gaps.indexOf(miniMetric));
 								s.pushDatapoints(gapMetric.getDatapoints());
 							}
-							synchronized(this) {
-								s.pushDatapoints(miniMetric.getDatapoints());
-								s.setEndTimestamp(new AtomicLong(endTime));
-								s.updateMetric(miniMetric);
-							}
+							s.lock.writeLock().lock();
+							s.pushDatapoints(miniMetric.getDatapoints());
+							s.setEndTimestamp(new AtomicLong(endTime));
+							s.updateMetric(miniMetric);
+							s.lock.writeLock().unlock();
 						}
 					}
 				}
 			}
 		}
+		lock.writeLock().lock();
+		lastStartTimestamp.set(startTime);
 		setEndTimestamp(new AtomicLong(endTime)); // regardless of whether new data was received, update the time
+		lock.writeLock().unlock();
 	}
 	
 	/**
@@ -511,6 +563,69 @@ public class MetricScanner {
 		int result = prime * this.metric.hashCode();
 		result = result + prime * this.query.hashCode();
 		return result;
+	}
+	
+	/**
+	 * Creates the scheduled executor service to manage asynchronously fetching chunks of data.
+	 * 
+	 * @return The scheduled executor service for the metric scanner.
+	 */
+	private ScheduledExecutorService _createScheduledExecutorService() {
+		return Executors.newScheduledThreadPool(1);
+	}
+	
+	/**
+	 * Starts the scheduled executor service. Keeps track of when data is being fetched so that
+	 * this is not repeatedly restarted while waiting for data.
+	 */
+	private void _startScheduledExecutorService() {
+		FetchDataChunkThread fetchDataChunkThread = new FetchDataChunkThread();
+		lock.writeLock().lock();
+		try {
+			fetching.set(true);
+			_scheduledExecutorService.schedule(fetchDataChunkThread, 0L, TimeUnit.MILLISECONDS);
+		} finally {
+			lock.writeLock().unlock();
+		}
+	}
+	
+	/**
+	 * Shuts down the scheduled executor service.
+	 */
+	private void _shutdownScheduledExecutorService() {
+		_logger.info("Shutting down scheduled fetch metric scanner data chunk executor service");
+		_scheduledExecutorService.shutdown();
+		try {
+			if (!_scheduledExecutorService.awaitTermination(5, TimeUnit.SECONDS)) {
+				_logger.warn("Shutdown of scheduled fetch metric scanner data chunk service timed out after 5 seconds.");
+				_scheduledExecutorService.shutdownNow();
+			}
+		} catch(InterruptedException ex) {
+			_logger.warn("Shutdown of executor service was interrupted.");
+			Thread.currentThread().interrupt();
+		}
+	}
+	
+	//~ Inner Classes  ******************************************************************************************************************************************
+	
+	/**
+	 * Thread that fetches the next chunk of the query to be supplied to the metric scanner.
+	 * 
+	 * @author adelaide.chambers (adelaide.chambers@salesforce.com)
+	 *
+	 */
+	private class FetchDataChunkThread implements Runnable {
+		
+		@Override
+		public void run() {
+			fetch();
+			lock.writeLock().lock();
+			try {
+				fetching.set(false);
+			} finally {
+				lock.writeLock().unlock();
+			}
+		}
 	}
 }
 /* Copyright (c) 2-17, Salesforce.com, Inc. All rights reserved. */
