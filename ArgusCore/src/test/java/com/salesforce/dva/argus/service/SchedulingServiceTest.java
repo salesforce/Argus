@@ -34,7 +34,7 @@ package com.salesforce.dva.argus.service;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 
 import org.junit.Test;
 import java.util.List;
@@ -70,7 +70,7 @@ public class SchedulingServiceTest extends AbstractTest {
         Thread.sleep((1000L * 60L * schedulingIterations));
         schedulingService.stopAlertScheduling();
 
-        List<AlertIdWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000 * noOfAlerts,
+        List<AlertWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000 * noOfAlerts,
             (int) (noOfAlerts * schedulingIterations));
 
         assertEquals(schedulingIterations * noOfAlerts, list.size());
