@@ -653,8 +653,6 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		}
 
 		when(_metricServiceMock.getMetrics(anyString(), anyLong())).thenReturn(metrics);
-
-		doReturn(Arrays.asList(alert)).when(spyAlertService).findAlertsByPrimaryKeys(anyListOf(BigInteger.class));
 		
 		doAnswer(new Answer<Notification>() {
 

@@ -33,10 +33,17 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
+import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
@@ -64,6 +71,13 @@ public class SchedulingServiceTest extends AbstractTest {
 
             alert = new Alert(user, user, createRandomName(), expression, "* * * * *");
             alert.setEnabled(true);
+            
+            Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 0, 0);
+            alert.setTriggers(Arrays.asList(trigger));
+    		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+    				0);
+    		alert.setNotifications(Arrays.asList(notification));
+            
             alertService.updateAlert(alert);
         }
         schedulingService.startAlertScheduling();

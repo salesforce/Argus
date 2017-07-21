@@ -306,27 +306,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
 
-		/*
-		List<BigInteger> alertIds = new ArrayList<>(alertsWithTimestamp.size());
-		for(AlertWithTimestamp alertIdWithTimestamp : alertsWithTimestamp) {
-			alertIds.add(alertIdWithTimestamp.alertId);
-		}
-		
-
-		List<Alert> alerts = alertIds.isEmpty() ? Collections.emptyList() : findAlertsByPrimaryKeys(alertIds);
-		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
-		for(Alert alert : alerts) {
-			alertsByIds.put(alert.getId(), alert);
-		}
-		*/
-
 		for (AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			long jobStartTime = System.currentTimeMillis();
-			
-			//BigInteger alertId = alertIdWithTimestamp.alertId;
 
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
-			
 			Alert alert;
 			try {
 				alert = _mapper.readValue(serializedAlert, Alert.class);
@@ -606,35 +589,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void enqueueAlerts(List<Alert> alerts) {
 		requireNotDisposed();
 		requireArgument(alerts != null, "The list of alerts cannot be null.");
-
-		
-		
-		/*
-		List<AlertIdWithTimestamp> idsWithTimestamp = new ArrayList<>(alerts.size());
-		for (Alert alert : alerts) {
-			AlertIdWithTimestamp obj = new AlertIdWithTimestamp(alert.getId(), System.currentTimeMillis());
-
-			idsWithTimestamp.add(obj);
-			
-			Map<String, String> tags = new HashMap<>();
-			tags.put(USERTAG, alert.getOwner().getUserName());
-			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
-		}
-		
- 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
- 		*/
  		
- 		
- 		
- 		
-		long start = System.currentTimeMillis();
 		List<AlertWithTimestamp> alertsWithTimestamp = new ArrayList<>(alerts.size());
 		for (Alert alert : alerts) {
 			AlertWithTimestamp obj;
 			try {
-				long serializationStart = System.currentTimeMillis();
 				String serializedAlert = _mapper.writeValueAsString(alert);
-				_logger.debug("Time to serialize alert = {}", (System.currentTimeMillis() - serializationStart));
 				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());
 			} catch (JsonProcessingException e) {
 				_logger.warn("Failed to serialize alert: {}.", alert.getId());
@@ -648,14 +608,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			tags.put(USERTAG, alert.getOwner().getUserName());
 			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
-		_logger.debug("Total time to serialize {} alerts = {}", alerts.size(), (System.currentTimeMillis() - start));
 		
  		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
-		_logger.debug("Total time to enqueue serialized alerts = {}", alerts.size(), (System.currentTimeMillis() - start));
-		
-		
-		
-		
 		
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
@@ -868,6 +822,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	//~ Inner Classes ********************************************************************************************************************************
 
+	/**
+	 * Used to enqueue alerts to evaluate.  The timestamp is used to reconcile lag between enqueue time 
+	 * and evaluation time by adjusting relative times in the alert metric expression being evaluated.
+	 *
+	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+	 */
 	public static class AlertWithTimestamp implements Serializable {
 		
 		/** The serial version UID. */
@@ -907,69 +867,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		
 	}
 	
-//	/**
-//	 * Used to enqueue alerts to evaluate.  The timestamp is used to reconcile lag between enqueue time and evaluation time by adjusting relative
-//	 * times in the alert metric expression being evaluated.
-//	 *
-//	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
-//	 */
-//	public static class AlertIdWithTimestamp implements Serializable {
-//
-//		/** The serial version UID. */
-//		private static final long serialVersionUID = 1L;
-//		protected BigInteger alertId;
-//		protected long alertEnqueueTime;
-//
-//		/** Creates a new AlertIdWithTimestamp object. */
-//		public AlertIdWithTimestamp() { }
-//
-//		/**
-//		 * Creates a new AlertIdWithTimestamp object.
-//		 *
-//		 * @param  id         The alert ID.  Cannot be null.
-//		 * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
-//		 */
-//		public AlertIdWithTimestamp(BigInteger id, long timestamp) {
-//			this.alertId = id;
-//			this.alertEnqueueTime = timestamp;
-//		}
-//
-//		/**
-//		 * Returns the alert ID.
-//		 *
-//		 * @return  The alert ID.
-//		 */
-//		public BigInteger getAlertId() {
-//			return alertId;
-//		}
-//
-//		/**
-//		 * Sets the alert ID.
-//		 *
-//		 * @param  alertId  The alert ID.
-//		 */
-//		public void setAlertId(BigInteger alertId) {
-//			this.alertId = alertId;
-//		}
-//
-//		/**
-//		 * Returns the epoch timestamp at which the alert was enqueued.
-//		 *
-//		 * @return  The enqueue timestamp.
-//		 */
-//		public long getAlertEnqueueTime() {
-//			return alertEnqueueTime;
-//		}
-//
-//		/**
-//		 * Sets the epoch timestamp at which the alert was enqueued.
-//		 *
-//		 * @param  alertEnqueueTime  The enqueue timestamp.
-//		 */
-//		public void setAlertEnqueueTime(long alertEnqueueTime) {
-//			this.alertEnqueueTime = alertEnqueueTime;
-//		}
-//	}
 
 	/**
 	 * The context for the notification which contains relevant information for the notification occurrence.
@@ -1123,7 +1020,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setTriggeredMetric(Metric triggeredMetric) {
 			this.triggeredMetric = triggeredMetric;
 		}
-
 	}
 
 }
