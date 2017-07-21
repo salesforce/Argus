@@ -196,8 +196,16 @@ angular.module('argus.services.charts.elements', [])
 		return {
 			x: x,
 			y: y.rangeRound(y.range()),
-			x0: d3.scaleBand().range(x.range()).paddingInner(0.1),
-			x1: d3.scaleBand().padding(0.05)
+			x0: d3.scaleBand().range(x.range()).paddingInner(0.05),
+			x1: d3.scaleBand().padding(0.01)
+		};
+	};
+
+	this.createStackbar = function (x, y) {
+		return {
+			x: x,
+			y: y.rangeRound(y.range()),
+			x0: d3.scaleBand().range(x.range()).paddingInner(0.05)
 		};
 	};
 
@@ -215,6 +223,9 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'bar':
 				graphElement = this.createBar(x, y);
+				break;
+			case 'stackbar':
+				graphElement = this.createStackbar(x, y);
 				break;
 			// case 'line':
 			default:
@@ -473,7 +484,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', 'stackarea ' + metric.graphClassName)
 			.style('fill', color)
 			.style('clip-path', 'url(\'#clip_' + chartId + '\')')
-			.datum(metric.stackedData)
+			.datum(metric.data)
 			.attr('d', stackarea);
 	};
 
@@ -481,11 +492,11 @@ angular.module('argus.services.charts.elements', [])
 		chart.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
-			.attr('cx', function (d) { return graph.x(d[0]); } )
-			.attr('cy', function (d) { return graph.y(d[1]); } )
+			.attr('cx', function (d) { return UtilService.validNumberChecker(graph.x(d[0])); })
+			.attr('cy', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 			.attr('class', 'dot ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
-			.style('opacity', 0.7)
+			.style('opacity', 0.8)
 			.attr('r', circleRadius * 0.7);
 	};
 
@@ -494,13 +505,26 @@ angular.module('argus.services.charts.elements', [])
 		chart.selectAll('.bars')
 			.data(metric.data)
 			.enter().append('rect')
-			.attr('x', function (d) { return graph.x0(d[0]); })
-			.attr('y', function (d) { return graph.y(d[1]); })
+			.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d[0])); })
+			.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 			.attr('width', graph.x1.bandwidth())
-			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
+			.attr('height', function(d) { return UtilService.validNumberChecker(tempHeight - graph.y(d[1])); })
 			.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
 			.attr('class', 'bar ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color);
+	};
+
+	this.renderStackbarGraph = function (chart, color, metric, graph, chartId) {
+		chart.selectAll('.stackbars')
+			.data(metric.data)
+			.enter().append('rect')
+			.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d.data.timestamp)); })
+			.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
+			.attr('width', graph.x0.bandwidth())
+			.attr('height', function (d) { return UtilService.validNumberChecker(graph.y(d[0]) - graph.y(d[1])); })
+			.attr('class', 'stackbar ' + metric.graphClassName + ' extraYAxis_' + (metric.extraYAxis || ''))
+			.attr('fill', color)
+			.style('opacity', 0.8);
 	};
 
 	this.renderGraph = function (chart, color, metric, graph, chartId, chartType, opacity) {
@@ -510,6 +534,9 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'bar':
 				this.renderBarGraph(chart, color, metric, graph, chartId);
+				break;
+			case 'stackbar':
+				this.renderStackbarGraph(chart, color, metric, graph, chartId);
 				break;
 			default:
 				var newGraph = chart.append('path')
@@ -537,29 +564,41 @@ angular.module('argus.services.charts.elements', [])
 			.attr('d', area2);
 	};
 
-	this.renderBrushScatterGraph = function (context, color, metric, graph) {
+	this.renderBrushScatterGraph = function (context, color, metric, graph2) {
 		context.selectAll('.dots')
 			.data(metric.data)
 			.enter().append('circle')
-			.attr('cx', function (d) { return graph.x(d[0]); } )
-			.attr('cy', function (d) { return graph.y(d[1]); } )
+			.attr('cx', function (d) { return UtilService.validNumberChecker(graph2.x(d[0])); })
+			.attr('cy', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); })
 			.attr('class', 'brushDot ' + metric.graphClassName + '_brushDot' +' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color)
 			.attr('r', 1.5);
 	};
 
-	this.renderBrushBarGraph = function (context, color, metric, graph) {
-		var tempHeight = graph.y.range()[0];
+	this.renderBrushBarGraph = function (context, color, metric, graph2) {
+		var tempHeight = graph2.y.range()[0];
 		context.selectAll('.bars')
 			.data(metric.data)
 			.enter().append('rect')
-			.attr('x', function (d) { return graph.x0(d[0]); })
-			.attr('y', function (d) { return graph.y(d[1]); })
-			.attr('width', graph.x1.bandwidth())
-			.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
-			.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
+			.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d[0])); })
+			.attr('y', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); })
+			.attr('width', graph2.x1.bandwidth())
+			.attr('height', function(d) { return UtilService.validNumberChecker(tempHeight - graph2.y(d[1])); })
+			.attr('transform', function() { return 'translate(' + graph2.x1(metric.graphClassName) + ',0)'; })
 			.attr('class', 'brushBar ' + metric.graphClassName + '_brushBar' +' extraYAxis_' + (metric.extraYAxis || ''))
 			.style('fill', color);
+	};
+
+	this.renderBrushStackbarGraph = function (context, color, metric, graph2) {
+		context.selectAll('.stackbars')
+			.data(metric.data)
+			.enter().append('rect')
+			.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d.data.timestamp)); })
+			.attr('y', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); })
+			.attr('width', graph2.x0.bandwidth())
+			.attr('height', function (d) { return UtilService.validNumberChecker(graph2.y(d[0]) - graph2.y(d[1])); })
+			.attr('class', 'brushStackbar ' + metric.graphClassName + '_brushStackbar' + ' extraYAxis_' + (metric.extraYAxis || ''))
+			.attr('fill', color);
 	};
 
 	this.renderBrushGraph = function (context, color, metric, graph2, chartType, opacity) {
@@ -570,6 +609,9 @@ angular.module('argus.services.charts.elements', [])
 				break;
 			case 'bar':
 				this.renderBrushBarGraph(context, color, metric, graph2);
+				break;
+			case 'stackbar':
+				this.renderBrushStackbarGraph(context, color, metric, graph2);
 				break;
 			default:
 				var newGraph = context.append('path')
@@ -729,7 +771,6 @@ angular.module('argus.services.charts.elements', [])
 
 				// set a snapping limit for graph
 				var notInSnappingRange = Math.abs(mousePositionData.positionX - x(currentDatapoint[0])) > snappingRange;
-				// var displayProperty = circle.attr('displayProperty');
 
 				if (ChartToolService.isNotInTheDomain(currentDatapoint[0], xDomain) ||
 					ChartToolService.isNotInTheDomain(d[1], y.domain()) ||
@@ -786,7 +827,6 @@ angular.module('argus.services.charts.elements', [])
 	this.updateHighlightRangeAndObtainDataPoints = function (graph, mouseOverHighlightBar, tipItems, series, sources, extraY, mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked, distanceToRight) {
 		var datapoints = [];
 		var bandOffset = graph.x0.bandwidth() + graph.x0.paddingInner()/2;
-		var xDomain = graph.x.domain();
 		var displayHighlightBar = false;
 
 		var xDiscreteDomain = graph.x0.domain();
@@ -814,7 +854,7 @@ angular.module('argus.services.charts.elements', [])
 					tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 				} else {
 					var currentDatapoint = isDataStacked ? [d.data.timestamp, d.data[metric.name]] : d;
-					if (ChartToolService.isNotInTheDomain(currentDatapoint[0], xDomain) ||
+					if (ChartToolService.isNotInTheDomain(currentDatapoint[0], xDiscreteDomain) ||
 						ChartToolService.isNotInTheDomain(currentDatapoint[1], y.domain())) {
 						tipItems.selectAll('.' + metric.graphClassName).style('display', 'none');
 					} else {
@@ -970,7 +1010,7 @@ angular.module('argus.services.charts.elements', [])
 
 		processCircle(y, '');
 
-		for(var iSet of extraYAxisSet) {
+		for (var iSet of extraYAxisSet) {
 			processCircle(extraY[iSet], iSet);
 		}
 	};
@@ -984,7 +1024,7 @@ angular.module('argus.services.charts.elements', [])
 			highlightBar.attr('x', startingPosition);
 			dateText.attr('x', startingPosition);
 			boxXRect.attr('x', startingPosition - crossLineTipPadding);
-			if (ChartToolService.isNotInTheDomain(currentTimestamp, graph.x.domain())) highlightBar.style('display', 'none');
+			if (ChartToolService.isNotInTheDomain(currentTimestamp, graph.x0.domain())) highlightBar.style('display', 'none');
 		} else {
 			highlightBar.style('display', 'none');
 		}
@@ -1067,7 +1107,8 @@ angular.module('argus.services.charts.elements', [])
 			this.toggleElementShowAndHide(isTooltipOn, tooltip);
 		} else {
 			//no need to show the circle or tooltip
-			if (!mouseMoveElement.select('circle').empty()) mouseMoveElement.selectAll('circle').style('display', 'none');
+			var circles = mouseMoveElement.selectAll('circle');
+			if (!circles.empty()) circles.style('display', 'none');
 			tooltip.style('display', 'none');
 		}
 	};
@@ -1164,8 +1205,8 @@ angular.module('argus.services.charts.elements', [])
 		switch (chartType) {
 			case 'scatter':
 				mainChart.selectAll('circle.dot.' + metric.graphClassName)
-					.attr('cx', function (d) { return graph.x(d[0]); } )
-					.attr('cy', function (d) { return graph.y(d[1]); } )
+					.attr('cx', function (d) { return UtilService.validNumberChecker(graph.x(d[0])); })
+					.attr('cy', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
@@ -1178,16 +1219,38 @@ angular.module('argus.services.charts.elements', [])
 			case 'bar':
 				var tempHeight = graph.y.range()[0];
 				mainChart.selectAll('rect.bar.' + metric.graphClassName)
-					.attr('x', function (d) { return graph.x0(d[0]); } )
-					.attr('y', function (d) { return graph.y(d[1]); } )
+					.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d[0])); })
+					.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 					.attr('width', graph.x1.bandwidth())
 					.attr('height', function(d) {
-						var newHeight = tempHeight - graph.y(d[1]);
+						var newHeight = UtilService.validNumberChecker(tempHeight - graph.y(d[1]));
 						return newHeight < 0 ? 0 : newHeight;
 					})
 					.attr('transform', function() { return 'translate(' + graph.x1(metric.graphClassName) + ',0)'; })
 					.style('display', function (d) {
-						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph.x0.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
+				break;
+			case 'stackbar':
+				var stackbars = mainChart.selectAll('rect.stackbar.' + metric.graphClassName);
+				// TODO: bad implementation (remove the old rect and render new ones); should just merely update the data
+				var classNames = stackbars.attr('class');
+				stackbars.remove().exit().data(metric.data)
+					.enter()
+					.append('rect')
+					.attr('class', classNames)
+					.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d.data.timestamp)); })
+					.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
+					.attr('width', graph.x0.bandwidth())
+					.attr('height', function (d) { return UtilService.validNumberChecker(graph.y(d[0]) - graph.y(d[1])); })
+					.attr('fill', source.color)
+					.style('opacity', 0.8)
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d.data.timestamp, graph.x0.domain())) {
 							return 'none';
 						} else {
 							return null;
@@ -1215,7 +1278,6 @@ angular.module('argus.services.charts.elements', [])
 
 	//rescale YAxis based on XAxis Domain
 	this.reScaleYAxis = function (series, sources, y, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete, extraY, extraYScalePlain, extraYAxisSet) {
-
 		if (!series) return;
 		if (agYMin !== undefined && agYMax !== undefined) return; //hard coded ymin & ymax
 		var datapoints = [];
@@ -1355,8 +1417,8 @@ angular.module('argus.services.charts.elements', [])
 		switch (chartType) {
 			case 'scatter':
 				svg_g.selectAll('.dot' + '.extraYAxis_' + extraYAxis)
-					.attr('cx', function (d) { return graph.x(d[0]); } )
-					.attr('cy', function (d) { return graph.y(d[1]); } )
+					.attr('cx', function (d) { return UtilService.validNumberChecker(graph.x(d[0])); })
+					.attr('cy', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph.y.domain())) {
@@ -1370,19 +1432,33 @@ angular.module('argus.services.charts.elements', [])
 				var tempHeight = graph.y.range()[0];
 				graphClassNames.map(function (className) {
 					svg_g.selectAll('.bar' + '.' + className + '.extraYAxis_' + extraYAxis)
-						.attr('x', function (d) { return graph.x0(d[0]); } )
-						.attr('y', function (d) { return graph.y(d[1]); } )
+						.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d[0])); })
+						.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
 						.attr('width', graph.x1.bandwidth())
 						.attr('height', function(d) { return tempHeight - graph.y(d[1]); })
 						.attr('transform', function() { return 'translate(' + graph.x1(className) + ',0)'; })
 						.style('display', function (d) {
-							if (ChartToolService.isNotInTheDomain(d[0], graph.x.domain())) {
+							if (ChartToolService.isNotInTheDomain(d[0], graph.x0.domain())) {
 								return 'none';
 							} else {
 								return null;
 							}
 						});
 				});
+				break;
+			case 'stackbar':
+				svg_g.selectAll('.stackbar' + '.extraYAxis_' + extraYAxis)
+					.attr('x', function (d) { return UtilService.validNumberChecker(graph.x0(d.data.timestamp)); })
+					.attr('y', function (d) { return UtilService.validNumberChecker(graph.y(d[1])); })
+					.attr('width', graph.x0.bandwidth())
+					.attr('height', function (d) { return UtilService.validNumberChecker(graph.y(d[0]) - graph.y(d[1])); })
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d.data.timestamp, graph.x0.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
 				break;
 			default:
 				svg_g.selectAll('.' + chartType + '.extraYAxis_' + extraYAxis).attr('d', graph);
@@ -1391,7 +1467,7 @@ angular.module('argus.services.charts.elements', [])
 
 	this.resizeGraphs = function (svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet) {
 		this.resizeGraph(svg_g, graph, graphClassNames, chartType, '');
-		for(var iSet of extraYAxisSet){
+		for (var iSet of extraYAxisSet) {
 			this.resizeGraph(svg_g, extraGraph[iSet], graphClassNames, chartType, iSet);
 		}
 	};
@@ -1400,8 +1476,8 @@ angular.module('argus.services.charts.elements', [])
 		switch (chartType) {
 			case 'scatter':
 				svg_g.selectAll('.brushDot' + '.extraYAxis_' + extraYAxis)
-					.attr('cx', function (d) { return graph2.x(d[0]); } )
-					.attr('cy', function (d) { return graph2.y(d[1]); } )
+					.attr('cx', function (d) { return UtilService.validNumberChecker(graph2.x(d[0])); } )
+					.attr('cy', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); } )
 					.style('display', function (d) {
 						if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain()) ||
 							ChartToolService.isNotInTheDomain(d[1], graph2.y.domain())) {
@@ -1414,12 +1490,26 @@ angular.module('argus.services.charts.elements', [])
 			case 'bar':
 				var tempHeight = graph2.y.range()[0];
 				svg_g.selectAll('.brushBar' + '.extraYAxis_' + extraYAxis)
-					.attr('x', function (d) { return graph2.x0(d[0]); } )
-					.attr('y', function (d) { return graph2.y(d[1]); } )
+					.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d[0])); } )
+					.attr('y', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); } )
 					.attr('width', graph2.x1.bandwidth())
 					.attr('height', function(d) { return tempHeight - graph2.y(d[1]); })
 					.style('display', function (d) {
-						if (ChartToolService.isNotInTheDomain(d[0], graph2.x.domain())) {
+						if (ChartToolService.isNotInTheDomain(d[0], graph2.x0.domain())) {
+							return 'none';
+						} else {
+							return null;
+						}
+					});
+				break;
+			case 'stackbar':
+				svg_g.selectAll('.brushStackbar' + '.extraYAxis_' + extraYAxis)
+					.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d.data.timestamp)); })
+					.attr('y', function (d) { return UtilService.validNumberChecker(graph2.y(d[1])); })
+					.attr('width', graph2.x0.bandwidth())
+					.attr('height', function (d) { return UtilService.validNumberChecker(graph2.y(d[0]) - graph2.y(d[1])); })
+					.style('display', function (d) {
+						if (ChartToolService.isNotInTheDomain(d.data.timestamp, graph2.x0.domain())) {
 							return 'none';
 						} else {
 							return null;
