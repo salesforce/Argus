@@ -447,8 +447,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartToolService.bindDefaultColorsWithSources(z, names);
 				// populate stack if its needed
 				if (isDataStacked) {
-					stack.keys(names)
-						.order(d3.stackOrderNone)
+					stack.order(d3.stackOrderNone)
 						.offset(d3.stackOffsetNone);
 				}
 				// set domain for bandwidth if its a bar chart
@@ -463,6 +462,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 				// compute stack data if its needed
 				if (isDataStacked) {
+					stack.keys(currSeries.map(function(metric) { return metric.name; }));
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack);
 				}
 				seriesBeingDisplayed = currSeries;
@@ -655,7 +655,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 
 			// adjust the graph based on small brush
-			function brushed() {
+			function brushed () {
 				// ignore the case when it is called by the zoomed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'zoom' )) return;
 				var s = d3.event.selection || x2.range();
@@ -779,7 +779,7 @@ angular.module('argus.directives.charts.lineChart', [])
 							graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 						}
 					}
-					ChartElementService.resizeGraphs(svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet);
+					ChartElementService.resizeGraphs(svg_g, graph, scope.sources, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
@@ -847,7 +847,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			// update series being displayed and redraw the graphs
 			scope.updateGraphAndScale = function (hiddenSourceNames) {
-				var needToUpdateData = isDataStacked && hiddenSourceNames !== undefined && hiddenSourceNames.length !== series.length;
+				var needToUpdateData = isDataStacked && hiddenSourceNames !== undefined && hiddenSourceNames.length !== names.length;
 				if (needToUpdateData) {
 					//need to recalculate currSeries since some series are hidden
 					currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);

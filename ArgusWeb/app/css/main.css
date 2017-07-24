@@ -327,10 +327,10 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
 
 .line {fill:none; stroke:steelblue; stroke-width:1.5;} /*clip-path: url('#clip');*/
 .area {stroke:none;}
-.dot {stroke: #000; stroke-width:0.5;}
-.bar {stroke-width:1; will-change: transform;}
 .stackarea {stroke:none;}
-.stackbar {stroke-width:1; will-change: transform;}
+.dot {stroke: #000; stroke-width:0.5; opacity: 0.8;}
+.bar {stroke-width:1; will-change: transform; opacity: 0.8;}
+.stackbar {stroke-width:1; will-change: transform; opacity: 0.8;}
 
 .brushLine {fill:none; stroke:steelblue; stroke-width:1.5;}
 .brushArea {fill:steelblue; stroke:none;}
