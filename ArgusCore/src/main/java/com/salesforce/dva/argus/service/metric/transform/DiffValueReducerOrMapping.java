@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
@@ -61,9 +62,28 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return difference;
     }
+	
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		SystemAssert.requireArgument(scanner.hasNextDP(), "Metric scanner must contain some datapoints to reduce.");
+    		
+    		Double difference = scanner.getNextDP().getValue();
+    		
+	   		while (scanner.hasNextDP()) {
+	   			Double value = scanner.getNextDP().getValue();
+	    		difference -= value == null ? 0.0 : value;
+	    	}
+    		return difference;
+    }
+
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
     }
 
@@ -87,9 +107,35 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return diffDatapoints;
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    		SystemAssert.requireArgument(constants != null && constants.size() == 1,
+                "If constants provided for diff transform, only exactly one constant allowed.");
+
+        Map<Long, Double> diffDatapoints = new HashMap<>();
+        
+        try {
+    		double subtrahend = Double.parseDouble(constants.get(0));
+    		
+       		while (scanner.hasNextDP()) {
+           		Map.Entry<Long, Double> dp = scanner.getNextDP();
+           		diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
+        	}
+        		
+        } catch (NumberFormatException nfe) {
+            throw new SystemException("Illegal constant value supplied to diff transform", nfe);
+        }
+        return diffDatapoints;
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
+        throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");
+    }
+	
+    @Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");
     }
 

@@ -33,10 +33,12 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -110,6 +112,60 @@ public class FillTransform implements Transform {
             }
         }
         return cleanFilledDatapoints;
+    }
+    
+    private static Map<Long, Double> _fillMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, long offsetInSeconds, double value) {
+    	Map<Long, Double> filledDatapoints = new TreeMap<>();
+    	
+    	Map<Long, Double> dps = new HashMap<>();
+    	List<Long> timestamps = new ArrayList<>();
+    	
+    	int index = 1;
+    	Map.Entry<Long, Double> dp = scanner.getNextDP();
+    	dps.put(dp.getKey(), dp.getValue());
+    	timestamps.add(dp.getKey());
+    	
+    	Long startTimestamp = dp.getKey();
+    	
+	   	while (scanner.hasNextDP()) {
+	   		dp = scanner.getNextDP();
+	   		dps.put(dp.getKey(), dp.getValue());
+	   		timestamps.add(dp.getKey());
+	    		
+	    	filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
+			if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
+	   		} else {
+	   			startTimestamp = timestamps.get(index);
+	   			index++;
+	   		}
+	    }
+		filledDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
+    	
+    	int newLength = filledDatapoints.size();
+    	List<Long> newTimestamps = new ArrayList<Long>();
+    	List<Double> newValues = new ArrayList<>();
+    	
+    	for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+    		newTimestamps.add(entry.getKey());
+    		newValues.add(entry.getValue());
+    	}
+    	for (int i = 0; i < newLength; i++) {
+    		if (newValues.get(i) != null) {
+    			continue;
+    		} else {
+    			filledDatapoints.put(newTimestamps.get(i) + offsetInSeconds * 1000, value);
+    		}
+    	}
+    	
+    	Map<Long, Double> cleanFilledDatapoints = new TreeMap<>();
+    	
+    	for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+    		if (entry.getValue() != null) {
+    			cleanFilledDatapoints.put(entry.getKey(), entry.getValue());
+    		}
+    	}
+    	return cleanFilledDatapoints;
     }
 
     private static long _parseTimeIntervalInSeconds(String interval) {
@@ -192,6 +248,11 @@ public class FillTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Fill Transform needs interval, offset and value!");
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Fill Transform needs interval, offset and value!");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -228,6 +289,39 @@ public class FillTransform implements Transform {
         }
         return fillMetricList;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	
+    	if (scanners == null || scanners.isEmpty()) {
+    		String relativeTo = "";
+    		if (constants != null && !constants.isEmpty()) {
+    			relativeTo = constants.remove(constants.size() - 1);
+    		}
+    		return _fillLine(constants, Long.parseLong(relativeTo)); 	// just use the metric version, this is fine
+    	}
+    	
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners!");
+        SystemAssert.requireArgument(constants != null && constants.size() == 3, 
+        		"Fill Transform needs exactly three constants: interval, offset, value");
+        
+        String interval = constants.get(0);
+        long windowSizeInSeconds = _parseTimeIntervalInSeconds(interval);
+        
+        SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
+        
+        String offset = constants.get(0);
+        long offsetInSeconds = _parseTimeIntervalInSeconds(offset);
+        double value = Double.parseDouble(constants.get(2));
+        
+        List<Metric> fillMetricList = new ArrayList<>();
+        for (MetricScanner scanner : scanners) {
+        	Metric newMetric = new Metric(scanner.getMetric());
+        	newMetric.setDatapoints(_fillMetricTransformScanner(scanner, windowSizeInSeconds, offsetInSeconds, value));
+        	fillMetricList.add(newMetric);
+        }
+        return fillMetricList;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -236,7 +330,12 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Fill doesb't need list of list!");
+        throw new UnsupportedOperationException("Fill doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("Fill doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

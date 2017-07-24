@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,6 +59,14 @@ public class LogValueMapping implements ValueMapping {
         constants.add("10");
         return mapping(originalDatapoints, constants);
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    	List<String> constants = new ArrayList<String>();
+    	
+    	constants.add("10");
+    	return mappingScanner(scanner, constants);
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
@@ -74,6 +83,25 @@ public class LogValueMapping implements ValueMapping {
 
             logDatapoints.put(entry.getKey(), logValue);
         }
+        return logDatapoints;
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    	if (constants == null || constants.isEmpty()) {
+    		return mappingScanner(scanner);
+    	}
+        SystemAssert.requireArgument(constants.size() == 1, "Log Transform requires exactly one constant!");
+        
+        Double base = Double.parseDouble(constants.get(0));
+        Map<Long, Double> logDatapoints = new HashMap<>();
+        
+	    while (scanner.hasNextDP()) {
+	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	       	Double logValue = Math.log(dp.getValue()) / Math.log(base);
+	       	logDatapoints.put(dp.getKey(), logValue);
+	    }
+        
         return logDatapoints;
     }
 

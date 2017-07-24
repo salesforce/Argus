@@ -33,9 +33,12 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -57,6 +60,12 @@ public class MovingAverageTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Moving Average Transform needs a window size either as fixed number" +
             " of past points or time interval");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    		throw new UnsupportedOperationException("Moving Average Transform needs a window size either as fixed number" +
+                " of past points or time interval");
     }
 
     @Override
@@ -91,6 +100,44 @@ public class MovingAverageTransform implements Transform {
         }
         return metrics;
     }
+	
+	public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    		SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners");
+    		List<Metric> result = new ArrayList<>();
+        if (scanners.isEmpty()) {
+            return result;
+        }
+        SystemAssert.requireArgument(constants != null && constants.size() == 1,
+            "Moving Average Transform " +
+            "must provide exactly 1 constant. windowSize -> Either fixed number of past points or time interval");
+
+        String window = constants.get(0);
+        MetricReader.TimeUnit timeunit = null;
+        
+        long windowSizeInSeconds = 0;
+        try {
+        		timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
+        		long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
+        		windowSizeInSeconds = timeDigits * timeunit.getValue() / 1000;
+        }
+        catch (Exception t) {
+        		long windowSize = Long.parseLong(window);
+        		
+        		for (MetricScanner scanner : scanners) {
+        			Metric m = scanner.getMetric();
+        			m.setDatapoints(_calculateMovingAverageUsingFixedNoOfPastPointsScanner(scanner, windowSize));
+        			result.add(m);
+        		}
+        		return result;
+        }
+        
+        for (MetricScanner scanner : scanners) {
+        		Metric m = scanner.getMetric();
+        		m.setDatapoints(_calculateMovingAverageUsingTimeIntervalScanner(scanner, windowSizeInSeconds));
+        		result.add(m);
+        }
+        return result;
+    }
 
     private Map<Long, Double> _calculateMovingAverageUsingTimeInterval(Map<Long, Double> originalDatapoints, long windowSizeInSeconds) {
         SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
@@ -115,11 +162,17 @@ public class MovingAverageTransform implements Transform {
                     }
                     transformedDatapoints.put(timestamps[i - 1], null);
                     i++;
+					if (i >= timestamps.length) {
+                    	break;
+                    }
                     count++;
                 }
                 transformedDatapoints.put(timestamps[i - 1], (sum / count));
             }
             try {
+				if (i >= timestamps.length) {
+            		break;
+            	}
                 sum += sortedDatapoints.get(timestamps[i]);
                 while (timestamps[j] <= timestamps[i] - windowSizeInSeconds * 1000) {
                     sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps[j], timestamps[i]);
@@ -131,6 +184,69 @@ public class MovingAverageTransform implements Transform {
             }
             count++;
             transformedDatapoints.put(timestamps[i], (sum / count));
+        }
+        return transformedDatapoints;
+    }
+	
+	private Map<Long, Double> _calculateMovingAverageUsingTimeIntervalScanner(MetricScanner scanner, long windowSizeInSeconds) {
+        SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
+        
+        Map<Long, Double> transformedDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
+        List<Long> timestamps = new ArrayList<>();
+        
+        Map.Entry<Long, Double> dp = null;
+        SystemAssert.requireArgument(scanner.hasNextDP(), "Scanner needs to have at least one datapoint!");
+       	dp = scanner.getNextDP();
+        
+        double sum = dp.getValue();
+        Long firstTimestamp = dp.getKey();
+        timestamps.add(firstTimestamp);
+        sortedDatapoints.put(dp.getKey(), dp.getValue());
+        int count = 1;
+        
+        int i = 0;
+        int j = 0;
+        
+        while (scanner.hasNextDP()) {
+        		dp = scanner.getNextDP();
+        		timestamps.add(dp.getKey());
+        		sortedDatapoints.put(dp.getKey(), dp.getValue());
+        		if (j == 0) {
+	        		while(timestamps.get(i) - windowSizeInSeconds * 1000 < firstTimestamp) {	// still within the first window
+	        			try {
+	        				sum += sortedDatapoints.get(timestamps.get(i));
+	        			} catch (NumberFormatException | NullPointerException e) {
+	        				_logger.warn("Failed to parse datapoint: " + dp.getValue());
+	        			}
+	        			transformedDatapoints.put(timestamps.get(timestamps.indexOf(dp.getKey()) - 1), null);
+	        			i++;
+	        			count++;
+	        			if (!scanner.hasNextDP()) {
+	        				break;
+	        			}
+	        			else {
+	        				dp = scanner.getNextDP();
+	        				timestamps.add(dp.getKey());
+	        				sortedDatapoints.put(dp.getKey(), dp.getValue());
+	        			}
+	        		}
+	        		transformedDatapoints.put(timestamps.get(i-1), (sum / count));
+        		}
+        		try {
+        			sum += sortedDatapoints.get(timestamps.get(i));	// this should exist by this point
+        			while (timestamps.get(j) <= timestamps.get(i) - windowSizeInSeconds * 1000) {
+        				sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps.get(j), timestamps.get(i));
+        				count--;
+        				j++;
+        				
+        			}
+        		} catch (NumberFormatException | NullPointerException e) {
+        			_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)));
+        		}
+        		count++;
+        		transformedDatapoints.put(timestamps.get(i), (sum / count));
+        		i++; // increment around the loop
         }
         return transformedDatapoints;
     }
@@ -171,6 +287,45 @@ public class MovingAverageTransform implements Transform {
         }
         return transformedDatapoints;
     }
+	
+	private Map<Long, Double> _calculateMovingAverageUsingFixedNoOfPastPointsScanner(MetricScanner scanner, long window) {
+    		SystemAssert.requireArgument(window != 0, "Window cannot be 0 for Moving Average Transform");
+    		
+    		Map<Long, Double> transformedDatapoints = new TreeMap<>();
+    		Map<Long, Double> sortedDatapoints = new TreeMap<>();
+    		double sum = 0.0;
+    		double firstValueInInterval = 0.0;
+    		List<Long> timestamps = new ArrayList<>();
+    		
+    		int i = 0;
+    		int j = 0;
+    		
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();	// basically sortedDatapoints.get(timestamps[i])
+    			sortedDatapoints.put(dp.getKey(), dp.getValue());
+    			timestamps.add(dp.getKey());
+    			if (i + 1 < window) {	// can put another point in here
+    				try {
+    					sum += sortedDatapoints.get(timestamps.get(i));
+    				} catch (NumberFormatException | NullPointerException e) {
+    					_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)) + " Skipping this one.");
+    				}
+    				transformedDatapoints.put(timestamps.get(i), null);
+    			} else {
+    				try {
+    					sum += sortedDatapoints.get(timestamps.get(i));
+    					sum -= firstValueInInterval;
+    					firstValueInInterval = sortedDatapoints.get(timestamps.get(j));
+    				} catch (NumberFormatException | NullPointerException e) {
+    					_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps.get(i)) + " Skipping this one.");
+    				}
+    				transformedDatapoints.put(timestamps.get(i), sum / window);
+    				j++;
+    			}
+    			i++; // increment looping variable
+    		}
+    		return transformedDatapoints;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -179,6 +334,11 @@ public class MovingAverageTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 }

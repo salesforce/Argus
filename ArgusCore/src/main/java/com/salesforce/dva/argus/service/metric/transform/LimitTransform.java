@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,11 @@ public class LimitTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
+        throw new UnsupportedOperationException("Limit transform requires a limit number!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
         throw new UnsupportedOperationException("Limit transform requires a limit number!");
     }
 
@@ -83,6 +89,40 @@ public class LimitTransform implements Transform {
         }
         return result;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        List<Metric> result = new ArrayList<>();
+        if (scanners.isEmpty()) {
+        	return result;
+        }
+        
+        SystemAssert.requireArgument(constants.size() == 1, "Please provide only one limit number");
+        SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) >= 0.0, "Please provide a valid limit number");
+
+        Long limit = null;
+        
+        try {
+        	limit = Long.parseLong(constants.get(0));
+        } catch (Exception e) {
+        	throw new IllegalArgumentException("Please provide a valid limit number!");
+        }
+        
+        Long count = 0L;
+        for (MetricScanner scanner : scanners) {
+        	if (count < limit) {
+	       		while (scanner.hasNextDP()) {
+	        		scanner.getNextDP();
+	        	}
+        		count++;
+        		result.add(scanner.getMetric());
+        	} else {
+        		break;
+        	}
+        }
+        return result;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -91,6 +131,11 @@ public class LimitTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Limit doesn't need list of list!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfLists) {
         throw new UnsupportedOperationException("Limit doesn't need list of list!");
     }
 }

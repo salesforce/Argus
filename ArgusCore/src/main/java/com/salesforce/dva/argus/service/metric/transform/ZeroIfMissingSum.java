@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,9 +58,7 @@ public class ZeroIfMissingSum implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        if (metrics == null) {
-            throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
-        }
+        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing arithmetic transformations.");
 
         List<Metric> resultMetrics = new ArrayList<>();
 
@@ -86,9 +87,47 @@ public class ZeroIfMissingSum implements Transform {
         Collections.addAll(resultMetrics, result);
         return resultMetrics;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    		SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing arithmetic transformations.");
+    		
+    		List<Metric> resultMetrics = new ArrayList<>();
+    		
+    		if (scanners.isEmpty()) {return resultMetrics;}
+    		
+    		Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
+    		Map<Long, Double> resultDatapoints = new HashMap<>();
+    		boolean done = false;
+    		
+    		while (!done) {
+    			done = true;
+    			for (MetricScanner scanner : scanners) {
+    				if (scanner.hasNextDP()) {
+	   					done = false;
+	   					Entry<Long, Double> entry = scanner.getNextDP();
+	    					
+	   					if (resultDatapoints.containsKey(entry.getKey())) {
+	   						resultDatapoints.put(entry.getKey(), performOperation(resultDatapoints.get(entry.getKey()), entry.getValue()));
+	    				} else {
+	    					resultDatapoints.put(entry.getKey(), entry.getValue());
+	    				}
+	    			}
+    			}
+    		}
+    		result.setDatapoints(resultDatapoints);
+    		MetricDistiller.setCommonScannerAttributes(scanners, result);
+    		Collections.addAll(resultMetrics, result);
+    		return resultMetrics;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+        throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
     }
 
@@ -111,6 +150,11 @@ public class ZeroIfMissingSum implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
     }
 }

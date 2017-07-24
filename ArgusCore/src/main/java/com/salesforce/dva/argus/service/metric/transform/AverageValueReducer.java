@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
+
 /**
  * Calculates the average of all values at each timestamp across all the metrics.
  *
@@ -44,6 +47,7 @@ public class AverageValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
+		SystemAssert.requireArgument(values.size() != 0, "There must be values to reduce.");
         Double sum = 0.0;
 
         for (Double value : values) {
@@ -53,6 +57,23 @@ public class AverageValueReducer implements ValueReducer {
             sum += value;
         }
         return (sum / values.size());
+    }
+	
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+			SystemAssert.requireArgument(scanner.hasNextDP(), "There must be datapoints to reduce.");
+    		Double sum = 0.0;
+    		int dpCount = 0;
+    		
+    		while (scanner.hasNextDP()) {
+	   			dpCount++;
+	   			Double val = scanner.getNextDP().getValue();
+	   			if (val != null) {
+	   				sum += val;
+	    		}
+	    	}
+    		
+    		return (sum / dpCount);
     }
 
     @Override

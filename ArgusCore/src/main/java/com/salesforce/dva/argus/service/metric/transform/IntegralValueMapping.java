@@ -34,6 +34,9 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.util.TreeMap;
 
 /**
@@ -57,9 +60,27 @@ public class IntegralValueMapping implements ValueMapping {
         }
         return sortedDatapoints;
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    		Map<Long, Double> integralDP = new TreeMap<>();
+    		Double prevSum = 0.0;
+    		
+	   		while (scanner.hasNextDP()) {
+	   			Map.Entry<Long, Double> dp = scanner.getNextDP();
+	   			prevSum += dp.getValue();
+	    		integralDP.put(dp.getKey(), prevSum);
+	    	}
+    		return integralDP;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+        throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
     }
 

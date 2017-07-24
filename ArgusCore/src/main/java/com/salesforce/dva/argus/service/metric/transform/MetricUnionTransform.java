@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.*;
 import java.util.ArrayList;
@@ -88,6 +89,18 @@ public class MetricUnionTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         return union(metrics);
     }
+	
+	/**
+     * If constants is not null, apply mapping transform to metric scanner list. Otherwise, apply reduce transform to metrics list.
+     * 
+     * @param  scanners  The list of metric scanners to transform.
+     * 
+     * @return  The transformed metrics.
+     */
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+	    	return unionScanner(scanners);
+    }
 
     /**
      * Performs a columnar union of metrics.
@@ -118,6 +131,36 @@ public class MetricUnionTransform implements Transform {
         newMetric.addDatapoints(unionDatapoints);
         return Arrays.asList(newMetric);
     }
+	
+	/**
+     * Performs a columnar union of metric information encapsulated by the metric scanners.
+     * 
+     * @param scanners The Metric Scanners encapsulating the metrics to merge.
+     * 
+     * @return The merged metrics.
+     */
+    public List<Metric> unionScanner(List<MetricScanner> scanners) {
+	    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+	    	if (scanners.isEmpty()) {
+	    		return new ArrayList<>();
+	    	}
+	    	
+	    	Metric newMetric = reduceScanner(scanners);	// this circles through all of the datapoints
+	    	Map<Long, Double> reducedDatapoints = newMetric.getDatapoints();
+	    	Set<Long> sharedTimestamps = reducedDatapoints.keySet();
+	    	Map<Long, Double> unionDatapoints = new TreeMap<>();
+	    		    	
+	    	for (MetricScanner scanner : scanners) {
+	    		SystemAssert.requireState(!scanner.hasNextDP(), "The scanner must have been fully explored by this point.");
+	    		for (Map.Entry<Long, Double> entry : scanner.getMetric().getDatapoints().entrySet()) {
+	    			if (!sharedTimestamps.contains(entry.getKey())) {
+	    				unionDatapoints.put(entry.getKey(), entry.getValue());
+	    			}
+	    		}
+	    	}
+	    	newMetric.addDatapoints(unionDatapoints);
+	    	return Arrays.asList(newMetric);
+    }
 
     /**
      * Reduce transform for the list of metrics.
@@ -147,6 +190,31 @@ public class MetricUnionTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
+	
+	/**
+     * Reduce transform for the list of metric scanners.
+     * 
+     * @param scanners The list of Metric Scanners to reduce.
+     * 
+     * @return The reduced metric.
+     */
+    protected Metric reduceScanner(List<MetricScanner> scanners) {
+	    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+	    	
+	    	MetricDistiller distiller = new MetricDistiller();
+	    	
+	    	distiller.distillScanner(scanners);
+	    	
+	    	Map<Long, Double> minDatapoints = collateAndReduceScanner(scanners);
+	    	String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
+	    	Metric newMetric = new Metric(defaultScope, newMetricName);
+	    	
+	    	newMetric.setDisplayName(distiller.getDisplayName());
+	    	newMetric.setUnits(distiller.getUnits());
+	    	newMetric.setTags(distiller.getTags());
+	    	newMetric.setDatapoints(minDatapoints);
+	    	return newMetric;
+    }
 
     private Map<Long, List<Double>> collate(List<Metric> metrics) {
         Map<Long, List<Double>> collated = new HashMap<>();
@@ -173,14 +241,47 @@ public class MetricUnionTransform implements Transform {
         }
         return reducedDatapoints;
     }
+	
+	private Map<Long, Double> collateAndReduceScanner(List<MetricScanner> scanners) {
+    	Map<Long, List<Double>> collated = new HashMap<>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		while (scanner.hasNextDP()) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+		   		if (!collated.containsKey(dp.getKey())) {
+		   			collated.put(dp.getKey(), new ArrayList<Double>());
+		   		}
+		   		collated.get(dp.getKey()).add(dp.getValue());
+	    	}
+    	}
+    	
+    	Map<Long, Double> reducedDatapoints = new HashMap<>();
+    	for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+    		if (entry.getValue().size() < scanners.size()) {
+    			continue;
+    		}
+    		reducedDatapoints.put(entry.getKey(), this.valueUnionReducer.reduce(entry.getValue()));
+    	}
+    	return reducedDatapoints;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Union transform can't be used with constants!");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        throw new UnsupportedOperationException("Union transform can't be used with constants!");
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Union doesn't need list of list");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Union doesn't need list of list");
     }
 }

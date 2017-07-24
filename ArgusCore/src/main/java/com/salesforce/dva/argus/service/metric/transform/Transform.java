@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.util.List;
 
 /**
@@ -52,6 +54,16 @@ public interface Transform {
      * @return  The result of the transform. Shall not be null.
      */
     List<Metric> transform(List<Metric> metrics);
+	
+	/**
+     * Applies the transform to one or more of the metric scanners. Implementations of this interface method shall perform any validation on the metrics
+     * contained in the list of scanners as required by the implementation.
+     * 
+     * @param scanners The list of metrics scanners encapsulating the metrics to which the transform will be applied. Cannot be null.
+     * 
+     * @return The result of the transform. Shall not be null.
+     */
+    List<Metric> transformScanner(List<MetricScanner> scanners);
 
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
@@ -63,6 +75,17 @@ public interface Transform {
      * @return  The result of the transform.  Shall not be null.
      */
     List<Metric> transform(List<Metric> metrics, List<String> constants);
+	
+	/**
+     * Applies the transform to one or more of the metric scanners. Implementations of this interface method shall perform any validation on the metrics
+     * contained in the list of scanners as required by the implementation.
+     * 
+     * @param scanners The list of metric scanners encapsulating the metrics to which the transform will be applied. Cannot be null.
+     * @param constants The transform specific constants to use.
+     * 
+     * @return The result of the transform. Shall not be null.
+     */
+    List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants);
 
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
@@ -73,6 +96,16 @@ public interface Transform {
      * @return  The result of the transform. Shall not be null.
      */
     List<Metric> transform(List<Metric>... metrics);
+	
+	/**
+     * Applies the transform to one or more of the metric scanners. Implementations of this interface method shall perform any validation on the metrics
+     * contained in the list of scanners as required by the implementation.
+     * 
+     * @param scanners The list of metric scanners encapsulating the metrics to which the transform will be applied. Cannot be null.
+     * 
+     * @return The result of the transform. Shall not be null.
+     */
+    List<Metric> transformScanner(List<MetricScanner>... scanners);
 
     /**
      * Returns the scope name for the result.

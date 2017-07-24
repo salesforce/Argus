@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +66,11 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("This Transform cannot be used without a constant");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanner) {
+        throw new UnsupportedOperationException("This Transform cannot be used without a constant");
+    }
 
     /**
      * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
@@ -92,6 +98,28 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         	result = Arrays.asList(reduce(metrics, constants));
         } else if (constants.size() > 1) {
             result = mapping(metrics, constants);
+        }
+        return result;
+    }
+  
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Metric Scanners List cannot be null");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
+        if (scanners.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Metric> result = new ArrayList<Metric>();
+        
+        if (constants.size() == 1) {
+        	result = Arrays.asList(reduceScanner(scanners, constants));
+		    } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+        	fulljoinIndicator = true;
+        	constants.remove(1);
+        	result = Arrays.asList(reduceScanner(scanners, constants));
+        } else if (constants.size() > 1) {
+        	result = mappingScanner(scanners, constants);
         }
         return result;
     }

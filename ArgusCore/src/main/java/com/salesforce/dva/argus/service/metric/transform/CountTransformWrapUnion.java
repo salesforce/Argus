@@ -32,8 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +76,28 @@ public class CountTransformWrapUnion implements Transform {
 
         return Arrays.asList(newMetric);
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    		SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners.");
+    		
+    		if (scanners.isEmpty()) {
+    			return new ArrayList<Metric>(0);
+    		}
+    		
+    		MetricDistiller distiller = new MetricDistiller();
+    		distiller.distillScanner(scanners);
+    		
+    		String newMetricName = distiller.getMetric() == null ? TransformFactory.DEFAULT_METRIC_NAME : distiller.getMetric();
+    		Metric newMetric = new Metric(getResultScopeName(), newMetricName);
+    		
+    		newMetric.setDisplayName(distiller.getDisplayName());
+    		newMetric.setUnits(distiller.getUnits());
+    		newMetric.setTags(distiller.getTags());
+    		newMetric.setDatapoints(_collateScanners(scanners));
+    		
+    		return Arrays.asList(newMetric);
+    }
     
     private Map<Long, Double> _collate(List<Metric> metrics) {
         Map<Long, Double> collated = new HashMap<>();
@@ -90,10 +114,31 @@ public class CountTransformWrapUnion implements Transform {
         }
         return collated;
     }
+	
+    private Map<Long, Double> _collateScanners(List<MetricScanner> scanners) {
+    		Map<Long, Double> collated = new HashMap<>();
+		
+		for (MetricScanner scanner : scanners) {
+			while (scanner.hasNextDP()) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				if (!collated.containsKey(dp.getKey())) {
+					collated.put(dp.getKey(), 1.0);
+				} else {
+					collated.put(dp.getKey(), collated.get(dp.getKey()) + 1.0);
+				}
+			}
+		}
+		return collated;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    		throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
     }
 
     @Override
@@ -104,6 +149,11 @@ public class CountTransformWrapUnion implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Count doesn't need list of list!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	throw new UnsupportedOperationException("Count doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

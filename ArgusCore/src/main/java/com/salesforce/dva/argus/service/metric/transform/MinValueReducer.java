@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Takes a list of doubles represents as Strings and returns the minimum value as a String. Values that do not convert to doubles are ignored.
  *
@@ -69,6 +71,29 @@ public class MinValueReducer implements ValueReducer {
             }
         }
         return min;
+    }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		if (scanner == null || !scanner.hasNextDP()) {
+    			return null;
+    		}
+    		
+    		double min = Double.MAX_VALUE;
+    		boolean unchanged = true;
+    	
+	    	while (scanner.hasNextDP()) {
+	    		Double value = scanner.getNextDP().getValue();
+	    		if (value == null) {
+					continue;
+    			}
+	   			double candidate = value;
+	   			if (unchanged || candidate < min) {
+	   				min = candidate;
+	   				unchanged = false;
+	    		}
+	    	}
+    		return !unchanged ? min : null;
     }
 
     @Override

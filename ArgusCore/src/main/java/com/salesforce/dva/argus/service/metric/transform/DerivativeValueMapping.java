@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Calculates the discrete time derivative.<br/>
  * <tt>DERIVATIVE(<expr>, <excludeType>)</tt><br/>
@@ -71,9 +73,30 @@ public class DerivativeValueMapping implements ValueMapping {
         }
         return derivativeDatapoints;
     }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    	Map<Long, Double> derivativeDatapoints = new HashMap<>();
+    	Double prev = null;
+    	
+	    while (scanner.hasNextDP()) {
+	    	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		
+	   		if (prev != null) {
+	   			derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
+	   		}
+	   		prev = dp.getValue();
+	    }
+    	return derivativeDatapoints;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+        throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
+    }
+	
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
 

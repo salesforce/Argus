@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.ArrayList;
@@ -101,6 +102,71 @@ public class PropagateTransform implements Transform {
         
         metric.setDatapoints(propagateDatapoints);
     }
+	
+    private void _propagateMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, List<Metric> result) {
+    	Metric m = new Metric(scanner.getMetric());
+    	Map.Entry<Long, Double> dp = null;
+	   	if (!scanner.hasNextDP()) {
+	    	result.add(m);
+			return;
+    	}
+	    	
+	   	dp = scanner.getNextDP();
+	   	if (!scanner.hasNextDP()) {
+	   		result.add(m);
+	   		return;
+	    }
+    	
+    	Map<Long, Double> propagateDatapoints = new TreeMap<>();
+    	Map<Long, Double> datapoints = new TreeMap<>();
+    	datapoints.put(dp.getKey(), dp.getValue());
+    	List<Long> timestamps = new ArrayList<>();
+    	timestamps.add(dp.getKey());
+    	
+    	Long startTimestamp = timestamps.get(0);
+    	int index = 1;
+    	
+   		if (!scanner.hasNextDP()) {
+   			result.add(m);
+   			return;
+   		}
+	   	do {
+	   		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
+	    		
+	   		dp = scanner.getNextDP();
+	   		datapoints.put(dp.getKey(), dp.getValue());
+	    	timestamps.add(dp.getKey());
+	    		
+			if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
+	   		} else {
+	   			startTimestamp = timestamps.get(index);
+	   			index++;
+	   		}
+	    } while (scanner.hasNextDP());
+		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
+    	
+    	int newLength = propagateDatapoints.size();
+    	List<Long> newTimestamps = new ArrayList<Long>();
+    	List<Double> newValues = new ArrayList<>();
+    	
+    	for (Map.Entry<Long, Double> entry : propagateDatapoints.entrySet()) {
+    		newTimestamps.add(entry.getKey());
+    		newValues.add(entry.getValue());
+    	}
+    	
+    	Double prev = null;
+    	for (int i = 0; i < newLength; i++) {
+    		if (newValues.get(i) != null) {
+    			prev = newValues.get(i);
+    		} else {
+    			propagateDatapoints.put(newTimestamps.get(i), prev);
+    		}
+    	}
+    	
+    	m.setDatapoints(propagateDatapoints);
+    	result.add(m);
+    }
 
     private static long parseTimeIntervalInSeconds(String interval) {
         MetricReader.TimeUnit timeunit = null;
@@ -125,6 +191,11 @@ public class PropagateTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Propagate Transform needs a max window size");
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Propagate Transform needs a max window size");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -142,6 +213,24 @@ public class PropagateTransform implements Transform {
         }
         return metrics;
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners.");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Propagate Transform needs a max window size");
+    	
+    	String window = constants.get(0);
+    	long windowSizeInSeconds = parseTimeIntervalInSeconds(window);
+    	
+    	List<Metric> result = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {
+    		_propagateMetricTransformScanner(scanner, windowSizeInSeconds, result);
+    	}
+    	return result;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -150,6 +239,11 @@ public class PropagateTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
     }
 }

@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,9 +69,37 @@ public class IntegralTransform implements Transform {
         }
         return result;
     }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    		SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    		
+    		List<Metric> result = new ArrayList<>(scanners.size());
+    		
+    		for (MetricScanner scanner : scanners) {
+    			Double prevSum = 0.0;
+    			Map<Long, Double> integralDP = new TreeMap<>();
+    			
+	   			while (scanner.hasNextDP()) {
+	   				Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    			prevSum += dp.getValue();
+	    			integralDP.put(dp.getKey(), prevSum);
+	    		}
+    			
+    			Metric m = new Metric(scanner.getMetric());
+    			m.setDatapoints(integralDP);
+    			result.add(m);
+    		}
+    		return result;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+        throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
         throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
     }
 
@@ -81,6 +110,11 @@ public class IntegralTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+	
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 }

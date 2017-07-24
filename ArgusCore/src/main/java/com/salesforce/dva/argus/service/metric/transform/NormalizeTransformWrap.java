@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -124,6 +125,46 @@ public class NormalizeTransformWrap implements Transform {
 
         return divide_vTransform.transform(paddingMetrics);
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	
+    	Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
+    	List<Metric> sumUnitMetric = unionTransform.transformScanner(scanners);
+    	
+    	Set<Long> unionKeyset = sumUnitMetric.get(0).getDatapoints().keySet();
+    	    	
+    	List<Metric> paddingMetrics = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		SystemAssert.requireState(!scanner.hasNextDP(), "Cannot pad data of an incompletely searched scanner.");
+    		Map<Long, Double> paddingDatapoints = new TreeMap<>();
+    		Set<Long> metricDPKeyset = scanner.getMetric().getDatapoints().keySet();
+    		
+    		for (Long unionKey : unionKeyset) {
+    			if (!metricDPKeyset.contains(unionKey)) {
+    				paddingDatapoints.put(unionKey, 0.0);
+    			}
+    		}
+    		
+    		paddingDatapoints.putAll(scanner.getMetric().getDatapoints());
+    		
+    		Metric m = new Metric(scanner.getMetric());
+    		m.setDatapoints(paddingDatapoints);
+    		paddingMetrics.add(m);
+    	}
+    	
+    	
+    	paddingMetrics.add(sumUnitMetric.get(0));
+    	
+    	Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
+    	
+    	return divide_vTransform.transform(paddingMetrics);
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -142,6 +183,24 @@ public class NormalizeTransformWrap implements Transform {
 
         return divideByConstantTransform.transform(metrics, constants);
     }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	if (constants == null || constants.isEmpty()) {
+    		return transformScanner(scanners);
+    	} else {
+    		SystemAssert.requireArgument(constants.size() == 1, "Normalize Transform must provide only one constants if any.");
+            SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) != 0.0, "Normalize unit can't be ZERO.");
+    	}
+    	
+    	Transform divideByConstantTransform = new MetricMappingTransform(new DivideByConstantValueMapping());
+    	
+    	return divideByConstantTransform.transformScanner(scanners, constants);
+    }
 
     @Override
     public String getResultScopeName() {
@@ -150,6 +209,11 @@ public class NormalizeTransformWrap implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
+        throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
+    }
+	
+	@Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
     }
 
@@ -179,9 +243,27 @@ public class NormalizeTransformWrap implements Transform {
             }
             return divideByConstantDatapoints;
         }
+		
+		@Override
+        public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+        	Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
+        	
+	       	while (scanner.hasNextDP()) {
+	       		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	        		
+	       		Double val = dp.getValue() == null ? 0.0 : dp.getValue();
+	       		divideByConstantDatapoints.put(dp.getKey(), val);
+	        }
+        	return divideByConstantDatapoints;
+        }
 
         @Override
         public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+            throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
+        }
+		
+		@Override
+        public Map<Long, Double> mappingScanner(MetricScanner scanner) {
             throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
         }
 

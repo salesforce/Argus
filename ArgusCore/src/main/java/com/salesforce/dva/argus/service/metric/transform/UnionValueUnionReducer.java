@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
+
 /**
  * Performs the union of all data points for the given time series.
  *
@@ -45,6 +48,14 @@ public class UnionValueUnionReducer implements ValueReducer {
     @Override
     public Double reduce(List<Double> values) {
         return values.get(0);
+    }
+	
+	@Override
+    public Double reduceScanner(MetricScanner scanner) {
+	   	SystemAssert.requireArgument(scanner.hasNextDP(), "Cannot reduce an empty scanner");
+	   	Double val = scanner.getNextDP().getValue();
+	   	scanner.dispose();
+	    return val;
     }
 
     @Override
