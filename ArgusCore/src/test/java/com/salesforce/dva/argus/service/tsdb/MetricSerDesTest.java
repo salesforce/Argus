@@ -29,7 +29,7 @@ public class MetricSerDesTest {
 	@Test
 	public void testMetricDeserializationList() {
         
-        String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":4.940423168E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}}]";
+        String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"host1\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":4.940423168E9}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"host2\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}}]";
         
         try {
 			ResultSet set = _mapper.readValue(content, new TypeReference<ResultSet>() { });
@@ -57,7 +57,7 @@ public class MetricSerDesTest {
 	@Test
 	public void testMetricDeserializationListWithEmptyDatapointSet() {
         
-        String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-2-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"shared1-argusws1-5-prd.eng.sfdc.net\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}}]";
+        String content = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"host1\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"host\":\"host2\",\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386300\":4.940423168E9}}]";
         
         try {
 			ResultSet set = _mapper.readValue(content, new TypeReference<ResultSet>() { });
