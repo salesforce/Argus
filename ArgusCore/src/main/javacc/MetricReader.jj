@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
@@ -138,6 +139,9 @@ TOKEN : { < #POUND : "#" > }
 TOKEN : { < #NOT : "!" > }
 TOKEN : { < #TIME_UNIT : "s" | "m" | "h" | "d" > }
 TOKEN : { < #ANYTHING : ~["#"] > }
+
+TOKEN : { < SIGNAL_SCAN : "::USE" > }
+TOKEN : { < SCANNER : "SCANNER" > }
 
 TOKEN : { < IDENTITY : "IDENTITY" > }
 TOKEN : { < SUM : "SUM" > }
@@ -252,9 +256,16 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	List<String> constants = new ArrayList<String>();
   	String functionName, constant = "";
   	Token t = null;
+  	boolean useScanner = false;
 }
 {
 	functionName = functionName()
+	(<SIGNAL_SCAN>useScanner = getScanner())?
+	{
+	  	if(useScanner) {
+	  	  clazz = (Class<T>) MetricScanner.class;
+	  	}
+	}
 	<LEFT_PARENTHESIS>
 		(
 		result = expression(relativeTo, syntaxOnly, clazz)
@@ -474,12 +485,24 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
   	{
   	  	if(MetricQuery.class.equals(clazz)) {
   	  		return (List<T>) result;
+  	    } else if(MetricScanner.class.equals(clazz)) {
+  	      	if(syntaxOnly) {
+  	      	  	/* have to return an empty list here, can't use create a metric scanner with a null tsdb service */ 
+  	      	 	return (List<T>) Arrays.asList( new MetricScanner[] { });
+  	      	} else {
+  	      	  	if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
+  	      	  	  	constants.add(String.valueOf(relativeTo));
+  	      	  	}
+  	      	  	Transform transform = factory.getTransform(functionName);
+  	      	  	return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transformScanner((List<MetricScanner>) result) : transform.transformScanner((List<MetricScanner>) result, constants));
+  	        }
   	  	} else if(Metric.class.equals(clazz)) {
   	  	  	if(syntaxOnly) {
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
 	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	      	constants.add(String.valueOf(relativeTo));
+	  	  	    }
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
@@ -513,8 +536,9 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
   	Aggregator downsampler = null;
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
+  	boolean useScanner = false;
 }
-{ 	
+{
   	startTimestamp = getTime(relativeTo)<COLON>
   	(endTimestamp = getTime(relativeTo)<COLON>)?
   	scope = getString() <COLON> metric = getString()
@@ -522,6 +546,7 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
   	<COLON>aggregator = getAggregator()
   	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
   	(<COLON>namespace = getString())?
+  	(<SIGNAL_SCAN>clazz = getScannerClass())?
 	{
 	  	if(MetricQuery.class.equals(clazz)) {
 	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
@@ -534,6 +559,27 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
 	        query.setDownsamplingPeriod(downsamplingPeriod);
 	        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
 	        return (List<T>) queries;
+	 	} else if(MetricScanner.class.equals(clazz)) {
+	 	  	clazz = (Class<T>)MetricScanner.class;
+	 	  	if(syntaxOnly) {
+	 	  	  	return (List<T>) Arrays.asList( new MetricScanner[] { });
+	 	  	} else {
+	 	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
+	 	  	  	downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr) : null;
+	 	  	  	endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
+	 	  	 	MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
+	 	  	  	query.setNamespace(namespace);
+	 	  	  	query.setAggregator(aggregator);
+	 	  	  	query.setDownsampler(downsampler);
+	 	  	  	query.setDownsamplingPeriod(downsamplingPeriod);
+	 	  	  	List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
+	 	  	  	List<MetricScanner> scanners = new ArrayList<MetricScanner>();
+	 	  	  	Map<MetricQuery, List<MetricScanner>> scannersMap = tsdbService.getMetricScanners(queries);
+	 	  	  	for(List<MetricScanner> ms : scannersMap.values()) {
+	 	  	    	scanners.addAll(ms);
+	 	  	    }
+	 	  	    return (List<T>) scanners;
+	 	  	} 
 	  	} else if(Metric.class.equals(clazz)) {
 			if(syntaxOnly) {
 	            return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
@@ -585,6 +631,26 @@ private Long getTime(long relativeTo) :
 	}
 }
 
+private Class<T> getScannerClass() :
+{}
+{
+  {
+    
+  	if(getScanner()) {
+  	  	return (Class<T>) MetricScanner.class;
+  	}
+ }
+}
+  
+private boolean getScanner() :
+{
+	Token t = null;
+}
+{
+  	t = <SCANNER>
+  	{ return true; }
+}
+ 
 private String getString() :
 {
   	Token t = null;
