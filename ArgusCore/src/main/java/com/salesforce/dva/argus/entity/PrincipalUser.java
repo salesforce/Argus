@@ -31,7 +31,17 @@
 	 
 package com.salesforce.dva.argus.entity;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -86,6 +96,40 @@ import javax.persistence.TypedQuery;
     }
 )
 public class PrincipalUser extends JPAEntity implements Serializable {
+	
+	public static class Serializer extends JsonSerializer<PrincipalUser> {
+
+	    @Override
+	    public void serialize(PrincipalUser value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+	        jgen.writeStartObject();
+	        jgen.writeStringField("id", value.getId().toString());
+	        jgen.writeStringField("username", value.getUserName());
+	        jgen.writeStringField("email", value.getEmail());
+	        jgen.writeEndObject();
+	    }
+	}
+	
+	public static class Deserializer extends JsonDeserializer<PrincipalUser> {
+
+		@Override
+		public PrincipalUser deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			PrincipalUser user = new PrincipalUser();
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			user.id = id;
+			
+			String username = rootNode.get("username").asText();
+			user.setUserName(username);
+			
+			String email = rootNode.get("email").asText();
+			user.setEmail(email);
+			
+			return user;
+		}
+		
+	}
 
     //~ Instance fields ******************************************************************************************************************************
 

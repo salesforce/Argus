@@ -31,9 +31,20 @@
 
 package com.salesforce.dva.argus.entity;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.util.Cron;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
@@ -85,7 +96,9 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  *   <li>OWNER</li>
  * </ul>
  *
- * @author  Tom Valine (tvaline@salesforce.com), Raj Sarkapally (rsarkapally@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Raj Sarkapally (rsarkapally@salesforce.com)
+ * @author	Bhinav Sura (bhinav.sura@salesforce.com)
  */
 @SuppressWarnings("serial")
 @Entity
@@ -134,11 +147,13 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private String name;
 	
+	@Basic(optional = false)
 	@Column(length = 2048)
 	@Metadata
 	private String expression;
 	
 	@Metadata
+	@Basic(optional = false)
 	private String cronEntry;
 	
 	@Metadata
@@ -381,6 +396,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByStatus", Alert.class);
 
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint("eclipselink.join-fetch", "a.triggers");
+		query.setHint("eclipselink.join-fetch", "a.notifications");
 		try {
 			query.setParameter("enabled", enabled);
 			return query.getResultList();
@@ -752,5 +769,128 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				", missingDataNotificationEnabled=" + missingDataNotificationEnabled + ", notifications=" + notifications + ", triggers=" + triggers +
 				", owner=" + owner + ", shared=" + shared + '}';
 	}
+	
+	public static class Serializer extends JsonSerializer<Alert> {
+
+		@Override
+		public void serialize(Alert alert, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+			
+			jgen.writeStartObject();
+			
+			jgen.writeStringField("id", alert.getId().toString());
+			jgen.writeStringField("name", alert.getName());
+			jgen.writeStringField("expression", alert.getExpression());
+			jgen.writeStringField("cronEntry", alert.getCronEntry());
+			jgen.writeBooleanField("enabled", alert.isEnabled());
+			jgen.writeBooleanField("missingDataNotificationEnabled", alert.isMissingDataNotificationEnabled());
+			jgen.writeObjectField("owner", alert.getOwner());
+			
+			jgen.writeArrayFieldStart("triggers");
+			for(Trigger trigger : alert.getTriggers()) {
+				jgen.writeObject(trigger);
+			}
+			jgen.writeEndArray();
+			
+			jgen.writeArrayFieldStart("notifications");
+			for(Notification notification : alert.getNotifications()) {
+				jgen.writeObject(notification);
+			}
+			jgen.writeEndArray();
+			
+			jgen.writeEndObject();
+		}
+	}
+	
+	public static class Deserializer extends JsonDeserializer<Alert> {
+
+		@Override
+		public Alert deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			SimpleModule module = new SimpleModule();
+			module.addDeserializer(Trigger.class, new Trigger.Deserializer());
+			module.addDeserializer(Notification.class, new Notification.Deserializer());
+			module.addDeserializer(PrincipalUser.class, new PrincipalUser.Deserializer());
+			
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(module);
+			
+			Alert alert = new Alert();
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			alert.id = id;
+			
+			String name = rootNode.get("name").asText();
+			alert.setName(name);
+			
+			String expression = rootNode.get("expression").asText();
+			alert.setExpression(expression);
+			
+			String cronEntry = rootNode.get("cronEntry").asText();
+			alert.setCronEntry(cronEntry);
+			
+			boolean enabled = rootNode.get("enabled").asBoolean();
+			alert.setEnabled(enabled);
+			
+			boolean missingDataNotificationEnabled = rootNode.get("missingDataNotificationEnabled").asBoolean();
+			alert.setMissingDataNotificationEnabled(missingDataNotificationEnabled);
+			
+			JsonNode onwerNode = rootNode.get("owner");
+			PrincipalUser owner = mapper.treeToValue(onwerNode, PrincipalUser.class);
+			alert.setOwner(owner);
+			
+			List<Trigger> triggers = new ArrayList<>();
+			JsonNode triggersArrayNode = rootNode.get("triggers");
+			if(triggersArrayNode.isArray()) {
+				for(JsonNode triggerNode : triggersArrayNode) {
+					Trigger trigger = mapper.treeToValue(triggerNode, Trigger.class);
+					trigger.setAlert(alert);
+					triggers.add(trigger);
+				}
+			}
+			alert.setTriggers(triggers);
+						
+			List<Notification> notifications = new ArrayList<>();
+			JsonNode notificationsArrayNode = rootNode.get("notifications");
+			if(notificationsArrayNode.isArray()) {
+				for(JsonNode notificationNode : notificationsArrayNode) {
+					Notification notification  = mapper.treeToValue(notificationNode, Notification.class);
+					notification.setAlert(alert);
+					_replaceTriggerObjectsContainingOnlyIDsWithActualObjects(notification, notification.getTriggers(), triggers);
+					notifications.add(notification);
+				}
+			}
+			alert.setNotifications(notifications);
+			
+			return alert;
+		}
+
+		private void _replaceTriggerObjectsContainingOnlyIDsWithActualObjects(Notification notification, List<Trigger> triggersWithIDsOnly, 
+				List<Trigger> triggers) {
+			
+			List<Trigger> triggersToAdd = new ArrayList<>(triggersWithIDsOnly.size());
+			for(Trigger trigger : triggers) {
+				if(_contains(trigger.getId(), triggersWithIDsOnly)) {
+					triggersToAdd.add(trigger);
+				}
+			}
+			
+			notification.setTriggers(triggersToAdd);
+			
+		}
+
+		private boolean _contains(BigInteger triggerID, List<Trigger> triggersWithIDsOnly) {
+			
+			for(Trigger trigger : triggersWithIDsOnly) {
+				if(trigger.getId().equals(triggerID)) {
+					return true;
+				}
+			}
+			
+			return false;
+		}
+		
+	}
+	
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
