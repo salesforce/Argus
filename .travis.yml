@@ -5,13 +5,11 @@ group: deprecated-2017Q2
 
 services:
   - docker
-
 env:
   global:
    # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
    #   via the "travis encrypt" command using the project repo's public key
    - secure: "fnj9R9EOWNKwtMOqikrKF96AsA9J0uyFH4b7NxvuDkLiTHbTcpeF6aPNdQAfkjW7PQCVsnzYUJmpvG/Tc+VJK+oeBO7ncIagGVTFEpQNH0mllZDvCOCn6c0FKRmC23U51lWYi5KuRe/iCARS97s7vHpuM1kgggB7VpkJRt3fnjbU2YQIR+d0Kare3+3nvKZl9xGNYEgxjw2hFEm1WplyLlCDCuYdrIoXtuwgiVqA4bnUm8YV5cDHmh8LvpBNzdUukYiKDyC6k28QVm52mFTJxT5QkWD3sgbkQTrJl3ItL8DhkubDCtOCPXNabfOYFyQv2/H6EVtYOYe/qXZQjcmI0BrEpSw4WnUuvEHx5YDhukWDp6KrJUsyI0tTsW9UT85z8RZQkbGLv4kk4x4BrrJmsLoMQnn5ScxzIhaDoCEVr9iZKowUvKt4MkPUR5eMckqDsZ53uOkSVyATgcvy2F5O6jvrc37YGb4+WnjXZycKExmX9DbJdXkZFR4DkBHJLAE/VWl9CW6Y5grBaX7Ni32yOiUuwxZJExr7rv0Q3VykREKA1bueOK3kBNlx5QPeP5/j6FpPw5YURWr5ARW4NO/diysGD7FZ+0nOw7PMEdNapQavftE4r+DpG6xMzBt0x0XEUxy89DwgS0I8wg+n8LtCXmnChF7/nYCMCejU15MOPr8="
-
 addons:
   coverity_scan:
     project:
@@ -21,9 +19,15 @@ addons:
     build_command_prepend: "mvn clean"
     build_command:   "mvn -DskipTests=true install"
     branch_pattern: master
-    
 before_script:
   - pip install --user codecov
-
 after_success:
   - codecov
+deploy:
+  env:
+  - secure: wjfAh76pe3vnb28g6YLO6n7bbgCuFykkkbNNZQpGB9FsE30UqnnJROlhzMgPjfuKxI+SJzjrrwWhkfgR5ZJx7PahGo7paxkHvhWvYnLok87ITx7OWWoo2aoZgVqhU3NOf7PCDydQBmt6rm7L4zonxCxtXNsFBrLcENsQIaVOtCuPNvBaLYcx4OtErCRawFFscUT7B9qJqv85tI7qIfFO7+7GkR/1DP3TEmrkSrpuW3ttZsKSPPxXGWEZXybJ/nxrAvhbxtyPeqVumaCNcFjNwuioZr2KDDeR2jKK21oKsulcR6YcBYLW0/x1daSqEPV/VIJvANdfhWpRyaSRIYmGgvWjIpMlFZ+vwQAiYS+1e8d45iB0yLruR+9zzM33h///iAL2s34iN7GWQxN9KA0QtoovcgC3wIWrREdvpgJTR2jXgAa+tnRZPD2wpuHq54Am6+tGweJKYXgOGCPTePm/yNyAwoXHOKa+hvR7q1XSKv+kvIcfifJUl6KOyYB4NUryIyVGUxxcDC3RZfZzKwAgb0c+mHzE0bVVwnP7hLwDcJbX86Q+WLsx4zIrdDhhp+9BZ0eX6nAX5prkCyPIuyZ15ELsrsKlaSUV8cLe5XQQFSgKeqkANIymigNm1Bh+wlYGnLRaW/dOrjdkAb2eHb72M2Di2nRWjOsHs+FT+QRAiVk=
+  - secure: HSd5uautMXap51GObiE3V9VmQkmTskt+NMkM3F1WpWsXBXpRTQAZ+UgbU4TZwdHeSuFRvgwy4Fm/L8vpCRc+GW0UeY1Nj8i1cs5M2ZlDCtlXhCM9+UJHBhFq9uLvU6+gM/EjH5mgCI/mzuO+HTGauN3g1DxG7MC9rrbXAeS2pXF6LJk5Y9IDtYcDUBYpd3JjuezkLge74k5hVg9fbeDFxsz0mJ0IPcevEXSEkbunune4cDxQ65sQUoKs9lgWOWvU0vHwI4PjcBHqgoR3EZSNmye6YHXCEUbY4/OSzo0fPNiVWIkKl3JKjrwmgoZizDEBaIGw4brvPHBEwXJSeGL9DXHvkcPQ5/YBUhF3n0usNNHlnKTuv3IOIUB0dL2xMaqM1h4OfnCBfOmYXisVUw9A5D+1cdzDznvTp1K6wv35LVn6IrR+QfLRr0/h2zuvpgctodF5dY95AuzdwhIwPoYg1hacJNZLt7BHHm88adCKSZovjk9kynuwvQXZPxa+mw6IIYGfEazQD8mIicqUTPCkncWOwibJZ6+TEKMQKRWf1BHdyBtH+v7pmsHROO1tmCxOaNNK9WUofrwBccMM7gVB+ZUpx/XyDfCnTXmQqGnSs6LJ+Bg9oSysKd/VtRBQsOnje5Z708mRtL6k9oITnzFDTtqZj8lYbpEo1zr36RUDsmA=
+  provider: script
+  script: echo "to be continued..."
+  on:
+    branch: master
