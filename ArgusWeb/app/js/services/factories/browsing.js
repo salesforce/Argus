@@ -3,8 +3,9 @@
 
 angular.module('argus.services.browsing', [])
 .factory('Browsing', ['$resource', 'CONFIG', function ($resource, CONFIG) {
-	//TODO: if a different WS URL is used for metric browsing, change it here
-	return $resource(CONFIG.wsUrl + 'discover/metrics/browsing', {}, {
+	//set metric browsing url to beta server
+	var metricBrowsingUrl = CONFIG.wsBetaUrl + 'discover/metrics/browsing';
+	return $resource(metricBrowsingUrl, {}, {
 		query: {method: 'GET', isArray: true}
 	});
 }]);
