@@ -399,7 +399,6 @@ angular.module('argus.services.charts.tools', [])
 		if (!k || k > numOfPoints) k = 3;
 		zoom.scaleExtent([1, numOfPoints / k]);
 		return parseInt(numOfPoints / k);
-
 	};
 
 	this.isBrushInNonEmptyRange = function (xDomain, dateExtent) {
@@ -412,6 +411,7 @@ angular.module('argus.services.charts.tools', [])
 
 	this.isMetricNotInTheDomain = function (metric, xDomain, timestampSelector) {
 		var len = metric.data.length;
+		if (len < 1) return false;
 		var startPoint = timestampSelector(metric.data[0]);
 		var endPoint = timestampSelector(metric.data[len - 1]);
 		return startPoint > xDomain[1] || endPoint < xDomain[xDomain.length - 1];
