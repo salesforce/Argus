@@ -493,6 +493,141 @@ angular.module('argus.services.charts.tools', [])
 		return result;
 	};
 
+    this.convertSeriesToTimeBasedFormatKeepUndefined = function (series) {
+        var result = [];
+        var allTimestamps = [];
+        var valuesAtPreviousTimestampWithIndex = {};
+
+        series.map(function(metric) {
+            valuesAtPreviousTimestampWithIndex[metric.name] = {value: 0, index: 0};
+            metric.data.map(function(d) {
+                var timestamp = d[0];
+                if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
+            });
+        });
+
+        // sort the timestamps and add values from each source
+        allTimestamps.sort(function(a, b) { return a - b; });
+        allTimestamps.map(function(timestamp) {
+            var valuesAtThisTimestamp = {timestamp: timestamp};
+
+            series.map(function(metric) {
+                var tempValueWithIndex = findValueAtAGivenTimestamp(metric, timestamp, valuesAtPreviousTimestampWithIndex[metric.name].index);
+                if(tempValueWithIndex !== undefined){
+                	valuesAtPreviousTimestampWithIndex[metric.name] = tempValueWithIndex;
+                    valuesAtThisTimestamp[metric.name] = tempValueWithIndex.value;
+                }
+            });
+            result.push(valuesAtThisTimestamp);
+        });
+        return result;
+    };
+
+    this.convertTimeBasedSeriesToHeatmapData = function(timeBasedSeries, names, aggr, intervalInMinutes, numOfYInterval){
+    	var startOfInterval = timeBasedSeries[0].timestamp;
+    	var endOfInterval = startOfInterval + intervalInMinutes * 60000;
+    	var aggregatedData = [];
+    	var heatmapData = [];
+    	var tempSum = {};
+    	var tempCount = {};
+    	var yDomain = [Number.MAX_VALUE, Number.MIN_VALUE];
+
+    	timeBasedSeries.forEach(function(d){
+            if(d.timestamp < endOfInterval){
+                //keep adding
+            	names.forEach(function(name){
+                    var val = d[name];
+                    if (val !== undefined){
+                        if(tempSum[name]){
+                            tempSum[name] += val;
+                            tempCount[name] += 1;
+                        }else{
+                            tempSum[name] = val;
+                            tempCount[name] = 1;
+                        }
+                    }
+                });
+            }else{
+				//sum/avg this interval
+				if(aggr === 'sum'){
+					var sum = {timestamp: startOfInterval};
+                    names.forEach(function(name){
+                    	if(tempSum[name] !== undefined){
+                            var val  = tempSum[name];
+                            if(val < yDomain[0]){
+                                yDomain[0] = val;
+                            }
+                            if(val > yDomain[1]){
+                                yDomain[1] = val;
+                            }
+                            sum[name] = val;
+						}
+                    });
+					aggregatedData.push(sum);
+				}else if(aggr === 'avg'){
+                    var avg = {timestamp: startOfInterval};
+                    names.forEach(function(name){
+                        if(tempSum[name] !== undefined){
+                            var val = tempSum[name]/tempCount[name];
+                        	if(val < yDomain[0]){
+                                yDomain[0] = val;
+                            }
+                            if(val > yDomain[1]){
+                                yDomain[1] = val;
+                            }
+                            avg[name] = val;
+                        }
+                    });
+                    aggregatedData.push(avg);
+				}
+				startOfInterval = endOfInterval;
+				endOfInterval = startOfInterval + intervalInMinutes * 60000;
+
+				//start adding
+				names.forEach(function (name){
+					var val = d[name];
+                    if (val !== undefined){
+                            tempSum[name] = val;
+                            tempCount[name] = 1;
+                    }
+				});
+            }
+		});
+    	console.log(aggregatedData);
+		console.log(yDomain[0], yDomain[1]);
+    	var intervalSize = (yDomain[1] - yDomain[0]) / numOfYInterval;
+    	//transfer to time, bucket, frequency
+		aggregatedData.forEach(function(d){
+			var temp = {};
+			for(var k in d){
+				if(d.hasOwnProperty(k)){
+					if (k !== 'timestamp'){
+                        for(var i = yDomain[0]; i < yDomain[1]; i += intervalSize){
+                        	temp[i] = 0;
+                        }
+						for(i = yDomain[0]; i < yDomain[1]; i += intervalSize){
+							if(d[k] < i + intervalSize){
+								temp[i] += 1;
+								break;
+							}
+						}
+					}
+				}
+			}
+			for(k in temp){
+				if(temp.hasOwnProperty(k)){
+					heatmapData.push({
+						timestamp: d.timestamp,
+						bucket: k,
+						frequency: temp[k]
+					})
+				}
+			}
+		});
+
+		return heatmapData;
+	};
+
 	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
 		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
 		var newSeries = series.map(function (metric, index) {

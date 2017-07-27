@@ -521,6 +521,12 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
+
+	this.renderHeatmap = function (chart, color, metric, graph, chartId) {
+		chart.selectAll('.heatmap')
+			.data(metric)
+
+	};
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
 		context.append('path')
 			.attr('class', 'brushLine ' + metric.graphClassName + '_brushLine')
