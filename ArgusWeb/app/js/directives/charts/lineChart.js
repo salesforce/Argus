@@ -414,7 +414,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				yGridG = gridsElement.yGridG;
 
 				//extra YAxis setup
-				if(extraYAxisSet.size > 0){
+				if (extraYAxisSet.size > 0) {
 					var extraYAxisRelatedElements = ChartElementService.createExtraYAxisRelatedElements(x, x2, extraYAxisSet, allSize, yScaleType, yScaleConfigValue, scope.menuOption.yAxisConfig, mainChart);
 					extraY = extraYAxisRelatedElements.extraY;
 					extraYScalePlain = extraYAxisRelatedElements.extraYScalePlain;
@@ -447,12 +447,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartToolService.bindDefaultColorsWithSources(z, names);
 				// populate stack if its needed
 				if (isDataStacked) {
-					stack.keys(names)
-						.order(d3.stackOrderNone)
+					stack.order(d3.stackOrderNone)
 						.offset(d3.stackOffsetNone);
 				}
 				// set domain for bandwidth if its a bar chart
-				if (chartType.includes('bar')) {
+				if (chartType ==='bar') {
 					graph.x1.domain(graphClassNames);
 					graph2.x1.domain(graphClassNames);
 				}
@@ -463,6 +462,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 				// compute stack data if its needed
 				if (isDataStacked) {
+					stack.keys(currSeries.map(function(metric) { return metric.name; }));
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack);
 				}
 				seriesBeingDisplayed = currSeries;
@@ -496,9 +496,11 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (isChartDiscrete) {
 					// update band scale domain from the time scale
 					graph.x0.domain(xyDomain.discreteXDomain);
-					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 					graph2.x0.domain(xyDomain.discreteXDomain);
-					graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+					if (chartType === 'bar') {
+						graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+						graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+					}
 				}
 
 				currSeries.forEach(function (metric, index) {
@@ -653,7 +655,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 
 			// adjust the graph based on small brush
-			function brushed() {
+			function brushed () {
 				// ignore the case when it is called by the zoomed function
 				if (d3.event.sourceEvent && (d3.event.sourceEvent.type === 'zoom' )) return;
 				var s = d3.event.selection || x2.range();
@@ -664,8 +666,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				// update band scale domain if bar chart is plotted
 				if (isChartDiscrete) {
 					graph.x0.domain(ChartToolService.getSubDiscreteXDomain(graph2.x0.domain(), newDomain));
-					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 					highlightBar.attr('width', graph.x0.bandwidth());
+					if (chartType === 'bar') graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 				}
 				//adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
@@ -708,8 +710,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				// update band scale domain if bar chart is plotted
 				if (isChartDiscrete) {
 					graph.x0.domain(ChartToolService.getSubDiscreteXDomain(graph2.x0.domain(), tempNewDomain));
-					graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 					highlightBar.attr('width', graph.x0.bandwidth());
+					if (chartType === 'bar') graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 				}
 				// adjust displaying series to the brushed period
 				seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
@@ -769,13 +771,15 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
 					if (isChartDiscrete) {
 						graph.x0.range(x.range());
-						graph.x1.rangeRound([0, graph.x0.bandwidth()]);
 						graph2.x0.range(x2.range());
-						graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
 						highlightBar.attr('height', allSize.height)
 							.attr('width', graph.x0.bandwidth());
+						if (chartType === 'bar') {
+							graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+							graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+						}
 					}
-					ChartElementService.resizeGraphs(svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet);
+					ChartElementService.resizeGraphs(svg_g, graph, scope.sources, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
@@ -843,7 +847,8 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			// update series being displayed and redraw the graphs
 			scope.updateGraphAndScale = function (hiddenSourceNames) {
-				if (isDataStacked && hiddenSourceNames !== undefined && hiddenSourceNames.length !== series.length) {
+				var needToUpdateData = isDataStacked && hiddenSourceNames !== undefined && hiddenSourceNames.length !== names.length;
+				if (needToUpdateData) {
 					//need to recalculate currSeries since some series are hidden
 					currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 					currSeries = ChartToolService.addStackedDataToSeries(currSeries, stack, hiddenSourceNames);
