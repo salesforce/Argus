@@ -635,7 +635,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		module.addSerializer(Alert.class, new Alert.Serializer());
 		module.addSerializer(Trigger.class, new Trigger.Serializer());
 		module.addSerializer(Notification.class, new Notification.Serializer());
-		module.addSerializer(PrincipalUser.class, new PrincipalUser.Serializer());
+		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
 		mapper.registerModule(module);
 		
 		try {

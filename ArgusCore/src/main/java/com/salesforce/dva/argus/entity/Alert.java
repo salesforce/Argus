@@ -809,7 +809,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			SimpleModule module = new SimpleModule();
 			module.addDeserializer(Trigger.class, new Trigger.Deserializer());
 			module.addDeserializer(Notification.class, new Notification.Deserializer());
-			module.addDeserializer(PrincipalUser.class, new PrincipalUser.Deserializer());
+			module.addDeserializer(PrincipalUser.class, new Alert.PrincipalUserDeserializer());
 			
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.registerModule(module);
@@ -888,6 +888,40 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 			
 			return false;
+		}
+		
+	}
+	
+	public static class PrincipalUserSerializer extends JsonSerializer<PrincipalUser> {
+
+	    @Override
+	    public void serialize(PrincipalUser value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+	        jgen.writeStartObject();
+	        jgen.writeStringField("id", value.getId().toString());
+	        jgen.writeStringField("username", value.getUserName());
+	        jgen.writeStringField("email", value.getEmail());
+	        jgen.writeEndObject();
+	    }
+	}
+	
+	public static class PrincipalUserDeserializer extends JsonDeserializer<PrincipalUser> {
+
+		@Override
+		public PrincipalUser deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			PrincipalUser user = new PrincipalUser();
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			user.id = id;
+			
+			String username = rootNode.get("username").asText();
+			user.setUserName(username);
+			
+			String email = rootNode.get("email").asText();
+			user.setEmail(email);
+			
+			return user;
 		}
 		
 	}
