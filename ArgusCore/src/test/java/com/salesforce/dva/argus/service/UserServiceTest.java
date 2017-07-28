@@ -48,9 +48,8 @@ public class UserServiceTest extends AbstractTest {
     @Test
     public void testUserCrud() {
         UserService userService = system.getServiceFactory().getUserService();
-        PrincipalUser user = new PrincipalUser("aUser", "aUser@mycompany.abc");
+        PrincipalUser user = new PrincipalUser(userService.findAdminUser(), "aUser", "aUser@mycompany.abc");
 
-        user.setCreatedBy(user);
         user = userService.updateUser(user);
         assertNotNull(user.getId());
         user.setEmail("someotheruser@mycompany.abc");

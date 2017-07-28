@@ -44,6 +44,7 @@ import static org.junit.Assert.assertNull;
 
 public class DashboardServiceTest extends AbstractTest {
 
+	private PrincipalUser admin;
     DashboardService dService;
     UserService uService;
 
@@ -53,11 +54,12 @@ public class DashboardServiceTest extends AbstractTest {
         super.setUp();
         dService = system.getServiceFactory().getDashboardService();
         uService = system.getServiceFactory().getUserService();
+        admin = system.getServiceFactory().getUserService().findAdminUser();
     }
 
     @Test
     public void testDashboardCrud() {
-        PrincipalUser owner = new PrincipalUser("owner", "owner@mycompany.abc");
+        PrincipalUser owner = new PrincipalUser(admin, "owner", "owner@mycompany.abc");
         Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
 
         dashboard = dService.updateDashboard(dashboard);
@@ -75,7 +77,7 @@ public class DashboardServiceTest extends AbstractTest {
 
     @Test
     public void testDashboard_FindShareDelete() {
-        PrincipalUser owner = new PrincipalUser("owner1", "owner1@mycompany.abc");
+        PrincipalUser owner = new PrincipalUser(admin, "owner1", "owner1@mycompany.abc");
         Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
 
         dashboard.setShared(true);
@@ -97,7 +99,7 @@ public class DashboardServiceTest extends AbstractTest {
     @Test
     public void testFindDashboardsMeta() {
     	
-    	PrincipalUser owner = new PrincipalUser("owner1", "owner1@mycompany.abc");
+    	PrincipalUser owner = new PrincipalUser(admin, "owner1", "owner1@mycompany.abc");
         Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
 
         dashboard.setShared(true);
@@ -111,8 +113,8 @@ public class DashboardServiceTest extends AbstractTest {
     
     @Test
     public void testFindDashboardsByOwnerMeta() {
-        PrincipalUser owner1 = new PrincipalUser("owner1", "owner1@mycompany.abc");
-        PrincipalUser owner2 = new PrincipalUser("owner2", "owner2@mycompany.abc");
+        PrincipalUser owner1 = new PrincipalUser(admin, "owner1", "owner1@mycompany.abc");
+        PrincipalUser owner2 = new PrincipalUser(admin, "owner2", "owner2@mycompany.abc");
         
         Dashboard dashboard1 = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner1);
         dashboard1 = dService.updateDashboard(dashboard1);
@@ -131,7 +133,7 @@ public class DashboardServiceTest extends AbstractTest {
     
     @Test
     public void testFindSharedDashboardsMeta() {
-        PrincipalUser owner = new PrincipalUser("owner1", "owner1@mycompany.abc");
+        PrincipalUser owner = new PrincipalUser(admin, "owner1", "owner1@mycompany.abc");
         
         Dashboard dashboard1 = new Dashboard(uService.findAdminUser(), "Test Dashboard1", owner);
         dashboard1.setShared(true);
