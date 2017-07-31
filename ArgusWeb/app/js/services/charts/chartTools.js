@@ -414,7 +414,7 @@ angular.module('argus.services.charts.tools', [])
 		if (len < 1) return false;
 		var startPoint = timestampSelector(metric.data[0]);
 		var endPoint = timestampSelector(metric.data[len - 1]);
-		return startPoint > xDomain[1] || endPoint < xDomain[xDomain.length - 1];
+		return startPoint > xDomain[xDomain.length - 1] || endPoint < xDomain[0];
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
