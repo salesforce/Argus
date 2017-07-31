@@ -332,7 +332,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			// color scheme
 			var z = ChartToolService.setColorScheme(scope.menuOption.colorPalette);
 			// determine chart layout and dimensions
-			var containerHeight = isSmallChart ? 150 : 330;
+			var containerHeight = isSmallChart ? 175 : 330;
 			var containerWidth = $('#' + chartId).width();
 			// remember the original size
 			var defaultContainerWidth = -1;
@@ -487,7 +487,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				dateExtent = xDomain;
 
 				// apply the actual x and y domain based on the data for axises and grids
-				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				xAxisG2.call(xAxis2);
 
@@ -737,7 +737,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
 					ChartElementService.redrawGraphs(seriesBeingDisplayed, scope.sources, chartType, graph, mainChart, extraGraph);
 				}
-				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
 				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
@@ -782,7 +782,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeGraphs(svg_g, graph, scope.sources, chartType, extraGraph, extraYAxisSet);
 					ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
-					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
+					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 					ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
 
 					ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
@@ -835,11 +835,18 @@ angular.module('argus.directives.charts.lineChart', [])
 				} else {
 					brushMainG.style('display', 'none');
 				}
-				// no wheel zoom on page load
-				if (!scope.menuOption.isWheelOn) {
-					chartRect.on('wheel.zoom', null);   // does not disable 'double-click' to zoom
-					brushMainG.on('wheel.zoom', null);
+
+				// turn on wheel zooming for 'smallChart'
+				if (isSmallChart) {
+					scope.menuOption.isWheelOn = true;
+					ChartElementService.toggleWheel(true, zoom, chartRect, brushMainG);
+				} else {
+					if (!scope.menuOption.isWheelOn) {
+						chartRect.on('wheel.zoom', null);   // does not disable 'double-click' to zoom
+						brushMainG.on('wheel.zoom', null);
+					}
 				}
+
 				if (!scope.menuOption.isBrushOn) ChartElementService.toggleElementShowAndHide(false, context);
 				if (scope.menuOption.isSyncChart) { addToSyncCharts(); }
 				scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
@@ -1010,6 +1017,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}, true);
 
+			scope.resetZoom = function() {
+				// smallChart reset brush/zoom
+				ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
+			};
 		}
 	};
 }]);
