@@ -19,7 +19,7 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipWidth = 35;
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
-	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
+	var extraYAxisPadding = ChartToolService.extraYAxisPadding;
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		graph.style('stroke', color);
@@ -209,6 +209,14 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
+	this.createHeatmap = function(x, y){
+		return {
+			x: x,
+			y: y,
+			z: d3.scaleLinear().range(["white", "steelblue"]) //TODO make the color a parameter
+		}
+	};
+
 	this.createGraph = function (x, y, chartType) {
 		var graphElement;
 		switch (chartType) {
@@ -228,6 +236,10 @@ angular.module('argus.services.charts.elements', [])
 				graphElement = this.createStackbar(x, y);
 				break;
 			// case 'line':
+
+			case 'heatmap':
+				graphElement = this.createHeatmap(x, y);
+				break;
 			default:
 				graphElement = this.createLine(x, y);
 		}
@@ -441,6 +453,25 @@ angular.module('argus.services.charts.elements', [])
 		return mouseOverHighlightBar;
 	};
 
+	this.appendMouseOverTile = function (chart, height, width) {
+		var mouseOverTile = chart.append('g')
+			.attr('class', 'mouseOverTile')
+			.style('display', 'none');
+		mouseOverTile.append('rect')
+			.attr('class', 'hightlightTile')
+			.attr('class', 'hightlight')
+			.attr('height', height)
+			.attr('width', width);
+        mouseOverTile.append('rect')
+            .attr('name', 'crossLineTipRectX')
+            .attr('class', 'crossLineTipRect');
+        mouseOverTile.append('text')
+            .attr('name', 'crossLineTipX')
+            .attr('class', 'crossLineTip')
+            .attr('y', 0)
+            .attr('dy', crossLineTipHeight);
+	};
+
 	this.appendTooltipElements = function (svg_g) {
 		var tooltip = svg_g.append('g')
 			.attr('class', 'tooltip')
@@ -550,11 +581,19 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 
-	this.renderHeatmap = function (chart, color, metric, graph, chartId) {
-		chart.selectAll('.heatmap')
-			.data(metric)
-
+	this.renderHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
+		chart.selectAll('.tile')
+			.data(heatmapData)
+			.enter().append('rect')
+			.attr('class', 'tile')
+			.attr('x', function(d){ return graph.x(d.timestamp);})
+			.attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
+			.attr('width', graph.x(bucket.xStep) - graph.x(0))
+			.attr('height', graph.y(0) - graph.y(bucket.yStep))
+			.attr('fill', function(d) {return graph.z(d.frequency)})
+            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
 	};
+
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
 		context.append('path')
 			.attr('class', 'brushLine ' + metric.graphClassName + '_brushLine')

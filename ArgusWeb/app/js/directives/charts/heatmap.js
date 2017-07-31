@@ -279,7 +279,10 @@ angular.module('argus.directives.charts.heatmap', [])
                 var chartOptions = scope.chartConfig;
                 var extraYAxisSet = scope.extraYAxisSet;
 
-                /** 'smallChart' settings:
+                chartOptions.step = Number(chartOptions.step);
+				chartOptions.minBucket = Number(chartOptions.minBucket);
+
+				/** 'smallChart' settings:
                  height: 150
                  no timeline, date range, option menu
                  only left-side Y axis
@@ -355,10 +358,11 @@ angular.module('argus.directives.charts.heatmap', [])
                     svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG,//g
                     context, clip, brushG, brushMainG, chartRect,//g
                     tooltip, tipBox, tipItems,
-                    focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement,
+                    focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement, mouseOverTile,
                     names, colors, graphClassNames,
                     flagsG, labelTip,
-                    stack;
+                    stack,
+					heatmapBucket;
 
                 var isDataStacked = chartType.includes('stack');
                 var isChartDiscrete = chartType.includes('bar');
@@ -385,17 +389,17 @@ angular.module('argus.directives.charts.heatmap', [])
                     xGrid = grids.xGrid;
                     yGrid = grids.yGrid;
 
-                    graph = ChartElementService.createGraph(x, y, chartType);
+                    graph = ChartElementService.createHeatmap(x, y);
 
                     // populate brash related items
-                    var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
-                    xAxis2 = smallBrush.xAxis;
-                    x2 = smallBrush.x;
-                    y2 = smallBrush.y;
-                    graph2 = smallBrush.graph;
-                    brush = smallBrush.brush;
+                   // var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
+                   //  xAxis2 = smallBrush.xAxis;
+                   //  x2 = smallBrush.x;
+                   //  y2 = smallBrush.y;
+                   //  graph2 = smallBrush.graph;
+                   //  brush = smallBrush.brush;
 
-                    brushMain = ChartElementService.createMainBrush(allSize, brushedMain);
+                  //  brushMain = ChartElementService.createMainBrush(allSize, brushedMain);
 
                     var chartContainerElements = ChartElementService.generateMainChartElements(allSize, container);
                     svg = chartContainerElements.svg;
@@ -413,127 +417,110 @@ angular.module('argus.directives.charts.heatmap', [])
                     xGridG = gridsElement.xGridG;
                     yGridG = gridsElement.yGridG;
 
-                    //extra YAxis setup
-                    if(extraYAxisSet.size > 0){
-                        var extraYAxisRelatedElements = ChartElementService.createExtraYAxisRelatedElements(x, x2, extraYAxisSet, allSize, yScaleType, yScaleConfigValue, scope.menuOption.yAxisConfig, mainChart);
-                        extraY = extraYAxisRelatedElements.extraY;
-                        extraYScalePlain = extraYAxisRelatedElements.extraYScalePlain;
-                        extraYAxisR = extraYAxisRelatedElements.extraYAxisR;
-                        extraYAxisRG = extraYAxisRelatedElements.extraYAxisRG;
-                        extraGraph = extraYAxisRelatedElements.extraGraph;
-                        extraY2 = extraYAxisRelatedElements.extraY2;
-                        extraGraph2 = extraYAxisRelatedElements.extraGraph2;
-                    }
 
                     //clip path: keep graphs within the container
                     clip = ChartElementService.appendClip(allSize, svg_g, chartId);
-
-                    //brush area
-                    var smallBrushElement = ChartElementService.appendBrushWithXAxisElements(allSize, svg_g);
-                    context = smallBrushElement.context;
-                    xAxisG2 = smallBrushElement.xAxisG2;
-
-                    // flags and annotations
-                    var flagsElement = ChartElementService.appendFlagsElements(svg_g, chartId);
-                    flagsG = flagsElement.flagsG;
-                    labelTip = flagsElement.labelTip;
-
+                    //
+                    // //brush area
+                    // var smallBrushElement = ChartElementService.appendBrushWithXAxisElements(allSize, svg_g);
+                    // context = smallBrushElement.context;
+                    // xAxisG2 = smallBrushElement.xAxisG2;
+                    //
+                    // // flags and annotations
+                    // var flagsElement = ChartElementService.appendFlagsElements(svg_g, chartId);
+                    // flagsG = flagsElement.flagsG;
+                    // labelTip = flagsElement.labelTip;
+                    //
                     // tooltip setup
                     var tooltipElement = ChartElementService.appendTooltipElements(svg_g);
                     tooltip = tooltipElement.tooltip;
                     tipBox = tooltipElement.tipBox;
                     tipItems = tooltipElement.tipItems;
-                    // set color
-                    ChartToolService.bindDefaultColorsWithSources(z, names);
-                    // populate stack if its needed
-                    if (isDataStacked) {
-                        stack.keys(names)
-                            .order(d3.stackOrderNone)
-                            .offset(d3.stackOffsetNone);
-                    }
-                    // set domain for bandwidth if its a bar chart
-                    if (chartType.includes('bar')) {
-                        graph.x1.domain(graphClassNames);
-                        graph2.x1.domain(graphClassNames);
-                    }
+                    // // set color
+                    // ChartToolService.bindDefaultColorsWithSources(z, names);
+                    // // populate stack if its needed
+                    // if (isDataStacked) {
+                    //     stack.keys(names)
+                    //         .order(d3.stackOrderNone)
+                    //         .offset(d3.stackOffsetNone);
+                    // }
+                    // // set domain for bandwidth if its a bar chart
+                    // if (chartType.includes('bar')) {
+                    //     graph.x1.domain(graphClassNames);
+                    //     graph2.x1.domain(graphClassNames);
+                    // }
                 }
 
                 function renderGraphs (series) {
                     // downsample if its needed
                     currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 
-                    currSeries = ChartToolService.convertSeriesToTimeBasedFormatKeepUndefined(currSeries);
+                    var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYDomain(series, names, chartOptions.aggregate ||
+						ChartToolService.defaultAggregate, chartOptions.intervalInMinutes ||
+						ChartToolService.defaultHeatmapIntervalInMinutes); //TODO move this default number to chartTools
+                    currSeries = aggregatedSeriesAndXYDomain.aggregatedSeries;
 
-                    seriesBeingDisplayed = currSeries;
+                    var xDomain = aggregatedSeriesAndXYDomain.xDomain;
+                    var yDomain = aggregatedSeriesAndXYDomain.yDomain;
 
-                    var xyDomain = ChartToolService.getXandYDomainsOfSeries(currSeries, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet);
-                    var xDomain = xyDomain.xDomain;
-                    var yDomain = xyDomain.yDomain;
-                    var extraYDomain = xyDomain.extraYDomain;
+					var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, chartOptions.bucketMin, chartOptions.step, chartOptions.numOfBucket);
+					var heatmapData = heatmapDataAndBucketInfo.heatmapData;
 
-                    x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
-                    y.domain(ChartToolService.processYDomain(yDomain, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete));
-                    for (var iSet of extraYAxisSet){
-                        extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
-                    }
+					x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
+                    y.domain(yDomain);
+
                     // update brush's x and y
-                    x2.domain(xDomain);
-                    y2.domain(yDomain);
-                    for (var iSet of extraYAxisSet){
-                        extraY2[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
-                    }
+                    // x2.domain(xDomain);
+                    // y2.domain(yDomain);
 
                     dateExtent = xDomain;
 
                     // apply the actual x and y domain based on the data for axises and grids
-                    ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+                    ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
                     ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
-                    xAxisG2.call(xAxis2);
+                   // xAxisG2.call(xAxis2);
 
-                    // minior adjustments based on chart type
-                    var chartOpacity = chartType.includes('stack')? 0.8: 1;
-                    if (isChartDiscrete) {
-                        // update band scale domain from the time scale
-                        graph.x0.domain(xyDomain.discreteXDomain);
-                        graph.x1.rangeRound([0, graph.x0.bandwidth()]);
-                        graph2.x0.domain(xyDomain.discreteXDomain);
-                        graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
-                    }
+                    heatmapBucket = {
+                    	xStep : chartOptions.intervalInMinutes * 60000 || ChartToolService.defaultHeatmapIntervalInMinutes * 60000,
+						yStep : chartOptions.step || heatmapDataAndBucketInfo.step
+					};
 
-                    currSeries.forEach(function (metric, index) {
-                        if (metric.data.length === 0) return;
-                        var tempColor = metric.color === null ? z(metric.name) : metric.color;
-                        var downSampledMetric;
-                        if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
+                    ChartElementService.renderHeatmap(mainChart, heatmapData, graph, heatmapBucket, chartId);
 
-                        var tempGraph, tempGraph2;
-                        if (!metric.extraYAxis) {
-                            tempGraph = graph;
-                            tempGraph2 = graph2;
-                        } else {
-                            tempGraph = extraGraph[metric.extraYAxis];
-                            tempGraph2 = extraGraph2[metric.extraYAxis];
-                        }
-
-                        ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
-                        // render brush line in a downsample manner
-                        downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-                        ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
-                        ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
-                        // render annotations
-                        if (!metric.flagSeries) return;
-                        var flagSeries = metric.flagSeries.data;
-                        flagSeries.forEach(function (d) {
-                            ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
-                        });
-                    });
-                    maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
-                    ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+                    // currSeries.forEach(function (metric, index) {
+                    //     if (metric.data.length === 0) return;
+                    //     var tempColor = metric.color === null ? z(metric.name) : metric.color;
+                    //     var downSampledMetric;
+                    //     if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
+                    //
+                    //     var tempGraph, tempGraph2;
+                    //     if (!metric.extraYAxis) {
+                    //         tempGraph = graph;
+                    //         tempGraph2 = graph2;
+                    //     } else {
+                    //         tempGraph = extraGraph[metric.extraYAxis];
+                    //         tempGraph2 = extraGraph2[metric.extraYAxis];
+                    //     }
+                    //
+                    //     ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+                    //     // render brush line in a downsample manner
+                    //     downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+                    //     ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
+                    //     ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
+                    //     // render annotations
+                    //     if (!metric.flagSeries) return;
+                    //     var flagSeries = metric.flagSeries.data;
+                    //     flagSeries.forEach(function (d) {
+                    //         ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
+                    //     });
+                    // });
+                    //maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
+                    //ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
                 }
 
                 // Add the overlay element to the graph when mouse interaction takes place. This needs to be on top
                 function addOverlay() {
-                    // Mouseover focus and crossline
+                    //Mouseover focus and crossline
                     if (!isChartDiscrete) {
                         focus = ChartElementService.appendFocus(mainChart);
                         crossLine = ChartElementService.appendCrossLine(focus);
@@ -552,11 +539,16 @@ angular.module('argus.directives.charts.heatmap', [])
                         highlightBar = mouseOverHighlightBar.select('.highlightBar');
                         mouseMoveElement = mouseOverHighlightBar;
                     }
+
+                    var tileWidth = graph.x(heatmapBucket.xStep) - graph.x(0);
+					var tileHight = graph.y(0) - graph.y(heatmapBucket.yStep);
+
+                    mouseOverTile = ChartElementService.appendMouseOverTile(mainChart, tileHight, tileWidth)
                     //the graph rectangle area
                     chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
                     // the brush overlay
-                    brushG = ChartElementService.appendBrushOverlay(context, brush, x.range());
-                    brushMainG = ChartElementService.appendMainBrushOverlay(mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom, brushMain);
+                   // brushG = ChartElementService.appendBrushOverlay(context, brush, x.range());
+                   // brushMainG = ChartElementService.appendMainBrushOverlay(mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom, brushMain);
                 }
 
                 // mouse interaction on the chart
@@ -887,8 +879,8 @@ angular.module('argus.directives.charts.heatmap', [])
                         setUpGraphs();
                         renderGraphs(series);
                         addOverlay();
-                        setupMenu();
-                        ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
+                    //    setupMenu();
+                    //    ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
                     } else {
                         // generate content for no graph message
                         if (invalidExpression) {
