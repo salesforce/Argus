@@ -91,14 +91,17 @@ angular.module('argus.directives.charts.lineChart', [])
 					isTooltipSortOn: $scope.menuOption.isTooltipSortOn
 				};
 			}
-			if ($scope.menuOption.yAxisConfig === undefined){
+			if ($scope.menuOption.yAxisConfig === undefined) {
 				$scope.menuOption.yAxisConfig = {
 					formatYaxis: $scope.menuOption.formatYaxis,
 					numTicksYaxis: $scope.menuOption.numTicksYaxis
 				};
 			}
-			if ($scope.menuOption.isSnapCrosslineOn === undefined){
+			if ($scope.menuOption.isSnapCrosslineOn === undefined) {
 				$scope.menuOption.isSnapCrosslineOn = true;
+			}
+			if ($scope.menuOption.localTimezone === undefined) {
+				$scope.menuOption.localTimezone = false;
 			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
@@ -275,7 +278,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			var chartId = scope.chartConfig.chartId;
 			var chartType = scope.chartConfig.chartType;
 			var series = scope.series;
-			var GMTon = scope.dateConfig.gmt;
+			var GMTon = !scope.menuOption.localTimezone;
 			var chartOptions = scope.chartConfig;
 			var extraYAxisSet = scope.extraYAxisSet;
 
@@ -1007,6 +1010,34 @@ angular.module('argus.directives.charts.lineChart', [])
 					}
 					seriesBeingDisplayed = ChartToolService.adjustSeriesBeingDisplayed(currSeries, x, timestampSelector, dateBisector);
 					scope.updateGraphAndScale();
+				}
+			}, true);
+
+			scope.$watch('menuOption.localTimezone', function (newValue, oldValue) {
+				if (!scope.hideMenu && newValue !== oldValue) {
+					// update x and x2 scale
+					if (newValue) {
+						console.log('using local timezone');
+						GMTon = false;
+						x = d3.scaleTime().domain(x.domain()).range(x.range());
+						x2 = d3.scaleTime().domain(x2.domain()).range(x2.range());
+					} else {
+						console.log('using GMT');
+						GMTon = true;
+						x = d3.scaleUtc().domain(x.domain()).range(x.range());
+						x2 = d3.scaleUtc().domain(x2.domain()).range(x2.range());
+					}
+					xAxis.scale(x);
+					xAxisG.call(xAxis);
+					xGrid.scale(x);
+					xGridG.call(xGrid);
+					xAxis2.scale(x2);
+					xAxisG2.call(xAxis2);
+					// TODO: update graph and graph2
+					// update date formatter
+					dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
+					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+					//
 				}
 			}, true);
 
