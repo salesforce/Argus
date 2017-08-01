@@ -17,11 +17,11 @@ angular.module('argus.directives.controls.select', ['selectize'])
 			controller: function($scope) {
 				$scope.ctrlVal = $scope.controlValue;
 
-                for (var prop in $routeParams) {
-                    if (prop == $scope.controlName) {
-                        $scope.ctrlVal = $routeParams[prop];
-                    }
-                }
+				for (var prop in $routeParams) {
+					if (prop == $scope.controlName) {
+						$scope.ctrlVal = $routeParams[prop];
+					}
+				}
 
 				$scope.selectizeOptions = [];
 				$scope.selectizeConfig = {
