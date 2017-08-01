@@ -197,7 +197,7 @@ angular.module('argus.services.charts.tools', [])
 	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
 		var extraDatapoints = {};
-
+		var allDatapoints = [];
 		for(var iSet of extraYAxisSet){
 			extraDatapoints[iSet] = [];
 		}
@@ -208,15 +208,16 @@ angular.module('argus.services.charts.tools', [])
 			} else {
 				datapoints = datapoints.concat(metric.data);
 			}
+			allDatapoints = allDatapoints.concat(metric.data);
 		});
 
 		var result = {
-			xDomain: this.getXDomainOfSeries(datapoints, timestampSelector),
+			xDomain: this.getXDomainOfSeries(allDatapoints, timestampSelector),
 			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
 			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
 
-		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(datapoints, timestampSelector);
+		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(allDatapoints, timestampSelector);
 
 		return result;
 	};
