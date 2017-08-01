@@ -57,7 +57,11 @@ angular.module('argus.services.charts.elements', [])
 
 		xAxis = d3.axisBottom()
 			.scale(x)
-			.ticks(currentnGridX);
+			.ticks(currentnGridX)
+
+		// set short numerical date time format to 'smallChart' for better readability
+		if (isSmallChart)
+			xAxis.tickFormat(d3.timeFormat("%-m/%-d %H:%M"));
 
 		yAxis = d3.axisLeft()
 			.scale(y)
@@ -1183,8 +1187,22 @@ angular.module('argus.services.charts.elements', [])
 		});
 	};
 
-	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet) {
-		xAxisG.call(xAxis);  //redraw xAxis
+	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart) {
+		//redraw xAxis
+
+		// rotate text label for 'smallChart'
+		if (isSmallChart) {
+			xAxisG.call(xAxis)
+				.selectAll("text")
+				.attr("y", 5)
+				.attr("x", -9)
+				.attr("dy", ".35em")
+				.attr("transform", "rotate(-65)")
+				.style("text-anchor", "end");
+		} else {
+			xAxisG.call(xAxis);
+		}
+
 		yAxisG.call(yAxis);  //redraw yAxis
 		yAxisRG.call(yAxisR); //redraw yAxis right
 		if(extraYAxisSet){
@@ -1307,7 +1325,7 @@ angular.module('argus.services.charts.elements', [])
 		chartRect.attr('width', sizeInfo.width);
 	};
 
-	this.resizeAxis = function (sizeInfo, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, xAxisConfig, extraYAxisR, extraYAxisRG, extraYAxisSet) {
+	this.resizeAxis = function (sizeInfo, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, xAxisConfig, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart) {
 		if (needToAdjustHeight) {
 			xAxisG.attr('transform', 'translate(0,' + sizeInfo.height + ')');
 		}
@@ -1320,7 +1338,7 @@ angular.module('argus.services.charts.elements', [])
 			}
 		}
 
-		this.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet);
+		this.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 
 		if (xAxisConfig!== undefined && xAxisConfig.title !== undefined) {
 			mainChart.select('.xAxisLabel')
