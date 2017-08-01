@@ -530,7 +530,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					if (!metric.flagSeries) return;
 					var flagSeries = metric.flagSeries.data;
 					flagSeries.forEach(function (d) {
-						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
+						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d);
 					});
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
@@ -1027,13 +1027,23 @@ angular.module('argus.directives.charts.lineChart', [])
 						x = d3.scaleUtc().domain(x.domain()).range(x.range());
 						x2 = d3.scaleUtc().domain(x2.domain()).range(x2.range());
 					}
+					// update axis and grid
 					xAxis.scale(x);
 					xAxisG.call(xAxis);
 					xGrid.scale(x);
 					xGridG.call(xGrid);
 					xAxis2.scale(x2);
 					xAxisG2.call(xAxis2);
-					// TODO: update graph and graph2
+					// update main chart and brush graphs
+                    if (ChartElementService.customizedChartType.includes(chartType)) {
+                    	ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
+                    	ChartElementService.updateCustomizedChartTypeGraphX(context, graph2, x2, chartType);
+                    } else {
+                        ChartElementService.updateGraphsX(graph, x, timestampSelector);
+                        ChartElementService.updateGraphsX(graph2, x2, timestampSelector);
+
+					}
+                    // TODO: update extraGraph from extraYaxis
 					// update date formatter
 					dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
 					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
@@ -1041,6 +1051,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}, true);
 
+			// remove annotation label tip when the user is leaving the page
+			scope.$on("$destroy", function() {
+            	labelTip.destroy();
+			});
 		}
 	};
 }]);

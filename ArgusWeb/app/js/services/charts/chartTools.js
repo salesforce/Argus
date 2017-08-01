@@ -120,7 +120,8 @@ angular.module('argus.services.charts.tools', [])
 			formatYaxis: defaultYaxis,
 			numTicksYaxis: defaultTicksYaxis
 		},
-		isSnapCrosslineOn: true
+		isSnapCrosslineOn: true,
+        localTimezone: false
 	};
 
 	// color

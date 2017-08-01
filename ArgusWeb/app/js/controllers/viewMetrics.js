@@ -35,8 +35,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			var tempSeries = []
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
-				// clear old chart
-				$('#' + 'container').empty();
+				// clear old chart and annotation label tip
+				angular.element('#' + 'container').empty();
+				angular.element('.d3-tip').remove();
 				$scope.checkMetricExpression();
 				// show loading spinner
 				$scope.chartLoaded = false;

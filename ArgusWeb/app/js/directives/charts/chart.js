@@ -7,7 +7,8 @@ angular.module('argus.directives.charts.chart', [])
 		var chartNameIndex = 1;
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
-			$('#' + newChartId).empty();
+			angular.element('#' + newChartId).empty();
+			angular.element('.d3-tip').remove();
 
 			// create a new scope to pass to compiled line-chart directive
 			var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
