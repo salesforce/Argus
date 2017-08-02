@@ -41,11 +41,15 @@ angular.module('argus.services.charts.tools', [])
 		var currentMarginRight = isSmallChart? marginRightSmall: marginRight;
 		var newWidth = newContainerWidth - marginLeft - currentMarginRight;
 		var newHeight, newHeight2;
+
+		// 'smallChart' setting: add to marginBottom, so xAxis has more room for rotated text labels
+		var tmpMarginBottom = (isSmallChart)? marginBottom + 30 : marginBottom;
+
 		if (isBrushOn) {
-			newHeight = parseInt((newContainerHeight - currentMarginTop - marginBottom) * mainChartRatio);
-			newHeight2 = parseInt((newContainerHeight - currentMarginTop - marginBottom) * brushChartRatio);
+			newHeight = parseInt((newContainerHeight - currentMarginTop - tmpMarginBottom) * mainChartRatio);
+			newHeight2 = parseInt((newContainerHeight - currentMarginTop - tmpMarginBottom) * brushChartRatio);
 		} else {
-			newHeight = parseInt(newContainerHeight - currentMarginTop - marginBottom);
+			newHeight = parseInt(newContainerHeight - currentMarginTop - tmpMarginBottom);
 			newHeight2 = 0;
 		}
 
@@ -56,9 +60,9 @@ angular.module('argus.services.charts.tools', [])
 			left: marginLeft
 		};
 		var newMargin2 = {
-			top: newContainerHeight - newHeight2 - marginBottom,
+			top: newContainerHeight - newHeight2 - tmpMarginBottom,
 			right: currentMarginRight,
-			bottom: marginBottom,
+			bottom: tmpMarginBottom,
 			left: marginLeft
 		};
 		return {
@@ -194,7 +198,7 @@ angular.module('argus.services.charts.tools', [])
 	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
 		var extraDatapoints = {};
-
+		var allDatapoints = [];
 		for(var iSet of extraYAxisSet){
 			extraDatapoints[iSet] = [];
 		}
@@ -205,15 +209,16 @@ angular.module('argus.services.charts.tools', [])
 			} else {
 				datapoints = datapoints.concat(metric.data);
 			}
+			allDatapoints = allDatapoints.concat(metric.data);
 		});
 
 		var result = {
-			xDomain: this.getXDomainOfSeries(datapoints, timestampSelector),
+			xDomain: this.getXDomainOfSeries(allDatapoints, timestampSelector),
 			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
 			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
 
-		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(datapoints, timestampSelector);
+		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(allDatapoints, timestampSelector);
 
 		return result;
 	};
