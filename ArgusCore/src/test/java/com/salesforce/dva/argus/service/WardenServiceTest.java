@@ -71,7 +71,7 @@ public class WardenServiceTest extends AbstractTest {
         PrincipalUser user = _userService.findUserByUsername("bhinav.sura");
 
         if (user == null) {
-            user = new PrincipalUser("bhinav.sura", "bhinav.sura@salesforce.com");
+            user = new PrincipalUser(_userService.findAdminUser(), "bhinav.sura", "bhinav.sura@salesforce.com");
             user = _userService.updateUser(user);
         }
         _wardenService.reinstateUser(user, SubSystem.API);

@@ -31,17 +31,16 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.google.common.collect.TreeMultiset;
+import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
-import com.salesforce.dva.argus.system.SystemException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.Collections;
-import java.util.Comparator;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 /**
  * Calculates the Nth percentile. If a window size is specified, each metric will be evaluated individually using that window. Otherwise, the set of
@@ -54,11 +53,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static Double percentile = Double.MAX_VALUE;
-    private static String windowSize = "";
-
-    //~ Instance fields ******************************************************************************************************************************
-
-    private Logger _logger = LoggerFactory.getLogger(getClass());
+    private static final String INDIVIDUAL = "INDIVIDUAL";
 
     //~ Methods **************************************************************************************************************************************
 
@@ -78,27 +73,20 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
             "Percentile Transform must provide at least percentile to calculate.");
         SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) > 0.0 && Double.parseDouble(constants.get(0)) < 100.0,
             "For Percentile Transform, 0.0 < percentile < 100.0.");
+        
         PercentileValueReducerOrMapping.percentile = Double.parseDouble(constants.get(0));
+        
         if (constants.size() > 1) {
-            try {
-                PercentileValueReducerOrMapping.windowSize = constants.get(1);
-            } catch (NumberFormatException nfe) {
-                throw new SystemException("Illegal window size supplied to percentile transform", nfe);
-            }
-        }
-    }
-
-    private long getWindowInSeconds(String window) {
-        MetricReader.TimeUnit timeunit = null;
-
-        try {
-            timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
-
-            long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
-
-            return timeDigits * timeunit.getValue() / 1000;
-        } catch (Exception t) {
-            return Long.parseLong(window);
+        	if(!INDIVIDUAL.equalsIgnoreCase(constants.get(1))) {
+        		String window = constants.get(1);
+            	try {
+                	MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
+                    Long.parseLong(window.substring(0, window.length() - 1));
+                } catch (Exception t) {
+                    throw new IllegalArgumentException(
+                    		"Invalid timeWindow: " + window + ". Please specify a valid window (E.g. 1s, 1m, 1h, 1d) ");
+                }
+        	}
         }
     }
 
@@ -110,7 +98,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         parseConstants(constants);
-        return _calculateNthPercentileForOneMetric(originalDatapoints, percentile, getWindowInSeconds(windowSize));
+        return _calculateNthPercentileForOneMetric(originalDatapoints, percentile);
     }
 
     @Override
@@ -118,93 +106,21 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         return TransformFactory.Function.PERCENTILE.name();
     }
 
-    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue,
-        long windowInSeconds) {
-        Map<Long, Double> percentileDatapoints = new TreeMap<>();
-
-        for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-            if (entry.getValue() == null) {
-                entry.setValue(0.0);
-            }
-        }
-
-        Long[] timestamps = new Long[originalDatapoints.size()];
-
-        originalDatapoints.keySet().toArray(timestamps);
-
-        // TreeSet allowing duplicate elements.
-        TreeMultiset<Double> values = TreeMultiset.create(new Comparator<Double>() {
-
-                @Override
-                public int compare(Double d1, Double d2) {
-                    return d1.compareTo(d2);
-                }
-            });
-
-        long start = System.currentTimeMillis();
-
-        values.add(originalDatapoints.get(timestamps[0]));
-        if (timestamps.length == 1) {
-            percentileDatapoints.put(timestamps[0], _calculateNthPercentile(values, percentileValue));
-        }
-
-        Long firstTimestamp = timestamps[0];
-
-        for (int head = 1, tail = 0; head < timestamps.length; head++) {
-            // When moving window, maintain a invariant that timestamps[head] - timestamps[end] < windowSize
-            // if timestamps[head] - timestamps[end] == windowSize, some points need to be kicked off
-            // For first window, exclude timestamps[head]
-            // For a regular window, exclude timestamps[tail]
-            if (tail == 0) {
-                while (timestamps[head] - windowInSeconds * 1000 < firstTimestamp) {
-                    // run out of points before hitting the end of first window
-                    if (head >= timestamps.length - 1) {
-                        break;
-                    }
-
-                    // do a partial calculation if not enough points
-                    percentileDatapoints.put(timestamps[head - 1], _calculateNthPercentile(values, percentileValue));
-                    values.add(originalDatapoints.get(timestamps[head]));
-                    head++;
-                }
-                percentileDatapoints.put(timestamps[head - 1], _calculateNthPercentile(values, percentileValue));
-            }
-            values.add(originalDatapoints.get(timestamps[head]));
-            while (timestamps[tail] <= timestamps[head] - windowInSeconds * 1000) {
-                values.remove(originalDatapoints.get(timestamps[tail]));
-                tail++;
-            }
-            percentileDatapoints.put(timestamps[head], _calculateNthPercentile(values, percentileValue));
-        }
-        _logger.debug("Time to calculate percentile = " + (System.currentTimeMillis() - start) + "ms");
-        return percentileDatapoints;
+    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue) {
+    	
+	    Map<Long, Double> result = new TreeMap<>();
+	    for(Long timestamp : originalDatapoints.keySet()) {
+	    	result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
+	    	break;
+	    }
+	    
+	    return result;
+    	
     }
 
-    private Double _calculateNthPercentile(List<Double> values, Double percentileValue) {
-        Collections.sort(values, new Comparator<Double>() {
-
-                @Override
-                public int compare(Double d1, Double d2) {
-                    return d1.compareTo(d2);
-                }
-            });
-
-        int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
-
-        return values.get(ordinalRank - 1);
+    private Double _calculateNthPercentile(Collection<Double> values, Double percentileValue) {
+        return new Percentile().evaluate(Doubles.toArray(values), percentileValue);
     }
-
-    // O(n) operation to return percentile value from a sorted list.
-    private Double _calculateNthPercentile(TreeMultiset<Double> values, Double percentileValue) {
-        int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);
-        int index = 1;
-
-        for (Double value : values) {
-            if (index++ == ordinalRank) {
-                return value;
-            }
-        }
-        throw new SystemException("This should never happen.");
-    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
