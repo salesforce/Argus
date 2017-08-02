@@ -222,12 +222,12 @@ angular.module('argus.services.charts.elements', [])
 			case 'stackbar':
 				graphElement = this.createStackbar(x, y);
 				break;
-            case 'area':
-                graphElement = this.createArea(x, y);
-                break;
-            case 'stackarea':
-                graphElement = this.createStackArea(x, y);
-                break;
+			case 'area':
+				graphElement = this.createArea(x, y);
+				break;
+			case 'stackarea':
+				graphElement = this.createStackArea(x, y);
+				break;
 			// case 'line':
 			default:
 				graphElement = this.createLine(x, y);
@@ -674,7 +674,7 @@ angular.module('argus.services.charts.elements', [])
 			.on('mouseover', function () {
 				// add timestamp to the annotation label
 				var dateObj = new Date(dataPoint.x);
-				var tempTimestamp = dateObj.toUTCString() + ' (local time: ' + dateObj.toLocaleString() + ')';
+				var tempTimestamp = dateObj.toUTCString() + ' (in this timezone: ' + dateObj.toLocaleString() + ')';
 				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
 				labelTip.style('border-color', color).html(tempTimestamp);
 				labelTip.show();
@@ -1509,13 +1509,13 @@ angular.module('argus.services.charts.elements', [])
 		graph.x(function (d) {
 			return UtilService.validNumberChecker(x(timestampSelector(d)));
 		});
-    };
+	};
 
 	this.updateCustomizedChartTypeGraphX = function (chart, graph, x, chartType) {
 		graph.x = x;
-        if (chartType === 'scatter') {
-            chart.selectAll('circle.dot').attr('cx', function (d) { return UtilService.validNumberChecker(x(d[0])); });
-        }
-        // bar charts element do not need to update x attr since they use x0 which is a discrete domain of epoch values
-    };
+		if (chartType === 'scatter') {
+			chart.selectAll('circle.dot').attr('cx', function (d) { return UtilService.validNumberChecker(x(d[0])); });
+		}
+		// bar charts element do not need to update x attr since they use x0 which is a discrete domain of epoch values
+	};
 }]);

@@ -121,7 +121,7 @@ angular.module('argus.services.charts.tools', [])
 			numTicksYaxis: defaultTicksYaxis
 		},
 		isSnapCrosslineOn: true,
-        localTimezone: false
+		localTimezone: false
 	};
 
 	// color
@@ -538,9 +538,13 @@ angular.module('argus.services.charts.tools', [])
 
 		finalYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
 		finalYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.2 * buffer)): agYMax;
-
+		// TODO: need to test with negative values for area and bar charts
 		if (isDataStacked && finalYMin < 0 && yMin !== yMax) finalYMin = 0;
-		if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
+		// if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
+		if (isChartDiscrete && !isDataStacked && finalYMin > 0 && yMin < yMax) {
+			finalYMin = 0;
+			finalYMax *= 1.2;
+		}
 		// TODO: still need to handle log(0) better
 		if (yScaleType === 'log') {
 			if (finalYMin === 0) finalYMin = 1;

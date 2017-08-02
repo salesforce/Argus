@@ -1017,12 +1017,10 @@ angular.module('argus.directives.charts.lineChart', [])
 				if (!scope.hideMenu && newValue !== oldValue) {
 					// update x and x2 scale
 					if (newValue) {
-						console.log('using local timezone');
 						GMTon = false;
 						x = d3.scaleTime().domain(x.domain()).range(x.range());
 						x2 = d3.scaleTime().domain(x2.domain()).range(x2.range());
 					} else {
-						console.log('using GMT');
 						GMTon = true;
 						x = d3.scaleUtc().domain(x.domain()).range(x.range());
 						x2 = d3.scaleUtc().domain(x2.domain()).range(x2.range());
@@ -1035,25 +1033,31 @@ angular.module('argus.directives.charts.lineChart', [])
 					xAxis2.scale(x2);
 					xAxisG2.call(xAxis2);
 					// update main chart and brush graphs
-                    if (ChartElementService.customizedChartType.includes(chartType)) {
-                    	ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
-                    	ChartElementService.updateCustomizedChartTypeGraphX(context, graph2, x2, chartType);
-                    } else {
-                        ChartElementService.updateGraphsX(graph, x, timestampSelector);
-                        ChartElementService.updateGraphsX(graph2, x2, timestampSelector);
+					if (ChartElementService.customizedChartType.includes(chartType)) {
+						ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
+						ChartElementService.updateCustomizedChartTypeGraphX(context, graph2, x2, chartType);
+						for (var iSet of extraYAxisSet) {
+							ChartElementService.updateCustomizedChartTypeGraphX(mainChart, extraGraph[iSet], x, chartType);
+							ChartElementService.updateCustomizedChartTypeGraphX(context, extraGraph2[iSet], x2, chartType);
+						}
+					} else {
+						ChartElementService.updateGraphsX(graph, x, timestampSelector);
+						ChartElementService.updateGraphsX(graph2, x2, timestampSelector);
+						for (var iSet of extraYAxisSet) {
+							ChartElementService.updateGraphsX(extraGraph[iSet], x, timestampSelector);
+							ChartElementService.updateGraphsX(extraGraph2[iSet], x2, timestampSelector);
+						}
 
 					}
-                    // TODO: update extraGraph from extraYaxis
 					// update date formatter
 					dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
 					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
-					//
 				}
 			}, true);
 
 			// remove annotation label tip when the user is leaving the page
 			scope.$on("$destroy", function() {
-            	labelTip.destroy();
+				labelTip.destroy();
 			});
 		}
 	};
