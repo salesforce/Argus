@@ -31,13 +31,6 @@
 	 
 package com.salesforce.dva.argus.ws.filter;
 
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
-
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +43,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.LoggerFactory;
+
+import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.system.SystemMain;
+import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
 /**
  * Servlet filter to push end point performance numbers to monitoring service.
@@ -115,14 +114,14 @@ public class PerfFilter implements Filter {
         	String method = req.getMethod();
         	tags.put(TAGS_METHOD_KEY, method);
         	
-            String pathInfo = req.getPathInfo().replaceFirst("/", "");
-            String endPoint = pathInfo.replaceAll("[0-9]+", "-");
+            String endPoint = _getEndpoint(req);
             if (endPoint != null && !endPoint.isEmpty()) {
                 tags.put(TAGS_ENDPOINT_KEY, endPoint);
             }
             
-            String username = MDC.get(AuthFilter.USER_ATTRIBUTE_NAME);
-            if(username != null && !username.isEmpty()) {
+            Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
+            String username = user != null ? String.class.cast(user) : "NULLUSER";
+            if(!username.isEmpty()) {
             	tags.put(TAGS_USER_KEY, username);
             }
 
@@ -145,5 +144,14 @@ public class PerfFilter implements Filter {
             LoggerFactory.getLogger(getClass()).error(e.getMessage(), e);
         }
     }
+
+	private String _getEndpoint(HttpServletRequest req) {
+		String pathInfo = req.getPathInfo();
+		if(pathInfo != null) {
+			return pathInfo.replaceFirst("/", "").replaceAll("[0-9]+", "-");
+		}
+		
+		return null;
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

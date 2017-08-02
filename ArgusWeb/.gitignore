@@ -8,6 +8,3 @@ tmp
 /nbproject/
 /app/views/main/config.js
 /app/config/development.json
-*.bundle.js
-*.bundle.min.js
-

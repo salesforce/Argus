@@ -37,9 +37,9 @@ import java.text.MessageFormat;
 /**
  * Represents a query against the metric schema data.  This is used for the discovery service and to expand wildcards.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com)
  */
-public class MetricSchemaRecordQuery {
+public class MetricSchemaRecordQuery extends SchemaQuery {
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -47,7 +47,8 @@ public class MetricSchemaRecordQuery {
     private String scope;
     private String metric;
     private String tagKey;
-    private String tagValue;
+    private String tagValue; 
+    private MetricSchemaRecord scanFrom;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -60,12 +61,15 @@ public class MetricSchemaRecordQuery {
      * @param  tagKey     The tag key.  Can be null.
      * @param  tagValue   The tag value.  Can be null.
      */
-    public MetricSchemaRecordQuery(String namespace, String scope, String metric, String tagKey, String tagValue) {
+    private MetricSchemaRecordQuery(String namespace, String scope, String metric, String tagKey, String tagValue, 
+    		int limit, int page, MetricSchemaRecord scanFrom) {
+    	super(limit, page);
         setNamespace(namespace);
         setScope(scope);
         setMetric(metric);
         setTagKey(tagKey);
         setTagValue(tagValue);
+        setScanFrom(scanFrom);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -162,10 +166,133 @@ public class MetricSchemaRecordQuery {
         this.tagValue = tagValue;
     }
 
-    @Override
+	public MetricSchemaRecord getScanFrom() {
+		return scanFrom;
+	}
+
+	public void setScanFrom(MetricSchemaRecord scanFrom) {
+		this.scanFrom = scanFrom;
+	}
+	
+	@Override
     public String toString() {
-        return MessageFormat.format("MetricSchemaRecordQuery = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4})", namespace,
-            scope, metric, tagKey, tagValue);
+        return MessageFormat.format("MetricSchemaRecordQuery = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, "
+        		+ "TagValue = {4}, Limit = {5}, Page = {6}, ScanFrom = {7})", 
+        		namespace, scope, metric, tagKey, tagValue, limit, page, scanFrom);
     }
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((metric == null) ? 0 : metric.hashCode());
+		result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
+		result = prime * result + ((scanFrom == null) ? 0 : scanFrom.hashCode());
+		result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+		result = prime * result + ((tagKey == null) ? 0 : tagKey.hashCode());
+		result = prime * result + ((tagValue == null) ? 0 : tagValue.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MetricSchemaRecordQuery other = (MetricSchemaRecordQuery) obj;
+		if (metric == null) {
+			if (other.metric != null)
+				return false;
+		} else if (!metric.equals(other.metric))
+			return false;
+		if (namespace == null) {
+			if (other.namespace != null)
+				return false;
+		} else if (!namespace.equals(other.namespace))
+			return false;
+		if (scanFrom == null) {
+			if (other.scanFrom != null)
+				return false;
+		} else if (!scanFrom.equals(other.scanFrom))
+			return false;
+		if (scope == null) {
+			if (other.scope != null)
+				return false;
+		} else if (!scope.equals(other.scope))
+			return false;
+		if (tagKey == null) {
+			if (other.tagKey != null)
+				return false;
+		} else if (!tagKey.equals(other.tagKey))
+			return false;
+		if (tagValue == null) {
+			if (other.tagValue != null)
+				return false;
+		} else if (!tagValue.equals(other.tagValue))
+			return false;
+		return true;
+	}
+	
+	public static class MetricSchemaRecordQueryBuilder {
+		
+		private String namespace;
+	    private String scope;
+	    private String metric;
+	    private String tagKey;
+	    private String tagValue;
+	    private int limit = 10; 
+	    private int page = 1; 
+	    private MetricSchemaRecord scanFrom;
+	    
+	    public MetricSchemaRecordQueryBuilder() {}
+	    
+	    public MetricSchemaRecordQueryBuilder namespace(String namespace) {
+	    	this.namespace = namespace;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder scope(String scope) {
+	    	this.scope = scope;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder metric(String metric) {
+	    	this.metric = metric;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder tagKey(String tagKey) {
+	    	this.tagKey = tagKey;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder tagValue(String tagValue) {
+	    	this.tagValue = tagValue;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder limit(int limit) {
+	    	this.limit = limit;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder page(int page) {
+	    	this.page = page;
+	    	return this;
+	    }
+	    
+	    public MetricSchemaRecordQueryBuilder scanFrom(MetricSchemaRecord scanFrom) {
+	    	this.scanFrom = scanFrom;
+	    	return this;
+	    }
+		
+	    public MetricSchemaRecordQuery build() {
+	    	return new MetricSchemaRecordQuery(namespace, scope, metric, tagKey, tagValue, limit, page, scanFrom);
+	    }
+	}
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

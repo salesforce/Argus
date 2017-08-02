@@ -10,10 +10,6 @@
         <filter-class>com.salesforce.dva.argus.ws.filter.TxFilter</filter-class>
     </filter>
     <filter>
-        <filter-name>SessionFilter</filter-name>
-        <filter-class>com.salesforce.dva.argus.ws.filter.SessionFilter</filter-class>
-    </filter>
-    <filter>
         <filter-name>LoggingFilter</filter-name>
         <filter-class>com.salesforce.dva.argus.ws.filter.LoggingFilter</filter-class>
     </filter>
@@ -21,10 +17,6 @@
         <filter-name>PerfFilter</filter-name>
         <filter-class>com.salesforce.dva.argus.ws.filter.PerfFilter</filter-class>
     </filter>
-    <filter-mapping>
-        <filter-name>SessionFilter</filter-name>
-        <url-pattern>/*</url-pattern>
-    </filter-mapping>
     <filter-mapping>
         <filter-name>AuthFilter</filter-name>
         <url-pattern>/*</url-pattern>

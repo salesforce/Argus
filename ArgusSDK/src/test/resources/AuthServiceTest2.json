@@ -1,0 +1,22 @@
+[{
+    "type" : "POST",
+    "endpoint" : "/v2/auth/login",
+    "jsonInput" : "{\"username\":\"aUsername\",\"password\":\"aPassword\"}",
+    "status" : 200,
+    "message" : "success",
+    "jsonOutput" : "{\"accessToken\":\"anAccessToken\",\"refreshToken\":\"aRefreshToken\"}"
+},{
+    "type" : "POST",
+    "endpoint" : "/v2/auth/login",
+    "jsonInput" : "{\"username\":\"aBadUsername\",\"password\":\"aBadPassword\"}",
+    "status" : 401,
+    "message" : "unauthorized",
+    "jsonOutput" : ""
+},{
+    "type" : "POST",
+    "endpoint" : "/v2/auth/token/refresh",
+    "jsonInput" : "{\"refreshToken\":\"aRefreshToken\"}",
+    "status" : 200,
+    "message" : "success",
+    "jsonOutput" : "{\"accessToken\":\"aNewAccessToken\",\"refreshToken\":\"aRefreshToken\"}"
+}]

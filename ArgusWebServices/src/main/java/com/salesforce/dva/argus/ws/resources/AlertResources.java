@@ -75,7 +75,6 @@ public class AlertResources extends AbstractResource {
 	//~ Instance fields ******************************************************************************************************************************
 
 	private AlertService alertService = system.getServiceFactory().getAlertService();
-	private final String OWNER_NAME = "ownername";
 
 	//~ Methods **************************************************************************************************************************************
 
@@ -86,19 +85,21 @@ public class AlertResources extends AbstractResource {
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
-	private List<Alert> _getAlertsByOwner(String alertname, PrincipalUser owner) {
+	private List<Alert> _getAlertsByOwner(String alertname, PrincipalUser owner, boolean populateMetaFieldsOnly) {
 		List<Alert> result;
 		if (alertname != null && !alertname.isEmpty()) {
 			result = new ArrayList<>();
 			Alert alert = alertService.findAlertByNameAndOwner(alertname, owner);
 			if (alert != null) {
 				result.add(alert);
+			} else {
+				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 			}
 		} else {
-			if(owner.isPrivileged()){
-				result=alertService.findAllAlerts();
-			}else{
-				result=alertService.findAlertsByOwner(owner);
+			if(owner.isPrivileged()) {
+				result = populateMetaFieldsOnly ? alertService.findAllAlerts(true) : alertService.findAllAlerts(false);
+			} else {
+				result = populateMetaFieldsOnly ? alertService.findAlertsByOwner(owner, true): alertService.findAlertsByOwner(owner, false);
 			}
 		}
 		return result;
@@ -108,13 +109,13 @@ public class AlertResources extends AbstractResource {
 	 * Return both owners and shared alerts (if the shared flag is true).
 	 * @return  The list of shared alerts.
 	 */
-	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared) {
+	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
 		
 		Set<Alert> result = new HashSet<>();
 		
-		result.addAll(_getAlertsByOwner(alertname, owner));
-		if(shared){
-			result.addAll(alertService.findSharedAlerts());
+		result.addAll(_getAlertsByOwner(alertname, owner, populateMetaFieldsOnly));
+		if(shared) {
+			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true) : alertService.findSharedAlerts(false));
 		}
 		
 		return new ArrayList<>(result);
@@ -133,13 +134,13 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta")
 	@Description("Returns all alerts' metadata.")
-	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req,
-			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName,
-			@QueryParam("shared") boolean shared) {
+	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("shared") boolean shared) {
+		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared);
-		return AlertDto.transformToDtoNoContent(result);
+		List<Alert> result = getAlertsObj(alertname, owner, shared, true);
+		return AlertDto.transformToDto(result);
 	}
 
 	/**
@@ -154,12 +155,12 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all alerts.")
-	public List<AlertDto> getAlerts(@Context HttpServletRequest req,
-			@QueryParam("alertname") String alertname,
-			@QueryParam(OWNER_NAME) String ownerName,
-			@QueryParam("shared") boolean shared) {
+	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("shared") boolean shared) {
+		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared);
+		List<Alert> result = getAlertsObj(alertname, owner, shared, false);
 		return AlertDto.transformToDto(result);
 	}
 
@@ -177,8 +178,8 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}")
 	@Description("Returns an alert by its ID.")
-	public AlertDto getAlertByID(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId) {
+	public AlertDto getAlertByID(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
@@ -186,12 +187,14 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
-		if(alert != null){
+		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			return AlertDto.transformToDto(alert);
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -209,20 +212,23 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/notifications")
 	@Description("Returns all notifications for the given alert ID.")
-	public List<NotificationDto> getAllNotifications(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId) {
+	public List<NotificationDto> getAllNotifications(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
+		
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			return NotificationDto.transformToDto(alert.getNotifications());
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -240,8 +246,8 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/triggers")
 	@Description("Returns all triggers for the given alert ID.")
-	public List<TriggerDto> getAllTriggers(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId) {
+	public List<TriggerDto> getAllTriggers(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
@@ -249,12 +255,14 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			return TriggerDto.transformToDto(alert.getTriggers());
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -273,28 +281,32 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/notifications/{notificationId}")
 	@Description("Returns a notification by its ID.")
-	public NotificationDto getNotificationById(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId,
-			@PathParam("notificationId") BigInteger notificationId) {
+	public NotificationDto getNotificationById(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId,
+											   @PathParam("notificationId") BigInteger notificationId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
+		
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					return NotificationDto.transformToDto(notification);
 				}
 			}
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -313,12 +325,13 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/notifications/{notificationId}/triggers")
 	@Description("Returns all the triggers for the given notification ID.")
-	public List<TriggerDto> getTriggersByNotificationId(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId,
-			@PathParam("notificationId") BigInteger notificationId) {
+	public List<TriggerDto> getTriggersByNotificationId(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId,
+														@PathParam("notificationId") BigInteger notificationId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
@@ -326,16 +339,18 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
 
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					return TriggerDto.transformToDto(notification.getTriggers());
 				}
 			}
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -354,29 +369,32 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/triggers/{triggerId}")
 	@Description("Returns a trigger by its ID.")
-	public TriggerDto getTriggerById(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId,
-			@PathParam("triggerId") BigInteger triggerId) {
+	public TriggerDto getTriggerById(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId,
+									 @PathParam("triggerId") BigInteger triggerId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (triggerId == null || triggerId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Trigger Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
+		
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			for (Trigger trigger : alert.getTriggers()) {
 				if (trigger.getId().equals(triggerId)) {
 					return TriggerDto.transformToDto(trigger);
 				}
 			}
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -396,26 +414,30 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}/notifications/{notificationId}/triggers/{triggerId}")
 	@Description("Returns an trigger by its ID only if it is associated with the given notification ID.")
-	public TriggerDto getTriggerByNotificationNTriggerId(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId,
-			@PathParam("notificationId") BigInteger notificationId,
-			@PathParam("triggerId") BigInteger triggerId) {
+	public TriggerDto getTriggerByNotificationNTriggerId(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId,
+														 @PathParam("notificationId") BigInteger notificationId,
+														 @PathParam("triggerId") BigInteger triggerId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (triggerId == null || triggerId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Trigger Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
 
 		PrincipalUser owner = validateAndGetOwner(req, null);
 		Alert alert = alertService.findAlertByPrimaryKey(alertId);
-		if (alert != null && !alert.isShared()) {
-			validateResourceAuthorization(req, alert.getOwner(), owner);
-		}
+		
 		if (alert != null) {
+			if(!alert.isShared()) {
+				validateResourceAuthorization(req, alert.getOwner(), owner);
+			}
+			
 			for (Notification notification : alert.getNotifications()) {
 				if (notification.getId().equals(notificationId)) {
 					for (Trigger trigger : notification.getTriggers()) {
@@ -426,6 +448,7 @@ public class AlertResources extends AbstractResource {
 				}
 			}
 		}
+		
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
 
@@ -444,6 +467,7 @@ public class AlertResources extends AbstractResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Description("Creates an alert.")
 	public AlertDto createAlert(@Context HttpServletRequest req, AlertDto alertDto) {
+		
 		if (alertDto == null) {
 			throw new WebApplicationException("Null alert object cannot be created.", Status.BAD_REQUEST);
 		}
@@ -471,11 +495,12 @@ public class AlertResources extends AbstractResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Path("/{alertId}")
 	@Description("Updates an alert having the given ID.")
-	public AlertDto updateAlert(@Context HttpServletRequest req,
-			@PathParam("alertId") BigInteger alertId, AlertDto alertDto) {
+	public AlertDto updateAlert(@Context HttpServletRequest req, @PathParam("alertId") BigInteger alertId, AlertDto alertDto) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (alertDto == null) {
 			throw new WebApplicationException("Null object cannot be updated.", Status.BAD_REQUEST);
 		}
@@ -486,6 +511,7 @@ public class AlertResources extends AbstractResource {
 		if (oldAlert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
+		
 		validateResourceAuthorization(req, oldAlert.getOwner(), owner);
 		copyProperties(oldAlert, alertDto);
 		oldAlert.setModifiedBy(getRemoteUser(req));
@@ -626,7 +652,11 @@ public class AlertResources extends AbstractResource {
 
 			Notification notification = new Notification(notificationDto.getName(), alert, notificationDto.getNotifierName(),
 					notificationDto.getSubscriptions(), notificationDto.getCooldownPeriod());
+			notification.setSRActionable(notificationDto.getSRActionable());
+			notification.setSeverityLevel(notificationDto.getSeverityLevel());
 			notification.setCustomText(notificationDto.getCustomText());
+
+			// TODO: 14.12.16 validate notification
 
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 
@@ -905,15 +935,18 @@ public class AlertResources extends AbstractResource {
 		if (alert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
+		
 		validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
 
 		// Remove triggers for all notifications TODO: is this required?
 		for (Notification notification : alert.getNotifications()) {
 			notification.setTriggers(new ArrayList<Trigger>(0));
 		}
+		
 		alert.setTriggers(new ArrayList<Trigger>(0));
 		alert.setModifiedBy(getRemoteUser(req));
 		alertService.updateAlert(alert);
+		
 		return Response.status(Status.OK).build();
 	}
 
@@ -935,9 +968,11 @@ public class AlertResources extends AbstractResource {
 	public Response deleteTriggersByNotificationId(@Context HttpServletRequest req,
 			@PathParam("alertId") BigInteger alertId,
 			@PathParam("notificationId") BigInteger notificationId) {
+		
 		if (alertId == null || alertId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Alert Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
+		
 		if (notificationId == null || notificationId.compareTo(BigInteger.ZERO) < 1) {
 			throw new WebApplicationException("Notification Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
 		}
@@ -948,18 +983,23 @@ public class AlertResources extends AbstractResource {
 		if (alert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}
+		
 		validateResourceAuthorization(req, alert.getOwner(), getRemoteUser(req));
+		
 		for (Notification n : alert.getNotifications()) {
 			if (n.getId().equals(notificationId)) {
 				notification = n;
 				break;
 			}
 		}
+		
 		if (notification == null) {
 			throw new WebApplicationException("The notification does not exist for this alert", Status.BAD_REQUEST);
 		}
+		
 		notification.setTriggers(new ArrayList<Trigger>(0));
 		alertService.updateAlert(alert);
+		
 		return Response.status(Status.OK).build();
 	}
 

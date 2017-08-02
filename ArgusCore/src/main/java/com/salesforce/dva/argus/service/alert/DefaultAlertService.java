@@ -89,6 +89,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	//~ Static fields/initializers *******************************************************************************************************************
 
+	private static final String USERTAG = "user";
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
@@ -236,10 +237,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	@Override
 	@Transactional
-	public List<Alert> findAlertsByOwner(PrincipalUser owner) {
+	public List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
-		return Alert.findByOwner(_emProvider.get(), owner);
+		
+		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
 
 	@Override
@@ -361,7 +363,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 				
 			} finally {
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, null);
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 				history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
 				historyList.add(history);
 			}
@@ -427,7 +431,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	/**
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
-	 * and the trigger fired time.
+	 * and the trigger fired time. 
 	 */
 	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(List<Trigger> triggers, List<Metric> metrics, History history) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
@@ -439,7 +443,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
-					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, null);
+					Map<String, String> tags = new HashMap<>();
+					tags.put(USERTAG, trigger.getAlert().getOwner().getUserName());
+					_monitorService.modifyCounter(Counter.TRIGGERS_VIOLATED, 1, tags);
 				}
 			}
 			triggerFiredTimesAndMetricsByTrigger.put(trigger.getId(), triggerFiredTimesForMetrics);
@@ -568,9 +574,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			AlertIdWithTimestamp obj = new AlertIdWithTimestamp(alert.getId(), System.currentTimeMillis());
 
 			idsWithTimestamp.add(obj);
+			
+			Map<String, String> tags = new HashMap<>();
+			tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
-		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alerts.size(), null);
-		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
+		
+ 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
@@ -588,16 +598,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		try {
 			_tsdbService.putMetrics(metricsAlertScheduled);
 		} catch (Exception ex) {
-			_logger.error("Error occured while pushing alert audit scheduling time series. Reason: {}", ex.getMessage());
+			_logger.error("Error occurred while pushing alert audit scheduling time series. Reason: {}", ex.getMessage());
 		}		
 	}
 
 
 	@Override
 	@Transactional
-	public List<Alert> findAllAlerts() {
+	public List<Alert> findAllAlerts(boolean metadataOnly) {
 		requireNotDisposed();
-		return Alert.findAll(_emProvider.get());
+		
+		return metadataOnly ? Alert.findAllMeta(_emProvider.get()) : Alert.findAll(_emProvider.get());
 	}
 
 	@Override
@@ -650,9 +661,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	@Override
 	@Transactional
-	public List<Alert> findSharedAlerts() {
+	public List<Alert> findSharedAlerts(boolean metadataOnly) {
 		requireNotDisposed();
-		return Alert.findSharedAlerts(_emProvider.get());
+		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get()) : Alert.findSharedAlerts(_emProvider.get());
 	}
 
 	/**
@@ -665,6 +676,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Override
 	public Notifier getNotifier(SupportedNotifier notifier) {
 		switch (notifier) {
+		case CALLBACK:
+			return _notifierFactory.getCallbackNotifier();
 		case EMAIL:
 			return _notifierFactory.getEmailNotifier();
 		case GOC:

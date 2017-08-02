@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <div class="topToolbar" ng-style="chartConfig.smallChart ? {'padding':'0'} : ''">
 	<h3 class="chartTitle" ng-style="chartConfig.title.style">{{chartConfig.title.text}} </h3>
 	<h4 class="chartTitle" ng-style="chartConfig.subtitle.style">{{chartConfig.subtitle.text}}</h4>
@@ -9,8 +9,8 @@
 			ng-show="!chartConfig.smallChart">
 
 			<li class="toolbarItemPreview">
-				<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(sources[0])}"></span>
-				<a>{{sources[0].name}}</a>
+				<span class="glyphicon glyphicon-minus {{sources[0].graphClassName}}_legend" ng-style="{color: labelTextColor(sources[0])}"></span>
+				<a>{{sources[0].name | truncateMetricName:menuOption}}</a>
 			</li>
 
 			<li class="toolbarItem legend floatPanel"
@@ -19,8 +19,8 @@
 
 				<ul style="padding-left:0;">
 				<li ng-repeat="source in sources track by $index">
-					<span class="glyphicon glyphicon-minus" ng-style="{color: labelTextColor(source)}"></span>
-					<a ng-click="toggleSource(source)" title="Hide">{{source.name}}</a> &nbsp;
+					<span class="glyphicon glyphicon-minus {{source.graphClassName}}_legend" ng-style="{color: labelTextColor(source)}"></span>
+					<a ng-click="toggleSource(source)" title="Hide">{{source.name | truncateMetricName:menuOption}}</a> &nbsp;
 					<a class="eyeIcon" title="Hide all other(s)"
 						ng-show="source.displaying && sources.length > 1"
 						ng-click="hideOtherSources(source)"
@@ -52,7 +52,7 @@
 				</ul>
 			</div>
 
-			<div class="toolbarMenu topMenu">
+			<div class="toolbarMenu topMenu" style="display:none;">
 				<a class="glyphicon glyphicon-option-vertical" title="Downsampling data options"></a>
 				<ul class="subMenu menuPanel list-group">
 				<li style="display:none;">
@@ -81,12 +81,12 @@
 				</li>
 				<li>
 					<input type="checkbox" name="toggle-syncchart" id="toggle-syncchart-{{chartConfig.chartId}}" class="pointer" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>
-					<label for="toggle-syncchart-{{chartConfig.chartId}}" title="synchronize this chart with other checked charts">Synchronize Chart</label>
+					<label for="toggle-syncchart-{{chartConfig.chartId}}" title="synchronize this chart with other checked charts">Synchronize chart</label>
 				</li>
 				</ul>
 			</div>
 
-			<div class="toolbarMenu topMenu" ng-show="!chartConfig.smallChart">
+			<div class="toolbarMenu topMenu" ng-show="!chartConfig.smallChart" style="display:none;">
 				<a class="glyphicon glyphicon-filter"></a>
 				<ul class="subMenu menuPanel list-group">
 					<li>
@@ -95,8 +95,7 @@
 						id="largest-triangle-one-bucket-{{chartConfig.chartId}}"
 						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="largest-triangle-one-bucket-{{chartConfig.chartId}}"
-							title="Use the largest triangle one bucket algorithm">Triangle 1 Bucket</label>
+						<label for="largest-triangle-one-bucket-{{chartConfig.chartId}}" title="Use the largest triangle one bucket algorithm">Triangle 1 Bucket</label>
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
@@ -104,8 +103,7 @@
 						id="largest-triangle-three-bucket-{{chartConfig.chartId}}"
 						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}"
-							title="Use the largest triangle three bucket algorithm">Triangle 3 Bucket</label>
+						<label for="largest-triangle-three-bucket-{{chartConfig.chartId}}" title="Use the largest triangle three bucket algorithm">Triangle 3 Bucket</label>
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
@@ -113,20 +111,20 @@
 						id="mode-median-{{chartConfig.chartId}}"
 						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="mode-median-{{chartConfig.chartId}}" title="Use the mode median algorithm">Mode Median</label>
+						<label for="mode-median-{{chartConfig.chartId}}" title="Use the mode median algorithm">Mode Median</label>
 					</li>
 					<li>
 						<input type="radio" name="down-sample-method-{{chartConfig.chartId}}" class="pointer"
-						value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}" 
-						ng-model="menuOption.downSampleMethod" 
+						value="every-nth-point" id="every-nth-point-{{chartConfig.chartId}}"
+						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
-							<label for="every-nth-point-{{chartConfig.chartId}}" title="N is calculated based on the container width and # of datapoints)">Every n'th point</label>
+						<label for="every-nth-point-{{chartConfig.chartId}}" title="N is calculated based on the container width and # of datapoints)">Every n'th point</label>
 				    </li>
 				</ul>
 			</div>
 
 			<div class="toolbarMenu topMenu">
-				<a name="download" class="glyphicon glyphicon-download" title="Download graph data"></a>
+				<a class="glyphicon glyphicon-download" title="Download graph data"></a>
 				<ul class="subMenu menuPanel list-group">
 					<li>
 						<a ng-click="downloadData('downloadCSV')" title="CSV format">CSV</a>
@@ -137,8 +135,16 @@
 				</ul>
 			</div>
 
+			<div class="toolbarMenu topMenu" show-if-fullscreen=false>
+				<a class="glyphicon glyphicon-cog" title="Display chart options" ng-click="openChartOptions(chartConfig.chartId, chartConfig.title)"></a>
+			</div>
+
+			<div class="toolbarMenu topMenu">
+				<a ngsf-toggle-fullscreen show-if-fullscreen-enabled class="glyphicon glyphicon-fullscreen" title="toggle full screen mode" ng-click="updateFullscreenChartID(chartConfig.chartId)"></a>
+			</div>
+
 			<div class="toolbarMenu topMenu" ng-show="chartConfig.smallChart">
-				<a name="reset" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
+				<a name="reset" ng-click="resetZoom()" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
 			</div>
 		</div>
 

@@ -40,6 +40,7 @@ import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.filter.AuthFilter;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import org.apache.commons.beanutils.BeanUtils;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -52,6 +53,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
@@ -67,7 +69,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public abstract class AbstractResource {
 
 	//~ Instance fields ******************************************************************************************************************************
-
+	
     protected final SystemMain system = ArgusWebServletListener.getSystem();
     protected UserService userService = system.getServiceFactory().getUserService();
 
@@ -106,6 +108,22 @@ public abstract class AbstractResource {
      */
     public PrincipalUser getRemoteUser(HttpServletRequest req) {
         requireArgument(req != null, "Request cannot be null.");
+        
+        if(req.getHeader(HttpHeaders.AUTHORIZATION) != null) {	
+	        PrincipalUser result = null;
+	        Object username = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
+	        
+	        if (username != null) {
+	            result = userService.findUserByUsername(String.class.cast(username));
+	        }
+	        return result;
+        } 
+        
+        return _getRemoteUserFromSession(req);
+    }
+    
+    private PrincipalUser _getRemoteUserFromSession(HttpServletRequest req) {
+    	requireArgument(req != null, "Request cannot be null.");
 
         PrincipalUser result = null;
         Object principalAttribute = req.getSession(true).getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
@@ -188,9 +206,9 @@ public abstract class AbstractResource {
     protected PrincipalUser validateAndGetOwner(HttpServletRequest req, String ownerName) {
         PrincipalUser remoteUser = getRemoteUser(req);
 
-        if (ownerName == null || ownerName.isEmpty()) {
-            return remoteUser;
-        } else if (ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
+        
+        if (ownerName == null || ownerName.isEmpty() || ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
+        	//If ownerName is not present or if it is present and equal to remote username, then return remoteUser.
             return remoteUser;
         } else if (remoteUser.isPrivileged()) {
             PrincipalUser owner;

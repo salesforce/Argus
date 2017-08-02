@@ -40,9 +40,11 @@ import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.DefaultTSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemException;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -55,7 +57,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
@@ -69,32 +70,6 @@ public class TSDBServiceIT extends AbstractTest {
         Long end = datapoints.lastKey();
 
         return new MetricQuery(metric.getScope(), metric.getMetric(), metric.getTags(), start, end);
-    }
-
-    protected List<Metric> createRandomMetrics(String scope, String metric, int count) {
-        List<Metric> result = new ArrayList<>(count);
-
-        scope = scope == null ? createRandomName() : scope;
-
-        String tag = createRandomName();
-
-        for (int i = 0; i < count; i++) {
-            String metricName = metric == null ? createRandomName() : metric;
-            Metric met = new Metric(scope, metricName);
-            int datapointCount = random.nextInt(25) + 1;
-            Map<Long, Double> datapoints = new HashMap<>();
-            long start = System.currentTimeMillis() - 60000L;
-
-            for (int j = 0; j < datapointCount; j++) {
-                datapoints.put(start - (j * 60000L), (double)(random.nextInt(100) + 1));
-            }
-            met.setDatapoints(datapoints);
-            met.setDisplayName(createRandomName());
-            met.setUnits(createRandomName());
-            met.setTag(tag, String.valueOf(i));
-            result.add(met);
-        }
-        return result;
     }
 
     protected List<Annotation> createRandomAnnotations(String scope, String metric, int count) {
@@ -146,14 +121,78 @@ public class TSDBServiceIT extends AbstractTest {
                 assertEquals(metric.getDisplayName(), actualMetric.getDisplayName());
                 assertEquals(metric.getUnits(), actualMetric.getUnits());
                 assertEquals(metric.getDatapoints(), actualMetric.getDatapoints());
-                assertNotNull(actualMetric.getUid());
             }
         } finally {
             service.dispose();
         }
     }
+    
+    @Test
+    public void testGetMetricsTagValueTooLarge() throws InterruptedException {
+    	
+    	TSDBService service = system.getServiceFactory().getTSDBService();
+        List<Metric> expected = createMetricWithMultipleTags("tagKey", 100);
 
-    private List<MetricQuery> toQueries(List<Metric> expected) {
+        try {
+            service.putMetrics(expected);
+            Thread.sleep(SLEEP_AFTER_PUT_IN_MILLIS);
+
+            MetricQuery query = toWildcardOrQuery(expected, "tagKey");
+            List<Metric> actual = _coalesceMetrics(service.getMetrics(Arrays.asList(query)));
+
+            Assert.assertEquals(new HashSet<>(expected), new HashSet<>(actual));
+            for (Metric metric : expected) {
+                Metric actualMetric = actual.remove(actual.indexOf(metric));
+
+                assertEquals(metric.getDisplayName(), actualMetric.getDisplayName());
+                assertEquals(metric.getUnits(), actualMetric.getUnits());
+                assertEquals(metric.getDatapoints(), actualMetric.getDatapoints());
+            }
+        } finally {
+            service.dispose();
+        }
+    	
+    }
+
+    private MetricQuery toWildcardOrQuery(List<Metric> metrics, String commonTagKey) {
+    	Metric metric = metrics.get(0);
+    	TreeMap<Long, Double> datapoints = new TreeMap<>(metric.getDatapoints());
+        Long start = datapoints.firstKey();
+        Long end = datapoints.lastKey();
+
+        Map<String, String> tags = new HashMap<>();
+        StringBuilder sb = new StringBuilder();
+        for(Metric m : metrics) {
+        	sb.append(m.getTag(commonTagKey)).append("|");
+        }
+        tags.put(commonTagKey, sb.substring(0, sb.length() - 1));
+        
+        return new MetricQuery(metric.getScope(), metric.getMetric(), tags, start, end);
+	}
+
+	private List<Metric> createMetricWithMultipleTags(String commonTagKey, int tagValueCount) {
+    	List<Metric> result = new ArrayList<>(tagValueCount);
+
+    	String scope = createRandomName();
+    	String metric = createRandomName();
+    	long timestamp = System.currentTimeMillis() - 60000L;
+        for(int i=0; i<tagValueCount; i++) {
+        	Metric m = new Metric(scope, metric);
+        	Map<Long, Double> datapoints = new HashMap<>();
+        	datapoints.put(timestamp, Double.valueOf(i));
+        	
+        	Map<String, String> tags = new HashMap<>();
+        	tags.put(commonTagKey, "someverylooooooooooooooooooooooooooooooooooooooooongTagValue" + i);
+        	
+        	m.setDatapoints(datapoints);
+        	m.setTags(tags);
+        	result.add(m);
+        }
+        
+        return result;
+	}
+
+	private List<MetricQuery> toQueries(List<Metric> expected) {
         List<MetricQuery> queries = new LinkedList<>();
 
         for (Metric metric : expected) {
@@ -202,7 +241,7 @@ public class TSDBServiceIT extends AbstractTest {
             List<MetricQuery> queries = Arrays.asList(new MetricQuery[] { query });
             List<Metric> actual = new LinkedList<>(_coalesceMetrics(service.getMetrics(queries)));
 
-            assertTrue(actual.size() == expected.size());
+            assertEquals(expected.size(), actual.size());
         } finally {
             service.dispose();
         }
@@ -359,6 +398,21 @@ public class TSDBServiceIT extends AbstractTest {
         TSDBService service2 = system.getServiceFactory().getTSDBService();
 
         assertTrue(service1 == service2);
+    }
+    
+    @Test
+    public void testPut_DatapointsContainNullValues() {
+    	
+    	TSDBService service = system.getServiceFactory().getTSDBService();
+    	
+    	Map<Long, Double> datapoints = new HashMap<>();
+    	datapoints.put(1493973552000L, 100D);
+    	datapoints.put(1493973652000L, null);
+    	Metric m = new Metric("scope", "metric");
+    	m.setDatapoints(datapoints);
+    	
+    	service.putMetrics(Arrays.asList(m));
+    	
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

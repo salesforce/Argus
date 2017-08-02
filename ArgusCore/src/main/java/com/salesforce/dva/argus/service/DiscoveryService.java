@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.SchemaQuery;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
@@ -44,8 +46,6 @@ import java.util.List;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public interface DiscoveryService extends Service {
-	
-	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 	
 	/** This should be a configuration. For now, this is how we reached on a value of 2M. 
 	 *  A datapoint in Argus is a tuple containing a Long timestamp (8 bytes with some additional Java Wrapper Class bytes) 
@@ -81,12 +81,11 @@ public interface DiscoveryService extends Service {
      * @param   tagkRegex       A regular expression to match against the tag key field.  Can be null.
      * @param   tagvRegex       A regular expression to match against the tag value field.  Can be null.
      * @param   limit           The maximum set of results to return.  Must be a positive integer.
-     * @param   page            The page of results to return.
+     * @param scanFrom Starting row for scanner
      *
      * @return  A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
      */
-    List<MetricSchemaRecord> filterRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex,
-        int limit, int page);
+    List<MetricSchemaRecord> filterRecords(SchemaQuery query);
 
     /**
      * @param   namespaceRegex  A regular expression to match against the namespace field. Can be null.
@@ -96,12 +95,11 @@ public interface DiscoveryService extends Service {
      * @param   tagvRegex       A regular expression to match against the tag value field.  Can be null.
      * @param   type            The field to return.  Cannot be null.
      * @param   limit           The maximum set of results to return.  Must be a positive integer.
-     * @param   page            The page of results to return.
+     * @param scanFrom Scanner start row
      *
-     * @return  A unique list of values for the specified field.  Will never return null, but may be empty.
+     * @return  A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
      */
-    List<String> getUniqueRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagkRegex, String tagvRegex, RecordType type,
-        int limit, int page);
+    List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type);
 
     /**
      * Expands a given wildcard query into a list of distinct queries.
@@ -120,40 +118,18 @@ public interface DiscoveryService extends Service {
      * @return  True if the query is a wildcard query.
      */
     static boolean isWildcardQuery(MetricQuery query) {
-    	if (_containsWildcard(query.getScope()) || _containsWildcard(query.getMetric())) {
+    	if (SchemaService.containsWildcard(query.getScope()) || SchemaService.containsWildcard(query.getMetric())) {
             return true;
         }
-        if (_containsWildcard(query.getNamespace())) {
+        if (SchemaService.containsWildcard(query.getNamespace())) {
             return true;
         }
         if (query.getTags() != null) {
             for (String tagKey : query.getTags().keySet()) {
-                if (_containsWildcard(tagKey) || (!"*".equals(query.getTag(tagKey)) && _containsWildcard(query.getTag(tagKey)))) {
+                if (SchemaService.containsWildcard(tagKey) || 
+                		(!"*".equals(query.getTag(tagKey)) && SchemaService.containsWildcard(query.getTag(tagKey)))) {
                     return true;
                 }
-            }
-        }
-        return false;
-    }
-    
-    static boolean _containsWildcard(String str) {
-        if (str == null || str.isEmpty()) {
-            return false;
-        }
-
-        char[] arr = str.toCharArray();
-        for (char ch : arr) {
-            if (_isWildcard(ch)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static boolean _isWildcard(char ch) {
-        for (char c : WILDCARD_CHARSET) {
-            if (c == ch) {
-                return true;
             }
         }
         return false;

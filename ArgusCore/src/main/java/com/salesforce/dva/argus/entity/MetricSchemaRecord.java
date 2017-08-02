@@ -247,5 +247,51 @@ public class MetricSchemaRecord {
         return MessageFormat.format("MetricSchemaRecord = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4})", namespace,
             scope, metric, tagKey, tagValue);
     }
+    /*
+     * Returns the Metric Schema Record constructed from a given string
+     * @param s String representing the metric expression in the format scope:metric{tagKey=tagValue}:namespace 
+     */
+    public static MetricSchemaRecord constructSchemaRecord(String s){
+    	
+    	if(s==null || s.length()==0)
+    		return null;
+    	
+    	String[] querySplit=s.split(":"); 
+
+		String scope=querySplit[0], namespace=querySplit.length==3?querySplit[2]:null,metric, tagKey, tagValue;
+
+		if(querySplit[1].contains("{")){
+			metric=querySplit[1].substring(0, querySplit[1].indexOf('{'));
+			String tagKeyTagValue=querySplit[1].substring(querySplit[1].indexOf('{'), querySplit[1].length()-1);
+			String[] tagKeyValueSplit=tagKeyTagValue.split("=");
+			tagKey=tagKeyValueSplit[0].substring(1);
+			tagValue=tagKeyValueSplit[1];
+
+		}else{
+			metric=querySplit[1];
+			tagKey=null;
+			tagValue=null;
+		}
+    	return new MetricSchemaRecord(namespace, scope, metric, tagKey, tagValue);
+    	
+    	
+    }
+    
+    public static String print(MetricSchemaRecord msr) {
+    	
+    	StringBuilder sb = new StringBuilder(msr.getScope());
+    	sb.append(":");
+    	sb.append(msr.getMetric());
+    	
+    	if(msr.getTagKey() != null) {
+    		sb.append("{").append(msr.getTagKey()).append("=").append(msr.getTagValue()).append("}");
+    	}
+    	
+    	if(msr.getNamespace() != null) {
+    		sb.append(":").append(msr.getNamespace());
+    	}
+    	
+    	return sb.toString();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

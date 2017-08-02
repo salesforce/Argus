@@ -102,8 +102,12 @@
                     <td><input class="form-control" type="text" ng-model="trigger.secondaryThreshold" /></td>
                     <td><input class="form-control" type="text" ng-model="trigger.inertia" /></td>
                     <td>
-                        <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
-                                ng-confirm='Delete "{{trigger.name}}"?' ng-confirm-action='removeTrigger(trigger)'>
+                        <button class="btn btn-warning btn-sm" type="button"
+                                confirm-click
+                                ng-disabled="alertNotEditable"
+                                confirm-title="Delete Trigger"
+                                confirm-message='Delete "{{trigger.name}}"?'
+                                confirm-call='removeTrigger(trigger)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
                     </td>
@@ -141,12 +145,14 @@
                 <tr>
                     <th>ID</th>
                     <th>Is SR Actionable</th>
+		    <th>Severity Level(1-5)</th>
                     <th>Name</th>
                     <th>Type</th>
                     <th>Subscriptions</th>
                     <th>Metrics to Annotate</th>
                     <th>Cooldown Millis</th>
-                    <th>Triggers</th>
+                    <th style="min-width: 95px">Triggers</th>
+                    <th>Custom Text</th>
                     <th>
                         <button class="btn btn-success btn-sm" type="button"
                                 ng-click="addNotification()" ng-disabled="alertNotEditable">
@@ -157,6 +163,12 @@
                 <tr ng-repeat="notification in notifications| filter:notificationSearchText |orderBy:'name'">
                     <td>{{notification.id}}</td>
                     <td><input type="checkbox" ng-model="notification.sractionable" /></td>
+		    <td>
+                <select class="form-control" ng-model="notification.severityLevel">
+                    <option ng-repeat="level in [1,2,3,4,5] " ng-value="{{level}}">{{level}}</option>
+                </select>
+
+            </td>
                     <td><input class="form-control" type="text" ng-model="notification.name" /></td>
                     <td>
                         <select class="form-control" ng-model="notification.notifierName">
@@ -171,9 +183,14 @@
                                 ng-model="notification.triggersIds" ng-options="id for id in getTriggerIds()">
                     </select></td>
                     <td>
+                        <textarea rows="4" cols="35" ng-model="notification.customText"></textarea>
+                    </td>
+                    <td>
                         <button class="btn btn-warning btn-sm" type="button" ng-disabled="alertNotEditable"
-                                ng-confirm='Delete "{{notification.name}}"?'
-                                ng-confirm-action='removeNotification(notification)'>
+                                confirm-click
+                                confirm-title="Delete Notification"
+                                confirm-message='Delete "{{notification.name}}"?'
+                                confirm-call='removeNotification(notification)'>
                             <i class="glyphicon glyphicon-trash"></i>
                         </button>
                     </td>

@@ -31,17 +31,25 @@
 	 
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Provides methods to update metric schema records for use in wildcard expansion and metric discovery.
  *
- * @author  Tom Valine (tvaline@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public interface SchemaService extends Service {
+	
+	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 
     //~ Methods **************************************************************************************************************************************
 
@@ -63,24 +71,150 @@ public interface SchemaService extends Service {
      * Returns a list of schema records matched by the given query.
      *
      * @param   query  The query to evaluate.  Cannot be null.
-     * @param   limit  The maximum number of records to return.  Must be a positive integer.
-     * @param   page   The page of records to return.  Must be a non-negative integer.
      *
      * @return  The list of matching schema records.
      */
-    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query, int limit, int page);
+    List<MetricSchemaRecord> get(MetricSchemaRecordQuery query);
 
     /**
      * Returns a list of unique names for the given record type.
      *
      * @param   query  The query to evaluate.  Cannot be null.
      * @param   limit  The maximum number of records to return.  Must be a positive integer.
-     * @param   page   The page of results to return.  Must be a non-negative integer.
      * @param   type   The record type for which to return unique names.
+     * @param   scanFrom   String representing the scanner start row
      *
-     * @return  A list of unique names for the give record type.  Will never return null, but may be empty.
+     * @return  A list of MetricSchemaRecords for the give record type.  Will never return null, but may be empty.
      */
-    List<String> getUnique(MetricSchemaRecordQuery query, int limit, int page, RecordType type);
+    List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
+    
+    List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
+    
+    static boolean containsWildcard(String str) {
+        if (str == null || str.isEmpty()) {
+            return false;
+        }
+
+        char[] arr = str.toCharArray();
+        for (char ch : arr) {
+            if (isWildcardCharacter(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean isWildcardCharacter(char ch) {
+        for (char c : WILDCARD_CHARSET) {
+            if (c == ch) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    static boolean containsFilter(String str) {
+    	if(str == null || str.isEmpty()) {
+    		return false;
+    	}
+    	
+		Pattern pattern = Pattern.compile("\\**");
+		Matcher matcher = pattern.matcher(str);
+		
+		return !matcher.matches();
+	}
+    
+    static String convertToRegex(String wildcardStr) {
+        if (wildcardStr == null || wildcardStr.isEmpty()) {
+            return wildcardStr;
+        }
+
+        char[] arr = wildcardStr.toCharArray();
+        char[] result = new char[arr.length * 3];
+        boolean flag = false;
+        int j = -1, k = 0;
+
+        for (int i = 0; i < arr.length; i++, k++) {
+            k = replace(result, arr, k, i);
+            if (arr[i] == '[') {
+                j = k;
+            }
+            if (arr[i] == '|') {
+                if (j != -1) {
+                    result[j] = '(';
+                    while (i < arr.length && arr[i] != ']') {
+                        k = replace(result, arr, k, i);
+                        i++;
+                        k++;
+                    }
+                    if (i < arr.length) {
+                        result[k] = ')';
+                        j = -1;
+                    }
+                } else {
+                    flag = true;
+                }
+            }
+        }
+        if (flag) {
+            return "(" + new String(result).trim() + ")";
+        }
+        return new String(result).trim();
+    }
+    
+    static int replace(char[] dest, char[] orig, int destIndex, int origIndex) {
+        if (orig[origIndex] == '?') {
+            dest[destIndex] = '.';
+            return destIndex;
+        } else if (orig[origIndex] == '*') {
+            dest[destIndex] = '.';
+            dest[destIndex + 1] = '*';
+            return destIndex + 1;
+        } else if (orig[origIndex] == '.') {
+            dest[destIndex] = '\\';
+            dest[destIndex + 1] = '.';
+            return destIndex + 1;
+        }
+        dest[destIndex] = orig[origIndex];
+        return destIndex;
+    }
+    
+    static MetricSchemaRecord constructMetricSchemaRecordForType(String str, RecordType type) {
+    	SystemAssert.requireArgument(type != null, "type cannot be null.");
+    	
+    	MetricSchemaRecord record = new MetricSchemaRecord();
+    	switch(type) {
+    		case SCOPE:
+    			record.setScope(str);
+    			break;
+    		case METRIC:
+    			record.setMetric(str);
+    			break;
+    		case TAGK:
+    			record.setTagKey(str);
+    			break;
+    		case TAGV:
+    			record.setTagValue(str);
+    			break;
+    		case NAMESPACE:
+    			record.setNamespace(str);
+    			break;
+    		default:
+    			throw new IllegalArgumentException("Invalid record type: " + type);	
+    	}
+    	
+    	return record;
+    }
+    
+    static List<MetricSchemaRecord> constructMetricSchemaRecordsForType(List<String> values, RecordType type) {
+    	
+    	List<MetricSchemaRecord> records = new ArrayList<>(values.size());
+		for(String value : values) {
+			records.add(SchemaService.constructMetricSchemaRecordForType(value, type));
+		}
+		
+		return records;
+    }
 
     //~ Enums ****************************************************************************************************************************************
 

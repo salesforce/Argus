@@ -75,7 +75,7 @@ public class PercentileTransformTest {
             assertEquals(p50, new Double(35.0));
             assertEquals(p100, new Double(50.0));
         } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new SystemException("Exception occured while trying to invoke method via reflection.", e);
+            throw new SystemException("Exception occurred while trying to invoke method via reflection.", e);
         }
     }
 
@@ -275,6 +275,76 @@ public class PercentileTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
+    
+    
+    @Test
+    public void testPercentileTransformWithOneConstantAndUNIONShareNoCommonDPs() {
+        Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 20.0);
+        expected.put(1000L, 20.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(2000L, 15.0);
+        expected.put(2000L, 15.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+
+        datapoints_3.put(3000L, 50.0);
+        expected.put(3000L, 50.0);
+
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_3.setDatapoints(datapoints_3);
+
+        Map<Long, Double> datapoints_4 = new HashMap<Long, Double>();
+
+        datapoints_4.put(4000L, 35.0);
+        expected.put(4000L, 35.0);
+
+        Metric metric_4 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_4.setDatapoints(datapoints_4);
+
+        Map<Long, Double> datapoints_5 = new HashMap<Long, Double>();
+
+        datapoints_5.put(5000L, 40.0);
+        expected.put(5000L, 40.0);
+
+        Metric metric_5 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_5.setDatapoints(datapoints_5);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+        metrics.add(metric_3);
+        metrics.add(metric_4);
+        metrics.add(metric_5);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("30");
+        constants.add("UNION");
+
+        List<Metric> result = percentileTransform.transform(metrics, constants);
+
+        assertEquals(expected.size(), result.get(0).getDatapoints().size());
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+    
 
     @Test(expected = IllegalArgumentException.class)
     public void testPercentileTransformWithoutConstants() {

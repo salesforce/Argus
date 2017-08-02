@@ -31,9 +31,15 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryQuery;
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryResult;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +55,10 @@ public class DiscoveryService extends EndpointService {
 
     private static final String RESOURCE = "/discover/metrics/schemarecords";
 
+    //~ Instance fields ******************************************************************************************************************************
+    
+    private final ObjectMapper MAPPER;
+    
     //~ Constructors *********************************************************************************************************************************
 
     /**
@@ -58,6 +68,11 @@ public class DiscoveryService extends EndpointService {
      */
     DiscoveryService(ArgusHttpClient client) {
         super(client);
+        
+        MAPPER = new ObjectMapper();
+   	 	SimpleModule module = new SimpleModule();
+   	 	module.addDeserializer(MetricDiscoveryResult.class, new MetricDiscoveryResult.Deserializer());
+   	 	MAPPER.registerModule(module);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -75,9 +90,10 @@ public class DiscoveryService extends EndpointService {
      * @return  The matching schema records.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
     public List<MetricSchemaRecord> getMatchingRecords(String namespaceRegex, String scopeRegex, String metricRegex, String tagKeyRegex,
-        String tagValueRegex, int limit) throws IOException {
+        String tagValueRegex, int limit) throws IOException, TokenExpiredException {
         StringBuilder urlBuilder = _buildBaseUrl(namespaceRegex, scopeRegex, metricRegex, tagKeyRegex, tagValueRegex, limit);
         String requestUrl = urlBuilder.toString();
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
@@ -100,9 +116,10 @@ public class DiscoveryService extends EndpointService {
      * @return  The matching schema records.
      *
      * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
      */
     public List<String> getMatchingRecordFields(String namespaceRegex, String scopeRegex, String metricRegex, String tagKeyRegex,
-        String tagValueRegex, FieldSelector type, int limit) throws IOException {
+        String tagValueRegex, FieldSelector type, int limit) throws IOException, TokenExpiredException {
         StringBuilder urlBuilder = _buildBaseUrl(namespaceRegex, scopeRegex, metricRegex, tagKeyRegex, tagValueRegex, limit);
 
         urlBuilder.append("&type=").append(type.name().toLowerCase(Locale.ENGLISH));
@@ -112,6 +129,17 @@ public class DiscoveryService extends EndpointService {
 
         assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<String>>() { });
+    }
+    /*
+     * 
+     */
+    public MetricDiscoveryResult getMatchingRecords(MetricDiscoveryQuery query) throws IOException, TokenExpiredException{
+    	
+    	String requestUrl = RESOURCE;
+    	 ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, query);
+    	 assertValidResponse(response, requestUrl);
+    	 
+    	 return MAPPER.readValue(response.getResult(), MetricDiscoveryResult.class);
     }
 
     private StringBuilder _buildBaseUrl(String namespaceRegex, String scopeRegex, String metricRegex, String tagKeyRegex, String tagValueRegex,

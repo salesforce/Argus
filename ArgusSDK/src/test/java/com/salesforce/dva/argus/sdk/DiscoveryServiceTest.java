@@ -30,7 +30,11 @@
  */
 package com.salesforce.dva.argus.sdk;
 
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryQuery;
+import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryResult;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 public class DiscoveryServiceTest extends AbstractTest {
 
     @Test
-    public void testGetMatchingRecords() throws IOException {
+    public void testGetMatchingRecords_GET() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
             DiscoveryService discoveryService = argusService.getDiscoveryService();
             List<MetricSchemaRecord> result = discoveryService.getMatchingRecords("nsReg", "scpReg", "metReg", "tkReg", "tvReg", 1);
@@ -53,11 +57,36 @@ public class DiscoveryServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetMatchingRecordFields() throws IOException {
+    public void testGetMatchingRecordFields() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
             DiscoveryService discoveryService = argusService.getDiscoveryService();
             List<String> result = discoveryService.getMatchingRecordFields("nsReg", "scpReg", "metReg", "tkReg", "tvReg", NAMESPACE, 2);
             List<String> expected = Arrays.asList(new String[] { "namespace1", "namespace2" });
+
+            assertEquals(expected, result);
+        }
+    }
+    
+    @Test
+    public void testGetMatchingRecords_POST() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
+            DiscoveryService discoveryService = argusService.getDiscoveryService();
+            MetricDiscoveryQuery query = new MetricDiscoveryQuery(null, "scpReg", "*", null, null, 10, null, null);
+            MetricDiscoveryResult result = discoveryService.getMatchingRecords(query);
+            MetricDiscoveryResult expected = new MetricDiscoveryResult(
+            		Arrays.asList(new MetricSchemaRecord[] { _constructPersistedMetricSchemaRecord() }), null);
+
+            assertEquals(expected, result);
+        }
+    }
+    
+    @Test
+    public void testGetMatchingRecordFields_POST() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/DiscoveryServiceTest.json"))) {
+            DiscoveryService discoveryService = argusService.getDiscoveryService();
+            MetricDiscoveryQuery query = new MetricDiscoveryQuery(null, "scpReg", "*", null, null, 10, "namespace", null);
+            MetricDiscoveryResult result = discoveryService.getMatchingRecords(query);
+            MetricDiscoveryResult expected = new MetricDiscoveryResult(Arrays.asList(new String[] { "namespace1", "namespace2" }), null);
 
             assertEquals(expected, result);
         }

@@ -1,11 +1,11 @@
 #
-# Argus web services
+# Argus web services 
 #
 BuildArch:     noarch
 Name:          argusws
 Version:       4.3
 Release:       1 
-License:       GPL+
+License:       BSD-3-Clause
 Group:         Applications/System
 Summary:       Argus web services
 Distribution:  Salesforce.com, Inc.
@@ -28,7 +28,9 @@ mkdir -p %{_stagerootdir}/%{_targetdir}
 cp %{_topdir}/ArgusWebServices/target/argus-webservices-*.war %{_stagerootdir}/%{_targetdir}
 
 %files
-/%{_targetdir}
+%defattr(755, sfdc, sfdc,755)
+%{_targetdir}/../../../..
+
 %pre
 
 %post

@@ -35,14 +35,12 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
  * transform for either mapping if no constant input, or reduing with a constant input Similar to MetricReducerOrMappingTransform, but this class need
- * a required constant which is required for transfrom function Do a mapping or reducing depends on other constants.
+ * a required constant which is required for transform function Do a mapping or reducing depends on other constants.
  *
  * <p>So far, Such functions include: List<Metric> PERCENTILE(List <Metric> metrics, Double constant);</p>
  *
@@ -88,63 +86,14 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
 
         if (constants.size() == 1) {
             result = Arrays.asList(reduce(metrics, constants));
+        } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+        	fulljoinIndicator = true;
+        	constants.remove(1);
+        	result = Arrays.asList(reduce(metrics, constants));
         } else if (constants.size() > 1) {
             result = mapping(metrics, constants);
         }
         return result;
-    }
-
-    /**
-     * Reduce transform for the list of metrics.
-     *
-     * @param   metrics    The list of metrics to reduce.
-     * @param   constants  The list of transform specific constants supplied to the transform.
-     *
-     * @return  The reduced metric.
-     */
-    protected Metric reduce(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
-
-        MetricDistiller distiller = new MetricDistiller();
-
-        distiller.distill(metrics);
-
-        Map<Long, List<Double>> collated = collate(metrics);
-        Map<Long, Double> reducedDatapoints = reduce(collated, constants, metrics);
-        String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
-        Metric newMetric = new Metric(defaultScope, newMetricName);
-
-        newMetric.setDisplayName(distiller.getDisplayName());
-        newMetric.setUnits(distiller.getUnits());
-        newMetric.setTags(distiller.getTags());
-        newMetric.setDatapoints(reducedDatapoints);
-        return newMetric;
-    }
-
-    private Map<Long, List<Double>> collate(List<Metric> metrics) {
-        Map<Long, List<Double>> collated = new HashMap<>();
-
-        for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
-                if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), new ArrayList<Double>());
-                }
-                collated.get(point.getKey()).add(point.getValue());
-            }
-        }
-        return collated;
-    }
-
-    private Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<String> constants, List<Metric> metrics) {
-        Map<Long, Double> reducedDatapoints = new HashMap<>();
-
-        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
-            if (entry.getValue().size() < metrics.size()) {
-                continue;
-            }
-            reducedDatapoints.put(entry.getKey(), this.valueReducerOrMapping.reduce(entry.getValue(), constants));
-        }
-        return reducedDatapoints;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

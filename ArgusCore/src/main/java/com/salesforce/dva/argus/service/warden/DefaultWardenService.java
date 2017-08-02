@@ -519,7 +519,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
 
     private void _disableWardenAlertsThatAreNotUpdated() {
         /* Disable alerts for counters that haven't been updated in the past one hour. */
-        List<Alert> alertsForAdmin = _alertService.findAlertsByOwner(_adminUser);
+        List<Alert> alertsForAdmin = _alertService.findAlertsByOwner(_adminUser, false);
 
         for (Alert alert : alertsForAdmin) {
             if (alert.getName().contains(WARDEN_ALERT_NAME_PREFIX) && alert.isEnabled()) {
@@ -581,7 +581,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
             try {
                 _disableWardenAlertsThatAreNotUpdated();
             } catch (Exception ex) {
-                _logger.warn("Error occured Reason: {}", ex.getMessage());
+                _logger.warn("Error occurred Reason: {}", ex.getMessage());
             }
         }
     }

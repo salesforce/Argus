@@ -30,10 +30,17 @@
  */
 package com.salesforce.dva.argus.sdk;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Credentials;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.http.HttpStatus;
 
 /**
  * Provides methods to authenticate to Argus.
@@ -42,9 +49,9 @@ import java.io.IOException;
  */
 public class AuthService extends EndpointService {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+	//~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String RESOURCE = "/auth";
+    private static final String RESOURCE = "/v2/auth";
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -66,6 +73,7 @@ public class AuthService extends EndpointService {
      * @param   password  The password.
      *
      * @throws  IOException  If the server is unavailable.
+     * @throws  
      */
     public void login(String username, String password) throws IOException {
         String requestUrl = RESOURCE + "/login";
@@ -76,19 +84,39 @@ public class AuthService extends EndpointService {
 
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, creds);
 
-        assertValidResponse(response, requestUrl);
+        try {
+		assertValidResponse(response, requestUrl);
+	} catch (TokenExpiredException e) {
+		//This should never happen
+		throw new RuntimeException("This should never happen. login() method should never throw a TokenExpiredException", e);
+	}
+        
+        Map<String, String> tokens = fromJson(response.getResult(), new TypeReference<Map<String, String>>() {});
+        getClient().accessToken = tokens.get("accessToken");
+        getClient().refreshToken = tokens.get("refreshToken");
+    }
+    
+    public void obtainNewAccessToken() throws TokenExpiredException, IOException {
+    	String requestUrl = RESOURCE + "/token/refresh";
+    	Map<String, String> token = new HashMap<>();
+    	token.put("refreshToken", getClient().refreshToken);
+    	
+    	ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.POST, requestUrl, token);
+    	
+    	if(response.getStatus() == HttpStatus.SC_UNAUTHORIZED) {
+    		throw new TokenExpiredException(response.getErrorMessage(), requestUrl, response.getResult());
+    	}
+    	assertValidResponse(response, requestUrl);
+    	
+    	Map<String, String> tokenMap = fromJson(response.getResult(), new TypeReference<Map<String, String>>() {});
+    	getClient().accessToken = tokenMap.get("accessToken");
     }
 
     /**
-     * Logs out from Argus.
-     *
-     * @throws  IOException  If the server is unavailable.
+     * Logs out from Argus. Not need with a TokenBased Auth Service. 
      */
-    public void logout() throws IOException {
-        String requestUrl = RESOURCE + "/logout";
-        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
-
-        assertValidResponse(response, requestUrl);
+    public void logout() {
+        return;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

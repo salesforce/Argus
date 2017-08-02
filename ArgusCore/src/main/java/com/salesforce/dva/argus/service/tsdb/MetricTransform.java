@@ -197,12 +197,14 @@ class MetricTransform {
             Map<Long, Double> datapoints = metric.getDatapoints();
 
             for (Map.Entry<Long, Double> entry : datapoints.entrySet()) {
-                jgen.writeStartObject();
-                jgen.writeStringField("metric", DefaultTSDBService.constructTSDBMetricName(metric));
-                jgen.writeNumberField("timestamp", entry.getKey());
-                jgen.writeNumberField("value", entry.getValue());
-                serializeTags(metric, jgen);
-                jgen.writeEndObject();
+            	if(entry.getValue() != null) {
+            		jgen.writeStartObject();
+                    jgen.writeStringField("metric", DefaultTSDBService.constructTSDBMetricName(metric));
+                    jgen.writeNumberField("timestamp", entry.getKey());
+                    jgen.writeNumberField("value", entry.getValue());
+                    serializeTags(metric, jgen);
+                    jgen.writeEndObject();
+            	}
             }
         }
 

@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.entity.Alert;
 import com.salesforce.dva.argus.sdk.entity.Notification;
 import com.salesforce.dva.argus.sdk.entity.Trigger;
+import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+
 import org.junit.Test;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -45,7 +48,7 @@ import static org.junit.Assert.*;
 public class AlertServiceTest extends AbstractTest {
 
     @Test
-    public void testCreateAlert() throws IOException {
+    public void testCreateAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Alert result = alertService.createAlert(_constructUnpersistedAlert());
@@ -56,7 +59,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetAlerts() throws IOException {
+    public void testGetAlerts() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             List<Alert> result = alertService.getAlerts(false);
@@ -67,7 +70,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetAlert() throws IOException {
+    public void testGetAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Alert result = alertService.getAlert(BigInteger.ONE);
@@ -78,7 +81,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetNotifications() throws IOException {
+    public void testGetNotifications() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             List<Notification> result = alertService.getNotifications(BigInteger.ONE);
@@ -89,7 +92,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetTriggers() throws IOException {
+    public void testGetTriggers() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             List<Trigger> result = alertService.getTriggers(BigInteger.ONE);
@@ -100,7 +103,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetTrigger() throws IOException {
+    public void testGetTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger result = alertService.getTrigger(BigInteger.ONE, BigInteger.ONE);
@@ -111,7 +114,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetNotification() throws IOException {
+    public void testGetNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Notification result = alertService.getNotification(BigInteger.ONE, BigInteger.ONE);
@@ -122,7 +125,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetTriggersForNotification() throws IOException {
+    public void testGetTriggersForNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             List<Trigger> result = alertService.getTriggersForNotification(BigInteger.ONE, BigInteger.ONE);
@@ -133,7 +136,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetTriggerIfAssigned() throws IOException {
+    public void testGetTriggerIfAssigned() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger result = alertService.getTriggerIfAssigned(BigInteger.ONE, BigInteger.ONE, BigInteger.ONE);
@@ -144,7 +147,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateAlert() throws IOException {
+    public void testUpdateAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Alert alert = alertService.getAlert(BigInteger.ONE);
@@ -159,13 +162,27 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateNotification() throws IOException {
+    public void testUpdateNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Notification notification = alertService.getNotification(BigInteger.ONE, BigInteger.ONE);
 
             notification.setName("UpdatedNotification");
+            Notification result = alertService.updateNotification(BigInteger.ONE, BigInteger.ONE, notification);
+            Notification expected = _constructUpdatedNotification();
 
+            assertEquals(expected, result);
+        }
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateNotificationWrongSeverityLevel() throws IOException, TokenExpiredException {
+        try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
+            AlertService alertService = argusService.getAlertService();
+            Notification notification = alertService.getNotification(BigInteger.ONE, BigInteger.ONE);
+
+            notification.setName("UpdatedNotification");
+            notification.setSeverityLevel(6);
             Notification result = alertService.updateNotification(BigInteger.ONE, BigInteger.ONE, notification);
             Notification expected = _constructUpdatedNotification();
 
@@ -174,7 +191,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testCreateNotification() throws IOException {
+    public void testCreateNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Notification notification = _constructUnpersistedNotification();
@@ -186,7 +203,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdateTrigger() throws IOException {
+    public void testUpdateTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger trigger = alertService.getTrigger(BigInteger.ONE, BigInteger.ONE);
@@ -201,7 +218,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testCreateTrigger() throws IOException {
+    public void testCreateTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger trigger = _constructUnpersistedTrigger();
@@ -213,7 +230,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteAlert() throws IOException {
+    public void testDeleteAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -222,7 +239,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteNotifications() throws IOException {
+    public void testDeleteNotifications() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -231,7 +248,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteNotification() throws IOException {
+    public void testDeleteNotification() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -240,7 +257,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteTriggers() throws IOException {
+    public void testDeleteTriggers() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -249,7 +266,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteTrigger() throws IOException {
+    public void testDeleteTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -258,7 +275,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUnlinkTriggers() throws IOException {
+    public void testUnlinkTriggers() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -267,7 +284,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testUnlinkTrigger() throws IOException {
+    public void testUnlinkTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -276,7 +293,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testLinkTrigger() throws IOException {
+    public void testLinkTrigger() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
             Trigger result = alertService.linkTrigger(BigInteger.ONE, BigInteger.ONE, BigInteger.ONE);
@@ -287,7 +304,7 @@ public class AlertServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testDuplicateAlert() throws IOException {
+    public void testDuplicateAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {
             AlertService alertService = argusService.getAlertService();
 
@@ -358,6 +375,7 @@ public class AlertServiceTest extends AbstractTest {
         notification.setName("TestNotification");
         notification.setNotifierName("EmailNotifier");
         notification.setSRActionable(false);
+        notification.setSeverityLevel(5);
         notification.setSubscriptions(Arrays.asList(new String[] { "you@yourcompany.com" }));
         notification.setCustomText("custom_text");
         return notification;
