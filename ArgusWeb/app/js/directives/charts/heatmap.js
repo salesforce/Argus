@@ -362,7 +362,8 @@ angular.module('argus.directives.charts.heatmap', [])
                     names, colors, graphClassNames,
                     flagsG, labelTip,
                     stack,
-					heatmapBucket;
+					bucketInfo,
+					graphClassNamesMap;
 
                 var isDataStacked = chartType.includes('stack');
                 var isChartDiscrete = chartType.includes('bar');
@@ -455,19 +456,24 @@ angular.module('argus.directives.charts.heatmap', [])
                     // downsample if its needed
                     currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 
-                    var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYDomain(series, names, chartOptions.aggregate ||
+                    var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, chartOptions.aggregate ||
 						ChartToolService.defaultAggregate, chartOptions.intervalInMinutes ||
 						ChartToolService.defaultHeatmapIntervalInMinutes); //TODO move this default number to chartTools
-                    currSeries = aggregatedSeriesAndXYDomain.aggregatedSeries;
+
+					currSeries = aggregatedSeriesAndXYDomain.aggregatedSeries;
 
                     var xDomain = aggregatedSeriesAndXYDomain.xDomain;
                     var yDomain = aggregatedSeriesAndXYDomain.yDomain;
+                    var zDomain = aggregatedSeriesAndXYDomain.zDomain;
 
 					var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, chartOptions.bucketMin, chartOptions.step, chartOptions.numOfBucket);
 					var heatmapData = heatmapDataAndBucketInfo.heatmapData;
 
+					seriesBeingDisplayed = heatmapData;
+
 					x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
                     y.domain(yDomain);
+                    graph.z.domain(zDomain);
 
                     // update brush's x and y
                     // x2.domain(xDomain);
@@ -480,12 +486,16 @@ angular.module('argus.directives.charts.heatmap', [])
                     ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
                    // xAxisG2.call(xAxis2);
 
-                    heatmapBucket = {
-                    	xStep : chartOptions.intervalInMinutes * 60000 || ChartToolService.defaultHeatmapIntervalInMinutes * 60000,
-						yStep : chartOptions.step || heatmapDataAndBucketInfo.step
+					var xStep = chartOptions.intervalInMinutes * 60000 || ChartToolService.defaultHeatmapIntervalInMinutes * 60000;
+					var yStep = chartOptions.step || heatmapDataAndBucketInfo.step;
+                    bucketInfo = {
+                    	xStep : xStep,
+						yStep : yStep,
+						numOfXStep: Math.ceil((x.domain()[1] - x.domain()[0])/xStep),
+						numOfYStep: heatmapDataAndBucketInfo.numOfBucket
 					};
 
-                    ChartElementService.renderHeatmap(mainChart, heatmapData, graph, heatmapBucket, chartId);
+                    ChartElementService.renderHeatmap(mainChart, heatmapData, graph, bucketInfo, chartId);
 
                     // currSeries.forEach(function (metric, index) {
                     //     if (metric.data.length === 0) return;
@@ -506,7 +516,12 @@ angular.module('argus.directives.charts.heatmap', [])
                     //     // render brush line in a downsample manner
                     //     downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
                     //     ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
-                    //     ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
+
+					ChartElementService.renderToolTipForHeatmap(tipItems, 'aggregateInfo');
+
+					graphClassNames.forEach(function(graphClassName){
+						ChartElementService.renderToolTipForHeatmap(tipItems, graphClassName);
+                    });
                     //     // render annotations
                     //     if (!metric.flagSeries) return;
                     //     var flagSeries = metric.flagSeries.data;
@@ -521,29 +536,30 @@ angular.module('argus.directives.charts.heatmap', [])
                 // Add the overlay element to the graph when mouse interaction takes place. This needs to be on top
                 function addOverlay() {
                     //Mouseover focus and crossline
-                    if (!isChartDiscrete) {
-                        focus = ChartElementService.appendFocus(mainChart);
-                        crossLine = ChartElementService.appendCrossLine(focus);
-                        currSeries.forEach(function (metric) {
-                            if (metric.data.length === 0) return;
-                            var tempColor = metric.color === null ? z(metric.name) : metric.color;
-                            if (metric.extraYAxis) {
-                                ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, metric.extraYAxis);
-                            } else {
-                                ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, '');
-                            }
-                        });
-                        mouseMoveElement = focus;
-                    } else {
-                        mouseOverHighlightBar = ChartElementService.appendMouseOverHighlightBar(mainChart, allSize.height, graph.x0.bandwidth());
-                        highlightBar = mouseOverHighlightBar.select('.highlightBar');
-                        mouseMoveElement = mouseOverHighlightBar;
-                    }
+                    // if (!isChartDiscrete) {
+                    //     focus = ChartElementService.appendFocus(mainChart);
+                    //     crossLine = ChartElementService.appendCrossLine(focus);
+                    //     currSeries.forEach(function (metric) {
+                    //         if (metric.data.length === 0) return;
+                    //         var tempColor = metric.color === null ? z(metric.name) : metric.color;
+                    //         if (metric.extraYAxis) {
+                    //             ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, metric.extraYAxis);
+                    //         } else {
+                    //             ChartElementService.renderFocusCircle(focus, tempColor, metric.graphClassName, '');
+                    //         }
+                    //     });
+                    //     mouseMoveElement = focus;
+                    // } else {
+                    //     mouseOverHighlightBar = ChartElementService.appendMouseOverHighlightBar(mainChart, allSize.height, graph.x0.bandwidth());
+                    //     highlightBar = mouseOverHighlightBar.select('.highlightBar');
+                    //     mouseMoveElement = mouseOverHighlightBar;
+                    // }
 
-                    var tileWidth = graph.x(heatmapBucket.xStep) - graph.x(0);
-					var tileHight = graph.y(0) - graph.y(heatmapBucket.yStep);
+                    var tileWidth = graph.x(bucketInfo.xStep) - graph.x(0);
+					var tileHight = graph.y(0) - graph.y(bucketInfo.yStep);
 
-                    mouseOverTile = ChartElementService.appendMouseOverTile(mainChart, tileHight, tileWidth)
+                    mouseOverTile = ChartElementService.appendMouseOverTile(mainChart, tileHight, tileWidth);
+                    mouseMoveElement = mouseOverTile;
                     //the graph rectangle area
                     chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
                     // the brush overlay
@@ -556,53 +572,63 @@ angular.module('argus.directives.charts.heatmap', [])
                     if (!seriesBeingDisplayed || seriesBeingDisplayed.length === 0) return;
                     var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
                     if (mousePositionData === undefined) mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
-                    var dataPoints, newMousePositionData;
-                    if (isChartDiscrete) {
-                        // use highlight bar
-                        if (brushInNonEmptyRange) {
-                            var distanceToRight = allSize.width + allSize.margin.right;
-                            dataPoints = ChartElementService.updateHighlightRangeAndObtainDataPoints(graph, mouseOverHighlightBar, tipItems, seriesBeingDisplayed, scope.sources, extraY,
-                                mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked, distanceToRight);
-                            // there is no snap point for bar chart
-                            newMousePositionData = mousePositionData;
-                        }
-                    } else {
-                        // use focus and crossLine
-                        var snapPoint;
-                        if (brushInNonEmptyRange) {
-                            var dataPointsAndSnapPoint = ChartElementService.updateFocusCirclesAndObtainDataPoints(focus, tipItems, seriesBeingDisplayed, scope.sources, x, y, extraY,
-                                mousePositionData, timestampSelector, dateBisector, isDataStacked);
-                            dataPoints = dataPointsAndSnapPoint.dataPoints;
-                            snapPoint = dataPointsAndSnapPoint.snapPoint;
-                        }
-                        newMousePositionData = snapPoint && scope.menuOption.isSnapCrosslineOn ? snapPoint : mousePositionData;
-                        ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, newMousePositionData);
-                    }
-                    // sort tooltip items if its needed
-                    if (scope.menuOption.tooltipConfig.isTooltipSortOn) {
-                        dataPoints = dataPoints.sort(function (a, b) {
-                            return b.data[1] - a.data[1];
-                        });
-                    }
-                    ChartElementService.updateTooltipItemsContent(allSize, scope.menuOption, tipItems, tipBox, dataPoints, mousePositionData);
+                   	//get the related tile
+                    var dataPoints, newMousePositionData, tileDataAndIndex;
+                    tileDataAndIndex = ChartToolService.getTileData(seriesBeingDisplayed, graph, mousePositionData, bucketInfo);
+                    var names = tileDataAndIndex.data.names;
+                    var aggregateInfo = ChartElementService.generateHeatmapTooltipInfo(tileDataAndIndex, bucketInfo, scope.menuOption);
+                    var distanceToRight = allSize.width + allSize.margin.right;
 
-                    if (!noSync) {
-                        // if current chart is snapping mouse position to data point, so will the synced charts
-                        if (chartId in syncChartJobs) syncChartMouseMoveAll(newMousePositionData.mouseX, chartId);
-                    }
+                    ChartElementService.updateHighlightTile(graph, allSize, bucketInfo, tileDataAndIndex, mouseOverTile, dateFormatter, distanceToRight);
+
+
+                    // if (isChartDiscrete) {
+                    //     // use highlight bar
+                    //     if (brushInNonEmptyRange) {
+                    //         var distanceToRight = allSize.width + allSize.margin.right;
+                    //         dataPoints = ChartElementService.updateHighlightRangeAndObtainDataPoints(graph, mouseOverHighlightBar, tipItems, seriesBeingDisplayed, scope.sources, extraY,
+                    //             mousePositionData, timestampSelector, dateBisector, dateFormatter, isDataStacked, distanceToRight);
+                    //         // there is no snap point for bar chart
+                    //         newMousePositionData = mousePositionData;
+                    //     }
+                    // } else {
+                    //     // use focus and crossLine
+                    //     var snapPoint;
+                    //     if (brushInNonEmptyRange) {
+                    //         var dataPointsAndSnapPoint = ChartElementService.updateFocusCirclesAndObtainDataPoints(focus, tipItems, seriesBeingDisplayed, scope.sources, x, y, extraY,
+                    //             mousePositionData, timestampSelector, dateBisector, isDataStacked);
+                    //         dataPoints = dataPointsAndSnapPoint.dataPoints;
+                    //         snapPoint = dataPointsAndSnapPoint.snapPoint;
+                    //     }
+                    //     newMousePositionData = snapPoint && scope.menuOption.isSnapCrosslineOn ? snapPoint : mousePositionData;
+                    //     ChartElementService.updateCrossLines(allSize, dateFormatter, scope.menuOption.yAxisConfig.formatYaxis, focus, newMousePositionData);
+                    // }
+                    // sort tooltip items if its needed
+                    // if (scope.menuOption.tooltipConfig.isTooltipSortOn) {
+                    //     dataPoints = dataPoints.sort(function (a, b) {
+                    //         return b.data[1] - a.data[1];
+                    //     });
+                    // }
+                    ChartElementService.unshowAllHeatmapTooltipText(tipItems, graphClassNames);
+					ChartElementService.updateTooltipItemsContentForHeatmap(allSize, scope.menuOption, tipItems, tipBox, aggregateInfo, names, graphClassNamesMap, mousePositionData);
+
+                    // if (!noSync) {
+                    //     // if current chart is snapping mouse position to data point, so will the synced charts
+                    //     if (chartId in syncChartJobs) syncChartMouseMoveAll(newMousePositionData.mouseX, chartId);
+                    // }
                 }
 
                 // mouse in
                 function mouseOverChart(noYCrossLine) {
                     var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
                     ChartElementService.showFocusAndTooltip(mouseMoveElement, tooltip, scope.menuOption.isTooltipOn, brushInNonEmptyRange);
-                    if (crossLine) {
-                        if (noYCrossLine) {
-                            crossLine.selectAll('.crossLineY').style('display', 'none');
-                        } else {
-                            crossLine.selectAll('.crossLineY').style('display', null);
-                        }
-                    }
+                    // if (crossLine) {
+                    //     if (noYCrossLine) {
+                    //         crossLine.selectAll('.crossLineY').style('display', 'none');
+                    //     } else {
+                    //         crossLine.selectAll('.crossLineY').style('display', null);
+                    //     }
+                    // }
                 }
 
                 // mouse out
@@ -850,6 +876,7 @@ angular.module('argus.directives.charts.heatmap', [])
                     console.log('Empty data from chart data processing');
                 } else {
                     // set up legend
+                    graphClassNamesMap = ChartToolService.getGraphClassNamesMap(series);
                     names = series.map(function(metric) { return metric.name; });
                     colors = series.map(function(metric) { return metric.color; });
                     graphClassNames = series.map(function(metric) { return metric.graphClassName; });

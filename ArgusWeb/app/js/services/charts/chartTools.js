@@ -496,9 +496,9 @@ angular.module('argus.services.charts.tools', [])
 		return result;
 	};
 
- 	this.getAggregatedSeriesAndXYDomain = function(series, names, aggr, intervalInMinutes){
+ 	this.getAggregatedSeriesAndXYZDomain = function(series, names, aggr, intervalInMinutes){
  		var timeBasedSeries = this.convertSeriesToTimeBasedFormatKeepUndefined(series);
- 		return this.getAggregatedTimeBasedSeriesAndXYDomain(timeBasedSeries, names, aggr, intervalInMinutes)
+ 		return this.getAggregatedTimeBasedSeriesAndXYZDomain(timeBasedSeries, names, aggr, intervalInMinutes)
 	};
 
 	this.convertSeriesToTimeBasedFormatKeepUndefined = function (series) {
@@ -531,7 +531,7 @@ angular.module('argus.services.charts.tools', [])
         return result;
     };
 
-    this.getAggregatedTimeBasedSeriesAndXYDomain = function(timeBasedSeries, names, aggr, intervalInMinutes) {
+    this.getAggregatedTimeBasedSeriesAndXYZDomain = function(timeBasedSeries, names, aggr, intervalInMinutes) {
         var startOfInterval = timeBasedSeries[0].timestamp;
         var endOfInterval = startOfInterval + intervalInMinutes * 60000;
         var aggregatedSeries = [];
@@ -603,11 +603,13 @@ angular.module('argus.services.charts.tools', [])
   		return {
   			aggregatedSeries: aggregatedSeries,
 			xDomain: [timeBasedSeries[0].timestamp, timeBasedSeries[timeBasedSeries.length-1].timestamp],
-			yDomain: yDomain
+			yDomain: yDomain,
+			zDomain: [0, names.length]
 		}
     };
 
-    this.getHeatmapDataAndBucketInfo = function(aggregatedSeriesAndYDomain, bucketMin, step, numOfBucket){
+
+	this.getHeatmapDataAndBucketInfo = function(aggregatedSeriesAndYDomain, bucketMin, step, numOfBucket){
         var heatmapData = [];
     	var aggregatedSeries = aggregatedSeriesAndYDomain.aggregatedSeries;
 		var yDomain = aggregatedSeriesAndYDomain.yDomain;
@@ -618,9 +620,10 @@ angular.module('argus.services.charts.tools', [])
 
     	//transfer to time, bucket, frequency
 		aggregatedSeries.forEach(function(d){
-			var temp = {};
-            for(var i = bucketMin; i < bucketMax; i += step){
+			var temp = [];
+            for(var i = 0; i < numOfBucket; i++){
                 temp[i] = {
+                	bucket: bucketMin + i * step,
                     count: 0,
                     names: []
                 };
@@ -628,31 +631,29 @@ angular.module('argus.services.charts.tools', [])
 			for(var k in d){
 				if(d.hasOwnProperty(k)){
 					if (k !== 'timestamp'){
-						for(i = bucketMin; i < bucketMax; i += step){
-							if(d[k] < i + step){
+						for(i = 0; i < numOfBucket; i++){
+							if(d[k] < bucketMin + step * (i + 1)){
 								temp[i].count += 1;
 								temp[i].names.push(k);
 								break;
 							}
 						}
                         if(d[k] === bucketMax){
-							i = bucketMax - step
-							temp[i].count += 1;
-                            temp[i].names.push(k);
+							temp[numOfBucket - 1].count += 1;
+                            temp[numOfBucket - 1].names.push(k);
 						}
 					}
 				}
 			}
-			for(k in temp){
-				if(temp.hasOwnProperty(k)){
-					heatmapData.push({
-						timestamp: d.timestamp,
-						bucket: Number(k),
-						frequency: temp[k].count,
-						names: temp[k].names
-					})
-				}
-			}
+			temp.forEach(function(e){
+                heatmapData.push({
+                    timestamp: d.timestamp,
+                    bucket: e.bucket,
+                    frequency: e.count,
+                    names: e.names
+                })
+			});
+
 		});
 
 		return{
@@ -718,4 +719,25 @@ angular.module('argus.services.charts.tools', [])
 
 		return [finalYMin, finalYMax];
 	};
+
+	this.getTileData = function(heatmapData, graph, mouseData, bucketInfo){
+		var xIndex = Math.floor((mouseData.mouseX - graph.x.domain()[0])/bucketInfo.xStep);
+		var yIndex = Math.floor((mouseData.mouseY - graph.y.domain()[0])/bucketInfo.yStep);
+		var index = bucketInfo.numOfYStep * xIndex + yIndex;
+        var tileData = heatmapData[index];
+        return {
+        	data: tileData,
+			xIndex: xIndex,
+			yIndex: yIndex
+        };
+	};
+
+	this.getGraphClassNamesMap = function(series){
+		var map = {};
+		series.forEach(function(metric){
+			map[metric.name] = metric.graphClassName;
+		});
+		return map;
+	}
+
 }]);

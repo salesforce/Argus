@@ -458,8 +458,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', 'mouseOverTile')
 			.style('display', 'none');
 		mouseOverTile.append('rect')
-			.attr('class', 'hightlightTile')
-			.attr('class', 'hightlight')
+			.attr('class', 'highlightTile')
 			.attr('height', height)
 			.attr('width', width);
         mouseOverTile.append('rect')
@@ -470,6 +469,8 @@ angular.module('argus.services.charts.elements', [])
             .attr('class', 'crossLineTip')
             .attr('y', 0)
             .attr('dy', crossLineTipHeight);
+
+        return mouseOverTile;
 	};
 
 	this.appendTooltipElements = function (svg_g) {
@@ -680,6 +681,11 @@ angular.module('argus.services.charts.elements', [])
 			.attr('r', circleRadius)
 			.style('fill', color)
 			.attr('class', className);
+		tipItems.append('text')
+			.attr('class', className);
+	};
+
+	this.renderToolTipForHeatmap = function (tipItems, className){
 		tipItems.append('text')
 			.attr('class', className);
 	};
@@ -922,7 +928,7 @@ angular.module('argus.services.charts.elements', [])
 			var startingPosition = graph.x0(matchingTimestamp);
 			var date = dateFormatter(matchingTimestamp);
 
-			mouseOverHighlightBar.select('.highlightBar')
+			mouseOverHighlightBarmouseOverHighlightBar.select('.highlightBar')
 				.attr('x', startingPosition)
 				.attr('dataX', matchingTimestamp)
 				.style('display', null);
@@ -937,6 +943,36 @@ angular.module('argus.services.charts.elements', [])
 		}
 
 		return datapoints;
+	};
+
+
+	this.updateHighlightTile = function (graph, sizeInfo, bucketInfo, tileDataAndIndex, mouseOverTile, dateFormatter, distanceToRight){
+
+		var width = graph.x(bucketInfo.xStep) - graph.x(0);
+        var height =  graph.y(0) - graph.y(bucketInfo.yStep);
+		var timestamp = tileDataAndIndex.data.timestamp
+		mouseOverTile.select('.highlightTile')
+			.attr('x', tileDataAndIndex.xIndex * width)
+			.attr('y', sizeInfo.height - (tileDataAndIndex.yIndex + 1) * height)
+			.attr('width', width)
+			.attr('height', height)
+            .style('display', null);
+
+
+		var dateText = mouseOverTile.select('.crossLineTip');
+		var boxXRect = mouseOverTile.select('.crossLineTipRect');
+		var startingPosition = graph.x(timestamp);
+		var date = dateFormatter(timestamp);
+
+		dateText.attr('x', startingPosition).text(date);
+
+		var boxX = dateText.node().getBBox();
+		boxXRect.attr('x', boxX.x - crossLineTipPadding)
+			.attr('y', boxX.y - crossLineTipPadding)
+			.attr('width', boxX.width + 2 * crossLineTipPadding)
+			.attr('height', boxX.height + 2 * crossLineTipPadding);
+		flipAnElementHorizontally([dateText, boxXRect], boxX.width, distanceToRight, 0, boxX.x, crossLineTipPadding);
+
 	};
 
 	this.updateTooltipItemsContent = function (sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData) {
@@ -994,6 +1030,72 @@ angular.module('argus.services.charts.elements', [])
 		}
 		// move tooltip to the left if there is not enough space to display it on the right
 		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
+	};
+
+
+	this.updateTooltipItemsContentForHeatmap = function(sizeInfo, menuOption, tipItems, tipBox, aggregateInfo, names, graphClassNamesMap,  mousePositionData) {
+        var XOffset = 0;
+        var YOffset = 0;
+        var newXOffset = 0;
+        var OffsetMultiplier = -1;
+        // update tipItems (circle, source name, and data)
+		tipItems.select('text.aggregateInfo')
+			.attr('dy', 20 + mousePositionData.positionY)
+			.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
+			.text(aggregateInfo);
+
+		for (var i = 0; i <names.length; i++) {
+            // create a new col after every itemsPerCol
+            if (i % itemsPerCol === 0) {
+                OffsetMultiplier++;
+                YOffset = OffsetMultiplier * itemsPerCol;
+                XOffset += newXOffset;
+                newXOffset = 0;
+            }
+            var textLine = tipItems.select('text.' + graphClassNamesMap[names[i]])
+                .attr('dy', 20 * (2 + i - YOffset) + mousePositionData.positionY)
+                .attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
+				.attr('display', null);
+
+            var name = UtilService.trimMetricName(names[i], menuOption);
+            textLine.text(name);
+            // update XOffset if existing offset is smaller than textLine
+            var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+            if (tempXOffset > newXOffset) {
+                newXOffset = tempXOffset;
+            }
+        }
+        // update tipBox
+        var tipBounds = tipItems.node().getBBox();
+        tipBox.attr('x', mousePositionData.positionX + tipOffset);
+        tipBox.attr('y', mousePositionData.positionY + tipOffset);
+        if (tipBounds.width === 0 || tipBounds.height === 0) {
+            // when there is no graph, make the tipBox 0 size
+            tipBox.attr('width', 0);
+            tipBox.attr('height', 0);
+        } else {
+            tipBox.attr('width', tipBounds.width + 4 * tipPadding);
+            tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+        }
+        // move tooltip to the left if there is not enough space to display it on the right
+        flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
+	};
+
+	this.unshowAllHeatmapTooltipText = function(tipItems, graphClassnames){
+		graphClassnames.forEach(function(name){
+			tipItems.select('text.'+name)
+				.attr('display', 'none')
+		});
+	};
+
+	this.generateHeatmapTooltipInfo = function(tileDataAndIndex, bucketInfo, menuOption){
+
+        var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
+        var format = d3.format(dataFormat);
+        var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '  ' +
+            'Frequency :' + tileDataAndIndex.data.frequency;
+
+        return aggregateInfo;
 	};
 
 	this.updateCrossLines = function (sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData) {

@@ -353,6 +353,10 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     fill: lightskyblue;
     opacity: 0.2;
 }
+.highlightTile {
+    fill: yellow;
+    opacity: 0.2;
+}
 
 .tick {will-change: transform;}
 .tick line {stroke: lightgrey;}
