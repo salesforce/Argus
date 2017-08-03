@@ -34,8 +34,13 @@ angular.module('argus.services.charts.elements', [])
 
 	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
-		if ((startingX + width > totalWidth + marginRight) && (startingX - width > 0)) {
-			transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+		console.log(startingX, width);
+		if (startingX + width > totalWidth + marginRight) {
+			if( (startingX - width > 0)){
+                transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+			}else{
+				transformAttr = 'translate(-' + startingX + ')';
+			}
 		}
 		elements.map(function(element) {
 			element.attr('transform', transformAttr);

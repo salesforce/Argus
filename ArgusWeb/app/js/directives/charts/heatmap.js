@@ -575,7 +575,7 @@ angular.module('argus.directives.charts.heatmap', [])
                    	//get the related tile
                     var dataPoints, newMousePositionData, tileDataAndIndex;
                     tileDataAndIndex = ChartToolService.getTileData(seriesBeingDisplayed, graph, mousePositionData, bucketInfo);
-                    var names = tileDataAndIndex.data.names;
+                    var names = tileDataAndIndex.data ? tileDataAndIndex.data.names : [];
                     var aggregateInfo = ChartElementService.generateHeatmapTooltipInfo(tileDataAndIndex, bucketInfo, scope.menuOption);
                     var distanceToRight = allSize.width + allSize.margin.right;
 
