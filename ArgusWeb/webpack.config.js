@@ -1,5 +1,5 @@
 'use strict';
-
+/*global require:false, __dirname */
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 var ChunkManifestPlugin = require('chunk-manifest-webpack-plugin');
@@ -40,12 +40,13 @@ module.exports = {
 				}
 			},
 			// for react
-			{
+			// {
 			// 	test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"
 			// },
 			// {
 			// 	test: /\.(eot|woff|woff2|ttf|svg)$/,
 			// 	loader: 'url-loader?limit=30000&name=[name]-[hash].[ext]'
+			{
 				test: /\.js$/,
 				exclude: /node_modules/,
 				loader: "babel-loader",
