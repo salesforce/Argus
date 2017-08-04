@@ -18,7 +18,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 				$scope.ctrlVal = $scope.controlValue;
 
 				for (var prop in $routeParams) {
-					if (prop == $scope.controlName) {
+					if (prop === $scope.controlName) {
 						$scope.ctrlVal = $routeParams[prop];
 					}
 				}

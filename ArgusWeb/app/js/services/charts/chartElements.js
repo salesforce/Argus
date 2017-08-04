@@ -20,6 +20,7 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
 	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
+	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		graph.style('stroke', color);
@@ -57,11 +58,12 @@ angular.module('argus.services.charts.elements', [])
 
 		xAxis = d3.axisBottom()
 			.scale(x)
-			.ticks(currentnGridX)
+			.ticks(currentnGridX);
 
 		// set short numerical date time format to 'smallChart' for better readability
-		if (isSmallChart)
+		if (isSmallChart) {
 			xAxis.tickFormat(d3.timeFormat("%-m/%-d %H:%M"));
+		}
 
 		yAxis = d3.axisLeft()
 			.scale(y)
@@ -219,17 +221,17 @@ angular.module('argus.services.charts.elements', [])
 			case 'scatter':
 				graphElement = this.createScatter(x, y);
 				break;
-			case 'area':
-				graphElement = this.createArea(x, y);
-				break;
-			case 'stackarea':
-				graphElement = this.createStackArea(x, y);
-				break;
 			case 'bar':
 				graphElement = this.createBar(x, y);
 				break;
 			case 'stackbar':
 				graphElement = this.createStackbar(x, y);
+				break;
+			case 'area':
+				graphElement = this.createArea(x, y);
+				break;
+			case 'stackarea':
+				graphElement = this.createStackArea(x, y);
 				break;
 			// case 'line':
 			default:
@@ -643,7 +645,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', className);
 	};
 
-	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint, dateFormatter) {
+	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint) {
 		var label = flags.append('g')
 			.attr('class', 'flagItem ' + className)
 			.attr('id', className + dataPoint.flagID)
@@ -676,7 +678,8 @@ angular.module('argus.services.charts.elements', [])
 			})
 			.on('mouseover', function () {
 				// add timestamp to the annotation label
-				var tempTimestamp = dateFormatter(dataPoint.x);
+				var dateObj = new Date(dataPoint.x);
+				var tempTimestamp = dateObj.toUTCString() + ' (in this timezone: ' + dateObj.toLocaleString() + ')';
 				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
 				labelTip.style('border-color', color).html(tempTimestamp);
 				labelTip.show();
@@ -1190,9 +1193,8 @@ angular.module('argus.services.charts.elements', [])
 		});
 	};
 
+	//redraw xAxis
 	this.redrawAxis = function (xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart) {
-		//redraw xAxis
-
 		// rotate text label for 'smallChart'
 		if (isSmallChart) {
 			xAxisG.call(xAxis)
@@ -1522,5 +1524,19 @@ angular.module('argus.services.charts.elements', [])
 		} else {
 			return null;
 		}
+	};
+
+	this.updateGraphsX = function (graph, x, timestampSelector) {
+		graph.x(function (d) {
+			return UtilService.validNumberChecker(x(timestampSelector(d)));
+		});
+	};
+
+	this.updateCustomizedChartTypeGraphX = function (chart, graph, x, chartType) {
+		graph.x = x;
+		if (chartType === 'scatter') {
+			chart.selectAll('circle.dot').attr('cx', function (d) { return UtilService.validNumberChecker(x(d[0])); });
+		}
+		// bar charts element do not need to update x attr since they use x0 which is a discrete domain of epoch values
 	};
 }]);
