@@ -1,5 +1,11 @@
 'use strict';
 /*global require:false, __dirname */
+
+// fix EMFILE: too many open files" or "ENFILE: file table overflow issue
+var fs = require('fs');
+var gracefulFs = require('graceful-fs');
+gracefulFs.gracefulify(fs);
+
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 var ChunkManifestPlugin = require('chunk-manifest-webpack-plugin');
