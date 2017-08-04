@@ -5,34 +5,13 @@ angular.module('argus.directives.charts.heatmap', [])
     .directive('heatmap', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
         //--------------------resize all charts-------------------
         var resizeTimeout = 250; //the time for resize function to fire
-        var resizeJobs = [];
-        var timer;
+        var allChartIds = [];
+		var timer;
         var fullscreenChartID;
 
-        function resizeHelper(){
-            $timeout.cancel(timer); //clear to improve performance
-            timer = $timeout(function () {
-                if (fullscreenChartID === undefined) {
-                    resizeJobs.forEach(function (resizeJob) { //resize all the charts
-                        resizeJob.resize();
-                    });
-                } else { // resize only one chart that in fullscreen mode
-                    var chartToFullscreen = resizeJobs.filter(function (item) {
-                        return item.chartID === fullscreenChartID;
-                    });
-                    chartToFullscreen[0].resize();
-                    if (window.innerHeight !== screen.height) {
-                        // reset the ID after exiting full screen
-                        fullscreenChartID = undefined;
-                    }
-                }
-            }, resizeTimeout); //only execute resize after a timeout
-        }
-
-        d3.select(window).on('resize', resizeHelper);
-
         //---------------------sync all charts-----------------------
-        var syncChartJobs = {};
+        var syncChartJobs;
+
         function syncChartMouseMoveAll(mouseX, focusChartId){
             for(var key in syncChartJobs){
                 if(!syncChartJobs.hasOwnProperty(key) || key === focusChartId) continue;
@@ -66,6 +45,8 @@ angular.module('argus.directives.charts.heatmap', [])
                 $scope.noDataSeries = [];
                 $scope.invalidSeries = [];
                 var hiddenSourceNames = [];
+
+                syncChartJobs = ChartToolService.getOrCreateSyncChartJobs($scope.dashboardId);
 
                 $scope.extraYAxisSet = new Set();
                 $scope.series.forEach(function(e){
@@ -154,7 +135,7 @@ angular.module('argus.directives.charts.heatmap', [])
                                 // update all graphs on dashboard with current scope.menuOption settings
                                 if ($scope.applyToAllGraphs) {
                                     //update localStorage for each chart
-                                    resizeJobs.forEach(function (job) {
+                                    allChartIds.forEach(function (job) {
                                         Storage.set('menuOption_' + dashboardId + '_' + job.chartID, $scope.menuOption);
                                     });
                                 }
@@ -348,14 +329,14 @@ angular.module('argus.directives.charts.heatmap', [])
                 }
                 var defaultContainerHeight = containerHeight;
                 // calculate width, height and margin for both brush and graphs
-                var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, scope.menuOption.isBrushOn, extraYAxisSet.size);
+                var allSize = ChartToolService.calculateDimensions(containerWidth, containerHeight, isSmallChart, false, extraYAxisSet.size);
 
                 //setup graph variables
                 var x, x2, y, y2, yScalePlain, extraY, extraYScalePlain, extraY2,
                     xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid, extraYAxisR,
                     graph, graph2, extraGraph, extraGraph2,
                     brush, brushMain, zoom,
-                    svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG,//g
+                    svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG, //g
                     context, clip, brushG, brushMainG, chartRect,//g
                     tooltip, tipBox, tipItems,
                     focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement, mouseOverTile,
@@ -421,6 +402,7 @@ angular.module('argus.directives.charts.heatmap', [])
 
                     //clip path: keep graphs within the container
                     clip = ChartElementService.appendClip(allSize, svg_g, chartId);
+
                     //
                     // //brush area
                     // var smallBrushElement = ChartElementService.appendBrushWithXAxisElements(allSize, svg_g);
@@ -437,6 +419,7 @@ angular.module('argus.directives.charts.heatmap', [])
                     tooltip = tooltipElement.tooltip;
                     tipBox = tooltipElement.tipBox;
                     tipItems = tooltipElement.tipItems;
+
                     // // set color
                     // ChartToolService.bindDefaultColorsWithSources(z, names);
                     // // populate stack if its needed
@@ -495,8 +478,7 @@ angular.module('argus.directives.charts.heatmap', [])
 						numOfYStep: heatmapDataAndBucketInfo.numOfBucket
 					};
 
-                    ChartElementService.renderHeatmap(mainChart, heatmapData, graph, bucketInfo, chartId);
-
+                    ChartElementService.renderHeatmap(mainChart, seriesBeingDisplayed, graph, bucketInfo, chartId);
                     // currSeries.forEach(function (metric, index) {
                     //     if (metric.data.length === 0) return;
                     //     var tempColor = metric.color === null ? z(metric.name) : metric.color;
@@ -561,7 +543,7 @@ angular.module('argus.directives.charts.heatmap', [])
                     mouseOverTile = ChartElementService.appendMouseOverTile(mainChart, tileHight, tileWidth);
                     mouseMoveElement = mouseOverTile;
                     //the graph rectangle area
-                    chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom);
+                    chartRect = ChartElementService.appendChartRect(allSize, mainChart, mouseOverChart, mouseOutChart, mouseMove);
                     // the brush overlay
                    // brushG = ChartElementService.appendBrushOverlay(context, brush, x.range());
                    // brushMainG = ChartElementService.appendMainBrushOverlay(mainChart, mouseOverChart, mouseOutChart, mouseMove, zoom, brushMain);
@@ -571,10 +553,20 @@ angular.module('argus.directives.charts.heatmap', [])
                 function mouseMove(mousePositionData, noSync) {
                     if (!seriesBeingDisplayed || seriesBeingDisplayed.length === 0) return;
                     var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
-                    if (mousePositionData === undefined) mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
+                    if (mousePositionData === undefined){
+
+                        mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
+                    }else{
+                        //synced by other chart
+                        ChartElementService.hideHighlightTile(mouseMoveElement);
+                        ChartElementService.hideTooltip(tooltip);
+                        ChartElementService.justUpdateDateText(graph, mouseOverTile, dateFormatter, mousePositionData.mouseX);
+                        return;
+                    }
                    	//get the related tile
                     var dataPoints, newMousePositionData, tileDataAndIndex;
                     tileDataAndIndex = ChartToolService.getTileData(seriesBeingDisplayed, graph, mousePositionData, bucketInfo);
+
                     var names = tileDataAndIndex.data ? tileDataAndIndex.data.names : [];
                     var aggregateInfo = ChartElementService.generateHeatmapTooltipInfo(tileDataAndIndex, bucketInfo, scope.menuOption);
                     var distanceToRight = allSize.width + allSize.margin.right;
@@ -612,10 +604,10 @@ angular.module('argus.directives.charts.heatmap', [])
                     ChartElementService.unshowAllHeatmapTooltipText(tipItems, graphClassNames);
 					ChartElementService.updateTooltipItemsContentForHeatmap(allSize, scope.menuOption, tipItems, tipBox, aggregateInfo, names, graphClassNamesMap, mousePositionData);
 
-                    // if (!noSync) {
-                    //     // if current chart is snapping mouse position to data point, so will the synced charts
-                    //     if (chartId in syncChartJobs) syncChartMouseMoveAll(newMousePositionData.mouseX, chartId);
-                    // }
+                    if (!noSync) {
+                        // if current chart is snapping mouse position to data point, so will the synced charts
+                        if (chartId in syncChartJobs) syncChartMouseMoveAll(mousePositionData.mouseX, chartId);
+                    }
                 }
 
                 // mouse in
@@ -763,7 +755,7 @@ angular.module('argus.directives.charts.heatmap', [])
                     if (series === 'series' || !series) {
                         return;
                     }
-                    var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, scope.menuOption.isBrushOn, scope.changeToFullscreen, extraYAxisSet.size);
+                    var tempSizeInfo = ChartToolService.updateContainerSize(container, defaultContainerHeight, defaultContainerWidth, isSmallChart, false, scope.changeToFullscreen, extraYAxisSet.size);
                     allSize = tempSizeInfo.newSize;
                     containerHeight = tempSizeInfo.containerHeight;
                     containerWidth = tempSizeInfo.containerWidth;
@@ -780,34 +772,37 @@ angular.module('argus.directives.charts.heatmap', [])
                         ChartElementService.resizeChartRect(allSize, chartRect, needToAdjustHeight);
                         ChartToolService.updateXandYRange(allSize, x, y, needToAdjustHeight);
                         needToAdjustHeight && ChartToolService.updateExtraYRange(allSize, extraY, extraYAxisSet);
-                        ChartElementService.resizeBrush(allSize, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight, extraY2, extraYAxisSet);
-                        ChartElementService.resizeMainBrush(allSize, brushMain, brushMainG);
-                        ChartElementService.resizeZoom(allSize, zoom);
+
+                        //ChartElementService.resizeBrush(allSize, brush, brushG, context, x2, xAxis2, xAxisG2, y2, needToAdjustHeight, extraY2, extraYAxisSet);
+                        //ChartElementService.resizeMainBrush(allSize, brushMain, brushMainG);
+                        //ChartElementService.resizeZoom(allSize, zoom);
                         ChartElementService.resizeMainChartElements(allSize, svg, svg_g, needToAdjustHeight);
-                        if (isChartDiscrete) {
-                            graph.x0.range(x.range());
-                            graph.x1.rangeRound([0, graph.x0.bandwidth()]);
-                            graph2.x0.range(x2.range());
-                            graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
-                            highlightBar.attr('height', allSize.height)
-                                .attr('width', graph.x0.bandwidth());
-                        }
-                        ChartElementService.resizeGraphs(svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet);
-                        ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
+                        // if (isChartDiscrete) {
+                        //     graph.x0.range(x.range());
+                        //     graph.x1.rangeRound([0, graph.x0.bandwidth()]);
+                        //     graph2.x0.range(x2.range());
+                        //     graph2.x1.rangeRound([0, graph2.x0.bandwidth()]);
+                        //     highlightBar.attr('height', allSize.height)
+                        //         .attr('width', graph.x0.bandwidth());
+                        // }
+                        ChartElementService.resizeHeatmap(mainChart, seriesBeingDisplayed, graph, bucketInfo, chartId);
+
+                        //ChartElementService.resizeGraphs(svg_g, graph, graphClassNames, chartType, extraGraph, extraYAxisSet);
+                        //ChartElementService.resizeBrushGraphs(svg_g, graph2, chartType, extraGraph2, extraYAxisSet);
 
                         ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet);
                         ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
 
                         ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
 
-                        if (tempX[0].getTime() === x2.domain()[0].getTime() &&
-                            tempX[1].getTime() === x2.domain()[1].getTime()) {
-                            ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
-                        } else {
-                            //restore the zoom&brush
-                            context.select('.brush').call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
-                        }
-                        ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
+                        // if (tempX[0].getTime() === x2.domain()[0].getTime() &&
+                        //     tempX[1].getTime() === x2.domain()[1].getTime()) {
+                        //     ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
+                        // } else {
+                        //     //restore the zoom&brush
+                        //     context.select('.brush').call(brush.move, [x2(tempX[0]), x2(tempX[1])]);
+                        // }
+                        //ChartElementService.adjustTooltipItemsBasedOnDisplayingSeries(seriesBeingDisplayed, scope.sources, x, tipItems, timestampSelector);
                     } else {
                         svg = ChartElementService.appendEmptyGraphMessage(allSize, svg, container, messagesToDisplay);
                     }
@@ -816,43 +811,43 @@ angular.module('argus.directives.charts.heatmap', [])
                 function setupMenu () {
                     //button set up
                     //dynamically enable button for brush time period(1h/1d/1w/1m/1y)
-                    var range = dateExtent[1] - dateExtent[0];
-                    if (range > 3600000) {
-                        //enable 1h button
-                        $('[name=oneHour]', topToolbar).prop('disabled', false)
-                            .click(ChartElementService.setBrushInTheMiddleWithMinutes(60, x, x2, context, brush));
-                    }
-                    if (range > 3600000 * 24) {
-                        //enable 1d button
-                        $('[name=oneDay]', topToolbar).prop('disabled', false)
-                            .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24, x, x2, context, brush));
-                    }
-                    if (range > 3600000 * 24 * 7) {
-                        //enable 1w button
-                        $('[name=oneWeek]', topToolbar).prop('disabled', false)
-                            .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*7, x, x2, context, brush));
-                    }
-                    if (range > 3600000 * 24 * 30) {
-                        //enable 1month button
-                        $('[name=oneMonth]', topToolbar).prop('disabled', false)
-                            .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*30, x, x2, context, brush));
-                    }
-                    if (range > 3600000 * 24 * 365) {
-                        //enable 1y button
-                        $('[name=oneYear]', topToolbar).prop('disabled', false)
-                            .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*365, x, x2, context, brush));
-                    }
+                    // var range = dateExtent[1] - dateExtent[0];
+                    // if (range > 3600000) {
+                    //     //enable 1h button
+                    //     $('[name=oneHour]', topToolbar).prop('disabled', false)
+                    //         .click(ChartElementService.setBrushInTheMiddleWithMinutes(60, x, x2, context, brush));
+                    // }
+                    // if (range > 3600000 * 24) {
+                    //     //enable 1d button
+                    //     $('[name=oneDay]', topToolbar).prop('disabled', false)
+                    //         .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24, x, x2, context, brush));
+                    // }
+                    // if (range > 3600000 * 24 * 7) {
+                    //     //enable 1w button
+                    //     $('[name=oneWeek]', topToolbar).prop('disabled', false)
+                    //         .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*7, x, x2, context, brush));
+                    // }
+                    // if (range > 3600000 * 24 * 30) {
+                    //     //enable 1month button
+                    //     $('[name=oneMonth]', topToolbar).prop('disabled', false)
+                    //         .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*30, x, x2, context, brush));
+                    // }
+                    // if (range > 3600000 * 24 * 365) {
+                    //     //enable 1y button
+                    //     $('[name=oneYear]', topToolbar).prop('disabled', false)
+                    //         .click(ChartElementService.setBrushInTheMiddleWithMinutes(60*24*365, x, x2, context, brush));
+                    // }
 
-                    if (scope.menuOption.isBrushMainOn) {
-                        brushMainG.style('display', null);
-                    } else {
-                        brushMainG.style('display', 'none');
-                    }
+                    // if (scope.menuOption.isBrushMainOn) {
+                    //     brushMainG.style('display', null);
+                    // } else {
+                    //     brushMainG.style('display', 'none');
+                    // }
                     // no wheel zoom on page load
-                    if (!scope.menuOption.isWheelOn) {
-                        chartRect.on('wheel.zoom', null);   // does not disable 'double-click' to zoom
-                        brushMainG.on('wheel.zoom', null);
-                    }
+                    // if (!scope.menuOption.isWheelOn) {
+                    //     chartRect.on('wheel.zoom', null);   // does not disable 'double-click' to zoom
+                    //     brushMainG.on('wheel.zoom', null);
+                    // }
                     if (!scope.menuOption.isBrushOn) ChartElementService.toggleElementShowAndHide(false, context);
                     if (scope.menuOption.isSyncChart) { addToSyncCharts(); }
                     scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
@@ -906,7 +901,7 @@ angular.module('argus.directives.charts.heatmap', [])
                         setUpGraphs();
                         renderGraphs(series);
                         addOverlay();
-                    //    setupMenu();
+                        setupMenu();
                     //    ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
                     } else {
                         // generate content for no graph message
@@ -931,15 +926,15 @@ angular.module('argus.directives.charts.heatmap', [])
 
                 //TODO: improve the resize efficiency if performance becomes an issue
                 element.on('$destroy', function(){
-                    if(resizeJobs.length){
-                        resizeJobs = [];
-                        syncChartJobs = {};//this get cleared too
+                    if(allChartIds.length){
+                        allChartIds = [];
+                        ChartToolService.destroySyncChartJobs(scope.dashboardId);//this get cleared too
                     }
                 });
 
-                resizeJobs.push({
+                allChartIds.push({
                     chartID: chartId,
-                    resize: resize
+                    //resize: resize
                 });
 
                 // watch changes from chart options modal to update graph
@@ -1023,6 +1018,14 @@ angular.module('argus.directives.charts.heatmap', [])
                     }
                 }, true);
 
+
+
+                scope.$watch(function(){return element.width()}, function () {
+                    $timeout.cancel(timer); //clear to improve performance
+                    timer = $timeout(function () {
+                        resize();
+                    }, resizeTimeout);
+                });
             }
         };
     }]);

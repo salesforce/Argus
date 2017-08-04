@@ -251,6 +251,9 @@ angular.module('argus.directives.charts.chart', [])
 			compile: function () {
 				return {
 					post: function postLink(scope, element, attributes, dashboardCtrl) {
+                        d3.select(window).on('resize', function(){
+                        	scope.$apply();
+						});
 						scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 							setupChart(scope, element, attributes, controls);
 						});

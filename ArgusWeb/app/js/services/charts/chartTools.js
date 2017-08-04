@@ -38,6 +38,24 @@ angular.module('argus.services.charts.tools', [])
 	this.defaultHeatmapIntervalInMinutes = 30;
 	this.defaultHeatmapNumOfBucket = 5;
 	this.defaultAggregate = 'avg';
+	this.syncChartJobs = {};
+
+	this.getOrCreateSyncChartJobs = function(dashboardId){
+		if(!this.syncChartJobs[dashboardId]){
+            this.syncChartJobs[dashboardId] = {};
+		}
+		return this.syncChartJobs[dashboardId];
+	};
+
+	this.destroySyncChartJobs = function(dashboardId){
+		delete this.syncChartJobs[dashboardId];
+	};
+
+	this.addSyncChartJob = function(dashboarId, chartId, syncChartJob){
+		if(syncChartJobs[dashboarId]){
+			syncChartJob[dashboarId][chartId] = syncChartJob;
+		}
+	};
 
 	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn, extraYAxisNum) {
 		var currentMarginTop = isSmallChart? marginTopSmall: marginTop;
@@ -163,6 +181,10 @@ angular.module('argus.services.charts.tools', [])
 			y: y.y,
 			yScalePlain: y.yScalePlain
 		};
+	};
+
+	this.getColorScale = function(sizeInfo){
+		return  d3.scaleLiner().range([0, sizeInfo.width]);
 	};
 
 	this.getY = function (sizeInfo, yScaleType, yScaleConfigValue){
@@ -539,6 +561,41 @@ angular.module('argus.services.charts.tools', [])
         var tempCount = {};
         var yDomain = [Number.MAX_VALUE, Number.MIN_VALUE];
 
+
+        function aggregate() {
+            if (aggr === 'sum') {
+                var sum = {timestamp: startOfInterval};
+                names.forEach(function (name) {
+                    if (tempSum[name] !== undefined) {
+                        var val = tempSum[name];
+                        if (val < yDomain[0]) {
+                            yDomain[0] = val;
+                        }
+                        if (val > yDomain[1]) {
+                            yDomain[1] = val;
+                        }
+                        sum[name] = val;
+                    }
+                });
+                aggregatedSeries.push(sum);
+            } else if (aggr === 'avg') {
+                var avg = {timestamp: startOfInterval};
+                names.forEach(function (name) {
+                    if (tempSum[name] !== undefined) {
+                        var val = tempSum[name] / tempCount[name];
+                        if (val < yDomain[0]) {
+                            yDomain[0] = val;
+                        }
+                        if (val > yDomain[1]) {
+                            yDomain[1] = val;
+                        }
+                        avg[name] = val;
+                    }
+                });
+                aggregatedSeries.push(avg);
+            }
+        }
+
         timeBasedSeries.forEach(function (d) {
             if (d.timestamp < endOfInterval) {
                 //keep adding
@@ -556,37 +613,7 @@ angular.module('argus.services.charts.tools', [])
                 });
             } else {
                 //sum/avg this interval
-                if (aggr === 'sum') {
-                    var sum = {timestamp: startOfInterval};
-                    names.forEach(function (name) {
-                        if (tempSum[name] !== undefined) {
-                            var val = tempSum[name];
-                            if (val < yDomain[0]) {
-                                yDomain[0] = val;
-                            }
-                            if (val > yDomain[1]) {
-                                yDomain[1] = val;
-                            }
-                            sum[name] = val;
-                        }
-                    });
-                    aggregatedSeries.push(sum);
-                } else if (aggr === 'avg') {
-                    var avg = {timestamp: startOfInterval};
-                    names.forEach(function (name) {
-                        if (tempSum[name] !== undefined) {
-                            var val = tempSum[name] / tempCount[name];
-                            if (val < yDomain[0]) {
-                                yDomain[0] = val;
-                            }
-                            if (val > yDomain[1]) {
-                                yDomain[1] = val;
-                            }
-                            avg[name] = val;
-                        }
-                    });
-                    aggregatedSeries.push(avg);
-                }
+                aggregate();
                 startOfInterval = endOfInterval;
                 endOfInterval = startOfInterval + intervalInMinutes * 60000;
 
@@ -600,6 +627,13 @@ angular.module('argus.services.charts.tools', [])
                 });
             }
         });
+
+
+        //last interval
+		if(timeBasedSeries[timeBasedSeries.length - 1].timestamp < endOfInterval){
+            //sum/avg this interval
+            aggregate()
+		}
   		return {
   			aggregatedSeries: aggregatedSeries,
 			xDomain: [timeBasedSeries[0].timestamp, timeBasedSeries[timeBasedSeries.length-1].timestamp],

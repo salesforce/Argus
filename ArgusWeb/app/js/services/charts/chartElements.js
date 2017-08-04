@@ -34,7 +34,7 @@ angular.module('argus.services.charts.elements', [])
 
 	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
-		console.log(startingX, width);
+		//console.log(startingX, width);
 		if (startingX + width > totalWidth + marginRight) {
 			if( (startingX - width > 0)){
                 transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
@@ -600,6 +600,17 @@ angular.module('argus.services.charts.elements', [])
             .style('clip-path', 'url(\'#clip_' + chartId + '\')');
 	};
 
+    this.resizeHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
+        chart.selectAll('.tile')
+            .data(heatmapData)
+            .attr('x', function(d){ return graph.x(d.timestamp);})
+            .attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
+            .attr('width', graph.x(bucket.xStep) - graph.x(0))
+            .attr('height', graph.y(0) - graph.y(bucket.yStep))
+            .attr('fill', function(d) {return graph.z(d.frequency)})
+            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
+    };
+
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
 		context.append('path')
 			.attr('class', 'brushLine ' + metric.graphClassName + '_brushLine')
@@ -748,8 +759,10 @@ angular.module('argus.services.charts.elements', [])
 			.attr('height', sizeInfo.height)
 			.on('mouseover', mouseOverFunction)
 			.on('mouseout', mouseOutFunction)
-			.on('mousemove', mouseMoveFunction)
-			.call(zoom);
+			.on('mousemove', mouseMoveFunction);
+		if(zoom){
+			chartRect.call(zoom);
+		}
 		return chartRect;
 	};
 
@@ -950,18 +963,40 @@ angular.module('argus.services.charts.elements', [])
 		return datapoints;
 	};
 
+	this.justUpdateDateText = function (graph, mouseOverTile, dateFormatter, timestamp){
+
+        var dateText = mouseOverTile.select('.crossLineTip').attr('display', null);
+        var boxXRect = mouseOverTile.select('.crossLineTipRect').attr('display', null);
+        var startingPosition = graph.x(timestamp);
+        var date = dateFormatter(timestamp);
+
+        dateText.attr('x', startingPosition).text(date);
+
+        var boxX = dateText.node().getBBox();
+        boxXRect.attr('x', boxX.x - crossLineTipPadding)
+            .attr('y', boxX.y - crossLineTipPadding)
+            .attr('width', boxX.width + 2 * crossLineTipPadding)
+            .attr('height', boxX.height + 2 * crossLineTipPadding);
+
+    };
 
 	this.updateHighlightTile = function (graph, sizeInfo, bucketInfo, tileDataAndIndex, mouseOverTile, dateFormatter, distanceToRight){
+        var timestamp = tileDataAndIndex.data.timestamp;
+
 
 		var width = graph.x(bucketInfo.xStep) - graph.x(0);
-        var height =  graph.y(0) - graph.y(bucketInfo.yStep);
-		var timestamp = tileDataAndIndex.data.timestamp
+		var height =  graph.y(0) - graph.y(bucketInfo.yStep);
+		var xPos = tileDataAndIndex.xIndex * width;
+		var yPos = sizeInfo.height - (tileDataAndIndex.yIndex + 1) * height;
+
+		if(tileDataAndIndex.xIndex * width + width > sizeInfo.width) width = sizeInfo.width - tileDataAndIndex.xIndex * width;
+
 		mouseOverTile.select('.highlightTile')
-			.attr('x', tileDataAndIndex.xIndex * width)
-			.attr('y', sizeInfo.height - (tileDataAndIndex.yIndex + 1) * height)
+			.attr('x', xPos)
+			.attr('y', yPos)
 			.attr('width', width)
 			.attr('height', height)
-            .style('display', null);
+			.style('display', null);
 
 
 		var dateText = mouseOverTile.select('.crossLineTip');
@@ -976,8 +1011,8 @@ angular.module('argus.services.charts.elements', [])
 			.attr('y', boxX.y - crossLineTipPadding)
 			.attr('width', boxX.width + 2 * crossLineTipPadding)
 			.attr('height', boxX.height + 2 * crossLineTipPadding);
-		flipAnElementHorizontally([dateText, boxXRect], boxX.width, distanceToRight, 0, boxX.x, crossLineTipPadding);
 
+		flipAnElementHorizontally([dateText, boxXRect], boxX.width, distanceToRight, 0, boxX.x, crossLineTipPadding);
 	};
 
 	this.updateTooltipItemsContent = function (sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData) {
@@ -1264,6 +1299,14 @@ angular.module('argus.services.charts.elements', [])
 			if (!circles.empty()) circles.style('display', 'none');
 			tooltip.style('display', 'none');
 		}
+	};
+
+	this.hideHighlightTile = function(mouseMoveElement){
+		mouseMoveElement.select('.highlightTile').attr('display', 'none');
+	};
+
+	this.hideTooltip = function(tooltip) {
+        tooltip.style('display', 'none');
 	};
 
 	this.hideFocusAndTooltip = function (mouseMoveElement, tooltip) {
