@@ -586,12 +586,17 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
+	this.appendTileArea = function (chart){
+		return chart.append('g').attr('class', 'tileArea');
+	};
 
-	this.renderHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
-		chart.selectAll('.tile')
+
+	this.renderHeatmap = function (tileArea, heatmapData, graph, bucket, chartId) {
+			tileArea
+			.selectAll('.heatmapTile')
 			.data(heatmapData)
 			.enter().append('rect')
-			.attr('class', 'tile')
+			.attr('class', 'heatmapTile')
 			.attr('x', function(d){ return graph.x(d.timestamp);})
 			.attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
 			.attr('width', graph.x(bucket.xStep) - graph.x(0))
@@ -600,8 +605,12 @@ angular.module('argus.services.charts.elements', [])
             .style('clip-path', 'url(\'#clip_' + chartId + '\')');
 	};
 
+	this.removeAllTiles = function (tileArea){
+		tileArea.selectAll('.heatmapTile').remove();
+	};
+
     this.resizeHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
-        chart.selectAll('.tile')
+        chart.selectAll('.heatmapTile')
             .data(heatmapData)
             .attr('x', function(d){ return graph.x(d.timestamp);})
             .attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
@@ -996,7 +1005,7 @@ angular.module('argus.services.charts.elements', [])
 			.attr('y', yPos)
 			.attr('width', width)
 			.attr('height', height)
-			.style('display', null);
+			.attr('display', null);
 
 
 		var dateText = mouseOverTile.select('.crossLineTip');

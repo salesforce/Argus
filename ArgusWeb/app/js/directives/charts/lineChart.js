@@ -4,9 +4,7 @@
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
-	var resizeTimeout = 250; //the time for resize function to fire
 	var AllChartIds = [];
-	var timer;
 	var fullscreenChartID;
 	var syncChartJobs;
     //
@@ -58,6 +56,7 @@ angular.module('argus.directives.charts.lineChart', [])
 		},
 		templateUrl: 'js/templates/charts/topToolbar.html',
 		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
+			$scope.showToggleSources = true;
 			$scope.hideMenu = true;
 			$scope.dateRange = '';
 			$scope.changeToFullscreen = false;
@@ -1013,10 +1012,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			}, true);
 
             scope.$watch(function(){return element.width()}, function () {
-                $timeout.cancel(timer); //clear to improve performance
-                timer = $timeout(function () {
-                    resize();
-                }, resizeTimeout);
+				resize();
             });
 
 		}

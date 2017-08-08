@@ -1,12 +1,14 @@
 'use strict';
 /*global angular:false, d3:false, $:false, window:false, screen:false, console:false */
-
+/**
+ * The commented part are saved for future feature enhancement
+ */
 angular.module('argus.directives.charts.heatmap', [])
 	.directive('heatmap', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
+		var timeout;
+		var inputTimeout = 250;
 		//--------------------resize all charts-------------------
-		var resizeTimeout = 250; //the time for resize function to fire
 		var allChartIds = [];
-		var timer;
 		var fullscreenChartID;
 
 		//---------------------sync all charts-----------------------
@@ -36,6 +38,7 @@ angular.module('argus.directives.charts.heatmap', [])
 			},
 			templateUrl: 'js/templates/charts/topToolbar.html',
 			controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
+				$scope.showToggleSources = false;
 				$scope.hideMenu = true;
 				$scope.dateRange = '';
 				$scope.changeToFullscreen = false;
@@ -82,6 +85,10 @@ angular.module('argus.directives.charts.heatmap', [])
 					$scope.menuOption.isSnapCrosslineOn = true;
 				}
 
+				if ($scope.menuOption.aggregateType === undefined){
+					$scope.menuOption.aggregateType = $scope.chartConfig.aggregateType ||ChartToolService.defaultAggregateType;
+				}
+
 				var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 				// user interactions
 				$scope.openChartOptions = function(chartId, chartTitle) {
@@ -94,7 +101,7 @@ angular.module('argus.directives.charts.heatmap', [])
 								return $scope.menuOption;
 							}
 						},
-						templateUrl: 'js/templates/modals/chartOptions.html',
+						templateUrl: 'js/templates/modals/chartOptionsForHeatmap.html',
 						windowClass: 'chartOptions',
 						size: 'lg',
 						// controller: chartOptions,     // ['optionsModal', 'menuOption', ChartOptions],
@@ -261,8 +268,8 @@ angular.module('argus.directives.charts.heatmap', [])
 				var extraYAxisSet = scope.extraYAxisSet;
 
 				chartOptions.step = Number(chartOptions.step);
-				chartOptions.minBucket = Number(chartOptions.minBucket);
-
+				chartOptions.bucketMin = Number(chartOptions.bucketMin);
+				chartOptions.intervalInMinutes = Number(chartOptions.bucketMin);
 				/** 'smallChart' settings:
 				 height: 150
 				 no timeline, date range, option menu
@@ -336,7 +343,7 @@ angular.module('argus.directives.charts.heatmap', [])
 					xAxis, xAxis2, yAxis, yAxisR, xGrid, yGrid, extraYAxisR,
 					graph, graph2, extraGraph, extraGraph2,
 					brush, brushMain, zoom,
-					svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG, //g
+					svg, svg_g, mainChart, xAxisG, xAxisG2, yAxisG, yAxisRG, xGridG, yGridG, extraYAxisRG, tileArea,//g
 					context, clip, brushG, brushMainG, chartRect,//g
 					tooltip, tipBox, tipItems,
 					focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement, mouseOverTile,
@@ -344,7 +351,8 @@ angular.module('argus.directives.charts.heatmap', [])
 					flagsG, labelTip,
 					stack,
 					bucketInfo,
-					graphClassNamesMap;
+					graphClassNamesMap,
+					currAggregatedSeries;
 
 				var isDataStacked = chartType.includes('stack');
 				var isChartDiscrete = chartType.includes('bar');
@@ -387,7 +395,6 @@ angular.module('argus.directives.charts.heatmap', [])
 					svg = chartContainerElements.svg;
 					svg_g = chartContainerElements.svg_g; // clip, flags, brush area,
 					mainChart = chartContainerElements.mainChart; // zoom, axis, grid
-
 					zoom = ChartElementService.createZoom(allSize, zoomed, mainChart);
 
 					var axisesElement = ChartElementService.appendAxisElements(allSize, mainChart, chartOptions.xAxis, chartOptions.yAxis);
@@ -399,6 +406,9 @@ angular.module('argus.directives.charts.heatmap', [])
 					xGridG = gridsElement.xGridG;
 					yGridG = gridsElement.yGridG;
 
+
+                    //the g element containing all the tiles
+					tileArea = ChartElementService.appendTileArea(mainChart);
 
 					//clip path: keep graphs within the container
 					clip = ChartElementService.appendClip(allSize, svg_g, chartId);
@@ -435,27 +445,65 @@ angular.module('argus.directives.charts.heatmap', [])
 					// }
 				}
 
+				function redrawHeatmap (){
+                    ChartElementService.removeAllTiles(tileArea);
+                    var aggregateType = scope.menuOption.aggregateType || chartOptions.aggregateType || ChartToolService.defaultAggregateType;
+                    var intervalInMinutes = Number(scope.menuOption.intervalInMinutes) || chartOptions.intervalInMinutes || ChartToolService.defaultHeatmapIntervalInMinutes;
+                    var bucketMin =ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
+                    var step = Number(scope.menuOption.step) || chartOptions.step;
+                    var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
+
+                    var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
+
+                    var xDomain = aggregatedSeriesAndXYDomain.xDomain;
+                    var zDomain = aggregatedSeriesAndXYDomain.zDomain;
+
+                    var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, bucketMin, step, numOfBucket);
+                    var heatmapData = heatmapDataAndBucketInfo.heatmapData;
+
+                    seriesBeingDisplayed = heatmapData;
+
+                    x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
+                    y.domain(heatmapDataAndBucketInfo.newYDomain);
+                    graph.z.domain(zDomain);
+
+                    ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
+                    ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
+
+                    var xStep = intervalInMinutes * 60000;
+                    var yStep = heatmapDataAndBucketInfo.step;
+                    bucketInfo = {
+                        xStep : xStep,
+                        yStep : yStep,
+                        numOfXStep: Math.ceil((x.domain()[1] - x.domain()[0])/xStep),
+                        numOfYStep: heatmapDataAndBucketInfo.numOfBucket
+                    };
+                    ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
+				}
+
 				function renderGraphs (series) {
 					// downsample if its needed
-					currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
+					//currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
+					var aggregateType = scope.menuOption.aggregateType || chartOptions.aggregateType || ChartToolService.defaultAggregateType;
+					var intervalInMinutes = Number(scope.menuOption.intervalInMinutes) || chartOptions.intervalInMinutes || ChartToolService.defaultHeatmapIntervalInMinutes;
+					var bucketMin = ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
+					var step = Number(scope.menuOption.step) || chartOptions.step;
+					var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
 
-					var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, chartOptions.aggregate ||
-						ChartToolService.defaultAggregate, chartOptions.intervalInMinutes ||
-						ChartToolService.defaultHeatmapIntervalInMinutes); //TODO move this default number to chartTools
+					var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
 
-					currSeries = aggregatedSeriesAndXYDomain.aggregatedSeries;
+					currAggregatedSeries = aggregatedSeriesAndXYDomain.aggregatedSeries;
 
 					var xDomain = aggregatedSeriesAndXYDomain.xDomain;
-					var yDomain = aggregatedSeriesAndXYDomain.yDomain;
 					var zDomain = aggregatedSeriesAndXYDomain.zDomain;
 
-					var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, chartOptions.bucketMin, chartOptions.step, chartOptions.numOfBucket);
+					var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, bucketMin, step, numOfBucket);
 					var heatmapData = heatmapDataAndBucketInfo.heatmapData;
 
 					seriesBeingDisplayed = heatmapData;
 
 					x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
-					y.domain(yDomain);
+					y.domain(heatmapDataAndBucketInfo.newYDomain);
 					graph.z.domain(zDomain);
 
 					// update brush's x and y
@@ -469,8 +517,8 @@ angular.module('argus.directives.charts.heatmap', [])
 					ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 				   // xAxisG2.call(xAxis2);
 
-					var xStep = chartOptions.intervalInMinutes * 60000 || ChartToolService.defaultHeatmapIntervalInMinutes * 60000;
-					var yStep = chartOptions.step || heatmapDataAndBucketInfo.step;
+					var xStep = intervalInMinutes * 60000;
+					var yStep = heatmapDataAndBucketInfo.step;
 					bucketInfo = {
 						xStep : xStep,
 						yStep : yStep,
@@ -478,7 +526,7 @@ angular.module('argus.directives.charts.heatmap', [])
 						numOfYStep: heatmapDataAndBucketInfo.numOfBucket
 					};
 
-					ChartElementService.renderHeatmap(mainChart, seriesBeingDisplayed, graph, bucketInfo, chartId);
+					ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
 					// currSeries.forEach(function (metric, index) {
 					//     if (metric.data.length === 0) return;
 					//     var tempColor = metric.color === null ? z(metric.name) : metric.color;
@@ -1019,12 +1067,58 @@ angular.module('argus.directives.charts.heatmap', [])
 				}, true);
 
 
+				scope.$watch('menuOption.aggregateType', function (newValue, oldValue) {
+				    if(!scope.hideMenu && newValue !== oldValue){
+						redrawHeatmap();
+					}
+                }, true);
+
+                scope.$watch('menuOption.intervalInMinutes', function (newValue, oldValue) {
+                    if(timeout){
+                        $timeout.cancel(timeout);
+                    }
+                    timeout = $timeout(function(){
+                        if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+                        }
+                    }, inputTimeout);
+                }, true);
+
+                scope.$watch('menuOption.bucketMin', function (newValue, oldValue) {
+                    if(timeout){
+                    	$timeout.cancel(timeout);
+					}
+					timeout = $timeout(function(){
+                        if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+                        }
+					}, inputTimeout);
+                }, true);
+
+                scope.$watch('menuOption.step', function (newValue, oldValue) {
+                    if(timeout){
+                        $timeout.cancel(timeout);
+                    }
+                    timeout = $timeout(function(){
+                        if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+                        }
+					}, inputTimeout);
+                }, true);
+
+                scope.$watch('menuOption.numOfBucket', function (newValue, oldValue) {
+                    if(timeout){
+                    	$timeout.cancel(timeout);
+					}
+                	timeout = $timeout(function(){
+                        if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+                        }
+					}, inputTimeout);
+                }, true);
 
 				scope.$watch(function(){return element.width()}, function () {
-					$timeout.cancel(timer); //clear to improve performance
-					timer = $timeout(function () {
-						resize();
-					}, resizeTimeout);
+				    resize();
 				});
 			}
 		};

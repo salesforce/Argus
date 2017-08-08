@@ -37,7 +37,7 @@ angular.module('argus.services.charts.tools', [])
     this.extraYAxisPadding = 35;
 	this.defaultHeatmapIntervalInMinutes = 30;
 	this.defaultHeatmapNumOfBucket = 5;
-	this.defaultAggregate = 'avg';
+	this.defaultAggregateType = 'avg';
 	this.syncChartJobs = {};
 
 	this.getOrCreateSyncChartJobs = function(dashboardId){
@@ -554,13 +554,13 @@ angular.module('argus.services.charts.tools', [])
     };
 
     this.getAggregatedTimeBasedSeriesAndXYZDomain = function(timeBasedSeries, names, aggr, intervalInMinutes) {
-        var startOfInterval = timeBasedSeries[0].timestamp;
+        intervalInMinutes = intervalInMinutes || this.defaultHeatmapIntervalInMinutes;
+    	var startOfInterval = timeBasedSeries[0].timestamp;
         var endOfInterval = startOfInterval + intervalInMinutes * 60000;
         var aggregatedSeries = [];
         var tempSum = {};
         var tempCount = {};
         var yDomain = [Number.MAX_VALUE, Number.MIN_VALUE];
-
 
         function aggregate() {
             if (aggr === 'sum') {
@@ -632,7 +632,7 @@ angular.module('argus.services.charts.tools', [])
         //last interval
 		if(timeBasedSeries[timeBasedSeries.length - 1].timestamp < endOfInterval){
             //sum/avg this interval
-            aggregate()
+            aggregate();
 		}
   		return {
   			aggregatedSeries: aggregatedSeries,
@@ -644,12 +644,12 @@ angular.module('argus.services.charts.tools', [])
 
 
 	this.getHeatmapDataAndBucketInfo = function(aggregatedSeriesAndYDomain, bucketMin, step, numOfBucket){
-        var heatmapData = [];
+		var heatmapData = [];
     	var aggregatedSeries = aggregatedSeriesAndYDomain.aggregatedSeries;
 		var yDomain = aggregatedSeriesAndYDomain.yDomain;
 		numOfBucket = numOfBucket || this.defaultHeatmapNumOfBucket;
-		bucketMin = bucketMin || yDomain[0];
-		step = step || (yDomain[1] - yDomain[0]) / numOfBucket;
+		bucketMin = this.getTheNumberValueFromTwo(bucketMin, yDomain[0]);
+		step = step || (yDomain[1] - bucketMin) / numOfBucket;
 		var bucketMax = bucketMin + step * numOfBucket;
 
     	//transfer to time, bucket, frequency
@@ -691,6 +691,7 @@ angular.module('argus.services.charts.tools', [])
 		});
 
 		return{
+			newYDomain: [bucketMin, bucketMin + step * numOfBucket],
 			heatmapData: heatmapData,
 			numOfBucket: numOfBucket,
 			bucketMin: bucketMin,
@@ -772,6 +773,24 @@ angular.module('argus.services.charts.tools', [])
 			map[metric.name] = metric.graphClassName;
 		});
 		return map;
-	}
+	};
 
+    this.Number = function(a){
+        if(typeof(a) === "string" && a.trim() === "") return NaN;
+        return Number(a);
+    };
+
+	this.isNaN = function (a) {
+		if(typeof(a) === "string" && a.trim() === "") return true;
+		return isNaN(a);
+    };
+
+	this.getTheNumberValueFromTwo = function(a, b){
+		return (this.isNaN(a) ? Number(b) : Number(a));
+	};
+
+	this.getTheNumberValueFromThree = function(a, b, c){
+		var temp = (this.isNaN(a) ? Number(b) : Number(a));
+		return this.isNaN(temp) ? Number(c) : temp;
+	};
 }]);

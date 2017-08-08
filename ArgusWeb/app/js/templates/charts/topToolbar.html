@@ -20,8 +20,9 @@
 				<ul style="padding-left:0;">
 				<li ng-repeat="source in sources track by $index">
 					<span class="glyphicon glyphicon-minus {{source.graphClassName}}_legend" ng-style="{color: labelTextColor(source)}"></span>
-					<a ng-click="toggleSource(source)" title="Hide">{{source.name | truncateMetricName:menuOption}}</a> &nbsp;
-					<a class="eyeIcon" title="Hide all other(s)"
+					<span ng-if="!showToggleSources">{{source.name | truncateMetricName:menuOption}}</span>
+					<a ng-if="showToggleSources" ng-click="toggleSource(source)" title="Hide">{{source.name | truncateMetricName:menuOption}}</a> &nbsp;
+					<a ng-if="showToggleSources" class="eyeIcon" title="Hide all other(s)"
 						ng-show="source.displaying && sources.length > 1"
 						ng-click="hideOtherSources(source)"
 						ng-class="(source.displaying && otherSourcesHidden) ? 'eyeOpen' : 'eyeClosed'"></a>
