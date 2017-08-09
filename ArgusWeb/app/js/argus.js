@@ -56,17 +56,19 @@ angular.module('argus', [
 	'argus.directives.charts.table',
 	'argus.directives.headerMenu',
 	'argus.directives.modals.confirmClick'
-]).run(['$http', '$templateCache', function ($http, $templateCache) {
-	// template caching
-	$http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
-	$http.get('js/templates/login.html', {cache: $templateCache});
-	$http.get('js/templates/alert-list.html', {cache: $templateCache});
-	$http.get('js/templates/alert-detail.html', {cache: $templateCache});
-	$http.get('js/templates/dashboard-list.html', {cache: $templateCache});
-	$http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
-	$http.get('js/templates/viewmetrics.html', {cache: $templateCache});
-	$http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
-}]);
+]);
+// TODO: not sure if this is even used
+// .run(['$http', '$templateCache', function ($http, $templateCache) {
+// 	// template caching
+// 	$http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
+// 	$http.get('js/templates/login.html', {cache: $templateCache});
+// 	$http.get('js/templates/alert-list.html', {cache: $templateCache});
+// 	$http.get('js/templates/alert-detail.html', {cache: $templateCache});
+// 	$http.get('js/templates/dashboard-list.html', {cache: $templateCache});
+// 	$http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
+// 	$http.get('js/templates/viewmetrics.html', {cache: $templateCache});
+// 	$http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
+// }]);
 
 // Services
 angular.module('argus.services', [
@@ -228,6 +230,30 @@ require('./directives/agRequest');
 require('./directives/agInfiniteScroll');
 // css
 require('../css/main.css');
+// img
+require('../img/argus_logo_rgb.png');
+// // html
+// require('./templates/beta.html');
+// require('./templates/viewmetrics.html');
+// require('./templates/batches.html');
+// require('./templates/dashboard-list.html');
+// require('./templates/dashboard-detail.html');
+// require('./templates/alert-list.html');
+// require('./templates/alert-detail.html');
+// require('./templates/about.html');
+// require('./templates/admin.html');
+// require('./templates/login.html');
+// require('./templates/namespace.html');
+// require('./templates/metricsBrowsing.html');
+// require('./templates/breadcrumbs.html');
+// require('./templates/charts/topToolbar.html');
+// require('./templates/modals/chartOptions.html');
+// require('./templates/ag-table.html');
+// require('./templates/headerMenu.html');
+// require('./templates/modals/chartOptions.html');
+// require('./templates/tableList.html');
+// require('./templates/tableTabs.html');
+// require('./templates/modals/confirmClick.html');
 
 // require("../css/main.css");
 // require("bootstrap/dist/css/bootstrap.min.css");

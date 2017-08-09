@@ -21,8 +21,6 @@ module.exports = {
 	context: __dirname + '/app',
 	entry: {
 		argus: './js/argus.js'
-		// vendor: ["codemirror","angular","angular-mocks","jquery","bootstrap","angular-route","angular-growl-v2","angular-animate","angular-resource","angular-utils-pagination","angular-ui-codemirror","ngstorage","angulartics","angular-bootstrap","angular-bootstrap-datetimepicker","q","d3","d3-tip","d3fc-rebind","d3fc-sample"]
-		// // angular-table not working as require
 	},
 	output: {
 		path: __dirname + '/dist',
@@ -32,6 +30,16 @@ module.exports = {
 	module: {
 		rules: [
 			{
+				test: /\.js$/,
+				exclude: /node_modules/,
+				use: {
+					loader: 'babel-loader',
+					options: {
+						presets: ['es2015']
+					}
+				}
+			},
+			{
 				test: /\.css$/,
 				use: ExtractTextPlugin.extract({
 					fallback: "style-loader",
@@ -39,56 +47,45 @@ module.exports = {
 				})
 			},
 			{
-				test: /\.(gif|png|jpg)$/,
-				loader: 'file-loader',
-				options: {
-					name: '[path][name].[ext]',
+				test: /\.html$/,
+				use: {
+					loader: 'html-loader',
+					options: {
+						attrs: [':data-src']
+					}
 				}
 			},
-			// for react
-			// {
-			// 	test: /\.js$/, exclude: /node_modules/, loader: "babel-loader"
-			// },
-			// {
-			// 	test: /\.(eot|woff|woff2|ttf|svg)$/,
-			// 	loader: 'url-loader?limit=30000&name=[name]-[hash].[ext]'
 			{
-				test: /\.js$/,
-				exclude: /node_modules/,
-				loader: "babel-loader",
-				query: {
-					presets: ['es2015']
+				test: /\.(jpg|png|gif)$/,
+				use: {
+					loader: 'file-loader',
+					options: {
+						name: '[path][name].[ext]'
+					}
 				}
 			}
 		]
 	},
 	devtool: "source-map",
 	plugins: [
-		// copy over static files and vendor
+		// copy over static files and vendor files
 		new CopyWebpackPlugin([
-			{from: 'node_modules', to:'node_modules'},
-			// {from: 'node_modules/angular-utils-pagination/dirPagination.tpl.html', to: 'node_modules/angular-utils-pagination/dirPagination.tpl.html'},
-			{from: 'img/argus_icon.png', to: 'img/argus_icon.png'},
-			{from: 'img/argus_logo_rgb.png', to: 'img/argus_logo_rgb.png'},
-			{from: 'js/templates', to: 'js/templates'}
+			{from: 'node_modules', to:'node_modules'}
 		]),
 		// copy over base html
 		new HtmlWebpackPlugin({
 			template: __dirname + '/webpack_index.html',
 			filename: 'index.html',
-			inject: 'body'
-			// hash: true
+			inject: 'body',
+			favicon: __dirname + '/app/img/argus_icon.png',
+			cache: true,
+			hash: true
 		}),
 		// cache hash management
 		new webpack.HashedModuleIdsPlugin(),
 		new webpack.optimize.CommonsChunkPlugin({
-			name: ["vendor", "manifest"], // vendor libs + extracted manifest
-			// name: "manifest",
-			// minChunks: Infinity
-			minChunks: function (module) {
-			   // this assumes your vendor imports exist in the node_modules directory
-			   return module.context && module.context.indexOf('node_modules') !== -1;
-			}
+			name: "manifest",
+			minChunks: Infinity
 		}),
 		new WebpackChunkHash(),
 		new ChunkManifestPlugin({
@@ -108,15 +105,12 @@ module.exports = {
 		}),
 		// copy over css
 		new ExtractTextPlugin({
-			filename: '[name].[contenthash].css',
+			filename: 'main.[contenthash].css',
 			allChunks: true
 		}),
+		// remove any existing previous build
 		new CleanWebpackPlugin('dist'),
-		// // handle jquery naming
-		// new webpack.ProvidePlugin({
-		// 	jQuery: 'jquery',
-		// 	$: 'jquery',
-		// 	jquery: 'jquery'
+		// css
 		new OptimizeCssAssetsPlugin({
 			// only minify main.css
 			assetNameRegExp: /^main.*.css$/g,

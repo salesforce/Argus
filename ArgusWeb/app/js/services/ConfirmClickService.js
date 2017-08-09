@@ -13,7 +13,7 @@ angular.module('argus.services.confirmClick', [])
 				controller: ['$scope', '$sce', function ($scope, $sce) {
 					$scope.toTrustedHTML = function( html ){
 						return $sce.trustAsHtml( html );
-					}
+					};
 					// Attach details to scope so they can be rendered in the modal
 					$scope.confirmTitle = confirmTitle;
 					$scope.confirmMessage = confirmMessage;
