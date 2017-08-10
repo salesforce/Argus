@@ -34,7 +34,7 @@ angular.module('argus.directives.controls.date', [])
 			};
 		},
 		require: '^agDashboard',
-		template: // TODO: move to external template
+		template:
 			'<strong>{{labelName}} </strong>' +
 			'<div class="dropdown" style="display: inline;">' +
 				'<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +

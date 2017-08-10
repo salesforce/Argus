@@ -19,8 +19,10 @@
 
 				<ul style="padding-left:0;">
 				<li ng-repeat="source in sources track by $index">
-					<span class="glyphicon glyphicon-minus {{source.graphClassName}}_legend" ng-style="{color: labelTextColor(source)}"></span>
-					<a ng-click="toggleSource(source)" title="Hide">{{source.name | truncateMetricName:menuOption}}</a> &nbsp;
+					<a ng-click="toggleSource(source)" title="Hide">
+						<span class="glyphicon glyphicon-minus {{source.graphClassName}}_legend" ng-style="{color: labelTextColor(source)}"></span>
+						{{source.name | truncateMetricName:menuOption}}
+					</a>
 					<a class="eyeIcon" title="Hide all other(s)"
 						ng-show="source.displaying && sources.length > 1"
 						ng-click="hideOtherSources(source)"
@@ -119,7 +121,7 @@
 						ng-model="menuOption.downSampleMethod"
 						ng-click="updateDownSample()" />
 						<label for="every-nth-point-{{chartConfig.chartId}}" title="N is calculated based on the container width and # of datapoints)">Every n'th point</label>
-				    </li>
+				</li>
 				</ul>
 			</div>
 
@@ -144,7 +146,7 @@
 			</div>
 
 			<div class="toolbarMenu topMenu" ng-show="chartConfig.smallChart">
-				<a name="reset" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
+				<a name="reset" ng-click="resetZoom()" class="glyphicon glyphicon-repeat" title="Reset graph settings"></a>
 			</div>
 		</div>
 

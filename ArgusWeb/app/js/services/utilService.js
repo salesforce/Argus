@@ -94,14 +94,6 @@ angular.module('argus.services.utils', [])
 				target[i] = obj[i];
 			}
 			return target;
-		},
-
-		removeDataResponseOverhead: function (rawData) {
-			var data = angular.copy(rawData);
-			delete data.$promise;
-			delete data.$resolved;
-			delete data.$cancelRequest;
-			return data;
 		}
 	};
 	return options;
