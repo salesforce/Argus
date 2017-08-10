@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

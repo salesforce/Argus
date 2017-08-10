@@ -53,6 +53,7 @@ public enum InternalReducerType {
     DEVIATION("dev"),
     SUM("sum"),
     MEDIAN("median"),
+    PERCENTILE(""),
 	COUNT("count");
 
     //~ Instance fields ******************************************************************************************************************************
@@ -84,8 +85,13 @@ public enum InternalReducerType {
                     return type;
                 }
             }
+            
+            if(name.matches("^p\\d{1,2}$")) {
+        		return InternalReducerType.PERCENTILE;
+        	}
         }
-        throw new IllegalArgumentException(name);
+        
+        throw new IllegalArgumentException("Illegal type: " + name + ". Please provide a valid type.");
     }
 
     //~ Methods **************************************************************************************************************************************
