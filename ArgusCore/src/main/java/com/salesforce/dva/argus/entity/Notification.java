@@ -31,12 +31,16 @@
 
 package com.salesforce.dva.argus.entity;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,6 +57,15 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 /**
@@ -65,35 +78,179 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Entity
 @Table(name = "NOTIFICATION", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
 public class Notification extends JPAEntity implements Serializable {
+	
+	
+	public static class Serializer extends JsonSerializer<Notification> {
+
+		@Override
+		public void serialize(Notification notification, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+			
+			jgen.writeStartObject();
+			
+			jgen.writeStringField("id", notification.getId().toString());
+			jgen.writeStringField("name", notification.getName());
+			jgen.writeStringField("notifier", notification.getNotifierName());
+			jgen.writeNumberField("cooldownPeriod", notification.getCooldownPeriod());
+			jgen.writeBooleanField("srActionable", notification.getSRActionable());
+			jgen.writeNumberField("severityLevel", notification.getSeverityLevel());
+			
+			if(notification.getCustomText() != null) {
+				jgen.writeStringField("customText", notification.getCustomText());
+			}
+			
+			jgen.writeArrayFieldStart("subscriptions");
+			for(String subscription : notification.getSubscriptions()) {
+				jgen.writeString(subscription);
+			}
+			jgen.writeEndArray();
+			
+			jgen.writeArrayFieldStart("metricsToAnnotate");
+			for(String metricToAnnotate : notification.getMetricsToAnnotate()) {
+				jgen.writeString(metricToAnnotate);
+			}
+			jgen.writeEndArray();
+			
+			jgen.writeArrayFieldStart("triggers");
+			for(Trigger trigger : notification.getTriggers()) {
+				jgen.writeString(trigger.getId().toString());
+			}
+			jgen.writeEndArray();
+			
+			jgen.writeObjectField("cooldownExpirationByTriggerAndMetric", notification.getCooldownExpirationMap());
+			jgen.writeObjectField("activeStatusByTriggerAndMetric", notification.getActiveStatusMap());
+			
+			jgen.writeEndObject();
+			
+		}
+		
+	}
+	
+	public static class Deserializer extends JsonDeserializer<Notification> {
+
+		@Override
+		public Notification deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			Notification notification = new Notification();
+			
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			notification.id = id;
+			
+			String name = rootNode.get("name").asText();
+			notification.setName(name);
+			
+			String notifierName = rootNode.get("notifier").asText();
+			notification.setNotifierName(notifierName);
+			
+			long cooldownPeriod = rootNode.get("cooldownPeriod").asLong();
+			notification.setCooldownPeriod(cooldownPeriod);
+			
+			boolean srActionable = rootNode.get("srActionable").asBoolean();
+			notification.setSRActionable(srActionable);
+			
+			int severity = rootNode.get("severityLevel").asInt();
+			notification.setSeverityLevel(severity);
+			
+			if(rootNode.get("customText") != null) {
+				notification.setCustomText(rootNode.get("customText").asText());
+			}
+			
+			List<String> subscriptions = new ArrayList<>();
+			JsonNode subscriptionsArrayNode = rootNode.get("subscriptions");
+			if(subscriptionsArrayNode.isArray()) {
+				for(JsonNode subscriptionNode : subscriptionsArrayNode) {
+					subscriptions.add(subscriptionNode.asText());
+				}
+			}
+			notification.setSubscriptions(subscriptions);
+			
+			List<String> metricsToAnnotate = new ArrayList<>();
+			JsonNode metricsToAnnotateArrayNode = rootNode.get("metricsToAnnotate");
+			if(metricsToAnnotateArrayNode.isArray()) {
+				for(JsonNode metricToAnnotateNode : metricsToAnnotateArrayNode) {
+					metricsToAnnotate.add(metricToAnnotateNode.asText());
+				}
+			}
+			notification.setMetricsToAnnotate(metricsToAnnotate);
+			
+			List<Trigger> triggers = new ArrayList<>();
+			JsonNode triggersArrayNode = rootNode.get("triggers");
+			if(triggersArrayNode.isArray()) {
+				for(JsonNode triggerNode : triggersArrayNode) {
+					BigInteger triggerId = new BigInteger(triggerNode.asText());
+					Trigger trigger = new Trigger();
+					trigger.id = triggerId;
+					triggers.add(trigger);
+				}
+			}
+			notification.setTriggers(triggers);
+			
+			Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
+			JsonNode activeStatusByTriggerAndMetricNode = rootNode.get("activeStatusByTriggerAndMetric");
+			if(activeStatusByTriggerAndMetricNode.isObject()) {
+				Iterator<Entry<String, JsonNode>> fieldsIter = activeStatusByTriggerAndMetricNode.fields();
+				while(fieldsIter.hasNext()) {
+					Entry<String, JsonNode> field  = fieldsIter.next();
+					activeStatusByTriggerAndMetric.put(field.getKey(), field.getValue().asBoolean());
+				}
+			}
+			notification.activeStatusByTriggerAndMetric = activeStatusByTriggerAndMetric;
+			
+			Map<String, Long> cooldownExpirationByTriggerAndMetric = new HashMap<>();
+			JsonNode cooldownExpirationByTriggerAndMetricNode = rootNode.get("cooldownExpirationByTriggerAndMetric");
+			if(cooldownExpirationByTriggerAndMetricNode.isObject()) {
+				Iterator<Entry<String, JsonNode>> fieldsIter = cooldownExpirationByTriggerAndMetricNode.fields();
+				while(fieldsIter.hasNext()) {
+					Entry<String, JsonNode> field  = fieldsIter.next();
+					cooldownExpirationByTriggerAndMetric.put(field.getKey(), field.getValue().asLong());
+				}
+			}
+			notification.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;
+			
+			return notification;
+		}
+		
+	}
 
     //~ Instance fields ******************************************************************************************************************************
 
     @Basic(optional = false)
     @Column(name = "name", nullable = false)
     String name;
+    
     String notifierName;
-	@ElementCollection
+	
+    @ElementCollection
 	@Column(length = 2048)
     List<String> subscriptions = new ArrayList<>(0);
-	@ElementCollection
+	
+    @ElementCollection
 	List<String> metricsToAnnotate = new ArrayList<>(0);
-	long cooldownPeriod;
-    @ManyToOne(optional = false)
+	
+    long cooldownPeriod;
+    
+	@ManyToOne(optional = false)
     @JoinColumn(name = "alert_id")
     private Alert alert;
-    @ManyToMany
+    
+	@ManyToMany
     @JoinTable(
         name = "NOTIFICATION_TRIGGER", joinColumns = @JoinColumn(name = "TRIGGER_ID"), inverseJoinColumns = @JoinColumn(name = "NOTIFICATION_ID")
     )
     List<Trigger> triggers = new ArrayList<>(0);
-    boolean isSRActionable = false;
-    int severityLevel = 5;
+    
+	boolean isSRActionable = false;
+    
+	int severityLevel = 5;
     
     @Lob
     private String customText;
+    
     @ElementCollection
     private Map<String, Long> cooldownExpirationByTriggerAndMetric = new HashMap<>();
-	@ElementCollection
+	
+    @ElementCollection
     private Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 
     //~ Constructors *********************************************************************************************************************************

@@ -35,17 +35,15 @@ import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.apache.commons.math.stat.descriptive.moment.Mean;
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math.stat.descriptive.summary.Sum;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.stat.descriptive.summary.Sum;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -78,6 +76,7 @@ public class DownsampleTransform implements Transform {
                 operands.add(value);
             }
         }
+        
         InternalReducerType type = InternalReducerType.fromString(reducerType);
         switch (type) {
             case AVG:
@@ -93,8 +92,10 @@ public class DownsampleTransform implements Transform {
             case COUNT:
             	values.removeAll(Collections.singleton(null));
             	return (double) values.size();
+            case PERCENTILE:
+            	return new Percentile().evaluate(Doubles.toArray(operands), Double.parseDouble(reducerType.substring(1)));
             default:
-                throw new UnsupportedOperationException(reducerType);
+                throw new UnsupportedOperationException("Illegal type: " + reducerType + ". Please provide a valid type.");
         }
     }
 
@@ -126,10 +127,12 @@ public class DownsampleTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
+        
         if (metrics.isEmpty()) {
             return metrics;
         }
+       
         SystemAssert.requireArgument(constants.size() == 1,
             "Downsampler Transform can only have exactly one constant which is downsampler expression");
         SystemAssert.requireArgument(constants.get(0).contains("-"), "This downsampler expression is not valid.");
@@ -142,11 +145,8 @@ public class DownsampleTransform implements Transform {
         String windowSizeStr = expArr[0];
         Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
         String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
-        // init downsample type
-        Set<String> typeSet = new HashSet<String>(Arrays.asList("avg", "min", "max", "sum", "dev", "count"));
         String downsampleType = expArr[1];
 
-        SystemAssert.requireArgument(typeSet.contains(downsampleType), "Please input a valid type.");
         for (Metric metric : metrics) {
             metric.setDatapoints(createDownsampleDatapoints(metric.getDatapoints(), windowSize, downsampleType, windowUnit));
         }
