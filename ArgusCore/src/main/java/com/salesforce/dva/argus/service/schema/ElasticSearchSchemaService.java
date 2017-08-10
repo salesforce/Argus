@@ -102,7 +102,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					PoolingNHttpClientConnectionManager connMgr = 
 							new PoolingNHttpClientConnectionManager(new org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor());
 					connMgr.setMaxTotal(connCount);
-					connMgr.setDefaultMaxPerRoute(connCount);
+					connMgr.setDefaultMaxPerRoute(connCount / httpHosts.length);
 					httpClientBuilder.setConnectionManager(connMgr);
 					return httpClientBuilder;
 				} catch(Exception e) {
@@ -138,6 +138,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		super.dispose();
 		try {
 			_esRestClient.close();
+			_logger.info("Shutdown of ElasticSearch RESTClient complete");
 		} catch (IOException e) {
 			_logger.warn("ElasticSearch RestClient failed to shutdown properly.", e);
 		}
@@ -178,6 +179,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
 		requireNotDisposed();
         SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
+        long size = (long) query.getLimit() * query.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
         
         boolean scroll = false;
 		StringBuilder sb = new StringBuilder().append("/")
@@ -187,19 +191,19 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 											  .append("/")
 											  .append("_search");
 		
-		int from = 0, size;
+		int from = 0, scrollSize;
 		if(query.getLimit() * query.getPage() > 10000) {
 			sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
 			scroll = true;
-			long total = query.getLimit() * query.getPage();
-			size = (int) (total / (total / 10000 + 1));
+			int total = query.getLimit() * query.getPage();
+			scrollSize = (int) (total / (total / 10000 + 1));
 		} else {
 			from = query.getLimit() * (query.getPage() - 1);
-			size = query.getLimit();
+			scrollSize = query.getLimit();
 		}
 		
 		String requestUrl = sb.toString();
-		String queryJson = _constructTermQuery(query, from, size);
+		String queryJson = _constructTermQuery(query, from, scrollSize);
 		
 		try {
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
@@ -221,7 +225,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 					records.addAll(list.getRecords());
 					
-					if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < size) {
+					if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < scrollSize) {
 						break;
 					}
 				}
@@ -249,6 +253,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
+		long size = (long) query.getLimit() * query.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
+        
 		
 		String requestUrl = new StringBuilder().append("/")
 											   .append(INDEX_NAME)
@@ -259,7 +267,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 											   .toString();
 		
 		String queryJson = _constructTermAggregationQuery(query, type);
-		
 		try {
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
@@ -276,8 +283,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			} else {
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
-		} catch (UnsupportedEncodingException e) {
-			throw new SystemException("Search failed.", e);
 		} catch (IOException e) {
 			throw new SystemException(e);
 		}
@@ -288,83 +293,101 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		requireNotDisposed();
         SystemAssert.requireArgument(kq != null, "KeywordQuery cannot be null.");
         
+        long size = (long) kq.getLimit() * kq.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
+        
+        
 		StringBuilder sb = new StringBuilder().append("/")
 				  							  .append(INDEX_NAME)
 											  .append("/")
 											  .append(TYPE_NAME)
 											  .append("/")
 											  .append("_search");
-		
-		//This is a hack to support native multi_match elastic search queries via Argus interface. 
-		if(kq.isNative()) {
-			SystemAssert.requireArgument(kq.getQuery().contains("multi_match"), "Only multi_match native elasticsearch queries are allowed.");
-			try {
-				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), sb.toString(), Collections.emptyMap(), new StringEntity(kq.getQuery()));
-				return toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {}).getRecords();
-			} catch (UnsupportedEncodingException e) {
-				throw new SystemException("Search failed.", e);
-			} catch (IOException e) {
-				throw new SystemException(e);
-			}
-		}
-		
-		boolean scroll = false;
-		int from = 0, size;
-		if(kq.getLimit() * kq.getPage() > 10000) {
-			sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
-			scroll = true;
-			long total = kq.getLimit() * kq.getPage();
-			size = (int) (total / (total / 10000 + 1));
-		} else {
-			from = kq.getLimit() * (kq.getPage() - 1);
-			size = kq.getLimit();
-		}
-		
-		String requestUrl = sb.toString();
-		String queryJson = _constructMultiMatchQuery(kq.getQuery(), from, size);
 		try {
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
-			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 			
-			if(scroll) {
-				requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
-				List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+			if(kq.getQuery() != null) {
 				
-				while(true) {
-					String scrollID = list.getScrollID();
-					
-					Map<String, String> requestBody = new HashMap<>();
-					requestBody.put("scroll_id", scrollID);
-					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
-					
-					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
-					
-					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
-					records.addAll(list.getRecords());
-					
-					if(records.size() >= kq.getLimit() * kq.getPage() || list.getRecords().size() < size) {
-						break;
-					}
+				int from = 0, scrollSize = 0;
+				boolean scroll = false;;
+				if(kq.getLimit() * kq.getPage() > 10000) {
+					sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
+					scroll = true;
+					int total = kq.getLimit() * kq.getPage();
+					scrollSize = (int) (total / (total / 10000 + 1));
+				} else {
+					from = kq.getLimit() * (kq.getPage() - 1);
+					scrollSize = kq.getLimit();
 				}
+				
+				String queryJson = _constructMultiMatchQuery(kq.getQuery(), from, scrollSize);
+				String requestUrl = sb.toString();
+				
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				String strResponse = extractResponse(response);
+				MetricSchemaRecordList list = toEntity(strResponse, new TypeReference<MetricSchemaRecordList>() {});
+				
+				if(scroll) {
+					requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
+					List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+					
+					while(true) {
+						Map<String, String> requestBody = new HashMap<>();
+						requestBody.put("scroll_id", list.getScrollID());
+						requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
+						
+						response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), 
+								new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+						
+						list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
+						
+						records.addAll(list.getRecords());
+						
+						if(records.size() >= kq.getLimit() * kq.getPage() || list.getRecords().size() < scrollSize) {
+							break;
+						}
+					}
+					
+					int fromIndex = kq.getLimit() * (kq.getPage() - 1);
+					if(records.size() <= fromIndex) {
+						return Collections.emptyList();
+					}
+					
+					return records.subList(fromIndex, records.size());
+					
+				} else {
+					return list.getRecords();
+				}
+				
+				
+			} else {
+				String queryJson = _constructQuery(kq);
+				String requestUrl = sb.toString();
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				String strResponse = extractResponse(response);
+
+				List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
+						toEntity(strResponse, new TypeReference<List<String>>() {}), kq.getType());
 				
 				int fromIndex = kq.getLimit() * (kq.getPage() - 1);
 				if(records.size() <= fromIndex) {
 					return Collections.emptyList();
 				}
 				
-				return records.subList(fromIndex, records.size());
+				if(records.size() < kq.getLimit() * kq.getPage()) {
+					return records.subList(fromIndex, records.size());
+				} else {
+					return records.subList(fromIndex, kq.getLimit() * kq.getPage());
+				}
 				
-			} else {
-				return list.getRecords();
 			}
-		} catch (UnsupportedEncodingException | JsonProcessingException e) {
-			throw new SystemException("Search failed.", e);
+			
 		} catch (IOException e) {
 			throw new SystemException(e);
 		}
 	}
-	
-	
+
+
 	private void _upsert(List<MetricSchemaRecord> records) {
 		
 		String requestUrl = new StringBuilder().append("/")
@@ -410,7 +433,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode queryNode = _constructQueryNode(query, mapper);
 		
-		int size = query.getLimit() * query.getPage();
+		long size = query.getLimit() * query.getPage();
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
+				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
+		
 		ObjectNode aggsNode = _constructAggsNode(type, Math.max(size, 10000), mapper);
 		
 		ObjectNode rootNode = mapper.createObjectNode();
@@ -442,7 +468,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ObjectNode multiMatchNode = mapper.createObjectNode();
 		multiMatchNode.put("query", query);
 		multiMatchNode.put("type", "best_fields");
-		multiMatchNode.put("fields", mapper.createArrayNode().add("scope").add("metric").add("tagKey").add("tagValue").add("namespace"));
+		multiMatchNode.put("fields", mapper.createArrayNode()
+										   .add(RecordType.SCOPE.getName())
+										   .add(RecordType.METRIC.getName())
+										   .add(RecordType.TAGK.getName())
+										   .add(RecordType.TAGV.getName())
+										   .add(RecordType.NAMESPACE.getName()));
 		multiMatchNode.put("operator", "and");
 		
 		ObjectNode queryNode = mapper.createObjectNode();
@@ -456,13 +487,67 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return rootNode.toString();
 	}
 	
+	private ObjectNode _constructMustNode(RecordType type, String query) {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		ObjectNode node = mapper.createObjectNode();
+		node.put("query", query);
+		node.put("operator", "and");
+		
+		ObjectNode recordTypeNode = mapper.createObjectNode();
+		recordTypeNode.put(type.getName(), node);
+		
+		ObjectNode matchNode = mapper.createObjectNode();
+		matchNode.put("match", recordTypeNode);
+		return matchNode;
+	}
+	
+	
+	private String _constructQuery(KeywordQuery kq) {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		ArrayNode mustNodes = mapper.createArrayNode();
+		if(SchemaService.containsFilter(kq.getScope())) {
+			mustNodes.add(_constructMustNode(RecordType.SCOPE, kq.getScope()));
+		}
+		if(SchemaService.containsFilter(kq.getMetric())) {
+			mustNodes.add(_constructMustNode(RecordType.METRIC, kq.getMetric()));
+		}
+		if(SchemaService.containsFilter(kq.getTagKey())) {
+			mustNodes.add(_constructMustNode(RecordType.TAGK, kq.getTagKey()));
+		}
+		if(SchemaService.containsFilter(kq.getTagValue())) {
+			mustNodes.add(_constructMustNode(RecordType.TAGV, kq.getTagValue()));
+		}
+		if(SchemaService.containsFilter(kq.getNamespace())) {
+			mustNodes.add(_constructMustNode(RecordType.NAMESPACE, kq.getNamespace()));
+		}
+		
+		ObjectNode mustNode = mapper.createObjectNode();
+		mustNode.put("must", mustNodes);
+		
+		ObjectNode boolNode = mapper.createObjectNode();
+		boolNode.put("bool", mustNode);
+		
+		ObjectNode rootNode = mapper.createObjectNode();
+		rootNode.put("query", boolNode);
+		rootNode.put("size", 0);
+		
+		long size = kq.getLimit() * kq.getPage();
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
+				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
+		rootNode.put("aggs", _constructAggsNode(kq.getType(), Math.max(size, 10000), mapper));
+		
+		return rootNode.toString();
+	}
+	
 	
 	private ObjectNode _constructQueryNode(MetricSchemaRecordQuery query, ObjectMapper mapper) {
 		ArrayNode shouldNodes = mapper.createArrayNode();
 		if(SchemaService.containsFilter(query.getMetric())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("metric.raw", SchemaService.convertToRegex(query.getMetric()));
+			regexpNode.put(RecordType.METRIC.getName() + ".raw", SchemaService.convertToRegex(query.getMetric()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -470,7 +555,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getScope())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("scope.raw", SchemaService.convertToRegex(query.getScope()));
+			regexpNode.put(RecordType.SCOPE.getName() + ".raw", SchemaService.convertToRegex(query.getScope()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -478,7 +563,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getTagKey())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("tagKey.raw", SchemaService.convertToRegex(query.getTagKey()));
+			regexpNode.put(RecordType.TAGK.getName() + ".raw", SchemaService.convertToRegex(query.getTagKey()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -486,7 +571,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getTagValue())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("tagValue.raw", SchemaService.convertToRegex(query.getTagValue()));
+			regexpNode.put(RecordType.TAGV.getName() + ".raw", SchemaService.convertToRegex(query.getTagValue()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -494,7 +579,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getNamespace())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("namespace.raw", SchemaService.convertToRegex(query.getNamespace()));
+			regexpNode.put(RecordType.NAMESPACE.getName() + ".raw", SchemaService.convertToRegex(query.getNamespace()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -513,6 +598,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		ObjectNode termsNode = mapper.createObjectNode();
 		termsNode.put("field", type.getName() + ".raw");
+		termsNode.put("order", mapper.createObjectNode().put("_term", "asc"));
 		termsNode.put("size", limit);
 		
 		ObjectNode distinctValuesNode = mapper.createObjectNode();
@@ -627,11 +713,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	ObjectMapper mapper = new ObjectMapper();
     	
     	ObjectNode propertiesNode = mapper.createObjectNode();
-    	propertiesNode.put("scope", _createFieldNode());
-    	propertiesNode.put("metric", _createFieldNode());
-    	propertiesNode.put("tagKey", _createFieldNode());
-    	propertiesNode.put("tagValue", _createFieldNode());
-    	propertiesNode.put("namespace", _createFieldNode());
+    	propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode());
     	
     	ObjectNode typeNode = mapper.createObjectNode();
     	typeNode.put("properties", propertiesNode);
@@ -664,6 +750,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			boolean indexExists = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK ? true : false;
 			
 			if(!indexExists) {
+				_logger.info("Index [" + INDEX_NAME + "] does not exist. Will create one.");
 				ObjectMapper mapper = new ObjectMapper();
 				
 				ObjectNode rootNode = mapper.createObjectNode();
@@ -677,7 +764,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				extractResponse(response);
 			}
 		} catch (Exception e) {
-			_logger.error("Failed to check/create elastic search index. ElasticSearchSchemaService may not function.", e);
+			_logger.error("Failed to check/create elasticsearch index. ElasticSearchSchemaService may not function.", e);
 		}
 	}
     

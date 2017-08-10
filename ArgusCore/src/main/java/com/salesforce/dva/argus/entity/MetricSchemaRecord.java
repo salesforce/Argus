@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.text.MessageFormat;
 
@@ -48,7 +49,9 @@ public class MetricSchemaRecord {
     private String namespace;
     private String scope;
     private String metric;
+    @JsonProperty("tagk")
     private String tagKey;
+    @JsonProperty("tagv")
     private String tagValue;
 
     //~ Constructors *********************************************************************************************************************************

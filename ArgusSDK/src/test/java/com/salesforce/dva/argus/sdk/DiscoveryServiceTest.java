@@ -98,8 +98,8 @@ public class DiscoveryServiceTest extends AbstractTest {
         result.setMetric("metReg");
         result.setNamespace("nsReg");
         result.setScope("scpReg");
-        result.setTagKey("tkReg");
-        result.setTagValue("tvReg");
+        result.setTagk("tkReg");
+        result.setTagv("tvReg");
         return result;
     }
 }

@@ -2,20 +2,20 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.util.Arrays;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.service.SchemaService.RecordType;
 
 public class MetricDiscoveryQueryDto extends BaseDto{
 
 	    private String namespace;
 	    private String scope;
 	    private String metric;
-	    private String tagKey;
-	    private String tagValue;
-	    private int limit = 50;
-	    private String type;
+	    private String tagk;
+	    private String tagv;
+	    private RecordType type;
 	    private MetricSchemaRecord scanStartSchemaRecord;
 	    private int page = 1;
+	    private int limit = 50;
 	    
 	    private String keywordQuery;
 	    private boolean isKeywordQueryNative;
@@ -44,22 +44,20 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 			this.metric = metric;
 		}
 		
-		public String getTagKey() {
-			return tagKey == null || tagKey.length() == 0 ? "*" : tagKey;
+		public String getTagk() {
+			return tagk == null || tagk.length() == 0 ? "*" : tagk;
 		}
 		
-		@JsonProperty("tagk")
-		public void setTagKey(String tagKey) {
-			this.tagKey = tagKey;
+		public void setTagk(String tagk) {
+			this.tagk = tagk;
 		}
 		
-		public String getTagValue() {
-			return tagValue == null || tagValue.length() == 0 ? "*" : tagValue;
+		public String getTagv() {
+			return tagv == null || tagv.length() == 0 ? "*" : tagv;
 		}
 		
-		@JsonProperty("tagv")
-		public void setTagValue(String tagValue) {
-			this.tagValue = tagValue;
+		public void setTagv(String tagv) {
+			this.tagv = tagv;
 		}
 		
 		public int getLimit() {
@@ -70,11 +68,11 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 			this.limit = limit;
 		}
 		
-		public String getType() {
+		public RecordType getType() {
 			return type;
 		}
 		
-		public void setType(String type) {
+		public void setType(RecordType type) {
 			this.type = type;
 		}
 		
@@ -112,25 +110,25 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 
 		@Override
 		public Object createExample() {
-			MetricDiscoveryQueryDto result = new MetricDiscoveryQueryDto();
-			result.setNamespace("namespace");
-			result.setScope("scope*");
-			result.setMetric("metric");
-			result.setTagKey("tagKey");
-			result.setTagValue("tagValue");
-			result.setLimit(10);
-			result.setType("scope");
-			result.setScanStartMetricSchemaRecord(new MetricSchemaRecord("scope1", "metric", "tagKey", "tagValue", "namespace")); 
+			MetricDiscoveryQueryDto query = new MetricDiscoveryQueryDto();
+			query.setNamespace("namespace");
+			query.setScope("scope*");
+			query.setMetric("metric");
+			query.setTagk("tagKey");
+			query.setTagv("tagValue");
+			query.setLimit(10);
+			query.setType(RecordType.SCOPE);
+			query.setScanStartMetricSchemaRecord(new MetricSchemaRecord("scope1", "metric", "tagKey", "tagValue", "namespace")); 
 			
-			MetricDiscoveryQueryDto anotherResult = new MetricDiscoveryQueryDto();
-			anotherResult.setNamespace("namespace");
-			anotherResult.setScope("scope");
-			anotherResult.setMetric("metric");
-			anotherResult.setTagKey("tagKey");
-			anotherResult.setTagValue("tagValue");
-			anotherResult.setLimit(10);
-			anotherResult.setType("scope");
-			anotherResult.setPage(1);
+			MetricDiscoveryQueryDto anotherQuery = new MetricDiscoveryQueryDto();
+			anotherQuery.setNamespace("namespace");
+			anotherQuery.setScope("scope");
+			anotherQuery.setMetric("metric");
+			anotherQuery.setTagk("tagKey");
+			anotherQuery.setTagv("tagValue");
+			anotherQuery.setLimit(10);
+			anotherQuery.setType(RecordType.SCOPE);
+			anotherQuery.setPage(1);
 			
 			MetricDiscoveryQueryDto yetAnotherResult = new MetricDiscoveryQueryDto();
 			yetAnotherResult.setKeywordQuery("cpu time");
@@ -138,7 +136,7 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 			yetAnotherResult.setPage(1);
 			yetAnotherResult.setKeywordQueryNative(false);
 			
-			return Arrays.asList(result, anotherResult, yetAnotherResult);
+			return Arrays.asList(query, anotherQuery, yetAnotherResult);
 		}
 	    
 	    
