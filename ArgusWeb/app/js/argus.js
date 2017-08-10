@@ -255,7 +255,6 @@ require('../img/argus_logo_rgb.png');
 // require('./templates/tableTabs.html');
 // require('./templates/modals/confirmClick.html');
 
-// require("../css/main.css");
 // require("bootstrap/dist/css/bootstrap.min.css");
 // require("angular-growl-v2/build/angular-growl.css");
 // require("codemirror/lib/codemirror.css");

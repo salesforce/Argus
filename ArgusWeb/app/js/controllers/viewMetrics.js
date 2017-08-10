@@ -1,4 +1,4 @@
-/*global angular:false, $:false, console:false */
+/*global angular:false, console:false */
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
@@ -32,7 +32,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		});
 
 		$scope.getMetricData = function () {
-			var tempSeries = []
+			var tempSeries = [];
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
 				// clear old chart and annotation label tip

@@ -1,3 +1,4 @@
+'use strict';
 /*global angular:false */
 
 angular.module('argus.services.storage', [])

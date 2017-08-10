@@ -2,7 +2,7 @@
  * Created by pfu on 6/8/17.
  */
 'use strict';
-/*global angular:false, jwt_decode:false */
+/*global angular:false, jwt_decode:false, $:false */
 
 angular.module('argus.services.confirmClick', [])
 	.service('ConfirmClick', ['$uibModal', function($uibModal){
