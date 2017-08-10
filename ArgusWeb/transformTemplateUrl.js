@@ -4,9 +4,13 @@ function getRelativePath (currentPath, targetFile) {
 	const previousDir = '../';
 	var result = targetFile.substring(3); // all targetFile should have the format 'js/template/*/.html'
 	var levelsUp = currentPath.substring(currentPath.indexOf('js/') + 3).split("/").length - 1;
-	while (levelsUp > 0) {
-		result = previousDir + result;
-		levelsUp--;
+	if (levelsUp === 0) {
+		result = './' + result;
+	} else {
+		while (levelsUp > 0) {
+			result = previousDir + result;
+			levelsUp--;
+		}
 	}
 	return result;
 }
