@@ -1,7 +1,7 @@
 /*global angular:false, copyProperties:false */
 'use strict';
 angular.module('argus.services.utils', [])
-.service('UtilService', [function() {
+.service('UtilService', ['$filter', function($filter) {
 	var options = {
 		assignController: function(controllers) {
 			if (!controllers) return;
@@ -56,20 +56,10 @@ angular.module('argus.services.utils', [])
 			return name.replace( /(:|\.|\[|\]|,|=|@)/g, '\\$1' );
 		},
 
-		trimMetricName: function (metricName, leadingNum, trailingNum) {
+		trimMetricName: function (metricName, menuOption) {
 			if (!metricName) return;
 
-			var startVal, endVal;
-			startVal = (leadingNum > 0) ? leadingNum : null;
-			endVal = (trailingNum > 0) ? trailingNum : null;
-
-			if (startVal && !endVal) {
-				return metricName.slice(startVal);
-			} else if (endVal) {
-				return metricName.slice(startVal, -endVal);
-			} else {
-				return metricName;
-			}
+			return $filter('truncateMetricName')(metricName, menuOption);
 		},
 
 		validNumberChecker: function (num) {
@@ -104,14 +94,6 @@ angular.module('argus.services.utils', [])
 				target[i] = obj[i];
 			}
 			return target;
-		},
-
-		removeDataResponseOverhead: function (rawData) {
-			var data = angular.copy(rawData);
-			delete data.$promise;
-			delete data.$resolved;
-			delete data.$cancelRequest;
-			return data;
 		}
 	};
 	return options;

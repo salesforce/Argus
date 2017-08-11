@@ -28,7 +28,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 			template:
 			'<ng-transclude></ng-transclude>'+
 			'<B>{{labelName}} : </B>' +
-			'<div style="display: inline-block; width: 20%;">' +
+			'<div style="display: inline-block; ">' +
 			'<selectize config="selectizeConfig" options="selectizeOptions" ng-model="ctrlVal"/>' +
 			'</div>'
 			,
