@@ -11,7 +11,7 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertIdWithTimestamp;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService.AlertWithTimestamp;
 
 public class SchedulingServiceIT extends AbstractTest {
 
@@ -45,7 +45,7 @@ public class SchedulingServiceIT extends AbstractTest {
         Thread.sleep((1000L * 60L * schedulingIterations));
         schedulingService.stopAlertScheduling();
 
-        List<AlertIdWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, 1000,
+        List<AlertWithTimestamp> list = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000,
             (int) (noOfAlerts * schedulingIterations));
 
         assertEquals(schedulingIterations * noOfAlerts, list.size());
