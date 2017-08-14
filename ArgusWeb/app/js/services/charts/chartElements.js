@@ -19,8 +19,9 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipWidth = 35;
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
-	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
 	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
+	var extraYAxisPadding = ChartToolService.extraYAxisPadding;
+
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
 		graph.style('stroke', color);
@@ -35,8 +36,13 @@ angular.module('argus.services.charts.elements', [])
 
 	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
-		if ((startingX + width > totalWidth + marginRight) && (startingX - width > 0)) {
-			transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+		//console.log(startingX, width);
+		if (startingX + width > totalWidth + marginRight) {
+			if( (startingX - width > 0)){
+                transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+			}else{
+				transformAttr = 'translate(-' + startingX + ')';
+			}
 		}
 		elements.map(function(element) {
 			element.attr('transform', transformAttr);
@@ -215,6 +221,14 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
+	this.createHeatmap = function(x, y){
+		return {
+			x: x,
+			y: y,
+			z: d3.scaleLinear().range(["white", "darkblue"]) //TODO make the color a parameter
+		}
+	};
+
 	this.createGraph = function (x, y, chartType) {
 		var graphElement;
 		switch (chartType) {
@@ -234,6 +248,10 @@ angular.module('argus.services.charts.elements', [])
 				graphElement = this.createStackArea(x, y);
 				break;
 			// case 'line':
+
+			case 'heatmap':
+				graphElement = this.createHeatmap(x, y);
+				break;
 			default:
 				graphElement = this.createLine(x, y);
 		}
@@ -447,6 +465,26 @@ angular.module('argus.services.charts.elements', [])
 		return mouseOverHighlightBar;
 	};
 
+	this.appendMouseOverTile = function (chart, height, width) {
+		var mouseOverTile = chart.append('g')
+			.attr('class', 'mouseOverTile')
+			.style('display', 'none');
+		mouseOverTile.append('rect')
+			.attr('class', 'highlightTile')
+			.attr('height', height)
+			.attr('width', width);
+        mouseOverTile.append('rect')
+            .attr('name', 'crossLineTipRectX')
+            .attr('class', 'crossLineTipRect');
+        mouseOverTile.append('text')
+            .attr('name', 'crossLineTipX')
+            .attr('class', 'crossLineTip')
+            .attr('y', 0)
+            .attr('dy', crossLineTipHeight);
+
+        return mouseOverTile;
+	};
+
 	this.appendTooltipElements = function (svg_g) {
 		var tooltip = svg_g.append('g')
 			.attr('class', 'tooltip')
@@ -555,6 +593,40 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
+	this.appendTileArea = function (chart){
+		return chart.append('g').attr('class', 'tileArea');
+	};
+
+
+	this.renderHeatmap = function (tileArea, heatmapData, graph, bucket, chartId) {
+			tileArea
+			.selectAll('.heatmapTile')
+			.data(heatmapData)
+			.enter().append('rect')
+			.attr('class', 'heatmapTile')
+			.attr('x', function(d){ return graph.x(d.timestamp);})
+			.attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
+			.attr('width', graph.x(bucket.xStep) - graph.x(0))
+			.attr('height', graph.y(0) - graph.y(bucket.yStep))
+			.attr('fill', function(d) {return graph.z(d.frequency)})
+            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
+	};
+
+	this.removeAllTiles = function (tileArea){
+		tileArea.selectAll('.heatmapTile').remove();
+	};
+
+    this.resizeHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
+        chart.selectAll('.heatmapTile')
+            .data(heatmapData)
+            .attr('x', function(d){ return graph.x(d.timestamp);})
+            .attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
+            .attr('width', graph.x(bucket.xStep) - graph.x(0))
+            .attr('height', graph.y(0) - graph.y(bucket.yStep))
+            .attr('fill', function(d) {return graph.z(d.frequency)})
+            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
+    };
+
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
 		context.append('path')
 			.attr('class', 'brushLine ' + metric.graphClassName + '_brushLine')
@@ -645,6 +717,11 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', className);
 	};
 
+    this.renderToolTipForHeatmap = function (tipItems, className){
+        tipItems.append('text')
+            .attr('class', className);
+    };
+
 	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint) {
 		var label = flags.append('g')
 			.attr('class', 'flagItem ' + className)
@@ -699,8 +776,10 @@ angular.module('argus.services.charts.elements', [])
 			.attr('height', sizeInfo.height)
 			.on('mouseover', mouseOverFunction)
 			.on('mouseout', mouseOutFunction)
-			.on('mousemove', mouseMoveFunction)
-			.call(zoom);
+			.on('mousemove', mouseMoveFunction);
+		if(zoom){
+			chartRect.call(zoom);
+		}
 		return chartRect;
 	};
 
@@ -884,7 +963,7 @@ angular.module('argus.services.charts.elements', [])
 			var startingPosition = graph.x0(matchingTimestamp);
 			var date = dateFormatter(matchingTimestamp);
 
-			mouseOverHighlightBar.select('.highlightBar')
+			mouseOverHighlightBarmouseOverHighlightBar.select('.highlightBar')
 				.attr('x', startingPosition)
 				.attr('dataX', matchingTimestamp)
 				.style('display', null);
@@ -899,6 +978,58 @@ angular.module('argus.services.charts.elements', [])
 		}
 
 		return datapoints;
+	};
+
+	this.justUpdateDateText = function (graph, mouseOverTile, dateFormatter, timestamp){
+
+        var dateText = mouseOverTile.select('.crossLineTip').attr('display', null);
+        var boxXRect = mouseOverTile.select('.crossLineTipRect').attr('display', null);
+        var startingPosition = graph.x(timestamp);
+        var date = dateFormatter(timestamp);
+
+        dateText.attr('x', startingPosition).text(date);
+
+        var boxX = dateText.node().getBBox();
+        boxXRect.attr('x', boxX.x - crossLineTipPadding)
+            .attr('y', boxX.y - crossLineTipPadding)
+            .attr('width', boxX.width + 2 * crossLineTipPadding)
+            .attr('height', boxX.height + 2 * crossLineTipPadding);
+
+    };
+
+	this.updateHighlightTile = function (graph, sizeInfo, bucketInfo, tileDataAndIndex, mouseOverTile, dateFormatter, distanceToRight){
+        var timestamp = tileDataAndIndex.data.timestamp;
+
+
+		var width = graph.x(bucketInfo.xStep) - graph.x(0);
+		var height =  graph.y(0) - graph.y(bucketInfo.yStep);
+		var xPos = tileDataAndIndex.xIndex * width;
+		var yPos = sizeInfo.height - (tileDataAndIndex.yIndex + 1) * height;
+
+		if(tileDataAndIndex.xIndex * width + width > sizeInfo.width) width = sizeInfo.width - tileDataAndIndex.xIndex * width;
+
+		mouseOverTile.select('.highlightTile')
+			.attr('x', xPos)
+			.attr('y', yPos)
+			.attr('width', width)
+			.attr('height', height)
+			.attr('display', null);
+
+
+		var dateText = mouseOverTile.select('.crossLineTip');
+		var boxXRect = mouseOverTile.select('.crossLineTipRect');
+		var startingPosition = graph.x(timestamp);
+		var date = dateFormatter(timestamp);
+
+		dateText.attr('x', startingPosition).text(date);
+
+		var boxX = dateText.node().getBBox();
+		boxXRect.attr('x', boxX.x - crossLineTipPadding)
+			.attr('y', boxX.y - crossLineTipPadding)
+			.attr('width', boxX.width + 2 * crossLineTipPadding)
+			.attr('height', boxX.height + 2 * crossLineTipPadding);
+
+		flipAnElementHorizontally([dateText, boxXRect], boxX.width, distanceToRight, 0, boxX.x, crossLineTipPadding);
 	};
 
 	this.updateTooltipItemsContent = function (sizeInfo, menuOption, tipItems, tipBox, datapoints, mousePositionData) {
@@ -956,6 +1087,74 @@ angular.module('argus.services.charts.elements', [])
 		}
 		// move tooltip to the left if there is not enough space to display it on the right
 		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
+	};
+
+
+	this.updateTooltipItemsContentForHeatmap = function(sizeInfo, menuOption, tipItems, tipBox, aggregateInfo, names, graphClassNamesMap,  mousePositionData) {
+        var XOffset = 0;
+        var YOffset = 0;
+        var newXOffset = 0;
+        var OffsetMultiplier = -1;
+        // update tipItems (circle, source name, and data)
+		tipItems.select('text.aggregateInfo')
+			.attr('dy', 20 + mousePositionData.positionY)
+			.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
+			.text(aggregateInfo)
+			.attr('font-weight', 'bold')
+			.attr('xml:space', 'preserve');
+
+		for (var i = 0; i <names.length; i++) {
+            // create a new col after every itemsPerCol
+            if (i % itemsPerCol === 0) {
+                OffsetMultiplier++;
+                YOffset = OffsetMultiplier * itemsPerCol;
+                XOffset += newXOffset;
+                newXOffset = 0;
+            }
+            var textLine = tipItems.select('text.' + graphClassNamesMap[names[i]])
+                .attr('dy', 20 * (2 + i - YOffset) + mousePositionData.positionY)
+                .attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
+				.attr('display', null);
+
+            var name = UtilService.trimMetricName(names[i], menuOption);
+            textLine.text(name);
+            // update XOffset if existing offset is smaller than textLine
+            var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+            if (tempXOffset > newXOffset) {
+                newXOffset = tempXOffset;
+            }
+        }
+        // update tipBox
+        var tipBounds = tipItems.node().getBBox();
+        tipBox.attr('x', mousePositionData.positionX + tipOffset);
+        tipBox.attr('y', mousePositionData.positionY + tipOffset);
+        if (tipBounds.width === 0 || tipBounds.height === 0) {
+            // when there is no graph, make the tipBox 0 size
+            tipBox.attr('width', 0);
+            tipBox.attr('height', 0);
+        } else {
+            tipBox.attr('width', tipBounds.width + 4 * tipPadding);
+            tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+        }
+        // move tooltip to the left if there is not enough space to display it on the right
+        flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
+	};
+
+	this.unshowAllHeatmapTooltipText = function(tipItems, graphClassnames){
+		graphClassnames.forEach(function(name){
+			tipItems.select('text.'+name)
+				.attr('display', 'none')
+		});
+	};
+
+	this.generateHeatmapTooltipInfo = function(tileDataAndIndex, bucketInfo, menuOption){
+
+        var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
+        var format = d3.format(dataFormat);
+        var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '    ' +
+            'Frequency :' + tileDataAndIndex.data.frequency;
+
+        return aggregateInfo;
 	};
 
 	this.updateCrossLines = function (sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData) {
@@ -1119,6 +1318,14 @@ angular.module('argus.services.charts.elements', [])
 			if (!circles.empty()) circles.style('display', 'none');
 			tooltip.style('display', 'none');
 		}
+	};
+
+	this.hideHighlightTile = function(mouseMoveElement){
+		mouseMoveElement.select('.highlightTile').attr('display', 'none');
+	};
+
+	this.hideTooltip = function(tooltip) {
+        tooltip.style('display', 'none');
 	};
 
 	this.hideFocusAndTooltip = function (mouseMoveElement, tooltip) {

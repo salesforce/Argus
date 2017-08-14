@@ -353,6 +353,10 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     fill: lightskyblue;
     opacity: 0.2;
 }
+.highlightTile {
+    fill: yellow;
+    opacity: 0.2;
+}
 
 .tick {will-change: transform;}
 .tick line {stroke: lightgrey;}
@@ -451,3 +455,11 @@ ag-select > div {min-width: 152px; word-wrap: break-word;}
     max-height: 350px;
     overflow: auto;
 }
+
+a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
+    color: steelblue;
+}
+
+.tooltip > .tooltip-inner {background-color: steelblue; text-align: left}
+.tooltip.bottom > .tooltip-arrow {border-bottom-color: steelblue;}
+.tooltip.in {opacity: 1}

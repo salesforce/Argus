@@ -2,8 +2,12 @@
 /*global angular:false, $:false, console:false, growl:false */
 
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl',
-	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl) {
+.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl', '$timeout',
+	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
+        var timer;
+        var resizeTimeout = 250;
+
+
 		var chartNameIndex = 1;
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
@@ -37,12 +41,21 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.series.sort(UtilService.alphabeticalSort);
 			// append, compile, & attach new scope to line-chart directive
 			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
-			angular.element('#' + newChartId).append(
-				$compile(
-					'<div ngsf-fullscreen>' +
-					'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
-					'</div>')(lineChartScope)
-			);
+			if(updatedOptionList.chartType === "heatmap"){
+                angular.element('#' + newChartId).append(
+                    $compile(
+                        '<div ngsf-fullscreen>' +
+                        '<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
+                        '</div>')(lineChartScope)
+                );
+			}else{
+                angular.element('#' + newChartId).append(
+                    $compile(
+                        '<div ngsf-fullscreen>' +
+                        '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+                        '</div>')(lineChartScope)
+                );
+			}
 		}
 
 		function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
@@ -172,7 +185,7 @@ angular.module('argus.directives.charts.chart', [])
 			var chartType = attributes.type ? attributes.type : 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
-			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar'];
+			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar', 'heatmap'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
@@ -238,6 +251,12 @@ angular.module('argus.directives.charts.chart', [])
 			compile: function () {
 				return {
 					post: function postLink(scope, element, attributes, dashboardCtrl) {
+                        d3.select(window).on('resize', function(){
+                            $timeout.cancel(timer); //clear to improve performance
+                            timer = $timeout(function () {
+                                scope.$apply();
+                            }, resizeTimeout);
+						});
 						scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 							setupChart(scope, element, attributes, controls);
 						});
