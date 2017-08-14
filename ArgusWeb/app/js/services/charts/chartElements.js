@@ -218,7 +218,7 @@ angular.module('argus.services.charts.elements', [])
 		return {
 			x: x,
 			y: y,
-			z: d3.scaleLinear().range(["white", "steelblue"]) //TODO make the color a parameter
+			z: d3.scaleLinear().range(["white", "darkblue"]) //TODO make the color a parameter
 		}
 	};
 
@@ -1091,7 +1091,9 @@ angular.module('argus.services.charts.elements', [])
 		tipItems.select('text.aggregateInfo')
 			.attr('dy', 20 + mousePositionData.positionY)
 			.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
-			.text(aggregateInfo);
+			.text(aggregateInfo)
+			.attr('font-weight', 'bold')
+			.attr('xml:space', 'preserve');
 
 		for (var i = 0; i <names.length; i++) {
             // create a new col after every itemsPerCol
@@ -1141,7 +1143,7 @@ angular.module('argus.services.charts.elements', [])
 
         var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
         var format = d3.format(dataFormat);
-        var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '  ' +
+        var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '    ' +
             'Frequency :' + tileDataAndIndex.data.frequency;
 
         return aggregateInfo;

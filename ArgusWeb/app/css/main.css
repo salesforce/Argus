@@ -455,3 +455,11 @@ ag-select > div {min-width: 152px; word-wrap: break-word;}
     max-height: 350px;
     overflow: auto;
 }
+
+a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
+    color: steelblue;
+}
+
+.tooltip > .tooltip-inner {background-color: steelblue; text-align: left}
+.tooltip.bottom > .tooltip-arrow {border-bottom-color: steelblue;}
+.tooltip.in {opacity: 1}

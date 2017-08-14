@@ -89,6 +89,10 @@ angular.module('argus.directives.charts.heatmap', [])
 					$scope.menuOption.aggregateType = $scope.chartConfig.aggregateType ||ChartToolService.defaultAggregateType;
 				}
 
+				if ($scope.menuOption.tileColor === undefined){
+					$scope.menuOption.tileColor = ChartToolService.defaultTileColor;
+				}
+
 				var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 				// user interactions
 				$scope.openChartOptions = function(chartId, chartTitle) {
@@ -173,6 +177,10 @@ angular.module('argus.directives.charts.heatmap', [])
 								$('body').removeClass('lightMask');
 							});
 						}]
+					});
+
+					optionsModal.rendered.then(function(){
+                        $("a.definition-tip").tooltip();
 					});
 				};
 
@@ -270,6 +278,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				chartOptions.step = Number(chartOptions.step);
 				chartOptions.bucketMin = Number(chartOptions.bucketMin);
 				chartOptions.intervalInMinutes = Number(chartOptions.bucketMin);
+				chartOptions.numOfBucket = Number(chartOptions.numOfBucket);
 				/** 'smallChart' settings:
 				 height: 150
 				 no timeline, date range, option menu
@@ -452,6 +461,7 @@ angular.module('argus.directives.charts.heatmap', [])
                     var bucketMin =ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
                     var step = Number(scope.menuOption.step) || chartOptions.step;
                     var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
+                    var tileColor = scope.menuOption.tileColor || ChartToolService.defaultTileColor;
 
                     var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
 
@@ -465,7 +475,9 @@ angular.module('argus.directives.charts.heatmap', [])
 
                     x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
                     y.domain(heatmapDataAndBucketInfo.newYDomain);
+                    z.domain(["white", scope.menuOption.tileColor]);
                     graph.z.domain(zDomain);
+                    graph.z.range(["white", tileColor]);
 
                     ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
                     ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
@@ -489,6 +501,7 @@ angular.module('argus.directives.charts.heatmap', [])
 					var bucketMin = ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
 					var step = Number(scope.menuOption.step) || chartOptions.step;
 					var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
+					var tileColor = scope.menuOption.tileColor || ChartToolService.defaultTileColor;
 
 					var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
 
@@ -505,6 +518,7 @@ angular.module('argus.directives.charts.heatmap', [])
 					x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
 					y.domain(heatmapDataAndBucketInfo.newYDomain);
 					graph.z.domain(zDomain);
+					graph.z.range(["white", tileColor]);
 
 					// update brush's x and y
 					// x2.domain(xDomain);
@@ -913,6 +927,11 @@ angular.module('argus.directives.charts.heatmap', [])
 					redraw();
 				};
 
+				scope.updateColor = function(color){
+					z.domain(['white', color]);
+                    ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
+				};
+
 				// create graph only when there is data
 				if (!series || series.length === 0) {
 					//this should never happen
@@ -1071,6 +1090,12 @@ angular.module('argus.directives.charts.heatmap', [])
 				    if(!scope.hideMenu && newValue !== oldValue){
 						redrawHeatmap();
 					}
+                }, true);
+
+                scope.$watch('menuOption.tileColor', function (newValue, oldValue) {
+                    if(!scope.hideMenu && newValue !== oldValue){
+                        redrawHeatmap();
+                    }
                 }, true);
 
                 scope.$watch('menuOption.intervalInMinutes', function (newValue, oldValue) {

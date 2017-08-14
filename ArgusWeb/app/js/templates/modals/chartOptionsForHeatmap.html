@@ -71,24 +71,51 @@
         <h4 class="sectionTitle btmBdr">Heatmap Parameter</h4>
 
         <label>Aggregation type : </label>
-        <select ng-model="menuOption.aggregateType" style="margin-left:.5em;">
+        <select ng-model="menuOption.aggregateType" style="margin-left:.5em;padding:0 .25em; margin-right:.5em;">
             <option value="avg" ng-selected="menuOption.aggregateType == 'avg'">avg</option>
             <option value="sum" ng-selected="menuOption.aggregateType == 'sum'">sum</option>
+        </select>
+        <a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="How you aggregate the datapoints in a bucket, the default is by average.">
+            <i class='glyphicon glyphicon-question-sign'></i>
+        </a>
+
+        <label>Color : </label>
+        <select ng-model="menuOption.tileColor" style="margin-left:.5em;">
+            <option value="steelblue" ng-selected="menuOption.tileColor == 'steelblue'">Steel blue</option>
+            <option value="darkblue" ng-selected="menuOption.tileColor == 'darkblue'">Dark Blue</option>
+            <option value="red" ng-selected="menuOption.tileColor == 'red'">Red</option>
         </select>
 
         <br/>
         <label for="intervalInMinutes-{{chartId}}">Aggregate data for every  </label>
         <input id="intervalInMinutes-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.intervalInMinutes" />
         <label> minutes</label>
+        <a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="The default is 30 minutes.">
+            <i class='glyphicon glyphicon-question-sign'></i>
+        </a>
+
+
         <br/>
-        <label for="bucketMin-{{chartId}}">Y Min: </label>
+        <label for="bucketMin-{{chartId}}">Y axis Min: </label>
         <input id="bucketMin-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.bucketMin" />
+        <a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="Explicitly define the minimum value for y domain. The default is the minimum value of the aggregated data.">
+            <i class='glyphicon glyphicon-question-sign'></i>
+        </a>
+
         <br/>
-        <label for="step-{{chartId}}">Bucket size for y axis #: </label>
+        <label for="step-{{chartId}}">Bucket size for y axis : </label>
         <input id="step-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em; width: 200px;" placeholder="" size="5" ng-model="menuOption.step" />
+        <a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="This decides the range of data in a bucket. The default is decided by the domain and number of buckets on y axis.">
+            <i class='glyphicon glyphicon-question-sign'></i>
+        </a>
+
         </br>
-        <label for="numOfBucket-{{chartId}}">Number of buckets on y axis #: </label>
+        <label for="numOfBucket-{{chartId}}">Number of buckets on y axis : </label>
         <input id="numOfBucket-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.numOfBucket" />
+        <a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="The default is 5">
+            <i class='glyphicon glyphicon-question-sign'></i>
+        </a>
+
         </br>
 
 

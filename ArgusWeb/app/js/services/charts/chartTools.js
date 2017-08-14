@@ -39,6 +39,7 @@ angular.module('argus.services.charts.tools', [])
 	this.defaultHeatmapNumOfBucket = 5;
 	this.defaultAggregateType = 'avg';
 	this.syncChartJobs = {};
+	this.defaultTileColor = 'steelblue';
 
 	this.getOrCreateSyncChartJobs = function(dashboardId){
 		if(!this.syncChartJobs[dashboardId]){
