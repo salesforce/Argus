@@ -458,6 +458,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 
 			function renderGraphs (series) {
+				console.log(chartId);
 				// downsample if its needed
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 				// compute stack data if its needed
@@ -524,12 +525,13 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// render annotations
-					if (!metric.flagSeries) return;
-					var flagSeries = metric.flagSeries.data;
-					flagSeries.forEach(function (d) {
-						ChartElementService.renderAnnotationsLabels(flags, tempColor, metric.graphClassName, d);
-					});
-					ChartElementService.bringMouseOverLabeltoFront(flags);
+					if (metric.flagSeries) {
+						var flagSeries = metric.flagSeries.data;
+						flagSeries.forEach(function (d) {
+							ChartElementService.renderAnnotationsLabels(flags, tempColor, metric.graphClassName, d);
+						});
+						ChartElementService.bringMouseOverLabelToFront(flags, chartId);
+					}
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
@@ -787,6 +789,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
 
 					ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
+					ChartElementService.bringMouseOverLabelToFront(flags, chartId);
 
 					if (tempX[0].getTime() === x2.domain()[0].getTime() &&
 						tempX[1].getTime() === x2.domain()[1].getTime()) {

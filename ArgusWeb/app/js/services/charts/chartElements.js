@@ -3,7 +3,7 @@
  */
 
 'use strict';
-/* global angular:false, d3:false, $:false */
+/* global angular:false, d3:false, $:false. document:false */
 
 angular.module('argus.services.charts.elements', [])
 .service('ChartElementService', ['ChartToolService', 'UtilService', function(ChartToolService, UtilService) {
@@ -37,7 +37,7 @@ angular.module('argus.services.charts.elements', [])
 	var flipAnElementHorizontally = function (elements, width, totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
 		if ((startingX + width > totalWidth + marginRight) && (startingX - width > 0)) {
-			transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+			transformAttr = 'translate(-' + (width + 2 * extraPadding) + ')';
 		}
 		elements.map(function(element) {
 			element.attr('transform', transformAttr);
@@ -670,7 +670,6 @@ angular.module('argus.services.charts.elements', [])
 			.text(dateObj.toUTCString());
 		labelContent.append('text')
 			.attr('dy', 20)
-			.append('tspan')
 			.text('In current timezone: ' + dateObj.toLocaleString());
 		var count = 1;
 		for (var key in dataPoint.fields) {
@@ -685,8 +684,11 @@ angular.module('argus.services.charts.elements', [])
 		labelContainer.attr('x', contentElement.x - tipPadding)
 					.attr('y', contentElement.y - tipPadding)
 					.attr('width', contentElement.width + doublePadding)
-					.attr('height', contentElement.height + doublePadding);
-		label.attr('transform', 'translate(-' + (contentElement.width/2 + tipPadding) + ', -' + (contentElement.height + doublePadding) + ')');
+					.attr('height', contentElement.height + doublePadding)
+					.attr('rx', tipPadding)
+					.attr('ry', tipPadding);
+		var defaultTransformAttr = 'translate(-' + (contentElement.width/2 + tipPadding) + ', -' + (contentElement.height + doublePadding) + ')';
+		label.attr('transform', defaultTransformAttr);
 		// add the info box while hovering over
 		flagG.selectAll('.pin').on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
@@ -710,7 +712,7 @@ angular.module('argus.services.charts.elements', [])
 			});
 	};
 
-	this.bringMouseOverLabeltoFront = function (flags) {
+	this.bringMouseOverLabelToFront = function (flags, chartId) {
 		// https://github.com/wbkd/d3-extended
 		// bring SVG to the front and back
 		d3.selection.prototype.moveToFront = function() {
@@ -726,11 +728,30 @@ angular.module('argus.services.charts.elements', [])
 				}
 			});
 		};
+		var containerDim = document.getElementById(chartId).getBoundingClientRect();
 		flags.selectAll('.flagItem')
-			.on('mouseover', function (d) {
-				d3.select(this).moveToFront();
+			.on('mouseover', function () {
+				// shift annotation label if its cut off
+				var currentElement = d3.select(this);
+				var flagLabelElement = currentElement.select('.flagLabel');
+				var currentTransformAttr = flagLabelElement.attr('transform');
+				var splitedTransformAttr;
+
+				var elementDim = this.lastElementChild.getBoundingClientRect();
+				if (elementDim.left < containerDim.left) {
+					splitedTransformAttr = currentTransformAttr.split(',');
+					flagLabelElement.attr('transform', 'translate(' +
+											(Number(splitedTransformAttr[0].substring(10)) + (containerDim.left - elementDim.left + tipOffset)) +
+											',' + splitedTransformAttr[1]);
+				} else if (elementDim.right > containerDim.right) {
+					splitedTransformAttr = currentTransformAttr.split(',');
+					flagLabelElement.attr('transform', 'translate(' +
+											(Number(splitedTransformAttr[0].substring(10)) - (elementDim.right - containerDim.right + tipOffset)) +
+											',' + splitedTransformAttr[1]);
+				}
+				currentElement.moveToFront();
 			})
-			.on('click', function (d) {
+			.on('click', function () {
 				d3.select(this).moveToBack();
 			});
 	};

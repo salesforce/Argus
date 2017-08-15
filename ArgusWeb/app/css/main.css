@@ -386,16 +386,16 @@ g.brush rect.handle {fill:#999; stroke:#333;}
     stroke: none;
 }
 .flagLabel rect {
-    fill:#ffffff;
-    opacity:0.9;
+    fill: #ffffff;
+    opacity: 0.95;
     will-change: transform;
 }
 
 /* tooltip stuff */
 .tooltip rect {
-	fill:#F1F1F1;
-	stroke:steelblue;
-	opacity:0.9;
+	fill: #F1F1F1;
+	stroke: steelblue;
+	opacity: 0.9;
 	will-change: transform;
 }
 g.tooltip-items text {color: #444; font-size: 12px;}
