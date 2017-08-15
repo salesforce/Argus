@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -291,7 +292,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	@Override
 	public List<MetricSchemaRecord> keywordSearch(KeywordQuery kq) {
 		requireNotDisposed();
-        SystemAssert.requireArgument(kq != null, "KeywordQuery cannot be null.");
+        SystemAssert.requireArgument(kq != null, "Query cannot be null.");
+        SystemAssert.requireArgument(kq.getQuery() != null || kq.getType() != null, "Either the query string or the type must not be null.");
         
         long size = (long) kq.getLimit() * kq.getPage();
         SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
@@ -361,7 +363,34 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				
 				
 			} else {
-				String queryJson = _constructQuery(kq);
+				Map<RecordType, List<String>> tokensMap = new HashMap<>();
+				
+				List<String> tokens = _analyzedTokens(kq.getScope());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.SCOPE, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getMetric());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.METRIC, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getTagKey());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.TAGK, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getTagValue());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.TAGV, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getNamespace());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.NAMESPACE, tokens);
+				}
+				
+				String queryJson = _constructNewQuery(kq, tokensMap);
 				String requestUrl = sb.toString();
 				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 				String strResponse = extractResponse(response);
@@ -382,6 +411,35 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				
 			}
 			
+		} catch (IOException e) {
+			throw new SystemException(e);
+		}
+	}
+	
+	
+	private List<String> _analyzedTokens(String query) {
+		
+		if(!SchemaService.containsFilter(query)) {
+			return Collections.emptyList();
+		}
+		
+		List<String> tokens = new ArrayList<>();
+		
+		String requestUrl = new StringBuilder("/").append(INDEX_NAME).append("/_analyze").toString();
+		
+		String requestBody = "{\"analyzer\" : \"metadata_analyzer\", \"text\": \"" + query + "\" }";
+		
+		try {
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+			String strResponse = extractResponse(response);
+			JsonNode tokensNode = _mapper.readTree(strResponse).get("tokens");
+			if(tokensNode.isArray()) {
+				for(JsonNode tokenNode : tokensNode) {
+					tokens.add(tokenNode.get("token").asText());
+				}
+			}
+			
+			return tokens;
 		} catch (IOException e) {
 			throw new SystemException(e);
 		}
@@ -487,40 +545,36 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return rootNode.toString();
 	}
 	
-	private ObjectNode _constructMustNode(RecordType type, String query) {
+	private ObjectNode _constructSimpleQueryStringNode(RecordType type, List<String> tokens) {
+		
+		if(tokens.isEmpty()) {
+			return null;
+		}
+		
 		ObjectMapper mapper = new ObjectMapper();
 		
+		StringBuilder queryString = new StringBuilder();
+		for(String token : tokens) {
+			queryString.append('+').append(token).append(' ');
+		}
+		queryString.replace(queryString.length() - 1, queryString.length(), "*");
+		
 		ObjectNode node = mapper.createObjectNode();
-		node.put("query", query);
-		node.put("operator", "and");
+		node.put("fields", mapper.createArrayNode().add(type.getName()));
+		node.put("query", queryString.toString());
 		
-		ObjectNode recordTypeNode = mapper.createObjectNode();
-		recordTypeNode.put(type.getName(), node);
+		ObjectNode simpleQueryStringNode = mapper.createObjectNode();
+		simpleQueryStringNode.put("simple_query_string", node);
 		
-		ObjectNode matchNode = mapper.createObjectNode();
-		matchNode.put("match", recordTypeNode);
-		return matchNode;
+		return simpleQueryStringNode;
 	}
 	
-	
-	private String _constructQuery(KeywordQuery kq) {
+	private String _constructNewQuery(KeywordQuery kq, Map<RecordType, List<String>> tokensMap) {
 		ObjectMapper mapper = new ObjectMapper();
 		
 		ArrayNode mustNodes = mapper.createArrayNode();
-		if(SchemaService.containsFilter(kq.getScope())) {
-			mustNodes.add(_constructMustNode(RecordType.SCOPE, kq.getScope()));
-		}
-		if(SchemaService.containsFilter(kq.getMetric())) {
-			mustNodes.add(_constructMustNode(RecordType.METRIC, kq.getMetric()));
-		}
-		if(SchemaService.containsFilter(kq.getTagKey())) {
-			mustNodes.add(_constructMustNode(RecordType.TAGK, kq.getTagKey()));
-		}
-		if(SchemaService.containsFilter(kq.getTagValue())) {
-			mustNodes.add(_constructMustNode(RecordType.TAGV, kq.getTagValue()));
-		}
-		if(SchemaService.containsFilter(kq.getNamespace())) {
-			mustNodes.add(_constructMustNode(RecordType.NAMESPACE, kq.getNamespace()));
+		for(Map.Entry<RecordType, List<String>> entry : tokensMap.entrySet()) {
+			mustNodes.add(_constructSimpleQueryStringNode(entry.getKey(), entry.getValue()));
 		}
 		
 		ObjectNode mustNode = mapper.createObjectNode();
@@ -539,6 +593,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		rootNode.put("aggs", _constructAggsNode(kq.getType(), Math.max(size, 10000), mapper));
 		
 		return rootNode.toString();
+		
 	}
 	
 	
