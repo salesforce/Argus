@@ -33,7 +33,7 @@ angular.module('argus.services.charts.elements', [])
 		return (rangeArray[1] - rangeArray[0]) * 0.1;
 	};
 
-	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
+	var flipAnElementHorizontally = function (elements, width, totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
 		if ((startingX + width > totalWidth + marginRight) && (startingX - width > 0)) {
 			transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
@@ -362,16 +362,9 @@ angular.module('argus.services.charts.elements', [])
 		return clip;
 	};
 
-	this.appendFlagsElements = function (svg_g, chartId) {
-		var flags = svg_g.append('g').attr('class', 'flags');
-		var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-		var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
-		d3.select('#' + chartId).select('svg').call(labelTip);
-		return {
-			// flags: flags,
-			flagsG: flagsG,
-			labelTip: labelTip
-		};
+	this.appendFlagsElements = function (svg_g) {
+		var flagsG = svg_g.append('g').attr('class', 'flags');
+		return flagsG;
 	};
 
 	this.appendBrushWithXAxisElements = function (sizeInfo, svg_g) {
@@ -645,49 +638,70 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', className);
 	};
 
-	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint) {
-		var label = flags.append('g')
+	this.renderAnnotationsLabels = function (flags, color, className, dataPoint) {
+		var flagG = flags.append('g')
 			.attr('class', 'flagItem ' + className)
 			.attr('id', className + dataPoint.flagID)
 			.style('stroke', color)
 			.attr('clicked', 'No');
 
 		// add the pin on the graph
-		label.append('line')
+		flagG.append('line')
 			.attr('y2', 35)
-			.attr('stroke-width', 2);
-		label.append('circle')
+			.attr('class', 'pin');
+		flagG.append('circle')
 			.attr('r', 8)
-			.attr('class', 'flag');
-		label.append('text')
+			.attr('class', 'pin');
+		flagG.append('text')
 			.attr('dy', 4)
-			.style('text-anchor', 'middle')
-			.style('stroke', 'black')
-			.text(dataPoint.title);
+			.text(dataPoint.title)
+			.attr('class', 'pin');
+
+		// add label to the pin
+		var dateObj = new Date(dataPoint.x);
+		var label = flagG.append('g').attr('class', 'flagLabel').style('display', 'none');
+		var labelContainer = label.append('rect');
+		var labelContent = label.append('g');
+		labelContent.append('text')
+			.append('tspan')
+			.style('font-weight', 600)
+			.text(dateObj.toUTCString() + ' (in current timezone: ' + dateObj.toLocaleString() + ')');
+		var count = 0;
+		for (var key in dataPoint.fields) {
+			if (dataPoint.fields.hasOwnProperty(key)) {
+				count++;
+				labelContent.append('text')
+					.text(key + ': ' + dataPoint.fields[key])
+					.attr('dy', 20 * count);
+			}
+		}
+		var contentElement = labelContent.node().getBBox();
+		labelContainer.attr('x', contentElement.x - tipPadding)
+					.attr('y', contentElement.y - tipPadding)
+					.attr('width', contentElement.width + tipPadding)
+					.attr('height', contentElement.height + tipPadding);
+		label.attr('transform', 'translate(-' + contentElement.width/2 + ', -' + contentElement.height + ')');
 
 		// add the info box while hovering over
-		label.on('click', function () {
+		flagG.selectAll('.pin').on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
-				if (label.attr('clicked') !== 'Yes') {
-					label.attr('clicked', 'Yes');
-					label.select('circle').attr('r', 16);
+				if (flagG.attr('clicked') !== 'Yes') {
+					flagG.attr('clicked', 'Yes');
+					flagG.select('circle').attr('r', 16);
+					label.style('display', null);
 				} else {
-					label.attr('clicked', 'No');
-					label.select('circle').attr('r', 8);
+					flagG.attr('clicked', 'No');
+					flagG.select('circle').attr('r', 8);
+					label.style('display', 'none');
 				}
 			})
 			.on('mouseover', function () {
-				// add timestamp to the annotation label
-				var dateObj = new Date(dataPoint.x);
-				var tempTimestamp = dateObj.toUTCString() + ' (in this timezone: ' + dateObj.toLocaleString() + ')';
-				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
-				labelTip.style('border-color', color).html(tempTimestamp);
-				labelTip.show();
-				// prevent annotation label goes outside of the view on the  side
-				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
+				label.style('display', null);
 			})
 			.on('mouseout', function () {
-				if (label.attr('clicked') !== 'Yes') labelTip.hide();
+				if (flagG.attr('clicked') !== 'Yes') {
+					label.style('display', 'none');
+				}
 			});
 	};
 
@@ -1038,13 +1052,13 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateAnnotations = function (series, sources, x, flagsG, height) {
+	this.updateAnnotations = function (series, sources, x, flags, height) {
 		if (series === undefined) return;
 		series.forEach(function(metric) {
 			if (metric.flagSeries === undefined) return;
 			var flagSeries = metric.flagSeries.data;
 			flagSeries.forEach(function(d) {
-				var label = flagsG.select('#' + metric.graphClassName + d.flagID);
+				var label = flags.select('#' + metric.graphClassName + d.flagID);
 				// d.x is timestamp of X axis and sometimes it can be in second instead of millisecond
 				var dx = UtilService.epochTimeMillisecondConverter(d.x);
 				var x_Val = x(dx);
@@ -1151,17 +1165,18 @@ angular.module('argus.services.charts.elements', [])
 			var allElementsLinkedWithThisSeries = d3.selectAll('.' + graphClassNames[i]);
 			allElementsLinkedWithThisSeries.filter('circle').style('fill', tempColor);
 			switch (chartType) {
-                case 'scatter':
-                    allElementsLinkedWithThisSeries.filter('.dot').style('fill', tempColor);
-                    d3.selectAll('.' + graphClassNames[i] + '_brushDot').style('fill', tempColor);
-                    break;
-                case 'bar':
-                    allElementsLinkedWithThisSeries.filter('.bar').style('fill', tempColor);
-                    d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
-                    break;
+				case 'scatter':
+					allElementsLinkedWithThisSeries.filter('.dot').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushDot').style('fill', tempColor);
+					break;
+				case 'bar':
+					allElementsLinkedWithThisSeries.filter('.bar').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
+					break;
 				case 'stackbar':
-                    allElementsLinkedWithThisSeries.filter('.stackbar').style('fill', tempColor);
-                    d3.selectAll('.' + graphClassNames[i] + '_brushStackbar').style('fill', tempColor);
+					allElementsLinkedWithThisSeries.filter('.stackbar').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushStackbar').style('fill', tempColor);
+					break;
 				case 'area':
 					allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushArea').style('fill', tempColor);
