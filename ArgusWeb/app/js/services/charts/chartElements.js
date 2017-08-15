@@ -3,7 +3,7 @@
  */
 
 'use strict';
-/*global angular:false, d3:false, $:false  */
+/* global angular:false, d3:false, $:false */
 
 angular.module('argus.services.charts.elements', [])
 .service('ChartElementService', ['ChartToolService', 'UtilService', function(ChartToolService, UtilService) {
@@ -13,6 +13,7 @@ angular.module('argus.services.charts.elements', [])
 	var xAxisLabelHeightFactor = 15;
 	var tipOffset = 8;
 	var tipPadding = 3;
+	var doublePadding = 2 * tipPadding;
 	var circleRadius = 4.5;
 	var circleLen = circleRadius * 2;
 	var itemsPerCol = 12; // for tooltip
@@ -662,11 +663,16 @@ angular.module('argus.services.charts.elements', [])
 		var label = flagG.append('g').attr('class', 'flagLabel').style('display', 'none');
 		var labelContainer = label.append('rect');
 		var labelContent = label.append('g');
+		// add time info
 		labelContent.append('text')
 			.append('tspan')
 			.style('font-weight', 600)
-			.text(dateObj.toUTCString() + ' (in current timezone: ' + dateObj.toLocaleString() + ')');
-		var count = 0;
+			.text(dateObj.toUTCString());
+		labelContent.append('text')
+			.attr('dy', 20)
+			.append('tspan')
+			.text('In current timezone: ' + dateObj.toLocaleString());
+		var count = 1;
 		for (var key in dataPoint.fields) {
 			if (dataPoint.fields.hasOwnProperty(key)) {
 				count++;
@@ -678,10 +684,9 @@ angular.module('argus.services.charts.elements', [])
 		var contentElement = labelContent.node().getBBox();
 		labelContainer.attr('x', contentElement.x - tipPadding)
 					.attr('y', contentElement.y - tipPadding)
-					.attr('width', contentElement.width + tipPadding)
-					.attr('height', contentElement.height + tipPadding);
-		label.attr('transform', 'translate(-' + contentElement.width/2 + ', -' + contentElement.height + ')');
-
+					.attr('width', contentElement.width + doublePadding)
+					.attr('height', contentElement.height + doublePadding);
+		label.attr('transform', 'translate(-' + (contentElement.width/2 + tipPadding) + ', -' + (contentElement.height + doublePadding) + ')');
 		// add the info box while hovering over
 		flagG.selectAll('.pin').on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
@@ -702,6 +707,31 @@ angular.module('argus.services.charts.elements', [])
 				if (flagG.attr('clicked') !== 'Yes') {
 					label.style('display', 'none');
 				}
+			});
+	};
+
+	this.bringMouseOverLabeltoFront = function (flags) {
+		// https://github.com/wbkd/d3-extended
+		// bring SVG to the front and back
+		d3.selection.prototype.moveToFront = function() {
+			return this.each(function(){
+				this.parentNode.appendChild(this);
+			});
+		};
+		d3.selection.prototype.moveToBack = function() {
+			return this.each(function() {
+				var firstChild = this.parentNode.firstChild;
+				if (firstChild) {
+					this.parentNode.insertBefore(this, firstChild);
+				}
+			});
+		};
+		flags.selectAll('.flagItem')
+			.on('mouseover', function (d) {
+				d3.select(this).moveToFront();
+			})
+			.on('click', function (d) {
+				d3.select(this).moveToBack();
 			});
 	};
 
@@ -965,8 +995,8 @@ angular.module('argus.services.charts.elements', [])
 			tipBox.attr('width', 0);
 			tipBox.attr('height', 0);
 		} else {
-			tipBox.attr('width', tipBounds.width + 4 * tipPadding);
-			tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+			tipBox.attr('width', tipBounds.width + 2 * doublePadding);
+			tipBox.attr('height', tipBounds.height + doublePadding);
 		}
 		// move tooltip to the left if there is not enough space to display it on the right
 		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);

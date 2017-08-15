@@ -529,6 +529,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					flagSeries.forEach(function (d) {
 						ChartElementService.renderAnnotationsLabels(flags, tempColor, metric.graphClassName, d);
 					});
+					ChartElementService.bringMouseOverLabeltoFront(flags);
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
 				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
