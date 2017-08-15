@@ -124,7 +124,8 @@ angular.module('argus.services.charts.tools', [])
 			formatYaxis: defaultYaxis,
 			numTicksYaxis: defaultTicksYaxis
 		},
-		isSnapCrosslineOn: true
+		isSnapCrosslineOn: true,
+		localTimezone: false
 	};
 
 	// color
@@ -197,7 +198,7 @@ angular.module('argus.services.charts.tools', [])
 	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
 		var extraDatapoints = {};
-
+		var allDatapoints = [];
 		for(var iSet of extraYAxisSet){
 			extraDatapoints[iSet] = [];
 		}
@@ -208,15 +209,16 @@ angular.module('argus.services.charts.tools', [])
 			} else {
 				datapoints = datapoints.concat(metric.data);
 			}
+			allDatapoints = allDatapoints.concat(metric.data);
 		});
 
 		var result = {
-			xDomain: this.getXDomainOfSeries(datapoints, timestampSelector),
+			xDomain: this.getXDomainOfSeries(allDatapoints, timestampSelector),
 			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
 			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
 
-		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(datapoints, timestampSelector);
+		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(allDatapoints, timestampSelector);
 
 		return result;
 	};
@@ -418,7 +420,7 @@ angular.module('argus.services.charts.tools', [])
 		if (len < 1) return false;
 		var startPoint = timestampSelector(metric.data[0]);
 		var endPoint = timestampSelector(metric.data[len - 1]);
-		return startPoint > xDomain[1] || endPoint < xDomain[xDomain.length - 1];
+		return startPoint > xDomain[xDomain.length - 1] || endPoint < xDomain[0];
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
@@ -541,9 +543,13 @@ angular.module('argus.services.charts.tools', [])
 
 		finalYMin = (agYMin === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMin - buffer)): agYMin;
 		finalYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.2 * buffer)): agYMax;
-
+		// TODO: need to test with negative values for area and bar charts
 		if (isDataStacked && finalYMin < 0 && yMin !== yMax) finalYMin = 0;
-		if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
+		// if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
+		if (isChartDiscrete && !isDataStacked && finalYMin > 0 && yMin < yMax) {
+			finalYMin = 0;
+			finalYMax *= 1.2;
+		}
 		// TODO: still need to handle log(0) better
 		if (yScaleType === 'log') {
 			if (finalYMin === 0) finalYMin = 1;

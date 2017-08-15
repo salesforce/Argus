@@ -14,11 +14,11 @@ angular.module('argus.directives')
 				scope.infiniteScrollDistance = 5;
 
 				element.on('scroll', function(){
-					var infiniteScoll = attributes.agInfiniteScroll;
+					var infiniteScroll = attributes.agInfiniteScroll;
 					if(this.scrollTop +  scope.infiniteScrollDistance> this.scrollHeight - this.offsetHeight ){
 						$timeout.cancel(timer);
 						timer = $timeout(function(){
-							eval(infiniteScoll);
+							eval(infiniteScroll);
 						}, scrollTimeout);
 					}
 				});

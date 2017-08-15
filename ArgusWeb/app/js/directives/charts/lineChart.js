@@ -91,14 +91,17 @@ angular.module('argus.directives.charts.lineChart', [])
 					isTooltipSortOn: $scope.menuOption.isTooltipSortOn
 				};
 			}
-			if ($scope.menuOption.yAxisConfig === undefined){
+			if ($scope.menuOption.yAxisConfig === undefined) {
 				$scope.menuOption.yAxisConfig = {
 					formatYaxis: $scope.menuOption.formatYaxis,
 					numTicksYaxis: $scope.menuOption.numTicksYaxis
 				};
 			}
-			if ($scope.menuOption.isSnapCrosslineOn === undefined){
+			if ($scope.menuOption.isSnapCrosslineOn === undefined) {
 				$scope.menuOption.isSnapCrosslineOn = true;
+			}
+			if ($scope.menuOption.localTimezone === undefined) {
+				$scope.menuOption.localTimezone = false;
 			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
@@ -275,7 +278,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			var chartId = scope.chartConfig.chartId;
 			var chartType = scope.chartConfig.chartType;
 			var series = scope.series;
-			var GMTon = scope.dateConfig.gmt;
+			var GMTon = !scope.menuOption.localTimezone;
 			var chartOptions = scope.chartConfig;
 			var extraYAxisSet = scope.extraYAxisSet;
 
@@ -527,7 +530,7 @@ angular.module('argus.directives.charts.lineChart', [])
 					if (!metric.flagSeries) return;
 					var flagSeries = metric.flagSeries.data;
 					flagSeries.forEach(function (d) {
-						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d, dateFormatter);
+						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d);
 					});
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
@@ -1017,10 +1020,57 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 			}, true);
 
+			scope.$watch('menuOption.localTimezone', function (newValue, oldValue) {
+				if (!scope.hideMenu && newValue !== oldValue) {
+					// update x and x2 scale
+					if (newValue) {
+						GMTon = false;
+						x = d3.scaleTime().domain(x.domain()).range(x.range());
+						x2 = d3.scaleTime().domain(x2.domain()).range(x2.range());
+					} else {
+						GMTon = true;
+						x = d3.scaleUtc().domain(x.domain()).range(x.range());
+						x2 = d3.scaleUtc().domain(x2.domain()).range(x2.range());
+					}
+					// update axis and grid
+					xAxis.scale(x);
+					xAxisG.call(xAxis);
+					xGrid.scale(x);
+					xGridG.call(xGrid);
+					xAxis2.scale(x2);
+					xAxisG2.call(xAxis2);
+					// update main chart and brush graphs
+					if (ChartElementService.customizedChartType.includes(chartType)) {
+						ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
+						ChartElementService.updateCustomizedChartTypeGraphX(context, graph2, x2, chartType);
+						for (var iSet of extraYAxisSet) {
+							ChartElementService.updateCustomizedChartTypeGraphX(mainChart, extraGraph[iSet], x, chartType);
+							ChartElementService.updateCustomizedChartTypeGraphX(context, extraGraph2[iSet], x2, chartType);
+						}
+					} else {
+						ChartElementService.updateGraphsX(graph, x, timestampSelector);
+						ChartElementService.updateGraphsX(graph2, x2, timestampSelector);
+						for (var iSet of extraYAxisSet) {
+							ChartElementService.updateGraphsX(extraGraph[iSet], x, timestampSelector);
+							ChartElementService.updateGraphsX(extraGraph2[iSet], x2, timestampSelector);
+						}
+
+					}
+					// update date formatter
+					dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
+					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+				}
+			}, true);
+
+			// smallChart reset brush/zoom`
 			scope.resetZoom = function() {
-				// smallChart reset brush/zoom
 				ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 			};
+
+			// remove annotation label tip when the user is leaving the page
+			scope.$on("$destroy", function() {
+				labelTip.destroy();
+			});
 		}
 	};
 }]);
