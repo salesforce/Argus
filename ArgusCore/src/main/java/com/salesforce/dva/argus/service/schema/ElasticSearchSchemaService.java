@@ -65,7 +65,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
-	private static final int INDEX_MAX_RESULT_WINDOW = 10000; 
+	private static final int INDEX_MAX_RESULT_WINDOW = 10000;
+	private static final int NUMBER_OF_REPLICAS = 3; 
 	
 	
 	private final ObjectMapper _mapper;
@@ -754,6 +755,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	
     	ObjectNode indexNode = mapper.createObjectNode();
     	indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
+    	indexNode.put("number_of_replicas", NUMBER_OF_REPLICAS);
     	
     	ObjectNode settingsNode = mapper.createObjectNode();
     	settingsNode.put("analysis", analysisNode);
