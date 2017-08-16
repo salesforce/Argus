@@ -161,7 +161,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		module.addSerializer(Alert.class, new Alert.Serializer());
 		module.addSerializer(Trigger.class, new Trigger.Serializer());
 		module.addSerializer(Notification.class, new Notification.Serializer());
-		module.addSerializer(PrincipalUser.class, new PrincipalUser.Serializer());
+		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
 		module.addDeserializer(Alert.class, new Alert.Deserializer());
 		
 		_mapper.registerModule(module);

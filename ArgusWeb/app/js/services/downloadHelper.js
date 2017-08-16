@@ -7,7 +7,7 @@
 angular.module('argus.services.downloadHelper', [])
 .service('DownloadHelper', function () {
 	this.downloadFile = function (data, filename) {
-		var blob = new Blob([data], {type: "text/plain;charset=utf-8"});
+		var blob = new Blob([data], {type: "text/plain"});
 		saveAs(blob, filename);
 	};
 });

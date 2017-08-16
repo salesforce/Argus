@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,6 +59,12 @@ public class AlertServiceTest extends AbstractTest {
 
 	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
+	private PrincipalUser admin;
+	
+	@Before
+	public void setup() {
+		admin = system.getServiceFactory().getUserService().findAdminUser();
+	}
 	
 	@Test
 	public void testUpdateAlert() {
@@ -139,7 +146,7 @@ public class AlertServiceTest extends AbstractTest {
 	public void testFindAlertByNameAndOwner() {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String alertName = "testAlert";
-		PrincipalUser expectedUser = new PrincipalUser("testUser", "testuser@testcompany.com");
+		PrincipalUser expectedUser = new PrincipalUser(admin, "testUser", "testuser@testcompany.com");
 		Alert expectedAlert = new Alert(expectedUser, expectedUser, alertName, EXPRESSION, "* * * * *");
 
 		expectedAlert = alertService.updateAlert(expectedAlert);
@@ -156,7 +163,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String userName = createRandomName();
 		int alertsCount = random.nextInt(20) + 1;
-		PrincipalUser user = new PrincipalUser(userName, userName + "@testcompany.com");
+		PrincipalUser user = new PrincipalUser(admin ,userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
 
@@ -184,7 +191,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String userName = createRandomName();
 		int alertsCount = random.nextInt(20) + 1;
-		PrincipalUser user = new PrincipalUser(userName, userName + "@testcompany.com");
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
 
@@ -212,7 +219,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String userName = createRandomName();
 		int alertsCount = random.nextInt(100) + 1;
-		PrincipalUser user = new PrincipalUser(userName, userName + "@testcompany.com");
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
 
@@ -240,7 +247,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		String userName = createRandomName();
 		int alertsCount = random.nextInt(100) + 1;
-		PrincipalUser user = new PrincipalUser(userName, userName + "@testcompany.com");
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
 		user = userService.updateUser(user);
 
@@ -339,7 +346,7 @@ public class AlertServiceTest extends AbstractTest {
 	public void testSharedAlertWhenOneSharedAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		
 		alertService.updateAlert(new Alert(user1, user1, "alert-name1", EXPRESSION, "* * * * *"));
 		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", EXPRESSION, "* * * * *"));
@@ -357,8 +364,8 @@ public class AlertServiceTest extends AbstractTest {
 	public void testSharedAlertWhenTwoSharedAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser("test2", "test2@salesforce.com"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 		
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
@@ -380,8 +387,8 @@ public class AlertServiceTest extends AbstractTest {
 	public void testFindSharedAlertsMeta() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		PrincipalUser user1 = userService.updateUser(new PrincipalUser("test1", "test1@salesforce.com"));
-		PrincipalUser user2 = userService.updateUser(new PrincipalUser("test2", "test2@salesforce.com"));
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
 		
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
@@ -427,7 +434,7 @@ public class AlertServiceTest extends AbstractTest {
 		module.addSerializer(Alert.class, new Alert.Serializer());
 		module.addSerializer(Trigger.class, new Trigger.Serializer());
 		module.addSerializer(Notification.class, new Notification.Serializer());
-		module.addSerializer(PrincipalUser.class, new PrincipalUser.Serializer());
+		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
 		module.addDeserializer(Alert.class, new Alert.Deserializer());
 		
 		mapper.registerModule(module);

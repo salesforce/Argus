@@ -124,15 +124,15 @@ public class FillCalculateTransformTest {
 
         Map<Long, Double> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, 9.0);
-        expected_1.put(3000L, 9.0);
-        expected_1.put(4000L, 9.0);
-        expected_1.put(5000L, 9.0);
-        expected_1.put(6000L, 9.0);
-        expected_1.put(7000L, 9.0);
-        expected_1.put(8000L, 9.0);
-        expected_1.put(9000L, 9.0);
-        expected_1.put(10000L, 9.0);
+        expected_1.put(1000L, 9.2);
+        expected_1.put(3000L, 9.2);
+        expected_1.put(4000L, 9.2);
+        expected_1.put(5000L, 9.2);
+        expected_1.put(6000L, 9.2);
+        expected_1.put(7000L, 9.2);
+        expected_1.put(8000L, 9.2);
+        expected_1.put(9000L, 9.2);
+        expected_1.put(10000L, 9.2);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 

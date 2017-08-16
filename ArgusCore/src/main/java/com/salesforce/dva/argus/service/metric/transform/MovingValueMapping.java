@@ -35,7 +35,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.math.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
@@ -63,32 +63,22 @@ public class MovingValueMapping implements ValueMapping {
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
-        SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
-        SystemAssert.requireArgument(!constants.isEmpty(),
-            "Moving Average Transform must provide at least 1 constant which is windowSize of time interval.");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), 
+        		"MOVING Transform must provide at least 1 constant which is windowSize of time interval.");
+        
+        //Default is to perform Moving Average.
+        InternalReducerType type = InternalReducerType.AVG;
         if (constants.size() > 1) {
-            SystemAssert.requireArgument(constants.size() == 2, "Moving Average Transform can't have more than 2 contants!");
-            SystemAssert.requireArgument((InternalReducerType.AVG.getName().equals(constants.get(1)) ||
-                    InternalReducerType.MEDIAN.getName().equals(constants.get(1))), "Type can only be average or median.");
+            SystemAssert.requireArgument(constants.size() == 2, "MOVING Transform can't have more than 2 contants!");
+            
+            type = InternalReducerType.fromString(constants.get(1));
+            SystemAssert.requireArgument((InternalReducerType.AVG.equals(type) ||
+                    InternalReducerType.MEDIAN.equals(type) || InternalReducerType.SUM.equals(type)), "Type can be one of <avg,median,sum>");
         }
 
         long windowSizeInSeconds = getWindowInSeconds(constants.get(0));
-
         SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
-
-        boolean isMedian = false;
-        String reducerType = InternalReducerType.AVG.getName();
-
-        if (constants.size() == 2) {
-            reducerType = constants.get(1);
-        }
-
-        InternalReducerType type = InternalReducerType.fromString(reducerType);
-
-        if (type.equals(InternalReducerType.MEDIAN)) {
-            isMedian = true;
-        }
-
+        
         Map<Long, Double> movingDatapoints = new TreeMap<>();
         Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
 
@@ -134,13 +124,7 @@ public class MovingValueMapping implements ValueMapping {
                         if (head >= timestamps.length - 1) {
                             break;
                         }
-                        if (isMedian) {
-                            double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
-
-                            value = new Percentile().evaluate(numbers, 50.0);
-                        } else {
-                            value = (sum / count);
-                        }
+                        value = _calculateValue(sum, numberArr, count, type);
                         movingDatapoints.put(timestamps[head - 1], value);
                         sum += sortedDatapoints.get(timestamps[head]);
                         numberArr.add(sortedDatapoints.get(timestamps[head]));
@@ -152,13 +136,7 @@ public class MovingValueMapping implements ValueMapping {
                     count++;
                 }
                 
-                if (isMedian) {
-                    double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
-
-                    value = new Percentile().evaluate(numbers, 50.0);
-                } else {
-                    value = (sum / count);
-                }
+                value = _calculateValue(sum, numberArr, count, type);
                 movingDatapoints.put(timestamps[head - 1], value);
             }
             
@@ -176,17 +154,25 @@ public class MovingValueMapping implements ValueMapping {
                 throw new UnsupportedOperationException("Bad datapoint!");
             }
             count++;
-            if (isMedian) {
-                double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
-
-                value = new Percentile().evaluate(numbers, 50.0);
-            } else {
-                value = (sum / count);
-            }
+            value = _calculateValue(sum, numberArr, count, type);
             movingDatapoints.put(timestamps[head], value);
         } // end for
         return movingDatapoints;
     }
+
+	private double _calculateValue(double sum, List<Double> numberArr, int count, InternalReducerType type) {
+			
+		if (InternalReducerType.MEDIAN.equals(type)) {
+		    double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
+		    return new Percentile().evaluate(numbers, 50.0);
+		} 
+		
+		if(InternalReducerType.AVG.equals(type)) {
+			return (sum / count);
+		}
+		
+		return sum;
+	}
 
     @Override
     public String name() {
