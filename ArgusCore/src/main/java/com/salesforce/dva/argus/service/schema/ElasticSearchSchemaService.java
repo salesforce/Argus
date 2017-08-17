@@ -66,7 +66,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
 	private static final int INDEX_MAX_RESULT_WINDOW = 10000;
-	private static final int NUMBER_OF_REPLICAS = 3; 
+	private static final int NUMBER_OF_REPLICAS = 2; 
 	
 	
 	private final ObjectMapper _mapper;

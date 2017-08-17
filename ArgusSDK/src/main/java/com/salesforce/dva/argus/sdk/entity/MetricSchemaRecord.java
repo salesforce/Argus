@@ -149,7 +149,7 @@ public final class MetricSchemaRecord {
     /**
      * Specifies the tag key associated with the result.
      *
-     * @param  tagKey  The tag key. Can be null.
+     * @param  tagk  The tag key. Can be null.
      */
     public void setTagk(String tagk) {
         this.tagk = tagk;
@@ -167,7 +167,7 @@ public final class MetricSchemaRecord {
     /**
      * Specifies the tag value associated with the result.
      *
-     * @param  tagValue  The tag value. Can be null.
+     * @param  tagv  The tag value. Can be null.
      */
     public void setTagv(String tagv) {
         this.tagv = tagv;
