@@ -323,7 +323,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					scrollSize = kq.getLimit();
 				}
 				
-				String queryJson = _constructMultiMatchQuery(kq.getQuery(), from, scrollSize);
+				List<String> tokens = _analyzedTokens(kq.getQuery());
+				String queryJson = _constructQueryStringQuery(tokens, from, scrollSize);
 				String requestUrl = sb.toString();
 				
 				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
@@ -391,7 +392,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					tokensMap.put(RecordType.NAMESPACE, tokens);
 				}
 				
-				String queryJson = _constructNewQuery(kq, tokensMap);
+				String queryJson = _constructQueryStringQuery(kq, tokensMap);
 				String requestUrl = sb.toString();
 				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 				String strResponse = extractResponse(response);
@@ -520,7 +521,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return rootNode.toString();
 	}
 
-	
+	/*
 	private String _constructMultiMatchQuery(String query, int from, int size) {
 		ObjectMapper mapper = new ObjectMapper();
 		
@@ -545,8 +546,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		return rootNode.toString();
 	}
+	*/
 	
-	private ObjectNode _constructSimpleQueryStringNode(RecordType type, List<String> tokens) {
+	
+	private ObjectNode _constructSimpleQueryStringNode(List<String> tokens, RecordType... types) {
 		
 		if(tokens.isEmpty()) {
 			return null;
@@ -561,7 +564,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		queryString.replace(queryString.length() - 1, queryString.length(), "*");
 		
 		ObjectNode node = mapper.createObjectNode();
-		node.put("fields", mapper.createArrayNode().add(type.getName()));
+		ArrayNode fieldsNode = mapper.createArrayNode();
+		for(RecordType type : types) {
+			fieldsNode.add(type.getName());
+		}
+		node.put("fields", fieldsNode);
 		node.put("query", queryString.toString());
 		
 		ObjectNode simpleQueryStringNode = mapper.createObjectNode();
@@ -570,12 +577,25 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return simpleQueryStringNode;
 	}
 	
-	private String _constructNewQuery(KeywordQuery kq, Map<RecordType, List<String>> tokensMap) {
+	private String _constructQueryStringQuery(List<String> tokens, int from, int size) {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		ObjectNode simpleQueryStringNode = _constructSimpleQueryStringNode(tokens, RecordType.values());
+		
+		ObjectNode rootNode = mapper.createObjectNode();
+		rootNode.put("query", simpleQueryStringNode);
+		rootNode.put("from", from);
+		rootNode.put("size", size);
+		
+		return rootNode.toString();
+	}
+	
+	private String _constructQueryStringQuery(KeywordQuery kq, Map<RecordType, List<String>> tokensMap) {
 		ObjectMapper mapper = new ObjectMapper();
 		
 		ArrayNode mustNodes = mapper.createArrayNode();
 		for(Map.Entry<RecordType, List<String>> entry : tokensMap.entrySet()) {
-			mustNodes.add(_constructSimpleQueryStringNode(entry.getKey(), entry.getValue()));
+			mustNodes.add(_constructSimpleQueryStringNode(entry.getValue(), entry.getKey()));
 		}
 		
 		ObjectNode mustNode = mapper.createObjectNode();
@@ -596,7 +616,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return rootNode.toString();
 		
 	}
-	
 	
 	private ObjectNode _constructQueryNode(MetricSchemaRecordQuery query, ObjectMapper mapper) {
 		ArrayNode shouldNodes = mapper.createArrayNode();
