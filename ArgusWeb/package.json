@@ -34,8 +34,8 @@
   "scripts": {
     "postinstall": "npm install --prefix ./app/",
     "clean": "rm -r node_modules app/node_modules",
-    "transformTemplates": "echo 'Changing templateUrl to template with inline HTML...' && jscodeshift app/js -t transformTemplateUrl.js -s",
-    "undoTransformTemplates": "echo 'revert template back to templateUrl with reference...' && jscodeshift app/js -t undoTransformTemplateUrl.js -s",
+    "transformTemplates": "echo 'Changing templateUrl to template with inline HTML...' && jscodeshift app/js -t codemod/transformTemplateUrl.js -s",
+    "undoTransformTemplates": "echo 'revert template back to templateUrl with reference...' && jscodeshift app/js -t codemod/undoTransformTemplateUrl.js -s",
     "start": "webpack-dev-server",
     "build": "webpack --verbose true",
     "lint": "npm run lint --prefix ./app/",

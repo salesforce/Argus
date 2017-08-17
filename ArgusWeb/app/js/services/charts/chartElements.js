@@ -21,6 +21,7 @@ angular.module('argus.services.charts.elements', [])
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
 	var extraYAxisPadding = ChartToolService.getExtraYAxisPadding();
+	var annotationLabelFontSize = 14;
 	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
@@ -661,34 +662,30 @@ angular.module('argus.services.charts.elements', [])
 		// add label to the pin
 		var dateObj = new Date(dataPoint.x);
 		var label = flagG.append('g').attr('class', 'flagLabel').style('display', 'none');
-		var labelContainer = label.append('rect');
+		var labelContainer = label.append('rect')
+					.attr('x', -tipPadding)
+					.attr('y', -annotationLabelFontSize - tipPadding)
+					.attr('rx', tipPadding)
+					.attr('ry', tipPadding);
 		var labelContent = label.append('g');
 		// add time info
+		var offset = 6 + annotationLabelFontSize,
+			totalOffset = offset;
 		labelContent.append('text')
 			.append('tspan')
 			.style('font-weight', 600)
 			.text(dateObj.toUTCString());
 		labelContent.append('text')
-			.attr('dy', 20)
+			.attr('dy', totalOffset)
 			.text('In current timezone: ' + dateObj.toLocaleString());
-		var count = 1;
 		for (var key in dataPoint.fields) {
 			if (dataPoint.fields.hasOwnProperty(key)) {
-				count++;
+				totalOffset += offset;
 				labelContent.append('text')
 					.text(key + ': ' + dataPoint.fields[key])
-					.attr('dy', 20 * count);
+					.attr('dy', totalOffset);
 			}
 		}
-		var contentElement = labelContent.node().getBBox();
-		labelContainer.attr('x', contentElement.x - tipPadding)
-					.attr('y', contentElement.y - tipPadding)
-					.attr('width', contentElement.width + doublePadding)
-					.attr('height', contentElement.height + doublePadding)
-					.attr('rx', tipPadding)
-					.attr('ry', tipPadding);
-		var defaultTransformAttr = 'translate(-' + (contentElement.width/2 + tipPadding) + ', -' + (contentElement.height + doublePadding) + ')';
-		label.attr('transform', defaultTransformAttr);
 		// add the info box while hovering over
 		flagG.selectAll('.pin').on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
@@ -732,24 +729,35 @@ angular.module('argus.services.charts.elements', [])
 		flags.selectAll('.flagItem')
 			.on('mouseover', function () {
 				// shift annotation label if its cut off
-				var currentElement = d3.select(this);
-				var flagLabelElement = currentElement.select('.flagLabel');
-				var currentTransformAttr = flagLabelElement.attr('transform');
-				var splitedTransformAttr;
-
-				var elementDim = this.lastElementChild.getBoundingClientRect();
-				if (elementDim.left < containerDim.left) {
-					splitedTransformAttr = currentTransformAttr.split(',');
-					flagLabelElement.attr('transform', 'translate(' +
-											(Number(splitedTransformAttr[0].substring(10)) + (containerDim.left - elementDim.left + tipOffset)) +
-											',' + splitedTransformAttr[1]);
-				} else if (elementDim.right > containerDim.right) {
-					splitedTransformAttr = currentTransformAttr.split(',');
-					flagLabelElement.attr('transform', 'translate(' +
-											(Number(splitedTransformAttr[0].substring(10)) - (elementDim.right - containerDim.right + tipOffset)) +
-											',' + splitedTransformAttr[1]);
+				var flag = d3.select(this);
+				var label = flag.select('.flagLabel');
+				var currentTransformAttr = label.attr('transform');
+				var labelDim = this.lastElementChild.getBoundingClientRect();
+				if (currentTransformAttr) {
+					// update transformation if label is cut off
+					var splitedTransformAttr = currentTransformAttr.split(',');
+					if (labelDim.left < containerDim.left) {
+						label.attr('transform', 'translate(' +
+												(Number(splitedTransformAttr[0].substring(10)) + (containerDim.left - labelDim.left + tipOffset)) +
+												',' + splitedTransformAttr[1]);
+					} else if (labelDim.right > containerDim.right) {
+						label.attr('transform', 'translate(' +
+												(Number(splitedTransformAttr[0].substring(10)) - (labelDim.right - containerDim.right + tipOffset)) +
+												',' + splitedTransformAttr[1]);
+					}
+				} else {
+					// update background rect's size and move label to the top of the flags
+					// this should be only called the first time mouseover happens to a flag
+					label.select('rect')
+						.attr('height', labelDim.height + doublePadding)
+						.attr('width', labelDim.width + doublePadding);
+					label.attr('transform', 'translate(-' + (labelDim.width/2 + tipPadding) + ', -' + (labelDim.height + doublePadding) + ')');
 				}
-				currentElement.moveToFront();
+				label.select('rect').style('stroke-width', 3);
+				flag.moveToFront();
+			})
+			.on('mouseout', function () {
+				d3.select(this).select('rect').style('stroke-width', 2);
 			})
 			.on('click', function () {
 				d3.select(this).moveToBack();

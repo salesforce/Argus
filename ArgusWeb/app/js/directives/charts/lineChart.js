@@ -458,7 +458,6 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 
 			function renderGraphs (series) {
-				console.log(chartId);
 				// downsample if its needed
 				currSeries = ChartToolService.downSample(series, containerWidth, scope.menuOption.downSampleMethod);
 				// compute stack data if its needed
