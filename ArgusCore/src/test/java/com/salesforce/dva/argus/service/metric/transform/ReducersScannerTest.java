@@ -232,4 +232,5 @@ public class ReducersScannerTest extends AbstractTest {
 			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
 		}
 	}
+	
 }

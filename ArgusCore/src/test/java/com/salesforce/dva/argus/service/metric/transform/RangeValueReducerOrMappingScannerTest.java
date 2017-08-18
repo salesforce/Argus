@@ -69,6 +69,7 @@ public class RangeValueReducerOrMappingScannerTest extends AbstractTest {
 		}
 		mini.setDatapoints(filteredDP);
 		return mini;
+		
 	}
 	
 	@Test
