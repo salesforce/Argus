@@ -52,6 +52,7 @@
     </div>
 
     <div ng-show="isTabSelected(3)">
+        <div ng-loading="historyLoaded"></div>
         <div ng-if="jobHistoryError != ''">{{jobHistoryError}}</div>
 
         <div ng-if="jobHistoryError == ''">

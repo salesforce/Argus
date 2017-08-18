@@ -4,35 +4,34 @@
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
-	var resizeTimeout = 250; //the time for resize function to fire
-	var resizeJobs = [];
-	var timer;
+	var AllChartIds = [];
 	var fullscreenChartID;
-
-	function resizeHelper(){
-		$timeout.cancel(timer); //clear to improve performance
-		timer = $timeout(function () {
-			if (fullscreenChartID === undefined) {
-				resizeJobs.forEach(function (resizeJob) { //resize all the charts
-					resizeJob.resize();
-				});
-			} else { // resize only one chart that in fullscreen mode
-				var chartToFullscreen = resizeJobs.filter(function (item) {
-					return item.chartID === fullscreenChartID;
-				});
-				chartToFullscreen[0].resize();
-				if (window.innerHeight !== screen.height) {
-					// reset the ID after exiting full screen
-					fullscreenChartID = undefined;
-				}
-			}
-		}, resizeTimeout); //only execute resize after a timeout
-	}
-
-	d3.select(window).on('resize', resizeHelper);
+	var syncChartJobs;
+	//
+	// function resizeHelper(){
+	// 	$timeout.cancel(timer); //clear to improve performance
+	// 	timer = $timeout(function () {
+	// 		if (fullscreenChartID === undefined) {
+	// 			resizeJobs.forEach(function (resizeJob) { //resize all the charts
+	// 				resizeJob.resize();
+	// 			});
+	// 		} else { // resize only one chart that in fullscreen mode
+	// 			var chartToFullscreen = resizeJobs.filter(function (item) {
+	// 				return item.chartID === fullscreenChartID;
+	// 			});
+	// 			chartToFullscreen[0].resize();
+	// 			if (window.innerHeight !== screen.height) {
+	// 				// reset the ID after exiting full screen
+	// 				fullscreenChartID = undefined;
+	// 			}
+	// 		}
+	// 	}, resizeTimeout); //only execute resize after a timeout
+	// }
+	//
+	// d3.select(window).on('resize', resizeHelper);
 
 	//---------------------sync all charts-----------------------
-	var syncChartJobs = {};
+
 	function syncChartMouseMoveAll(mouseX, focusChartId){
 		for(var key in syncChartJobs){
 			if(!syncChartJobs.hasOwnProperty(key) || key === focusChartId) continue;
@@ -57,6 +56,7 @@ angular.module('argus.directives.charts.lineChart', [])
 		},
 		templateUrl: 'js/templates/charts/topToolbar.html',
 		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
+			$scope.showToggleSources = true;
 			$scope.hideMenu = true;
 			$scope.dateRange = '';
 			$scope.changeToFullscreen = false;
@@ -66,6 +66,8 @@ angular.module('argus.directives.charts.lineChart', [])
 			$scope.noDataSeries = [];
 			$scope.invalidSeries = [];
 			var hiddenSourceNames = [];
+
+			syncChartJobs = ChartToolService.getOrCreateSyncChartJobs($scope.dashboardId);
 
 			$scope.extraYAxisSet = new Set();
 			$scope.series.forEach(function(e){
@@ -157,7 +159,7 @@ angular.module('argus.directives.charts.lineChart', [])
 							// update all graphs on dashboard with current scope.menuOption settings
 							if ($scope.applyToAllGraphs) {
 								//update localStorage for each chart
-								resizeJobs.forEach(function (job) {
+								AllChartIds.forEach(function (job) {
 									Storage.set('menuOption_' + dashboardId + '_' + job.chartID, $scope.menuOption);
 								});
 							}
@@ -928,15 +930,14 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//TODO: improve the resize efficiency if performance becomes an issue
 			element.on('$destroy', function(){
-				if(resizeJobs.length){
-					resizeJobs = [];
-					syncChartJobs = {};//this get cleared too
+				if(AllChartIds.length){
+					AllChartIds = [];
+					ChartToolService.destroySyncChartJobs(scope.dashboardId);//this get cleared too
 				}
 			});
 
-			resizeJobs.push({
-				chartID: chartId,
-				resize: resize
+			AllChartIds.push({
+				chartID: chartId
 			});
 
 			// watch changes from chart options modal to update graph
@@ -1066,6 +1067,10 @@ angular.module('argus.directives.charts.lineChart', [])
 			scope.resetZoom = function() {
 				ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 			};
+
+			scope.$watch(function(){ return element.width(); }, function () {
+				resize();
+			});
 		}
 	};
 }]);
