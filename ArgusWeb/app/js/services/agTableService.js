@@ -5,32 +5,8 @@
 /*global angular:false */
 
 angular.module('argus.services.agTableService', [])
-.service('AgTableService', ['$filter',
-	function ($filter) {
-		function createSeriesName(metric) {
-			var scope = metric.scope;
-			var name = metric.metric;
-			var tags = createTagString(metric.tags);
-			return scope + ':' + name + tags;
-		}
-
-		function createTagString(tags) {
-			var result = '';
-			if (tags) {
-				var tagString = '';
-				for (var key in tags) {
-					if (tags.hasOwnProperty(key)) {
-						tagString += (key + '=' + tags[key] + ',');
-					}
-				}
-				if (tagString.length) {
-					result += '{';
-					result += tagString.substring(0, tagString.length - 1);
-					result += '}';
-				}
-			}
-			return result;
-		}
+.service('AgTableService', ['$filter', 'ChartDataProcessingService',
+	function ($filter, ChartDataProcessingService) {
 
 		this.setTData = function(data, scope, GMTon) {
 			var tData = [];
@@ -50,7 +26,7 @@ angular.module('argus.services.agTableService', [])
 				for (i in data) {
 					dps = data[i].datapoints;
 					if (dps) {
-						columns['value' + i] = createSeriesName(data[i]);
+						columns['value' + i] = ChartDataProcessingService.createSeriesName(data[i]);
 						for (timestamp in allTimestamps) {
 							var values = allTimestamps[timestamp];
 							if (dps[timestamp]) {
