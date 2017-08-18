@@ -406,7 +406,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testDownsampleTransformAvgMultipleMetrics() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -716,5 +716,106 @@ public class DownsampleTransformTest {
         assertEquals(expected, result.get(0).getDatapoints());
     }
     
+    @Test
+    public void testDownsampleTransformPercentileOneMetric() {
+        Transform downsampleTransform = new DownsampleTransform();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(4000L, 4.0);
+        datapoints_1.put(5000L, 5.0);
+        datapoints_1.put(6000L, 6.0);
+        datapoints_1.put(7000L, 7.0);
+        datapoints_1.put(8000L, 8.0);
+        datapoints_1.put(9000L, 9.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("2s-p90");
+
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+        expected_1.put(0L, 1.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(4000L, 5.0);
+        expected_1.put(6000L, 7.0);
+        expected_1.put(8000L, 9.0);
+
+        List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+        assertEquals(result.size(), 1);
+        assertEquals(expected_1, result.get(0).getDatapoints());
+    }
+    
+    @Test
+    public void testDownsampleTransformPercentileMultipleMetrics() {
+        Transform downsampleTransform = new DownsampleTransform();
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(000L, 10.0);
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(4000L, 4.0);
+        datapoints_1.put(5000L, 5.0);
+        datapoints_1.put(6000L, 6.0);
+        datapoints_1.put(7000L, 7.0);
+        datapoints_1.put(8000L, 8.0);
+        datapoints_1.put(9000L, 9.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+        
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(0L, 1.0);
+        datapoints_2.put(1000L, 20.0);
+        datapoints_2.put(2000L, 30.0);
+        datapoints_2.put(3000L, 40.0);
+        datapoints_2.put(4000L, 50.0);
+        datapoints_2.put(5000L, 60.0);
+        datapoints_2.put(6000L, 70.0);
+        datapoints_2.put(7000L, 80.0);
+        datapoints_2.put(8000L, 90.0);
+        datapoints_2.put(9000L, 100.0);
+        
+
+        Metric metric_2 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+
+        List<String> constants = new ArrayList<String>();
+        constants.add("10s-p90");
+
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+        expected_1.put(0L, 9.9);
+        
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+
+        expected_2.put(0L, 99.0);
+
+        List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+        assertEquals(2, result.size());
+        assertEquals(expected_1, result.get(0).getDatapoints());
+        assertEquals(expected_2, result.get(1).getDatapoints());
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

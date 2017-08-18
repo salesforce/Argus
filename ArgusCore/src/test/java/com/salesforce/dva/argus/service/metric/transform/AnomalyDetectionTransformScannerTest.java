@@ -15,6 +15,8 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerTransform;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -209,6 +211,90 @@ public class AnomalyDetectionTransformScannerTest extends AbstractTest {
 			}
 			
 			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
+	
+	private Metric filterUnder(Metric m, Long bound) {
+		Metric res = new Metric(m);
+		Map<Long, Double> dps = new HashMap<>();
+		for (Long key : m.getDatapoints().keySet()) {
+			if (key <= bound) {
+				dps.put(key, m.getDatapoints().get(key));
+			}
+		}
+		res.setDatapoints(dps);
+		return res;
+	}
+	
+	@Test
+	public void testPager() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 3);
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(filterUnder(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, upperHalf.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		Transform transform = new AnomalyDetectionGaussianDensityTransform();
+		List<String> constants = new ArrayList<>();
+		constants.add("2h");
+	
+		for (int i = 0; i < metrics.size(); i++) {
+			List<Metric> l = new ArrayList<>();
+			l.add(metrics.get(i));
+			List<MetricScanner> ms = new ArrayList<>();
+			ms.add(scanners.get(i));
+			List<Metric> expected = transform.transform(l, constants);
+			Long chunkTime = (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 7;
+			MetricPager stream = new MetricPagerTransform(ms, chunkTime, transform, constants);
+	
+			int chunk = random.nextInt(stream.getNumberChunks());
+			Long start = stream.getStartTime() + (chunk) * stream.getChunkTime();
+			Long end = Math.min(start + stream.getChunkTime(), stream.getEndTime());
+			List<Metric> resChunk = stream.getMetricChunk(chunk);
+			for (Metric m : expected) {
+				TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+				if (!dps.subMap(start, end + 1).isEmpty()) {
+					assert(resChunk.contains(m));
+					int index = resChunk.indexOf(m);
+					Double epsilon = Math.pow(10, -6);
+					
+					for (int j = 0; j < dps.subMap(start, end + 1).size(); j++) {
+						for (Long time : dps.subMap(start, end + 1).keySet()) {
+							assert(Math.abs(dps.subMap(start, end + 1).get(time) - resChunk.get(index).getDatapoints().get(time)) < epsilon);
+						}
+					}
+				} else {
+					assert(resChunk.contains(m));
+					assert(resChunk.get(resChunk.indexOf(m)).getDatapoints().isEmpty());
+				}
+			}
+			
+			List<Metric> act = stream.getMetricChunk(0);
+			for (int j = 1; j < stream.getNumberChunks(); j++) {
+				List<Metric> b = stream.getMetricChunk(j);
+				for (Metric m : b) {
+					act.get(act.indexOf(m)).addDatapoints(m.getDatapoints());
+				}
+			}
+			
+			for (Metric m : expected) {
+				assert(act.contains(m));
+				assert(m.getDatapoints().equals(act.get(act.indexOf(m)).getDatapoints()));
+			}
 		}
 	}
 }

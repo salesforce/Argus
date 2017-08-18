@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,6 +16,8 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerValueMapping;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -185,6 +188,93 @@ public class LogValueMappingScannerTest extends AbstractTest {
 			
 			assert(expected.equals(actual));
 			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
+	
+	private Metric filterUnder(Metric m, Long bound) {
+		Metric res = new Metric(m);
+		Map<Long, Double> dps = new HashMap<>();
+		for (Long key : m.getDatapoints().keySet()) {
+			if (key <= bound) {
+				dps.put(key, m.getDatapoints().get(key));
+			}
+		}
+		res.setDatapoints(dps);
+		return res;
+	}
+	
+	@Test
+	public void testPagerWithAndWithoutConstants() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 5);
+		
+		for (Metric m : metrics) {
+			Map<Long, Double> d = new HashMap<>(m.getDatapoints());
+			if (d.size() > 5) {
+				Map<Long, Double> dps = new HashMap<>();
+				int i = 0;
+				for (Map.Entry<Long, Double> entry : d.entrySet()) {
+					if (i > 4) {
+						break;
+					}
+					dps.put(entry.getKey(), entry.getValue());
+					i++;
+				}
+				m.setDatapoints(dps);
+			}
+		}
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(filterUnder(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, upperHalf.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		ValueMapping mapping = new LogValueMapping();
+		List<String> constants = new ArrayList<>();
+		constants.add("2.0");
+		
+		for (int i = 0; i < scanners.size(); i++) {
+			TreeMap<Long, Double> expected = new TreeMap<>(mapping.mapping(metrics.get(i).getDatapoints()));
+			Long chunkTime = (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 3;
+			MetricPager stream = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping);
+			int chunk = random.nextInt(stream.getNumberChunks());
+			Long start = stream.getStartTime() + chunk * stream.getChunkTime();
+			Long end = Math.min(stream.getEndTime(), start + stream.getChunkTime());
+			
+			Map<Long, Double> actual = new TreeMap<>();
+			assert(expected.subMap(start, end + 1).equals(stream.getDPChunk(chunk)));			
+			for (int j = 0; j < stream.getNumberChunks(); j++) {
+				actual.putAll(stream.getDPChunk(j));
+			}
+
+			assert(expected.equals(actual));
+			
+			// will also test that explored scanners are handled correctly
+			TreeMap<Long, Double> expected2 = new TreeMap<>(mapping.mapping(metrics.get(i).getDatapoints(), constants));
+			MetricPager stream2 = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping, constants);
+			chunk = random.nextInt(stream2.getNumberChunks());
+			start = stream2.getStartTime() + chunk * stream2.getChunkTime();
+			end = Math.min(stream2.getEndTime(), start + stream2.getChunkTime());
+			
+			actual = new TreeMap<>();
+			assert(expected2.subMap(start, end + 1).equals(stream2.getDPChunk(chunk)));			
+			for (int j = 0; j < stream.getNumberChunks(); j++) {
+				actual.putAll(stream2.getDPChunk(j));
+			}
+
+			assert(expected2.equals(actual));
 		}
 	}
 }

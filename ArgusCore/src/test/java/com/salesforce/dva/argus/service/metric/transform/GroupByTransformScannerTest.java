@@ -15,6 +15,8 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerTransform;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -78,21 +80,21 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		TSDBService serviceMock = mock(TSDBService.class);
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		Metric metric1 = new Metric("system.WAS.na1", "metric1");
-        	metric1.setDatapoints(datapoints);
-        	Metric metric2 = new Metric("system.WAS.na2", "metric1");
-        	metric2.setDatapoints(datapoints);
-        	Metric metric3 = new Metric("system.CHI.na1", "metric1");
-        	metric3.setDatapoints(datapoints);
-        	Metric metric4 = new Metric("system.CHI.na2", "metric1");
-        	metric4.setDatapoints(datapoints);
-        	metrics.add(metric1);
-        	metrics.add(metric2);
-        	metrics.add(metric3);
-        	metrics.add(metric4);
+        metric1.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.WAS.na2", "metric1");
+        metric2.setDatapoints(datapoints);
+        Metric metric3 = new Metric("system.CHI.na1", "metric1");
+        metric3.setDatapoints(datapoints);
+        Metric metric4 = new Metric("system.CHI.na2", "metric1");
+        metric4.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric2);
+        metrics.add(metric3);
+        metrics.add(metric4);
         
         
 		List<MetricQuery> queries = toQueries(metrics);
@@ -138,21 +140,21 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		TSDBService serviceMock = mock(TSDBService.class);
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		Metric metric1 = new Metric("system.WAS.na1", "metric1");
-        	metric1.setDatapoints(datapoints);
-        	Metric metric2 = new Metric("system.WAS.na2", "metric1");
-        	metric2.setDatapoints(datapoints);
-        	Metric metric3 = new Metric("bla1", "metric1");
-        	metric3.setDatapoints(datapoints);
-        	Metric metric4 = new Metric("bla2", "metric1");
-        	metric4.setDatapoints(datapoints);
-        	metrics.add(metric1);
-        	metrics.add(metric2);
-        	metrics.add(metric3);
-        	metrics.add(metric4);
+        metric1.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.WAS.na2", "metric1");
+        metric2.setDatapoints(datapoints);
+        Metric metric3 = new Metric("bla1", "metric1");
+        metric3.setDatapoints(datapoints);
+        Metric metric4 = new Metric("bla2", "metric1");
+        metric4.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric2);
+        metrics.add(metric3);
+        metrics.add(metric4);
         
         
 		List<MetricQuery> queries = toQueries(metrics);
@@ -197,34 +199,34 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		
 		TSDBService serviceMock = mock(TSDBService.class);
 		
-        	Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		Metric metric1 = new Metric("system.CHI.SP1.na1", "latency");
 		metric1.setTag("device", "na1-app1-1-chi.ops.sfdc.net");
-        	metric1.setDatapoints(datapoints);
-        	Metric metric11 = new Metric("system.CHI.SP1.na1", "latency");
+        metric1.setDatapoints(datapoints);
+        Metric metric11 = new Metric("system.CHI.SP1.na1", "latency");
 		metric11.setTag("device", "na1-app1-2-chi.ops.sfdc.net");
-        	metric11.setDatapoints(datapoints);
-        	Metric metric2 = new Metric("system.CHI.SP1.na2", "latency");
+        metric11.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.CHI.SP1.na2", "latency");
 		metric2.setTag("device", "na2-app1-1-chi.ops.sfdc.net");
-        	metric2.setDatapoints(datapoints);
-        	Metric metric21 = new Metric("system.CHI.SP1.na2", "latency");
+        metric2.setDatapoints(datapoints);
+        Metric metric21 = new Metric("system.CHI.SP1.na2", "latency");
 		metric21.setTag("device", "na2-app1-2-chi.ops.sfdc.net");
-        	metric21.setDatapoints(datapoints);
-        	Metric metric3 = new Metric("system.CHI.SP1.na3", "latency");
+        metric21.setDatapoints(datapoints);
+        Metric metric3 = new Metric("system.CHI.SP1.na3", "latency");
 		metric3.setTag("device", "na3-app1-1-chi.ops.sfdc.net");
-        	metric3.setDatapoints(datapoints);
-        	Metric metric31 = new Metric("system.CHI.SP1.na3", "latency");
+        metric3.setDatapoints(datapoints);
+        Metric metric31 = new Metric("system.CHI.SP1.na3", "latency");
 		metric31.setTag("device", "na3-app1-2-chi.ops.sfdc.net");
-        	metric31.setDatapoints(datapoints);
-        	metrics.add(metric1);
-        	metrics.add(metric11);
-        	metrics.add(metric2);
-        	metrics.add(metric21);
-        	metrics.add(metric3);
-        	metrics.add(metric31);
+        metric31.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric11);
+        metrics.add(metric2);
+        metrics.add(metric21);
+        metrics.add(metric3);
+        metrics.add(metric31);
         
         
 		List<MetricQuery> queries = toQueries(metrics);
@@ -271,21 +273,21 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		TSDBService serviceMock = mock(TSDBService.class);
 		
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+        datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
 		Metric metric1 = new Metric("system.WAS.na1", "metric1");
-        	metric1.setDatapoints(datapoints);
-        	Metric metric2 = new Metric("system.WAS.na2", "metric1");
-        	metric2.setDatapoints(datapoints);
-        	Metric metric3 = new Metric("system.CHI.na1", "metric1");
-        	metric3.setDatapoints(datapoints);
-        	Metric metric4 = new Metric("system.CHI.na2", "metric1");
-        	metric4.setDatapoints(datapoints);
-        	metrics.add(metric1);
-        	metrics.add(metric2);
-        	metrics.add(metric3);
-        	metrics.add(metric4);
+        metric1.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.WAS.na2", "metric1");
+        metric2.setDatapoints(datapoints);
+        Metric metric3 = new Metric("system.CHI.na1", "metric1");
+        metric3.setDatapoints(datapoints);
+        Metric metric4 = new Metric("system.CHI.na2", "metric1");
+        metric4.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric2);
+        metrics.add(metric3);
+        metrics.add(metric4);
         
         
 		List<MetricQuery> queries = toQueries(metrics);
@@ -325,6 +327,120 @@ public class GroupByTransformScannerTest extends AbstractTest {
 		}
 		for (int i = 0; i < metrics.size(); i++) {
 			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
+	
+	private Metric filterUnder(Metric m, Long bound) {
+		Metric res = new Metric(m);
+		Map<Long, Double> dps = new HashMap<>();
+		for (Long key : m.getDatapoints().keySet()) {
+			if (key <= bound) {
+				dps.put(key, m.getDatapoints().get(key));
+			}
+		}
+		res.setDatapoints(dps);
+		return res;
+	}
+	
+	@Test
+	public void testPager() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        datapoints.put(1000L, 1.0);
+		
+		List<Metric> metrics = new ArrayList<>();
+		Metric metric1 = new Metric("system.CHI.SP1.na1", "latency");
+		metric1.setTag("device", "na1-app1-1-chi.ops.sfdc.net");
+        metric1.setDatapoints(datapoints);
+        Metric metric11 = new Metric("system.CHI.SP1.na1", "latency");
+		metric11.setTag("device", "na1-app1-2-chi.ops.sfdc.net");
+        metric11.setDatapoints(datapoints);
+        Metric metric2 = new Metric("system.CHI.SP1.na2", "latency");
+		metric2.setTag("device", "na2-app1-1-chi.ops.sfdc.net");
+        metric2.setDatapoints(datapoints);
+        Metric metric21 = new Metric("system.CHI.SP1.na2", "latency");
+		metric21.setTag("device", "na2-app1-2-chi.ops.sfdc.net");
+        metric21.setDatapoints(datapoints);
+        Metric metric3 = new Metric("system.CHI.SP1.na3", "latency");
+		metric3.setTag("device", "na3-app1-1-chi.ops.sfdc.net");
+        metric3.setDatapoints(datapoints);
+        Metric metric31 = new Metric("system.CHI.SP1.na3", "latency");
+		metric31.setTag("device", "na3-app1-2-chi.ops.sfdc.net");
+        metric31.setDatapoints(datapoints);
+        metrics.add(metric1);
+        metrics.add(metric11);
+        metrics.add(metric2);
+        metrics.add(metric21);
+        metrics.add(metric3);
+        metrics.add(metric31);
+		List<MetricQuery> queries = toQueries(metrics);
+		Long max = null;
+		Long min = null;
+		for (MetricQuery q : queries) {
+			if (min == null || q.getStartTimestamp() < min) {
+				min = q.getStartTimestamp();
+			}
+			if (max == null || q.getEndTimestamp() > max) {
+				max = q.getEndTimestamp();
+			}
+		}
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(filterUnder(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, upperHalf.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		Transform transform = new GroupByTransform(new TransformFactory(system.getServiceFactory().getTSDBService()));
+		List<String> constants = new ArrayList<>();
+		constants.add("(system\\.CHI\\.SP1\\..*:latency)");
+		constants.add("LIMIT");
+		constants.add("5");
+		
+		List<String> constants2 = new ArrayList<>(constants);
+
+		List<Metric> expected = transform.transform(metrics, constants2);
+		Long chunkTime = (max - min) / 7;
+		MetricPager stream = new MetricPagerTransform(scanners, chunkTime, transform, constants);
+		
+		int chunk = random.nextInt(stream.getNumberChunks());
+		Long start = stream.getStartTime() + (chunk) * chunkTime;
+		Long end = Math.min(start + chunkTime, stream.getEndTime());
+		List<Metric> resChunk = stream.getMetricChunk(chunk);
+		for (Metric m : expected) {
+			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+			if (!dps.subMap(start, end + 1).isEmpty()) {
+				assert(resChunk.contains(m));
+				int index = resChunk.indexOf(m);
+				assert(dps.subMap(start, end + 1).equals(resChunk.get(index).getDatapoints()));
+			} else {
+				assert(resChunk.contains(m));
+				assert(resChunk.get(resChunk.indexOf(m)).getDatapoints().isEmpty());
+			}
+		}
+		
+		List<Metric> act = stream.getMetricChunk(0);
+		for (int j = 1; j < stream.getNumberChunks(); j++) {
+			List<Metric> b = stream.getMetricChunk(j);
+			for (Metric m : b) {
+				act.get(act.indexOf(m)).addDatapoints(m.getDatapoints());
+			}
+		}
+		
+		for (Metric m : expected) {
+			assert(act.contains(m));
+			assert(m.getDatapoints().equals(act.get(act.indexOf(m)).getDatapoints()));
 		}
 	}
 }

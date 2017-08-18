@@ -16,6 +16,8 @@ import org.mockito.Matchers;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerTransform;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -393,6 +395,118 @@ protected static final long MILLIS_IN_A_WEEK = 7 * 24 * 60 * 60 * 100;
 		}
 		for (int i = 0; i < metrics.size(); i++) {
 			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+		}
+	}
+	
+	@Test
+	public void testPager() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 5);
+		List<MetricQuery> queries = toQueries(metrics);
+		Long max = null;
+		Long min = null;
+		for (MetricQuery q : queries) {
+			if (min == null || q.getStartTimestamp() < min) {
+				min = q.getStartTimestamp();
+			}
+			if (max == null || q.getEndTimestamp() > max) {
+				max = q.getEndTimestamp();
+			}
+		}
+		List<MetricScanner> scanners = new ArrayList<>();
+		Map<MetricQuery, List<Metric>> earlier = new HashMap<>();
+		Map<MetricQuery, List<MetricScanner>> earlierS = new HashMap<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			Metric m = metrics.get(i);
+			MetricQuery q = queries.get(i);
+			m.setQuery(q);
+			
+			Metric earlierMetric = new Metric(m);
+			Map<Long, Double> dps = new HashMap<>();
+			for (Map.Entry<Long, Double> entry : earlierMetric.getDatapoints().entrySet()) {
+				dps.put(entry.getKey() - MILLIS_IN_A_WEEK, entry.getValue());
+			}
+
+			MetricQuery earlierQ = new MetricQuery(q);
+			earlierQ.setStartTimestamp(q.getStartTimestamp() - MILLIS_IN_A_WEEK);
+			earlierQ.setEndTimestamp(q.getStartTimestamp());
+			if (!earlier.containsKey(earlierQ)) {
+				earlier.put(earlierQ, new ArrayList<>());
+			}
+			earlier.get(earlierQ).add(earlierMetric);
+						
+			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
+			List<MetricQuery> highQuery = new ArrayList<>();
+			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
+			List<MetricQuery> copyHighQuery = new ArrayList<>();
+			copyHighQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound, q.getStartTimestamp()));
+			List<MetricQuery> copyLowQuery = new ArrayList<>();
+			copyLowQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getStartTimestamp() - MILLIS_IN_A_WEEK, q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound));
+			List<MetricQuery> copyTooHigh = new ArrayList<>();
+			copyTooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getStartTimestamp(), q.getStartTimestamp()));
+			
+			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
+			scanners.add(s);
+			
+			MetricScanner earlierScanner = new MetricScanner(lowElems(earlierMetric, q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound), earlierQ, serviceMock, q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound);
+			if (!earlierS.containsKey(earlierQ)) {
+				earlierS.put(earlierQ, new ArrayList<>());
+			}
+			earlierS.get(earlierQ).add(earlierScanner);
+			
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
+			when(serviceMock.getMetrics(copyTooHigh)).thenReturn(outOfBounds());
+			when(serviceMock.getMetrics(copyHighQuery)).thenReturn(filterOver(earlierMetric, q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound, copyHighQuery.get(0)));
+			when(serviceMock.getMetrics(copyLowQuery)).thenReturn(filterUnder(earlierMetric, q.getStartTimestamp() - MILLIS_IN_A_WEEK + bound, copyLowQuery.get(0)));
+		}
+
+		when(serviceMock.getMetrics(Matchers.anyListOf(MetricQuery.class))).thenReturn(earlier);
+		when(serviceMock.getMetricScanners(Matchers.anyListOf(MetricQuery.class))).thenReturn(earlierS);
+				
+		Transform transform = new HoltWintersForecast(serviceMock);
+		List<String> constants = new ArrayList<>();
+		constants.add("" + random.nextDouble() * 10);
+		constants.add("" + random.nextDouble() * 10);
+		constants.add("" + random.nextDouble() * 10);
+		constants.add("" + random.nextInt());
+		Long chunkTime = (max - min) / 7;				
+		
+		List<Metric> expected = transform.transform(metrics, new ArrayList<>(constants));
+		MetricPager stream = new MetricPagerTransform(scanners, chunkTime, transform, constants);			
+		
+		int chunk = random.nextInt(stream.getNumberChunks());
+		Long start = stream.getStartTime() + (chunk) * chunkTime;
+		Long end = Math.min(start + chunkTime, stream.getEndTime());
+		List<Metric> resChunk = stream.getMetricChunk(chunk);
+		for (Metric m : expected) {
+			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+			if (!dps.subMap(start, end + 1).isEmpty()) {
+				assert(resChunk.contains(m));
+				int index = resChunk.indexOf(m);
+				assert(dps.subMap(start, end + 1).equals(resChunk.get(index).getDatapoints()));
+			} else {
+				assert(resChunk.contains(m));
+				assert(resChunk.get(resChunk.indexOf(m)).getDatapoints().isEmpty());
+			}
+		}
+		
+		List<Metric> act = stream.getMetricChunk(0);
+		for (int j = 1; j < stream.getNumberChunks(); j++) {
+			List<Metric> b = stream.getMetricChunk(j);
+			for (Metric m : b) {
+				act.get(act.indexOf(m)).addDatapoints(m.getDatapoints());
+			}
+		}
+		
+		for (Metric m : expected) {
+			assert(act.contains(m));
+			assert(m.getDatapoints().equals(act.get(act.indexOf(m)).getDatapoints()));
 		}
 	}
 }

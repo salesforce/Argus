@@ -489,53 +489,6 @@ public class DeviationTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
-    @Test
-    public void testDevTransformWithNoNumWithUNIONShareNoCommonDPsUnderTolerance() {
-        Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
-
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-
-        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
-
-        metric_1.setDatapoints(datapoints_1);
-
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
-
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
-        datapoints_2.put(300L, 1000.0);
-
-        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
-
-        metric_2.setDatapoints(datapoints_2);
-
-        List<Metric> metrics = new ArrayList<Metric>();
-
-        metrics.add(metric_1);
-        metrics.add(metric_2);
-
-        List<String> constants = new ArrayList<String>();
-
-        constants.add("0.1");
-        constants.add("UNION");
-
-        Map<Long, Double> expected = new HashMap<Long, Double>();
-        expected.put(100L, 0.0);
-        expected.put(200L, 0.0);
-        expected.put(300L, 0.0);
-        expected.put(1000L, 0.0);
-        expected.put(2000L, 0.0);
-        expected.put(3000L, 0.0);
-        
-        List<Metric> result = devTransform.transform(metrics, constants);
-
-        assertEquals(6, result.get(0).getDatapoints().size());
-        assertEquals(expected, result.get(0).getDatapoints());
-    }
 
     @Test
     public void testDevTransformWithNoConstantShareSomeCommonDPsBeyondTolerance() {

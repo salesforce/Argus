@@ -15,6 +15,8 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerTransform;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -39,7 +41,7 @@ public class GroupTransformWrapUnionScannerTest extends AbstractTest {
 		}
 		return queries;
 	}
-	
+
 	private Map<MetricQuery, List<Metric>> filterOver(Metric m, Long startTime, MetricQuery query) {
 		Metric mini = new Metric(m);
 		Map<Long, Double> filteredDP = new TreeMap<>();
@@ -401,7 +403,93 @@ public class GroupTransformWrapUnionScannerTest extends AbstractTest {
 		}
 		
 		for (int i = 0; i < metrics.size(); i++) {
-			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			assert(!scanners.get(i).isInUse());
+		}
+	}
+	
+	private Metric filterUnder(Metric m, Long bound) {
+		Metric res = new Metric(m);
+		Map<Long, Double> dps = new HashMap<>();
+		for (Long key : m.getDatapoints().keySet()) {
+			if (key <= bound) {
+				dps.put(key, m.getDatapoints().get(key));
+			}
+		}
+		res.setDatapoints(dps);
+		return res;
+	}
+	
+	@Test
+	public void testPager() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 5);
+		for (int i = 0; i < metrics.size(); i++) {
+			metrics.get(i).setMetric(TEST_NAME + i);
+		}
+		List<MetricQuery> queries = toQueries(metrics);
+		Long max = null;
+		Long min = null;
+		for (MetricQuery q : queries) {
+			if (min == null || q.getStartTimestamp() < min) {
+				min = q.getStartTimestamp();
+			}
+			if (max == null || q.getEndTimestamp() > max) {
+				max = q.getEndTimestamp();
+			}
+		}
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(filterUnder(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, upperHalf.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		Transform transform = new GroupTransformWrapUnion();
+		List<String> constants = new ArrayList<>();
+		constants.add(TEST_INCLUDE_REGEX);
+		constants.add("inclusive");
+		Long chunkTime = (max - min) / 7;
+		
+		List<Metric> expected = transform.transform(metrics, constants);
+		MetricPager stream = new MetricPagerTransform(scanners, chunkTime, transform, constants);			
+		
+		int chunk = random.nextInt(stream.getNumberChunks());
+		Long start = stream.getStartTime() + (chunk) * chunkTime;
+		Long end = Math.min(start + chunkTime, stream.getEndTime());
+		List<Metric> resChunk = stream.getMetricChunk(chunk);
+		for (Metric m : expected) {
+			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+			if (!dps.subMap(start, end + 1).isEmpty()) {
+				assert(resChunk.contains(m));
+				int index = resChunk.indexOf(m);
+				assert(dps.subMap(start, end + 1).equals(resChunk.get(index).getDatapoints()));
+			} else {
+				assert(resChunk.contains(m));
+				assert(resChunk.get(resChunk.indexOf(m)).getDatapoints().isEmpty());
+			}
+		}
+		
+		List<Metric> act = stream.getMetricChunk(0);
+		for (int j = 1; j < stream.getNumberChunks(); j++) {
+			List<Metric> b = stream.getMetricChunk(j);
+			for (Metric m : b) {
+				act.get(act.indexOf(m)).addDatapoints(m.getDatapoints());
+			}
+		}
+		
+		for (Metric m : expected) {
+			assert(act.contains(m));
+			assert(m.getDatapoints().equals(act.get(act.indexOf(m)).getDatapoints()));
 		}
 	}
 }

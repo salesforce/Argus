@@ -1,9 +1,11 @@
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,6 +18,8 @@ import org.junit.Test;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.tsdb.MetricPager;
+import com.salesforce.dva.argus.service.tsdb.MetricPagerValueMapping;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
@@ -201,4 +205,67 @@ public class CullAboveValueMappingScannerTest extends AbstractTest {
 		}
 	}
 	
+	private Metric filterUnder(Metric m, Long bound) {
+		Metric res = new Metric(m);
+		Map<Long, Double> dps = new HashMap<>();
+		for (Long key : m.getDatapoints().keySet()) {
+			if (key <= bound) {
+				dps.put(key, m.getDatapoints().get(key));
+			}
+		}
+		res.setDatapoints(dps);
+		return res;
+	}
+	
+	@Test
+	public void testPager() {
+		MetricScanner.setChunkPercentage(0.50);
+		
+		TSDBService serviceMock = mock(TSDBService.class);
+		List<Metric> metrics = createRandomMetrics(null, null, 5);
+
+		List<MetricQuery> queries = toQueries(metrics);
+		List<MetricScanner> scanners = new ArrayList<>();
+		
+		for (int i = 0; i < metrics.size(); i++) {
+			List<MetricQuery> upperHalf = new ArrayList<>();
+			Long bound = queries.get(i).getStartTimestamp() + (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 2;
+			upperHalf.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), bound, queries.get(i).getEndTimestamp()));
+			List<MetricQuery> tooHigh = new ArrayList<>();
+			tooHigh.add(new MetricQuery(queries.get(i).getScope(), queries.get(i).getMetric(), queries.get(i).getTags(), queries.get(i).getEndTimestamp(), queries.get(i).getEndTimestamp()));
+			
+			scanners.add(new MetricScanner(filterUnder(metrics.get(i), bound), queries.get(i), serviceMock, bound));
+			
+			when(serviceMock.getMetrics(upperHalf)).thenReturn(filterOver(metrics.get(i), bound, upperHalf.get(0)));
+			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
+		}
+		
+		ValueMapping mapping = new CullAboveValueMapping();
+		List<String> constants = new ArrayList<>();
+		constants.add("75.0");
+		constants.add("value");
+		
+		for (int i = 0; i < scanners.size(); i++) {
+			if (i % 2 == 0) {
+				constants.set(1, "value");
+			} else {
+				constants.set(1, "percentile");
+			}
+			TreeMap<Long, Double> expected = new TreeMap<>(mapping.mapping(metrics.get(i).getDatapoints(), constants));
+			Long chunkTime = metrics.get(i).getDatapoints().size() == 1 ? 0L :
+				(Collections.max(metrics.get(i).getDatapoints().keySet()) - Collections.min(metrics.get(i).getDatapoints().keySet())) / 3;
+			MetricPager stream = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping, constants);
+			int chunk = random.nextInt(stream.getNumberChunks());
+			Long start = stream.getStartTime() + chunk * stream.getChunkTime();
+			Long end = Math.min(stream.getEndTime(), start + stream.getChunkTime());
+			
+			Map<Long, Double> actual = new TreeMap<>();
+			assert(expected.subMap(start, end + 1).equals(stream.getDPChunk(chunk)));			
+			for (int j = 0; j < stream.getNumberChunks(); j++) {
+				actual.putAll(stream.getDPChunk(j));
+			}
+
+			assert(expected.equals(actual));
+		}
+	}
 }

@@ -36,6 +36,16 @@ public class AbstractArithmeticTransformExtensionForScannerTest extends Abstract
 	}
 	
 	@Override
+	public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+		throw new UnsupportedOperationException("Don't use this sum implementation with a constant!");
+	}
+	
+	@Override
+	public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+		throw new UnsupportedOperationException("This sum implementation doesn't take list of list!!!");
+	}
+	
+	@Override
 	public String getResultScopeName() {
 		return "Testing implementation of AbstractArithmeticTransform";
 	}
