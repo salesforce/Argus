@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
@@ -72,16 +73,98 @@ public abstract class AnomalyDetectionTransform implements Transform {
                         timestamps, detectionIntervalInSeconds);
         calculateContextualAnomalyScores(predictionDatapoints, completeDatapoints, timestamps,
                 currentIndex, detectionIntervalInSeconds);
-
+        
         predictions.setDatapoints(predictionDatapoints);
         List<Metric> resultMetrics = new ArrayList<>();
         resultMetrics.add(predictions);
         return resultMetrics;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners.");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+    	
+    	Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
+    	Map<Long, Double> predictionDatapoints = new HashMap<>();
+    	Map<Long, Double> completeDatapoints = new HashMap<>();
+    	List<Long> timestamps = new ArrayList<>();
+    	
+    	long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
+    	
+    	Map.Entry<Long, Double> dp = null;
+    	SystemAssert.requireArgument(scanners.get(0).hasNextDP(), "Cannot operate on a scanner with no metric data.");
+    	dp = scanners.get(0).getNextDP();
+    	timestamps.add(dp.getKey());
+    	completeDatapoints.put(dp.getKey(), dp.getValue());
+    	
+    	int currentIndex = 0;
+    	currentIndex = advanceCurrentIndexByIntervalScanner(currentIndex, scanners.get(0), predictionDatapoints,
+    			completeDatapoints, timestamps, detectionIntervalInSeconds);
+    	
+    	calculateContextualAnomalyScoresScanner(scanners.get(0), predictionDatapoints, completeDatapoints, timestamps,
+    			currentIndex, detectionIntervalInSeconds);
+    	
+    	predictions.setDatapoints(predictionDatapoints);
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	resultMetrics.add(predictions);
+    	return resultMetrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners.");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+    	
+    	Map.Entry<Long, Double> next = scanners.get(0).peek();
+    	List<Metric> res = null;
+    	if (next == null) {
+    		/* fully explored */
+    		List<Metric> mList = new ArrayList<>();
+    		mList.add(scanners.get(0).getMetric());
+    		res = transform(mList, constants);
+    	} else if (next.getKey().equals(Collections.min(scanners.get(0).getMetric().getDatapoints().keySet()))) {
+    		/* not explored at all */
+    		res = transformScanner(scanners, constants);
+    	} else {
+    		/* partially explored -> this should almost never happen as an initial scanner iteration would fully explore it */
+    		while (scanners.get(0).hasNextDP()) {
+    			scanners.get(0).getNextDP();
+    		}
+    		List<Metric> mList = new ArrayList<>();
+    		mList.add(scanners.get(0).getMetric());
+    		res = transform(mList, constants);
+    	}
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	for (Metric m : res) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			resultMetrics.add(m);
+    		} else {
+    			m.setDatapoints(new HashMap<>());
+    			resultMetrics.add(m);
+    		}
+    	}
+    	return resultMetrics;
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... metrics) {
         throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... scanners) {
+        throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
     }
 
     public long getTimePeriodInSeconds(String timePeriod) {
@@ -202,6 +285,21 @@ public abstract class AnomalyDetectionTransform implements Transform {
         }
         return currentIndex;
     }
+    
+    private int advanceCurrentIndexByIntervalScanner(int currentIndex, MetricScanner scanner, Map<Long, Double> predictionDatapoints,
+    										Map<Long, Double> completeDatapoints, List<Long> timestamps, long detectionIntervalInSeconds) {
+    	long firstIntervalEndTime = timestamps.get(0) + detectionIntervalInSeconds;
+    	Map.Entry<Long, Double> dp = null;
+    	
+       	while (scanner.hasNextDP() && timestamps.get(currentIndex) <= firstIntervalEndTime) {
+    		dp = scanner.getNextDP();
+    		timestamps.add(dp.getKey());
+    		predictionDatapoints.put(timestamps.get(currentIndex), 0.0);
+    		completeDatapoints.put(dp.getKey(), dp.getValue());
+    		currentIndex += 1;
+    	}
+    	return currentIndex;
+    }
 
     /**
      * Creates an interval for each data point (after currentIndex) in the metric
@@ -234,6 +332,43 @@ public abstract class AnomalyDetectionTransform implements Transform {
                     intervalAnomaliesMetricData.get(timestamps[i]));
         }
     }
+    
+    private void calculateContextualAnomalyScoresScanner(MetricScanner scanner, Map<Long, Double> predictionDatapoints,
+    													Map<Long, Double> completeDatapoints, List<Long> timestamps,
+    													int currentIndex, long detectionIntervalInSeconds) {
+    	Map.Entry<Long, Double> dp = null;
+    	int i = currentIndex; // looping variable
+    	while (scanner.hasNextDP()) {
+    		dp = scanner.getNextDP();
+    		timestamps.add(dp.getKey());
+    		completeDatapoints.put(dp.getKey(), dp.getValue());
+    		
+    		long timestampAtCurrentIndex = timestamps.get(i);
+    		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
+    		
+    		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
+    		List<Metric> intervalRawDataMetrics = new ArrayList<>();
+    		intervalRawDataMetrics.add(intervalMetric);
+    		
+    		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
+    		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+    		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
+    		
+    		i++;
+    	}
+    	
+    	// complete the final datapoint
+    	long timestampAtCurrentIndex = timestamps.get(i);
+		long projectedIntervalStartTime = timestampAtCurrentIndex - detectionIntervalInSeconds;
+		
+		Metric intervalMetric = createIntervalMetricScanner(i, completeDatapoints, timestamps, projectedIntervalStartTime);
+		List<Metric> intervalRawDataMetrics = new ArrayList<>();
+		intervalRawDataMetrics.add(intervalMetric);
+		
+		Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0); // call metric version on the first piece of this
+		Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+		predictionDatapoints.put(timestamps.get(i), intervalAnomaliesMetricData.get(timestamps.get(i)));
+    }
 
     /**
      * Creates an interval metric containing data points from a starting point
@@ -250,7 +385,6 @@ public abstract class AnomalyDetectionTransform implements Transform {
                                         Long[] timestamps, long projectedIntervalStartTime) {
         Metric intervalMetric = new Metric(getResultScopeName(), getResultMetricName());
         Map<Long, Double> intervalMetricData = new HashMap<>();
-
         //Decrease intervalStartIndex until it's at the start of the interval
         int intervalStartIndex = currentDatapointIndex;
         while (intervalStartIndex >= 0 && timestamps[intervalStartIndex] >= projectedIntervalStartTime) {
@@ -263,9 +397,29 @@ public abstract class AnomalyDetectionTransform implements Transform {
         intervalMetric.setDatapoints(intervalMetricData);
         return intervalMetric;
     }
+    
+    private Metric createIntervalMetricScanner(int i, Map<Long, Double> earlyDatapoints, List<Long> timestamps,
+    														long projectedIntervalStartTime) {
+    	Metric intervalMetric = new Metric(getResultScopeName(), getResultMetricName());
+		Map<Long, Double> intervalMetricData = new HashMap<>();
+		int intervalStartIndex = i;
+		while (intervalStartIndex >= 0 && timestamps.get(intervalStartIndex) >= projectedIntervalStartTime) {
+			long tempTimestamp = timestamps.get(intervalStartIndex);
+			intervalMetricData.put(tempTimestamp, earlyDatapoints.get(tempTimestamp));
+			intervalStartIndex--;
+		}
+		intervalMetric.setDatapoints(intervalMetricData);
+		return intervalMetric;
+    }
 
     @Override
     abstract public List<Metric> transform(List<Metric> metrics);
+    
+    @Override
+    abstract public List<Metric> transformScanner(List<MetricScanner> scanners);
+    
+    @Override
+    abstract public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end);
 
     @Override
     abstract public String getResultScopeName();

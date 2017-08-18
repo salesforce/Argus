@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Objects;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Implementation of basic reducers with necessary types transformation:
  *
@@ -50,6 +52,15 @@ public class Reducers {
                 .reduce(0.0, (a, b) -> a + b);
 
         return result;
+    }
+    
+    public static Double sumReducerScanner(MetricScanner scanner) {
+    		double result = 0.0;
+    		while (scanner.hasNextDP()) {
+    			Double value = scanner.getNextDP().getValue();
+    			result += value == null ? 0.0 : value;
+    		}
+    		return result;
     }
 
 }

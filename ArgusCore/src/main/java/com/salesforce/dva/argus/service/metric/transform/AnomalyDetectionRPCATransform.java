@@ -31,8 +31,12 @@
 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import sun.tools.java.Scanner;
 
 import java.util.*;
 
@@ -95,9 +99,123 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
     }
 
     @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric/metrics");
+        SystemAssert.requireState(scanners.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(scanners.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
+                "metric.");
+        SystemAssert.requireState(constants.size() == 1, "Anomaly Detection RPCA Transform can only be used with " +
+                "one constant for the length of a season");
+        
+        List<Long> times = new ArrayList<>();
+        SystemAssert.requireState(scanners.get(0).hasNextDP(), "Cannot transform metric scanner with no data point.");
+        
+        String seasonLengthInput = constants.get(0);
+        long seasonLengthInMilliseconds = super.getTimePeriodInSeconds(seasonLengthInput) * 1000;
+        
+        List<Double> metricVals = new ArrayList<>();
+        
+        while (scanners.get(0).hasNextDP()) {
+        	Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+        	times.add(dp.getKey());
+        	metricVals.add(dp.getValue());
+        }
+        
+        timestamps = times.toArray(new Long[times.size()]);
+        frequency = calculateFrequency(seasonLengthInMilliseconds);
+        metricValues = Doubles.toArray(metricVals);
+        standardize(metricValues);
+        
+        trainModel();
+        Metric predictions = predictAnomalies();
+        Metric predictionsNormalized = normalizePredictions(predictions);
+        
+        List<Metric> resultMetrics = new ArrayList<>();
+        resultMetrics.add(predictionsNormalized);
+        return resultMetrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric/metrics");
+        SystemAssert.requireState(scanners.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
+        SystemAssert.requireState(scanners.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
+                "metric.");
+        SystemAssert.requireState(constants.size() == 1, "Anomaly Detection RPCA Transform can only be used with " +
+                "one constant for the length of a season");
+        
+        SystemAssert.requireState(!scanners.get(0).getMetric().getDatapoints().isEmpty() || scanners.get(0).hasNextDP(),
+        		"Cannot transform metric scanner with no data point.");
+        
+        Map.Entry<Long, Double> next = scanners.get(0).peek();
+        List<Metric> res = new ArrayList<>();
+        if (next == null) {
+        	/* scanner is fully explored */
+        	List<Metric> mList = new ArrayList<>();
+        	mList.add(scanners.get(0).getMetric());
+        	res = transform(mList, constants);
+        } else if (next.getKey().equals(Collections.min(scanners.get(0).getMetric().getDatapoints().keySet()))) {
+        	/* scanner is not explored at all */
+        	res = transformScanner(scanners, constants);
+        } else {
+        	/* partially explored */
+        	TreeMap<Long, Double> metricData = new TreeMap<>(scanners.get(0).getMetric().getDatapoints());
+        	List<Long> times = new ArrayList<>();
+        	
+        	String seasonLengthInput = constants.get(0);
+        	long seasonLengthInMilliseconds = super.getTimePeriodInSeconds(seasonLengthInput) * 1000;
+        	
+        	Long startKey = metricData.ceilingKey(start);
+        	Long endKey = metricData.floorKey(next.getKey());
+        	if (startKey != null && endKey != null && startKey < endKey) {
+        		Map<Long, Double> dps = metricData.subMap(startKey, endKey);
+        		times.addAll(dps.keySet());
+        	}
+        	
+        	while (scanners.get(0).hasNextDP()) {
+        		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+        		times.add(dp.getKey());
+        		metricData.put(dp.getKey(), dp.getValue());
+        	}
+        	
+        	timestamps = times.toArray(new Long[times.size()]);
+        	frequency = calculateFrequency(seasonLengthInMilliseconds);
+        	metricValues = Doubles.toArray(metricData.values());
+        	standardize(metricValues);
+        	
+        	trainModel();
+        	Metric predictions = predictAnomalies();
+        	Metric predictionsNormalized = normalizePredictions(predictions);
+        	res.add(predictionsNormalized);
+        }
+        
+    	TreeMap<Long, Double> finalize = new TreeMap<>(res.get(0).getDatapoints());
+    	Long startKey = finalize.ceilingKey(start);
+    	Long endKey = finalize.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		res.get(0).setDatapoints(new HashMap<>());
+    		return res;
+    	}
+    	Map<Long, Double> range = finalize.subMap(startKey, endKey + 1);
+    	res.get(0).setDatapoints(range);
+    	return res;
+    }
+    
+    @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanner) {
+    	throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
+    }
+    
 
     /*
      * Calculates the frequency of the metric (the number of data

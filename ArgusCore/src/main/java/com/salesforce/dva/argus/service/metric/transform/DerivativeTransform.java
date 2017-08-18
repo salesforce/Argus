@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ import java.util.TreeMap;
 public class DerivativeTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
-
+	
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
@@ -78,6 +79,97 @@ public class DerivativeTransform implements Transform {
         }
         return result;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner / scanners");
+    	
+    	List<Metric> result = new ArrayList<>(scanners.size());
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Double prev = null;
+    		Map<Long, Double> derivativeDatapoints = new HashMap<>();
+    		
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			
+    			if (prev == null) {
+    				derivativeDatapoints.put(dp.getKey(), null);
+    			} else {
+    				derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
+    			}
+    			prev = dp.getValue();
+    		}
+    		Metric metric = new Metric(scanner.getMetric());
+    		metric.setDatapoints(derivativeDatapoints);
+    		result.add(metric);
+    	}
+    	return result;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner / scanners");
+    	
+    	List<Metric> result = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {
+    		Map.Entry<Long, Double> next = scanner.peek();
+    		Metric m = scanner.getMetric();
+    		Metric mDeriv = new Metric(m);
+    		mDeriv.setDatapoints(new HashMap<>());
+    		Double prev = null;
+    		
+    		if (next == null || next.getKey() > end) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start - 1);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey == null || endKey == null || startKey > endKey) {
+    				result.add(mDeriv);
+    				continue;
+    			}
+    			Metric holder = new Metric(m);
+    			holder.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			List<Metric> h = new ArrayList<>();
+    			h.add(holder);
+    			TreeMap<Long, Double> res = new TreeMap<>(transform(h).get(0).getDatapoints());
+    			if (res.firstKey() < start) {
+    				res.remove(res.firstKey());
+    			}
+    			mDeriv.setDatapoints(res);
+    		} else if (next.getKey() > start) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start - 1);
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey < endKey) {
+	    			Metric holder = new Metric(m);
+	    			holder.setDatapoints(dps.subMap(startKey, endKey));
+	    			List<Metric> h = new ArrayList<>();
+	    			h.add(holder);
+	    			TreeMap<Long, Double> res = new TreeMap<>(transform(h).get(0).getDatapoints());
+	    			if (res.firstKey() < start) {
+	    				res.remove(res.firstKey());
+	    			}
+	    			mDeriv.setDatapoints(res);
+	    			prev = !res.isEmpty() ? dps.get(res.lastKey()) : dps.floorKey(start - 1) == null ? null : dps.floorEntry(start - 1).getValue();
+    			}
+    		} else {
+    			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    				prev = scanner.getNextDP().getValue();
+    			}
+    		}
+    		Map<Long, Double> derivativeDatapoints = new HashMap<>();
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			
+    			derivativeDatapoints.put(dp.getKey(), prev == null ? null : dp.getValue() - prev);
+    			prev = dp.getValue();
+    		}
+    		mDeriv.addDatapoints(derivativeDatapoints);
+    		result.add(mDeriv);
+    	}
+    	return result;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -88,10 +180,30 @@ public class DerivativeTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("This class is deprecated!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("This class is deprecated!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

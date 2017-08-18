@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
+import java.util.Map;
+
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 /**
  * Calculates a metric having the a set of timestamps that is the union of all input metric timestamp values where each timestamp value is the
@@ -56,6 +59,18 @@ public class CountValueUnionReducer implements ValueReducer {
         }
         
         return sum;
+    }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    	Double sum = 0.0;
+    	
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		sum += dp.getValue() == null ? 0.0 : dp.getValue();
+    	}
+    	
+    	return sum;
     }
 
     @Override

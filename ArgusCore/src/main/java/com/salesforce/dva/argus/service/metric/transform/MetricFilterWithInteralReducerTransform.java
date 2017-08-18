@@ -33,9 +33,10 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math.stat.descriptive.moment.Mean;
+import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,6 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Filter transform is used by transform functions which cull the metric based on the result of evaluation against their datapoints.
@@ -87,10 +89,10 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
      */
     public static String internalReducer(Metric metric, String reducerType) {
-        Map<Long, Double> sortedDatapoints = new HashMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(metric.getDatapoints());
-
+        
         List<Double> operands = new ArrayList<Double>();
 
         for (Double value : sortedDatapoints.values()) {
@@ -127,6 +129,115 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
             default:
                 throw new UnsupportedOperationException(reducerType);
         }
+    }
+    
+    /**
+     * Reduces the given metric scanner to a single value based on the specified reducer.
+     * 
+     * @param scanner 		The Metric scanner to reduce.
+     * @param reducerType	The type of reduction to perform.
+     * 
+     * @return The reduced value.
+     * 
+     * @throws UnsupportedOperationException	If an unknown reducer type is specified.
+     */
+    public static String internalReducerScanner(MetricScanner scanner, String reducerType, Map<Long, Double> sortedDatapoints) {
+    	List<Double> operands = new ArrayList<Double>();
+    	
+    	while (scanner.hasNextDP()) {
+    		if (reducerType.equals("name")) {
+    			break;
+    		}
+    		
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		
+    		if (dp.getValue() == null) {
+    			operands.add(0.0);
+    		} else {
+    			operands.add(dp.getValue());
+    		}
+    	}
+    	
+    	InternalReducerType type = InternalReducerType.fromString(reducerType);
+    	
+    	switch(type) {
+	    	case AVG:
+	    		return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
+	    	case MIN:
+	    		return String.valueOf(Collections.min(operands));
+	    	case MAX:
+	    		return String.valueOf(Collections.max(operands));
+	    	case RECENT:
+	    		return String.valueOf(operands.get(operands.size() - 1));
+	    	case MAXIMA:
+	    		return String.valueOf(Collections.max(operands));
+	    	case MINIMA:
+	    		return String.valueOf(Collections.min(operands));
+	    	case NAME:
+	    		return scanner.getMetricName();
+	    	case DEVIATION:
+	    		return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+	    	default:
+	    		throw new UnsupportedOperationException(reducerType);
+    	}
+    }
+    
+    public static String internalReducerPager(MetricScanner scanner, String reducerType) {
+    	List<Double> operands = new ArrayList<Double>();
+    	
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null) {
+    		Map<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		for (Double value : dps.values()) {
+    			if (reducerType.equals("name")) {
+    				break;
+    			}
+    			operands.add(value == null ? 0.0 : value);    			
+    		}
+    	} else if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.firstKey();
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+	    		for (Double value : new TreeMap<>(dps.subMap(startKey, endKey + 1)).values()) {
+	    			if (reducerType.equals("name")) {
+	    				break;
+	    			}
+	    			operands.add(value == null ? 0.0 : value);
+	    		}
+    		}
+    	}
+    	
+    	while (scanner.hasNextDP()) {
+    		if (reducerType.equals("name")) {
+    			break;
+    		}
+    		Double value = scanner.getNextDP().getValue();
+    		operands.add(value == null ? 0.0 : value);
+    	}
+    	
+    	InternalReducerType type = InternalReducerType.fromString(reducerType);
+    	
+    	switch (type) {
+	    	case AVG:
+	    		return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
+    		case MIN:
+    			return String.valueOf(Collections.min(operands));
+    		case MAX:
+    			return String.valueOf(Collections.max(operands));
+    		case RECENT:
+    			return String.valueOf(operands.get(operands.size() - 1));
+    		case MAXIMA:
+    			return String.valueOf(Collections.max(operands));
+    		case MINIMA:
+    			return String.valueOf(Collections.min(operands));
+    		case NAME:
+    			return scanner.getMetricName();
+    		case DEVIATION:
+    			return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
+    		default:
+    			throw new UnsupportedOperationException(reducerType);
+    	}
     }
 
     /**
@@ -172,6 +283,16 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Filter transform need constant input!");
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Filter transform need constant input!");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Filter trnasform need constant input!");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -191,6 +312,45 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 
         return filteredMetricList;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform emtpy metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(!constants.isEmpty(), "Filter Transform must provide at least limit");
+    	if (constants.size() == 1) {
+    		constants.add(InternalReducerType.AVG.reducerName);
+    	}
+    	
+    	String limit = constants.get(0);
+    	String type = constants.get(1);
+    	Map<Metric, String> extendedSortedMap = createExtendedMapScanner(scanners, type);
+    	List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
+    	
+    	return filteredMetricList;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(!constants.isEmpty(), "Filter Transform must provide at least limit");
+    	if (constants.size() == 1) {
+    		constants.add(InternalReducerType.AVG.reducerName);
+    	}
+    	
+    	String limit = constants.get(0);
+    	String type = constants.get(1);
+    	
+    	Map<Metric, String> extendedSortedMap = createExtendedMapPager(scanners, type, start, end);
+    	List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
+    	
+    	return filteredMetricList;
+    }
 
     private Map<Metric, String> createExtendedMap(List<Metric> metrics, String type) {
         Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
@@ -202,10 +362,88 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
         }
         return sortByValue(extendedSortedMap, type);
     }
+    
+    private Map<Metric, String> createExtendedMapScanner(List<MetricScanner> scanners, String type) {
+    	Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> dps = new HashMap<>();
+    		String extendedEvaluation = internalReducerScanner(scanner, type, dps);
+    		if (type.equals("name")) {
+    			buildMetric(scanner);
+    		}
+    		
+    		extendedSortedMap.put(scanner.getMetric(), extendedEvaluation);
+    	}
+    	return sortByValue(extendedSortedMap, type);
+    }
+    
+    private Map<Metric, String> createExtendedMapPager(List<MetricScanner> scanners, String type, Long start, Long end) {
+    	Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		String extendedEvaluation = internalReducerPager(scanner, type);
+    		Metric m = metricRange(scanner, start, end);
+    		extendedSortedMap.put(m, extendedEvaluation);
+    	}
+    	return sortByValue(extendedSortedMap, type);
+    }
+    
+    private Metric metricRange(MetricScanner scanner, Long start, Long end) {
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	Metric m = scanner.getMetric();
+    	m.setDatapoints(new HashMap<>());
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			return m;
+    		}
+    		m.setDatapoints(new HashMap<>());
+    		return m;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			m.setDatapoints(dps.subMap(startKey, endKey));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	Map<Long, Double> extraDps = new HashMap<>();
+    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		extraDps.put(dp.getKey(), dp.getValue());
+    	}
+    	m.addDatapoints(extraDps);
+    	return m;
+    }
+    
+    private void buildMetric(MetricScanner scanner) {
+		while(scanner.hasNextDP()) {
+			scanner.getNextDP();
+		}
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Filter doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("Filter doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Filter doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

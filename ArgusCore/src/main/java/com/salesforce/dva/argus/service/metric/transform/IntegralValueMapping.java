@@ -31,9 +31,13 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.util.TreeMap;
 
 /**
@@ -57,10 +61,74 @@ public class IntegralValueMapping implements ValueMapping {
         }
         return sortedDatapoints;
     }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+		Map<Long, Double> integralDP = new TreeMap<>();
+		Double prevSum = 0.0;
+		
+		while (scanner.hasNextDP()) {
+			Map.Entry<Long, Double> dp = scanner.getNextDP();
+			prevSum += dp.getValue();
+			integralDP.put(dp.getKey(), prevSum);
+		}
+		return integralDP;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	TreeMap<Long, Double> integralDP = new TreeMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	Double lastSum = 0.0;
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		TreeMap<Long, Double> result = new TreeMap<>(mapping(dps.subMap(dps.firstKey(), endKey + 1)));
+    		integralDP.putAll(result.subMap(startKey, endKey + 1));
+    		return integralDP;
+    	} else if (next.getKey() > start || next.getKey() > Collections.min(scanner.getMetric().getDatapoints().keySet())) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (endKey != null) {
+    			TreeMap<Long, Double> result = new TreeMap<>(mapping(dps.subMap(dps.firstKey(), endKey)));
+    			lastSum = result.size() == 0 ? 0.0 : result.lastEntry().getValue();
+	    		if (startKey != null && endKey != null && startKey < endKey) {
+	    			integralDP.putAll(result.subMap(startKey, endKey));
+	    		}
+    		}
+    	}
+    	
+    	while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    		lastSum += scanner.getNextDP().getValue();
+    	}
+    	
+    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		lastSum += dp.getValue();
+    		integralDP.put(dp.getKey(), lastSum);
+    	}
+    	
+    	return integralDP;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+        throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Integral Transform is not supposed to be used with a constant");
     }
 
     @Override

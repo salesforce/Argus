@@ -31,11 +31,13 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Calculates an quotient. If a constant is provided, it is divided into each data point in the set of input metrics, otherwise the data point values
@@ -64,10 +66,39 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return quotient;
     }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    	SystemAssert.requireArgument(scanner.hasNextDP(), "The Metric Scanner must contain a datapoint");
+    	
+    	Double quotient = scanner.getNextDP().getValue();
+    	SystemAssert.requireArgument(quotient != null, "The Metric Scanner must contain a non-null first datapoint.");
+    	
+    	while (scanner.hasNextDP()) {
+    		Double value = scanner.getNextDP().getValue();
+    		
+    		if (value == null) {
+    			continue;
+    		}
+    		SystemAssert.requireArgument(value != 0.0, "This scanner datapoint set has a value of zero!");
+    		quotient /= value;
+    	}
+    	return quotient;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Divide Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Divide Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Divide Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
@@ -92,10 +123,79 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return divideDatapoints;
     }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, "If constants provided for divide transform, only "
+    			+ "exactly one constant allowed.");
+    	
+    	Map<Long, Double> divideDatapoints = new HashMap<>();
+    	
+    	try {
+    		double divisor = Double.parseDouble(constants.get(0));   		
+    		SystemAssert.requireArgument(divisor != 0, "The constant divisor cannot be zero.");
+    		
+       		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			divideDatapoints.put(dp.getKey(), dp.getValue() / divisor);
+    		}
+    	} catch (NumberFormatException nfe) {
+            throw new SystemException("Illegal constant value supplied to divide transform", nfe);
+    	}
+    	return divideDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, "If constants provided for divide transform, only "
+    			+ " exactly one constant allowed.");
+    	
+    	Map<Long, Double> divideDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new HashMap<>();
+    		}
+    		divideDatapoints = mapping(dps.subMap(startKey, endKey + 1), constants);
+    		return divideDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			divideDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	try {
+    		double divisor = Double.parseDouble(constants.get(0));
+    		SystemAssert.requireArgument(divisor != 0.0, "The constant divisor cannot be zero.");
+    		
+    		while(scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			divideDatapoints.put(dp.getKey(), dp.getValue() / divisor);
+    		}
+    	} catch (NumberFormatException nfe) {
+    		throw new SystemException("Illegal constant value supplied to divide transform" , nfe);
+    	}
+       	return divideDatapoints;
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
-        throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used without a constant");
+        throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
+        throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used with a constant");
     }
 
     @Override

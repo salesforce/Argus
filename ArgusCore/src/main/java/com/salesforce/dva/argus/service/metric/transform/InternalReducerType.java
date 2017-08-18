@@ -87,11 +87,10 @@ public enum InternalReducerType {
             }
             
             if(name.matches("^p\\d{1,2}$")) {
-        		return InternalReducerType.PERCENTILE;
-        	}
+            	return InternalReducerType.PERCENTILE;
+            }
         }
-        
-        throw new IllegalArgumentException("Illegal type: " + name + ". Please provide a valid type.");
+        throw new IllegalArgumentException(name);
     }
 
     //~ Methods **************************************************************************************************************************************
