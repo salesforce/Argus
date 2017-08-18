@@ -36,7 +36,10 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
@@ -66,10 +69,15 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("This Transform cannot be used without a constant");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanner) {
         throw new UnsupportedOperationException("This Transform cannot be used without a constant");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("This Transform cannot be used without a constant");
     }
 
     /**
@@ -101,8 +109,8 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         }
         return result;
     }
-  
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Metric Scanners List cannot be null");
         SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
@@ -114,7 +122,7 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         
         if (constants.size() == 1) {
         	result = Arrays.asList(reduceScanner(scanners, constants));
-		    } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+        } else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
         	fulljoinIndicator = true;
         	constants.remove(1);
         	result = Arrays.asList(reduceScanner(scanners, constants));
@@ -123,5 +131,55 @@ public class MetricReducerOrMappingWithConstantTransform extends MetricReducerOr
         }
         return result;
     }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Metric Scanners List cannot be null");
+    	SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "This Transform cannot be used without a constant");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	List<Metric> result = new ArrayList<Metric>();
+    	if (constants.size() == 1) {
+    		Metric m = reduceToPager(scanners, constants, start, end);
+    		if (!m.getDatapoints().isEmpty()) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey != null && endKey != null && startKey <= endKey) {
+    				m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			} else {
+    				m.setDatapoints(new TreeMap<>());
+    			}
+    			result.add(m);
+    		} else {
+    			m.setDatapoints(new TreeMap<>());
+    			result.add(m);
+    		}
+    	} else if (constants.size() == 2 && constants.get(1).toUpperCase().equals(FULLJOIN)) {
+    		fulljoinIndicator = true;
+    		constants.remove(1);
+    		Metric m = reduceToPager(scanners, constants, start, end);
+    		if (!m.getDatapoints().isEmpty()) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey != null && endKey != null && startKey <= endKey) {
+    				m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			} else {
+    				m.setDatapoints(new TreeMap<>());
+    			}
+    			result.add(m);
+    		} else {
+    			m.setDatapoints(new TreeMap<>());
+    			result.add(m);
+    		}
+    	} else if (constants.size() > 1) {
+    		result = mappingToPager(scanners, constants, start, end);
+    	}
+    	return result;
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

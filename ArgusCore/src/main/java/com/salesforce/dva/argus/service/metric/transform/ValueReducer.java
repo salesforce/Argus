@@ -61,7 +61,7 @@ public interface ValueReducer {
 	 * @return The reduced value.
 	 */
 	Double reduceScanner(MetricScanner scanner);
-
+	
     /**
      * Returns the name of the reducer.
      *

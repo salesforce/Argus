@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -102,20 +103,19 @@ public class PropagateTransform implements Transform {
         
         metric.setDatapoints(propagateDatapoints);
     }
-	
+    
     private void _propagateMetricTransformScanner(MetricScanner scanner, long windowSizeInSeconds, List<Metric> result) {
     	Metric m = new Metric(scanner.getMetric());
     	Map.Entry<Long, Double> dp = null;
-	   	if (!scanner.hasNextDP()) {
-	    	result.add(m);
-			return;
+    	if (!scanner.hasNextDP()) {
+    		return;
     	}
-	    	
-	   	dp = scanner.getNextDP();
-	   	if (!scanner.hasNextDP()) {
-	   		result.add(m);
-	   		return;
-	    }
+    	
+    	dp = scanner.getNextDP();
+    	if (!scanner.hasNextDP()) {
+    		result.add(m);
+    		return;
+    	}
     	
     	Map<Long, Double> propagateDatapoints = new TreeMap<>();
     	Map<Long, Double> datapoints = new TreeMap<>();
@@ -126,24 +126,24 @@ public class PropagateTransform implements Transform {
     	Long startTimestamp = timestamps.get(0);
     	int index = 1;
     	
-   		if (!scanner.hasNextDP()) {
-   			result.add(m);
-   			return;
-   		}
-	   	do {
-	   		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
-	    		
-	   		dp = scanner.getNextDP();
-	   		datapoints.put(dp.getKey(), dp.getValue());
-	    	timestamps.add(dp.getKey());
-	    		
-			if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+		if (!scanner.hasNextDP()) {
+			result.add(m);
+			return;
+		}
+    	do {
+    		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
+    		
+    		dp = scanner.getNextDP();
+    		datapoints.put(dp.getKey(), dp.getValue());
+    		timestamps.add(dp.getKey());
+    		
+    		if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
     			startTimestamp = startTimestamp + windowSizeInSeconds * 1000;
-	   		} else {
-	   			startTimestamp = timestamps.get(index);
-	   			index++;
-	   		}
-	    } while (scanner.hasNextDP());
+    		} else {
+    			startTimestamp = timestamps.get(index);
+    			index++;
+    		}
+    	} while (scanner.hasNextDP());
 		propagateDatapoints.put(startTimestamp, datapoints.containsKey(startTimestamp) ? datapoints.get(startTimestamp) : null);
     	
     	int newLength = propagateDatapoints.size();
@@ -166,6 +166,127 @@ public class PropagateTransform implements Transform {
     	
     	m.setDatapoints(propagateDatapoints);
     	result.add(m);
+    }
+    
+    private void _propagateMetricTransformPager(MetricScanner scanner, long windowSizeInSeconds, Long start, Long end, List<Metric> result) {
+    	if ((scanner.getMetric().getDatapoints().isEmpty() || scanner.getMetric().getDatapoints().size() == 1) && !scanner.hasNextDP()) {
+    		result.add(scanner.getMetric());
+    		return;
+    	}
+    	TreeMap<Long, Double> propagateDatapoints = new TreeMap<>();
+    	List<Long> timestamps = new ArrayList<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	int index = 1;
+    	
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		// try to go before the start key to accurately generate those datapoints before it
+    		Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start - 1);
+    		// try to go past the end key to accurately generate those datapoints after it
+    		Long endKey = dps.ceilingKey(end + 1) == null ? dps.floorKey(end) : dps.ceilingKey(end + 1);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			timestamps.addAll(dps.subMap(startKey, endKey + 1).keySet());
+    			Long startTimestamp = timestamps.get(0);
+    			Long endTimestamp = Math.min(end, timestamps.get(timestamps.size() - 1));
+    			while (startTimestamp <= endTimestamp) {
+    				propagateDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
+    				if (index >= timestamps.size()) {
+    					break;
+    				}
+    				if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    					startTimestamp += windowSizeInSeconds * 1000;
+    				} else {
+    					startTimestamp = timestamps.get(index);
+    					index++;
+    				}
+    			}
+    		}
+    	} else {
+    		Long startTimestamp = null;
+    		if (next.getKey() > start) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    			Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start - 1);
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey < endKey) {
+    				timestamps.addAll(dps.subMap(startKey, endKey).keySet());
+    				startTimestamp = timestamps.get(0);
+    				Long endTimestamp = timestamps.get(timestamps.size() - 1);
+    				
+    				while (startTimestamp <= endTimestamp) {
+    					propagateDatapoints.put(startTimestamp, dps.containsKey(startTimestamp) ? dps.get(startTimestamp) : null);
+    					if (index >= timestamps.size()) {
+    						break;
+    					}
+    					if ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    						startTimestamp += windowSizeInSeconds * 1000;
+    					} else {
+    						startTimestamp = timestamps.get(index);
+    						index++;
+    					}
+    				}
+    			}
+    		} else {
+    			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    				scanner.getNextDP();
+    			}
+    		}
+    		
+    		if (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			timestamps.add(dp.getKey());
+    			if (startTimestamp == null) {
+    				startTimestamp = dp.getKey();
+    				propagateDatapoints.put(startTimestamp, dp.getValue());
+    			}
+    			
+    			while (scanner.peek() != null && startTimestamp <= end) {
+    				dp = scanner.getNextDP();
+    				timestamps.add(dp.getKey());
+    				
+    				propagateDatapoints.put(startTimestamp, scanner.getMetric().getDatapoints().containsKey(startTimestamp) ?
+    						scanner.getMetric().getDatapoints().get(startTimestamp) : null);
+    				while ((startTimestamp + windowSizeInSeconds * 1000) < timestamps.get(index)) {
+    					startTimestamp += windowSizeInSeconds * 1000;
+    					propagateDatapoints.put(startTimestamp, null);
+    				}
+    				startTimestamp = timestamps.get(index);
+    				propagateDatapoints.put(startTimestamp, scanner.getMetric().getDatapoints().get(startTimestamp));
+    				index++;
+    			}
+    			
+    			if (scanner.peek() != null) {
+    				// find out how far we should fill up to
+    				timestamps.add(scanner.peek().getKey());
+    			}
+    			
+    			while (startTimestamp + windowSizeInSeconds * 1000 < timestamps.get(timestamps.size() - 1)) {
+    				startTimestamp += windowSizeInSeconds * 1000;
+    				propagateDatapoints.put(startTimestamp, null);
+    			}
+    			startTimestamp = timestamps.get(timestamps.size() - 1);
+    			propagateDatapoints.put(startTimestamp, scanner.getMetric().getDatapoints().get(startTimestamp));
+    		}
+    	}
+    	
+    	List<Long> newTimestamps = new ArrayList<>(propagateDatapoints.keySet());
+    	Double prev = null;
+    	
+    	for (Long time : newTimestamps) {
+    		if (propagateDatapoints.get(time) != null) {
+    			prev = propagateDatapoints.get(time);
+    		} else {
+    			propagateDatapoints.put(time, prev);
+    		}
+	}
+		Long startKey = propagateDatapoints.ceilingKey(start);
+		Long endKey = propagateDatapoints.floorKey(end);
+		Metric m = scanner.getMetric();
+		if (startKey != null && endKey != null && startKey <= endKey) {
+			m.setDatapoints(propagateDatapoints.subMap(startKey, endKey + 1));
+		} else {
+			m.setDatapoints(new TreeMap<>());
+		}
+		result.add(m);
     }
 
     private static long parseTimeIntervalInSeconds(String interval) {
@@ -191,10 +312,15 @@ public class PropagateTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Propagate Transform needs a max window size");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
         throw new UnsupportedOperationException("Propagate Transform needs a max window size");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Propagate Transform needs a max window size");
     }
 
     @Override
@@ -213,8 +339,8 @@ public class PropagateTransform implements Transform {
         }
         return metrics;
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners.");
     	if (scanners.isEmpty()) {
@@ -231,7 +357,25 @@ public class PropagateTransform implements Transform {
     	}
     	return result;
     }
-
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners.");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Propagate Transform needs a max window size");
+    	
+    	String window = constants.get(0);
+    	long windowSizeInSeconds = parseTimeIntervalInSeconds(window);
+    	
+    	List<Metric> result = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {
+    		_propagateMetricTransformPager(scanner, windowSizeInSeconds, start, end, result);
+    	}
+    	return result;
+    }
+    
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.PROPAGATE.name();
@@ -241,10 +385,15 @@ public class PropagateTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Propagate Transform doesn't accept list of metric list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

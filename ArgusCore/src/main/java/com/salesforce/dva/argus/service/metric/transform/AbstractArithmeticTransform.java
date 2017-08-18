@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import java.util.TreeMap;
+
 /**
  * Raj Sarkapally.
  *
@@ -59,7 +61,7 @@ public abstract class AbstractArithmeticTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing arithmetic transformations.");
+    	SystemAssert.requireArgument(metrics != null, "The metrics list cannot be null or empty while performing arithmetic transformations.");
         if (metrics.isEmpty()) {
             return metrics;
         }
@@ -87,7 +89,7 @@ public abstract class AbstractArithmeticTransform implements Transform {
         Collections.addAll(resultMetrics, result);
         return resultMetrics;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
     	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing arithmetic transformations.");
@@ -106,13 +108,14 @@ public abstract class AbstractArithmeticTransform implements Transform {
     	while (scanners.get(0).hasNextDP()) {
     		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
     		List<Double> operands = new ArrayList<>();
+    		operands.add(dp.getValue());
     		
     		try {
     			for (MetricScanner scanner : remainingScanners) {
 	    			if (scanner.hasNextDP()) {
 	    				Map.Entry<Long, Double> nextDP = scanner.getNextDP();
 	    				datapoints.get(remainingScanners.indexOf(scanner)).put(nextDP.getKey(), nextDP.getValue());
-	    			}
+    				}
     				if (datapoints.get(remainingScanners.indexOf(scanner)).containsKey(dp.getKey())) {
     					operands.add(datapoints.get(remainingScanners.indexOf(scanner)).get(dp.getKey())); // add the value associated with this timestamp
     				}
@@ -145,15 +148,79 @@ public abstract class AbstractArithmeticTransform implements Transform {
     		}
     		resultDatapoints.put(dp.getKey(), performOperation(operands));
     	}
-	    
-	for (MetricScanner scanner : remainingScanners) {
-		if (scanner.hasNextDP()) {
-			scanner.dispose();
+    	
+    	for (MetricScanner scanner : remainingScanners) {
+			if (scanner.hasNextDP()) {
+				scanner.dispose();
+			}
 		}
-	}
-	    
+    	
     	result.setDatapoints(resultDatapoints);
     	MetricDistiller.setCommonScannerAttributes(scanners, result); // can still use this here, don't need any datapoints
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	Collections.addAll(resultMetrics, result);
+    	return resultMetrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing arithmetic transformations");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
+    	Map<Long, Double> resultDatapoints = new HashMap<>();
+    	
+    	MetricScanner main = scanners.get(0);
+    	Map.Entry<Long, Double> next = main.peek();
+    	
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(main.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+		    	Map<Long, Double> range = dps.subMap(startKey, endKey + 1);
+		    	for (Long time : range.keySet()) {
+		    		List<Double> operands = getOperandsPager(time, scanners);
+		    		if (operands == null) {
+		    			continue;
+		    		}
+		    		resultDatapoints.put(time, performOperation(operands));
+    			}
+    		}
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(main.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			Map<Long, Double> range = dps.subMap(startKey, endKey);
+    			for (Long time : range.keySet()) {
+    				List<Double> operands = getOperandsPager(time, scanners);
+    				if (operands == null) {
+    					continue;
+    				}
+    				resultDatapoints.put(time, performOperation(operands));
+    			}
+    		}
+    	} else {
+    		while (main.peek() != null && main.peek().getKey() < start) {
+    			main.getNextDP();
+    		}
+    	}
+    	
+    	while (main.peek() != null && main.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> dp = main.getNextDP();
+    		List<Double> operands = getOperandsPager(dp.getKey(), scanners);
+    		if (operands == null) {
+    			continue;
+    		}
+    		resultDatapoints.put(dp.getKey(), performOperation(operands));
+    	}
+
+    	result.setDatapoints(resultDatapoints);
+    	MetricDistiller.setCommonScannerAttributes(scanners, result);
     	
     	List<Metric> resultMetrics = new ArrayList<>();
     	Collections.addAll(resultMetrics, result);
@@ -173,6 +240,34 @@ public abstract class AbstractArithmeticTransform implements Transform {
             operands.add(operand);
         }
         return operands;
+    }
+    
+
+    private List<Double> getOperandsPager(Long time, List<MetricScanner> remainingScanners) {
+    	List<Double> operands = null;
+		try {
+			operands = new ArrayList<>();
+			for (MetricScanner scanner : remainingScanners) {
+				if (scanner.getMetric().getDatapoints().containsKey(time)) {
+					operands.add(scanner.getMetric().getDatapoints().get(time));
+				} else if (scanner.peek() != null && scanner.peek().getKey() > time) {
+					throw new MissingDataException(MessageFormat.format("Data point does not exist for timestamp: {0} for metric {1}", time, scanner.getMetric()));
+				} else {
+					while (scanner.peek() != null && scanner.peek().getKey() < time) {
+						scanner.getNextDP();
+					}
+					Map.Entry<Long, Double> dp = scanner.getNextDP();
+					if (dp.getKey().equals(time)) {
+						operands.add(dp.getValue());
+					} else {
+						throw new MissingDataException(MessageFormat.format("Data point does not exist for timestamp: {0} for metric {1}", time, scanner.getMetric()));
+					}
+				}
+			}
+		} catch (MissingDataException mde) {
+			return null;
+		}
+		return operands;
     }
 
     /**

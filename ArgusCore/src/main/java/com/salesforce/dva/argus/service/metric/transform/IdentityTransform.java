@@ -36,7 +36,10 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Identity transform for a time series metric.
@@ -52,28 +55,75 @@ public class IdentityTransform implements Transform {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         return metrics;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
         SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
         List<Metric> metrics = new ArrayList<>();
         for (MetricScanner scanner : scanners) {   
-	       	while (scanner.hasNextDP()) {
-	       		scanner.getNextDP();
-	        }
+        	while (scanner.hasNextDP()) {
+        		scanner.getNextDP();
+        	}
         	metrics.add(scanner.getMetric());
         }
         return metrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    	
+    	List<Metric> metrics = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {
+    		Map.Entry<Long, Double> next = scanner.peek();
+    		Map<Long, Double> res = new HashMap<>();
+    		Metric m = scanner.getMetric();
+    		if (next == null || next.getKey() > end) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey == null || endKey == null || startKey > endKey) {
+    				m.setDatapoints(new TreeMap<>());
+    				metrics.add(m);
+    				continue;
+    			}
+    			res = dps.subMap(startKey, endKey + 1);
+    		} else if (next.getKey() > start) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey < endKey) {
+    				res.putAll(dps.subMap(startKey, endKey));
+    			}
+    		} else {
+    			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    				scanner.getNextDP();
+    			}
+    		}
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			res.put(dp.getKey(), dp.getValue());
+    		}
+			m.setDatapoints(res);
+			metrics.add(m);
+    	}
+    	return metrics;
     }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
     }
-	
+    
     @Override
-    public List<Metric> transformScanner(List<MetricScanner> metrics, List<String> constants) {
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
         throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");
     }
 
     @Override
@@ -85,10 +135,15 @@ public class IdentityTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("This class is deprecated!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -48,22 +48,22 @@ public class MinValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
-    	if(values == null || values.isEmpty()) {
-    		return null;
-    	}
-    	
-    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
-    	if(stream.allMatch(o -> o == null)) {
-    		stream.close();
-    		return null;
-    	}
-    	stream.close();
+	    	if(values == null || values.isEmpty()) {
+	    		return null;
+	    	}
+	    	
+	    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+	    	if(stream.allMatch(o -> o == null)) {
+	    		stream.close();
+	    		return null;
+	    	}
+	    	stream.close();
     	
         double min = Double.MAX_VALUE;
         for (Double value : values) {
-        	if(value == null) {
-        		continue;
-        	}
+	        	if(value == null) {
+	        		continue;
+	        	}
         	
             double candidate = value;
             if (candidate < min) {
@@ -72,8 +72,8 @@ public class MinValueReducer implements ValueReducer {
         }
         return min;
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner) {
     		if (scanner == null || !scanner.hasNextDP()) {
     			return null;
@@ -82,17 +82,17 @@ public class MinValueReducer implements ValueReducer {
     		double min = Double.MAX_VALUE;
     		boolean unchanged = true;
     	
-	    	while (scanner.hasNextDP()) {
-	    		Double value = scanner.getNextDP().getValue();
-	    		if (value == null) {
-					continue;
+    		while (scanner.hasNextDP()) {
+    			Double value = scanner.getNextDP().getValue();
+    			if (value == null) {
+    				continue;
     			}
-	   			double candidate = value;
-	   			if (unchanged || candidate < min) {
-	   				min = candidate;
-	   				unchanged = false;
-	    		}
-	    	}
+    			double candidate = value;
+    			if (unchanged || candidate < min) {
+    				min = candidate;
+    				unchanged = false;
+    			}
+    		}
     		return !unchanged ? min : null;
     }
 

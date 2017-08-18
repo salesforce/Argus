@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * This class transforms a list of metrics in a mapping way, which means apply the same function to every metric. More specifically, an interface
@@ -76,11 +77,17 @@ public class MetricZipperTransform implements Transform {
         SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
         return transform(metrics);
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
         return transformScanner(scanners);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
+    	return transformScanner(scanners);
     }
 
     @Override
@@ -93,8 +100,8 @@ public class MetricZipperTransform implements Transform {
             "Cannot transform without a base metric as second param!");
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
     	if (scanners.isEmpty()) {
@@ -103,6 +110,17 @@ public class MetricZipperTransform implements Transform {
     	SystemAssert.requireArgument(scanners.size() >= 2 && scanners.get(scanners.size() - 1) != null,
     	            "Cannot transform without a base metric scanner as second param!");
     	return zipScanner(scanners.subList(0, scanners.size() - 1), scanners.get(scanners.size() - 1));
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	SystemAssert.requireArgument(scanners.size() >= 2 && scanners.get(scanners.size() - 1) != null,
+    			"Cannot transform without a base metric scanner as second param!");
+    	return zipToPager(scanners.subList(0, scanners.size() - 1), scanners.get(scanners.size() - 1), start, end);
     }
 
     /**
@@ -122,38 +140,105 @@ public class MetricZipperTransform implements Transform {
         for (Metric metric : metrics) {
             Map<Long, Double> originalDatapoints = metric.getDatapoints();
             Map<Long, Double> zippedDatadpoints = this.zip(originalDatapoints, baseDatapoints);
-
+            
             metric.setDatapoints(zippedDatadpoints);
             zippedMetrics.add(metric);
         }
         return zippedMetrics;
     }
-	
+    
     public List<Metric> zipScanner(List<MetricScanner> scanners, MetricScanner baseScanner) {
     	SystemAssert.requireArgument(baseScanner != null, "Zipper transform requires a base metric scanner as second param!");
     	
     	List<Metric> zippedMetrics = new ArrayList<Metric>();
     	Map<Long, Double> baseDatapoints = new HashMap<>();
-	   	while (baseScanner.hasNextDP()) {
-	   		Map.Entry<Long, Double> dp = baseScanner.getNextDP();
-	   		baseDatapoints.put(dp.getKey(), dp.getValue());
-	    }
+    	while (baseScanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = baseScanner.getNextDP();
+    		baseDatapoints.put(dp.getKey(), dp.getValue());
+    	}
     	
      	for (MetricScanner scanner : scanners) {
-			Map<Long, Double> zippedDP = new HashMap<>();
+        	Map<Long, Double> zippedDP = new HashMap<>();
      		while (scanner.hasNextDP()) {
-	   			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
-	     			
-	   			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
-	    			
-	     		zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
-	     	}
-     		
+     			Map.Entry<Long, Double> originalDP = scanner.getNextDP();
+     				     			
+     			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
+     			zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
+     		}
+     		     		
      		Metric m = new Metric(scanner.getMetric());
      		m.setDatapoints(zippedDP);
      		zippedMetrics.add(m);
     	}
      	return zippedMetrics;
+    }
+    
+    private Double calculateBaseVal(Long time, MetricScanner baseScanner) {
+		Double baseVal = null;
+		if (baseScanner.peek() == null || baseScanner.peek().getKey() > time) {
+			if (baseScanner.getMetric().getDatapoints().containsKey(time)) {
+				baseVal = baseScanner.getMetric().getDatapoints().get(time);
+			}
+		} else {
+			while (baseScanner.peek() != null && baseScanner.peek().getKey() < time) {
+				baseScanner.getNextDP();
+			}
+			if (baseScanner.peek() != null) {
+				Map.Entry<Long, Double> dp = baseScanner.getNextDP();
+				if (dp.getKey().equals(time)) {
+					baseVal = dp.getValue();
+				}
+			}
+		}
+		return baseVal;
+    }
+    
+    public List<Metric> zipToPager(List<MetricScanner> scanners, MetricScanner baseScanner, Long start, Long end) {
+    	SystemAssert.requireArgument(baseScanner != null, "Zipper transform requires a base metric scanner as second param!");
+    	
+    	List<Metric> zippedMetrics = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> zippedDP = new HashMap<>();
+    		
+    		Map.Entry<Long, Double> next = scanner.peek();
+    		if (next == null || next.getKey() > end) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey != null && endKey != null && startKey <= endKey) {
+    				for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey + 1).entrySet()) {
+    					Double baseVal = calculateBaseVal(entry.getKey(), baseScanner);
+    					zippedDP.put(entry.getKey(), this.valueZipper.zip(entry.getValue(), baseVal));
+    				}
+    			}
+    		} else if (next.getKey() > start) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey < endKey) {
+    				for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey).entrySet()) {
+    					Double baseVal = calculateBaseVal(entry.getKey(), baseScanner);
+    					zippedDP.put(entry.getKey(), this.valueZipper.zip(entry.getValue(), baseVal));
+    				}
+    			}
+    		} else {
+    			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    				scanner.getNextDP();
+    			}
+    		}
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			Double baseVal = calculateBaseVal(dp.getKey(), baseScanner);
+    			zippedDP.put(dp.getKey(), this.valueZipper.zip(dp.getValue(), baseVal));
+    		}
+    		
+			Metric m = new Metric(scanner.getMetric());
+			m.setDatapoints(zippedDP);
+			zippedMetrics.add(m);
+    	}
+    	return zippedMetrics;
     }
 
     /**
@@ -176,7 +261,6 @@ public class MetricZipperTransform implements Transform {
 
             // if base datapoints doesn't have the key, give it null
             Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
-
             zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
         }
         return zippedDP;
@@ -186,10 +270,15 @@ public class MetricZipperTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Zipper doesn't need list of list!");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Zipper doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Zipper doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

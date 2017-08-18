@@ -49,15 +49,15 @@ public class UnionValueUnionReducer implements ValueReducer {
     public Double reduce(List<Double> values) {
         return values.get(0);
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner) {
-	   	SystemAssert.requireArgument(scanner.hasNextDP(), "Cannot reduce an empty scanner");
-	   	Double val = scanner.getNextDP().getValue();
-	   	scanner.dispose();
-	    return val;
+    	SystemAssert.requireArgument(scanner.hasNextDP(), "Cannot reduce an empty scanner");
+    	Double val = scanner.getNextDP().getValue();
+    	scanner.dispose();
+    	return val;
     }
-
+ 
     @Override
     public String name() {
         return TransformFactory.Function.UNION.name();

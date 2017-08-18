@@ -48,16 +48,16 @@ public class MaxValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
-    	if(values == null || values.isEmpty()) {
-    		return null;
-    	}
-    	
-    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
-    	if(stream.allMatch(o -> o == null)) {
-    		stream.close();
-    		return null;
-    	}
-    	stream.close();
+	    	if(values == null || values.isEmpty()) {
+	    		return null;
+	    	}
+	    	
+	    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+	    	if(stream.allMatch(o -> o == null)) {
+	    		stream.close();
+	    		return null;
+	    	}
+	    	stream.close();
     	
         double max = Double.NEGATIVE_INFINITY;
         for (Double value : values) {
@@ -72,7 +72,7 @@ public class MaxValueReducer implements ValueReducer {
         }
         return max;
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner) {
     		if (scanner == null || !scanner.hasNextDP()) {
@@ -83,17 +83,17 @@ public class MaxValueReducer implements ValueReducer {
     		boolean unchanged = true;
     		
     		while (scanner.hasNextDP()) {
-	    		Double value = scanner.getNextDP().getValue();
-	    		if (value == null) {
-					continue;
+    			Double value = scanner.getNextDP().getValue();
+    			if (value == null) {
+    				continue;
     			}
-	   			double candidate = value;
-	   			if (unchanged || candidate > max) {
-	   				unchanged = false;
-	   				max = candidate;
-	    		}
+    			double candidate = value;
+    			if (unchanged || candidate > max) {
+    				unchanged = false;
+    				max = candidate;
+    			}
 	    	}
-    	return !unchanged ? max : null;
+    		return !unchanged ? max : null;
     }
 
     @Override

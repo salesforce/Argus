@@ -47,7 +47,7 @@ public class AverageValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
-		SystemAssert.requireArgument(values.size() != 0, "There must be values to reduce.");
+    	SystemAssert.requireArgument(values.size() != 0, "There must be values to reduce.");
         Double sum = 0.0;
 
         for (Double value : values) {
@@ -58,24 +58,24 @@ public class AverageValueReducer implements ValueReducer {
         }
         return (sum / values.size());
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner) {
-			SystemAssert.requireArgument(scanner.hasNextDP(), "There must be datapoints to reduce.");
+    	SystemAssert.requireArgument(scanner.hasNextDP(), "There must be datapoints to reduce.");
     		Double sum = 0.0;
     		int dpCount = 0;
     		
     		while (scanner.hasNextDP()) {
-	   			dpCount++;
-	   			Double val = scanner.getNextDP().getValue();
-	   			if (val != null) {
-	   				sum += val;
-	    		}
-	    	}
+    			dpCount++;
+    			Double val = scanner.getNextDP().getValue();
+    			if (val != null) {
+    				sum += val;
+    			}
+    		}
     		
     		return (sum / dpCount);
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.AVERAGE.name();

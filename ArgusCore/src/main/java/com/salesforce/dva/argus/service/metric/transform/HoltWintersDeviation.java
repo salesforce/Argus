@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,17 +67,22 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
     }
 
     //~ Methods **************************************************************************************************************************************
-
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         // TODO Auto-generated method stub
         return null;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanner) {
     		// TODO Auto-generated method stub
     		return null;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	// TODO Auto-generated method stub
+    	return null;
     }
 
     @Override
@@ -105,13 +111,13 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
                     break;
                 }
             }
-
+           
             Map<Long, Double> bootstrappedDps = new TreeMap<>(metric.getDatapoints());
-
+            
             if (oneWeekBeforeMetric != null) {
                 bootstrappedDps.putAll(oneWeekBeforeMetric.getDatapoints());
             }
-
+            
             Metric resultMetric = new Metric(metric);
 
             resultMetric.setDatapoints(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
@@ -120,55 +126,128 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
         }
         return result;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
-	    	SystemAssert.requireArgument(scanners != null, "Metric scanners list cannot be null");
-	    	SystemAssert.requireArgument(constants != null && constants.size() == 4, "Constants List cannot be null and its size must be equal to 4.");
-	    	
-	    	double alpha = Double.parseDouble(constants.get(0));
-	    	double beta = Double.parseDouble(constants.get(1));
-	    	double gamma = Double.parseDouble(constants.get(2));
-	    	int seasonLength = Integer.parseInt(constants.get(3));
-	    	List<Metric> result = new ArrayList<>(scanners.size());
-	    	
-	    	for (MetricScanner scanner : scanners) {
-	    		MetricQuery oneWeekBeforeQuery = new MetricQuery(scanner.getQuery());
-	    		
-	    		oneWeekBeforeQuery.setEndTimestamp(oneWeekBeforeQuery.getStartTimestamp());
-	    		oneWeekBeforeQuery.setStartTimestamp(oneWeekBeforeQuery.getStartTimestamp() - ONE_WEEK_IN_MILLIS);
-	    		
-	    		List<MetricScanner> scannersList  = _tsdbService.getMetricScanners(Arrays.asList(new MetricQuery[] { oneWeekBeforeQuery })).get(oneWeekBeforeQuery);
-	    		MetricScanner oneWeekBeforeScanner = null;
-	    		
-	    		for (MetricScanner s : scannersList) {
-	    			if (scanner.getMetric().equals(s.getMetric())) {
-	    				oneWeekBeforeScanner = s;
-	    				break;
-	    			}
-	    		}
-	    		
-	    		Map<Long, Double> bootstrappedDps = new TreeMap<>();
-	    		
-		   		while (scanner.hasNextDP()) {
-		   			Map.Entry<Long, Double> dp = scanner.getNextDP();
-		    		bootstrappedDps.put(dp.getKey(), dp.getValue());
-		    	}
-	    		
-	    		if (oneWeekBeforeScanner != null) {
-		   			while (oneWeekBeforeScanner.hasNextDP()) {
-		    			Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
-		    			bootstrappedDps.put(dp.getKey(), dp.getValue());
-		    		}
-	    		}
-	    		
-	    		Metric resultMetric = new Metric(scanner.getMetric());
-	    		
-	    		resultMetric.setDatapoints(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
-	    				scanner.getQuery().getStartTimestamp().longValue()).getDeviationDatapoints());
-	    		result.add(resultMetric);
-	    	}
-	    	return result;
+    	SystemAssert.requireArgument(scanners != null, "Metric scanners list cannot be null");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 4, 
+    			"Constants List cannot be null and its size must be equal to 4.");
+    	
+    	double alpha = Double.parseDouble(constants.get(0));
+    	double beta = Double.parseDouble(constants.get(1));
+    	double gamma = Double.parseDouble(constants.get(2));
+    	int seasonLength = Integer.parseInt(constants.get(3));
+    	List<Metric> result = new ArrayList<>(scanners.size());
+    	
+    	for (MetricScanner scanner : scanners) {
+    		MetricQuery oneWeekBeforeQuery = new MetricQuery(scanner.getQuery());
+    		
+    		oneWeekBeforeQuery.setEndTimestamp(oneWeekBeforeQuery.getStartTimestamp());
+    		oneWeekBeforeQuery.setStartTimestamp(oneWeekBeforeQuery.getStartTimestamp() - ONE_WEEK_IN_MILLIS);
+    		
+    		List<MetricScanner> scannersList  = _tsdbService.getMetricScanners(Arrays.asList(new MetricQuery[] { oneWeekBeforeQuery })).get(oneWeekBeforeQuery);
+    		MetricScanner oneWeekBeforeScanner = null;
+    		
+    		for (MetricScanner s : scannersList) {
+    			if (scanner.getMetric().equals(s.getMetric())) {
+    				oneWeekBeforeScanner = s;
+    				break;
+    			}
+    		}
+    		
+    		Map<Long, Double> bootstrappedDps = new TreeMap<>();
+    		
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			bootstrappedDps.put(dp.getKey(), dp.getValue());
+    		}
+    			    		
+    		if (oneWeekBeforeScanner != null) {
+    			while (oneWeekBeforeScanner.hasNextDP()) {
+    				Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
+    				bootstrappedDps.put(dp.getKey(), dp.getValue());
+    			}
+    		}
+    			    		
+    		Metric resultMetric = new Metric(scanner.getMetric());
+    		
+    		resultMetric.setDatapoints(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
+    				scanner.getQuery().getStartTimestamp().longValue()).getDeviationDatapoints());
+    		result.add(resultMetric);
+    	}
+    	return result;
+    }
+    
+    private Map<Long, Double> addDatapointsToMap(Map<Long, Double> bootstrappedDps, MetricScanner scanner, Long start, Long end) {
+    	Map.Entry<Long, Double> next = scanner.peek();
+		if (next == null) {
+			bootstrappedDps.putAll(scanner.getMetric().getDatapoints());
+		} else if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+			Long startKey = dps.firstKey();
+			Long endKey = dps.ceilingKey(next.getKey());
+			if (startKey != null && endKey != null && startKey < endKey) {
+				bootstrappedDps.putAll(dps.subMap(startKey, endKey));
+			}
+		} else {
+			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				bootstrappedDps.put(dp.getKey(), dp.getValue());
+			}
+		}
+		
+		while (scanner.hasNextDP()) {
+			Map.Entry<Long, Double> dp = scanner.getNextDP();
+			bootstrappedDps.put(dp.getKey(), dp.getValue());
+		}
+		return bootstrappedDps;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Metric scanners list cannot be null");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 4, 
+    			"Constants List cannot be null and its size must be equal to 4.");
+    	
+    	double alpha = Double.parseDouble(constants.get(0));
+    	double beta = Double.parseDouble(constants.get(1));
+    	double gamma = Double.parseDouble(constants.get(2));
+    	int seasonLength = Integer.parseInt(constants.get(3));
+    	List<Metric> result = new ArrayList<>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		MetricQuery oneWeekBeforeQuery = new MetricQuery(scanner.getQuery());
+    		
+    		oneWeekBeforeQuery.setEndTimestamp(oneWeekBeforeQuery.getStartTimestamp());
+    		oneWeekBeforeQuery.setStartTimestamp(oneWeekBeforeQuery.getStartTimestamp() - ONE_WEEK_IN_MILLIS);
+    		
+    		List<MetricScanner> scannersList = _tsdbService.getMetricScanners(Arrays.asList(new MetricQuery[] { oneWeekBeforeQuery })).get(oneWeekBeforeQuery);
+    		MetricScanner oneWeekBeforeScanner = null;
+    		for (MetricScanner s : scannersList) {
+    			if (scanner.getMetric().equals(s.getMetric())) {
+    				oneWeekBeforeScanner = s;
+    				break;
+    			}
+    		}
+    		
+    		Map<Long, Double> bootstrappedDps = addDatapointsToMap(new TreeMap<>(), scanner, start, end);
+    		if (oneWeekBeforeScanner != null) {
+    			bootstrappedDps = addDatapointsToMap(bootstrappedDps, oneWeekBeforeScanner, start, end);
+    		}
+    		
+    		TreeMap<Long, Double> res = new TreeMap<>(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
+    				scanner.getQuery().getStartTimestamp().longValue()).getDeviationDatapoints());
+    		Long startKey = res.ceilingKey(start);
+    		Long endKey = res.floorKey(end);
+			Metric resultMetric = new Metric(scanner.getMetric());
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			resultMetric.setDatapoints(res.subMap(startKey, endKey + 1));
+    		} else {
+    			resultMetric.setDatapoints(new TreeMap<>());
+    		}
+    		result.add(resultMetric);
+    	}
+    	return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -177,12 +256,18 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
         // TODO Auto-generated method stub
         return null;
     }
-	
+    
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
-    		// TODO Auto-generated method stub
-    		return null;
+		// TODO Auto-generated method stub
+		return null;
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	// TODO Auto-generated method stub
+    	return null;
     }
 
     @Override

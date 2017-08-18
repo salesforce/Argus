@@ -69,8 +69,8 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     public Double reduce(List<Double> values) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
@@ -80,8 +80,8 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         parseConstants(constants);
         return _calculateNthPercentile(values, percentile);
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner, List<String> constants) {
     	parseConstants(constants);
     	return _calculateNthPercentileScanner(scanner, percentile);
@@ -120,10 +120,15 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
@@ -131,11 +136,45 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         parseConstants(constants);
         return _calculateNthPercentileForOneMetric(originalDatapoints, percentile, getWindowInSeconds(windowSize));
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
     	parseConstants(constants);
     	return _calculateNthPercentileForOneMetricScanner(scanner, percentile, getWindowInSeconds(windowSize));
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	parseConstants(constants);
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	TreeMap<Long, Double> res = new TreeMap<>();
+    	if (next != null && next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		/* not explored at all */
+    		res = new TreeMap<>(mappingScanner(scanner, constants));
+    	} else {
+    		Long extraTime = null;
+    		try {
+    			extraTime = Long.parseLong(windowSize);
+    		} catch (Exception ex) {
+    			;
+    		}
+    		if (next == null || (extraTime == null ? next.getKey() > end : next.getKey() > end + extraTime)) {
+    			/* sufficiently explored to do all metric */
+    			res = new TreeMap<>(mapping(scanner.getMetric().getDatapoints(), constants));
+    		} else {
+    			/* need to process some more of the scanner */
+    			while (scanner.peek() != null && (extraTime == null ? scanner.peek().getKey() > end : scanner.peek().getKey() > end + extraTime)) {
+    				scanner.getNextDP();
+    			}
+    			res = new TreeMap<>(mapping(scanner.getMetric().getDatapoints(), constants));
+    		}
+    	}
+    	Long startKey = res.ceilingKey(start);
+		Long endKey = res.floorKey(end);
+		if (startKey == null || endKey == null || startKey > endKey) {
+			return new TreeMap<>();
+		}
+		return res.subMap(startKey, endKey + 1);
     }
 
     @Override
@@ -145,6 +184,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
 
     private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue,
         long windowInSeconds) {
+    	
         Map<Long, Double> percentileDatapoints = new TreeMap<>();
 
         for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
@@ -152,10 +192,11 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
                 entry.setValue(0.0);
             }
         }
-
+               
         Long[] timestamps = new Long[originalDatapoints.size()];
-
+        
         originalDatapoints.keySet().toArray(timestamps);
+        
 
         // TreeSet allowing duplicate elements.
         TreeMultiset<Double> values = TreeMultiset.create(new Comparator<Double>() {
@@ -174,7 +215,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         }
 
         Long firstTimestamp = timestamps[0];
-
+        
         for (int head = 1, tail = 0; head < timestamps.length; head++) {
             // When moving window, maintain a invariant that timestamps[head] - timestamps[end] < windowSize
             // if timestamps[head] - timestamps[end] == windowSize, some points need to be kicked off
@@ -204,20 +245,20 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         _logger.debug("Time to calculate percentile = " + (System.currentTimeMillis() - start) + "ms");
         return percentileDatapoints;
     }
-	
-	private Map<Long, Double> _calculateNthPercentileForOneMetricScanner(MetricScanner scanner, Double percentileValue, long windowInSeconds) {
+    
+    private Map<Long, Double> _calculateNthPercentileForOneMetricScanner(MetricScanner scanner, Double percentileValue, long windowInSeconds) {
     	Map<Long, Double> percentileDatapoints = new TreeMap<>();
     	Map<Long, Double> originalDatapoints = new TreeMap<>();
     	List<Long> times = new ArrayList<>();
     	
-	    while(scanner.hasNextDP()) {
-			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    	while(scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
     		if (dp.getValue() == null) {
-	   			dp.setValue(0.0);
-	   		}
-	   		originalDatapoints.put(dp.getKey(), dp.getValue());
-	   		times.add(dp.getKey());
-	    }
+    			dp.setValue(0.0);
+    		}
+    		originalDatapoints.put(dp.getKey(), dp.getValue());
+    		times.add(dp.getKey());
+    	}
     	    	
     	Long[] timestamps = new Long[times.size()];
     	times.toArray(timestamps);
@@ -275,12 +316,12 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
 
         return values.get(ordinalRank - 1);
     }
-	
-	private Double _calculateNthPercentileScanner(MetricScanner scanner, Double percentileValue) {
+    
+    private Double _calculateNthPercentileScanner(MetricScanner scanner, Double percentileValue) {
     	List<Double> values = new ArrayList<>();
-	   	while (scanner.hasNextDP()) {
-	   		values.add(scanner.getNextDP().getValue());
-	    }
+    	while (scanner.hasNextDP()) {
+    		values.add(scanner.getNextDP().getValue());
+    	}
     	Collections.sort(values);
     	
     	int ordinalRank = (int) Math.ceil(percentileValue * values.size() / 100.0);

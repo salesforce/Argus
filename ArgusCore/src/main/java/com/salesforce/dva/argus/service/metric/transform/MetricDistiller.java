@@ -71,7 +71,7 @@ public class MetricDistiller {
         result.setUnits(distiller.getUnits());
         result.setTags(distiller.getTags());
     }
-	
+    
     public static void setCommonScannerAttributes(List<MetricScanner> scanners, Metric result) {
     		MetricDistiller distiller = new MetricDistiller();
     		
@@ -80,7 +80,7 @@ public class MetricDistiller {
     		result.setUnits(distiller.getUnits());
     		result.setTags(distiller.getTags());
     }
-
+    
     //~ Methods **************************************************************************************************************************************
 
     /**
@@ -93,7 +93,7 @@ public class MetricDistiller {
             distill(m);
         }
     }
-	
+    
     public void distillScanner(List<MetricScanner> scanners) {
     		for (MetricScanner ms : scanners) {
     			distill(ms.getMetric());

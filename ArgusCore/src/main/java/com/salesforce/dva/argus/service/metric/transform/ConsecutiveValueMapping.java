@@ -64,8 +64,8 @@ public class ConsecutiveValueMapping implements ValueMapping {
      *	
      * @return	resultMetric	A new time series that has been transformed.
      */
-    @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+	@Override
+	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
 		SystemAssert.requireArgument(constants != null, "This transform needs constants");
         SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");    
         
@@ -78,7 +78,7 @@ public class ConsecutiveValueMapping implements ValueMapping {
 		keyList.addAll(originalDatapoints.keySet());
 		Collections.sort(keyList);
 		
-		if (keyList.size() > 0){
+		if (keyList.size() > 1){
 			connect(0, new ArrayList<>(Arrays.asList(keyList.get(0))));
 		}
 		
@@ -86,10 +86,10 @@ public class ConsecutiveValueMapping implements ValueMapping {
 			resultMetric.put(resultKey, originalDatapoints.get(resultKey));
 		}
 		return resultMetric;
-    }
+	}
 	
-    @Override
-    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+	@Override
+	public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
 		SystemAssert.requireArgument(constants != null, "This transform needs constants");
         SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");
         
@@ -109,9 +109,123 @@ public class ConsecutiveValueMapping implements ValueMapping {
         	resultMetric.put(resultKey, dps.get(resultKey));
         }
         return resultMetric;
-    }
+	}
 	
-	private Object connect(int current, ArrayList<Long> carryList){		
+	@Override
+	public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+		SystemAssert.requireArgument(constants != null, "This transform needs constants");
+		SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");
+		
+		this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
+		this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
+		this.keyList = new ArrayList<>();
+		this.resultKeyList = new ArrayList<>();
+		
+		Map.Entry<Long, Double> next = scanner.peek();
+		if (next == null || next.getKey() > end + connectDistance) {
+			/* all metric */
+			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+			Long startKey = dps.ceilingKey(start - Math.max(connectDistance, threshold));
+			Long endKey = dps.floorKey(end + Math.max(connectDistance, threshold));
+			if (startKey == null || endKey == null || startKey > endKey) {
+				return new HashMap<>();
+			}
+			this.keyList = new ArrayList<>(dps.subMap(startKey, endKey + 1).keySet());
+			Collections.sort(keyList);
+			this.resultKeyList = new ArrayList<>();
+			if (keyList.size() >= 2) {
+				connect(0, new ArrayList<>(Arrays.asList(keyList.get(0))));
+			}
+		} else {
+			List<Long> carryList = new ArrayList<>();
+			if (next.getKey() > Collections.min(scanner.getMetric().getDatapoints().keySet())) {
+				/* some metric */
+				TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+				Long startKey = dps.ceilingKey(start - connectDistance);
+				Long endKey = dps.floorKey(next.getKey());
+				if (startKey != null && endKey != null && startKey < endKey) {
+					this.keyList = new ArrayList<>(dps.subMap(startKey, endKey).keySet());
+					Collections.sort(keyList);
+					this.resultKeyList = new ArrayList<>();
+					carryList = new ArrayList<>(Arrays.asList(keyList.get(0)));
+					
+					for (int i = 0; i < keyList.size() - 1; i++) {
+						if (keyList.get(i + 1) - keyList.get(i) <= connectDistance) {
+							carryList.add(keyList.get(i + 1));
+							if (i != keyList.size() - 2) {
+								continue;
+							}
+						}
+						if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+							resultKeyList.addAll(carryList);
+						}
+						if (i != keyList.size() - 2) {
+							carryList = new ArrayList<>(Arrays.asList(keyList.get(i + 1)));
+						}
+					}
+				}
+			} else {
+				while (scanner.peek() != null && scanner.peek().getKey() < start - connectDistance) {
+					scanner.getNextDP();
+				}
+			}
+			
+			if (next != null && next.getKey() <= end + Math.max(connectDistance, threshold)) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				keyList.add(dp.getKey());
+				Collections.sort(keyList);
+				if (!carryList.isEmpty() && dp.getKey() - carryList.get(carryList.size() - 1) <= connectDistance) {
+					carryList.add(dp.getKey());
+					if ((scanner.peek() == null || scanner.peek().getKey() > end + connectDistance) &&
+							carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+						resultKeyList.addAll(carryList);
+					}
+				} else {
+					carryList = new ArrayList<>(Arrays.asList(dp.getKey()));
+				}
+				int current = carryList.size() - 1;
+				Collections.sort(keyList);
+				while (scanner.peek() != null && scanner.peek().getKey() <= end + Math.max(connectDistance, threshold)) {
+					dp = scanner.getNextDP();
+					keyList.add(dp.getKey());
+					if (scanner.peek() == null || scanner.peek().getKey() > end + connectDistance) {
+						// are on the last point
+						if (dp.getKey() - keyList.get(current) <= connectDistance) {
+							carryList.add(dp.getKey());
+						}
+						if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+							resultKeyList.addAll(carryList);
+						}
+					} else {
+						if (dp.getKey() - keyList.get(current) <= connectDistance) {
+							carryList.add(dp.getKey());
+							current++;
+							continue;
+						}
+						if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
+							resultKeyList.addAll(carryList);
+						}
+						current++;
+						carryList = new ArrayList<>(Arrays.asList(dp.getKey()));
+					}
+				}
+			}
+		}
+		/* down here, should have updated keyList and resultKeyList */
+		TreeMap<Long, Double> result = new TreeMap<>();
+		Map<Long, Double> original = scanner.getMetric().getDatapoints();
+		for (Long key : resultKeyList) {
+			result.put(key, original.get(key));
+		}
+		Long sKey = result.ceilingKey(start);
+		Long eKey = result.floorKey(end);
+		if (sKey == null || eKey == null || sKey > eKey) {
+			return new HashMap<>();
+		}
+		return result.subMap(sKey, eKey + 1);
+	}
+	
+	private Object connect(int current, ArrayList<Long> carryList){	
 		if (current + 2 == keyList.size()){
 			if (keyList.get(current + 1) - keyList.get(current) <= connectDistance){
 				carryList.add(keyList.get(current + 1));
@@ -129,7 +243,7 @@ public class ConsecutiveValueMapping implements ValueMapping {
 		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold){
 			resultKeyList.addAll(carryList);
 		}
-		return connect(current+1, new ArrayList<>(Arrays.asList(keyList.get(current+1)))); 
+		return connect(current + 1, new ArrayList<>(Arrays.asList(keyList.get(current+1)))); 
 	}
 	
 	private void connectScanner(MetricScanner scanner, Map<Long, Double> dps) {    	
@@ -141,20 +255,20 @@ public class ConsecutiveValueMapping implements ValueMapping {
     	int current = 0;
     	
     	while (scanner.hasNextDP()) {	// know that we then have a datapoint at current + 1
-	   		dp = scanner.getNextDP();
-	   		this.keyList.add(dp.getKey());
-	   		dps.put(dp.getKey(), dp.getValue());
-	    		
-	   		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance) {
-	    		carryList.add(keyList.get(current + 1));
-			}
+    		dp = scanner.getNextDP();
+    		this.keyList.add(dp.getKey());
+    		dps.put(dp.getKey(), dp.getValue());
+    		
+    		if (keyList.get(current + 1) - keyList.get(current) <= connectDistance) {
+    			carryList.add(keyList.get(current + 1));
+    		}
     		if (carryList.size() > 0 && Collections.max(carryList) - Collections.min(carryList) >= threshold) {
-	   			resultKeyList.addAll(carryList);
-	   		}
-	    		
-	   		current += 1;
-	   		carryList = new ArrayList<>(Arrays.asList(keyList.get(current)));
-	    }
+    			resultKeyList.addAll(carryList);
+    		}
+    		
+    		current += 1;
+    		carryList = new ArrayList<>(Arrays.asList(keyList.get(current)));
+    	}
 	}
 	
 	private long getOffsetInSeconds(String offset) {
@@ -184,6 +298,11 @@ public class ConsecutiveValueMapping implements ValueMapping {
 	@Override
 	public Map<Long, Double> mappingScanner(MetricScanner scanner) {
 		throw new UnsupportedOperationException("Consective Transform needs a threshold and type.");
+	}
+	
+	@Override
+	public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+		throw new UnsupportedOperationException("Consecutive Transform needs a threshold and type.");
 	}
 	
 	@Override

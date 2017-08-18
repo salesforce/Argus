@@ -37,6 +37,8 @@ import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Transforms the name of one or more metrics.<br/>
@@ -67,10 +69,15 @@ public class AliasTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Alias Transform cannot be performed without an alias expression and an alias type");
     }
-
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
         throw new UnsupportedOperationException("Alias Transform cannot be performed without an alias expression and an alias type");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Alias Transform cannot be performed without an alias expression and an alias type");
     }
 
     @Override
@@ -128,7 +135,7 @@ public class AliasTransform implements Transform {
         
         return metrics;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners");
@@ -174,7 +181,7 @@ public class AliasTransform implements Transform {
         
         List<Metric> result = new ArrayList<>();
         for (MetricScanner scanner : scanners) {
-		buildMetric(scanner);
+        	buildMetric(scanner);
         	Metric m = new Metric(scanner.getMetric());
         	String newMetricName = scanner.getMetricName().replaceAll(metricSearchRegex, metricReplaceText);
         	m.setMetric(newMetricName);
@@ -189,11 +196,89 @@ public class AliasTransform implements Transform {
         
         return result;
     }
-	
-	private void buildMetric(MetricScanner scanner) {
+    
+    private void buildMetric(MetricScanner scanner) {
    		while (scanner.hasNextDP()) {
     		scanner.getNextDP();
     	}
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metric scanners");
+        SystemAssert.requireArgument(constants != null && (constants.size() == 2 || constants.size() == 4), "Alias Transform must provide either 2 or 4 constants.");
+        
+        String aliasTypeForMetric = constants.get(1);
+        
+        SystemAssert.requireArgument(REGRE.equals(aliasTypeForMetric) || LITERAL.equals(aliasTypeForMetric), 
+        		"Alias Transform can only performed for a regular expression or a string literal.");
+        if (REGRE.equals(aliasTypeForMetric)) {
+            SystemAssert.requireArgument(constants.get(0).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
+        }
+
+        String metricSearchRegex = "";
+        String metricReplaceText = "";
+        String scopeSearchRegex = "";
+        String scopeReplaceText = "";
+        if (REGRE.equals(aliasTypeForMetric)) {
+            metricSearchRegex = constants.get(0).split("/")[1];
+            metricReplaceText = constants.get(0).split("/")[2];
+        } else if (LITERAL.equals(aliasTypeForMetric)) {
+            metricSearchRegex = ".+";
+            metricReplaceText = constants.get(0);
+        }
+
+        if(constants.size() == 4) {
+        	String aliasTypeForScope = constants.get(3);
+        	SystemAssert.requireArgument(REGRE.equals(aliasTypeForScope) || LITERAL.equals(aliasTypeForScope), 
+        			"Alias Transform can only performed for a regular expression or a string literal.");
+        	if (REGRE.equals(aliasTypeForScope)) {
+                SystemAssert.requireArgument(constants.get(2).matches(SEARCH_REPLACE_FORM), "Please provide a valid search/replace form!");
+            }
+        	
+        	
+            if (REGRE.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = constants.get(2).split("/")[1];
+            	scopeReplaceText = constants.get(2).split("/")[2];
+            } else if (LITERAL.equals(aliasTypeForScope)) {
+            	scopeSearchRegex = ".+";
+            	scopeReplaceText = constants.get(2);
+            }
+        }
+        
+        List<Metric> result = new ArrayList<>();
+        for (MetricScanner scanner : scanners) {
+        	Metric m = buildMetricRange(scanner, start, end);
+        	String newMetricName = scanner.getMetricName().replaceAll(metricSearchRegex, metricReplaceText);
+        	m.setMetric(newMetricName);
+        	
+        	if (constants.size() == 4) {
+        		String newScopeName = scanner.getMetricScope().replaceAll(scopeSearchRegex, scopeReplaceText);
+        		m.setScope(newScopeName);
+        	}
+        	
+        	result.add(m);
+        }
+        return result;
+    }
+    
+    private Metric buildMetricRange(MetricScanner scanner, Long start, Long end) {
+    	Metric m = scanner.getMetric();
+    	TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    	if (dps.lastKey() < end) {
+	    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		dps.put(dp.getKey(), dp.getValue());
+	    	}
+    	}
+    	Long startKey = dps.ceilingKey(start);
+    	Long endKey = dps.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		m.setDatapoints(new TreeMap<>());
+    		return m;
+    	}
+    	m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    	return m;
     }
 
     @Override
@@ -205,9 +290,14 @@ public class AliasTransform implements Transform {
     public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
-	
+    
     @Override
     public List<Metric> transformScanner(@SuppressWarnings("unchecked") List<MetricScanner>... listOfList) {
+    	throw new UnsupportedOperationException("Alias doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
     	throw new UnsupportedOperationException("Alias doesn't need list of list!");
     }
 }

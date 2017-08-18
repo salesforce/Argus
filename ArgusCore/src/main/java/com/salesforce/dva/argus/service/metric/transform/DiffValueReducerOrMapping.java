@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Calculates an arithmetic difference. If a constant is provided, it is subtracted from each data point in the set of input metrics, otherwise the
@@ -62,29 +63,33 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return difference;
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner) {
     		SystemAssert.requireArgument(scanner.hasNextDP(), "Metric scanner must contain some datapoints to reduce.");
     		
     		Double difference = scanner.getNextDP().getValue();
     		
-	   		while (scanner.hasNextDP()) {
-	   			Double value = scanner.getNextDP().getValue();
-	    		difference -= value == null ? 0.0 : value;
-	    	}
+    		while (scanner.hasNextDP()) {
+    			Double value = scanner.getNextDP().getValue();
+    			difference -= value == null ? 0.0 : value;
+    		}
     		return difference;
     }
-
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
@@ -107,33 +112,76 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return diffDatapoints;
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
-    		SystemAssert.requireArgument(constants != null && constants.size() == 1,
-                "If constants provided for diff transform, only exactly one constant allowed.");
+		SystemAssert.requireArgument(constants != null && constants.size() == 1,
+            "If constants provided for diff transform, only exactly one constant allowed.");
 
         Map<Long, Double> diffDatapoints = new HashMap<>();
         
         try {
     		double subtrahend = Double.parseDouble(constants.get(0));
     		
-       		while (scanner.hasNextDP()) {
-           		Map.Entry<Long, Double> dp = scanner.getNextDP();
-           		diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
-        	}
+    		while (scanner.hasNextDP()) {
+        		Map.Entry<Long, Double> dp = scanner.getNextDP();
+        		diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
+    		}
         		
         } catch (NumberFormatException nfe) {
             throw new SystemException("Illegal constant value supplied to diff transform", nfe);
         }
         return diffDatapoints;
     }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+    			"If constants provide for diff transform, only exactly one constant allowed.");
+    	
+    	Map<Long, Double> diffDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		diffDatapoints = mapping(dps.subMap(startKey, endKey + 1), constants);
+    		return diffDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			diffDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	try {
+    		double subtrahend = Double.parseDouble(constants.get(0));
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			diffDatapoints.put(dp.getKey(), dp.getValue() - subtrahend);
+    		}
+    	} catch (NumberFormatException nfe) {
+    		throw new SystemException("Illegal constant value supplied to diff transform", nfe);
+    	}
+    	return diffDatapoints;
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");

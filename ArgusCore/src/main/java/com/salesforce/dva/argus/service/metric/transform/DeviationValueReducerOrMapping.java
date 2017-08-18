@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -67,7 +68,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     public Double reduce(List<Double> values) {
         throw new UnsupportedOperationException("Deviation Transform with reducer is not supposed to be used without a tolerance!");
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner) {
     	throw new UnsupportedOperationException("Deviation Transform with reducer is not supposed to be used without a tolerance!");
@@ -78,7 +79,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         parseConstants(constants);
         return calculateDeviation(values, tolerance);
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner, List<String> constants) {
     	parseConstants(constants);
@@ -105,7 +106,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         if (!isUnderTolerance(values, tolerance)) {
             return null;
         }
-
+        
         double[] elementsFull = new double[values.size()];
         int k = 0;
 
@@ -122,18 +123,18 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
 
         return result;
     }
-	
+    
     private Double calculateDeviationScanner(MetricScanner scanner, List<Double> values, Double tolerance) {
     	double missingPointNumber = 0;
     	
-	    while (scanner.hasNextDP()) {
-			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
     		if (dp.getValue() == null) {
-	   			missingPointNumber++;
-	   		} else {
-	       		values.add(dp.getValue());
-	   		}
-	    }
+    			missingPointNumber++;
+    		} else {
+        		values.add(dp.getValue());
+    		}
+    	}
     	if (missingPointNumber / values.size() > tolerance) {
     		return null;
     	}
@@ -158,10 +159,15 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
     }
 
     @Override
@@ -169,12 +175,54 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         parseConstants(constants);
         return calculateNDeviationForOneMetric(originalDatapoints, tolerance, pointNum);
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
     	parseConstants(constants);
     	SystemAssert.requireArgument(scanner.hasNextDP(), "Deviation Transform cannot map a scanner without datapoints.");
     	return calculateNDeviationForOneMetricScanner(scanner, tolerance, pointNum);
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	Map<Long, Double> deviationDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	
+    	/* need to look at all of the dps in order to determine the deviation */
+    	if (next == null) {
+    		/* Already completely explored */
+    		TreeMap<Long, Double> res = new TreeMap<>(mapping(scanner.getMetric().getDatapoints(), constants));
+    		Long startKey = res.ceilingKey(start);
+    		Long endKey = res.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		deviationDatapoints = res.subMap(startKey, endKey + 1);
+    		return deviationDatapoints;
+    	} else if (next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		/* Not explored at all yet */
+    		TreeMap<Long, Double> res = new TreeMap<>(mappingScanner(scanner, constants));
+    		Long startKey = res.ceilingKey(start);
+    		Long endKey = res.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		deviationDatapoints = res.subMap(startKey, endKey + 1);
+    		return deviationDatapoints;
+    	} else {
+    		/* Partially explored, but still need to look at all of the data */
+    		while (scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+    		TreeMap<Long, Double> res = new TreeMap<>(mapping(scanner.getMetric().getDatapoints(), constants));
+    		Long startKey = res.ceilingKey(start);
+    		Long endKey = res.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		deviationDatapoints = res.subMap(startKey, endKey + 1);
+    		return deviationDatapoints;
+    	}
     }
 
     private Map<Long, Double> calculateNDeviationForOneMetric(Map<Long, Double> originalDatapoints, Double tolerance, Long pointNum) {
@@ -203,18 +251,18 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         deviationDatapoints.put(lastTimestamp, dev);
         return deviationDatapoints;
     }
-	
+    
     private Map<Long, Double> calculateNDeviationForOneMetricScanner(MetricScanner scanner, Double tolerance, Long pointNum) {    	
     	Long count = 0L;
     	List<Double> values = new ArrayList<>();
     	
     	Map.Entry<Long, Double> dp = null;
     	
-	    while (scanner.hasNextDP()) { 
-	   		dp = scanner.getNextDP();
-	   		values.add(dp.getValue());
-	   		count++;
-	    }
+    	while (scanner.hasNextDP()) { 
+    		dp = scanner.getNextDP();
+    		values.add(dp.getValue());
+    		count++;
+    	}
     	Long lastTimestamp = dp.getKey();	// will be the last key
     	
     	if (values.size() > pointNum) {

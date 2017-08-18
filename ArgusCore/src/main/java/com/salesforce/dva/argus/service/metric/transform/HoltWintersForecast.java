@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,9 +71,14 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("HoltWinters Transform needs 4 constants. 3 parameters(alpha, beta and gamma) and season length.");
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	throw new UnsupportedOperationException("HoltWinters Transform needs 4 constants. 3 parameters(alpha, beta and gamma) and season length.");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
     	throw new UnsupportedOperationException("HoltWinters Transform needs 4 constants. 3 parameters(alpha, beta and gamma) and season length.");
     }
 
@@ -117,7 +123,7 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
         }
         return result;
     }
-	
+    
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Metric Scanners list cannot be null.");
@@ -146,16 +152,16 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
     		}
     		
     		Map<Long, Double> bootstrappedDps = new TreeMap<>();
-	   		while (scanner.hasNextDP()) {
-	   			Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		bootstrappedDps.put(dp.getKey(), dp.getValue());
-	    	}
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			bootstrappedDps.put(dp.getKey(), dp.getValue());
+    		}
     	    			
     		if (oneWeekBeforeScanner != null) {
-	   			while (oneWeekBeforeScanner.hasNextDP()) {
-	    			Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
-	    			bootstrappedDps.put(dp.getKey(), dp.getValue());
-	    		}
+    			while (oneWeekBeforeScanner.hasNextDP()) {
+    				Map.Entry<Long, Double> dp = oneWeekBeforeScanner.getNextDP();
+    				bootstrappedDps.put(dp.getKey(), dp.getValue());
+    			}
     		}
     		
     		Metric resultMetric = new Metric(scanner.getMetric());
@@ -166,6 +172,84 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
     	}
     	return result;
     }
+    
+    private Map<Long, Double> addDatapointsToMap(Map<Long, Double> bootstrappedDps, MetricScanner scanner, Long start, Long end) {
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null) {
+    		for (Map.Entry<Long, Double> entry : scanner.getMetric().getDatapoints().entrySet()) {
+    			bootstrappedDps.put(entry.getKey(), entry.getValue());
+    		}
+    	} else if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.firstKey();
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey).entrySet()) {
+    				bootstrappedDps.put(entry.getKey(), entry.getValue());
+    			}
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			bootstrappedDps.put(dp.getKey(), dp.getValue());
+    		}
+    	}
+    	
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		bootstrappedDps.put(dp.getKey(), dp.getValue());
+    	}
+    	
+    	return bootstrappedDps;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Metric Scanners list cannot be null.");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 4, "Constants List cannot be null and its size must be equal to 4.");
+    	
+    	double alpha = Double.parseDouble(constants.get(0));
+    	double beta = Double.parseDouble(constants.get(1));
+    	double gamma = Double.parseDouble(constants.get(2));
+    	int seasonLength = Integer.parseInt(constants.get(3));
+    	List<Metric> result = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		MetricQuery oneWeekBeforeQuery = new MetricQuery(scanner.getQuery());
+    		
+    		oneWeekBeforeQuery.setEndTimestamp(oneWeekBeforeQuery.getStartTimestamp());
+    		oneWeekBeforeQuery.setStartTimestamp(oneWeekBeforeQuery.getStartTimestamp() - ONE_WEEK_IN_MILLIS);
+    		
+    		List<MetricScanner> scannersList = _tsdbService.getMetricScanners(Arrays.asList(new MetricQuery [] { oneWeekBeforeQuery })).get(oneWeekBeforeQuery);
+    		MetricScanner oneWeekBeforeScanner = null;
+    		
+    		for (MetricScanner s : scannersList) {
+    			if (scanner.getMetric().equals(s.getMetric())) {
+    				oneWeekBeforeScanner = s;
+    				break;
+    			}
+    		}
+    		
+    		Map<Long, Double> bootstrappedDps = addDatapointsToMap(new TreeMap<>(), scanner, start, end);
+    		if (oneWeekBeforeScanner != null) {
+    			bootstrappedDps = addDatapointsToMap(bootstrappedDps, oneWeekBeforeScanner, start, end);
+    		}
+    		
+    		TreeMap<Long, Double> res = new TreeMap<>(_performHoltWintersAnalysis(bootstrappedDps, alpha, beta, gamma, seasonLength,
+    				scanner.getQuery().getStartTimestamp().longValue()).getForecastedDatapoints());
+    	    		
+    		Long startKey = res.ceilingKey(start);
+    		Long endKey = res.floorKey(end);
+    		Metric m = new Metric(scanner.getMetric());
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(res.subMap(startKey, endKey + 1));
+    		} else {
+    			m.setDatapoints(new TreeMap<>());
+    		}
+    		result.add(m);
+    	}
+    	return result;
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -173,10 +257,16 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
         // TODO Auto-generated method stub
         return null;
     }
-	
+    
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	// TODO Auto-generated method stub
+    	return null;
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
     	// TODO Auto-generated method stub
     	return null;
     }

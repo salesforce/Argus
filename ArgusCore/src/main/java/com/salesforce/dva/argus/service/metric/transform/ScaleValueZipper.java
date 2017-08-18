@@ -55,7 +55,7 @@ public class ScaleValueZipper implements ValueZipper {
             throw new SystemException("Fail to parse the double value of original Datapoint or base Datapoint!", e);
         }
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.SCALE_V.name();

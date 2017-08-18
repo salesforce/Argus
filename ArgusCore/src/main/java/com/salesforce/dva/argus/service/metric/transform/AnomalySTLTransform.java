@@ -38,6 +38,8 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
+import sun.tools.java.Scanner;
+
 import java.util.*;
 
 
@@ -61,6 +63,7 @@ public class AnomalySTLTransform implements Transform {
         } else {
             l.add(0, Integer.toString(size/2));
         }
+        
         return transform(metrics, l);
     }
     
@@ -72,11 +75,11 @@ public class AnomalySTLTransform implements Transform {
     	int dpCount = 0;
     	Map<Long, Double> dps = new TreeMap<>();
     	
-	   	while (scanners.get(0).hasNextDP()) {
-	   		dpCount++;
-	    	Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
-	    	dps.put(dp.getKey(), dp.getValue());
-	    }
+    	while (scanners.get(0).hasNextDP()) {
+    		dpCount++;
+    		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+    		dps.put(dp.getKey(), dp.getValue());
+    	}
     	
     	if (dpCount >= 52 * 2) {
     		l.add(0, "52");
@@ -89,6 +92,55 @@ public class AnomalySTLTransform implements Transform {
     	mList.add(m);
     	
     	return transform(mList, l);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	List<String> l = new ArrayList<String>();
+    	List<Metric> mList = new ArrayList<>();
+    	
+    	Map.Entry<Long, Double> next = scanners.get(0).peek();
+    	int size = 0;
+    	if (next == null) {
+    		size = scanners.get(0).getMetric().getDatapoints().size();
+    	} else {
+    		if (!next.getKey().equals(Collections.min(scanners.get(0).getMetric().getDatapoints().keySet()))) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanners.get(0).getMetric().getDatapoints());
+    			Long startKey = dps.firstKey();
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey <= endKey) {
+    				size += dps.subMap(startKey, endKey + 1).size();
+    			}
+    		}
+    		while (scanners.get(0).hasNextDP()) {
+    			scanners.get(0).getNextDP();
+    			size++;
+    		}
+    	}
+    	
+    	if (size >= 52 * 2) {
+			l.add(0, "52");
+		} else {
+			l.add(0, Integer.toString(size / 2));
+		}
+    	
+    	mList.add(scanners.get(0).getMetric());
+    	List<Metric> res = transform(mList, l);
+    	List<Metric> result = new ArrayList<>();
+    	
+    	for (Metric m : res) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    			result.add(m);
+    		} else {
+    			m.setDatapoints(new HashMap<>());
+    			result.add(m);
+    		}
+    	}
+    	return result;
     }
 
     @Override
@@ -192,12 +244,12 @@ public class AnomalySTLTransform implements Transform {
         
         int dpCount = 0; // make sure we have enough points -> need at least 4
         
-		while (scanner.hasNextDP()) {
-		   	dpCount++;
-		   	Map.Entry<Long, Double> dp = scanner.getNextDP();
-		   	datapoints.put(dp.getKey(), dp.getValue());
-		    timestamps.add(dp.getKey());
-		}
+	    while (scanner.hasNextDP()) {
+	    	dpCount++;
+	    	Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    	datapoints.put(dp.getKey(), dp.getValue());
+	    	timestamps.add(dp.getKey());
+        }
         
         SystemAssert.requireState(dpCount >= 4, "STL Anomaly Detection Transform can " +
                 "only be used if there are at least 4 points.");
@@ -227,6 +279,99 @@ public class AnomalySTLTransform implements Transform {
         remainder_metric.setDatapoints(remainder_map);
         List<Metric> result = new ArrayList<>(scanners.size());
         result.add(remainder_metric);
+        
+        return result;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        SystemAssert.requireState(scanners.size() == 1, "Anomaly Detection Transform can only be used on one metric scanner.");
+        SystemAssert.requireState(scanners.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
+                "metric scanner.");
+        SystemAssert.requireState(constants.size() <= 2, "Anomaly Detection Transform can only be used with one or " +
+                "two integer constants.");
+
+        if (constants.size() == 0) {
+            return transformScanner(scanners);
+        } else if (constants.size() == 2) {
+            SystemAssert.requireState(constants.get(1).equals("resid") || constants.get(1).equals("anomalyScore"),
+                    "The only options for STL Anomaly Detection Transform are '$resid' to view the residuals or " +
+                    "'$anomalyScore' to view the anomaly Score. Entering no option defaults to '$anomalyScore'.");
+        }
+
+        SystemAssert.requireState(Integer.parseInt(constants.get(0)) >= 2, "STL Anomaly Detection Transform can only " +
+                "be used with a season size of at least 2.");
+        
+        
+        Map.Entry<Long, Double> next = scanners.get(0).peek();
+        List<Metric> res = new ArrayList<>();
+        if (next == null) {
+        	List<Metric> mList = new ArrayList<>();
+        	mList.add(scanners.get(0).getMetric());
+        	res = transform(mList, constants);
+        } else if (next.getKey().equals(Collections.min(scanners.get(0).getMetric().getDatapoints().keySet()))) {
+        	res = transformScanner(scanners, constants);
+        } else {
+        	int season = Integer.parseInt(constants.get(0));
+        	List<Long> timestamps = new ArrayList<>();
+        	TreeMap<Long, Double> dps = new TreeMap<>(scanners.get(0).getMetric().getDatapoints());
+        	Long startKey = dps.firstKey();
+        	Long endKey = dps.floorKey(next.getKey());
+        	int dpCount = 0;
+        	if (startKey != null && endKey != null && startKey < endKey) {
+        		timestamps.addAll(dps.subMap(startKey, endKey).keySet());
+        		dpCount += dps.subMap(startKey, endKey).size();
+        	}
+        	
+        	while (scanners.get(0).hasNextDP()) {
+        		dpCount++;
+        		Map.Entry<Long, Double> dp = scanners.get(0).getNextDP();
+        		timestamps.add(dp.getKey());
+        	}
+        	
+        	SystemAssert.requireState(dpCount >= 4, "STL Anomaly Detection Transform can " + 
+        			" only be used if there are at least 4 points.");
+        	
+        	double[] values = Doubles.toArray(scanners.get(0).getMetric().getDatapoints().values());
+        	double[] times = Doubles.toArray(timestamps);
+        	
+        	StlResult stl = new StlDecomposition(season).decompose(times, values);
+        	double[] remainder = stl.getRemainder();
+        	
+        	double mean = calcMean(remainder);
+        	double sd = calcSD(remainder, mean);
+        	
+        	HashMap<Long, Double> remainder_map = new HashMap<>();
+        	
+        	if (constants.size() == 2 && constants.get(1).equals("resid")) {
+        		for (int i = 0; i < dpCount; i++) {
+        			remainder_map.put((long) times[i], remainder[i]); 
+        		}
+        	} else {
+        		for (int i = 0; i < dpCount; i++) {
+        			remainder_map.put((long) times[i], anomalyScore(remainder[i], mean, sd)); 
+        		}
+        	}
+        	
+        	Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
+        	remainder_metric.setDatapoints(remainder_map);
+        	res.add(remainder_metric);
+        }
+        
+        List<Metric> result = new ArrayList<>();
+        for (Metric m : res) {
+        	TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+        	Long startKey = dps.ceilingKey(start);
+        	Long endKey = dps.floorKey(end);
+        	if (startKey != null && endKey != null && startKey <= endKey) {
+        		m.setDatapoints(dps.subMap(startKey, endKey + 1));
+        		result.add(m);
+        	} else {
+        		m.setDatapoints(new HashMap<>());
+        		result.add(m);
+        	}
+        }
         
         return result;
     }
@@ -287,5 +432,9 @@ public class AnomalySTLTransform implements Transform {
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
-
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("This class is deprecated!");
+    }
 }

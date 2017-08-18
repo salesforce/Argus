@@ -60,15 +60,15 @@ public class CountValueUnionReducer implements ValueReducer {
         
         return sum;
     }
-	
+    
     @Override
     public Double reduceScanner(MetricScanner scanner) {
     	Double sum = 0.0;
     	
-	   	while (scanner.hasNextDP()) {
-	   		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	   		sum += dp.getValue() == null ? 0.0 : dp.getValue();
-	    }
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		sum += dp.getValue() == null ? 0.0 : dp.getValue();
+    	}
     	
     	return sum;
     }

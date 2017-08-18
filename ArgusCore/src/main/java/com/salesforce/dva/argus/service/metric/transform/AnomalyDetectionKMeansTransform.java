@@ -38,6 +38,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import sun.tools.java.Scanner;
 import weka.clusterers.SimpleKMeans;
 import weka.core.*;
 
@@ -70,7 +72,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         Map<Long, Double> metricData = metrics.get(0).getDatapoints();
         metricDataValues = metricData.values().stream().collect(Collectors.toList());
         if (metricData.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
-
+    
         try {
             trainModel(metricData);
         } catch (Exception e) {
@@ -87,25 +89,96 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
-    		SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
-    											"k constant.");
+		SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
+											"k constant.");
+		
+		if (!scanners.get(0).hasNextDP()) {
+			throw new MissingDataException("Metric scanner must contain data points to perform transforms.");
+		}
+		Map<Long, Double> datapoints = null;
+		try {
+			datapoints = trainModelScanner(scanners.get(0));
+		} catch (Exception e) {
+			throw new UnsupportedOperationException("Cluster creation unsuccessful");
+		}
+		
+		Metric predictions = predictAnomalies(datapoints);
+		Metric predictionsNormalized = normalizePredictions(predictions);
+		
+		List<Metric> resultMetrics = new ArrayList<>();
+		resultMetrics.add(predictionsNormalized);
+		return resultMetrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer k constant.");
+    	if (scanners.get(0).getMetric().getDatapoints().size() == 0 && !scanners.get(0).hasNextDP()) {
+    		throw new MissingDataException("Metric scanner must contain data points to perform transforms.");
+    	}
+    	Map.Entry<Long, Double> next = scanners.get(0).peek();
+    	List<Metric> res = new ArrayList<>();
+    	if (next == null) {
+    		List<Metric> mList = new ArrayList<>();
+    		mList.add(scanners.get(0).getMetric());
+    		res = transform(mList);
+    	} else if (next.getKey().equals(Collections.min(scanners.get(0).getMetric().getDatapoints().keySet()))) {
+    		res = transformScanner(scanners);
+    	} else {
+    		Attribute value = new Attribute("metric_value");
+    		FastVector attributes = new FastVector();
+    		attributes.addElement(value);
     		
-    		if (!scanners.get(0).hasNextDP()) {
-    			throw new MissingDataException("Metric scanner must contain data points to perform transforms.");
+    		trainingData = new Instances("metric_value_data", attributes, 0);
+    		TreeMap<Long, Double> metricData = new TreeMap<>(scanners.get(0).getMetric().getDatapoints());
+    		Long startKey = metricData.ceilingKey(start);
+    		Long endKey = metricData.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			for (Double val : metricData.subMap(startKey, endKey).values()) {
+    				double[] valArray = new double[] { val } ;
+    				Instance instance = new Instance(1.0, valArray);
+    				trainingData.add(instance);
+    			}
     		}
-    		Map<Long, Double> datapoints = null;
+    		
+    		while (scanners.get(0).hasNextDP()) {
+    			double[] valArray = new double[] { scanners.get(0).getNextDP().getValue() } ;
+    			Instance instance = new Instance(1.0, valArray);
+    			trainingData.add(instance);
+       		}
+    		
     		try {
-    			datapoints = trainModelScanner(scanners.get(0));
+    			setModel();
     		} catch (Exception e) {
     			throw new UnsupportedOperationException("Cluster creation unsuccessful");
     		}
     		
-    		Metric predictions = predictAnomalies(datapoints);
-    		Metric predictionsNormalized = normalizePredictions(predictions);
-    		
-    		List<Metric> resultMetrics = new ArrayList<>();
-    		resultMetrics.add(predictionsNormalized);
-    		return resultMetrics;
+    		Metric predictions = predictAnomalies(scanners.get(0).getMetric().getDatapoints());
+        	Metric predictionsNormalized = normalizePredictions(predictions);
+        	res.add(predictionsNormalized);
+    	}
+    	TreeMap<Long, Double> dps = new TreeMap<>(res.get(0).getDatapoints());
+    	Long startKey = dps.ceilingKey(start);
+    	Long endKey = dps.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		res.get(0).setDatapoints(new HashMap<>());
+    		return res;
+    	}
+    	Map<Long, Double> range = dps.subMap(startKey, endKey + 1);
+    	res.get(0).setDatapoints(range);
+    	return res;
+    }
+    
+    private void setModel() throws Exception {
+    	model = new SimpleKMeans();
+		model.setNumClusters(k);
+		model.setMaxIterations(20);
+		model.setPreserveInstancesOrder(true);
+		model.buildClusterer(trainingData);
+		
+		clusterCentroids = model.getClusterCentroids();
+		centroidAssignments = model.getAssignments();
+		setMeanDistancesToCentroids();
     }
 
     @Override
@@ -135,12 +208,29 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
                                                             "contextual anomaly detection.");
         
         try {
-        		k = Integer.valueOf(constants.get(0));
+        	k = Integer.valueOf(constants.get(0));
         } catch (NumberFormatException e) {
-        		throw new UnsupportedOperationException("K-means anomaly detection transform requires a positive integer k constant");
+        	throw new UnsupportedOperationException("K-means anomaly detection transform requires a positive integer k constant");
         }
         
         return transformScanner(scanners);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+    	SystemAssert.requireArgument(constants.size() > 0, "K-means anomaly detection transform requires a k constant.");
+    	SystemAssert.requireArgument(constants.size() < 2, "K-means anomaly detection transform does not support " +
+    														"contextual anomaly detection.");
+    	
+    	try {
+    		k = Integer.valueOf(constants.get(0));
+    	} catch (NumberFormatException e) {
+    		throw new UnsupportedOperationException("K-means anomaly detection transform requires a potsitive integer k constant");
+    	}
+    	
+    	return transformToPager(scanners, start, end);
     }
 
     private void trainModel(Map<Long, Double> metricData) throws Exception {
@@ -176,13 +266,14 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     		trainingData = new Instances("metric_value_data", attributes, 0);
     		Map<Long, Double> datapoints = new TreeMap<>();
     		
-	    	while (scanner.hasNextDP()) {
-	   		Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		datapoints.put(dp.getKey(), dp.getValue());
-	    		double[] valArray = new double[] { dp.getValue() };
-	   		Instance instance = new Instance(1.0, valArray);
-	    		trainingData.add(instance);
-	    	}
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			datapoints.put(dp.getKey(), dp.getValue());
+    			double[] valArray = new double[] { dp.getValue() };
+    			Instance instance = new Instance(1.0, valArray);
+    			trainingData.add(instance);
+    		}
+    		
     		
     		metricDataValues = new ArrayList<>(datapoints.values());
     		

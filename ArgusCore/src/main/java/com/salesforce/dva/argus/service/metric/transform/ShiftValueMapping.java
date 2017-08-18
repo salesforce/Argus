@@ -52,10 +52,15 @@ public class ShiftValueMapping implements ValueMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Shift transform requires an offset input!");
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Shift transform requires an offset input!");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Shift transform requires an offset input!");
     }
 
     @Override
@@ -74,23 +79,62 @@ public class ShiftValueMapping implements ValueMapping {
         }
         return shiftDatapoints;
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         SystemAssert.requireArgument(constants.size() == 1, "Shift Transform can only have one constant which is offset.");
         
         Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
         Map<Long, Double> shiftDatapoints = new TreeMap<>();
         
-	    while (scanner.hasNextDP()) {
-	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
-			Long newTimestamp = dp.getKey() + offset;
-	        	
+        while (scanner.hasNextDP()) {
+        	Map.Entry<Long, Double> dp = scanner.getNextDP();
+        	Long newTimestamp = dp.getKey() + offset;
+        	
         	SystemAssert.requireArgument((dp.getKey() + offset <= Long.MAX_VALUE && dp.getKey() + offset >= Long.MIN_VALUE),
-	                 "You are not allowed to shift like this, be nice to me!");
-	       	shiftDatapoints.put(newTimestamp, dp.getValue());
-	    }
+                    "You are not allowed to shift like this, be nice to me!");
+        	shiftDatapoints.put(newTimestamp, dp.getValue());
+        }
         return shiftDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants.size() == 1, "Shift Transform can only have one constant, which is offset.");
+    	
+    	Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
+    	Map<Long, Double> shiftDatapoints = new TreeMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		shiftDatapoints = mapping(dps.subMap(startKey, endKey + 1), constants);
+    		return shiftDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			shiftDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		Long newTimestamp = dp.getKey() + offset;
+    		SystemAssert.requireArgument((dp.getKey() + offset <= Long.MAX_VALUE && dp.getKey() + offset >= Long.MIN_VALUE), 
+    				"You are not allowed to shift like this, be nice to me!");
+    		shiftDatapoints.put(newTimestamp, dp.getValue());
+    	}
+    	return shiftDatapoints;
     }
 
     @Override

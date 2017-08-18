@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 /**
  * Calculates the logarithm according to the specified base.<br/>
@@ -59,13 +60,21 @@ public class LogValueMapping implements ValueMapping {
         constants.add("10");
         return mapping(originalDatapoints, constants);
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
     	List<String> constants = new ArrayList<String>();
     	
     	constants.add("10");
     	return mappingScanner(scanner, constants);
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	List<String> constants = new ArrayList<String>();
+    	
+    	constants.add("10");
+    	return mappingToPager(scanner, constants, start, end);
     }
 
     @Override
@@ -85,7 +94,7 @@ public class LogValueMapping implements ValueMapping {
         }
         return logDatapoints;
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
     	if (constants == null || constants.isEmpty()) {
@@ -96,13 +105,55 @@ public class LogValueMapping implements ValueMapping {
         Double base = Double.parseDouble(constants.get(0));
         Map<Long, Double> logDatapoints = new HashMap<>();
         
-	    while (scanner.hasNextDP()) {
-	       	Map.Entry<Long, Double> dp = scanner.getNextDP();
-	       	Double logValue = Math.log(dp.getValue()) / Math.log(base);
-	       	logDatapoints.put(dp.getKey(), logValue);
-	    }
+        while (scanner.hasNextDP()) {
+        	Map.Entry<Long, Double> dp = scanner.getNextDP();
+        	Double logValue = Math.log(dp.getValue()) / Math.log(base);
+        	logDatapoints.put(dp.getKey(), logValue);
+        }
         
         return logDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	if (constants == null || constants.isEmpty()) {
+    		return mappingToPager(scanner, start, end);
+    	}
+    	SystemAssert.requireArgument(constants.size() == 1, "Log Transform requires exactly one constant!");
+    	
+    	Double base = Double.parseDouble(constants.get(0));
+    	Map<Long, Double> logDatapoints = new HashMap<>();
+    	
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		logDatapoints = mapping(dps.subMap(startKey, endKey + 1), constants);
+    		return logDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			logDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		Double logValue = Math.log(dp.getValue()) / Math.log(base);
+    		logDatapoints.put(dp.getKey(), logValue);
+    	}
+    	
+    	return logDatapoints;
     }
 
     @Override

@@ -32,9 +32,11 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,10 +78,15 @@ public class MetricMappingTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         return mapping(metrics);
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners) {
     	return mappingScanner(scanners);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	return mappingToPager(scanners, start, end);
     }
 
     /**
@@ -105,8 +112,8 @@ public class MetricMappingTransform implements Transform {
         }
         return newMetricsList;
     }
-	
-	private List<Metric> mappingScanner(List<MetricScanner> scanners) {
+    
+    private List<Metric> mappingScanner(List<MetricScanner> scanners) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
     	List<Metric> newMetricsList = new ArrayList<Metric>();
     	
@@ -114,21 +121,72 @@ public class MetricMappingTransform implements Transform {
     		Map<Long, Double> cleanDatapoints = cleanDPScanner(scanner);
     		
     		Metric m = new Metric(scanner.getMetric());
-    		m.setDatapoints(cleanDatapoints);
+    		m.setDatapoints(this.valueMapping.mapping(cleanDatapoints));
     		newMetricsList.add(m);
     	}
     	
     	return newMetricsList;
     }
+    
+    private List<Metric> mappingToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	List<Metric> newMetricsList = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> cleanDatapoints = cleanDPPagerFull(scanner);
+    		
+    		if (!cleanDatapoints.isEmpty()) {
+	    		Metric m = new Metric(scanner.getMetric());
+	    		TreeMap<Long, Double> res = new TreeMap<>(this.valueMapping.mapping(cleanDatapoints));
 
+	    		Long startKey = res.ceilingKey(start);
+	    		Long endKey = res.floorKey(end);
+	    		if (startKey != null && endKey != null && startKey <= endKey) {
+	    			m.setDatapoints(res.subMap(startKey, endKey + 1));
+	    		} else {
+	    			m.setDatapoints(new TreeMap<>());
+	    		}
+	    		newMetricsList.add(m);
+    		}
+    	}
+    	return newMetricsList;
+    }
+
+    private long getOffsetInSeconds(String offset) {
+        MetricReader.TimeUnit timeunit = null;
+        Long backwards = 1L;
+
+        try {
+            if (offset.startsWith("-")) {
+                backwards = -1L;
+                offset = offset.substring(1);
+            }
+            if (offset.startsWith("+")) {
+                offset = offset.substring(1);
+            }
+            timeunit = MetricReader.TimeUnit.fromString(offset.substring(offset.length() - 1));
+
+            long timeDigits = Long.parseLong(offset.substring(0, offset.length() - 1));
+
+            return backwards * timeDigits * timeunit.getValue() / 1000;
+        } catch (Exception t) {
+            throw new IllegalArgumentException("Fail to parse offset!");
+        }
+    }
+    
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         return mapping(metrics, constants);
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
     	return mappingScanner(scanners, constants);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	return mappingToPager(scanners, constants, start, end);
     }
 
     private List<Metric> mapping(List<Metric> metrics, List<String> constants) {
@@ -147,8 +205,8 @@ public class MetricMappingTransform implements Transform {
         }
         return newMetricsList;
     }
-	
-	private List<Metric> mappingScanner(List<MetricScanner> scanners, List<String> constants) {
+    
+    private List<Metric> mappingScanner(List<MetricScanner> scanners, List<String> constants) {
     	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
     	
     	List<Metric> newMetricsList = new ArrayList<Metric>();
@@ -161,6 +219,36 @@ public class MetricMappingTransform implements Transform {
     		Map<Long, Double> cleanDatapoints = cleanDPScanner(scanner);
     		Metric m = new Metric(scanner.getMetric());
     		m.setDatapoints(this.valueMapping.mapping(cleanDatapoints, constants));
+    		newMetricsList.add(m);
+    	}
+    	return newMetricsList;
+    }
+    
+    private List<Metric> mappingToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform empty metric scanner/scanners");
+    	
+    	List<Metric> newMetricsList = new ArrayList<Metric>();
+    	if (scanners.isEmpty()) {
+    		return newMetricsList;
+    	}
+    	
+    	for (MetricScanner scanner : scanners) {
+    		/* use full version here in case the value mapping needs all of the data */
+    		Map<Long, Double> cleanDatapoints = cleanDPPagerFull(scanner);
+    		Metric m = new Metric(scanner.getMetric());
+    		TreeMap<Long, Double> res = new TreeMap<>(this.valueMapping.mapping(cleanDatapoints, constants));
+    		
+    		Long shift = 0L;
+    		if (ShiftValueMapping.class.isInstance(this.valueMapping)) {
+    			shift = getOffsetInSeconds(constants.get(0)) * 1000;
+    		}
+    		Long startKey = res.ceilingKey(start + shift);
+    		Long endKey = res.floorKey(end + shift);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(res.subMap(startKey, endKey + 1));
+    		} else {
+    			m.setDatapoints(new TreeMap<>());
+    		}
     		newMetricsList.add(m);
     	}
     	return newMetricsList;
@@ -178,18 +266,41 @@ public class MetricMappingTransform implements Transform {
         }
         return cleanDPs;
     }
-	
-	private Map<Long, Double> cleanDPScanner(MetricScanner scanner) {
+    
+    private Map<Long, Double> cleanDPScanner(MetricScanner scanner) {
     	Map<Long, Double> cleanDPs = new HashMap<>();
     	
-    	while (scanner.hasNextDP()) {
-			Map.Entry<Long, Double> dp = scanner.getNextDP();
+		while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
     		if (dp.getValue() == null) {
-	   			cleanDPs.put(dp.getKey(), 0.0);
-	   		} else {
-	   			cleanDPs.put(dp.getKey(), dp.getValue());
-	   		}
-	    }
+    			cleanDPs.put(dp.getKey(), 0.0);
+    		} else {
+    			cleanDPs.put(dp.getKey(), dp.getValue());
+    		}
+    	}
+    	return cleanDPs;
+    }
+
+    private Map<Long, Double> cleanDPPagerFull(MetricScanner scanner) {
+    	Map<Long, Double> cleanDPs = new TreeMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	
+    	if (next == null) {
+    		return cleanDPs(scanner.getMetric().getDatapoints());
+    	} else if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.firstKey();
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			cleanDPs = cleanDPs(dps.subMap(startKey, endKey));
+    		}
+    	} 
+   
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		cleanDPs.put(dp.getKey(), dp.getValue() == null ? 0.0 : dp.getValue());
+    	}
+    	
     	return cleanDPs;
     }
 
@@ -197,10 +308,15 @@ public class MetricMappingTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Mapping doesn't need list of list!");
     }
-	
-	@Override
+    
+    @Override
     public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
         throw new UnsupportedOperationException("Mapping doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Mapping doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

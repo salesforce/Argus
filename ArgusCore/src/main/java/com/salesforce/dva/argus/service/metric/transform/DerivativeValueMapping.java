@@ -73,20 +73,63 @@ public class DerivativeValueMapping implements ValueMapping {
         }
         return derivativeDatapoints;
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
     	Map<Long, Double> derivativeDatapoints = new HashMap<>();
     	Double prev = null;
     	
-	    while (scanner.hasNextDP()) {
-	    	Map.Entry<Long, Double> dp = scanner.getNextDP();
-	    		
-	   		if (prev != null) {
-	   			derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
-	   		}
-	   		prev = dp.getValue();
-	    }
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		
+    		if (prev != null) {
+    			derivativeDatapoints.put(dp.getKey(), dp.getValue() - prev);
+    		}
+    		prev = dp.getValue();
+    	}
+    	return derivativeDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	TreeMap<Long, Double> derivativeDatapoints = new TreeMap<>();
+    	Double prev = null;
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		/* start one timestamp before the start so that we can get an accurate first point */
+    		Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start - 1);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new HashMap<>();
+    		}
+    		derivativeDatapoints.putAll(mapping(dps.subMap(startKey, endKey + 1)));
+    		return derivativeDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<Long, Double>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.floorKey(start - 1) == null ? dps.ceilingKey(start) : dps.floorKey(start  - 1);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			derivativeDatapoints.putAll(mapping(dps.subMap(startKey, endKey)));
+    		}
+    		prev = !derivativeDatapoints.isEmpty() ? dps.get(derivativeDatapoints.lastEntry().getKey()) :
+    			dps.floorKey(start - 1) == null ? null : dps.floorEntry(start - 1).getValue();
+    	} else {
+    		Map.Entry<Long, Double> dp = null;
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			dp = scanner.getNextDP();
+    		}
+    		prev = dp == null ? null : dp.getValue();
+    	}
+    	
+    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+    		if (prev != null) {
+    			derivativeDatapoints.put(nextDP.getKey(), nextDP.getValue() - prev);
+    		}
+    		prev = nextDP.getValue();
+    	}
+    	
     	return derivativeDatapoints;
     }
 
@@ -94,10 +137,15 @@ public class DerivativeValueMapping implements ValueMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
-	
+    
     @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
 
     @Override

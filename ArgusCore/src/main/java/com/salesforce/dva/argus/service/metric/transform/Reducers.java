@@ -53,15 +53,15 @@ public class Reducers {
 
         return result;
     }
-	
-	public static Double sumReducerScanner(MetricScanner scanner) {
+    
+    public static Double sumReducerScanner(MetricScanner scanner) {
     		double result = 0.0;
-	   		while (scanner.hasNextDP()) {
-	   			Double value = scanner.getNextDP().getValue();
-	    		result += value == null ? 0.0 : value;
-	    	}
+    		while (scanner.hasNextDP()) {
+    			Double value = scanner.getNextDP().getValue();
+    			result += value == null ? 0.0 : value;
+    		}
     		return result;
     }
-	
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

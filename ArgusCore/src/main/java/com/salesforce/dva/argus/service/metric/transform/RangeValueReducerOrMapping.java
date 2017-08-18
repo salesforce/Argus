@@ -66,27 +66,27 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return max - min;
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner) {
     	double min = Double.MAX_VALUE;
     	double max = Double.MIN_VALUE;
     	
     	while (scanner.hasNextDP()) {
-	   		Double value = scanner.getNextDP().getValue();
-	   		if (value == null) {
-	   			value = 0.0;
-	   		}
-	    		
-	    	double candidate = value;
-	    		
-			if (candidate < min) {
+    		Double value = scanner.getNextDP().getValue();
+    		if (value == null) {
+    			value = 0.0;
+    		}
+    		
+    		double candidate = value;
+    		
+    		if (candidate < min) {
     			min = candidate;
-	   		}
-	   		if (candidate > max) {
-	   			max = candidate;
-	   		}
-	    }
+    		}
+    		if (candidate > max) {
+    			max = candidate;
+    		}
+    	}
     	return max - min;
      }
 
@@ -94,28 +94,39 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Range transform doesn't support mapping");
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner) {
         throw new UnsupportedOperationException("Range transform doesn't support mapping");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Range transform doesn't support mapping");
     }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't support mapping");
     }
-	
-	@Override
+    
+    @Override
     public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Range transform doesn't support mapping");
+    }
+    
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't support reduce with constant");
     }
-	
-	@Override
+    
+    @Override
     public Double reduceScanner(MetricScanner scanner, List<String> constants) {
     	throw new UnsupportedOperationException("Range transform doesn't support reduce with constant");
     }
