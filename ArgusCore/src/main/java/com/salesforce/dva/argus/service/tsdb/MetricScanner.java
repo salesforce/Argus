@@ -35,6 +35,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.*;
  * <ul>
  * 	<li>metric</li>
  * 	<li>query</li>
+ * 	<li>pointer</li>
  * </ul>
  * 
  * @author Addie Chambers (adelaide.chambers@salesforce.com)
@@ -50,19 +51,19 @@ public class MetricScanner {
 	
 	//~ Instance fields *************************************************************************************************************************************************************************
 	
-	private AtomicLong pointer;
-	private Map<Long, Double> datapoints = new HashMap<>();
-	private ReentrantReadWriteLock lock;
+	protected AtomicLong pointer;
+	protected Map<Long, Double> datapoints = new HashMap<>();
+	protected ReentrantReadWriteLock lock;
 	private Long chunkSize;
 	private AtomicLong lastStartTimestamp;
 	private AtomicLong lastEndTimestamp;
-	private MetricQuery query;
+	protected MetricQuery query;
 	private TSDBService service;
-	private Metric metric;
-	private AtomicBoolean inUse;
+	protected Metric metric;
+	protected AtomicBoolean inUse;
 	private int callsToFetch = 0;
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
-	private ScheduledExecutorService _scheduledExecutorService;
+	protected ScheduledExecutorService _scheduledExecutorService;
 	private AtomicBoolean fetching = new AtomicBoolean(false);
 	
 	//~ Constructors ****************************************************************************************************************************************************************************
@@ -70,8 +71,47 @@ public class MetricScanner {
 	/**
 	 * Creates a new metric scanner object.
 	 * 
-	 * TSDB service, metric, and query cannot be null. There must not already exist a metric scanner in use for the given metric
-	 * and query pair.
+	 * Metric cannot be null. Intended to be used with a MetricPageScanner
+	 * to push additional data.
+	 * 
+	 * @param metric The Metric to encapsulate.
+	 */
+	public MetricScanner(Metric metric) {
+		SystemAssert.requireArgument(metric != null, "The metric cannot be null!");
+		lock = new ReentrantReadWriteLock();
+		
+		lock.writeLock().lock();
+		this.metric = new Metric(metric);
+		this.metric.setDatapoints(new HashMap<>(metric.getDatapoints()));
+		datapoints.putAll(metric.getDatapoints());
+		pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+		inUse = new AtomicBoolean(true);
+		lock.writeLock().unlock();
+	}
+	
+	/**
+	 * Creates a new metric scanner object.
+	 * 
+	 * Datapoints cannot be null. Intended to be used with a
+	 * MetricPageDatapointScanner to push additional data.
+	 * 
+	 * @param datapoints The Map of datapoints to encapsulate.
+	 */
+	public MetricScanner(Map<Long, Double> datapoints) {
+		SystemAssert.requireArgument(datapoints != null, "The datapoints cannot be null!");
+		lock = new ReentrantReadWriteLock();
+		
+		lock.writeLock().lock();
+		this.datapoints.putAll(datapoints);
+		pointer = datapoints.isEmpty() ? null : new AtomicLong(Collections.min(datapoints.keySet()));
+		inUse = new AtomicBoolean(true);
+		lock.writeLock().unlock();
+	}
+	
+	/**
+	 * Creates a new metric scanner object.
+	 * 
+	 * TSDB service, metric, and query cannot be null.
 	 * 
 	 * @param metric The Metric object encapsulating the data from the start of the query result.
 	 * @param query The MetricQuery object to query.
@@ -87,6 +127,7 @@ public class MetricScanner {
 		
 		lock = new ReentrantReadWriteLock();
 		this.metric = new Metric(metric);
+		this.metric.setDatapoints(new HashMap<>(metric.getDatapoints()));
 		this.query = new MetricQuery(query);
 		this.metric.setQuery(this.query);
 		this.service = service;
@@ -125,6 +166,7 @@ public class MetricScanner {
 	public MetricScanner(MetricScanner scanner) {
 		lock = new ReentrantReadWriteLock();
 		this.metric = scanner.getMetric();
+		this.metric.setDatapoints(new HashMap<>(metric.getDatapoints()));
 		this.query = scanner.getQuery();
 		this.metric.setQuery(this.query);
 		this.service = scanner.service;
@@ -250,9 +292,10 @@ public class MetricScanner {
 	}
 	
 	/**
-	 * Retrieves the next data point of the metric. Checks if more data needs to be fetched asynchronously.
+	 * Retrieves the next data point of the metric. Checks if more data needs to be fetched asynchronously. Another
+	 * data point must exist in the scanner to call this method.
 	 * 
-	 * @return The Map.Entry representing the next data point stored in the metric in chronological order, or null if there are no more data points.
+	 * @return The Map.Entry representing the next data point stored in the metric in chronological order.
 	 */
 	public Map.Entry<Long, Double> getNextDP() {
 		asyncFetch();
@@ -268,6 +311,31 @@ public class MetricScanner {
 		}
 		lock.readLock().unlock();
 		pointer = nextTime();
+		return dp;
+	}
+	
+	/**
+	 * Returns the next data point of the metric, or null if no more datapoints exist. This point may later be
+	 * re-accessed by the scanner.
+	 * 
+	 * @return The Map.Entry representing the next data point stored in the metric in chronological order, or null if no more exist.
+	 */
+	public Map.Entry<Long, Double> peek() {
+		asyncFetch();
+		
+		if (!this.hasNextDP()) {
+			return null;
+		}
+		lock.readLock().lock();
+		Map<Long, Double> dpMap = new HashMap<Long, Double>();
+		if (pointer != null) {
+			dpMap.put(pointer.get(), datapoints.get(pointer.get()));
+		}
+		Map.Entry<Long, Double> dp = null;
+		for (Map.Entry<Long, Double> elem : dpMap.entrySet()) {
+			dp = elem;
+		}
+		lock.readLock().unlock();
 		return dp;
 	}
 	
@@ -290,6 +358,7 @@ public class MetricScanner {
 		Metric m = null;
 		try {
 			m = new Metric(metric);
+			m.setDatapoints(new HashMap<>(m.getDatapoints()));
 		} finally {
 			lock.readLock().unlock();
 		}
@@ -321,6 +390,14 @@ public class MetricScanner {
 	 */
 	public Map<String, String> getMetricTags() {
 		return this.metric.getTags();
+	}
+	
+	/**
+	 * Whether the current scanner has been disposed.
+	 * @return The boolean for whether the scanner is still in use or not.
+	 */
+	public boolean isInUse() {
+		return inUse.get();
 	}
 	
 	/**
@@ -366,7 +443,7 @@ public class MetricScanner {
 	 * 
 	 * @return The timestamp of the next data point in the metric scanner, or null if there are no later data points.
 	 */
-	private AtomicLong nextTime() {
+	protected AtomicLong nextTime() {
 		Long next = null;
 		lock.readLock().lock();
 		for (Long time : datapoints.keySet()) {
@@ -429,7 +506,7 @@ public class MetricScanner {
 	 * 
 	 * @param datapoints The data points contained in the slice of time returned by the query.
 	 */
-	private void pushDatapoints(Map<Long, Double> datapoints) {
+	protected void pushDatapoints(Map<Long, Double> datapoints) {
 		SystemAssert.requireState(lock.writeLock().isHeldByCurrentThread(), "This thread must have the writing lock to push more datapoints!");
 		if (pointer == null) {
 			Set<Long> possiblePointers = new HashSet<>();
@@ -459,7 +536,7 @@ public class MetricScanner {
 	 * 
 	 * @param metric The metric returned by the most recent section of the query.
 	 */
-	private void updateMetric(Metric metric) {
+	protected void updateMetric(Metric metric) {
 		this.metric.setNamespace(metric.getNamespace());
 		this.metric.setDisplayName(metric.getDisplayName());
 		this.metric.setUnits(metric.getUnits());
@@ -470,7 +547,7 @@ public class MetricScanner {
 	 * Pushes the received data to metric scanners associated with all of the metrics received, including this one.
 	 * Fills in gaps if we have generated lated data for a scanner but not the earlier data.
 	 */
-	private void fetch() {
+	private void fetch() throws InterruptedException {
 		callsToFetch++;
 		lock.readLock().lock();
 		Long startTime = lastEndTimestamp.get();
@@ -525,6 +602,18 @@ public class MetricScanner {
 	}
 	
 	/**
+	 * Gets the shift function already encapsulated by a metric scanner
+	 * upon its creation. A metric scanner that interacts with the database
+	 * has no previous shift, so its shift function is a NOP.
+	 * 
+	 * @return A ShiftFunction representing a NOP.
+	 */
+	protected ScannerShiftFunction getShift() {
+		ScannerShiftFunction shift = (Long t) -> t;
+		return shift;
+	}
+	
+	/**
 	 * Converts a metric scanner into a string based off of its associated metric, query, and current pointer value.
 	 */
 	@Override
@@ -550,7 +639,7 @@ public class MetricScanner {
 		
 		MetricScanner o = (MetricScanner) other;
 		
-		return this.metric == o.metric && this.query == o.query;
+		return this.metric == o.metric && this.query == o.query && ((this.pointer == null && o.pointer == null) || this.pointer.equals(o.pointer));
 	}
 	
 	/**
@@ -562,6 +651,7 @@ public class MetricScanner {
 		
 		int result = prime * this.metric.hashCode();
 		result = result + prime * this.query.hashCode();
+		result = result + prime * (pointer == null ? prime : (int) pointer.get());
 		return result;
 	}
 	
@@ -570,7 +660,7 @@ public class MetricScanner {
 	 * 
 	 * @return The scheduled executor service for the metric scanner.
 	 */
-	private ScheduledExecutorService _createScheduledExecutorService() {
+	protected ScheduledExecutorService _createScheduledExecutorService() {
 		return Executors.newScheduledThreadPool(1);
 	}
 	
@@ -583,7 +673,7 @@ public class MetricScanner {
 		lock.writeLock().lock();
 		try {
 			fetching.set(true);
-			_scheduledExecutorService.schedule(fetchDataChunkThread, 0L, TimeUnit.MILLISECONDS);
+			_scheduledExecutorService.scheduleWithFixedDelay(fetchDataChunkThread, 0L, 500L, TimeUnit.MILLISECONDS);
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -592,7 +682,7 @@ public class MetricScanner {
 	/**
 	 * Shuts down the scheduled executor service.
 	 */
-	private void _shutdownScheduledExecutorService() {
+	protected void _shutdownScheduledExecutorService() {
 		_logger.info("Shutting down scheduled fetch metric scanner data chunk executor service");
 		_scheduledExecutorService.shutdown();
 		try {
@@ -618,12 +708,17 @@ public class MetricScanner {
 		
 		@Override
 		public void run() {
-			fetch();
-			lock.writeLock().lock();
 			try {
-				fetching.set(false);
+				fetch();
+			} catch (InterruptedException e) {
+				_logger.info("Fetching was interrupted.");
 			} finally {
-				lock.writeLock().unlock();
+				lock.writeLock().lock();
+				try {
+					fetching.set(false);
+				} finally {
+					lock.writeLock().unlock();
+				}
 			}
 		}
 	}

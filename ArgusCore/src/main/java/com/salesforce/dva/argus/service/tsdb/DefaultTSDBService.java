@@ -1,4 +1,5 @@
 /*
+
  * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
  *
@@ -351,7 +352,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));
         return metricsMap;
     }
-	
+    
     /** @see TSDBService#getMetricScanners(java.util.List) */
     @Override
     public Map<MetricQuery, List<MetricScanner>> getMetricScanners(List<MetricQuery> queries) {

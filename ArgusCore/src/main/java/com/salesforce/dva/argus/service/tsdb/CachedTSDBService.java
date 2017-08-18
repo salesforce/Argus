@@ -196,7 +196,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
         }
         return result;
     }
-	
+    
     @Override
     public Map<MetricQuery, List<MetricScanner>> getMetricScanners(List<MetricQuery> queries) {
     	SystemAssert.requireArgument(queries != null, "Metric queries list cannot be null.");
