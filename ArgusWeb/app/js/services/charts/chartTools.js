@@ -41,11 +41,15 @@ angular.module('argus.services.charts.tools', [])
 		var currentMarginRight = isSmallChart? marginRightSmall: marginRight;
 		var newWidth = newContainerWidth - marginLeft - currentMarginRight;
 		var newHeight, newHeight2;
+
+		// 'smallChart' setting: add to marginBottom, so xAxis has more room for rotated text labels
+		var tmpMarginBottom = (isSmallChart)? marginBottom + 30 : marginBottom;
+
 		if (isBrushOn) {
-			newHeight = parseInt((newContainerHeight - currentMarginTop - marginBottom) * mainChartRatio);
-			newHeight2 = parseInt((newContainerHeight - currentMarginTop - marginBottom) * brushChartRatio);
+			newHeight = parseInt((newContainerHeight - currentMarginTop - tmpMarginBottom) * mainChartRatio);
+			newHeight2 = parseInt((newContainerHeight - currentMarginTop - tmpMarginBottom) * brushChartRatio);
 		} else {
-			newHeight = parseInt(newContainerHeight - currentMarginTop - marginBottom);
+			newHeight = parseInt(newContainerHeight - currentMarginTop - tmpMarginBottom);
 			newHeight2 = 0;
 		}
 
@@ -56,9 +60,9 @@ angular.module('argus.services.charts.tools', [])
 			left: marginLeft
 		};
 		var newMargin2 = {
-			top: newContainerHeight - newHeight2 - marginBottom,
+			top: newContainerHeight - newHeight2 - tmpMarginBottom,
 			right: currentMarginRight,
-			bottom: marginBottom,
+			bottom: tmpMarginBottom,
 			left: marginLeft
 		};
 		return {
@@ -89,12 +93,10 @@ angular.module('argus.services.charts.tools', [])
 	this.bisectDate = d3.bisector(function (d) {
 		return d[0];
 	}).left;
-	var bisectDate = this.bisectDate;
 
 	this.bisectDateStackedData = d3.bisector(function (d) {
 		return d.data.timestamp;
 	}).left;
-	var bisectDateStackedData = this.bisectDateStackedData;
 
 	// menu option
 	var sampleCustomFormat = '0,.8';     // scientific notation
@@ -188,8 +190,11 @@ angular.module('argus.services.charts.tools', [])
 		};
 	};
 
+	this.generateTimestampSelector = function (isDataStacked) {
+		return isDataStacked ? function (d) {return d.data.timestamp;} : function (d) {return d[0];};
+	};
 
-	this.getXandYDomainsOfSeries = function (series, isDataStacked, extraYAxisSet) {
+	this.getXandYDomainsOfSeries = function (series, isChartDiscrete, isDataStacked, timestampSelector, extraYAxisSet) {
 		var datapoints = [];
 		var extraDatapoints = {};
 
@@ -198,32 +203,39 @@ angular.module('argus.services.charts.tools', [])
 		}
 
 		series.forEach(function (metric) {
-			if(metric.extraYAxis){
+			if (metric.extraYAxis) {
 				extraDatapoints[metric.extraYAxis] = extraDatapoints[metric.extraYAxis].concat(metric.data);
-			}else{
-				datapoints = datapoints.concat(metric.data)
+			} else {
+				datapoints = datapoints.concat(metric.data);
 			}
 		});
 
-		return {
-			xDomain: this.getXDomainOfSeries(datapoints, isDataStacked),
+		var result = {
+			xDomain: this.getXDomainOfSeries(datapoints, timestampSelector),
 			yDomain: this.getYDomainOfSeries(datapoints, isDataStacked),
 			extraYDomain: this.getExtraYDomainOfSeries(extraDatapoints, extraYAxisSet)
 		};
+
+		if (isChartDiscrete) result.discreteXDomain = this.getDiscreteXDomainOfSeries(datapoints, timestampSelector);
+
+		return result;
 	};
 
-	this.getXDomainOfSeries = function (dataPoints, isDataStacked) {
+	this.getXDomainOfSeries = function (dataPoints, timestampSelector) {
 		var extent;
-		if (isDataStacked) {
-			extent = d3.extent(dataPoints, function (d) {
-				return d.data.timestamp;
-			});
-		} else {
-			extent = d3.extent(dataPoints, function (d) {
-				return d[0];
-			});
-		}
+		extent = d3.extent(dataPoints, function (d) {
+			return timestampSelector(d);
+		});
 		return extent;
+	};
+
+	this.getDiscreteXDomainOfSeries = function (datapoints, timestampSelector) {
+		var result = [];
+		datapoints.map(function (d) {
+			var newTimestamp = timestampSelector(d);
+			if (!result.includes(newTimestamp)) result.push(newTimestamp);
+		});
+		return result.sort();
 	};
 
 	this.getYDomainOfSeries = function (dataPoints, isDataStacked) {
@@ -270,6 +282,16 @@ angular.module('argus.services.charts.tools', [])
 				extraY[iSet].range([sizeInfo.height, 0]);
 			}
 		}
+	};
+
+	this.getSubDiscreteXDomain = function (discreteXDomain, newExtent) {
+		var startTime = typeof newExtent[0] === 'number' ? newExtent[0] : newExtent[0].getTime();
+		var endTime = typeof newExtent[1] === 'number' ? newExtent[1] : newExtent[1].getTime();
+		var startIndex = discreteXDomain.indexOf(startTime);
+		var endIndex = discreteXDomain.indexOf(endTime);
+		if (startIndex === -1) startIndex = d3.bisectLeft(discreteXDomain, startTime) - 1;
+		if (endIndex === -1) endIndex = d3.bisectRight(discreteXDomain, endTime);
+		return discreteXDomain.slice(startIndex, endIndex + 1);
 	};
 
 	this.createSourceListForLegend = function (names, graphClassNames, colors, colorZ) {
@@ -364,9 +386,9 @@ angular.module('argus.services.charts.tools', [])
 			var bucketSize = Math.ceil(metric.data.length / (0.1 * containerWidth));
 			sampler.bucketSize(bucketSize);
 			result.data = sampler(metric.data);
-			return result
+			return result;
 		} else {
-			return metric
+			return metric;
 		}
 	};
 
@@ -381,28 +403,22 @@ angular.module('argus.services.charts.tools', [])
 		if (!k || k > numOfPoints) k = 3;
 		zoom.scaleExtent([1, numOfPoints / k]);
 		return parseInt(numOfPoints / k);
-
 	};
 
 	this.isBrushInNonEmptyRange = function (xDomain, dateExtent) {
-		return xDomain[0].getTime() <= dateExtent[1] &&  xDomain[1].getTime()>= dateExtent[0];
+		return xDomain[0] <= dateExtent[1] && xDomain[xDomain.length - 1] >= dateExtent[0];
 	};
 
 	this.isNotInTheDomain = function (value, domainArray) {
-		return value < domainArray[0] || value > domainArray[1];
+		return value < domainArray[0] || value > domainArray[domainArray.length - 1];
 	};
 
-	this.isMetricNotInTheDomain = function (metric, xDomain, isDataStacked) {
+	this.isMetricNotInTheDomain = function (metric, xDomain, timestampSelector) {
 		var len = metric.data.length;
-		var startPoint, endPoint;
-		if (isDataStacked) {
-			startPoint = metric.data[0].data.timestamp;
-			endPoint = metric.data[len - 1].data.timestamp;
-		} else {
-			startPoint = metric.data[0][0];
-			endPoint = metric.data[len - 1][0];
-		}
-		return startPoint > xDomain[1].getTime() || endPoint < xDomain[0].getTime();
+		if (len < 1) return false;
+		var startPoint = timestampSelector(metric.data[0]);
+		var endPoint = timestampSelector(metric.data[len - 1]);
+		return startPoint > xDomain[1] || endPoint < xDomain[xDomain.length - 1];
 	};
 	var isMetricNotInTheDomain = this.isMetricNotInTheDomain;
 
@@ -491,27 +507,20 @@ angular.module('argus.services.charts.tools', [])
 		return newSeries;
 	};
 
-	this.adjustSeriesBeingDisplayed = function (series, x, isDataStacked) {
+	this.adjustSeriesBeingDisplayed = function (series, x, timestampSelector, dateBisector) {
 		var xDomain = x.domain();
-		// var newDisplayingSeries = angular.copy(series);
 		var newDisplayingSeries = series.map(function(metric) {
 			return UtilService.objectWithoutProperties(metric, ['data']);
 		});
 		series.forEach(function (metric, index) {
-			if (isMetricNotInTheDomain(metric, xDomain, isDataStacked)) {
+			if (isMetricNotInTheDomain(metric, xDomain, timestampSelector)) {
 				newDisplayingSeries[index].data = [];
 				return;
 			}
 			var start, end;
-			if (isDataStacked) {
-				start = bisectDateStackedData(metric.data, xDomain[0]);
-				if (start > 0) start -= 1; //to avoid cut off issue on the edge
-				end = bisectDateStackedData(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
-			} else {
-				start = bisectDate(metric.data, xDomain[0]);
-				if (start > 0) start -= 1;
-				end = bisectDate(metric.data, xDomain[1], start) + 1;
-			}
+			start = dateBisector(metric.data, xDomain[0]);
+			if (start > 0) start -= 1; //to avoid cut off issue on the edge
+			end = dateBisector(metric.data, xDomain[1], start) + 1; //to avoid cut off issue on the edge
 			newDisplayingSeries[index].data = metric.data.slice(start, end + 1);
 		});
 		return newDisplayingSeries;
@@ -523,7 +532,7 @@ angular.module('argus.services.charts.tools', [])
 		})[0];
 	};
 
-	this.processYDomain = function (currentExtent, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked) {
+	this.processYDomain = function (currentExtent, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete) {
 		var yMin, yMax, buffer, finalYMin, finalYMax;
 		yMin = UtilService.validNumberChecker(yScalePlain(currentExtent[0]));
 		yMax = UtilService.validNumberChecker(yScalePlain(currentExtent[1]));
@@ -534,6 +543,7 @@ angular.module('argus.services.charts.tools', [])
 		finalYMax = (agYMax === undefined) ? UtilService.validNumberChecker(yScalePlain.invert(yMax + 1.2 * buffer)): agYMax;
 
 		if (isDataStacked && finalYMin < 0 && yMin !== yMax) finalYMin = 0;
+		if (isChartDiscrete && finalYMin < 0 && yMin < yMax) finalYMin = 0;
 		// TODO: still need to handle log(0) better
 		if (yScaleType === 'log') {
 			if (finalYMin === 0) finalYMin = 1;
