@@ -9,7 +9,7 @@ To find out more [see the wiki.](https://github.com/salesforce/Argus/wiki)
 
 ![Argus UI](https://cloud.githubusercontent.com/assets/15337203/12775758/53f98b02-ca05-11e5-88b0-1fd11afe335f.png)
 
-## Building Argus
+### Building Argus
 
 ### Installing The Resource Filters
 
