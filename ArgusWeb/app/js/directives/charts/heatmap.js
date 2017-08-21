@@ -180,7 +180,7 @@ angular.module('argus.directives.charts.heatmap', [])
 					});
 
 					optionsModal.rendered.then(function(){
-                        $("a.definition-tip").tooltip();
+						$("a.definition-tip").tooltip();
 					});
 				};
 
@@ -416,7 +416,7 @@ angular.module('argus.directives.charts.heatmap', [])
 					yGridG = gridsElement.yGridG;
 
 
-                    //the g element containing all the tiles
+					//the g element containing all the tiles
 					tileArea = ChartElementService.appendTileArea(mainChart);
 
 					//clip path: keep graphs within the container
@@ -455,42 +455,42 @@ angular.module('argus.directives.charts.heatmap', [])
 				}
 
 				function redrawHeatmap (){
-                    ChartElementService.removeAllTiles(tileArea);
-                    var aggregateType = scope.menuOption.aggregateType || chartOptions.aggregateType || ChartToolService.defaultAggregateType;
-                    var intervalInMinutes = Number(scope.menuOption.intervalInMinutes) || chartOptions.intervalInMinutes || ChartToolService.defaultHeatmapIntervalInMinutes;
-                    var bucketMin =ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
-                    var step = Number(scope.menuOption.step) || chartOptions.step;
-                    var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
-                    var tileColor = scope.menuOption.tileColor || ChartToolService.defaultTileColor;
+					ChartElementService.removeAllTiles(tileArea);
+					var aggregateType = scope.menuOption.aggregateType || chartOptions.aggregateType || ChartToolService.defaultAggregateType;
+					var intervalInMinutes = Number(scope.menuOption.intervalInMinutes) || chartOptions.intervalInMinutes || ChartToolService.defaultHeatmapIntervalInMinutes;
+					var bucketMin =ChartToolService.getTheNumberValueFromTwo(scope.menuOption.bucketMin, chartOptions.bucketMin);
+					var step = Number(scope.menuOption.step) || chartOptions.step;
+					var numOfBucket = Number(scope.menuOption.numOfBucket) || chartOptions.numOfBucket || ChartToolService.defaultHeatmapNumOfBucket;
+					var tileColor = scope.menuOption.tileColor || ChartToolService.defaultTileColor;
 
-                    var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
+					var aggregatedSeriesAndXYDomain = ChartToolService.getAggregatedSeriesAndXYZDomain(series, names, aggregateType, intervalInMinutes);
 
-                    var xDomain = aggregatedSeriesAndXYDomain.xDomain;
-                    var zDomain = aggregatedSeriesAndXYDomain.zDomain;
+					var xDomain = aggregatedSeriesAndXYDomain.xDomain;
+					var zDomain = aggregatedSeriesAndXYDomain.zDomain;
 
-                    var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, bucketMin, step, numOfBucket);
-                    var heatmapData = heatmapDataAndBucketInfo.heatmapData;
+					var heatmapDataAndBucketInfo = ChartToolService.getHeatmapDataAndBucketInfo(aggregatedSeriesAndXYDomain, bucketMin, step, numOfBucket);
+					var heatmapData = heatmapDataAndBucketInfo.heatmapData;
 
-                    seriesBeingDisplayed = heatmapData;
+					seriesBeingDisplayed = heatmapData;
 
-                    x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
-                    y.domain(heatmapDataAndBucketInfo.newYDomain);
-                    z.domain(["white", scope.menuOption.tileColor]);
-                    graph.z.domain(zDomain);
-                    graph.z.range(["white", tileColor]);
+					x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
+					y.domain(heatmapDataAndBucketInfo.newYDomain);
+					z.domain(["white", scope.menuOption.tileColor]);
+					graph.z.domain(zDomain);
+					graph.z.range(["white", tileColor]);
 
-                    ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
-                    ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
+					ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG);
+					ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
 
-                    var xStep = intervalInMinutes * 60000;
-                    var yStep = heatmapDataAndBucketInfo.step;
-                    bucketInfo = {
-                        xStep : xStep,
-                        yStep : yStep,
-                        numOfXStep: Math.ceil((x.domain()[1] - x.domain()[0])/xStep),
-                        numOfYStep: heatmapDataAndBucketInfo.numOfBucket
-                    };
-                    ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
+					var xStep = intervalInMinutes * 60000;
+					var yStep = heatmapDataAndBucketInfo.step;
+					bucketInfo = {
+						xStep : xStep,
+						yStep : yStep,
+						numOfXStep: Math.ceil((x.domain()[1] - x.domain()[0])/xStep),
+						numOfYStep: heatmapDataAndBucketInfo.numOfBucket
+					};
+					ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
 				}
 
 				function renderGraphs (series) {
@@ -929,7 +929,7 @@ angular.module('argus.directives.charts.heatmap', [])
 
 				scope.updateColor = function(color){
 					z.domain(['white', color]);
-                    ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
+					ChartElementService.renderHeatmap(tileArea, seriesBeingDisplayed, graph, bucketInfo, chartId);
 				};
 
 				// create graph only when there is data
@@ -1087,63 +1087,63 @@ angular.module('argus.directives.charts.heatmap', [])
 
 
 				scope.$watch('menuOption.aggregateType', function (newValue, oldValue) {
-				    if(!scope.hideMenu && newValue !== oldValue){
+					if(!scope.hideMenu && newValue !== oldValue){
 						redrawHeatmap();
 					}
-                }, true);
+				}, true);
 
-                scope.$watch('menuOption.tileColor', function (newValue, oldValue) {
-                    if(!scope.hideMenu && newValue !== oldValue){
-                        redrawHeatmap();
-                    }
-                }, true);
+				scope.$watch('menuOption.tileColor', function (newValue, oldValue) {
+					if(!scope.hideMenu && newValue !== oldValue){
+						redrawHeatmap();
+					}
+				}, true);
 
-                scope.$watch('menuOption.intervalInMinutes', function (newValue, oldValue) {
-                    if(timeout){
-                        $timeout.cancel(timeout);
-                    }
-                    timeout = $timeout(function(){
-                        if(!scope.hideMenu && newValue !== oldValue){
-							redrawHeatmap();
-                        }
-                    }, inputTimeout);
-                }, true);
-
-                scope.$watch('menuOption.bucketMin', function (newValue, oldValue) {
-                    if(timeout){
-                    	$timeout.cancel(timeout);
+				scope.$watch('menuOption.intervalInMinutes', function (newValue, oldValue) {
+					if(timeout){
+						$timeout.cancel(timeout);
 					}
 					timeout = $timeout(function(){
-                        if(!scope.hideMenu && newValue !== oldValue){
+						if(!scope.hideMenu && newValue !== oldValue){
 							redrawHeatmap();
-                        }
+						}
 					}, inputTimeout);
-                }, true);
+				}, true);
 
-                scope.$watch('menuOption.step', function (newValue, oldValue) {
-                    if(timeout){
-                        $timeout.cancel(timeout);
-                    }
-                    timeout = $timeout(function(){
-                        if(!scope.hideMenu && newValue !== oldValue){
-							redrawHeatmap();
-                        }
-					}, inputTimeout);
-                }, true);
-
-                scope.$watch('menuOption.numOfBucket', function (newValue, oldValue) {
-                    if(timeout){
-                    	$timeout.cancel(timeout);
+				scope.$watch('menuOption.bucketMin', function (newValue, oldValue) {
+					if(timeout){
+						$timeout.cancel(timeout);
 					}
-                	timeout = $timeout(function(){
-                        if(!scope.hideMenu && newValue !== oldValue){
+					timeout = $timeout(function(){
+						if(!scope.hideMenu && newValue !== oldValue){
 							redrawHeatmap();
-                        }
+						}
 					}, inputTimeout);
-                }, true);
+				}, true);
 
-				scope.$watch(function(){return element.width()}, function () {
-				    resize();
+				scope.$watch('menuOption.step', function (newValue, oldValue) {
+					if(timeout){
+						$timeout.cancel(timeout);
+					}
+					timeout = $timeout(function(){
+						if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+						}
+					}, inputTimeout);
+				}, true);
+
+				scope.$watch('menuOption.numOfBucket', function (newValue, oldValue) {
+					if(timeout){
+						$timeout.cancel(timeout);
+					}
+					timeout = $timeout(function(){
+						if(!scope.hideMenu && newValue !== oldValue){
+							redrawHeatmap();
+						}
+					}, inputTimeout);
+				}, true);
+
+				scope.$watch(function(){return element.width();}, function () {
+					resize();
 				});
 			}
 		};

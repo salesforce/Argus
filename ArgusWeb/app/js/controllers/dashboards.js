@@ -178,7 +178,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 		var template = "<!-- This is the root level tag. All dashboards must be encapsulated within this tag. -->\n<ag-dashboard>\n\n";
 
 		template += "<!-- <ag-text> are filters used to refine a query. The values of these will be used by the <ag-metric> tag. You may define as many <ag-text> tags as the number of components you want to substitute in the argus query expression. A default value may be specified on each <ag-text> tag. The page will be loaded using these default values. -->\n";
-		template += "<ag-date type='datetime' name='start' label='Start Date' default='-12h'></ag-date>\n";
+		template += "<ag-date type='datetime' name='start' label='Start Date' default='-2h'></ag-date>\n";
 		template += "<ag-date type='datetime' name='end' label='End Date' default='-0h'></ag-date>\n";
 		template += "<ag-text type='text' name='scope' label='Scope' default='argus.jvm'></ag-text>\n";
 		template += "<ag-text type='text' name='metric' label='Metric' default='mem.heap.used'></ag-text>\n";

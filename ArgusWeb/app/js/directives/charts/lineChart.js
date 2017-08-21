@@ -7,7 +7,7 @@ angular.module('argus.directives.charts.lineChart', [])
 	var AllChartIds = [];
 	var fullscreenChartID;
 	var syncChartJobs;
-    //
+	//
 	// function resizeHelper(){
 	// 	$timeout.cancel(timer); //clear to improve performance
 	// 	timer = $timeout(function () {
@@ -27,7 +27,7 @@ angular.module('argus.directives.charts.lineChart', [])
 	// 		}
 	// 	}, resizeTimeout); //only execute resize after a timeout
 	// }
-    //
+	//
 	// d3.select(window).on('resize', resizeHelper);
 
 	//---------------------sync all charts-----------------------
@@ -362,8 +362,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				tooltip, tipBox, tipItems,
 				focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement,
 				names, colors, graphClassNames,
-				flagsG, labelTip,
-				stack;
+				flags, stack;
 
 			var isDataStacked = chartType.includes('stack');
 			var isChartDiscrete = chartType.includes('bar');
@@ -439,9 +438,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				xAxisG2 = smallBrushElement.xAxisG2;
 
 				// flags and annotations
-				var flagsElement = ChartElementService.appendFlagsElements(svg_g, chartId);
-				flagsG = flagsElement.flagsG;
-				labelTip = flagsElement.labelTip;
+				flags = ChartElementService.appendFlagsElements(svg_g);
 
 				// tooltip setup
 				var tooltipElement = ChartElementService.appendTooltipElements(svg_g);
@@ -529,14 +526,16 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
 					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// render annotations
-					if (!metric.flagSeries) return;
-					var flagSeries = metric.flagSeries.data;
-					flagSeries.forEach(function (d) {
-						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d);
-					});
+					if (metric.flagSeries) {
+						var flagSeries = metric.flagSeries.data;
+						flagSeries.forEach(function (d) {
+							ChartElementService.renderAnnotationsLabels(flags, tempColor, metric.graphClassName, d);
+						});
+						ChartElementService.bringMouseOverLabelToFront(flags, chartId);
+					}
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
-				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
 			}
 
 			// Add the overlay element to the graph when mouse interaction takes place. This needs to be on top
@@ -744,7 +743,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
-				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
 				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 			}
 
@@ -790,7 +789,8 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 					ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
 
-					ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+					ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
+					ChartElementService.bringMouseOverLabelToFront(flags, chartId);
 
 					if (tempX[0].getTime() === x2.domain()[0].getTime() &&
 						tempX[1].getTime() === x2.domain()[1].getTime()) {
@@ -1068,15 +1068,9 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 			};
 
-			// remove annotation label tip when the user is leaving the page
-			scope.$on("$destroy", function() {
-				labelTip.destroy();
-			});
-
-            scope.$watch(function(){return element.width()}, function () {
+			scope.$watch(function(){ return element.width(); }, function () {
 				resize();
-            });
-
+			});
 		}
 	};
 }]);

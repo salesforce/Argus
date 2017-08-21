@@ -63,7 +63,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 					x: flagData.timestamp,
 					title: 'A',
 					text: formatFlagText(flagData.fields),
-					flagID: '_Flag'+tempID
+					flagID: '_Flag'+tempID,
+					fields: flagData.fields,
+					source: flagData.source
 				});
 				tempID++;
 			}

@@ -1,11 +1,11 @@
 'use strict';
-/*global angular:false, $:false, console:false, growl:false */
+/*global angular:false, $:false, console:false, growl:false, d3:false, window:false */
 
 angular.module('argus.directives.charts.chart', [])
 .directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl', '$timeout',
 	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
-        var timer;
-        var resizeTimeout = 250;
+		var timer;
+		var resizeTimeout = 250;
 
 
 		var chartNameIndex = 1;
@@ -42,19 +42,19 @@ angular.module('argus.directives.charts.chart', [])
 			// append, compile, & attach new scope to line-chart directive
 			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
 			if(updatedOptionList.chartType === "heatmap"){
-                angular.element('#' + newChartId).append(
-                    $compile(
-                        '<div ngsf-fullscreen>' +
-                        '<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
-                        '</div>')(lineChartScope)
-                );
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
+						'</div>')(lineChartScope)
+				);
 			}else{
-                angular.element('#' + newChartId).append(
-                    $compile(
-                        '<div ngsf-fullscreen>' +
-                        '<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
-                        '</div>')(lineChartScope)
-                );
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+						'</div>')(lineChartScope)
+				);
 			}
 		}
 
@@ -251,11 +251,11 @@ angular.module('argus.directives.charts.chart', [])
 			compile: function () {
 				return {
 					post: function postLink(scope, element, attributes, dashboardCtrl) {
-                        d3.select(window).on('resize', function(){
-                            $timeout.cancel(timer); //clear to improve performance
-                            timer = $timeout(function () {
-                                scope.$apply();
-                            }, resizeTimeout);
+						d3.select(window).on('resize', function(){
+							$timeout.cancel(timer); //clear to improve performance
+							timer = $timeout(function () {
+								scope.$apply();
+							}, resizeTimeout);
 						});
 						scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 							setupChart(scope, element, attributes, controls);

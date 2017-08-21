@@ -3,7 +3,7 @@
  */
 
 'use strict';
-/*global angular:false, d3:false, $:false  */
+/* global angular:false, d3:false, $:false. document:false */
 
 angular.module('argus.services.charts.elements', [])
 .service('ChartElementService', ['ChartToolService', 'UtilService', function(ChartToolService, UtilService) {
@@ -13,14 +13,16 @@ angular.module('argus.services.charts.elements', [])
 	var xAxisLabelHeightFactor = 15;
 	var tipOffset = 8;
 	var tipPadding = 3;
+	var doublePadding = 2 * tipPadding;
 	var circleRadius = 4.5;
 	var circleLen = circleRadius * 2;
 	var itemsPerCol = 12; // for tooltip
 	var crossLineTipWidth = 35;
 	var crossLineTipHeight = 15;
 	var crossLineTipPadding = 3;
-	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
+	var annotationLabelFontSize = 14;
 	var extraYAxisPadding = ChartToolService.extraYAxisPadding;
+	this.customizedChartType = ['scatter', 'bar', 'stackbar'];
 
 
 	var setGraphColorStyle = function (graph, color, chartType, opacity) {
@@ -34,13 +36,12 @@ angular.module('argus.services.charts.elements', [])
 		return (rangeArray[1] - rangeArray[0]) * 0.1;
 	};
 
-	var flipAnElementHorizontally = function (elements, width,totalWidth, marginRight, startingX, extraPadding) {
+	var flipAnElementHorizontally = function (elements, width, totalWidth, marginRight, startingX, extraPadding) {
 		var transformAttr = null;
-		//console.log(startingX, width);
 		if (startingX + width > totalWidth + marginRight) {
-			if( (startingX - width > 0)){
-                transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
-			}else{
+			if(startingX - width > 0){
+				transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+			} else {
 				transformAttr = 'translate(-' + startingX + ')';
 			}
 		}
@@ -226,7 +227,7 @@ angular.module('argus.services.charts.elements', [])
 			x: x,
 			y: y,
 			z: d3.scaleLinear().range(["white", "darkblue"]) //TODO make the color a parameter
-		}
+		};
 	};
 
 	this.createGraph = function (x, y, chartType) {
@@ -380,16 +381,9 @@ angular.module('argus.services.charts.elements', [])
 		return clip;
 	};
 
-	this.appendFlagsElements = function (svg_g, chartId) {
-		var flags = svg_g.append('g').attr('class', 'flags');
-		var flagsG = d3.select('#' + chartId).select('svg').select('.flags');
-		var labelTip = d3.tip().attr('class', 'd3-tip').offset([-10, 0]);
-		d3.select('#' + chartId).select('svg').call(labelTip);
-		return {
-			// flags: flags,
-			flagsG: flagsG,
-			labelTip: labelTip
-		};
+	this.appendFlagsElements = function (svg_g) {
+		var flagsG = svg_g.append('g').attr('class', 'flags');
+		return flagsG;
 	};
 
 	this.appendBrushWithXAxisElements = function (sizeInfo, svg_g) {
@@ -473,16 +467,16 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', 'highlightTile')
 			.attr('height', height)
 			.attr('width', width);
-        mouseOverTile.append('rect')
-            .attr('name', 'crossLineTipRectX')
-            .attr('class', 'crossLineTipRect');
-        mouseOverTile.append('text')
-            .attr('name', 'crossLineTipX')
-            .attr('class', 'crossLineTip')
-            .attr('y', 0)
-            .attr('dy', crossLineTipHeight);
+		mouseOverTile.append('rect')
+			.attr('name', 'crossLineTipRectX')
+			.attr('class', 'crossLineTipRect');
+		mouseOverTile.append('text')
+			.attr('name', 'crossLineTipX')
+			.attr('class', 'crossLineTip')
+			.attr('y', 0)
+			.attr('dy', crossLineTipHeight);
 
-        return mouseOverTile;
+		return mouseOverTile;
 	};
 
 	this.appendTooltipElements = function (svg_g) {
@@ -608,24 +602,24 @@ angular.module('argus.services.charts.elements', [])
 			.attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
 			.attr('width', graph.x(bucket.xStep) - graph.x(0))
 			.attr('height', graph.y(0) - graph.y(bucket.yStep))
-			.attr('fill', function(d) {return graph.z(d.frequency)})
-            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
+			.attr('fill', function(d) {return graph.z(d.frequency);})
+			.style('clip-path', 'url(\'#clip_' + chartId + '\')');
 	};
 
 	this.removeAllTiles = function (tileArea){
 		tileArea.selectAll('.heatmapTile').remove();
 	};
 
-    this.resizeHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
-        chart.selectAll('.heatmapTile')
-            .data(heatmapData)
-            .attr('x', function(d){ return graph.x(d.timestamp);})
-            .attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
-            .attr('width', graph.x(bucket.xStep) - graph.x(0))
-            .attr('height', graph.y(0) - graph.y(bucket.yStep))
-            .attr('fill', function(d) {return graph.z(d.frequency)})
-            .style('clip-path', 'url(\'#clip_' + chartId + '\')');
-    };
+	this.resizeHeatmap = function (chart, heatmapData, graph, bucket, chartId) {
+		chart.selectAll('.heatmapTile')
+			.data(heatmapData)
+			.attr('x', function(d){ return graph.x(d.timestamp);})
+			.attr('y', function(d){ return graph.y(d.bucket + bucket.yStep);})
+			.attr('width', graph.x(bucket.xStep) - graph.x(0))
+			.attr('height', graph.y(0) - graph.y(bucket.yStep))
+			.attr('fill', function(d) {return graph.z(d.frequency);})
+			.style('clip-path', 'url(\'#clip_' + chartId + '\')');
+	};
 
 	this.renderBrushLineGraph = function (context, color, metric, line2) {
 		context.append('path')
@@ -717,54 +711,132 @@ angular.module('argus.services.charts.elements', [])
 			.attr('class', className);
 	};
 
-    this.renderToolTipForHeatmap = function (tipItems, className){
-        tipItems.append('text')
-            .attr('class', className);
-    };
+	this.renderToolTipForHeatmap = function (tipItems, className){
+		tipItems.append('text')
+			.attr('class', className);
+	};
 
-	this.renderAnnotationsLabels = function (flags, labelTip, color, className, dataPoint) {
-		var label = flags.append('g')
+	this.renderAnnotationsLabels = function (flags, color, className, dataPoint) {
+		var flagG = flags.append('g')
 			.attr('class', 'flagItem ' + className)
 			.attr('id', className + dataPoint.flagID)
 			.style('stroke', color)
 			.attr('clicked', 'No');
 
 		// add the pin on the graph
-		label.append('line')
+		flagG.append('line')
 			.attr('y2', 35)
-			.attr('stroke-width', 2);
-		label.append('circle')
+			.attr('class', 'pin');
+		flagG.append('circle')
 			.attr('r', 8)
-			.attr('class', 'flag');
-		label.append('text')
+			.attr('class', 'pin');
+		flagG.append('text')
 			.attr('dy', 4)
-			.style('text-anchor', 'middle')
-			.style('stroke', 'black')
-			.text(dataPoint.title);
+			.text(dataPoint.title)
+			.attr('class', 'pin');
 
+		// add label to the pin
+		var dateObj = new Date(dataPoint.x);
+		var label = flagG.append('g').attr('class', 'flagLabel').style('display', 'none');
+		var labelContainer = label.append('rect')
+					.attr('x', -tipPadding)
+					.attr('y', -annotationLabelFontSize - tipPadding)
+					.attr('rx', tipPadding)
+					.attr('ry', tipPadding);
+		var labelContent = label.append('g');
+		// add time info
+		var offset = 6 + annotationLabelFontSize,
+			totalOffset = offset;
+		labelContent.append('text')
+			.append('tspan')
+			.style('font-weight', 600)
+			.text(dateObj.toUTCString());
+		labelContent.append('text')
+			.attr('dy', totalOffset)
+			.text('In current timezone: ' + dateObj.toLocaleString());
+		for (var key in dataPoint.fields) {
+			if (dataPoint.fields.hasOwnProperty(key)) {
+				totalOffset += offset;
+				labelContent.append('text')
+					.text(key + ': ' + dataPoint.fields[key])
+					.attr('dy', totalOffset);
+			}
+		}
 		// add the info box while hovering over
-		label.on('click', function () {
+		flagG.selectAll('.pin').on('click', function () {
 				// click to make the label tip stay while hovering over and enlarge the annotation's circle
-				if (label.attr('clicked') !== 'Yes') {
-					label.attr('clicked', 'Yes');
-					label.select('circle').attr('r', 16);
+				if (flagG.attr('clicked') !== 'Yes') {
+					flagG.attr('clicked', 'Yes');
+					flagG.select('circle').attr('r', 16);
+					label.style('display', null);
 				} else {
-					label.attr('clicked', 'No');
-					label.select('circle').attr('r', 8);
+					flagG.attr('clicked', 'No');
+					flagG.select('circle').attr('r', 8);
+					label.style('display', 'none');
 				}
 			})
 			.on('mouseover', function () {
-				// add timestamp to the annotation label
-				var dateObj = new Date(dataPoint.x);
-				var tempTimestamp = dateObj.toUTCString() + ' (in this timezone: ' + dateObj.toLocaleString() + ')';
-				tempTimestamp =  '<strong>' + tempTimestamp + '</strong><br/>' + dataPoint.text;
-				labelTip.style('border-color', color).html(tempTimestamp);
-				labelTip.show();
-				// prevent annotation label goes outside of the view on the  side
-				if (parseInt(labelTip.style('left')) < 15) labelTip.style('left', '15px');
+				label.style('display', null);
 			})
 			.on('mouseout', function () {
-				if (label.attr('clicked') !== 'Yes') labelTip.hide();
+				if (flagG.attr('clicked') !== 'Yes') {
+					label.style('display', 'none');
+				}
+			});
+	};
+
+	this.bringMouseOverLabelToFront = function (flags, chartId) {
+		// https://github.com/wbkd/d3-extended
+		// bring SVG to the front and back
+		d3.selection.prototype.moveToFront = function() {
+			return this.each(function(){
+				this.parentNode.appendChild(this);
+			});
+		};
+		d3.selection.prototype.moveToBack = function() {
+			return this.each(function() {
+				var firstChild = this.parentNode.firstChild;
+				if (firstChild) {
+					this.parentNode.insertBefore(this, firstChild);
+				}
+			});
+		};
+		var containerDim = document.getElementById(chartId).getBoundingClientRect();
+		flags.selectAll('.flagItem')
+			.on('mouseover', function () {
+				// shift annotation label if its cut off
+				var flag = d3.select(this);
+				var label = flag.select('.flagLabel');
+				var currentTransformAttr = label.attr('transform');
+				var labelDim = this.lastElementChild.getBoundingClientRect();
+				if (currentTransformAttr) {
+					// update transformation if label is cut off
+					var splitedTransformAttr = currentTransformAttr.split(',');
+					if (labelDim.left < containerDim.left) {
+						label.attr('transform', 'translate(' +
+												(Number(splitedTransformAttr[0].substring(10)) + (containerDim.left - labelDim.left + tipOffset)) +
+												',' + splitedTransformAttr[1]);
+					} else if (labelDim.right > containerDim.right) {
+						label.attr('transform', 'translate(' +
+												(Number(splitedTransformAttr[0].substring(10)) - (labelDim.right - containerDim.right + tipOffset)) +
+												',' + splitedTransformAttr[1]);
+					}
+				} else {
+					// update background rect's size and move label to the top of the flags
+					// this should be only called the first time mouseover happens to a flag
+					label.select('rect')
+						.attr('height', labelDim.height + doublePadding)
+						.attr('width', labelDim.width + doublePadding);
+					label.attr('transform', 'translate(-' + (labelDim.width/2 + tipPadding) + ', -' + (labelDim.height + doublePadding) + ')');
+				}
+				label.select('rect').style('stroke-width', 3);
+				flag.moveToFront();
+			})
+			.on('mouseout', function () {
+				d3.select(this).select('rect').style('stroke-width', 2);
+			})
+			.on('click', function () {
+				d3.select(this).moveToBack();
 			});
 	};
 
@@ -963,7 +1035,7 @@ angular.module('argus.services.charts.elements', [])
 			var startingPosition = graph.x0(matchingTimestamp);
 			var date = dateFormatter(matchingTimestamp);
 
-			mouseOverHighlightBarmouseOverHighlightBar.select('.highlightBar')
+			mouseOverHighlightBar.select('.highlightBar')
 				.attr('x', startingPosition)
 				.attr('dataX', matchingTimestamp)
 				.style('display', null);
@@ -982,23 +1054,23 @@ angular.module('argus.services.charts.elements', [])
 
 	this.justUpdateDateText = function (graph, mouseOverTile, dateFormatter, timestamp){
 
-        var dateText = mouseOverTile.select('.crossLineTip').attr('display', null);
-        var boxXRect = mouseOverTile.select('.crossLineTipRect').attr('display', null);
-        var startingPosition = graph.x(timestamp);
-        var date = dateFormatter(timestamp);
+		var dateText = mouseOverTile.select('.crossLineTip').attr('display', null);
+		var boxXRect = mouseOverTile.select('.crossLineTipRect').attr('display', null);
+		var startingPosition = graph.x(timestamp);
+		var date = dateFormatter(timestamp);
 
-        dateText.attr('x', startingPosition).text(date);
+		dateText.attr('x', startingPosition).text(date);
 
-        var boxX = dateText.node().getBBox();
-        boxXRect.attr('x', boxX.x - crossLineTipPadding)
-            .attr('y', boxX.y - crossLineTipPadding)
-            .attr('width', boxX.width + 2 * crossLineTipPadding)
-            .attr('height', boxX.height + 2 * crossLineTipPadding);
+		var boxX = dateText.node().getBBox();
+		boxXRect.attr('x', boxX.x - crossLineTipPadding)
+			.attr('y', boxX.y - crossLineTipPadding)
+			.attr('width', boxX.width + 2 * crossLineTipPadding)
+			.attr('height', boxX.height + 2 * crossLineTipPadding);
 
-    };
+	};
 
 	this.updateHighlightTile = function (graph, sizeInfo, bucketInfo, tileDataAndIndex, mouseOverTile, dateFormatter, distanceToRight){
-        var timestamp = tileDataAndIndex.data.timestamp;
+		var timestamp = tileDataAndIndex.data.timestamp;
 
 
 		var width = graph.x(bucketInfo.xStep) - graph.x(0);
@@ -1082,8 +1154,8 @@ angular.module('argus.services.charts.elements', [])
 			tipBox.attr('width', 0);
 			tipBox.attr('height', 0);
 		} else {
-			tipBox.attr('width', tipBounds.width + 4 * tipPadding);
-			tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+			tipBox.attr('width', tipBounds.width + 2 * doublePadding);
+			tipBox.attr('height', tipBounds.height + doublePadding);
 		}
 		// move tooltip to the left if there is not enough space to display it on the right
 		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
@@ -1091,11 +1163,11 @@ angular.module('argus.services.charts.elements', [])
 
 
 	this.updateTooltipItemsContentForHeatmap = function(sizeInfo, menuOption, tipItems, tipBox, aggregateInfo, names, graphClassNamesMap,  mousePositionData) {
-        var XOffset = 0;
-        var YOffset = 0;
-        var newXOffset = 0;
-        var OffsetMultiplier = -1;
-        // update tipItems (circle, source name, and data)
+		var XOffset = 0;
+		var YOffset = 0;
+		var newXOffset = 0;
+		var OffsetMultiplier = -1;
+		// update tipItems (circle, source name, and data)
 		tipItems.select('text.aggregateInfo')
 			.attr('dy', 20 + mousePositionData.positionY)
 			.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
@@ -1104,57 +1176,57 @@ angular.module('argus.services.charts.elements', [])
 			.attr('xml:space', 'preserve');
 
 		for (var i = 0; i <names.length; i++) {
-            // create a new col after every itemsPerCol
-            if (i % itemsPerCol === 0) {
-                OffsetMultiplier++;
-                YOffset = OffsetMultiplier * itemsPerCol;
-                XOffset += newXOffset;
-                newXOffset = 0;
-            }
-            var textLine = tipItems.select('text.' + graphClassNamesMap[names[i]])
-                .attr('dy', 20 * (2 + i - YOffset) + mousePositionData.positionY)
-                .attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
+			// create a new col after every itemsPerCol
+			if (i % itemsPerCol === 0) {
+				OffsetMultiplier++;
+				YOffset = OffsetMultiplier * itemsPerCol;
+				XOffset += newXOffset;
+				newXOffset = 0;
+			}
+			var textLine = tipItems.select('text.' + graphClassNamesMap[names[i]])
+				.attr('dy', 20 * (2 + i - YOffset) + mousePositionData.positionY)
+				.attr('dx', mousePositionData.positionX + tipOffset + tipPadding + 2 + XOffset)
 				.attr('display', null);
 
-            var name = UtilService.trimMetricName(names[i], menuOption);
-            textLine.text(name);
-            // update XOffset if existing offset is smaller than textLine
-            var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
-            if (tempXOffset > newXOffset) {
-                newXOffset = tempXOffset;
-            }
-        }
-        // update tipBox
-        var tipBounds = tipItems.node().getBBox();
-        tipBox.attr('x', mousePositionData.positionX + tipOffset);
-        tipBox.attr('y', mousePositionData.positionY + tipOffset);
-        if (tipBounds.width === 0 || tipBounds.height === 0) {
-            // when there is no graph, make the tipBox 0 size
-            tipBox.attr('width', 0);
-            tipBox.attr('height', 0);
-        } else {
-            tipBox.attr('width', tipBounds.width + 4 * tipPadding);
-            tipBox.attr('height', tipBounds.height + 2 * tipPadding);
-        }
-        // move tooltip to the left if there is not enough space to display it on the right
-        flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
+			var name = UtilService.trimMetricName(names[i], menuOption);
+			textLine.text(name);
+			// update XOffset if existing offset is smaller than textLine
+			var tempXOffset = textLine.node().getBBox().width + circleLen + tipOffset;
+			if (tempXOffset > newXOffset) {
+				newXOffset = tempXOffset;
+			}
+		}
+		// update tipBox
+		var tipBounds = tipItems.node().getBBox();
+		tipBox.attr('x', mousePositionData.positionX + tipOffset);
+		tipBox.attr('y', mousePositionData.positionY + tipOffset);
+		if (tipBounds.width === 0 || tipBounds.height === 0) {
+			// when there is no graph, make the tipBox 0 size
+			tipBox.attr('width', 0);
+			tipBox.attr('height', 0);
+		} else {
+			tipBox.attr('width', tipBounds.width + 4 * tipPadding);
+			tipBox.attr('height', tipBounds.height + 2 * tipPadding);
+		}
+		// move tooltip to the left if there is not enough space to display it on the right
+		flipAnElementHorizontally([tipItems, tipBox], Number(tipBox.attr('width')), sizeInfo.width, sizeInfo.margin.right, mousePositionData.positionX, tipOffset);
 	};
 
 	this.unshowAllHeatmapTooltipText = function(tipItems, graphClassnames){
 		graphClassnames.forEach(function(name){
 			tipItems.select('text.'+name)
-				.attr('display', 'none')
+				.attr('display', 'none');
 		});
 	};
 
 	this.generateHeatmapTooltipInfo = function(tileDataAndIndex, bucketInfo, menuOption){
 
-        var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
-        var format = d3.format(dataFormat);
-        var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '    ' +
-            'Frequency :' + tileDataAndIndex.data.frequency;
+		var dataFormat = menuOption.tooltipConfig.rawTooltip ? ChartToolService.rawDataFormat : menuOption.tooltipConfig.customTooltipFormat;
+		var format = d3.format(dataFormat);
+		var aggregateInfo = 'Range : ' + format(tileDataAndIndex.data.bucket) + '-' + format(tileDataAndIndex.data.bucket + bucketInfo.yStep) + '    ' +
+			'Frequency :' + tileDataAndIndex.data.frequency;
 
-        return aggregateInfo;
+		return aggregateInfo;
 	};
 
 	this.updateCrossLines = function (sizeInfo, dateFormatter, formatYaxis, focus, mousePositionData) {
@@ -1237,13 +1309,13 @@ angular.module('argus.services.charts.elements', [])
 		}
 	};
 
-	this.updateAnnotations = function (series, sources, x, flagsG, height) {
+	this.updateAnnotations = function (series, sources, x, flags, height) {
 		if (series === undefined) return;
 		series.forEach(function(metric) {
 			if (metric.flagSeries === undefined) return;
 			var flagSeries = metric.flagSeries.data;
 			flagSeries.forEach(function(d) {
-				var label = flagsG.select('#' + metric.graphClassName + d.flagID);
+				var label = flags.select('#' + metric.graphClassName + d.flagID);
 				// d.x is timestamp of X axis and sometimes it can be in second instead of millisecond
 				var dx = UtilService.epochTimeMillisecondConverter(d.x);
 				var x_Val = x(dx);
@@ -1325,7 +1397,7 @@ angular.module('argus.services.charts.elements', [])
 	};
 
 	this.hideTooltip = function(tooltip) {
-        tooltip.style('display', 'none');
+		tooltip.style('display', 'none');
 	};
 
 	this.hideFocusAndTooltip = function (mouseMoveElement, tooltip) {
@@ -1358,6 +1430,18 @@ angular.module('argus.services.charts.elements', [])
 			var allElementsLinkedWithThisSeries = d3.selectAll('.' + graphClassNames[i]);
 			allElementsLinkedWithThisSeries.filter('circle').style('fill', tempColor);
 			switch (chartType) {
+				case 'scatter':
+					allElementsLinkedWithThisSeries.filter('.dot').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushDot').style('fill', tempColor);
+					break;
+				case 'bar':
+					allElementsLinkedWithThisSeries.filter('.bar').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
+					break;
+				case 'stackbar':
+					allElementsLinkedWithThisSeries.filter('.stackbar').style('fill', tempColor);
+					d3.selectAll('.' + graphClassNames[i] + '_brushStackbar').style('fill', tempColor);
+					break;
 				case 'area':
 					allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushArea').style('fill', tempColor);
@@ -1365,14 +1449,6 @@ angular.module('argus.services.charts.elements', [])
 				case 'stackarea':
 					allElementsLinkedWithThisSeries.filter('path').style('fill', tempColor).style('stroke', tempColor);
 					d3.select('.' + graphClassNames[i] + '_brushStackarea').style('fill', tempColor);
-					break;
-				case 'scatter':
-					allElementsLinkedWithThisSeries.filter('dot').style('fill', tempColor);
-					d3.selectAll('.' + graphClassNames[i] + '_brushDot').style('fill', tempColor);
-					break;
-				case 'bar':
-					allElementsLinkedWithThisSeries.filter('bar').style('fill', tempColor);
-					d3.selectAll('.' + graphClassNames[i] + '_brushBar').style('fill', tempColor);
 					break;
 				// case 'line':
 				default:

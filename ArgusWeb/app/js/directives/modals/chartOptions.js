@@ -17,7 +17,6 @@ angular.module('argus.directives.controls.dashboard', [])
 							windowClass: 'argusModal chartOptions',
 							controller: ['$scope', function ($scope) {
 								// Attach details to scope so they can be rendered in the modal
-
 								// close modal window
 								$scope.close = function () {
 									chartOptions.close();
