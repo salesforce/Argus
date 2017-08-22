@@ -76,7 +76,7 @@ public class MetricScanner {
 	 * 
 	 * @param metric The Metric to encapsulate.
 	 */
-	public MetricScanner(Metric metric) {
+	protected MetricScanner(Metric metric) {
 		SystemAssert.requireArgument(metric != null, "The metric cannot be null!");
 		lock = new ReentrantReadWriteLock();
 		
@@ -97,7 +97,7 @@ public class MetricScanner {
 	 * 
 	 * @param datapoints The Map of datapoints to encapsulate.
 	 */
-	public MetricScanner(Map<Long, Double> datapoints) {
+	protected MetricScanner(Map<Long, Double> datapoints) {
 		SystemAssert.requireArgument(datapoints != null, "The datapoints cannot be null!");
 		lock = new ReentrantReadWriteLock();
 		
