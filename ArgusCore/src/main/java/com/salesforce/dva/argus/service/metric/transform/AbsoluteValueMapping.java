@@ -35,6 +35,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
+
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 
 /**
  * Calculate all the absolute value for all datapoints in every metric.
@@ -56,10 +59,62 @@ public class AbsoluteValueMapping implements ValueMapping {
         }
         return absDatapoints;
     }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+    		Map<Long, Double> absDatapoints = new HashMap<>();
+    		while (scanner.hasNextDP()) {
+    			Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+    			absDatapoints.put(nextDP.getKey(), Math.abs(nextDP.getValue()));
+    		}
+    		
+    		return absDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	Map<Long, Double> absDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<Long, Double>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		absDatapoints = mapping(dps.subMap(startKey, endKey + 1));
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<Long, Double>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			absDatapoints.putAll(mapping(dps.subMap(startKey, endKey)));
+    		}
+    	} else {
+	    	while(scanner.peek() != null && scanner.peek().getKey() < start) {
+	    		scanner.getNextDP();
+	    	}
+    	}
+    	while(scanner.peek() != null && scanner.peek().getKey() <= end) {
+    		Map.Entry<Long, Double> nextDP = scanner.getNextDP();
+    		absDatapoints.put(nextDP.getKey(), Math.abs(nextDP.getValue()));
+    	}
+    	return absDatapoints;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+        throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
     }
 
     @Override
