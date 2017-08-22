@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,30 @@ public class GroupTransformWrapUnion implements Transform {
 
         return unionTransform.transform(metrics);
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
+    	
+    	return unionTransform.transformScanner(scanners);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner / scanners");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
+    	
+    	return unionTransform.transformToPager(scanners, start, end);
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -81,6 +106,36 @@ public class GroupTransformWrapUnion implements Transform {
 
         return transform(matchMetrics);
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null && constants.size() == 2, 
+    			"Group transform require regex and type, only two constants allowed, regex and type");
+    	
+    	SystemAssert.requireArgument(!"".equals(constants.get(0)), "expression can't be an empty string");
+        SystemAssert.requireArgument(INCLUSIVE.equals(constants.get(1)) || EXCLUSIVE.equals(constants.get(1)), "Input type value is not correct.");
+
+        String expr = constants.get(0);
+        String type = constants.get(1);
+        List<MetricScanner> matchScanners = filterMetricScanners(scanners, expr, type);
+        
+        return transformScanner(matchScanners);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null && constants.size() == 2, 
+    			"Group transform require regex and type, only two constants allowed, regex and type");
+    	
+    	SystemAssert.requireArgument(!"".equals(constants.get(0)), "expression can't be an empty string");
+    	SystemAssert.requireArgument(INCLUSIVE.equals(constants.get(1)) || EXCLUSIVE.equals(constants.get(1)), "Input type value is not correct.");
+    	
+    	String expr = constants.get(0);
+    	String type = constants.get(1);
+    	List<MetricScanner> matchScanners = filterMetricPagers(scanners, expr, type);
+    	
+    	return transformToPager(matchScanners, start, end);
+    }
 
     private List<Metric> filterMetrics(List<Metric> metrics, String expr, String type) {
         List<Metric> matchMetricList = new ArrayList<Metric>();
@@ -97,6 +152,40 @@ public class GroupTransformWrapUnion implements Transform {
         }
         return matchMetricList;
     }
+    
+    private List<MetricScanner> filterMetricScanners(List<MetricScanner> scanners, String expr, String type) {
+    	List<MetricScanner> matchScannerList = new ArrayList<>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		String name = scanner.getMetric().getIdentifier();
+    		boolean isMatch = name.matches(expr);
+    		
+    		if (isMatch && type.equals(INCLUSIVE)) {
+    			matchScannerList.add(scanner);
+    		} else if (!isMatch && type.equals(EXCLUSIVE)) {
+    			matchScannerList.add(scanner);
+    		} else {
+    			scanner.dispose();
+    		}
+    	}
+    	return matchScannerList;
+    }
+    
+    private List<MetricScanner> filterMetricPagers(List<MetricScanner> scanners, String expr, String type) {
+    	List<MetricScanner> matchScannerList = new ArrayList<>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		String name = scanner.getMetric().getIdentifier();
+    		boolean isMatch = name.matches(expr);
+    		
+    		if (isMatch && type.equals(INCLUSIVE)) {
+    			matchScannerList.add(scanner);
+    		} else if (!isMatch && type.equals(EXCLUSIVE)) {
+    			matchScannerList.add(scanner);
+    		}
+    	}
+    	return matchScannerList;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -106,6 +195,16 @@ public class GroupTransformWrapUnion implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Group doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("Group doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Group doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
