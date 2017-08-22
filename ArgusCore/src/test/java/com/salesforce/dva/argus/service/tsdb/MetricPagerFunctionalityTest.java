@@ -1,4 +1,4 @@
-package com.salesforce.dva.argus.service.tsdb;
+/*package com.salesforce.dva.argus.service.tsdb;
 
 import org.junit.Test;
 
@@ -541,4 +541,4 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 			assert(new TreeMap<>(m.getDatapoints()).subMap(start - millis, start + stream.getChunkTime() + 1).equals(actualInp.get(actualInp.indexOf(m)).getDatapoints()));
 		}
 	}
-}
+}*/
