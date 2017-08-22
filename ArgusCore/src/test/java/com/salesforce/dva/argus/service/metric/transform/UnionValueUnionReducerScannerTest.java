@@ -140,7 +140,7 @@ public class UnionValueUnionReducerScannerTest extends AbstractTest {
 			Double actual = reducer.reduceScanner(scanners.get(i));
 			
 			assert(expected.equals(actual));
-			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			assert(!scanners.get(i).isInUse();
 		}
 	}
 }
