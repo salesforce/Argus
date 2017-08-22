@@ -32,7 +32,11 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import sun.tools.java.Scanner;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +86,7 @@ public class NormalizeTransformWrap implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metric");
         if (metrics.isEmpty()) {
             return metrics;
         }
@@ -93,7 +97,7 @@ public class NormalizeTransformWrap implements Transform {
 
         // union of all timestamp
         Set<Long> unionKeyset = sumUnitMetric.get(0).getDatapoints().keySet();
-
+        
         // create a list of metrics, for every metric it has union of all timestamps
         List<Metric> paddingMetrics = new ArrayList<Metric>();
 
@@ -108,7 +112,7 @@ public class NormalizeTransformWrap implements Transform {
                     paddingDatapoints.put(unionKey, 0.0);
                 }
             }
-
+            
             // create paddingDatapoints
             paddingDatapoints.putAll(metric.getDatapoints());
             metric.setDatapoints(paddingDatapoints);
@@ -124,10 +128,89 @@ public class NormalizeTransformWrap implements Transform {
 
         return divide_vTransform.transform(paddingMetrics);
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	
+    	Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
+    	List<Metric> sumUnitMetric = unionTransform.transformScanner(scanners);
+    	
+    	Set<Long> unionKeyset = sumUnitMetric.get(0).getDatapoints().keySet();
+    	    	
+    	List<Metric> paddingMetrics = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		SystemAssert.requireState(!scanner.hasNextDP(), "Cannot pad data of an incompletely searched scanner.");
+    		Map<Long, Double> paddingDatapoints = new TreeMap<>();
+    		Set<Long> metricDPKeyset = scanner.getMetric().getDatapoints().keySet();
+    		
+    		for (Long unionKey : unionKeyset) {
+    			if (!metricDPKeyset.contains(unionKey)) {
+    				paddingDatapoints.put(unionKey, 0.0);
+    			}
+    		}
+    		
+    		paddingDatapoints.putAll(scanner.getMetric().getDatapoints());
+    		
+    		Metric m = new Metric(scanner.getMetric());
+    		m.setDatapoints(paddingDatapoints);
+    		paddingMetrics.add(m);
+    	}
+    	
+    	
+    	paddingMetrics.add(sumUnitMetric.get(0));
+    	
+    	Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
+    	
+    	return divide_vTransform.transform(paddingMetrics);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	Transform unionTransform = new MetricUnionTransform(new CountValueUnionReducer());
+    	List<Metric> sumUnitMetric = unionTransform.transformToPager(scanners, start, end);
+    	
+    	Set<Long> unionKeyset = sumUnitMetric.get(0).getDatapoints().keySet();  	
+    	List<Metric> paddingMetrics = new ArrayList<Metric>();
+    	
+    	for (MetricScanner scanner : scanners) {
+    		SystemAssert.requireState(scanner.peek() == null || scanner.peek().getKey() > end,
+    				"The scanner must be explored within the page range by this point");
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		
+    		Map<Long, Double> paddingDatapoints = new HashMap<>();
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			paddingDatapoints.putAll(dps.subMap(startKey, endKey + 1));
+    		}
+    		
+    		for (Long unionKey : unionKeyset) {
+    			if (!paddingDatapoints.containsKey(unionKey)) {
+    				paddingDatapoints.put(unionKey, 0.0);
+    			}
+    		}
+			Metric m = new Metric(scanner.getMetric());
+			m.setDatapoints(paddingDatapoints);
+			paddingMetrics.add(m);
+    	}
+
+		paddingMetrics.add(sumUnitMetric.get(0));
+		Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
+		return divide_vTransform.transform(paddingMetrics);
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metric");
         if (metrics.isEmpty()) {
             return metrics;
         }
@@ -142,6 +225,40 @@ public class NormalizeTransformWrap implements Transform {
 
         return divideByConstantTransform.transform(metrics, constants);
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	if (constants == null || constants.isEmpty()) {
+    		return transformScanner(scanners);
+    	} else {
+    		SystemAssert.requireArgument(constants.size() == 1, "Normalize Transform must provide only one constants if any.");
+            SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) != 0.0, "Normalize unit can't be ZERO.");
+    	}
+    	
+    	Transform divideByConstantTransform = new MetricMappingTransform(new DivideByConstantValueMapping());
+    	
+    	return divideByConstantTransform.transformScanner(scanners, constants);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	if (constants == null || constants.isEmpty()) {
+    		return transformToPager(scanners, start, end);
+    	}
+    	SystemAssert.requireArgument(constants.size() == 1, "Normalize Transform must provide only one constant if any.");
+    	SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) != 0.0, "Normalize unit can't be ZERO.");
+    	
+    	Transform divideByConstantTransform = new MetricMappingTransform(new DivideByConstantValueMapping());
+    	return divideByConstantTransform.transformToPager(scanners, constants, start, end);
+    }
 
     @Override
     public String getResultScopeName() {
@@ -151,6 +268,16 @@ public class NormalizeTransformWrap implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("NormalizeTransformWrap doesn't support list of list!");
     }
 
     //~ Inner Classes ********************************************************************************************************************************
@@ -179,10 +306,75 @@ public class NormalizeTransformWrap implements Transform {
             }
             return divideByConstantDatapoints;
         }
+        
+        @Override
+        public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+        	Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
+    	
+        	while (scanner.hasNextDP()) {
+        		Map.Entry<Long, Double> dp = scanner.getNextDP();
+        		
+        		Double val = dp.getValue() == null ? 0.0 : dp.getValue() / Double.parseDouble(constants.get(0));
+        		divideByConstantDatapoints.put(dp.getKey(), val);
+        	}
+        	return divideByConstantDatapoints;
+        }
+        
+        @Override
+        public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+        	Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
+        	Map.Entry<Long, Double> next = scanner.peek();
+        	Double divisor = Double.parseDouble(constants.get(0));
+        	
+        	if (next == null || next.getKey() > end) {
+        		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+        		Long startKey = dps.ceilingKey(start);
+        		Long endKey = dps.floorKey(end);
+        		if (startKey != null && endKey != null && startKey <= endKey) {
+        			for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey + 1).entrySet()) {
+        				Double val = entry.getValue() == null ? 0.0 : entry.getValue() / divisor;
+        				divideByConstantDatapoints.put(entry.getKey(), val);
+        			}
+        		}
+        	} else {
+        		if (next.getKey() > start) {
+        			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+        			Long startKey = dps.ceilingKey(start);
+        			Long endKey = dps.floorKey(next.getKey());
+        			if (startKey != null && endKey != null && startKey < endKey) {
+        				for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey).entrySet()) {
+        					Double val = entry.getValue() == null ? 0.0 : entry.getValue() / divisor;
+        					divideByConstantDatapoints.put(entry.getKey(), val);
+        				}
+        			}
+        		} else {
+        			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+        				scanner.getNextDP();
+        			}
+        		}
+        		
+        		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+        			Map.Entry<Long, Double> dp = scanner.getNextDP();
+        			Double val = dp.getValue() == null ? 0.0 : dp.getValue() / divisor;
+        			divideByConstantDatapoints.put(dp.getKey(), val);
+        		}
+        	}
+        	return divideByConstantDatapoints;
+        }
 
         @Override
         public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
             throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
+        }
+        
+        @Override
+        public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+            throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
+        }
+        
+        @Override
+        public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+        	throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
         }
 
         @Override
