@@ -1020,6 +1020,5 @@ public class MetricScannerTest extends AbstractTest {
 			
 			assert(scanners.get(i).getMetric().getDatapoints().equals(metrics.get(i).getDatapoints()));
 		}
-		
 	}
 }
