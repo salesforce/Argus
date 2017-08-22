@@ -32,9 +32,13 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Retains metrics based on the matching of a regular expression against the metric name.<br/>
@@ -51,7 +55,17 @@ public class IncludeTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        throw new UnsupportedOperationException("Include Transform cannot be performed without an regular expression.");
+        throw new UnsupportedOperationException("Include Transform cannot be performed without a regular expression.");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Include Transform cannot be performed without a regular expression.");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Include Transform cannot be performed without a regular expression.");
     }
 
     @Override
@@ -74,6 +88,97 @@ public class IncludeTransform implements Transform {
         }
         return includeMetricList;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        SystemAssert.requireArgument(constants != null && constants.size() == 1,
+            "Include transform require regex, only exactly one constant allowed.");
+        SystemAssert.requireArgument(!constants.get(0).equals(""), "Expression can't be an empty string");
+        
+        List<Metric> includeMetricList = new ArrayList<Metric>();
+        String expr = constants.get(0);
+        
+        for (MetricScanner scanner : scanners) {
+        	if (scanner.getMetric().getIdentifier().matches(expr)) {
+        		Metric m = setMetricData(scanner); // only do this if there is a match, generate all of the datapoints to store
+        		includeMetricList.add(m);
+        	}
+        	else {
+        		scanner.dispose();
+        	}
+        }
+        return includeMetricList;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+    			"Include transform requires regex, only exactly one constant allowed.");
+    	SystemAssert.requireArgument(!constants.get(0).equals(""), "Expression can't be an empty string");
+    	
+    	List<Metric> includeMetricList = new ArrayList<Metric>();
+    	String expr = constants.get(0);
+    	    	
+    	for (MetricScanner scanner : scanners) {
+    		if (scanner.getMetric().getIdentifier().matches(expr)) {
+    			Map.Entry<Long, Double> next = scanner.peek();
+    			Metric holder = new Metric(scanner.getMetric());
+    			if (next == null || next.getKey() > end) {
+    				TreeMap<Long, Double> dps = new TreeMap<>(holder.getDatapoints());
+    				Long startKey = dps.ceilingKey(start);
+    				Long endKey = dps.floorKey(end);
+    				if (startKey == null || endKey == null || startKey > endKey) {
+    					holder.setDatapoints(new HashMap<>());
+    				} else {
+    					holder.setDatapoints(dps.subMap(startKey, endKey + 1));
+    				}
+    			} else if (next.getKey() > start) {
+    				TreeMap<Long, Double> dps = new TreeMap<>(holder.getDatapoints());
+    				Long startKey = dps.ceilingKey(start);
+    				Long endKey = dps.floorKey(next.getKey());
+    				if (startKey != null && endKey != null && startKey < endKey) {
+    					holder.setDatapoints(dps.subMap(startKey, endKey));
+    				} else {
+    					holder.setDatapoints(new HashMap<>());
+    				}
+    			} else {
+    				holder.setDatapoints(new HashMap<>());
+    				while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    					scanner.getNextDP();
+    				}
+    			}
+    			
+    			Map<Long, Double> includeDPs = new HashMap<>();
+    			while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    				Map.Entry<Long, Double> dp = scanner.getNextDP();
+    				includeDPs.put(dp.getKey(), dp.getValue());
+    			}
+    			holder.addDatapoints(includeDPs);
+    			
+    			if (!holder.getDatapoints().isEmpty()) {
+    				TreeMap<Long, Double> finalize = new TreeMap<>(holder.getDatapoints());
+    				Long sKey = finalize.ceilingKey(start);
+    				Long eKey = finalize.floorKey(end);
+    				if (sKey == null || eKey == null || sKey > eKey) {
+    					holder.setDatapoints(new HashMap<>());
+    				} else {
+    					holder.setDatapoints(finalize.subMap(sKey, eKey + 1));
+    				}
+    			}
+    			includeMetricList.add(holder);
+    		}
+    	}
+    	return includeMetricList;
+    }
+    
+    private Metric setMetricData(MetricScanner scanner) {
+    	while (scanner.hasNextDP()) {
+    		scanner.getNextDP();
+    	}
+       	return scanner.getMetric();
+    }
 
     @Override
     public String getResultScopeName() {
@@ -83,6 +188,16 @@ public class IncludeTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Include doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("Include doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Include doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
