@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * This interface is used to perform a mapping or reducing operation based on input constant.
  *
@@ -51,6 +53,26 @@ public interface ValueReducerOrMapping {
      * @return  The value after mapping.
      */
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints);
+    
+    /**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner whose datapoints to map.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner);
+    
+    /**
+     * Apply function to all datapoints within a specified window of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner whose datapoints to map.
+     * @param start The Long timestamp start of the window in which to apply the function, inclusive.
+     * @param end The Long timestamp end of the window in which to apply the function, inclusive.
+     * 
+     * @return The datapoints within the window after mapping.
+     */
+    Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end);
 
     /**
      * Apply function to every datapoint of a datapoint map and return a new datapoint.
@@ -63,6 +85,28 @@ public interface ValueReducerOrMapping {
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants);
 
     /**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner whose datapoints to map.
+     * @param constants The input constants specific to the mapping function.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants);
+    
+    /**
+     * Apply function to all datapoints within a specified window of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner whose datapoints to map.
+     * @param constants The input constants specific to the mapping function.
+     * @param start The Long timestamp start of the window in which to apply the function, inclusive.
+     * @param end The Long timestamp end of the window in which to apply the function, inclusive.
+     * 
+     * @return The datapoints within the window after mapping.
+     */
+    Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end);
+    
+    /**
      * Reduce a set of values to a single value.
      *
      * @param   values  The values to reduce.
@@ -70,6 +114,14 @@ public interface ValueReducerOrMapping {
      * @return  The reduced value.
      */
     Double reduce(List<Double> values);
+    
+    /**
+     * Reduce the datapoint values of a metric scanner to a single value.
+     * 
+     * @param scanner The metric scanner whose datapoint values to reduce.
+     * @return The reduced value.
+     */
+    Double reduceScanner(MetricScanner scanner);
 
     /**
      * Reduce a set of values to a single value.
@@ -80,6 +132,16 @@ public interface ValueReducerOrMapping {
      * @return  The reduced value.
      */
     Double reduce(List<Double> values, List<String> constants);
+    
+    /**
+     * Reduce the datapoint values of a metric scanner to a single value.
+     * 
+     * @param scanner The metric scanner whose datapoint values to reduce.
+     * @param constants The input constants specific to the reducing function.
+     * 
+     * @return The reduced value.
+     */
+    Double reduceScanner(MetricScanner scanner, List<String> constants);
 
     /**
      * Returns the name of the value mapping/reducer.
