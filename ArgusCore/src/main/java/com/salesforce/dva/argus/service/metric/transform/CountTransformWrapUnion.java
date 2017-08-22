@@ -32,12 +32,15 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Prepare the datapoints of every metric for count transform.
@@ -75,6 +78,50 @@ public class CountTransformWrapUnion implements Transform {
         return Arrays.asList(newMetric);
     }
     
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+		SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners.");
+		
+		if (scanners.isEmpty()) {
+			return new ArrayList<Metric>(0);
+		}
+		
+		MetricDistiller distiller = new MetricDistiller();
+		distiller.distillScanner(scanners);
+		
+		String newMetricName = distiller.getMetric() == null ? TransformFactory.DEFAULT_METRIC_NAME : distiller.getMetric();
+		Metric newMetric = new Metric(getResultScopeName(), newMetricName);
+		
+		newMetric.setDisplayName(distiller.getDisplayName());
+		newMetric.setUnits(distiller.getUnits());
+		newMetric.setTags(distiller.getTags());
+		newMetric.setDatapoints(_collateScanners(scanners));
+		
+		return Arrays.asList(newMetric);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanners.");
+    	
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>(0);
+    	}
+    	
+    	MetricDistiller distiller = new MetricDistiller();
+    	distiller.distillScanner(scanners);
+    	
+    	String newMetricName = distiller.getMetric() == null ? TransformFactory.DEFAULT_METRIC_NAME : distiller.getMetric();
+    	Metric newMetric = new Metric(getResultScopeName(), newMetricName);
+    	
+    	newMetric.setDisplayName(distiller.getDisplayName());
+    	newMetric.setUnits(distiller.getUnits());
+    	newMetric.setTags(distiller.getTags());
+    	newMetric.setDatapoints(_collatePager(scanners, start, end));
+
+    	return Arrays.asList(newMetric);
+    }
+    
     private Map<Long, Double> _collate(List<Metric> metrics) {
         Map<Long, Double> collated = new HashMap<>();
 
@@ -90,10 +137,75 @@ public class CountTransformWrapUnion implements Transform {
         }
         return collated;
     }
+    
+    private Map<Long, Double> _collateScanners(List<MetricScanner> scanners) {
+		Map<Long, Double> collated = new HashMap<>();
+		
+		for (MetricScanner scanner : scanners) {
+			while (scanner.hasNextDP()) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				if (!collated.containsKey(dp.getKey())) {
+					collated.put(dp.getKey(), 1.0);
+				} else {
+					collated.put(dp.getKey(), collated.get(dp.getKey()) + 1.0);
+				}
+			}
+		}
+		return collated;
+    }
+    
+    private Map<Long, Double> _collatePager(List<MetricScanner> scanners, Long start, Long end) {
+    	Map<Long, Double> collated = new HashMap<>();
+    	for (MetricScanner scanner : scanners) {
+    		Map.Entry<Long, Double> next = scanner.peek();
+    		if (next == null || next.getKey() > end) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(end);
+    			if (startKey != null && endKey != null && startKey <= endKey) {
+    				for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey + 1).entrySet()) {
+    					collated.put(entry.getKey(), collated.containsKey(entry.getKey()) ? 
+    							collated.get(entry.getKey()) + 1.0 : 1.0);
+    				}
+    			}
+    		} else if (next.getKey() > start) {
+    			TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    			Long startKey = dps.ceilingKey(start);
+    			Long endKey = dps.floorKey(next.getKey());
+    			if (startKey != null && endKey != null && startKey < endKey) {
+    				for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey).entrySet()) {
+    					collated.put(entry.getKey(), collated.containsKey(entry.getKey()) ? 
+    							collated.get(entry.getKey()) + 1.0 : 1.0);
+    				}
+    			}
+    		} else {
+    			while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    				scanner.getNextDP();
+    			}
+    		}
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			collated.put(dp.getKey(), collated.containsKey(dp.getKey()) ? 
+    					collated.get(dp.getKey()) + 1.0 : 1.0);
+    		}
+    	}
+    	return collated;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("COUNT Transform is not supposed to be used with a constant");
     }
 
     @Override
@@ -104,6 +216,16 @@ public class CountTransformWrapUnion implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Count doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	throw new UnsupportedOperationException("Count doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Count doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
