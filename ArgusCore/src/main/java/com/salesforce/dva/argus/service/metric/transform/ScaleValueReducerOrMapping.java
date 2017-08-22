@@ -31,11 +31,13 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Calculates an arithmetic product. If a constant is provided, it is multiplied with each data point in the set of input metrics, otherwise the data
@@ -59,10 +61,34 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return product;
     }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		Double product = 1.0;
+    		
+    		while (scanner.hasNextDP()) {
+	   			Double value = scanner.getNextDP().getValue();
+	   			if (value == null) {
+	   				continue;
+	   			}
+	    		product *= value;
+	    	}
+    		return product;
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
@@ -85,9 +111,84 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return scaleDatapoints;
     }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+		SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+				"If constants provided for scale transform, only exactly one constant allowed.");
+		
+		Map<Long, Double> scaleDatapoints = new HashMap<>();
+		
+		try {
+			double multiplicand = Double.parseDouble(constants.get(0));
+		
+			while (scanner.hasNextDP()) {
+				Map.Entry<Long, Double> dp = scanner.getNextDP();
+				if (dp.getValue() == null) {
+					continue; // skip the missing data
+				}
+				double productValue = multiplicand * dp.getValue();
+				scaleDatapoints.put(dp.getKey(), productValue);
+			}
+		}catch (NumberFormatException nfe) {
+			throw new SystemException("Illegal constant value supplied to scale transform" , nfe);
+		}
+		return scaleDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+    			"If constants provided for scale transform, only exactly one constant allowed.");
+    	
+    	Map<Long, Double> scaleDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		scaleDatapoints = mapping(dps.subMap(startKey, endKey + 1), constants);
+    		return scaleDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			scaleDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	try {
+    		double multiplicand = Double.parseDouble(constants.get(0));
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			if (dp.getValue() == null) {
+    				continue;
+    			}
+    			scaleDatapoints.put(dp.getKey(), dp.getValue() * multiplicand);
+    		}
+    	} catch (NumberFormatException nfe) {
+    		throw new SystemException("Illegal constant value supplied to scale transform" , nfe);
+    	}
+    	
+    	return scaleDatapoints;
+    }
 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
+        throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
         throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
     }
 
