@@ -32,9 +32,12 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Returns a subset input metrics in stable order from the head of the list not to exceed the specified limit.
@@ -48,6 +51,16 @@ public class LimitTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Limit transform requires a limit number!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Limit transform requires a limit number!");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Limit transform requires a limit number!");
     }
 
     @Override
@@ -83,6 +96,90 @@ public class LimitTransform implements Transform {
         }
         return result;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        List<Metric> result = new ArrayList<>();
+        if (scanners.isEmpty()) {
+        	return result;
+        }
+        
+        SystemAssert.requireArgument(constants.size() == 1, "Please provide only one limit number");
+        SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) >= 0.0, "Please provide a valid limit number");
+
+        Long limit = null;
+        
+        try {
+        	limit = Long.parseLong(constants.get(0));
+        } catch (Exception e) {
+        	throw new IllegalArgumentException("Please provide a valid limit number!");
+        }
+        
+        Long count = 0L;
+        for (MetricScanner scanner : scanners) {
+        	if (count < limit) {
+	       		while (scanner.hasNextDP()) {
+	        		scanner.getNextDP();
+	        	}
+        		count++;
+        		result.add(scanner.getMetric());
+        	} else {
+        		break;
+        	}
+        }
+        return result;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+        List<Metric> result = new ArrayList<>();
+        if (scanners.isEmpty()) {
+        	return result;
+        }
+        
+        SystemAssert.requireArgument(constants.size() == 1, "Please provide only one limit number");
+        SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) >= 0.0, "Please provide a valid limit number");
+
+        Long limit = null;
+        try {
+        	limit = Long.parseLong(constants.get(0));
+        } catch (Exception e) {
+        	throw new IllegalArgumentException("Please provide a valid limit number!");
+        }
+        
+        Long count = 0L;
+        for (MetricScanner scanner : scanners) {
+        	if (count < limit) {
+        		Metric m = buildMetricRange(scanner, start, end);
+        		result.add(m);
+        		count++;
+        	} else {
+        		break;
+        	}
+        }
+        return result;
+    }
+    
+    private Metric buildMetricRange(MetricScanner scanner, Long start, Long end) {
+    	Metric m = new Metric(scanner.getMetric());
+    	TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    	if (dps.lastKey() < end) {
+    		while (scanner.peek() != null && scanner.peek().getKey() < end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			dps.put(dp.getKey(), dp.getValue());
+    		}
+    	}
+    	Long startKey = dps.ceilingKey(start);
+    	Long endKey = dps.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		m.setDatapoints(new TreeMap<>());
+    		return m;
+    	}
+    	m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    	return m;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -92,6 +189,16 @@ public class LimitTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Limit doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfLists) {
+        throw new UnsupportedOperationException("Limit doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Limit doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

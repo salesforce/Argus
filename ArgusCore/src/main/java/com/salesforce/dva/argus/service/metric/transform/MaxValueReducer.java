@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * Takes a list of doubles represents as Strings and returns the maximum value as a String. Values that do not convert to doubles are ignored.
  *
@@ -46,16 +48,16 @@ public class MaxValueReducer implements ValueReducer {
 
     @Override
     public Double reduce(List<Double> values) {
-    	if(values == null || values.isEmpty()) {
-    		return null;
-    	}
-    	
-    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
-    	if(stream.allMatch(o -> o == null)) {
-    		stream.close();
-    		return null;
-    	}
-    	stream.close();
+	    	if(values == null || values.isEmpty()) {
+	    		return null;
+	    	}
+	    	
+	    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+	    	if(stream.allMatch(o -> o == null)) {
+	    		stream.close();
+	    		return null;
+	    	}
+	    	stream.close();
     	
         double max = Double.NEGATIVE_INFINITY;
         for (Double value : values) {
@@ -69,6 +71,29 @@ public class MaxValueReducer implements ValueReducer {
             }
         }
         return max;
+    }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		if (scanner == null || !scanner.hasNextDP()) {
+    			return null;
+    		}
+    		
+    		double max = Double.NEGATIVE_INFINITY;
+    		boolean unchanged = true;
+    		
+    		while (scanner.hasNextDP()) {
+    			Double value = scanner.getNextDP().getValue();
+    			if (value == null) {
+    				continue;
+    			}
+    			double candidate = value;
+    			if (unchanged || candidate > max) {
+    				unchanged = false;
+    				max = candidate;
+    			}
+	    	}
+    		return !unchanged ? max : null;
     }
 
     @Override
