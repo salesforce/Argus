@@ -250,17 +250,15 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 		
 		Long start = stream.getStartTime() + chunkTime / 2;
 		Long end = stream.getStartTime() +  3 * chunkTime / 2;
-		
-		Long millis = (start % (10 * 60 * 1000));
-		
+				
 		List<Metric> actualInp = stream.getMetricWindowInputTimeRange(start, end);
-		List<Metric> actualOut = stream.getMetricWindowOutputTimeRange(Math.max(start, stream.getStartTime() - millis), Math.min(stream.getEndTime() - (stream.getEndTime() % 10 * 60 * 1000), end));
+		List<Metric> actualOut = stream.getMetricWindowOutputTimeRange(Math.max(start, stream.getStartTime() - stream.getStartTime() % (10 * 60 * 1000)), Math.min(stream.getEndTime() - stream.getEndTime() % (10 * 60 * 1000), end));
 		
 		for (Metric m : expected) {
 			assert(actualInp.contains(m));
 			
 			assert(new TreeMap<>(m.getDatapoints()).subMap(Math.max(start, stream.getStartTime()), end).equals(actualOut.get(actualOut.indexOf(m)).getDatapoints()));
-			assert(new TreeMap<>(m.getDatapoints()).subMap(start - millis, end + 1).equals(actualInp.get(actualInp.indexOf(m)).getDatapoints()));
+			assert(new TreeMap<>(m.getDatapoints()).subMap(start - start % (10 * 60 * 1000), end + 1).equals(actualInp.get(actualInp.indexOf(m)).getDatapoints()));
 		}
 	}
 	
@@ -481,8 +479,8 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 			Long start = stream.getStartTime() + stream.getChunkTime() / 3;
 			Long end = Math.min(start + stream.getChunkTime(), stream.getEndTime());
 			
-			assert(expected.subMap(start, end).equals(stream.getNewDPPageFromStartOutput(start)));
-			assert(expected.subMap(start, end).equals(stream.getNewDPPageFromStartInput(start)));					
+			assert(expected.subMap(start, end + 1).equals(stream.getNewDPPageFromStartOutput(start)));
+			assert(expected.subMap(start, end + 1).equals(stream.getNewDPPageFromStartInput(start)));					
 		}
 	}
 	
