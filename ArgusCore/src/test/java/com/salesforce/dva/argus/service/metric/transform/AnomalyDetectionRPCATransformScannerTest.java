@@ -342,12 +342,16 @@ public class AnomalyDetectionRPCATransformScannerTest extends AbstractTest {
 		scanners.get(0).getNextDP();
 	
 		for (int i = 0; i < metrics.size(); i++) {
+			if (metrics.get(i).getDatapoints().size() == 1) {
+				continue;
+			}
 			List<Metric> l = new ArrayList<>();
 			l.add(metrics.get(i));
 			List<MetricScanner> ms = new ArrayList<>();
 			ms.add(scanners.get(i));
-			List<Metric> expected = transform.transform(l, constants);
 			Long chunkTime = (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 7;
+
+			List<Metric> expected = transform.transform(l, constants);
 			MetricPager stream = new MetricPagerTransform(ms, chunkTime, transform, constants);
 		
 			int chunk = random.nextInt(stream.getNumberChunks());

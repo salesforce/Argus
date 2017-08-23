@@ -1,4 +1,4 @@
-/*package com.salesforce.dva.argus.service.tsdb;
+package com.salesforce.dva.argus.service.tsdb;
 
 import org.junit.Test;
 
@@ -202,8 +202,8 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 			MetricPager stream = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping, constants);
 			Long start = stream.getStartTime() + stream.getChunkTime() / 2;
 			Long end = start + 3 * stream.getChunkTime() / 2;
-			
-			assert(expected.subMap(Math.max(start, stream.getStartTime()), end).equals(stream.getDPWindowOutputTimeRange(Math.min(start, stream.getEndTime()), end)));
+
+			assert(expected.subMap(Math.max(stream.getStartTime() + 1000, start), Math.max(stream.getStartTime() + 1001, end + 1)).equals(stream.getDPWindowOutputTimeRange(Math.max(start, stream.getStartTime() + 1000), Math.max(end, stream.getStartTime() + 1000))));
 			assert(expected.subMap(start + 1000, end + 1001).equals(stream.getDPWindowInputTimeRange(start, end)));					
 		}
 	}
@@ -254,7 +254,7 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 		Long millis = (start % (10 * 60 * 1000));
 		
 		List<Metric> actualInp = stream.getMetricWindowInputTimeRange(start, end);
-		List<Metric> actualOut = stream.getMetricWindowOutputTimeRange(Math.min(start, stream.getEndTime() - millis), end);
+		List<Metric> actualOut = stream.getMetricWindowOutputTimeRange(Math.max(start, stream.getStartTime() - millis), Math.min(stream.getEndTime() - (stream.getEndTime() % 10 * 60 * 1000), end));
 		
 		for (Metric m : expected) {
 			assert(actualInp.contains(m));
@@ -541,4 +541,4 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 			assert(new TreeMap<>(m.getDatapoints()).subMap(start - millis, start + stream.getChunkTime() + 1).equals(actualInp.get(actualInp.indexOf(m)).getDatapoints()));
 		}
 	}
-}*/
+}

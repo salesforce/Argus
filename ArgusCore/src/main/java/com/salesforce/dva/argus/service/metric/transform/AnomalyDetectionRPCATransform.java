@@ -74,6 +74,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         //Create a sorted array of the metric's timestamps
         Map<Long, Double> completeDatapoints = metrics.get(0).getDatapoints();
         SystemAssert.requireState(completeDatapoints.size() != 0, "Cannot transform metric with no data points.");
+        SystemAssert.requireState(completeDatapoints.size() > 1, "Cannot transform metric with only one data point.");
         timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
 
@@ -122,6 +123,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         }
         
         timestamps = times.toArray(new Long[times.size()]);
+        SystemAssert.requireState(timestamps.length > 1, "Cannot transform metric scanner with one or fewer data points.");
         frequency = calculateFrequency(seasonLengthInMilliseconds);
         metricValues = Doubles.toArray(metricVals);
         standardize(metricValues);
@@ -179,6 +181,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         	}
         	
         	timestamps = times.toArray(new Long[times.size()]);
+            SystemAssert.requireState(timestamps.length > 1, "Cannot transform metric scanner with one or fewer datapoints");
         	frequency = calculateFrequency(seasonLengthInMilliseconds);
         	metricValues = Doubles.toArray(metricData.values());
         	standardize(metricValues);

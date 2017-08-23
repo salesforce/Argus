@@ -256,18 +256,26 @@ public class MetricPagerTransform extends MetricPager {
 	
 	protected void performTransform() {
 		lock.readLock().lock();
-		Long startTime = lastEndTimestamp.get();
-		Long endTime = Math.min(end.get(), startTime + chunkTime.get());
-		List<Metric> result = null;
-		ScannerShiftFunction prevShift = scanners.isEmpty() ? (Long t) -> t : scanners.get(0).getShift();
-		if (listOfList == null) {
-			result = constants == null ? transform.transformToPager(scanners, prevShift.shift(startTime), prevShift.shift(endTime)) :
-				transform.transformToPager(scanners, new ArrayList<>(constants), prevShift.shift(startTime), prevShift.shift(endTime));
-		} else {
-			SystemAssert.requireArgument(JoinTransform.class.isInstance(transform), "List of list can only be used with join transform!");
-			result = transform.transformToPagerListOfList(listOfList, prevShift.shift(startTime), prevShift.shift(endTime));
+		Long startTime = null;
+		Long endTime = null;
+		List<Metric> result = new ArrayList<>();
+		try {
+			startTime = lastEndTimestamp.get();
+			endTime = Math.min(end.get(), startTime + chunkTime.get());
+			ScannerShiftFunction prevShift = scanners.isEmpty() ? (Long t) -> t : scanners.get(0).getShift();
+			if (listOfList == null) {
+				result = constants == null ? transform.transformToPager(scanners, prevShift.shift(startTime), prevShift.shift(endTime)) :
+					transform.transformToPager(scanners, new ArrayList<>(constants), prevShift.shift(startTime), prevShift.shift(endTime));
+			} else {
+				SystemAssert.requireArgument(JoinTransform.class.isInstance(transform), "List of list can only be used with join transform!");
+				result = transform.transformToPagerListOfList(listOfList, prevShift.shift(startTime), prevShift.shift(endTime));
+			}
+		} catch (Exception ex) {
+			_logger.warn("The transformation cause an exception: " + ex.getMessage());
+		} finally {	
+			/* make sure we release the lock, even if the transformation causes an error */
+			lock.readLock().unlock();
 		}
-		lock.readLock().unlock();
 
 		lock.writeLock().lock();
 		sendToScanner(result);
@@ -289,6 +297,7 @@ public class MetricPagerTransform extends MetricPager {
 		}
 		hasDataMet.signalAll();
 		lock.writeLock().unlock();
+
 		if (complete.get()) {
 			_shutdownScheduledExecutorService();
 		}
