@@ -472,17 +472,17 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
 		}
 				
-		ValueMapping mapping = new ShiftValueMapping();
-		List<String> constants = Arrays.asList("3s");
+		ValueMapping mapping = new AbsoluteValueMapping();
 		
 		for (int i = 0; i < scanners.size(); i++) {
-			TreeMap<Long, Double> expected = new TreeMap<>(mapping.mapping(metrics.get(i).getDatapoints(), constants));
+			TreeMap<Long, Double> expected = new TreeMap<>(mapping.mapping(metrics.get(i).getDatapoints()));
 			Long chunkTime = (queries.get(i).getEndTimestamp() - queries.get(i).getStartTimestamp()) / 3;
-			MetricPager stream = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping, constants);
+			MetricPager stream = new MetricPagerValueMapping(Arrays.asList(scanners.get(i)), chunkTime, mapping);
 			Long start = stream.getStartTime() + stream.getChunkTime() / 3;
+			Long end = Math.min(start + stream.getChunkTime(), stream.getEndTime());
 			
-			assert(expected.subMap(start, start + stream.getChunkTime() + 1).equals(stream.getNewDPPageFromStartOutput(Math.max(start, stream.getStartTime() + 3000))));
-			assert(expected.subMap(start + 3000, start + stream.getChunkTime() + 3001).equals(stream.getNewDPPageFromStartInput(start)));					
+			assert(expected.subMap(start, end).equals(stream.getNewDPPageFromStartOutput(start)));
+			assert(expected.subMap(start, end).equals(stream.getNewDPPageFromStartInput(start)));					
 		}
 	}
 	
