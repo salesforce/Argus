@@ -60,7 +60,6 @@ import static org.mockito.Mockito.when;
 
 public class MetricReaderScannerTest {
 	
-	//private static String prefix = "USE::SCANNER(";
 	private static String suffix = "::USESCANNER";
 	
 	private void testValid(String expression1, String expression2) {

@@ -59,30 +59,6 @@ public class MetricPageDatapointScanner extends MetricPageScanner {
 	}
 	
 	@Override
-	public String toString() {
-		String repr = "MetricPageDatapoint datapoints:" + datapoints + ":Pointer:" +
-				(pointer == null ? null : pointer.get());
-		return repr;
-	}
-	
-	@Override
-	public boolean equals(Object other) {
-		if (other == null) {
-			return false;
-		}
-		if (this == other) {
-			return true;
-		}
-		if (getClass() != other.getClass()) {
-			return false;
-		}
-		
-		MetricPageDatapointScanner o = (MetricPageDatapointScanner) other;
-		
-		return this.metric == o.metric && ((this.pointer == null && o.pointer == null) || this.pointer.equals(o.pointer));
-	}
-	
-	@Override
 	public int hashCode() {
 		final int prime = 23;
 		

@@ -348,7 +348,7 @@ public class MetricPagerFunctionalityTest extends AbstractTest {
 				
 		List<Metric> actualInp = streamOuter.getMetricWindowInputTimeRange(start, end);
 		Long sKey = Math.max(start, streamOuter.getStartTime() + 1000);
-		Long eKey = Math.max(end, streamOuter.getStartTime() + 1000);
+		Long eKey = Math.min(end, streamOuter.getEndTime() + 1000);
 		List<Metric> actualOut = streamOuter.getMetricWindowOutputTimeRange(sKey, eKey);
 		
 		for (Metric m : expected) {
