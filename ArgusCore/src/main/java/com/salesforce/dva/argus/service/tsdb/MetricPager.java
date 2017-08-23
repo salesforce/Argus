@@ -233,12 +233,18 @@ public abstract class MetricPager {
 	 * @return The List of Metric containing the transformed metric data within the specified output window.
 	 */
 	synchronized private List<Metric> getMetricWindow(Long startTime, Long endTime) {
+		//System.out.println("Immediately in method, start is " + startTime);
 		waitForTimeMets(endTime);
+		//System.out.println("DONE WAITING IN WINDOW FOR DATA, start time is " + startTime);
+		//System.out.println("Metric has " + metrics);
 		List<Metric> filteredMetric = new ArrayList<>();
 		lock.readLock().lock();
 		for (Metric m : metrics) {
+			//System.out.println("Range is " + startTime + " - " + endTime);
+			//System.out.println("M has " + new TreeMap<>(m.getDatapoints()));
 			Metric mWindow = new Metric(m);
 			mWindow.setDatapoints(new TreeMap<>(m.getDatapoints()).subMap(startTime, endTime + 1));
+			//System.out.println("Set dps at " + mWindow.getDatapoints());
 			filteredMetric.add(mWindow);
 		}
 		lock.readLock().unlock();
@@ -246,6 +252,7 @@ public abstract class MetricPager {
 		currentChunkStartTime = new Long(startTime);
 		currentViewingWindow = new Long(endTime - startTime);
 		lock.writeLock().unlock();
+		//System.out.println("About to return " + filteredMetric);
 		return Collections.unmodifiableList(filteredMetric);
 	}
 	
@@ -273,12 +280,14 @@ public abstract class MetricPager {
 	 * @param chunkNumber The chunk index of the chunk to view, beginning from zero for the first chunk.
 	 * @return The List of Metric containing the transformed metrics and their datapoints within this chunk.
 	 */
-	public List<Metric> getMetricChunk(int chunkNumber) {
+	synchronized public List<Metric> getMetricChunk(int chunkNumber) {
+		//System.out.println("Getting chunk " + chunkNumber);
 		SystemAssert.requireArgument(0 <= chunkNumber && chunkNumber < numChunks, "Cannot display a page outside the valid range of pages.");
 		lock.readLock().lock();
 		Long startTime = start.get() + chunkNumber * chunkTime.get();
 		Long endTime = Math.min(startTime + chunkTime.get(), end.get());
 		lock.readLock().unlock();
+		//System.out.println("Calling for window " + startTime + ", " + endTime);
 		return getMetricWindowInputTimeRange(startTime, endTime);
 	}
 	

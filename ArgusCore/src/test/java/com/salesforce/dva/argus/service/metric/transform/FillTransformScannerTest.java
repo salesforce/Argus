@@ -299,7 +299,7 @@ public class FillTransformScannerTest extends AbstractTest {
 			assert(expected.get(i).getDatapoints().equals(actual.get(i).getDatapoints()));
 		}
 		for (int i = 0; i < metrics.size(); i++) {
-			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			assert(!scanners.get(i).isInUse());
 		}
 	}
 	

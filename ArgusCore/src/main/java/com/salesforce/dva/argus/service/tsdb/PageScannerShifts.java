@@ -224,15 +224,9 @@ public enum PageScannerShifts {
 			case EXCLUDE:
 				return prevShift;
 			case FILL_CALCULATE:
-				if (constants.size() == 1) {
-					return prevShift;
-				} else {
-					shift = (Long t) -> { return prevShift.shift(t) + getOffsetInMilliseconds(constants.get(2)); };
-				}
-				return shift;
-			case FILL:
-				shift = (Long t) -> { return prevShift.shift(t) + getOffsetInMilliseconds(constants.get(1)); };
-				return shift;
+				return prevShift;
+			case FILL: /* doesn't shift the timestamps of the metric itself, only the datapoints that are filled in */
+				return prevShift;
 			case GROUP_BY:
 				return getTransformShiftFromString(prevShift, constants.get(1), new ArrayList<>(constants.subList(2, constants.size())));
 			case GROUP_WRAP:

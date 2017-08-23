@@ -155,7 +155,7 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testMapLowPercentageSmallWindowNoNull() {
+	public void testMapLowPercentage() {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
@@ -184,7 +184,6 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 		PercentileValueReducerOrMapping redMap = new PercentileValueReducerOrMapping();
 		List<String> constants = new ArrayList<>();
 		constants.add("" + (int) (random.nextDouble() * 49 + 1));
-		constants.add("2m");
 		
 		for (int i = 0; i < metrics.size(); i++) {
 			Map<Long, Double> expected = redMap.mapping(metrics.get(i).getDatapoints(), constants);
@@ -195,18 +194,12 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testMapHighPercentageSmallWindowWithNull() {
+	public void testMapHighPercentage() {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
 		TSDBService serviceMock = mock(TSDBService.class);
 		List<Metric> metrics = createRandomMetrics(null, null, 10);
-		for (Metric m : metrics) {
-			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
-			Long timestamp = Collections.min(dps.keySet()) + (Collections.max(dps.keySet()) - Collections.min(dps.keySet())) / 2;
-			dps.put(timestamp, null);
-			m.setDatapoints(dps);
-		}
 		List<MetricQuery> queries = toQueries(metrics);
 		List<MetricScanner> scanners = new ArrayList<>();
 		
@@ -230,98 +223,11 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 		PercentileValueReducerOrMapping redMap = new PercentileValueReducerOrMapping();
 		List<String> constants = new ArrayList<>();
 		constants.add("" + ((int) (random.nextDouble() * 50) + 50));
-		constants.add("2m");
 		
 		for (int i = 0; i < metrics.size(); i++) {
 			Map<Long, Double> originalDP = new TreeMap<>(metrics.get(i).getDatapoints());
 			assert(originalDP.entrySet().equals(metrics.get(i).getDatapoints().entrySet()));
 			Map<Long, Double> expected = redMap.mapping(originalDP, constants);
-			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
-			
-			assert(actual.equals(expected));
-		}
-	}
-	
-	@Test
-	public void testMapLowPercentageLargeWindowWithNull() {
-		
-		MetricScanner.setChunkPercentage(0.50);
-		
-		TSDBService serviceMock = mock(TSDBService.class);
-		List<Metric> metrics = createRandomMetrics(null, null, 10);
-		for (Metric m : metrics) {
-			Map<Long, Double> dps = new HashMap<>(m.getDatapoints());
-			Long timestamp = Collections.min(dps.keySet()) + (Collections.max(dps.keySet()) - Collections.min(dps.keySet())) / 2;
-			dps.put(timestamp, null);
-			m.setDatapoints(dps);
-		}
-		List<MetricQuery> queries = toQueries(metrics);
-		List<MetricScanner> scanners = new ArrayList<>();
-		
-		for (int i = 0; i < metrics.size(); i++) {
-			Metric m = metrics.get(i);
-			MetricQuery q = queries.get(i);
-						
-			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
-			List<MetricQuery> highQuery = new ArrayList<>();
-			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
-			List<MetricQuery> tooHigh = new ArrayList<>();
-			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
-			
-			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
-			scanners.add(s);
-			
-			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
-			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
-		}
-		
-		PercentileValueReducerOrMapping redMap = new PercentileValueReducerOrMapping();
-		List<String> constants = new ArrayList<>();
-		constants.add("" + (int) (random.nextDouble() * 49 + 1));
-		constants.add("1h");
-		
-		for (int i = 0; i < metrics.size(); i++) {
-			Map<Long, Double> expected = redMap.mapping(new TreeMap<>(metrics.get(i).getDatapoints()), constants);
-			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
-			
-			assert(actual.equals(expected));
-		}
-	}
-	
-	@Test
-	public void testMapHighPercentageLargeWindow() {
-		
-		MetricScanner.setChunkPercentage(0.50);
-		
-		TSDBService serviceMock = mock(TSDBService.class);
-		List<Metric> metrics = createRandomMetrics(null, null, 10);
-		List<MetricQuery> queries = toQueries(metrics);
-		List<MetricScanner> scanners = new ArrayList<>();
-		
-		for (int i = 0; i < metrics.size(); i++) {
-			Metric m = metrics.get(i);
-			MetricQuery q = queries.get(i);
-						
-			Long bound = q.getStartTimestamp() + (q.getEndTimestamp() - q.getStartTimestamp()) / 2;
-			List<MetricQuery> highQuery = new ArrayList<>();
-			highQuery.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), bound, q.getEndTimestamp()));
-			List<MetricQuery> tooHigh = new ArrayList<>();
-			tooHigh.add(new MetricQuery(q.getScope(), q.getMetric(), q.getTags(), q.getEndTimestamp(), q.getEndTimestamp()));
-			
-			MetricScanner s = new MetricScanner(lowElems(m, bound), q, serviceMock, bound);
-			scanners.add(s);
-			
-			when(serviceMock.getMetrics(tooHigh)).thenReturn(outOfBounds());
-			when(serviceMock.getMetrics(highQuery)).thenReturn(filterOver(m, bound, highQuery.get(0)));
-		}
-		
-		PercentileValueReducerOrMapping redMap = new PercentileValueReducerOrMapping();
-		List<String> constants = new ArrayList<>();
-		constants.add("" + ((int) (random.nextDouble() * 50) + 50));
-		constants.add("1h");
-		
-		for (int i = 0; i < metrics.size(); i++) {
-			Map<Long, Double> expected = redMap.mapping(metrics.get(i).getDatapoints(), constants);
 			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
 			
 			assert(actual.equals(expected));
@@ -364,7 +270,7 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 			Map<Long, Double> actual = redMap.mappingScanner(scanners.get(i), constants);
 			
 			assert(actual.equals(expected));
-			assert(!MetricScanner.existingScanner(metrics.get(i), queries.get(i)));
+			assert(!scanners.get(i).isInUse());
 		}
 	}
 	
@@ -407,12 +313,7 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 		constants.add("75.0");
 		
 		for (int i = 0; i < scanners.size(); i++) {
-			if (i % 2 == 0) {
-				constants.add("2m");
-			} else {
-				constants.remove(1);
-			}
-			TreeMap<Long, Double> expected = new TreeMap<>(redMap.mapping(metrics.get(i).getDatapoints(), constants));
+			TreeMap<Long, Double> expected = new TreeMap<>(redMap.mapping(metrics.get(i).getDatapoints(), new ArrayList<>(constants)));
 			Long chunkTime = metrics.get(i).getDatapoints().size() == 1 ? 0L :
 				(Collections.max(metrics.get(i).getDatapoints().keySet()) - Collections.min(metrics.get(i).getDatapoints().keySet())) / 3;
 			MetricPager stream = new MetricPagerValueReducerOrMapping(Arrays.asList(scanners.get(i)), chunkTime, redMap, constants);
@@ -425,7 +326,6 @@ public class PercentileValueReducerOrMappingScannerTest extends AbstractTest {
 			for (int j = 0; j < stream.getNumberChunks(); j++) {
 				actual.putAll(stream.getDPChunk(j));
 			}
-
 			assert(expected.equals(actual));
 		}
 	}

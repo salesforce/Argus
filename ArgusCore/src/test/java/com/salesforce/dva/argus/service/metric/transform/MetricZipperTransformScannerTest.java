@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -119,7 +120,7 @@ public class MetricZipperTransformScannerTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testMetricZipperTransformNoConstantsWithNullUsingDiffValueZipper() {
+	public void testMetricZipperTransformNoConstantsWithNullUsingDiffValueZipperFullJoinIndicator() {
 		
 		MetricScanner.setChunkPercentage(0.50);
 		
@@ -158,9 +159,10 @@ public class MetricZipperTransformScannerTest extends AbstractTest {
 		
 		ValueZipper zip = new DiffValueZipper();
 		MetricZipperTransform transform = new MetricZipperTransform(zip);
+		List<String> constants = Arrays.asList("UNION");
 		
-		List<Metric> expected = transform.transform(metrics);
-		List<Metric> actual = transform.transformScanner(scanners);
+		List<Metric> expected = transform.transform(metrics, constants);
+		List<Metric> actual = transform.transformScanner(scanners, constants);
 		
 		assert(expected.equals(actual));
 	}
@@ -373,10 +375,11 @@ public class MetricZipperTransformScannerTest extends AbstractTest {
 		}
 				
 		Transform transform = new MetricZipperTransform(new SumValueZipper());
+		List<String> constants = Arrays.asList("union");
 		Long chunkTime = (max - min) / 7;				
 		
-		List<Metric> expected = transform.transform(metricCopy);	
-		MetricPager stream = new MetricPagerTransform(scanners, chunkTime, transform);			
+		List<Metric> expected = transform.transform(metricCopy, constants);	
+		MetricPager stream = new MetricPagerTransform(scanners, chunkTime, transform, constants);			
 		
 		int chunk = random.nextInt(stream.getNumberChunks());
 		Long start = stream.getStartTime() + (chunk) * chunkTime;

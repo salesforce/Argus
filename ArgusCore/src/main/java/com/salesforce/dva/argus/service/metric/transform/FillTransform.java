@@ -185,7 +185,7 @@ public class FillTransform implements Transform {
     }
     
     private static Map<Long, Double> _fillMetricTransformPager(MetricScanner scanner, long windowSizeInSeconds, long offsetInSeconds, double value, Long start, Long end) {
-    	Map<Long, Double> filledDatapoints = new TreeMap<>();
+        Map<Long, Double> filledDatapoints = new TreeMap<>();
     	int index = 1;
     	Map.Entry<Long, Double> next = scanner.peek();
     	
@@ -260,7 +260,6 @@ public class FillTransform implements Transform {
     				startTimestamp = dp.getKey();
     				filledDatapoints.put(startTimestamp, dp.getValue());
     			}
-    			
     			while (scanner.peek() != null && startTimestamp <= end) {
     				dp = scanner.getNextDP();
     				sortedTimestamps.add(dp.getKey());
@@ -306,7 +305,6 @@ public class FillTransform implements Transform {
     			filledDatapoints.put(newTimestamps.get(i) + offsetInSeconds * 1000, value);
     		}
     	}
-    	
     	Map<Long, Double> cleanFilledDatapoints = new TreeMap<>();
     	
     	for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {

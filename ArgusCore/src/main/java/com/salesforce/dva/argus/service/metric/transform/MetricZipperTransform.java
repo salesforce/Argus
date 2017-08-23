@@ -52,6 +52,8 @@ public class MetricZipperTransform implements Transform {
 
     private final ValueZipper valueZipper;
     private final String defaultScope;
+    protected static String FULLJOIN = "UNION";
+    protected Boolean fulljoinIndicator = false;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -74,20 +76,25 @@ public class MetricZipperTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
+        SystemAssert.requireArgument(constants != null && constants.size() == 1 && FULLJOIN.equals(constants.get(0).toUpperCase()),
+            "Zipper transforms only support UNION indicator as a constant!");
+        fulljoinIndicator = true;
         return transform(metrics);
     }
     
     @Override
     public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
-    	SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
+        SystemAssert.requireArgument(constants != null && constants.size() == 1 && FULLJOIN.equals(constants.get(0).toUpperCase()),
+            "Zipper transforms only support UNION indicator as a constant!");
+        fulljoinIndicator = true;
         return transformScanner(scanners);
     }
     
     @Override
     public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
-    	SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
-    	return transformScanner(scanners);
+        SystemAssert.requireArgument(constants != null && constants.size() == 1 && FULLJOIN.equals(constants.get(0).toUpperCase()),
+            "Zipper transforms only support UNION indicator as a constant!");
+        fulljoinIndicator = true;    	return transformScanner(scanners);
     }
 
     @Override
@@ -165,7 +172,19 @@ public class MetricZipperTransform implements Transform {
      			Double baseVal = baseDatapoints.containsKey(originalDP.getKey()) ? baseDatapoints.get(originalDP.getKey()) : null;
      			zippedDP.put(originalDP.getKey(), this.valueZipper.zip(originalDP.getValue(), baseVal));
      		}
-     		     		
+     		
+            // if a point exists in the baseDP but does not exist in the original set,
+            // then only add it to the result when the fullJoinIndicator is true.
+            if (fulljoinIndicator) {
+                for (Map.Entry<Long, Double> baseDP : baseDatapoints.entrySet()) {
+                    Long baseDPKey = baseDP.getKey();
+
+                    if (!zippedDP.containsKey(baseDPKey)) {
+                        zippedDP.put(baseDPKey, this.valueZipper.zip(null, baseDP.getValue()));
+                    }
+                }
+            }
+
      		Metric m = new Metric(scanner.getMetric());
      		m.setDatapoints(zippedDP);
      		zippedMetrics.add(m);
@@ -193,6 +212,46 @@ public class MetricZipperTransform implements Transform {
 		return baseVal;
     }
     
+    private void addBaseFullJoin(MetricScanner scanner, Map<Long, Double> zippedDP, Long start, Long end) {
+        Map.Entry<Long, Double> next = scanner.peek();
+
+        if (next == null || next.getKey() > end) {
+            TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+            Long startKey = dps.ceilingKey(start);
+            Long endKey = dps.floorKey(end);
+            if (startKey != null && endKey != null && startKey <= endKey) {
+                for (Map.Entry<Long, Double> dp : dps.subMap(startKey, endKey + 1).entrySet()) {
+                    if (!zippedDP.containsKey(dp.getKey())) {
+                        zippedDP.put(dp.getKey(), this.valueZipper.zip(null, dp.getValue()));
+                    }
+                }
+            }
+        } else if (next.getKey() > start) {
+            TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+            Long startKey = dps.ceilingKey(start);
+            Long endKey = dps.floorKey(next.getKey());
+            if (startKey != null && endKey != null && startKey < endKey) {
+                for (Map.Entry<Long, Double> dp : dps.subMap(startKey, endKey).entrySet()) {
+                    if (!zippedDP.containsKey(dp.getKey())) {
+                        zippedDP.put(dp.getKey(), this.valueZipper.zip(null, dp.getValue()));
+                    }
+                }
+            }
+        } else {
+            while (scanner.peek() != null && scanner.peek().getKey() < start) {
+                scanner.getNextDP();
+            }
+        }
+
+        while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+            Map.Entry<Long, Double> dp = scanner.getNextDP();
+
+            if (!zippedDP.containsKey(dp.getKey())) {
+                zippedDP.put(dp.getKey(), this.valueZipper.zip(null, dp.getValue()));
+            }
+        }
+    }
+
     public List<Metric> zipToPager(List<MetricScanner> scanners, MetricScanner baseScanner, Long start, Long end) {
     	SystemAssert.requireArgument(baseScanner != null, "Zipper transform requires a base metric scanner as second param!");
     	
@@ -234,6 +293,12 @@ public class MetricZipperTransform implements Transform {
     			zippedDP.put(dp.getKey(), this.valueZipper.zip(dp.getValue(), baseVal));
     		}
     		
+            // if a point exists in the baseDP but does not exist in the original set,
+            // then only add it to the result when the fullJoinIndicator is true.
+            if (fulljoinIndicator) {
+                addBaseFullJoin(baseScanner, zippedDP, start, end);
+            }
+
 			Metric m = new Metric(scanner.getMetric());
 			m.setDatapoints(zippedDP);
 			zippedMetrics.add(m);
@@ -262,6 +327,18 @@ public class MetricZipperTransform implements Transform {
             // if base datapoints doesn't have the key, give it null
             Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
             zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
+        }
+
+        // if a point exists in the baseDP but does not exist in the original set,
+        // then only add it to the result when the fullJoinIndicator is true.
+        if (fulljoinIndicator) {
+            for (Map.Entry<Long, Double> baseDP : baseDatapoints.entrySet()) {
+                Long baseDPKey = baseDP.getKey();
+
+                if (!zippedDP.containsKey(baseDPKey)) {
+                    zippedDP.put(baseDPKey, this.valueZipper.zip(null, baseDP.getValue()));
+                }
+            }
         }
         return zippedDP;
     }
