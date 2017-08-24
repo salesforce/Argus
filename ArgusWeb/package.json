@@ -1,5 +1,9 @@
 {
   "name": "argus-web",
+  "engines": {
+    "node": ">=5.3"
+  },
+  "engineStrict": true,
   "description": "Argus Web",
   "license": "BSD-3-Clause",
   "repository": {
@@ -7,6 +11,7 @@
     "url": "https://github.com/salesforce/Argus.git"
   },
   "devDependencies": {
+    "babel-cli": "^6.26.0",
     "babel-core": "^6.4.5",
     "babel-loader": "^7.1.0",
     "babel-preset-es2015": "^6.3.13",
@@ -24,6 +29,7 @@
     "html-webpack-plugin": "^2.28.0",
     "jscodeshift": "^0.3.32",
     "optimize-css-assets-webpack-plugin": "^1.3.0",
+    "semver": "^5.4.1",
     "shelljs": "^0.2.6",
     "style-loader": "^0.18.2",
     "url-loader": "^0.5.9",
@@ -32,6 +38,7 @@
     "webpack-dev-server": "^2.6.1"
   },
   "scripts": {
+    "requirements-check": "babel-node check-version.js",
     "postinstall": "npm install --prefix ./app/",
     "clean": "rm -r node_modules app/node_modules",
     "transformTemplates": "echo 'Changing templateUrl to template with inline HTML...' && jscodeshift app/js -t codemod/transformTemplateUrl.js -s",
