@@ -488,7 +488,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 	
-	
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode queryNode = _constructQueryNode(query, mapper);
@@ -507,7 +506,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return rootNode.toString();
 	}
 	
-	
 	private String _constructTermQuery(MetricSchemaRecordQuery query, int from, int size) {
 		ObjectMapper mapper = new ObjectMapper();
 		
@@ -520,34 +518,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		return rootNode.toString();
 	}
-
-	/*
-	private String _constructMultiMatchQuery(String query, int from, int size) {
-		ObjectMapper mapper = new ObjectMapper();
-		
-		ObjectNode multiMatchNode = mapper.createObjectNode();
-		multiMatchNode.put("query", query);
-		multiMatchNode.put("type", "best_fields");
-		multiMatchNode.put("fields", mapper.createArrayNode()
-										   .add(RecordType.SCOPE.getName())
-										   .add(RecordType.METRIC.getName())
-										   .add(RecordType.TAGK.getName())
-										   .add(RecordType.TAGV.getName())
-										   .add(RecordType.NAMESPACE.getName()));
-		multiMatchNode.put("operator", "and");
-		
-		ObjectNode queryNode = mapper.createObjectNode();
-		queryNode.put("multi_match", multiMatchNode);
-		
-		ObjectNode rootNode = mapper.createObjectNode();
-		rootNode.put("query", queryNode);
-		rootNode.put("from", from);
-		rootNode.put("size", size);
-		
-		return rootNode.toString();
-	}
-	*/
-	
 	
 	private ObjectNode _constructSimpleQueryStringNode(List<String> tokens, RecordType... types) {
 		
