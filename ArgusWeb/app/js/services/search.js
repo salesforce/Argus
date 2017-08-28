@@ -15,6 +15,17 @@ angular.module('argus.services.search', [])
 
 		return request;
 	};
+	
+	this.newSearch = function(searchParams) {
+		var request = $http({
+			method: 'POST',
+			url: CONFIG.wsUrl + 'discover/metrics/search',
+			timeout: 30000,
+			data: searchParams
+		});
+		
+		return request;
+	};
 
 	this.processResponse = function(response) {
 		return response.data;

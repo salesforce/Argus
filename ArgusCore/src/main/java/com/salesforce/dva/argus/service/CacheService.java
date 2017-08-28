@@ -52,7 +52,7 @@ public interface CacheService extends Service {
      *
      * @return  The value or null if no value exists for the given key.
      */
-    byte[] get(String key);
+    <V> V get(String key);
 
     /**
      * Gets a map of corresponding key-values, given a set of keys.
@@ -62,7 +62,7 @@ public interface CacheService extends Service {
      *
      * @return  The map of cache keys to cache values.  Cache keys having no cache value will have a map entry value of null.
      */
-    Map<String, byte[]> get(Set<String> keys);
+    <V> Map<String, V> get(Set<String> keys);
 
     /**
      * Puts a value into the key slot and set expiry of key in seconds.
@@ -72,7 +72,7 @@ public interface CacheService extends Service {
      * @param  value  The cache value.  Cannot be null.
      * @param  ttl    Expiry in seconds.  Must be greater than or equal to zero.
      */
-    void put(String key, byte[] value, int ttl);
+    <V> void put(String key, V value, int ttl);
 
     /**
      * Puts a map of key-value entries into cache and sets the expiry of each key.
@@ -81,7 +81,7 @@ public interface CacheService extends Service {
      * @param  entries  A map of cache keys to cache values.  Cannot be null, but may be empty.
      * @param  ttl      Expiry in seconds.  Must be greater than or equal to zero.
      */
-    void put(Map<String, byte[]> entries, int ttl);
+    <V> void put(Map<String, V> entries, int ttl);
 
     /** Removes all entries from cache. */
     void clear();
@@ -103,7 +103,7 @@ public interface CacheService extends Service {
      *
      * @return  Map of key-value pairs.  Will never be null, but may be empty.
      */
-    Map<String, byte[]> getByPattern(String pattern);
+    <V> Map<String, V> getByPattern(String pattern);
 
     /**
      * Given a pattern in form of wildcard returns all the matching keys.
@@ -162,7 +162,7 @@ public interface CacheService extends Service {
      * @param  key    The cache key.  Cannot be null or empty.
      * @param  value  The value to append.  Cannot be null.
      */
-    void append(byte[] key, byte[] value);
+    <V> void append(String key, V value);
 
     /**
      * Gets the list of values from <tt>startOffset</tt> to <tt>endOffset</tt> for a key. To get all values in key entry startOffset=0 and endOffset=-1.
@@ -184,7 +184,7 @@ public interface CacheService extends Service {
      * @param  value  The value.  Cannot be null.
      * @param  ttl    The timeout in seconds.  Must be greater than zero.
      */
-    <V> void append(byte[] key, byte[] value, int ttl);
+    <V> void append(String key, V value, int ttl);
 
     /**
      * Returns the map of key-values, for value list between <tt>startOffset</tt> to <tt>endOffset</tt> for a set of keys. To get all values in key entry startOffset=0

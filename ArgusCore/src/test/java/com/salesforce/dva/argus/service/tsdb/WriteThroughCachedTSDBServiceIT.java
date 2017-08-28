@@ -10,11 +10,13 @@ import java.util.TreeMap;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import com.salesforce.dva.argus.AbstractTest;
+import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
@@ -23,8 +25,9 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.WriteThroughCachedTSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
+@Category(IntegrationTest.class)
 @RunWith(org.mockito.runners.MockitoJUnitRunner.class)
-public class WriteThroughCachedTSDBServiceTest extends AbstractTest {
+public class WriteThroughCachedTSDBServiceIT extends AbstractTest {
 	
 	private static long PREV_HOUR_START = System.currentTimeMillis()/3600000 * 3600000 - 3600000;
 	
@@ -36,7 +39,7 @@ public class WriteThroughCachedTSDBServiceTest extends AbstractTest {
 		Mockito.doNothing().when(_tsdbServiceMock).putMetrics(Mockito.anyListOf(Metric.class));
 		TransformFactory factory = new TransformFactory(_tsdbServiceMock);
 		_writeThroughCachedTSDBService = new WriteThroughCachedTSDBService(system.getConfiguration(),
-				system.getServiceFactory().getMonitorService(), system.getServiceFactory().getCacheService(), _tsdbServiceMock, factory);
+				system.getServiceFactory().getMonitorService(), _tsdbServiceMock, factory);
 		system.getServiceFactory().getCacheService().clear();
 	}
 	
@@ -319,64 +322,6 @@ public class WriteThroughCachedTSDBServiceTest extends AbstractTest {
 		assertTrue(metrics.get(1).getTag("host").matches("shared1-argusws1-2-prd.eng.sfdc.net|shared1-argusws1-3-prd.eng.sfdc.net"));
 		assertTrue(metrics.get(1).getTag("port").equals("4466"));
 	}
-	
-	@Test
-	public void testDatapointsBrokenOnHourlyBoundary() {
-		
-		Map<Long, Double> datapoints = new TreeMap<>();
-		
-		for(int i=0; i<100; i++) {
-			datapoints.put((System.currentTimeMillis() / 60000 * 60000) + (i * 60000), 1.0);
-		}
-		
-		Map<Long, Map<Long, Double>> datapointsBrokenOnHouryBoundary = WriteThroughCachedTSDBService._breakDatapointsByHourlyBoundary(datapoints);
-		assertTrue(datapointsBrokenOnHouryBoundary.size() == 2 || datapointsBrokenOnHouryBoundary.size() == 3);
-	}
-	
-	@Test
-	public void testConvertDatapointsToByteArrAndBack() {
-		
-		Map<Long, Double> datapoints = new TreeMap<>();
-		datapoints.put(1496772240L, 13488749694.984127);
-		datapoints.put(1496772300L, 11917782622.47619);
-		datapoints.put(1496772360L, 12190658378.15873);
-		datapoints.put(1496772420L, 11933017011.809525);
-		datapoints.put(1496772480L, 12047358319.74603);
-		datapoints.put(1496772540L, 12686119925.84127);
-		datapoints.put(1496772600L, 12632496244.825397);
-		datapoints.put(1496772660L, 12231557863.36508);
-		datapoints.put(1496772720L, 12454423044.825397);
-		
-		Map<Long, Double> expected = new TreeMap<>();
-		for(Map.Entry<Long, Double> entry : datapoints.entrySet()) {
-			expected.put(entry.getKey() * 1000, entry.getValue());
-		}
-		
-		byte[] arr = WriteThroughCachedTSDBService._convertDatapointsMapToBytes(1496772000L, datapoints);
-		Map<Long, Double> convertedDatapoints = WriteThroughCachedTSDBService._convertDatapointsByteArrToMap(1496772000L, arr, 0, Long.MAX_VALUE);
-		assertEquals(expected, convertedDatapoints);
-	}
-	
-	@Test
-	public void testCacheKeyConstruction() {
-		
-		Metric metric = new Metric("scope", "metric");
-		metric.setTag("device", "device1");
-		metric.setTag("port", "port1");
-		
-		CharSequence seq = WriteThroughCachedTSDBService._constructCackeKeyWithoutBaseTimestamp(metric);
-		assertEquals("scope:metric:device:device1:port:port1:", seq.toString());		
-	}
-	
-	@Test
-	public void testCacheKeyConstruction_NoTags() {
-		
-		Metric metric = new Metric("scope", "metric");
-		
-		CharSequence seq = WriteThroughCachedTSDBService._constructCackeKeyWithoutBaseTimestamp(metric);
-		assertEquals("scope:metric:", seq.toString());		
-	}
-	
 	
 	private Metric createMetric1(Map<String, String> tags) {
 		

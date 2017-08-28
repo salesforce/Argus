@@ -51,6 +51,10 @@ import java.util.TreeMap;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public interface TSDBService extends Service {
+	
+	static final String QUERY_LATENCY_COUNTER = "query.latency";
+    static final String QUERY_COUNT_COUNTER = "query.count"; 
+	
 
     //~ Methods **************************************************************************************************************************************
 
@@ -160,6 +164,32 @@ public interface TSDBService extends Service {
 		String downsampler = query.getDownsamplingPeriod() / 1000 + "s-" + query.getDownsampler().getDescription();
 		metrics = downsampleTransform.transform(metrics, Arrays.asList(downsampler));
 	}
+	
+
+    
+    static void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start, final MeasurementType type) {
+		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
+		Map<String, String> tags = new HashMap<String, String>();
+		tags.put("type", type.getName());
+		tags.put("timeWindow", timeWindow);
+		tags.put("cached", "true");
+		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
+        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
+	}
+    
+    public static enum MeasurementType {
+    	METRICS("metrics"), ANNOTATIONS("annotations");
+    	
+    	private String _name;
+    	
+    	MeasurementType(String name) {
+			_name = name;
+		}
+    	
+    	public String getName() {
+    		return _name;
+    	}
+    }
     
     /**
      * Enumeration of time window for a query

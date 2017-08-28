@@ -51,13 +51,14 @@ import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockServ
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
 import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
-import com.salesforce.dva.argus.service.jpa.DefaultUserService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.WriteThroughCachedTSDBService;
+import com.salesforce.dva.argus.service.users.CachedUserService;
+import com.salesforce.dva.argus.service.users.DefaultUserService;
 import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
 
@@ -236,10 +237,11 @@ final class SystemInitializer extends AbstractModule {
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
         bindConcreteClassWithNamedAnnotation(DefaultDiscoveryService.class, DiscoveryService.class);
+        bindConcreteClassWithNamedAnnotation(DefaultUserService.class, UserService.class);
 
         // static binding
         bindConcreteClass(WriteThroughCachedTSDBService.class, TSDBService.class);
-        bindConcreteClass(DefaultUserService.class, UserService.class);
+        bindConcreteClass(CachedUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);
         bindConcreteClass(AsyncMetricService.class, MetricService.class);

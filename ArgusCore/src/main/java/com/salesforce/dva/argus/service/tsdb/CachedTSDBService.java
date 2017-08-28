@@ -76,8 +76,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     private static final Long LOWER_START_TIME_LIMIT_IN_MILLIS = 86400000L;
     private static final Long UPPER_START_TIME_LIMIT_IN_MILLIS = 86400000 * 61L;
     private static final Long END_TIME_LIMIT_IN_MILLIS = 60000L;
-    private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count"; 
 
     
     //~ Instance fields ******************************************************************************************************************************
@@ -508,7 +506,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                         metricsForThisQuery.add(metric);
                     }
                     resultsMap.put(query, metricsForThisQuery);
-                    instrumentQueryLatency(_monitorService, query, startExecutionTime);
+                    TSDBService.instrumentQueryLatency(_monitorService, query, startExecutionTime, MeasurementType.METRICS);
                     
                     afterTime = System.currentTimeMillis();
                     _logger.info("Time spent in mapping tags in tsdb metrics to tags in cache: {}", afterTime - beforeTime);
@@ -583,16 +581,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
         return _defaultTsdbService.getAnnotations(queries);
     }
-    
-    private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start) {
-		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
-		Map<String, String> tags = new HashMap<String, String>();
-		tags.put("type", "metrics");
-		tags.put("timeWindow", timeWindow);
-		tags.put("cached", "true");
-		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
-        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
-	}
     
     //~ Inner Classes ********************************************************************************************************************************
 
@@ -719,7 +707,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             try {
                 for (Map.Entry<String, List<Metric>> entry : cacheMap.entrySet()) {
                     for (Metric metric : entry.getValue()) {
-                        _cacheService.append(entry.getKey().getBytes(), _mapper.writeValueAsString(metric).getBytes(), _cacheService.getCacheExpirationTime());
+                        _cacheService.append(entry.getKey(), _mapper.writeValueAsString(metric), _cacheService.getCacheExpirationTime());
                         _cacheService.expire(entry.getKey(), getTimeUntilEndOfHour(System.currentTimeMillis()));
                     }
                 }

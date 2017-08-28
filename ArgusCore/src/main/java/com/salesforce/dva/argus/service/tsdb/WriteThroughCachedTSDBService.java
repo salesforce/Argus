@@ -2,7 +2,7 @@ package com.salesforce.dva.argus.service.tsdb;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
-import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -13,11 +13,18 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.redisson.Redisson;
+import org.redisson.api.RBatch;
+import org.redisson.api.RFuture;
+import org.redisson.api.RSet;
+import org.redisson.api.RSetAsync;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.config.ClusterServersConfig;
+import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,23 +33,17 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.CacheService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.cache.RedisCacheService.Property;
+import com.salesforce.dva.argus.service.cache.RedisCacheService;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
-
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
 
 @Singleton
 public class WriteThroughCachedTSDBService extends DefaultService implements TSDBService {
@@ -52,19 +53,18 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 	private static int STORE_HOURS = 4;
 	private static int EXPIRY_IN_SECONDS = (STORE_HOURS + 1) * 60 * 60;
 	private static String DELIMITER = ":";
-	private static String APPEND_IDENTIFIER_TO_CACHEKEYS = "TEST" + DELIMITER;
-	//private static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
-	private static final Logger LOGGER = LoggerFactory.getLogger(WriteThroughCachedTSDBService.class);
 	
+	//TODO: Append "TEST:" to cache keys for development purposes. Change this to an empty string when using in production.  
+	private static String APPEND_IDENTIFIER_TO_CACHEKEYS = "TEST" + DELIMITER;
+	private static final Logger LOGGER = LoggerFactory.getLogger(WriteThroughCachedTSDBService.class);
 	
 	//~ Instance fields ******************************************************************************************************************************
 	
     private final TSDBService _defaultTsdbService;
-    private final CacheService _cacheService;
     private final MonitorService _monitorService;
-    private final boolean _isWriteThroughCachingEnabled = true;
     private final TransformFactory _transformFactory;
-    JedisCluster _jedisClusterClient;
+    private RedissonClient _redissonClient;
+    private boolean _writeThroughCacheEnabled = false;
     
   //~ Constructors *********************************************************************************************************************************
 
@@ -78,101 +78,104 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
      *
      */
     @Inject
-    public WriteThroughCachedTSDBService(SystemConfiguration config, MonitorService monitorService, CacheService cacheService, 
+    public WriteThroughCachedTSDBService(SystemConfiguration sysConfig, MonitorService monitorService, 
     		@NamedBinding TSDBService defaultTSDBService, TransformFactory transformFactory) {
-    	super(config);
+    	super(sysConfig);
         requireArgument(monitorService != null, "Monitor service cannot be null.");
-        requireArgument(cacheService != null, "Cache service cannot be null.");
-        _cacheService = cacheService;
         _monitorService = monitorService;
         _defaultTsdbService = defaultTSDBService;
         _transformFactory = transformFactory;
-        //TODO: read wrtieThrough as a configuration option
         
-        _initializeJedisClusterClient(config);
+        _writeThroughCacheEnabled = Boolean.parseBoolean(
+        		sysConfig.getValue(Property.WRITE_THROUGH_CACHE_ENABLED.getName(), Property.WRITE_THROUGH_CACHE_ENABLED.getDefaultValue()));
         
+        _initializeRedissonClient(sysConfig);
     }
-
-	private void _initializeJedisClusterClient(SystemConfiguration config) {
-		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-        poolConfig.setMaxTotal(Integer.parseInt(
-                config.getValue(Property.REDIS_SERVER_MAX_CONNECTIONS.getName(), Property.REDIS_SERVER_MAX_CONNECTIONS.getDefaultValue())));
-
-        String[] hostsPorts = config.getValue(Property.REDIS_CLUSTER.getName(), Property.REDIS_CLUSTER.getDefaultValue()).split(",");
-
-        Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
-        for (String hostPort : hostsPorts) {
-            String[] hostPortPair = hostPort.split(":");
-
-            jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
-        }
-        _jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
-	}
-	
     
+	private void _initializeRedissonClient(SystemConfiguration sysConfig) {
+		Config config = new Config();
+		ClusterServersConfig clusterConfig = config.useClusterServers();
+		
+		String[] nodes = sysConfig.getValue(
+				RedisCacheService.Property.REDIS_CLUSTER.getName(), RedisCacheService.Property.REDIS_CLUSTER.getDefaultValue()).split(",");
+		for(String node : nodes) {
+			clusterConfig.addNodeAddress("redis://" + node);
+		}
+		config.setCodec(new StringCodec());
+		_redissonClient = Redisson.create(config);
+	}
+    
+	
     @Override
     public void dispose() {
     	super.dispose();
-    	try {
-			_jedisClusterClient.close();
-		} catch (IOException e) {
-			LOGGER.warn("IOException while trying to close JedisClusterClient", e);
-		}
+    	_redissonClient.shutdown();
+    	_defaultTsdbService.dispose();
     }
 
-	@Override
-	public void putMetrics(List<Metric> metrics) {
-		requireNotDisposed();
+        
+    @Override
+    public void putMetrics(List<Metric> metrics) {
+    	requireNotDisposed();
 		requireArgument(metrics != null, "Metrics list cannot be null.");
-		
-		ExecutorService service = Executors.newFixedThreadPool(2);
-		Future<?> cachePutFuture = service.submit(new Runnable() {
-			
-			@Override
-			public void run() {
-				if(_isWriteThroughCachingEnabled) {
-					LOGGER.debug("Adding " + metrics.size() + " metrics to cache.");
-					for(Metric metric : metrics) {
-						CharSequence cacheKeyWithoutBaseTimestamp = _constructCackeKeyWithoutBaseTimestamp(metric);
-						_addToCache(cacheKeyWithoutBaseTimestamp, metric.getDatapoints());
-						_addTagInfoToCache(metric);
-					}
-				}
+    	
+		if(_writeThroughCacheEnabled) {
+			long start = System.currentTimeMillis();
+	    	RBatch batch = _redissonClient.createBatch();
+	    	for(Metric metric : metrics) {
+				CharSequence cacheKeyWithoutBaseTimestamp = _constructCackeKeyWithoutBaseTimestamp(metric);
+				_addToBatch(cacheKeyWithoutBaseTimestamp, metric.getDatapoints(), batch);
 			}
-		});
+	    	
+	    	_addTagInfoToBatch(metrics, batch);
+	    	
+	    	batch.execute();
+	    	LOGGER.debug("Time to write " + metrics.size() + " metrics to cache: " + (System.currentTimeMillis() - start));
+		}
+    	
+    	_defaultTsdbService.putMetrics(metrics);
+    }
+    
+    private void _addToBatch(CharSequence cacheKeyWithoutBaseTimestamp, Map<Long, Double> datapoints, RBatch batch) {
 		
-		Future<?> persistentStorePutFuture = service.submit(new Runnable() {
-			
-			@Override
-			public void run() {
-				_defaultTsdbService.putMetrics(metrics);
-			}
-		});
+		Map<Long, Map<Long, Double>> datapointsBrokenOutByHourlyBoundary = _breakDatapointsByHourlyBoundary(datapoints);
 		
-		try {
-			cachePutFuture.get();
-			persistentStorePutFuture.get();
-			service.shutdownNow();
-		} catch (InterruptedException e) {
-			LOGGER.warn("Interrupted while waiting on putMetrics to complete.", e);
-			Thread.currentThread().interrupt();
-		} catch (ExecutionException e) {
-			throw new SystemException("Exception occurred when trying to put metrics.", e);
+		for(Map.Entry<Long, Map<Long, Double>> entry : datapointsBrokenOutByHourlyBoundary.entrySet()) {
+			long baseTimestamp = entry.getKey();
+			String cacheKey =  new StringBuilder().append(APPEND_IDENTIFIER_TO_CACHEKEYS).append(baseTimestamp).append(DELIMITER).append(cacheKeyWithoutBaseTimestamp).toString();
+			List<String> values = _convertDatapointToByteString(entry.getKey(), entry.getValue());
+			RSetAsync<String> set = batch.getSet(cacheKey);
+			set.addAllAsync(values);
+			set.expireAsync(EXPIRY_IN_SECONDS, TimeUnit.SECONDS);
 		}
 	}
-
-	private void _addTagInfoToCache(Metric metric) {
+    
+    private void _addTagInfoToBatch(List<Metric> metrics, RBatch batch) {
 		
-		StringBuilder keySB = new StringBuilder(metric.getScope()).append(DELIMITER).append(metric.getMetric()).append(DELIMITER);
-		StringBuilder valueSB = new StringBuilder();
+		Map<String, List<String>> map = new HashMap<>();
 		
-		Map<String, String> sortedTags = new TreeMap<>(metric.getTags());
-		for(Map.Entry<String, String> entry : sortedTags.entrySet()) {
-			valueSB.append(entry.getKey()).append(DELIMITER).append(entry.getValue()).append(DELIMITER);
+		for(Metric metric : metrics) {
+			StringBuilder keySB = new StringBuilder(metric.getScope()).append(DELIMITER).append(metric.getMetric()).append(DELIMITER);
+			StringBuilder valueSB = new StringBuilder();
+			
+			Map<String, String> sortedTags = new TreeMap<>(metric.getTags());
+			for(Map.Entry<String, String> entry : sortedTags.entrySet()) {
+				valueSB.append(entry.getKey()).append(DELIMITER).append(entry.getValue()).append(DELIMITER);
+			}
+			
+			
+			if(!map.containsKey(keySB.toString())) {
+				List<String> values = new ArrayList<>();
+				map.put(keySB.toString(), values);
+			}
+			
+			map.get(keySB.toString()).add(valueSB.toString());
 		}
 		
-		_jedisClusterClient.sadd(keySB.toString().getBytes(), valueSB.toString().getBytes());
-		
+		for(Map.Entry<String, List<String>> entry : map.entrySet()) {
+			RSetAsync<String> set = batch.getSet(entry.getKey());
+			set.addAllAsync(entry.getValue());
+		}
 	}
 
 	static CharSequence _constructCackeKeyWithoutBaseTimestamp(Metric metric) {
@@ -186,28 +189,16 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 		
 		return sb;
 	}
-
-	private void _addToCache(CharSequence cacheKeyWithoutBaseTimestamp, Map<Long, Double> datapoints) {
-		
-		Map<Long, Map<Long, Double>> datapointsBrokenOutByHourlyBoundary = _breakDatapointsByHourlyBoundary(datapoints);
-		
-		for(Map.Entry<Long, Map<Long, Double>> entry : datapointsBrokenOutByHourlyBoundary.entrySet()) {
-			long baseTimestamp = entry.getKey();
-			StringBuilder cacheKey =  new StringBuilder().append(APPEND_IDENTIFIER_TO_CACHEKEYS).append(baseTimestamp).append(DELIMITER).append(cacheKeyWithoutBaseTimestamp);
-			byte[] cacheValue = _convertDatapointsMapToBytes(entry.getKey(), entry.getValue());
-			_cacheService.append(cacheKey.toString().getBytes(), cacheValue, EXPIRY_IN_SECONDS);
-		}
-	}
 	
-	
-	static byte[] _convertDatapointsMapToBytes(long baseTimestampInSecs, Map<Long, Double> datapointsWithTimestampsInSecs) {
+	static List<String> _convertDatapointToByteString(long baseTimestampInSecs, Map<Long, Double> datapointsWithTimestampsInSecs) {
 		
-		//10 bytes per datapoint, 2 for long timestamp and 8 for double value.
-		int size = datapointsWithTimestampsInSecs.size() * 10;
-		byte[] datapointsByteArr = new byte[size];
+		List<String> datapoints = new ArrayList<>();
 		
-		int destPos = 0;
+		//int destPos = 0;
 		for(Map.Entry<Long, Double> entry : datapointsWithTimestampsInSecs.entrySet()) {
+			
+			//10 bytes per datapoint, 2 for long timestamp and 8 for double value.
+			byte[] datapointsByteArr = new byte[10];
 			
 			long deltaInSeconds = entry.getKey() - baseTimestampInSecs;
 			byte[] deltaInBytes = Longs.toByteArray(deltaInSeconds);
@@ -216,24 +207,22 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 			//Since we are only storing 1 hour of data in a single row and Argus does not support ms granularity,
 			//the maximum datapoints that can fit in this row is 3600. Hence we can capture max_detla (which will be 3600)
 			//using 2 bytes.
-			System.arraycopy(deltaInBytes, 6, datapointsByteArr, destPos, 2);
-			destPos += 2;
-			System.arraycopy(valueInBytes, 0, datapointsByteArr, destPos, 8);
-			destPos += 8;
+			System.arraycopy(deltaInBytes, 6, datapointsByteArr, 0, 2);
+			System.arraycopy(valueInBytes, 0, datapointsByteArr, 2, 8);
+			
+			datapoints.add(new String(datapointsByteArr, Charset.forName("ISO-8859-1")));
 		}
 		
-		return datapointsByteArr;
+		return datapoints;
 	}
 	
-	static Map<Long, Double> _convertDatapointsByteArrToMap(long baseTimestampInSecs, byte[] datapointsByteArr, long start, long end) {
+	static Map<Long, Double> _convertByteStringToDatapoint(long baseTimestampInSecs, Set<String> datapointsSet, long start, long end) {
 		
 		//TODO: Handle cases where start and end are in seconds and not milliseconds.
 		
-		if(datapointsByteArr == null) {
+		if(datapointsSet == null || datapointsSet.isEmpty()) {
 			return new TreeMap<>();
 		}
-		
-		SystemAssert.requireArgument(datapointsByteArr.length % 10 == 0, "Datapoint byte array was not properly formatted.");
 		
 		long baseTimestampInMillis = baseTimestampInSecs * 1000;
 		boolean trim = false;
@@ -241,28 +230,31 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 			trim = true;
 		}
 		
-		int size = datapointsByteArr.length/10;
 		Map<Long, Double> datapoints = new TreeMap<>();
-		
-		for(int i=0; i<size; i++) {
+		for(String datapoint : datapointsSet) {
+			
+			byte[] dpInBytes = datapoint.getBytes(Charset.forName("ISO-8859-1"));
+			SystemAssert.requireArgument(dpInBytes.length % 10 == 0, "Datapoint byte array was not properly formatted.");
+			
 			byte[] timestampInBytes = new byte[8];
-			timestampInBytes[6] = datapointsByteArr[10 * i + 0];
-			timestampInBytes[7] = datapointsByteArr[10 * i + 1];
+			timestampInBytes[6] = dpInBytes[0];
+			timestampInBytes[7] = dpInBytes[1];
 			
 			long timestamp = Longs.fromByteArray(timestampInBytes) * 1000 + baseTimestampInMillis;
+			
 			if(trim && (timestamp < start || timestamp > end)) {
 				continue;
 			}
 			
 			byte[] valueInBytes = new byte[8];
-			valueInBytes[0] = datapointsByteArr[10 * i + 2];
-			valueInBytes[1] = datapointsByteArr[10 * i + 3];
-			valueInBytes[2] = datapointsByteArr[10 * i + 4];
-			valueInBytes[3] = datapointsByteArr[10 * i + 5];
-			valueInBytes[4] = datapointsByteArr[10 * i + 6];
-			valueInBytes[5] = datapointsByteArr[10 * i + 7];
-			valueInBytes[6] = datapointsByteArr[10 * i + 8];
-			valueInBytes[7] = datapointsByteArr[10 * i + 9];
+			valueInBytes[0] = dpInBytes[2];
+			valueInBytes[1] = dpInBytes[3];
+			valueInBytes[2] = dpInBytes[4];
+			valueInBytes[3] = dpInBytes[5];
+			valueInBytes[4] = dpInBytes[6];
+			valueInBytes[5] = dpInBytes[7];
+			valueInBytes[6] = dpInBytes[8];
+			valueInBytes[7] = dpInBytes[9];
 			
 			datapoints.put(timestamp, Double.longBitsToDouble(Longs.fromByteArray(valueInBytes)));
 		}
@@ -296,21 +288,12 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 		
 		String key = new StringBuilder(query.getScope()).append(DELIMITER).append(query.getMetric()).append(DELIMITER).toString();
 		
-		ScanParams params = new ScanParams();
-		params.count(100);
 		
-		String cursor = "0";
+		RSet<String> values = _redissonClient.getSet(key);
 		Set<String> keysWithoutBaseTimestamp = new HashSet<>();
-		do {
-			ScanResult<String> scanResult = _jedisClusterClient.sscan(key, cursor, params);
-			
-			List<String> values = scanResult.getResult();
-			for(String value : values) {
-				keysWithoutBaseTimestamp.add(key + value);
-			}
-			
-			cursor = scanResult.getStringCursor();
-		} while(!"0".equals(cursor));
+		for(String value : values) {
+			keysWithoutBaseTimestamp.add(key + value);
+		}
 		
 		Set<String> matchedKeys = new HashSet<>();
 		String pattern = _constructKeyPattern(query.getScope(), query.getMetric(), sortedTags);
@@ -355,14 +338,108 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 		}
 	}
 
-	private static Metric _constructMetric(Entry<String, byte[]> cacheEntry, MetricQuery query) {
+	
+	@Override
+	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
+		requireNotDisposed();
+		requireArgument(queries != null, "Queries cannot be null");
 		
+		if(!_writeThroughCacheEnabled) {
+			return _defaultTsdbService.getMetrics(queries);
+		}
+		
+		
+		long totalStart = System.currentTimeMillis();
+		Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>(queries.size());
+		
+		for(MetricQuery query : queries) {
+			SystemAssert.requireArgument(query != null, "MetricQuery cannot be null.");
+			
+			long queryExecutionStartTime = System.currentTimeMillis();
+			long currentHourInMillis = queryExecutionStartTime - (queryExecutionStartTime % ONE_HOUR_IN_MILLIS); 
+			if(query.getStartTimestamp() < currentHourInMillis - STORE_HOURS * 1000 * 3600) {
+				LOGGER.info("Query start exceeds time window for data stored in cache. Will read from PERSISTENT STORE.");
+				List<Metric> metrics = _defaultTsdbService.getMetrics(Arrays.asList(query)).get(query);
+				metricsMap.put(query, metrics);
+			} else {
+				LOGGER.info("Query start is within the time window for data stored in cache. Will read from CACHE.");
+				
+				long start = System.currentTimeMillis();
+				Set<String> cacheKeys = _constructCacheKeys(query);
+				LOGGER.info("Time to construct keys for a query: " + (System.currentTimeMillis() - start));
+				
+				if(cacheKeys.isEmpty()) {
+					LOGGER.info("CACHE MISS. Will read from PERSISTENT STORE.");
+					metricsMap.putAll(_defaultTsdbService.getMetrics(Arrays.asList(query)));
+				} else {
+					LOGGER.info("CACHE HIT. Will read from CACHE.");
+					
+					Map<String, Set<String>> data = new HashMap<>();
+					
+					try {
+						start = System.currentTimeMillis();
+						RBatch batch = _redissonClient.createBatch();
+						Map<String, RFuture<Set<String>>> futures = new HashMap<>();
+						for(String cacheKey : cacheKeys) {
+							RSetAsync<String> set = batch.getSet(cacheKey);
+							futures.put(cacheKey, set.readAllAsync());
+						}
+						batch.execute();
+						
+						for(Map.Entry<String, RFuture<Set<String>>> entry : futures.entrySet()) {
+							Set<String> set = entry.getValue().get();
+							data.put(entry.getKey(), set);
+							
+						}
+						LOGGER.info("Time to read data for " + cacheKeys.size() + " keys: " + (System.currentTimeMillis() - start));
+						
+						if(data.isEmpty() || data.size() < cacheKeys.size()) {
+							LOGGER.info("Failed to read data from CACHE. Will read from PERSISTENT STORE.");
+							metricsMap.putAll(_defaultTsdbService.getMetrics(Arrays.asList(query)));
+						} else {
+							List<Metric> metrics = new ArrayList<>();
+							
+							for(Map.Entry<String, Set<String>> entry : data.entrySet()) {
+								Metric m = _constructMetric(entry, query);
+								metrics.add(m);
+							}
+							
+							TSDBService.collate(metrics);
+							
+							Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
+							TSDBService.downsample(query, metrics, downsampleTransform);
+							
+							Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(metrics, query);
+							Transform transform = Aggregator.correspondingTransform(query.getAggregator(), _transformFactory);
+							metricsMap.put(query, TSDBService.aggregate(groupedMetricsMap, transform));
+						}
+						
+					} catch (InterruptedException e) {
+						LOGGER.warn("Interrupted while reading data from CACHE", e);
+						Thread.currentThread().interrupt();
+					} catch (RedisException | ExecutionException e) {
+						LOGGER.error("Failed to read data from CACHE. Will read from PERSISTENT STORE.", e);
+						metricsMap.putAll(_defaultTsdbService.getMetrics(Arrays.asList(query)));
+					}
+				}
+			}
+			
+			TSDBService.instrumentQueryLatency(_monitorService, query, queryExecutionStartTime, MeasurementType.METRICS);
+		}
+		
+		LOGGER.debug("Time to get metrics: " + (System.currentTimeMillis() - totalStart));
+		
+		
+		return metricsMap;
+	}
+
+	private Metric _constructMetric(Entry<String, Set<String>> cacheEntry, MetricQuery query) {
 		String cacheKey = cacheEntry.getKey();
 		
 		String[] parts = cacheKey.split(DELIMITER);
 		long baseTimestampInSecs = Long.parseLong(parts[1]);
 		Metric metric = new Metric(parts[2], parts[3]);
-		Map<Long, Double> datapoints = _convertDatapointsByteArrToMap(baseTimestampInSecs, cacheEntry.getValue(), query.getStartTimestamp(), query.getEndTimestamp());
+		Map<Long, Double> datapoints = _convertByteStringToDatapoint(baseTimestampInSecs, cacheEntry.getValue(), query.getStartTimestamp(), query.getEndTimestamp());
 		metric.setDatapoints(datapoints);
 		
 		for(int i=4; i<parts.length; i++) {
@@ -376,60 +453,6 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 		
 		return metric;
 	}
-	
-	@Override
-	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
-		requireNotDisposed();
-		requireArgument(queries != null, "Queries cannot be null");
-		
-		Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>(queries.size());
-		
-		for(MetricQuery query : queries) {
-			SystemAssert.requireArgument(query != null, "MetricQuery cannot be null.");
-			
-			long now = System.currentTimeMillis();
-			long currentHourInMillis = now - (now % ONE_HOUR_IN_MILLIS);
-			if(query.getStartTimestamp() < currentHourInMillis - STORE_HOURS * 3600 * 1000) {
-				LOGGER.info("Query start exceeds time window for data stored in cache. Will read from persistent storage.");
-				List<Metric> metrics = _defaultTsdbService.getMetrics(Arrays.asList(query)).get(query);
-				metricsMap.put(query, metrics);
-			} else {
-				LOGGER.info("Query start is within the time window for data stored in cache. Will read from cache.");
-				Set<String> cacheKeys = _constructCacheKeys(query);
-				
-				if(cacheKeys.isEmpty()) {
-					//Data does not exist in cache. Get it from persistent storage.
-					LOGGER.info("CACHE MISS. Will get data from persistent storage.");
-					metricsMap.putAll(_defaultTsdbService.getMetrics(Arrays.asList(query)));
-				} else {
-					LOGGER.info("CACHE HIT. Will get data from cache storage.");
-					Map<String, byte[]> data = _cacheService.get(cacheKeys);
-					
-					if(data == null || data.isEmpty()) {
-						LOGGER.info("Error occured while getting data from CACHE. Will get data from persistent storage.");
-						metricsMap.putAll(_defaultTsdbService.getMetrics(Arrays.asList(query)));
-					} else {
-						List<Metric> metrics = new ArrayList<>();
-						for(Map.Entry<String, byte[]> entry : data.entrySet()) {
-							Metric m = _constructMetric(entry, query);
-							metrics.add(m);
-						}
-						
-						TSDBService.collate(metrics);
-						
-						Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
-						TSDBService.downsample(query, metrics, downsampleTransform);
-						
-						Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(metrics, query);
-						Transform transform = Aggregator.correspondingTransform(query.getAggregator(), _transformFactory);
-						metricsMap.put(query, TSDBService.aggregate(groupedMetricsMap, transform));
-					}
-				}
-			}
-		}
-		
-		return metricsMap;
-	}
 
 	@Override
 	public void putAnnotations(List<Annotation> annotations) {
@@ -440,5 +463,42 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 	public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
 		return _defaultTsdbService.getAnnotations(queries);
 	}
+	
+	
+	/**
+     * The set of implementation specific configuration properties.
+     *
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     */
+    public enum Property {
+        
+    	WRITE_THROUGH_CACHE_ENABLED("service.property.tsdb.writethrough.cache.enabled", "false");
+
+        private final String _name;
+        private final String _defaultValue;
+
+        private Property(String name, String defaultValue) {
+            _name = name;
+            _defaultValue = defaultValue;
+        }
+
+        /**
+         * Returns the property name.
+         *
+         * @return  The property name.
+         */
+        public String getName() {
+            return _name;
+        }
+
+        /**
+         * Returns the default value for the property.
+         *
+         * @return  The default value.
+         */
+        public String getDefaultValue() {
+            return _defaultValue;
+        }
+    }
 	
 }

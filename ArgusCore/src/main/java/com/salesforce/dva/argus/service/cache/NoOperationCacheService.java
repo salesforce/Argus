@@ -56,22 +56,22 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
     }
 
 	@Override
-    public byte[] get(String key) {
+    public <V> V get(String key) {
         return null;
     }
 
     @Override
-    public Map<String, byte[]> get(Set<String> keys) {
+    public <V> Map<String, V> get(Set<String> keys) {
         return null;
     }
 
     @Override
-    public void put(String key, byte[] value, int ttl) {
+    public <V> void put(String key, V value, int ttl) {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
 
     @Override
-    public void put(Map<String, byte[]> entries, int ttl) {
+    public <V> void put(Map<String, V> entries, int ttl) {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
 
@@ -86,7 +86,7 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
     }
 
     @Override
-    public Map<String, byte[]> getByPattern(String pattern) {
+    public <V> Map<String, V> getByPattern(String pattern) {
         return null;
     }
 
@@ -116,7 +116,7 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
     }
 
     @Override
-    public void append(byte[] key, byte[] value) {
+    public <V> void append(String key, V value) {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
 
@@ -126,7 +126,7 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
     }
 
     @Override
-    public void append(byte[] key, byte[] value, int ttl) {
+    public <V> void append(String key, V value, int ttl) {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
 

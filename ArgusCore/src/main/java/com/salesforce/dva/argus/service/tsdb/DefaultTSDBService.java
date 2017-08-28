@@ -78,8 +78,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
     private static final int CHUNK_SIZE = 50;
     private static final int TSDB_DATAPOINTS_WRITE_MAX_SIZE = 100;
-    private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count";
     static final String DELIMITER = "-__-";
 
     //~ Instance fields ******************************************************************************************************************************
@@ -319,13 +317,13 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         long start = System.currentTimeMillis();
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
         Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
-        Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
+        Map<MetricQuery, Long> queryExecutionStartTime = new HashMap<>();
         String requestUrl = _readEndpoint + "/api/query";
 
         for (MetricQuery query : queries) {
         	String requestBody = fromEntity(query);
             futures.put(query, _executorService.submit(new QueryWorker(requestUrl, requestBody)));
-            queryStartExecutionTime.put(query, System.currentTimeMillis());
+            queryExecutionStartTime.put(query, System.currentTimeMillis());
         }
         for (Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
             try {
@@ -341,7 +339,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                     }
                 }
                 
-                instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
+                TSDBService.instrumentQueryLatency(_monitorService, entry.getKey(), queryExecutionStartTime.get(entry.getKey()), 
+                		MeasurementType.METRICS);
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
                 _logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
@@ -403,7 +402,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                         }
                     }
                 }
-                instrumentQueryLatency(_monitorService, query, start, "annotations");
+                TSDBService.instrumentQueryLatency(_monitorService, query, start, MeasurementType.ANNOTATIONS);
             }
         } catch(IOException ex) {
         	throw new SystemException(ex);
@@ -726,17 +725,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
             return _defaultValue;
         }
     }
-    
-    private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start,
-    		final String measurementType) {
-		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
-		Map<String, String> tags = new HashMap<String, String>();
-		tags.put("type", measurementType);
-		tags.put("timeWindow", timeWindow);
-		tags.put("cached", "false");
-		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
-        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
-	}
     
     /**
      * Enumeration of supported HTTP methods.

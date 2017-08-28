@@ -29,13 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
      
-package com.salesforce.dva.argus.service;
+package com.salesforce.dva.argus.service.tsdb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.IntegrationTest;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.DefaultTSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
