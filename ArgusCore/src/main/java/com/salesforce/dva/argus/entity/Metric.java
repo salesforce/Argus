@@ -258,6 +258,13 @@ public class Metric extends TSDBEntity implements Serializable {
         return MessageFormat.format(format, params);
     }
     
+    /**
+     * Given an identifier string of format &lt;namespace&gt;:&lt;scope&gt;:&lt;name&gt;{&lt;tags&gt;}, parse the identifier to decompose
+     * different fields (scope, metric, namespace, tags) and construct a metric object.
+     * 
+     * @param	identifier	An identifier string of format &lt;namespace&gt;:&lt;scope&gt;:&lt;name&gt;{&lt;tags&gt;}
+     * @return	Returns a metric object created using the identifier.
+     */
     @JsonIgnore
     public static Metric getMetricFromIdentifier(String identifier) {
     	
@@ -294,23 +301,6 @@ public class Metric extends TSDBEntity implements Serializable {
     	}
     	
     	return metric;
-    }
-    
-    public static void main(String args[]) {
-    	
-    	Metric m = Metric.getMetricFromIdentifier("scope:metric{tagk=tagv}");
-    	System.out.println(m);
-    	m = Metric.getMetricFromIdentifier("scope:metric{tagk1=tagv1,tagk2=tagv2}");
-    	System.out.println(m);
-    	m = Metric.getMetricFromIdentifier("scope:metric");
-    	System.out.println(m);
-    	m = Metric.getMetricFromIdentifier("namespace:scope:metric{tagk=tagv}");
-    	System.out.println(m);
-    	m = Metric.getMetricFromIdentifier("namespace:scope:metric{tagk1=tagv1,tagk2=tagv2}");
-    	System.out.println(m);
-    	m = Metric.getMetricFromIdentifier("namespace:scope:metric");
-    	System.out.println(m);
-    	
     }
     
 }

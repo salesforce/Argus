@@ -256,8 +256,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
-        
-        //bind(TSDBService.class).annotatedWith(DefaultTSDBServiceNamedBinding.class).to(DefaultTSDBService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {
