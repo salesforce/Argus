@@ -105,6 +105,11 @@ angular.module('argus.directives.charts.lineChart', [])
 			if ($scope.menuOption.localTimezone === undefined) {
 				$scope.menuOption.localTimezone = false;
 			}
+			// When it's small chart, hide the brush and use mouse zoom
+			if ($scope.chartConfig.smallChart) {
+				$scope.menuOption.isBrushOn = false;
+				$scope.menuOption.isWheelOn = true;
+			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 			// user interactions

@@ -6,9 +6,8 @@ angular.module('argus.directives.charts.chart', [])
 	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
 		var timer;
 		var resizeTimeout = 250;
-
-
 		var chartNameIndex = 1;
+
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
 			angular.element('#' + newChartId).empty();
