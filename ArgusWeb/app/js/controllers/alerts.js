@@ -21,7 +21,7 @@
 /*global angular:false */
 
 angular.module('argus.controllers.alerts', ['ngResource'])
-.controller('Alerts', ['Auth', '$scope', 'growl', 'Alerts', '$sessionStorage', 'TableListService', function (Auth, $scope, growl, Alerts, $sessionStorage, TableListService) {
+.controller('Alerts', ['Auth', '$scope', 'growl', 'Alerts', 'TableListService', 'Storage', function (Auth, $scope, growl, Alerts, TableListService, Storage) {
 
 	$scope.colName = {
 		id:'ID',
@@ -46,17 +46,18 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 	$scope.alertsLoaded = false;
 
 	var alertLists = {
-		sharedList: [],
 		usersList: [],
+		sharedList: [],
 		privilegedList: []
 	};
 	var remoteUsername = Auth.getUsername();
 	var userPrivileged = Auth.isPrivileged();
+	var sessionStoredList;
 
 	$scope.getAlerts = function (selectedTab) {
 		if ($scope.alertsLoaded) {
 			// when only user's alerts are loaded but shared tab is chosen: need to start a new API call
-			if (selectedTab === 2 && !$sessionStorage.alerts.loadedEverything) {
+			if (selectedTab === 2 && !sessionStoredList.loadedEverything) {
 				delete $scope.alerts;
 				$scope.alertsLoaded = false;
 				getAllAlerts();
@@ -78,6 +79,16 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 		}
 	};
 
+	function updateAlertListInSessionStorage (alertLists) {
+		if (Storage.roughSizeOfObject(alertLists) > 2000000) { // limit list size to be 2MB
+			Storage.compressData(alertLists).then(function(compressedData) {
+				sessionStoredList.cachedCompressedData = compressedData;
+			});
+		} else {
+			sessionStoredList.cachedData = alertLists;
+		}
+	}
+
 	function setAlertsAfterLoading (selectedTab) {
 		$scope.alertsLoaded = true;
 		$scope.getAlerts(selectedTab);
@@ -86,28 +97,34 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 	function getAllAlerts () {
 		Alerts.getMeta().$promise.then(function(alerts) {
 			alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
-			$sessionStorage.alerts.cachedData = alertLists;
-			$sessionStorage.alerts.loadedEverything = true;
 			setAlertsAfterLoading($scope.selectedTab);
+			sessionStoredList.loadedEverything = true;
+			updateAlertListInSessionStorage(alertLists);
 		});
 	}
 
 	function getUsersAlerts () {
 		Alerts.getNonSharedAlerts().$promise.then(function(alerts) {
 			alertLists = TableListService.getListUnderTab(alerts, remoteUsername, userPrivileged);
-			$sessionStorage.alerts.cachedData = alertLists;
-			$sessionStorage.alerts.loadedEverything = false;
 			setAlertsAfterLoading(1);
+			sessionStoredList.loadedEverything = false;
+			updateAlertListInSessionStorage(alertLists);
 		});
 	}
 
 	function updateList () {
-		$sessionStorage.alerts.cachedData = alertLists;
 		$scope.getAlerts($scope.selectedTab);
+		if (sessionStoredList.cachedCompressedData !== '') {
+			// dont update session storage if list is compressed; if the user leaves this page, just re query everything again
+			sessionStoredList.emptyData = true;
+		} else {
+			sessionStoredList.cachedData = alertLists;
+		}
 	}
 
 	$scope.refreshAlerts = function () {
-		delete $sessionStorage.alerts.cachedData;
+		sessionStoredList.cachedData = {};
+		sessionStoredList.cachedCompressedData = '';
 		delete $scope.alerts;
 		$scope.alertsLoaded = false;
 		if ($scope.selectedTab === 2) {
@@ -124,6 +141,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 			cronEntry: '0 */4 * * *',
 			shared: $scope.selectedTab === 2
 		};
+		growl.info('Creating "' + alert.name + '"...');
 		Alerts.save(alert, function (result) {
 			// update both scope and session alerts
 			result.expression = '';
@@ -136,6 +154,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 	};
 
 	$scope.removeAlert = function (alert) {
+		growl.info('Deleting "' + alert.name + '"...');
 		Alerts.delete({alertId: alert.id}, function () {
 			alertLists = TableListService.deleteItemFromTableList(alertLists, 'alerts', alert, remoteUsername, userPrivileged);
 			updateList();
@@ -147,6 +166,7 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 
 	$scope.enableAlert = function (alert, enabled) {
 		if (alert.enabled !== enabled) {
+			growl.info('Updating "' + alert.name + '"...');
 			Alerts.get({alertId: alert.id}, function(updated) {
 				updated.enabled = enabled;
 				Alerts.update({alertId: alert.id}, updated, function () {
@@ -160,16 +180,30 @@ angular.module('argus.controllers.alerts', ['ngResource'])
 		}
 	};
 
-	if ($sessionStorage.alerts === undefined) $sessionStorage.alerts = {};
-	if ($sessionStorage.alerts.cachedData !== undefined && $sessionStorage.alerts.selectedTab !== undefined) {
-		alertLists = $sessionStorage.alerts.cachedData;
-		$scope.selectedTab = $sessionStorage.alerts.selectedTab;
-		setAlertsAfterLoading($scope.selectedTab);
-	} else {
+	// see if there is anything in the session storage
+	sessionStoredList = Storage.getSessionList('alerts');
+	if (sessionStoredList === undefined) {
+		Storage.initializeSessionList('alerts');
+		sessionStoredList = Storage.getSessionList('alerts');
+	}
+	// set up view based on data in session storage or query data
+	if (sessionStoredList.emptyData || sessionStoredList.selectedTab === undefined) {
 		if ($scope.selectedTab === 2) {
 			getAllAlerts();
 		} else {
 			getUsersAlerts();
 		}
+		sessionStoredList.emptyData = false;
+	} else {
+		if (sessionStoredList.cachedCompressedData !== '') {
+			Storage.decompressData(sessionStoredList.cachedCompressedData).then(function(decompressedData) {
+				alertLists = decompressedData;
+				setAlertsAfterLoading($scope.selectedTab);
+			});
+		} else {
+			alertLists = sessionStoredList.cachedData;
+			setAlertsAfterLoading($scope.selectedTab);
+		}
+		$scope.selectedTab = sessionStoredList.selectedTab;
 	}
 }]);

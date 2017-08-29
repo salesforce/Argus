@@ -47,11 +47,7 @@ angular.module('argus.controllers.dashboards', ['ngResource', 'ui.codemirror'])
 	$scope.dashboardsLoaded = false;
 
 	// private variables
-	var dashboardLists = {
-		sharedList: [],
-		usersList: [],
-		privilegedList: []
-	};
+	var dashboardLists;
 	var remoteUsername = Auth.getUsername();
 	var userPrivileged = Auth.isPrivileged();
 
