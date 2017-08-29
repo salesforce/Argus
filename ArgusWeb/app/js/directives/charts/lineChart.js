@@ -511,25 +511,26 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 
 				currSeries.forEach(function (metric, index) {
-					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					var downSampledMetric;
-					if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
+					if (metric.data.length !== 0) {
+						var downSampledMetric;
+						if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
 
-					var tempGraph, tempGraph2;
-					if (!metric.extraYAxis) {
-						tempGraph = graph;
-						tempGraph2 = graph2;
-					} else {
-						tempGraph = extraGraph[metric.extraYAxis];
-						tempGraph2 = extraGraph2[metric.extraYAxis];
+						var tempGraph, tempGraph2;
+						if (!metric.extraYAxis) {
+							tempGraph = graph;
+							tempGraph2 = graph2;
+						} else {
+							tempGraph = extraGraph[metric.extraYAxis];
+							tempGraph2 = extraGraph2[metric.extraYAxis];
+						}
+
+						ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+						// redener brush line in a downsample manner
+						downSampledMetric = isChartDiscrete ? metric : ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
+						ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					}
-
-					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
-					// redener brush line in a downsample manner
-					downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
-					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// render annotations
 					if (metric.flagSeries) {
 						var flagSeries = metric.flagSeries.data;
@@ -895,9 +896,12 @@ angular.module('argus.directives.charts.lineChart', [])
 					} else if (series[i].noData) {
 						scope.noDataSeries.push(series[i]);
 						emptyReturn = true;
-					} else if (series[i].data.length === 0 ||
-								angular.equals(series[i].data, {})) {
-						hasNoData = true;
+					} else if (series[i].data.length === 0 || angular.equals(series[i].data, {})) {
+						if (!series[i].flagSeries) {
+							hasNoData = true;
+						} else {
+							tempSeries.push(series[i]);
+						}
 					} else {
 						// only keep the metric that's graphable
 						tempSeries.push(series[i]);
