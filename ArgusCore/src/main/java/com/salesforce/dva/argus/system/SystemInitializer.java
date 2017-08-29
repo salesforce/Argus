@@ -56,7 +56,7 @@ import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
-import com.salesforce.dva.argus.service.tsdb.WriteThroughCachedTSDBService;
+import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
 import com.salesforce.dva.argus.service.users.DefaultUserService;
 import com.salesforce.dva.argus.service.warden.DefaultWardenService;
@@ -240,7 +240,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClassWithNamedAnnotation(DefaultUserService.class, UserService.class);
 
         // static binding
-        bindConcreteClass(WriteThroughCachedTSDBService.class, TSDBService.class);
+        bindConcreteClass(CachedTSDBService.class, TSDBService.class);
         bindConcreteClass(CachedUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);

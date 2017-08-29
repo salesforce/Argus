@@ -108,7 +108,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			newParams.tagv = ($scope.tagv) ? $scope.tagv : '*';
 			newParams.type = category ? category : 'scope';
 
-			/*
 			if(category) {
 				if(category === 'scope') {
 					newParams.scope = newParams.scope + '*';
@@ -125,7 +124,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			} else {
 				newParams.scope = newParams.scope + '*';
 			}
-			
+
 			lastParams = newParams;
 			// end TODO
 			//return a promise for template but later assign the data to the variable
@@ -136,20 +135,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 					}
 					return response.data;
 				});
-			*/
-
-			lastParams = newParams;
-			// end TODO
-			//return a promise for template but later assign the data to the variable
-			var result = SearchService.newSearch(newParams)
-				.then(function(response) {
-					if(response.data.data.length < newParams.limit){
-						noMorePages = true;
-					}
-					return response.data.data;
-				});
-			
-			
 			return result;
 		};
 
@@ -158,14 +143,14 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 			lastParams.page = lastParams.page + 1;
 			eval('$scope.'+loadingAttr +'= true;');
-			SearchService.newSearch(lastParams)
+			SearchService.search(lastParams)
 				.then(function(response) {
-						if(response.data.data.length < lastParams.limit){
+						if(response.data.length < lastParams.limit){
 							noMorePages = true;
 						}
-						response.data.data.forEach(function(name){
+						response.data.forEach(function(name){
 							matches.push({
-								model: name
+							model: name
 							});
 						});
 						eval('$scope.'+loadingAttr +'= false;');
@@ -173,7 +158,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				}, function(){
 						eval('$scope.'+loadingAttr +'= false;');
 				});
-			return result;
+
 		};
 
 		$scope.isSearchMetricDisabled = function () {
