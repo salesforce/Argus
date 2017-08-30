@@ -48,15 +48,15 @@ import com.salesforce.dva.argus.system.SystemException;
 @Singleton
 public class WriteThroughCachedTSDBService extends DefaultService implements TSDBService {
 	
-	private static long ONE_HOUR_IN_MILLIS = 60 * 60 * 1000;
-	private static long ONE_HOUR_IN_SECS = 60 * 60;
+	private static final Logger LOGGER = LoggerFactory.getLogger(WriteThroughCachedTSDBService.class);
+	private static final String DELIMITER = ":";
+	private static final String APPEND_IDENTIFIER_TO_CACHEKEYS = "";
+	private static final long ONE_HOUR_IN_MILLIS = 60 * 60 * 1000L;
+	private static final long ONE_HOUR_IN_SECS = 60 * 60L;
+	
 	private static int STORE_HOURS = 4;
 	private static int EXPIRY_IN_SECONDS = (STORE_HOURS + 1) * 60 * 60;
-	private static String DELIMITER = ":";
-	
-	//TODO: Append "TEST:" to cache keys for development purposes. Change this to an empty string when using in production.  
-	private static String APPEND_IDENTIFIER_TO_CACHEKEYS = "TEST" + DELIMITER;
-	private static final Logger LOGGER = LoggerFactory.getLogger(WriteThroughCachedTSDBService.class);
+	private static boolean ENABLED = false;
 	
 	//~ Instance fields ******************************************************************************************************************************
 	
@@ -64,9 +64,8 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
     private final MonitorService _monitorService;
     private final TransformFactory _transformFactory;
     private RedissonClient _redissonClient;
-    private boolean _writeThroughCacheEnabled = false;
     
-  //~ Constructors *********************************************************************************************************************************
+    //~ Constructors *********************************************************************************************************************************
 
     /**
      * Creates a new Cached TSDB Service
@@ -86,8 +85,11 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
         _defaultTsdbService = defaultTSDBService;
         _transformFactory = transformFactory;
         
-        _writeThroughCacheEnabled = Boolean.parseBoolean(
+        ENABLED = Boolean.parseBoolean(
         		sysConfig.getValue(Property.WRITE_THROUGH_CACHE_ENABLED.getName(), Property.WRITE_THROUGH_CACHE_ENABLED.getDefaultValue()));
+        STORE_HOURS = Integer.parseInt(
+        		sysConfig.getValue(Property.TTL_HOURS.getName(), Property.TTL_HOURS.getDefaultValue()));
+        EXPIRY_IN_SECONDS = (STORE_HOURS + 1) * 60 * 60;
         
         _initializeRedissonClient(sysConfig);
     }
@@ -119,7 +121,7 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
     	requireNotDisposed();
 		requireArgument(metrics != null, "Metrics list cannot be null.");
     	
-		if(_writeThroughCacheEnabled) {
+		if(ENABLED) {
 			long start = System.currentTimeMillis();
 	    	RBatch batch = _redissonClient.createBatch();
 	    	for(Metric metric : metrics) {
@@ -344,7 +346,7 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
 		requireNotDisposed();
 		requireArgument(queries != null, "Queries cannot be null");
 		
-		if(!_writeThroughCacheEnabled) {
+		if(!ENABLED) {
 			return _defaultTsdbService.getMetrics(queries);
 		}
 		
@@ -472,7 +474,8 @@ public class WriteThroughCachedTSDBService extends DefaultService implements TSD
      */
     public enum Property {
         
-    	WRITE_THROUGH_CACHE_ENABLED("service.property.tsdb.writethrough.cache.enabled", "false");
+    	WRITE_THROUGH_CACHE_ENABLED("service.property.tsdb.writethrough.cache.enabled", "false"),
+    	TTL_HOURS("service.property.tsdb.writethrough.ttl.hours", "4");
 
         private final String _name;
         private final String _defaultValue;
