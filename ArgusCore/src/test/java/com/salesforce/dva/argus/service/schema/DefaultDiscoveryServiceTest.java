@@ -68,13 +68,15 @@ public class DefaultDiscoveryServiceTest extends AbstractTest {
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("source", "unittest");
 
-        MetricQuery query = new MetricQuery("scope[0|1]", "metric[0|1]", tags, 1L, 2L);
+        long start = System.currentTimeMillis() - 1000;
+        long end = System.currentTimeMillis();
+        MetricQuery query = new MetricQuery("scope[0|1]", "metric[0|1]", tags, start, end);
         List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
         
         assertEquals(2, queries.size());
 
-        assertEquals(new MetricQuery("scope0", "metric0", tags, 1L, 2L), queries.get(0));
-        assertEquals(new MetricQuery("scope1", "metric1", tags, 1L, 2L), queries.get(1));
+        assertEquals(new MetricQuery("scope0", "metric0", tags, start, end), queries.get(0));
+        assertEquals(new MetricQuery("scope1", "metric1", tags, start, end), queries.get(1));
     }
     
     /**
