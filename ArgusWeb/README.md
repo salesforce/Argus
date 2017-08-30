@@ -1,7 +1,6 @@
 ArgusWeb
 =
 
-#
 #### Build the Front-End
 ---
 > Install the following:
@@ -95,27 +94,27 @@ $ grunt replace:production
 
 #
 ##### Available npm scripts
+Remove all existing npm modules
 ```sh
 $ npm run clean
 ```
-Remove all existing npm modules
 
+Use [jscodeshift](https://github.com/facebook/jscodeshift) to replace all templateUrl references to `require` format for webpack build process
 ```sh
 $ npm run transformTemplates
 ```
-Use [jscodeshift](https://github.com/facebook/jscodeshift) to replace all templateUrl references to `require` format for webpack build process
 
+Use [webpack-dev-server](https://github.com/webpack/webpack-dev-server) for development (Must run `npm run transformTemplates` first to have proper templates)
 ```sh
 $ npm start
 ```
-Use [webpack-dev-server](https://github.com/webpack/webpack-dev-server) for development (Must run `npm run transformTemplates` first to have proper templates)
 
+The reverse of `npm run transformTemplates` (normally run this after done with webpack)
 ```sh
 $ npm run undoTransformTemplates
 ```
-The reverse of `npm run transformTemplates` (normally run this after done with webpack)
 
+Run [eslint](http://eslint.org/) check against *app* folder (all the source code)
 ```sh
 $ npm run lint
 ```
-Run [eslint](http://eslint.org/) check against *app* folder (all the source code)
