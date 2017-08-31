@@ -29,25 +29,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 	 
-package com.salesforce.dva.argus.service.jpa;
+package com.salesforce.dva.argus.service.users;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.util.Optional;
 
 import javax.persistence.EntityManager;
 
@@ -61,14 +59,10 @@ import static java.math.BigInteger.ZERO;
  */
 @Singleton
 public class DefaultUserService extends DefaultJPAService implements UserService {
-	
-	private static final int NUM_USERS_TO_CACHE = 50;
-	private static LoadingCache<String, Optional<PrincipalUser>> USERCACHE;
 
     //~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    private Logger _logger = LoggerFactory.getLogger(getClass());
     @Inject
     Provider<EntityManager> emf;
     
@@ -84,23 +78,13 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     @Inject
     public DefaultUserService(AuditService auditService, SystemConfiguration _sysConfig) {
         super(auditService, _sysConfig);
-        
-        USERCACHE = CacheBuilder
-        		.newBuilder()
-        		.maximumSize(NUM_USERS_TO_CACHE)
-        		.build(new CacheLoader<String, Optional<PrincipalUser>>() {
-
-			@Override
-			public Optional<PrincipalUser> load(String username) {
-				return Optional.ofNullable(_findUserByUsernameFromDB(username));
-			}
-		});
     }
 
     //~ Methods **************************************************************************************************************************************
 
     @Transactional
-    private PrincipalUser _findUserByUsernameFromDB(String userName) {
+    @Override
+    public PrincipalUser findUserByUsername(String userName) {
     	requireNotDisposed();
         requireArgument(userName != null && !userName.trim().isEmpty(), "User name cannot be null or empty.");
 
@@ -108,17 +92,6 @@ public class DefaultUserService extends DefaultJPAService implements UserService
 
         _logger.debug("Retrieving user having username {} from db.", userName);
         return result;
-    }
-    
-    @Override
-    public PrincipalUser findUserByUsername(String userName) {
-        PrincipalUser user = USERCACHE.getUnchecked(userName).orElse(null);
-        if(user == null) {
-        	USERCACHE.invalidate(userName);
-        }
-        
-        _logger.info("Query for user having username {} resulted in : {}", userName, user);
-        return user;
     }
 
     @Override
@@ -139,8 +112,6 @@ public class DefaultUserService extends DefaultJPAService implements UserService
         requireNotDisposed();
         requireArgument(user != null && user.getId() != null && user.getId().compareTo(ZERO) > 0, "User cannot be null and must have a valid ID.");
         _logger.debug("Deleting user {}.", user);
-
-        USERCACHE.invalidate(user.getUserName());
 	    
         EntityManager em = emf.get();
         deleteEntity(em, user);
@@ -152,8 +123,6 @@ public class DefaultUserService extends DefaultJPAService implements UserService
     public PrincipalUser updateUser(PrincipalUser user) {
         requireNotDisposed();
         requireArgument(user != null, "User cannot be null.");
-
-        USERCACHE.invalidate(user.getUserName());
 	    
         EntityManager em = emf.get();
         PrincipalUser result = mergeEntity(em, user);

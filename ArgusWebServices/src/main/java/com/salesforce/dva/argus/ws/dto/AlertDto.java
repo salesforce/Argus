@@ -113,49 +113,6 @@ public class AlertDto extends EntityDTO {
         return result;
     }
 
-    /**
-     * Converts alert entity to alertDto.
-     *
-     * @param   alert  The alert object. Cannot be null.
-     *
-     * @return  AlertDto object.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    public static AlertDto transformToDtoNoContent(Alert alert) {
-        if (alert == null) {
-            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
-        }
-
-        AlertDto result = createDtoObject(AlertDto.class, alert);
-        result.setOwnerName(alert.getOwner().getUserName());
-        // set expression to be empty; notification and triggers are empty by default
-        result.setExpression("");
-        return result;
-    }
-
-    /**
-     * Converts list of alert entity objects to list of alertDto objects without the content.
-     *
-     * @param   alerts  List of alert entities. Cannot be null.
-     *
-     * @return  List of alertDto objects without their content.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    public static List<AlertDto> transformToDtoNoContent(List<Alert> alerts) {
-        if (alerts == null) {
-            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
-        }
-
-        List<AlertDto> result = new ArrayList<AlertDto>();
-
-        for (Alert alert : alerts) {
-            result.add(transformToDtoNoContent(alert));
-        }
-        return result;
-    }
-
     //~ Methods **************************************************************************************************************************************
 
     /**

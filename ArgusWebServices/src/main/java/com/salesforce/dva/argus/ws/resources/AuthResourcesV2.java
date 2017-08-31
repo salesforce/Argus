@@ -88,7 +88,7 @@ public class AuthResourcesV2 extends AbstractResource {
 
             if (user != null) {
                 JWTUtils.Tokens tokens = JWTUtils.generateTokens(user.getUserName());
-		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
+                req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
                 return Response.ok(tokens).build();
             } else {
                 throw new WebApplicationException("User does not exist. Please provide valid credentials.", Response.Status.UNAUTHORIZED);

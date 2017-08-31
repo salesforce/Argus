@@ -50,6 +50,8 @@ public class MetricZipperTransform implements Transform {
 
     private final ValueZipper valueZipper;
     private final String defaultScope;
+    protected static String FULLJOIN = "UNION";
+    protected Boolean fulljoinIndicator = false;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -72,18 +74,23 @@ public class MetricZipperTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        SystemAssert.requireArgument(constants == null || constants.isEmpty(), "Zipper transform doesn't support constants!");
+        SystemAssert.requireArgument(constants != null && constants.size() == 1 && FULLJOIN.equals(constants.get(0).toUpperCase()), 
+        		"Zipper transforms only support UNION indicator as a constant!");
+        
+        fulljoinIndicator = true;
         return transform(metrics);
     }
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics.");
         if (metrics.isEmpty()) {
             return metrics;
         }
+        
         SystemAssert.requireArgument(metrics.size() >= 2 && metrics.get(metrics.size() - 1) != null,
             "Cannot transform without a base metric as second param!");
+        
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
 
@@ -134,6 +141,19 @@ public class MetricZipperTransform implements Transform {
 
             zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
         }
+        
+        // if a point exists in the baseDP but does not exist in the original set, 
+        // then only add it to the result when fullJoinIndicator is true.
+        if(fulljoinIndicator) {
+        	for (Map.Entry<Long, Double> baseDP : baseDatapoints.entrySet()) {
+                Long baseDPKey = baseDP.getKey();
+
+                if(!zippedDP.containsKey(baseDPKey)) {
+                    zippedDP.put(baseDPKey, this.valueZipper.zip(null, baseDP.getValue()));
+                }
+            }
+        }
+        
         return zippedDP;
     }
 

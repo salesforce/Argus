@@ -45,6 +45,7 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -74,51 +75,47 @@ public class DashboardResources extends AbstractResource {
 	//~ Methods **************************************************************************************************************************************
 
 	/**
-	 * Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
-	 * @param   dashboardName  The dashboard name filter.
-	 * @param   owner          The principlaUser owner for owner name filter.
+	 * Return all dashboard objects filtered by owner.
+	 * @param   dashboardName  				The dashboard name filter.
+	 * @param   owner          				The principlaUser owner for owner name filter.
+	 * @param	populateMetaFieldsOnly		The flag to determine if only meta fields should be populated.
 	 *
-	 * @return  Return all dashboards in dashboard objects filtered by owner, as well as shared dashboards
+	 * @return  The list of filtered alerts in alert object.
 	 */
-	private Set<Dashboard> getDashboardsObj(String dashboardName, String ownerName, HttpServletRequest req) {
-
-		PrincipalUser owner=null, loggedInUser=getRemoteUser(req);
-		if(ownerName !=null && ownerName.length()>0){
-			owner=userService.findUserByUsername(ownerName);
-			if(owner==null){
-				throw new WebApplicationException(ownerName + ": User does not exist.", Status.NOT_FOUND);
-			}
-		}else{
-			owner=loggedInUser;
-		}
-
-		Set<Dashboard> result = new HashSet<>();
+	private List<Dashboard> _getDashboardsByOwner(String dashboardName, PrincipalUser owner, boolean populateMetaFieldsOnly) {
+		
+		List<Dashboard> result = new ArrayList<>();
+		
 		if (dashboardName != null && !dashboardName.isEmpty()) {
 			Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
-			if (dashboard != null) {
-				result.add(dashboard);
+			if (dashboard == null) {
+				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 			}
-			if(!owner.equals(loggedInUser) && !loggedInUser.isPrivileged()){
-				_removeNonSharedDashboards(result);
-			}	
+			
+			result.add(dashboard);
 		} else {
-			if(ownerName != null && ownerName.length()>0){ 
-				result.addAll(dService.findDashboardsByOwner(owner)); 
-				if(!owner.equals(loggedInUser) && !loggedInUser.isPrivileged()){
-					_removeNonSharedDashboards(result);
-				}	
-			}else{
-				if (loggedInUser.isPrivileged()) {
-					result.addAll(dService.findDashboards(null));
-				} else {
-					result.addAll(dService.findDashboardsByOwner(owner));
-					result.addAll(dService.findSharedDashboards());
-				}
+			if(owner.isPrivileged()) {
+				result = populateMetaFieldsOnly ? dService.findDashboards(null, true) : dService.findDashboards(null, false);
+			} else {
+				result = populateMetaFieldsOnly ? dService.findDashboardsByOwner(owner, true) : dService.findDashboardsByOwner(owner, false);
 			}
 		}
+		
 		return result;
 	}
-
+	
+	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
+		
+		Set<Dashboard> result = new HashSet<>();
+		
+		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly));
+		if(shared) {
+			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true) : dService.findSharedDashboards(false));
+		}
+		
+		return new ArrayList<>(result);
+	}
+	
 	/**
 	 * Returns all dashboards' metadata filtered by owner.
 	 *
@@ -132,12 +129,13 @@ public class DashboardResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta")
 	@Description("Returns all dashboards' metadata.")
-	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req,
-			@QueryParam("dashboardName") String dashboardName,
-			@QueryParam("owner") String ownerName) {
-		Set<Dashboard> result = getDashboardsObj(dashboardName, ownerName,req);
-		return DashboardDto.transformToDtoNoContent(new ArrayList<>(result));
-
+	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
+												@QueryParam("owner") String ownerName,
+												@QueryParam("shared") @DefaultValue("true") boolean shared) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true);
+		return DashboardDto.transformToDto(result);
 	}
 
 	/**
@@ -152,11 +150,13 @@ public class DashboardResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all dashboards.")
-	public List<DashboardDto> getDashboards(@Context HttpServletRequest req,
-			@QueryParam("dashboardName") String dashboardName,
-			@QueryParam("owner") String ownerName) {
-		Set<Dashboard> result = getDashboardsObj(dashboardName, ownerName, req);
-		return DashboardDto.transformToDto(new ArrayList<>(result));
+	public List<DashboardDto> getDashboards(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
+											@QueryParam("owner") String ownerName,
+											@QueryParam("shared") @DefaultValue("true") boolean shared) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false);
+		return DashboardDto.transformToDto(result);
 	}
 
 	/**
@@ -283,9 +283,6 @@ public class DashboardResources extends AbstractResource {
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
-
-	private void _removeNonSharedDashboards(Set<Dashboard> input){
-		input.removeIf(e->e.isShared()==false);
-	}
+	
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

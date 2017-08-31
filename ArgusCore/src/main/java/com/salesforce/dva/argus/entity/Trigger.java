@@ -33,8 +33,19 @@ package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.system.SystemException;
+
+import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,20 +88,88 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Entity
 @Table(name = "TRIGGER", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
 public class Trigger extends JPAEntity implements Serializable {
+	
+	
+	public static class Serializer extends JsonSerializer<Trigger> {
+
+		@Override
+		public void serialize(Trigger trigger, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+			
+			jgen.writeStartObject();
+			
+			jgen.writeStringField("id", trigger.getId().toString());
+			jgen.writeStringField("name", trigger.getName());
+			jgen.writeStringField("type", trigger.getType().name());
+			jgen.writeNumberField("threshold", trigger.getThreshold().doubleValue());
+			
+			if(trigger.getSecondaryThreshold() != null) {
+				jgen.writeNumberField("secondaryThreshold", trigger.getSecondaryThreshold());
+			}
+			
+			if(trigger.getInertia() != null) {
+				jgen.writeNumberField("inertia", trigger.getInertia());
+			}
+			
+			jgen.writeEndObject();
+		}
+		
+	}
+	
+	public static class Deserializer extends JsonDeserializer<Trigger> {
+
+		@Override
+		public Trigger deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			Trigger trigger = new Trigger();
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			trigger.id = id;
+			
+			String name = rootNode.get("name").asText();
+			trigger.setName(name);
+			
+			TriggerType type = TriggerType.fromString(rootNode.get("type").asText());
+			trigger.setType(type);
+			
+			Double threshold = rootNode.get("threshold").asDouble();
+			trigger.setThreshold(threshold);
+			
+			if(rootNode.get("secondaryThreshold") != null) {
+				trigger.setSecondaryThreshold(rootNode.get("secondaryThreshold").asDouble());
+			}
+			
+			if(rootNode.get("inertia") != null) {
+				trigger.setInertia(rootNode.get("inertia").asLong());
+			}
+			
+			return trigger;
+		}
+		
+	}
+	
 
     //~ Instance fields ******************************************************************************************************************************
 
+	@Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TriggerType type;
+    
     @Basic(optional = false)
     @Column(name = "name", nullable = false)
     private String name;
+    
+    @Basic(optional = false)
     private Double threshold;
+    
     private Double secondaryThreshold;
+    
     private Long inertia;
+    
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false, name = "alert_id")
     private Alert alert;
+    
     @ManyToMany(mappedBy = "triggers", cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH })
     private List<Notification> notifications = new ArrayList<>(0);
 
