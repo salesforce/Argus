@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Test;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -494,5 +495,85 @@ public class Sum_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
+    
+    @Test
+    public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
+        Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
+        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+
+        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 3.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+
+        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(2000L, 100.0);
+        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(4000L, 10000.0);
+
+        Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_2.setDatapoints(datapoints_2);
+
+        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+
+        datapoints_3.put(1000L, 0.1);
+        datapoints_3.put(2000L, 0.01);
+
+        Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_3.setDatapoints(datapoints_3);
+
+        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+
+        vector_datapoints.put(1000L, 1.0);
+        vector_datapoints.put(2000L, 1.0);
+        vector_datapoints.put(3000L, 1.0);
+
+        Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        vector.setDatapoints(vector_datapoints);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+        metrics.add(metric_2);
+        metrics.add(metric_3);
+        metrics.add(vector);
+
+        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+        expected_1.put(1000L, 2.0);
+        expected_1.put(2000L, 3.0);
+        expected_1.put(3000L, 4.0);
+
+        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+
+        expected_2.put(1000L, 11.0);
+        expected_2.put(2000L, 101.0);
+        expected_2.put(3000L, 1001.0);
+        expected_2.put(4000L, 10000.0);
+
+        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+
+        expected_3.put(1000L, 1.1);
+        expected_3.put(2000L, 1.01);
+        expected_3.put(3000L, 1.0);
+        
+        List<Metric> result = sum_vTransform.transform(metrics, Arrays.asList("UNION"));
+
+        assertEquals(3, result.get(0).getDatapoints().size());
+        assertEquals(expected_1, result.get(0).getDatapoints());
+        assertEquals(4, result.get(1).getDatapoints().size());
+        assertEquals(expected_2, result.get(1).getDatapoints());
+        assertEquals(3, result.get(2).getDatapoints().size());
+        assertEquals(expected_3, result.get(2).getDatapoints());
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

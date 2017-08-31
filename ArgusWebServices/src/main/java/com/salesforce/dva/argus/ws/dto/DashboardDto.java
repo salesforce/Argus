@@ -101,28 +101,6 @@ public class DashboardDto extends EntityDTO {
         return result;
     }
 
-    /**
-     * Converts list of dashboard entity objects to list of dashboardDto objects without the content.
-     *
-     * @param   dashboards  List of dashboard entities. Cannot be null.
-     *
-     * @return  List of dashboardDto objects without their content.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    public static List<DashboardDto> transformToDtoNoContent(List<Dashboard> dashboards) {
-        if (dashboards == null) {
-            throw new WebApplicationException("Null entity object cannot be converted to Dto object.", Status.INTERNAL_SERVER_ERROR);
-        }
-
-        List<DashboardDto> result = transformToDto(dashboards);
-        // loop through dashboardsDtos to remove the content
-        for (DashboardDto item : result) {
-            item.setContent("");
-        }
-        return result;
-    }
-
     //~ Methods **************************************************************************************************************************************
 
     /**

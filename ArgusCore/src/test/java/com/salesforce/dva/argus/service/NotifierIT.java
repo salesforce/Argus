@@ -119,7 +119,7 @@ public class NotifierIT extends AbstractTest {
     @Test
     public void testWardenNotifier() throws InterruptedException {
         UserService userService = system.getServiceFactory().getUserService();
-        PrincipalUser user = new PrincipalUser("aUser", "aUser@mycompany.abc");
+        PrincipalUser user = new PrincipalUser(userService.findAdminUser(), "aUser", "aUser@mycompany.abc");
 
         user.setCreatedBy(user);
         user = userService.updateUser(user);

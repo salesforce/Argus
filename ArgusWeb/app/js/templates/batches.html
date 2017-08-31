@@ -50,8 +50,11 @@
                 <td><a ng-click="refreshBatchState(batch.id)">{{batch.id}}</a></td>
                 <td>{{batch.status}}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" type="button" 
-                            ng-confirm='Delete "{{batch.id}}"?' ng-confirm-action='deleteBatch(batch.id)'>
+                    <button class="btn btn-warning btn-sm" type="button"
+                            confirm-click
+                            confirm-title="Delete Batch"
+                            confirm-message='Delete "{{batch.id}}"?'
+                            confirm-call='deleteBatch(batch.id)'>
                         <i class="glyphicon glyphicon-trash"></i>
                     </button>
                 </td>

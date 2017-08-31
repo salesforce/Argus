@@ -1,0 +1,13 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true" ng-click="close()">&times;</button>
+    <h4 class="modal-title" id="myModalLabel">{{confirmTitle}}</h4>
+</div>
+
+<div class="modal-body">
+    <p ng-bind-html="toTrustedHTML(confirmMessage)"></p>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" data-dismiss="modal" ng-click="close()">Cancel</button>
+    <a class="btn btn-danger btn-ok" ng-click="confirm()">Confirm</a>
+</div>
