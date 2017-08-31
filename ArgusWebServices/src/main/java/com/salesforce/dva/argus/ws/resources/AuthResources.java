@@ -85,7 +85,7 @@ public class AuthResources extends AbstractResource {
             PrincipalUser user = authService.getUser(creds.getUsername(), creds.getPassword());
 
             if (user != null) {
-		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
+            	req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
                 result = PrincipalUserDto.transformToDto(user);
             } else {
                 throw new WebApplicationException(Response.Status.UNAUTHORIZED.getReasonPhrase(), Response.Status.UNAUTHORIZED);
@@ -93,7 +93,7 @@ public class AuthResources extends AbstractResource {
             req.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, result);
             return result;
         } catch (Exception ex) {
-            throw new WebApplicationException(ex.getMessage(), Response.Status.UNAUTHORIZED);
+            throw new WebApplicationException(Response.Status.UNAUTHORIZED.getReasonPhrase(), Response.Status.UNAUTHORIZED);
         }
     }
 
