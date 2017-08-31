@@ -88,7 +88,7 @@ public class AuthResourcesV2 extends AbstractResource {
 
             if (user != null) {
                 JWTUtils.Tokens tokens = JWTUtils.generateTokens(user.getUserName());
-		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
+                req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
                 return Response.ok(tokens).build();
             } else {
                 throw new WebApplicationException("User does not exist. Please provide valid credentials.", Response.Status.UNAUTHORIZED);
@@ -110,7 +110,6 @@ public class AuthResourcesV2 extends AbstractResource {
     	try {
     		username = JWTUtils.validateTokenAndGetSubj(refreshToken, JWTUtils.TokenType.REFRESH);
     		JWTUtils.Tokens tokens = new JWTUtils.Tokens(JWTUtils.generateAccessToken(username), refreshToken);
-		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, username);
         	return Response.ok(tokens).build();
     	} catch(ExpiredJwtException ex) {
     		throw new WebApplicationException("Your Refresh token has expired. You can no longer use it to obtain a new Access token. "
