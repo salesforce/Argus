@@ -2,7 +2,7 @@
 /*global angular:false */
 
 angular.module('argus.directives.charts.table', [])
-.directive('agTable', ['JsonFlattenService','$routeParams', 'DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', function( JsonFlattenService, $routeParams, DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG) {
+.directive('agTable', ['JsonFlattenService','$routeParams', 'DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', '$filter', function( JsonFlattenService, $routeParams, DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG, $filter) {
 	var tableNameIndex = 1;
 
 	function setupTable(scope, element, controls){
@@ -42,8 +42,14 @@ angular.module('argus.directives.charts.table', [])
 		// searchText setting
 		var searchTextFromStorage = storageId + '-searchText';
 		scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, '');
-		scope.$watch('searchText', function(newValue) {
-			InputTracker.updateDefaultValue(searchTextFromStorage, '', newValue);
+
+
+		scope.$watch('searchText', function(newVal, oldVal) {
+			InputTracker.updateDefaultValue(searchTextFromStorage, '', newVal);
+            if(newVal !== undefined && newVal !== oldVal){
+                scope.results = $filter('filter')(scope.tData, newVal);
+                AgTableService.processResults(scope);
+            }
 		});
 
 		// pagination page setting
@@ -63,7 +69,7 @@ angular.module('argus.directives.charts.table', [])
 		if(Math.abs(scope.reverse)!==1) scope.reverse = 1;
 
 		scope.sort = function (item) {
-			var key = item.timestamp;
+			var key = item.firstCol;
 			if (scope.sortKey === key) {
 				scope.reverse = scope.reverse * -1;
 				InputTracker.updateDefaultValue(sortReverseFromStorage, -1, scope.reverse);
@@ -78,9 +84,9 @@ angular.module('argus.directives.charts.table', [])
 			var sortedArray =[];
 			for(var key in item)
 			{
-				if(key !== 'timestamp' && key !== 'datetime') sortedArray.push([key, item[key]]);
+				if(key.startsWith('value')) sortedArray.push([key, item[key]]);
 			}
-			if(item['datetime'] === scope.colNames.datetime){
+			if(item['firstCol'] === scope.colNamesSources.firstCol){
 				sortedArray.sort(function(a, b){
 					return (a[1].localeCompare(b[1])) * scope.reverse;
 				});
@@ -122,10 +128,13 @@ angular.module('argus.directives.charts.table', [])
 			params: {'expression': metricExpressionList}
 		}).success(function(data) {
 			if ( data && data.length > 0) {
-				//set scope.tData and scope.colNames
+				//set scope.tData and scope.colNamesSources
 				AgTableService.setTData(data, scope, scope.GMTOn);
 				scope.tableLoaded = true;
-
+				scope.colNames = scope.colNamesSources;
+				scope.headerHeight = AgTableService.processRowHeight(scope.colNames);
+                scope.results = $filter('filter')(scope.tData, scope.searchText);
+                AgTableService.processResults(scope);
 			}else{
 				console.log('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
 			}
@@ -145,8 +154,15 @@ angular.module('argus.directives.charts.table', [])
 			//DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);
 
 			scope.dashboardId = $routeParams.dashboardId;
+			scope.oneRow = false;
+			scope.processRowHeight = AgTableService.processRowHeight;
+
 			setupTable(scope, element, dashboardCtrl.getAllControls());
 			queryMetricData(scope, dashboardCtrl.getAllControls());
+
+			scope.getDateTime = function(timestamp){
+               return  AgTableService.getDateTime(timestamp, scope.GMTOn);
+			};
 
 			scope.$watch('tableLoaded', function(val){
 				//do not use ng-show cause it does not update dom size in this digest
@@ -157,12 +173,12 @@ angular.module('argus.directives.charts.table', [])
 				}
 			});
 
-			scope.$watch(function(){
-				return angular.element(element.context.querySelector('.agTableHeadRow th:nth-child(2)')).css('height'); },
-					function(val){
-						scope.headerHeight = val;
-					}
-			);
+			// scope.$watch(function(){
+			// 	return angular.element(element.context.querySelector('.agTableHeadRow th:nth-child(2)')).css('height'); },
+			// 		function(val){
+			// 			scope.headerHeight = val;
+			// 		}
+			// );
 
 			angular.element(element.context.querySelector('table')).on('scroll', function(){
 				scope.headerTop = this.scrollTop;

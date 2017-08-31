@@ -60,7 +60,8 @@ angular.module('argus.services.storage', [])
 
 	return {
 		get : function (key) {
-			var result = deserializer(localStorage.getItem(storageKeyPrefix + key));
+			var result = localStorage.getItem(storageKeyPrefix + key);
+			if(result !== undefined) result = deserializer(result);
 			return angular.isDefined(result) ? result : null;
 		},
 
