@@ -2,7 +2,7 @@
 /*global angular:false */
 
 angular.module('argus.directives.charts.table', [])
-.directive('agTable', ['JsonFlattenService','$routeParams', 'DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', '$filter', function( JsonFlattenService, $routeParams, DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG, $filter) {
+.directive('agTable', ['JsonFlattenService','$routeParams', 'DashboardService', 'DateHandlerService', 'AgTableService', 'growl', 'VIEWELEMENT', 'InputTracker', '$http', 'CONFIG', '$filter', '$sce', function( JsonFlattenService, $routeParams, DashboardService, DateHandlerService, AgTableService, growl, VIEWELEMENT, InputTracker, $http, CONFIG, $filter, $sce) {
 	var tableNameIndex = 1;
 
 	function setupTable(scope, element, controls){
@@ -80,13 +80,21 @@ angular.module('argus.directives.charts.table', [])
 			scope.sortSourceIndices(item);
 		};
 
+		scope.sortInColumn = function(key){
+            if (scope.sortKeyInColumn === key) {
+                scope.reverseInColumn = scope.reverseInColumn * -1;
+            } else {
+                scope.sortKeyInColumn = key;
+            }
+		};
+
 		scope.sortSourceIndices = function(item){
 			var sortedArray =[];
 			for(var key in item)
 			{
 				if(key.startsWith('value')) sortedArray.push([key, item[key]]);
 			}
-			if(item['firstCol'] === scope.colNamesSources.firstCol){
+			if(item['firstCol'] === scope.colNames.firstCol){
 				sortedArray.sort(function(a, b){
 					return (a[1].localeCompare(b[1])) * scope.reverse;
 				});
@@ -131,7 +139,6 @@ angular.module('argus.directives.charts.table', [])
 				//set scope.tData and scope.colNamesSources
 				AgTableService.setTData(data, scope, scope.GMTOn);
 				scope.tableLoaded = true;
-				scope.colNames = scope.colNamesSources;
 				scope.headerHeight = AgTableService.processRowHeight(scope.colNames);
                 scope.results = $filter('filter')(scope.tData, scope.searchText);
                 AgTableService.processResults(scope);
@@ -156,7 +163,10 @@ angular.module('argus.directives.charts.table', [])
 			scope.dashboardId = $routeParams.dashboardId;
 			scope.oneRow = false;
 			scope.processRowHeight = AgTableService.processRowHeight;
-
+			scope.topLeftString = AgTableService.TopLeftStringDatetime;
+            scope.toTrustedHTML = function( html ){
+                return $sce.trustAsHtml( html );
+            };
 			setupTable(scope, element, dashboardCtrl.getAllControls());
 			queryMetricData(scope, dashboardCtrl.getAllControls());
 
@@ -185,6 +195,12 @@ angular.module('argus.directives.charts.table', [])
 				scope.headerLeft = this.scrollLeft;
 				scope.$apply();
 			});
+
+            angular.element(element.context.querySelector('table.agTableOneRow')).on('scroll', function(){
+                scope.headerTop = this.scrollTop;
+                scope.headerLeft = this.scrollLeft;
+                scope.$apply();
+            });
 
 			scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 				delete scope.tData;

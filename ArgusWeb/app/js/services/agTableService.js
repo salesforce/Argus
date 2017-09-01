@@ -11,6 +11,8 @@ angular.module('argus.services.agTableService', [])
         this.baseHeight = 60;
         this.numOfLettersPerline = 22;
         this.heightPerLine = 19;
+        this.TopLeftStringDatetime = "Datetime / <br> Metric Sources";
+        this.TopLeftStringTags = "Tags / <br> Metric & Scopes";
         var self = this;
 
         this.getDateTime = function(timestamp, GMTOn){
@@ -24,12 +26,14 @@ angular.module('argus.services.agTableService', [])
                 scope.results = self.setTDataWithFirstColumnAsTags(scope.results[0], scope);
                 scope.colNames = scope.colNamesScopeMetric;
                 scope.sort(scope.colNames);
+                scope.topLeftString = self.TopLeftStringTags;
             }else{
                 if(scope.oneRow){
                     scope.oneRow = false;
                     scope.colNames = scope.colNamesSources;
                     scope.results = scope.tData;
                     scope.sort(scope.colNames);
+                    scope.topLeftString = self.TopLeftStringDatetime;
                 }
             }
         };
@@ -121,6 +125,8 @@ angular.module('argus.services.agTableService', [])
 						}
 					}
 				}
+
+                scope.colNames = columns;
 				scope.colNamesSources = columns;
 				scope.sortSourceIndices(columns);
 				for (timestamp in allTimestamps) {

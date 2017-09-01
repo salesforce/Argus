@@ -191,13 +191,13 @@ angular.module('argus.filters', [])
 	};
 }])
 
-.filter('agTableSort', function(){
+.filter('agTableSortInRow', function(){
 	return function(item, sortedIndices){
 		var newArray = [];
 
-		if(!sortedIndices || sortedIndices.length == 0){
+		if(!sortedIndices || sortedIndices.length === 0){
 			for(var key in item){
-				if(key !== 'timestamp'){
+				if(key.startsWith('value')){
 					newArray.push(item[key]);
 				}
 			}
@@ -209,6 +209,7 @@ angular.module('argus.filters', [])
 		return newArray;
 	};
 })
+
 
 .filter('truncateMetricName', function() {
 	// truncate the metric name for presentation
