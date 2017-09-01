@@ -40,7 +40,7 @@ angular.module('argus.services.charts.elements', [])
 		var transformAttr = null;
 		if (startingX + width > totalWidth + marginRight) {
 			if(startingX - width > 0){
-				transformAttr = 'translate(-' + width + 2 * extraPadding + ')';
+				transformAttr = 'translate(-' + (width + 2 * extraPadding) + ')';
 			} else {
 				transformAttr = 'translate(-' + startingX + ')';
 			}

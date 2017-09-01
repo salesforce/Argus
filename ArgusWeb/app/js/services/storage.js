@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false */
+/*global angular:false, LZString:false, Promise:false */
 
 angular.module('argus.services.storage', [])
 .factory('Storage', ['$rootScope', '$localStorage', '$sessionStorage','$injector', '$window', '$location', function ($rootScope, $localStorage, $sessionStorage, $injector, $window, $location) {
@@ -9,8 +9,8 @@ angular.module('argus.services.storage', [])
 	var localStorage = $window.localStorage;
 	$rootScope.storage = $localStorage;
 	var warnModalCount = 0; //prevent user from clicking so many confirm modals
-	function warn(ls){
-		if(warnModalCount > 0) return;
+	function warn (ls) {
+		if (warnModalCount > 0) return;
 		warnModalCount ++;
 		var ConfirmClick = $injector.get('ConfirmClick');
 		ConfirmClick.openConfirmModal(
@@ -35,7 +35,7 @@ angular.module('argus.services.storage', [])
 		);
 	}
 
-	function isQuotaExceeded(e) {
+	function isQuotaExceeded (e) {
 		var quotaExceeded = false;
 		if (e) {
 			if (e.code) {
@@ -70,7 +70,7 @@ angular.module('argus.services.storage', [])
 			try {
 				//using $localStorage cannot handle the error here
 				localStorage.setItem(storageKeyPrefix + key, serializer(value));
-			}catch (e) {
+			} catch (e) {
 				if(isQuotaExceeded(e)){
 					warn(self);
 				}
@@ -79,19 +79,58 @@ angular.module('argus.services.storage', [])
 		clear : function (key) {
 			localStorage.removeItem(storageKeyPrefix + key);
 		},
-		reset : function(){
+		reset : function () {
 			//delete user info, but preserve the storage of preferences
 			this.clear('user');
 			this.clear('target');
 			$sessionStorage.$reset();
 		},
-		resetAll : function(){
+		resetAll : function () {
 			for (var k in localStorage) {
-				if(k.substring(0, storageKeyPrefix.length) === storageKeyPrefix){
+				if (k.substring(0, storageKeyPrefix.length) === storageKeyPrefix) {
 					localStorage.removeItem(k);
 				}
 			}
 			$sessionStorage.$reset();
+		},
+		initializeSessionList : function (listName) {
+			$sessionStorage[listName] = {
+				cachedData: {},
+				cachedCompressedData: '',
+				emptyData: true,
+				loadedEverything: false,
+				selectedTab: undefined
+			};
+		},
+		getSessionList : function (listName) {
+			return $sessionStorage[listName];
+		},
+		compressData : function (data) {
+			return Promise.resolve(LZString.compress(JSON.stringify(data)));
+		},
+		decompressData : function (data) {
+			return Promise.resolve(JSON.parse(LZString.decompress(data)));
+		},
+		roughSizeOfObject: function (object) {
+			var objectList = [];
+			var recurse = function(value) {
+				var bytes = 0;
+				if (typeof value === 'boolean') {
+					bytes = 4;
+				} else if (typeof value === 'string') {
+					bytes = value.length * 2;
+				} else if (typeof value === 'number') {
+					bytes = 8;
+				} else if (typeof value === 'object' && objectList.indexOf(value) === -1) {
+					objectList[ objectList.length ] = value;
+					for (var i in value) {
+						bytes+= 8; // assumed existence overhead
+						bytes+= recurse( value[i] );
+					}
+				}
+				return bytes;
+			};
+			return recurse(object);
 		}
 	};
 }]);

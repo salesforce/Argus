@@ -6,9 +6,8 @@ angular.module('argus.directives.charts.chart', [])
 	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
 		var timer;
 		var resizeTimeout = 250;
-
-
 		var chartNameIndex = 1;
+
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
 			angular.element('#' + newChartId).empty();
@@ -22,7 +21,7 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			// when there is no agDate
+			// when there is no agDate, use
 			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
 				if (series[0].data && series[0].data.length > 0) {
 					dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
@@ -41,14 +40,14 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.series.sort(UtilService.alphabeticalSort);
 			// append, compile, & attach new scope to line-chart directive
 			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
-			if(updatedOptionList.chartType === "heatmap"){
+			if (updatedOptionList.chartType === 'heatmap') {
 				angular.element('#' + newChartId).append(
 					$compile(
 						'<div ngsf-fullscreen>' +
 						'<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
 						'</div>')(lineChartScope)
 				);
-			}else{
+			} else {
 				angular.element('#' + newChartId).append(
 					$compile(
 						'<div ngsf-fullscreen>' +
@@ -61,14 +60,27 @@ angular.module('argus.directives.charts.chart', [])
 		function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
 			Annotations.query({expression: annotationItem}).$promise.then(function(data) {
 				if (data && data.length > 0) {
+					var flagSeriesNotInSeries = true;
 					var forName = ChartDataProcessingService.createSeriesName(data[0]);
 					var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
 					flagSeries.linkedTo = forName;
 					// bind series with its annotations(flag series)
 					series = series.map(function (item) {
-						if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+						if (item.name === flagSeries.linkedTo) {
+							item.flagSeries = flagSeries;
+							flagSeriesNotInSeries = false;
+						}
 						return item;
 					});
+					if (flagSeriesNotInSeries) {
+						series.push({
+							name: flagSeries.linkedTo,
+							color: null,
+							extraYAxis: null,
+							data: [],
+							flagSeries: flagSeries
+						});
+					}
 				}
 
 				// append, compile, & attach new scope to line-chart directive
