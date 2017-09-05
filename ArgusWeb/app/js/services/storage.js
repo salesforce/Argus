@@ -69,7 +69,10 @@ angular.module('argus.services.storage', [])
 			var self = this;
 			try {
 				//using $localStorage cannot handle the error here
-				localStorage.setItem(storageKeyPrefix + key, serializer(value));
+				var val = serializer(value);
+				if(val !== undefined){
+                    localStorage.setItem(storageKeyPrefix + key, val);
+				}
 			} catch (e) {
 				if(isQuotaExceeded(e)){
 					warn(self);
