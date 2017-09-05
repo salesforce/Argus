@@ -7,7 +7,7 @@
 
 angular.module('argus.services.charts.elements', [])
 .service('ChartElementService', ['ChartToolService', 'UtilService', function(ChartToolService, UtilService) {
-	var nGridXSmall = 3;
+	var nGridXSmall = 5;
 	var nGridYSmall = 3;
 	var nGridX = 7;
 	var xAxisLabelHeightFactor = 15;
@@ -56,21 +56,16 @@ angular.module('argus.services.charts.elements', [])
 			currentnGridX, currentnGridY;
 
 		if (isSmallChart) {
-			currentnGridX = nGridX;
-			currentnGridY = yAxisConfig.numTicksYaxis;
-		} else {
 			currentnGridX = nGridXSmall;
 			currentnGridY = nGridYSmall;
+		} else {
+			currentnGridX = nGridX;
+			currentnGridY = yAxisConfig.numTicksYaxis;
 		}
 
 		xAxis = d3.axisBottom()
 			.scale(x)
 			.ticks(currentnGridX);
-
-		// set short numerical date time format to 'smallChart' for better readability
-		if (isSmallChart) {
-			xAxis.tickFormat(d3.timeFormat("%-m/%-d %H:%M"));
-		}
 
 		yAxis = d3.axisLeft()
 			.scale(y)
@@ -122,7 +117,7 @@ angular.module('argus.services.charts.elements', [])
 		};
 	};
 
-	this.createBrushElements = function (timeInfo, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
+	this.createBrushElements = function (timeInfo, isGMT, sizeInfo, isSmallChart, chartType, brushFunction, yScaleType, yScaleConfigValue) {
 		// axis and ticks
 		var currentnGridX = isSmallChart? nGridXSmall: nGridX;
 
@@ -130,7 +125,7 @@ angular.module('argus.services.charts.elements', [])
 			width: sizeInfo.width,
 			height: sizeInfo.height2
 		};
-		var xy = ChartToolService.getXandY(timeInfo, brushSizeInfo, yScaleType, yScaleConfigValue);
+		var xy = ChartToolService.getXandY(timeInfo, isGMT, brushSizeInfo, yScaleType, yScaleConfigValue);
 		var x2 = xy.x;
 		var y2 = xy.y;
 
