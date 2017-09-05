@@ -46,10 +46,10 @@ angular.module('argus.directives.charts.table', [])
 
 		scope.$watch('searchText', function(newVal, oldVal) {
 			InputTracker.updateDefaultValue(searchTextFromStorage, '', newVal);
-            if(newVal !== undefined && newVal !== oldVal){
-                scope.results = $filter('filter')(scope.tData, newVal);
-                AgTableService.processResults(scope);
-            }
+			if(newVal !== undefined && newVal !== oldVal){
+				scope.results = $filter('filter')(scope.tData, newVal);
+				AgTableService.processResults(scope);
+			}
 		});
 
 		// pagination page setting
@@ -81,11 +81,11 @@ angular.module('argus.directives.charts.table', [])
 		};
 
 		scope.sortInColumn = function(key){
-            if (scope.sortKeyInColumn === key) {
-                scope.reverseInColumn = scope.reverseInColumn * -1;
-            } else {
-                scope.sortKeyInColumn = key;
-            }
+			if (scope.sortKeyInColumn === key) {
+				scope.reverseInColumn = scope.reverseInColumn * -1;
+			} else {
+				scope.sortKeyInColumn = key;
+			}
 		};
 
 		scope.sortSourceIndices = function(item){
@@ -140,8 +140,8 @@ angular.module('argus.directives.charts.table', [])
 				AgTableService.setTData(data, scope, scope.GMTOn);
 				scope.tableLoaded = true;
 				scope.headerHeight = AgTableService.processRowHeight(scope.colNames);
-                scope.results = $filter('filter')(scope.tData, scope.searchText);
-                AgTableService.processResults(scope);
+				scope.results = $filter('filter')(scope.tData, scope.searchText);
+				AgTableService.processResults(scope);
 			}else{
 				console.log('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
 			}
@@ -164,14 +164,14 @@ angular.module('argus.directives.charts.table', [])
 			scope.oneRow = false;
 			scope.processRowHeight = AgTableService.processRowHeight;
 			scope.topLeftString = AgTableService.TopLeftStringDatetime;
-            scope.toTrustedHTML = function( html ){
-                return $sce.trustAsHtml( html );
-            };
+			scope.toTrustedHTML = function( html ){
+				return $sce.trustAsHtml( html );
+			};
 			setupTable(scope, element, dashboardCtrl.getAllControls());
 			queryMetricData(scope, dashboardCtrl.getAllControls());
 
 			scope.getDateTime = function(timestamp){
-               return  AgTableService.getDateTime(timestamp, scope.GMTOn);
+			   return  AgTableService.getDateTime(timestamp, scope.GMTOn);
 			};
 
 			scope.$watch('tableLoaded', function(val){
@@ -196,11 +196,11 @@ angular.module('argus.directives.charts.table', [])
 				scope.$apply();
 			});
 
-            angular.element(element.context.querySelector('table.agTableOneRow')).on('scroll', function(){
-                scope.headerTop = this.scrollTop;
-                scope.headerLeft = this.scrollLeft;
-                scope.$apply();
-            });
+			angular.element(element.context.querySelector('table.agTableOneRow')).on('scroll', function(){
+				scope.headerTop = this.scrollTop;
+				scope.headerLeft = this.scrollLeft;
+				scope.$apply();
+			});
 
 			scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 				delete scope.tData;
