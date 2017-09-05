@@ -146,24 +146,26 @@ public class AnnotationQuery {
     }
 
     /**
-     * Returns the start time stamp.
+     * Returns the start time stamp in millis.
      *
-     * @return  The start time stamp. Will never return null.
+     * @return  The start time stamp in millis since epoch. Will never return null.
      */
     public Long getStartTimestamp() {
-        return _startTimestamp;
+        //return _startTimestamp;
+    	return String.valueOf(_startTimestamp).length() >= 12 ? _startTimestamp : _startTimestamp * 1000;
     }
 
     /**
-     * Returns the end time stamp. If no end time was specified for the query the current system time is returned.
+     * Returns the end time stamp in millis. If no end time was specified for the query the current system time is returned.
      *
-     * @return  The end time stamp.
+     * @return  The end time stamp in millis since epoch.
      */
     public Long getEndTimestamp() {
         if (_endTimestamp == null) {
             return System.currentTimeMillis();
         } else {
-            return _endTimestamp;
+            //return _endTimestamp;
+        	return String.valueOf(_endTimestamp).length() >= 12 ? _endTimestamp : _endTimestamp * 1000;
         }
     }
 

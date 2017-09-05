@@ -36,8 +36,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     private static final int DEFAULT_TTL = 2592000;
 
     //~ Instance fields ******************************************************************************************************************************
-
-    private final SystemConfiguration _config;
+    
     private final CacheService _cacheService;
     private final MQService _mqService;
     private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
@@ -45,11 +44,11 @@ public class DefaultBatchService extends DefaultService implements BatchService 
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
-    public DefaultBatchService(SystemConfiguration config, CacheService cacheService, MQService mqService, Provider<MetricReader<Metric>> metricsprovider) {
+    public DefaultBatchService(SystemConfiguration config, CacheService cacheService, MQService mqService, 
+    		Provider<MetricReader<Metric>> metricsprovider) {
         super(config);
         requireArgument(cacheService != null, "Cache service cannot be null.");
         requireArgument(mqService != null, "MQ service cannot be null.");
-        _config = config;
         _cacheService = cacheService;
         _mqService = mqService;
         _metricReaderProviderForMetrics = metricsprovider;

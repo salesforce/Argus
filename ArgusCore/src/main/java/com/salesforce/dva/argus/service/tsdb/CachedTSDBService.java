@@ -76,9 +76,8 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     private static final Long LOWER_START_TIME_LIMIT_IN_MILLIS = 86400000L;
     private static final Long UPPER_START_TIME_LIMIT_IN_MILLIS = 86400000 * 61L;
     private static final Long END_TIME_LIMIT_IN_MILLIS = 60000L;
-    private static final String QUERY_LATENCY_COUNTER = "query.latency";
-    private static final String QUERY_COUNT_COUNTER = "query.count"; 
 
+    
     //~ Instance fields ******************************************************************************************************************************
 
     protected Logger _logger = LoggerFactory.getLogger(getClass());
@@ -129,10 +128,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
         // Copy the metric query since the passed in list may be a
         // fixed length array backed list, and we cannot remove queries from that list.
-        List<MetricQuery> queryList = new ArrayList<MetricQuery>(queries);
-        Map<MetricQuery, List<Metric>> result = new HashMap<MetricQuery, List<Metric>>();
-        List<MetricQuery> filterMetricQueries = new ArrayList<MetricQuery>();
-        Map<MetricQuery, MetricQueryTimestamp> map = new HashMap<MetricQuery, MetricQueryTimestamp>();
+        List<MetricQuery> queryList = new ArrayList<>(queries);
+        Map<MetricQuery, List<Metric>> result = new HashMap<>();
+        List<MetricQuery> filterMetricQueries = new ArrayList<>();
+        Map<MetricQuery, MetricQueryTimestamp> map = new HashMap<>();
 
         for (MetricQuery query : queryList) {
             if (compulsoryCacheMiss(query)) {
@@ -140,7 +139,9 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                 filterMetricQueries.add(query);
             }
         }
+        
         queryList.removeAll(filterMetricQueries);
+        
         if (!queryList.isEmpty()) {
             long beforeTime = System.currentTimeMillis();
             List<MetricQueryTimestamp> uncached = _getCachedMetricValues(queryList, result);
@@ -505,7 +506,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                         metricsForThisQuery.add(metric);
                     }
                     resultsMap.put(query, metricsForThisQuery);
-                    instrumentQueryLatency(_monitorService, query, startExecutionTime);
+                    TSDBService.instrumentQueryLatency(_monitorService, query, startExecutionTime, MeasurementType.METRICS);
                     
                     afterTime = System.currentTimeMillis();
                     _logger.info("Time spent in mapping tags in tsdb metrics to tags in cache: {}", afterTime - beforeTime);
@@ -580,16 +581,6 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
     public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
         return _defaultTsdbService.getAnnotations(queries);
     }
-    
-    private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start) {
-		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
-		Map<String, String> tags = new HashMap<String, String>();
-		tags.put("type", "metrics");
-		tags.put("timeWindow", timeWindow);
-		tags.put("cached", "true");
-		monitorService.modifyCustomCounter(QUERY_LATENCY_COUNTER, (System.currentTimeMillis() - start), tags);
-        monitorService.modifyCustomCounter(QUERY_COUNT_COUNTER, 1, tags);
-	}
     
     //~ Inner Classes ********************************************************************************************************************************
 

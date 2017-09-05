@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
+import com.salesforce.dva.argus.service.NamedBinding;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.WardenService;
 import com.salesforce.dva.argus.service.WardenService.SubSystem;
@@ -112,8 +113,8 @@ public abstract class WardenNotifier extends DefaultNotifier {
      * @param  config             The system configuration. Cannot be null.
      */
     @Inject
-    protected WardenNotifier(MetricService metricService, AnnotationService annotationService, WardenService wardenService, TSDBService tsdbService,
-        MailService mailService, SystemConfiguration config) {
+    protected WardenNotifier(MetricService metricService, AnnotationService annotationService, WardenService wardenService, 
+    		@NamedBinding TSDBService tsdbService, MailService mailService, SystemConfiguration config) {
         super(metricService, annotationService, config);
         requireArgument(wardenService != null, "Warden service cannot be null.");
         requireArgument(tsdbService != null, "TSDB service cannot be null.");

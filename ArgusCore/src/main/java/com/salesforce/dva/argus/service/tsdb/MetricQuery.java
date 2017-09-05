@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.tsdb;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.salesforce.dva.argus.service.metric.transform.Transform;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -53,7 +55,7 @@ public class MetricQuery extends AnnotationQuery {
     //~ Instance fields ******************************************************************************************************************************
 
     private String _namespace;
-    private Aggregator _aggregator;
+    private Aggregator _aggregator = Aggregator.AVG;
     private Aggregator _downsampler;
     private Long _downsamplingPeriod;
 
@@ -316,6 +318,44 @@ public class MetricQuery extends AnnotationQuery {
          */
         public String getDescription() {
             return _description;
+        }
+        
+        public static Transform correspondingTransform(Aggregator agg, TransformFactory factory) {
+        	
+        	Transform transform;
+    		switch(agg) {    			
+    			case MIN:
+    				transform = factory.getTransform(TransformFactory.Function.MIN.getName());
+    				break;
+    			case MAX:
+    				transform = factory.getTransform(TransformFactory.Function.MAX.getName());
+    				break;
+    			case SUM: 
+    				transform = factory.getTransform(TransformFactory.Function.SUM.getName());
+    				break;
+    			case AVG:
+    				transform = factory.getTransform(TransformFactory.Function.AVERAGE.getName());
+    				break;
+    			case DEV:
+    				transform = factory.getTransform(TransformFactory.Function.DEVIATION.getName());
+    				break;
+    			case ZIMSUM: 
+    				transform = factory.getTransform(TransformFactory.Function.ZEROIFMISSINGSUM.getName());
+    				break;
+    			case COUNT:
+    				transform = factory.getTransform(TransformFactory.Function.COUNT.getName());
+    				break;
+    			case MIMMIN:
+    				transform = factory.getTransform(TransformFactory.Function.MIN.getName());
+    				break;
+    			case MIMMAX:
+    				transform = factory.getTransform(TransformFactory.Function.MAX.getName());
+    				break;
+    			default:
+    				throw new IllegalArgumentException("Aggregator not legal: " + agg);
+    		}
+        	
+    		return transform;
         }
     }
 }

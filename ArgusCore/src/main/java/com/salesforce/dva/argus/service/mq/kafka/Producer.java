@@ -216,7 +216,7 @@ public class Producer {
                         @Override
                         public void onCompletion(RecordMetadata metaData, Exception exception) {
                             if (exception != null) {
-                                _logger.warn("Exception while sending message. ", exception);
+                                _logger.warn("Exception while sending message [" + record.value() + "]. ", exception);
                             } else {
                                 _logger.trace("Message sent to partition {} with offset {}.", metaData.partition(), metaData.offset());
                             }

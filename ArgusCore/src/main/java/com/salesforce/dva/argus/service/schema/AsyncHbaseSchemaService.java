@@ -224,14 +224,12 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
-        String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow)
+        String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow) 
         									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName, null);
-        
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
-        
         _logger.debug("Scan startRow: " + scanStartRow);
-        _logger.debug("Scan stopRow: " + metadata.stopRow.toString());
+        _logger.debug("Scan stopRow: " + Bytes.toString(metadata.stopRow));
         
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
 
@@ -424,10 +422,10 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 			throw new SystemException("Interrupted while waiting to obtain results for query", e);
 		} catch (TimeoutException e) {
 			_logger.warn("Timed out while waiting to obtain results.");
+			return null;
 		} catch (Exception e) {
 			throw new SystemException("Exception occurred in getting results for query", e);
 		}
-		return null;
 	}
 
 	//TSDB allowed characteers are: [A-Za-z0-9./-_]. The lowest ASCII value (45) out of these is for hyphen (-). 
@@ -487,7 +485,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
         String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow)
         									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName, type);
-        
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
         _logger.debug("Scan startRow: " + scanStartRow);
