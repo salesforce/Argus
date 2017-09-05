@@ -4,6 +4,7 @@ ArgusDocker
 ArgusDocker contains docker-compose files to deploy a complete argus system.  Follow these steps
 to deploy:
 
+ 1. Follow the build instructions for [`ArgusWeb`](https://github.com/salesforce/Argus/tree/develop/ArgusWeb) to install the NPM dependencies.
  1. Build the images using `mvn install`
  1. Bring up the environment using `docker-compose up -d`
 
