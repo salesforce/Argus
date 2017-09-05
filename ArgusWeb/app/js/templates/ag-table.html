@@ -32,29 +32,65 @@
         <table class="table table-striped table-bordered agTable">
             <thead>
             <tr class="agTableHeadRow">
-                <th class="agTableHead" ng-style="{'z-index': 2, 'height': headerHeight, 'top': headerTop+'px', 'left': headerLeft+'px'}" ng-click="sort(colNames)">
-                    Date time <br> /Metric source
-                    <span class="glyphicon sort-icon" ng-show="sortKey===colNames.timestamp"
+                <th class="agTableHead" ng-style="{'z-index': 2, 'height': headerHeight + 'px', 'top': headerTop+'px', 'left': headerLeft+'px'}" ng-click="sort(colNames)">
+                    <span ng-bind-html="toTrustedHTML(topLeftString)"></span>
+                    <span class="glyphicon sort-icon" ng-show="sortKey===colNames.firstCol"
                           ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
                 </th>
-                <th class="agTableHead" ng-style="{'left':'{{($index+1)*180}}px','top': headerTop+'px'}" ng-repeat="value in (colNames | agTableSort: sortedSourceIndices) track by $index">
+                <th class="agTableHead" ng-style="{'left':'{{($index+1)*180}}px','top': headerTop+'px', 'height': headerHeight}"
+                    ng-repeat="(key, value) in (colNames | agTableSortInRow: sortedSourceIndices) track by $index"
+                    >
                     {{value}}
                 </th>
             </tr>
-            <!--place holder for the absolute positioned header-->
-            <tr class="agTableFirstRow" ng-style="{'height': headerHeight}"><td></td></tr>
+            <!--place holder for the absolute positioned header, removing this will lead to the second column overlap the first in tbody -->
+            <tr class="agTableFirstRow" ng-style="{'height': headerHeight + 'px'}"><td></td></tr>
             </thead>
             <tbody>
-            <tr dir-paginate="item in results = (tData | filter:searchText) | itemsPerPage:itemsPerPage track by $index"
+            <tr dir-paginate="item in results |itemsPerPage:itemsPerPage track by $index"
                 current-page="currentPage">
-                <td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px'}" ng-click="sort(item)">{{item.datetime}}
-                    <span class="glyphicon sort-icon" ng-show="sortKey===item.timestamp"
+                <td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px', 'height': rowHeight = processRowHeight(item) + 'px'}" ng-click="sort(item)">{{oneRow?item.firstCol : item.dateTime}}
+                    <span class="glyphicon sort-icon" ng-show="sortKey===item.firstCol"
                           ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>
                 </td>
-                <td ng-repeat="value in (item | agTableSort: sortedSourceIndices) track by $index">{{value}}</td>
+                <td ng-repeat="value in (item | agTableSortInRow: sortedSourceIndices) track by $index" ng-style="{'height':rowHeight}">{{value}}</td>
             </tr>
             </tbody>
         </table>
+
+        <!--<table ng-show="oneRow" class="table table-striped table-bordered agTable agTableOneRow">-->
+            <!--<thead>-->
+            <!--<tr class="agTableHeadRow">-->
+                <!--<th class="agTableHead" ng-style="{'z-index': 2, 'height': headerHeight + 'px', 'top': headerTop+'px', 'left': headerLeft+'px'}" ng-click="sortInColumn('firstCol')">-->
+                    <!--<span ng-bind-html="toTrustedHTML(topLeftString)"></span>-->
+                    <!--<span class="glyphicon sort-icon" ng-show="sortKeyInColumn==='firstCol'"-->
+                          <!--ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"-->
+                    <!--&gt;</span>-->
+                <!--</th>-->
+                <!--<th class="agTableHead" ng-style="{'left':'{{($index+1)*180}}px','top': headerTop+'px', 'height': headerHeight}"-->
+                    <!--ng-repeat="(key, value) in (colNames | agTableSortInRow: sortedSourceIndices) track by $index"-->
+                    <!--ng-click = "sortInColumn(key)"-->
+                <!--&gt;-->
+                    <!--{{value}}-->
+                    <!--<span class="glyphicon sort-icon" ng-show="sortKeyInColumn===key"-->
+                          <!--ng-class="{'glyphicon-chevron-up':reverseInColumn,'glyphicon-chevron-down':!reverseInColumn}"-->
+                          <!--&gt;</span>-->
+                <!--</th>-->
+            <!--</tr>-->
+            <!--&lt;!&ndash;place holder for the absolute positioned header, removing this will lead to the second column overlap the first in tbody &ndash;&gt;-->
+            <!--<tr class="agTableFirstRow" ng-style="{'height': headerHeight + 'px'}"><td></td></tr>-->
+            <!--</thead>-->
+            <!--<tbody>-->
+            <!--<tr dir-paginate="item in results |orderBy: sortKeyInColumn: reverseInColumn |itemsPerPage:itemsPerPage track by $index"-->
+                <!--current-page="currentPage">-->
+                <!--<td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px', 'height': rowHeight = processRowHeight(item) + 'px'}"-->
+                    <!--ng-click="sort(item)">-->
+                    <!--{{oneRow?item.firstCol : item.dateTime}}-->
+                <!--</td>-->
+                <!--<td ng-repeat="value in (item | agTableSortInRow: sortedSourceIndices) track by $index" ng-style="{'height':rowHeight}">{{value}}</td>-->
+            <!--</tr>-->
+            <!--</tbody>-->
+        <!--</table>-->
     </div>
     <div ng-if="loaded">
         <div class="row text-center" ng-show="searchText.length === 0">
