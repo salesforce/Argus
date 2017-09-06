@@ -102,14 +102,13 @@ angular.module('argus.services.charts.tools', [])
 	var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
 	this.generateDateFormatter = function (isGMT, customizedFormat, isSmallChart) {
-		var result, tmpDate;
-		if (isSmallChart) {
-			result = isGMT? d3.utcFormat(smallChartDate): d3.timeFormat(smallChartDate);
+		var tmpDate;
+		if (customizedFormat === undefined) {
+			tmpDate = isSmallChart ? smallChartDate : numericalDate;
 		} else {
-			tmpDate = customizedFormat === undefined? numericalDate: customizedFormat;
-			result = isGMT? d3.utcFormat(tmpDate): d3.timeFormat(tmpDate);
+			tmpDate = customizedFormat;
 		}
-		return result;
+		return isGMT? d3.utcFormat(tmpDate): d3.timeFormat(tmpDate);
 	};
 
 	this.bisectDate = d3.bisector(function (d) {
@@ -134,6 +133,29 @@ angular.module('argus.services.charts.tools', [])
 		isBrushMainOn: false,
 		isWheelOn: false,
 		isBrushOn: true,
+		isTooltipOn: true,
+		tooltipConfig: {
+			rawTooltip: true,
+			customTooltipFormat: sampleCustomFormat,
+			leadingNum: null,
+			trailingNum: null,
+			isTooltipSortOn: true
+		},
+		yAxisConfig: {
+			formatYaxis: defaultYaxis,
+			numTicksYaxis: defaultTicksYaxis
+		},
+		isSnapCrosslineOn: true,
+		localTimezone: false
+	};
+	this.defaultMenuOptionSmallChart = {
+		dateFormat: numericalDate,
+		colorPalette: 'schemeCategory20',
+		downSampleMethod: '',
+		isSyncChart: false,
+		isBrushMainOn: false,
+		isWheelOn: true,
+		isBrushOn: false,
 		isTooltipOn: true,
 		tooltipConfig: {
 			rawTooltip: true,
@@ -179,8 +201,8 @@ angular.module('argus.services.charts.tools', [])
 	// other things
 	this.defaultEmptyGraphMessage = 'No graph available';
 
-	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
-		var xScale = timeInfo.gmt? d3.scaleUtc(): d3.scaleTime();
+	this.getXandY = function (timeInfo, isGMT, sizeInfo, yScaleType, yScaleConfigValue) {
+		var xScale = isGMT? d3.scaleUtc(): d3.scaleTime();
 		var y = this.getY(sizeInfo, yScaleType, yScaleConfigValue);
 		return {
 			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),

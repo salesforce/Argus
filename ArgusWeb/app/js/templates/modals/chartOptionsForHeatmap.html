@@ -14,7 +14,11 @@
 				   ng-change="updateDateFormatOutput()"
 			/>
 			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank" title="Custom d3 date format codes"></a>
-			<div style="margin-left:3em; color:#999;">{{dateFormatOutput}}</div>
+			<div style="margin-left:3em;">
+				<span style="color:#999; margin-right:3em;">{{dateFormatOutput}}</span>
+				<input class="chkBox pointer" id="toggle-localtimezone-{{chartConfig.chartId}}" type="checkbox" ng-model="menuOption.localTimezone">
+				<label class="chkBoxLbl" for="toggle-localtimezone-{{chartConfig.chartId}}">Use local timezone</label>
+			</div>
 		</div>
 
 		<div style="margin:.5em 0 .5em 1em;">

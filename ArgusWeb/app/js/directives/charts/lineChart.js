@@ -79,8 +79,9 @@ angular.module('argus.directives.charts.lineChart', [])
 			};
 			// read menuOption from local storage; use default one if there is none
 			$scope.menuOption = angular.copy(Storage.get('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId));
-			if ($scope.menuOption === null) {
-				$scope.menuOption = angular.copy(ChartToolService.defaultMenuOption);
+			if ($scope.menuOption === null || $scope.menuOption === undefined) {
+				$scope.menuOption = angular.copy($scope.chartConfig.smallChart ?
+					 ChartToolService.defaultMenuOptionSmallChart : ChartToolService.defaultMenuOption);
 				$scope.updateStorage();
 			}
 			// reformat existing stored menuOption
@@ -104,11 +105,6 @@ angular.module('argus.directives.charts.lineChart', [])
 			}
 			if ($scope.menuOption.localTimezone === undefined) {
 				$scope.menuOption.localTimezone = false;
-			}
-			// When it's small chart, hide the brush and use mouse zoom
-			if ($scope.chartConfig.smallChart) {
-				$scope.menuOption.isBrushOn = false;
-				$scope.menuOption.isWheelOn = true;
 			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
@@ -380,7 +376,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			function setUpGraphs() {
 				if (isDataStacked) stack = d3.stack();
 
-				var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
+				var xy = ChartToolService.getXandY(scope.dateConfig, GMTon, allSize, yScaleType, yScaleConfigValue);
 				x = xy.x;
 				y = xy.y;
 				yScalePlain = xy.yScalePlain;
@@ -397,7 +393,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				graph = ChartElementService.createGraph(x, y, chartType);
 
 				// populate brash related items
-				var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
+				var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, GMTon, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
 				xAxis2 = smallBrush.xAxis;
 				x2 = smallBrush.x;
 				y2 = smallBrush.y;
@@ -1049,6 +1045,15 @@ angular.module('argus.directives.charts.lineChart', [])
 					xGridG.call(xGrid);
 					xAxis2.scale(x2);
 					xAxisG2.call(xAxis2);
+					if (isSmallChart) {
+						xAxisG.call(xAxis)
+							.selectAll("text")
+							.attr("y", 5)
+							.attr("x", -9)
+							.attr("dy", ".35em")
+							.attr("transform", "rotate(-65)")
+							.style("text-anchor", "end");
+					}
 					// update main chart and brush graphs
 					if (ChartElementService.customizedChartType.includes(chartType)) {
 						ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);

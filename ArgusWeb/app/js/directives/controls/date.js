@@ -14,7 +14,7 @@ angular.module('argus.directives.controls.date', [])
 			$scope.ctrlVal = $scope.controlValue;
 
 			for (var prop in $routeParams) {
-				if (prop == $scope.controlName) {
+				if (prop === $scope.controlName) {
 					$scope.ctrlVal = $routeParams[prop];
 					// remove GMT from page refreshing
 					if( $scope.ctrlVal.indexOf('GMT') >= 0){
