@@ -4,35 +4,34 @@
 angular.module('argus.directives.charts.lineChart', [])
 .directive('lineChart', ['$timeout', 'Storage', 'ChartToolService', 'ChartElementService', function($timeout, Storage, ChartToolService, ChartElementService) {
 	//--------------------resize all charts-------------------
-	var resizeTimeout = 250; //the time for resize function to fire
-	var resizeJobs = [];
-	var timer;
+	var AllChartIds = [];
 	var fullscreenChartID;
-
-	function resizeHelper(){
-		$timeout.cancel(timer); //clear to improve performance
-		timer = $timeout(function () {
-			if (fullscreenChartID === undefined) {
-				resizeJobs.forEach(function (resizeJob) { //resize all the charts
-					resizeJob.resize();
-				});
-			} else { // resize only one chart that in fullscreen mode
-				var chartToFullscreen = resizeJobs.filter(function (item) {
-					return item.chartID === fullscreenChartID;
-				});
-				chartToFullscreen[0].resize();
-				if (window.innerHeight !== screen.height) {
-					// reset the ID after exiting full screen
-					fullscreenChartID = undefined;
-				}
-			}
-		}, resizeTimeout); //only execute resize after a timeout
-	}
-
-	d3.select(window).on('resize', resizeHelper);
+	var syncChartJobs;
+	//
+	// function resizeHelper(){
+	// 	$timeout.cancel(timer); //clear to improve performance
+	// 	timer = $timeout(function () {
+	// 		if (fullscreenChartID === undefined) {
+	// 			resizeJobs.forEach(function (resizeJob) { //resize all the charts
+	// 				resizeJob.resize();
+	// 			});
+	// 		} else { // resize only one chart that in fullscreen mode
+	// 			var chartToFullscreen = resizeJobs.filter(function (item) {
+	// 				return item.chartID === fullscreenChartID;
+	// 			});
+	// 			chartToFullscreen[0].resize();
+	// 			if (window.innerHeight !== screen.height) {
+	// 				// reset the ID after exiting full screen
+	// 				fullscreenChartID = undefined;
+	// 			}
+	// 		}
+	// 	}, resizeTimeout); //only execute resize after a timeout
+	// }
+	//
+	// d3.select(window).on('resize', resizeHelper);
 
 	//---------------------sync all charts-----------------------
-	var syncChartJobs = {};
+
 	function syncChartMouseMoveAll(mouseX, focusChartId){
 		for(var key in syncChartJobs){
 			if(!syncChartJobs.hasOwnProperty(key) || key === focusChartId) continue;
@@ -57,6 +56,7 @@ angular.module('argus.directives.charts.lineChart', [])
 		},
 		templateUrl: 'js/templates/charts/topToolbar.html',
 		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
+			$scope.showToggleSources = true;
 			$scope.hideMenu = true;
 			$scope.dateRange = '';
 			$scope.changeToFullscreen = false;
@@ -66,6 +66,8 @@ angular.module('argus.directives.charts.lineChart', [])
 			$scope.noDataSeries = [];
 			$scope.invalidSeries = [];
 			var hiddenSourceNames = [];
+
+			syncChartJobs = ChartToolService.getOrCreateSyncChartJobs($scope.dashboardId);
 
 			$scope.extraYAxisSet = new Set();
 			$scope.series.forEach(function(e){
@@ -77,8 +79,9 @@ angular.module('argus.directives.charts.lineChart', [])
 			};
 			// read menuOption from local storage; use default one if there is none
 			$scope.menuOption = angular.copy(Storage.get('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId));
-			if ($scope.menuOption === null) {
-				$scope.menuOption = angular.copy(ChartToolService.defaultMenuOption);
+			if ($scope.menuOption === null || $scope.menuOption === undefined) {
+				$scope.menuOption = angular.copy($scope.chartConfig.smallChart ?
+					 ChartToolService.defaultMenuOptionSmallChart : ChartToolService.defaultMenuOption);
 				$scope.updateStorage();
 			}
 			// reformat existing stored menuOption
@@ -157,7 +160,7 @@ angular.module('argus.directives.charts.lineChart', [])
 							// update all graphs on dashboard with current scope.menuOption settings
 							if ($scope.applyToAllGraphs) {
 								//update localStorage for each chart
-								resizeJobs.forEach(function (job) {
+								AllChartIds.forEach(function (job) {
 									Storage.set('menuOption_' + dashboardId + '_' + job.chartID, $scope.menuOption);
 								});
 							}
@@ -360,8 +363,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				tooltip, tipBox, tipItems,
 				focus, crossLine, mouseOverHighlightBar, highlightBar, mouseMoveElement,
 				names, colors, graphClassNames,
-				flagsG, labelTip,
-				stack;
+				flags, stack;
 
 			var isDataStacked = chartType.includes('stack');
 			var isChartDiscrete = chartType.includes('bar');
@@ -374,7 +376,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			function setUpGraphs() {
 				if (isDataStacked) stack = d3.stack();
 
-				var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
+				var xy = ChartToolService.getXandY(scope.dateConfig, GMTon, allSize, yScaleType, yScaleConfigValue);
 				x = xy.x;
 				y = xy.y;
 				yScalePlain = xy.yScalePlain;
@@ -391,7 +393,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				graph = ChartElementService.createGraph(x, y, chartType);
 
 				// populate brash related items
-				var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
+				var smallBrush = ChartElementService.createBrushElements(scope.dateConfig, GMTon, allSize, isSmallChart, chartType, brushed, yScaleType, yScaleConfigValue);
 				xAxis2 = smallBrush.xAxis;
 				x2 = smallBrush.x;
 				y2 = smallBrush.y;
@@ -437,9 +439,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				xAxisG2 = smallBrushElement.xAxisG2;
 
 				// flags and annotations
-				var flagsElement = ChartElementService.appendFlagsElements(svg_g, chartId);
-				flagsG = flagsElement.flagsG;
-				labelTip = flagsElement.labelTip;
+				flags = ChartElementService.appendFlagsElements(svg_g);
 
 				// tooltip setup
 				var tooltipElement = ChartElementService.appendTooltipElements(svg_g);
@@ -507,34 +507,37 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 
 				currSeries.forEach(function (metric, index) {
-					if (metric.data.length === 0) return;
 					var tempColor = metric.color === null ? z(metric.name) : metric.color;
-					var downSampledMetric;
-					if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
+					if (metric.data.length !== 0) {
+						var downSampledMetric;
+						if (chartType === 'area') chartOpacity = ChartToolService.calculateGradientOpacity(index, currSeries.length);
 
-					var tempGraph, tempGraph2;
-					if (!metric.extraYAxis) {
-						tempGraph = graph;
-						tempGraph2 = graph2;
-					} else {
-						tempGraph = extraGraph[metric.extraYAxis];
-						tempGraph2 = extraGraph2[metric.extraYAxis];
+						var tempGraph, tempGraph2;
+						if (!metric.extraYAxis) {
+							tempGraph = graph;
+							tempGraph2 = graph2;
+						} else {
+							tempGraph = extraGraph[metric.extraYAxis];
+							tempGraph2 = extraGraph2[metric.extraYAxis];
+						}
+
+						ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
+						// redener brush line in a downsample manner
+						downSampledMetric = isChartDiscrete ? metric : ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
+						ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
+						ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					}
-
-					ChartElementService.renderGraph(mainChart, tempColor, metric, tempGraph, chartId, chartType, chartOpacity);
-					// redener brush line in a downsample manner
-					downSampledMetric = isChartDiscrete? metric: ChartToolService.downSampleASingleMetricsDataEveryTenPoints(metric, containerWidth);
-					ChartElementService.renderBrushGraph(context, tempColor, downSampledMetric, tempGraph2, chartType, chartOpacity);
-					ChartElementService.renderTooltip(tipItems, tempColor, metric.graphClassName);
 					// render annotations
-					if (!metric.flagSeries) return;
-					var flagSeries = metric.flagSeries.data;
-					flagSeries.forEach(function (d) {
-						ChartElementService.renderAnnotationsLabels(flagsG, labelTip, tempColor, metric.graphClassName, d);
-					});
+					if (metric.flagSeries) {
+						var flagSeries = metric.flagSeries.data;
+						flagSeries.forEach(function (d) {
+							ChartElementService.renderAnnotationsLabels(flags, tempColor, metric.graphClassName, d);
+						});
+						ChartElementService.bringMouseOverLabelToFront(flags, chartId);
+					}
 				});
 				maxScaleExtent = ChartToolService.setZoomExtent(series, zoom);
-				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
 			}
 
 			// Add the overlay element to the graph when mouse interaction takes place. This needs to be on top
@@ -742,7 +745,7 @@ angular.module('argus.directives.charts.lineChart', [])
 				}
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
-				ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+				ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
 				ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
 			}
 
@@ -788,7 +791,8 @@ angular.module('argus.directives.charts.lineChart', [])
 					ChartElementService.resizeAxis(allSize, xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, needToAdjustHeight, mainChart, chartOptions.xAxis, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 					ChartElementService.resizeGrid(allSize, xGrid, xGridG, yGrid, yGridG, needToAdjustHeight);
 
-					ChartElementService.updateAnnotations(series, scope.sources, x, flagsG, allSize.height);
+					ChartElementService.updateAnnotations(series, scope.sources, x, flags, allSize.height);
+					ChartElementService.bringMouseOverLabelToFront(flags, chartId);
 
 					if (tempX[0].getTime() === x2.domain()[0].getTime() &&
 						tempX[1].getTime() === x2.domain()[1].getTime()) {
@@ -888,9 +892,12 @@ angular.module('argus.directives.charts.lineChart', [])
 					} else if (series[i].noData) {
 						scope.noDataSeries.push(series[i]);
 						emptyReturn = true;
-					} else if (series[i].data.length === 0 ||
-								angular.equals(series[i].data, {})) {
-						hasNoData = true;
+					} else if (series[i].data.length === 0 || angular.equals(series[i].data, {})) {
+						if (!series[i].flagSeries) {
+							hasNoData = true;
+						} else {
+							tempSeries.push(series[i]);
+						}
 					} else {
 						// only keep the metric that's graphable
 						tempSeries.push(series[i]);
@@ -928,15 +935,14 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			//TODO: improve the resize efficiency if performance becomes an issue
 			element.on('$destroy', function(){
-				if(resizeJobs.length){
-					resizeJobs = [];
-					syncChartJobs = {};//this get cleared too
+				if(AllChartIds.length){
+					AllChartIds = [];
+					ChartToolService.destroySyncChartJobs(scope.dashboardId);//this get cleared too
 				}
 			});
 
-			resizeJobs.push({
-				chartID: chartId,
-				resize: resize
+			AllChartIds.push({
+				chartID: chartId
 			});
 
 			// watch changes from chart options modal to update graph
@@ -1039,6 +1045,15 @@ angular.module('argus.directives.charts.lineChart', [])
 					xGridG.call(xGrid);
 					xAxis2.scale(x2);
 					xAxisG2.call(xAxis2);
+					if (isSmallChart) {
+						xAxisG.call(xAxis)
+							.selectAll("text")
+							.attr("y", 5)
+							.attr("x", -9)
+							.attr("dy", ".35em")
+							.attr("transform", "rotate(-65)")
+							.style("text-anchor", "end");
+					}
 					// update main chart and brush graphs
 					if (ChartElementService.customizedChartType.includes(chartType)) {
 						ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
@@ -1067,9 +1082,8 @@ angular.module('argus.directives.charts.lineChart', [])
 				ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}]);
 			};
 
-			// remove annotation label tip when the user is leaving the page
-			scope.$on("$destroy", function() {
-				labelTip.destroy();
+			scope.$watch(function(){ return element.width(); }, function () {
+				resize();
 			});
 		}
 	};

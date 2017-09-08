@@ -41,9 +41,11 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 		};
 
 		$scope.fetchHistory = function() {
+			$scope.historyLoaded = false;
 			History.query({id: $scope.dashboardId}, function (history) {
 				$scope.jobHistoryError='';
 				$scope.history = history;
+				$scope.historyLoaded = true;
 			}, function (error) {
 				if(error.status==404){
 					$scope.jobHistoryError = 'No job history details found.';
@@ -55,6 +57,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 					$scope.jobHistoryError = error.statusText;
 					growl.error('Failed to get history for job "' + $scope.jobId + '"');
 				}
+				$scope.historyLoaded = true;
 			});
 		};
 
