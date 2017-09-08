@@ -17,21 +17,17 @@ import java.util.Properties;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
-import org.apache.http.MethodNotSupportedException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
+import org.elasticsearch.client.RestClientBuilder.RequestConfigCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -57,42 +54,82 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
+/**
+ * Implementation of the schema service using ElasticSearch.
+ *
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ */
 @Singleton
 public class ElasticSearchSchemaService extends AbstractSchemaService {
 	
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
-	private static final int INDEX_MAX_RESULT_WINDOW = 10000; 
+	private static final int INDEX_MAX_RESULT_WINDOW = 10000;
+	private static final int NUMBER_OF_REPLICAS = 2; 
 	
 	
 	private final ObjectMapper _mapper;
     private Logger _logger = LoggerFactory.getLogger(getClass());
-    private CloseableHttpClient _httpClient;
-    private String _esEndpoint;
     private final MonitorService _monitorService;
+    private final RestClient _esRestClient;
     
     @Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
 		
 		_monitorService = monitorService;
-		_esEndpoint = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue());
-		
-		int connCount = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_CONNECTION_COUNT.getName(),
-                Property.ELASTICSEARCH_CONNECTION_COUNT.getDefaultValue()));
-        int connTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT.getName(),
-                Property.ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT.getDefaultValue()));
-        int socketTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getName(),
-                Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
-        
 		_mapper = _createObjectMapper();
 		
-		try {
-			_httpClient = _getClient(_esEndpoint, connCount, connTimeout, socketTimeout);
-		} catch (MalformedURLException e) {
-			_logger.error("Error initializing ElasticSearch Http Client. SchemaService will not work.", e);
+		String[] nodes = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue()).split(",");
+		HttpHost[] httpHosts = new HttpHost[nodes.length];
+		
+		for(int i=0; i<nodes.length; i++) {
+			try {
+				URL url = new URL(nodes[i]);
+				httpHosts[i] = new HttpHost(url.getHost(), url.getPort());
+			} catch (MalformedURLException e) {
+				_logger.error("One or more ElasticSearch endpoints are malformed. "
+						+ "If you have configured only a single endpoint, then ESSchemaService will not function.", e);
+			}
 		}
+        
+        HttpClientConfigCallback clientConfigCallback = new RestClientBuilder.HttpClientConfigCallback() {
+			
+			@Override
+			public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+				try {
+					int connCount = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_CONNECTION_COUNT.getName(),
+			                Property.ELASTICSEARCH_CONNECTION_COUNT.getDefaultValue()));
+					PoolingNHttpClientConnectionManager connMgr = 
+							new PoolingNHttpClientConnectionManager(new org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor());
+					connMgr.setMaxTotal(connCount);
+					connMgr.setDefaultMaxPerRoute(connCount / httpHosts.length);
+					httpClientBuilder.setConnectionManager(connMgr);
+					return httpClientBuilder;
+				} catch(Exception e) {
+					throw new SystemException(e);
+				}
+			}
+		};
+		
+		RequestConfigCallback requestConfigCallback = new RestClientBuilder.RequestConfigCallback() {
+			
+			@Override
+			public Builder customizeRequestConfig(Builder requestConfigBuilder) {
+				int connTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT.getName(),
+		                Property.ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT.getDefaultValue()));
+		        int socketTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getName(),
+		                Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
+				requestConfigBuilder.setConnectTimeout(connTimeout).setSocketTimeout(socketTimeout);
+				return requestConfigBuilder;
+			}
+		};
+		
+		_esRestClient = RestClient.builder(httpHosts)
+								  .setHttpClientConfigCallback(clientConfigCallback)
+								  .setRequestConfigCallback(requestConfigCallback)
+								  .build();
 		
 		_createIndexIfNotExists();
 	}
@@ -101,13 +138,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	@Override
 	public void dispose() {
 		super.dispose();
-        for (CloseableHttpClient client : new CloseableHttpClient[] { _httpClient }) {
-            try {
-                client.close();
-            } catch (Exception ex) {
-                _logger.warn("ElasticSearch HTTP client failed to shutdown properly.", ex);
-            }
-        }
+		try {
+			_esRestClient.close();
+			_logger.info("Shutdown of ElasticSearch RESTClient complete");
+		} catch (IOException e) {
+			_logger.warn("ElasticSearch RestClient failed to shutdown properly.", e);
+		}
 	}
 
 	
@@ -145,35 +181,38 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
 		requireNotDisposed();
         SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
+        long size = (long) query.getLimit() * query.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
         
         boolean scroll = false;
-		StringBuilder sb = new StringBuilder(_esEndpoint).append("/")
-														  .append(INDEX_NAME)
-														  .append("/")
-														  .append(TYPE_NAME)
-														  .append("/")
-														  .append("_search");
+		StringBuilder sb = new StringBuilder().append("/")
+											  .append(INDEX_NAME)
+											  .append("/")
+											  .append(TYPE_NAME)
+											  .append("/")
+											  .append("_search");
 		
-		int from = 0, size;
+		int from = 0, scrollSize;
 		if(query.getLimit() * query.getPage() > 10000) {
 			sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
 			scroll = true;
-			long total = query.getLimit() * query.getPage();
-			size = (int) (total / (total / 10000 + 1));
+			int total = query.getLimit() * query.getPage();
+			scrollSize = (int) (total / (total / 10000 + 1));
 		} else {
 			from = query.getLimit() * (query.getPage() - 1);
-			size = query.getLimit();
+			scrollSize = query.getLimit();
 		}
 		
 		String requestUrl = sb.toString();
-		String queryJson = _constructTermQuery(query, from, size);
+		String queryJson = _constructTermQuery(query, from, scrollSize);
 		
 		try {
-			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(queryJson));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 			
 			if(scroll) {
-				requestUrl = new StringBuilder(_esEndpoint).append("/").append("_search").append("/").append("scroll").toString();
+				requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
 				List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
 				
 				while(true) {
@@ -182,11 +221,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					Map<String, String> requestBody = new HashMap<>();
 					requestBody.put("scroll_id", scrollID);
 					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
-					response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+					
+					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+					
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 					records.addAll(list.getRecords());
 					
-					if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < size) {
+					if(records.size() >= query.getLimit() * query.getPage() || list.getRecords().size() < scrollSize) {
 						break;
 					}
 				}
@@ -204,6 +245,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			
 		} catch (UnsupportedEncodingException | JsonProcessingException e) {
 			throw new SystemException("Search failed.", e);
+		} catch (IOException e) {
+			throw new SystemException(e);
 		}
 	}
 
@@ -212,19 +255,22 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
+		long size = (long) query.getLimit() * query.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
+        
 		
-		String requestUrl = new StringBuilder(_esEndpoint).append("/")
-														  .append(INDEX_NAME)
-														  .append("/")
-														  .append(TYPE_NAME)
-														  .append("/")
-														  .append("_search")
-														  .toString();
+		String requestUrl = new StringBuilder().append("/")
+											   .append(INDEX_NAME)
+											   .append("/")
+											   .append(TYPE_NAME)
+											   .append("/")
+											   .append("_search")
+											   .toString();
 		
 		String queryJson = _constructTermAggregationQuery(query, type);
-		
 		try {
-			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(queryJson));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
 												toEntity(str, new TypeReference<List<String>>() {}), type);
@@ -239,105 +285,189 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			} else {
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
-		} catch (UnsupportedEncodingException e) {
-			throw new SystemException("Search failed.", e);
+		} catch (IOException e) {
+			throw new SystemException(e);
 		}
 	}
 	
 	@Override
 	public List<MetricSchemaRecord> keywordSearch(KeywordQuery kq) {
 		requireNotDisposed();
-        SystemAssert.requireArgument(kq != null, "KeywordQuery cannot be null.");
+        SystemAssert.requireArgument(kq != null, "Query cannot be null.");
+        SystemAssert.requireArgument(kq.getQuery() != null || kq.getType() != null, "Either the query string or the type must not be null.");
         
-		StringBuilder sb = new StringBuilder(_esEndpoint).append("/")
-				  										  .append(INDEX_NAME)
-														  .append("/")
-														  .append(TYPE_NAME)
-														  .append("/")
-														  .append("_search");
-		
-		//This is a hack to support native multi_match elastic search queries via Argus interface. 
-		if(kq.isNative()) {
-			SystemAssert.requireArgument(kq.getQuery().contains("multi_match"), "Only multi_match native elasticsearch queries are allowed.");
-			try {
-				HttpResponse response = executeHttpRequest(HttpMethod.POST, sb.toString(), new StringEntity(kq.getQuery()));
-				return toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {}).getRecords();
-			} catch (UnsupportedEncodingException e) {
-				throw new SystemException("Search failed.", e);
-			}
-		}
-		
-		boolean scroll = false;
-		int from = 0, size;
-		if(kq.getLimit() * kq.getPage() > 10000) {
-			sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
-			scroll = true;
-			long total = kq.getLimit() * kq.getPage();
-			size = (int) (total / (total / 10000 + 1));
-		} else {
-			from = kq.getLimit() * (kq.getPage() - 1);
-			size = kq.getLimit();
-		}
-		
-		String requestUrl = sb.toString();
-		String queryJson = _constructMultiMatchQuery(kq.getQuery(), from, size);
+        long size = (long) kq.getLimit() * kq.getPage();
+        SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+        		"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
+        
+        
+		StringBuilder sb = new StringBuilder().append("/")
+				  							  .append(INDEX_NAME)
+											  .append("/")
+											  .append(TYPE_NAME)
+											  .append("/")
+											  .append("_search");
 		try {
-			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(queryJson));
-			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 			
-			if(scroll) {
-				requestUrl = new StringBuilder(_esEndpoint).append("/").append("_search").append("/").append("scroll").toString();
-				List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+			if(kq.getQuery() != null) {
 				
-				while(true) {
-					String scrollID = list.getScrollID();
-					
-					Map<String, String> requestBody = new HashMap<>();
-					requestBody.put("scroll_id", scrollID);
-					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
-					response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
-					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
-					records.addAll(list.getRecords());
-					
-					if(records.size() >= kq.getLimit() * kq.getPage() || list.getRecords().size() < size) {
-						break;
-					}
+				int from = 0, scrollSize = 0;
+				boolean scroll = false;;
+				if(kq.getLimit() * kq.getPage() > 10000) {
+					sb.append("?scroll=").append(KEEP_SCROLL_CONTEXT_OPEN_FOR);
+					scroll = true;
+					int total = kq.getLimit() * kq.getPage();
+					scrollSize = (int) (total / (total / 10000 + 1));
+				} else {
+					from = kq.getLimit() * (kq.getPage() - 1);
+					scrollSize = kq.getLimit();
 				}
+				
+				List<String> tokens = _analyzedTokens(kq.getQuery());
+				String queryJson = _constructQueryStringQuery(tokens, from, scrollSize);
+				String requestUrl = sb.toString();
+				
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				String strResponse = extractResponse(response);
+				MetricSchemaRecordList list = toEntity(strResponse, new TypeReference<MetricSchemaRecordList>() {});
+				
+				if(scroll) {
+					requestUrl = new StringBuilder().append("/").append("_search").append("/").append("scroll").toString();
+					List<MetricSchemaRecord> records = new LinkedList<>(list.getRecords());
+					
+					while(true) {
+						Map<String, String> requestBody = new HashMap<>();
+						requestBody.put("scroll_id", list.getScrollID());
+						requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
+						
+						response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), 
+								new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+						
+						list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
+						
+						records.addAll(list.getRecords());
+						
+						if(records.size() >= kq.getLimit() * kq.getPage() || list.getRecords().size() < scrollSize) {
+							break;
+						}
+					}
+					
+					int fromIndex = kq.getLimit() * (kq.getPage() - 1);
+					if(records.size() <= fromIndex) {
+						return Collections.emptyList();
+					}
+					
+					return records.subList(fromIndex, records.size());
+					
+				} else {
+					return list.getRecords();
+				}
+				
+				
+			} else {
+				Map<RecordType, List<String>> tokensMap = new HashMap<>();
+				
+				List<String> tokens = _analyzedTokens(kq.getScope());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.SCOPE, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getMetric());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.METRIC, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getTagKey());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.TAGK, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getTagValue());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.TAGV, tokens);
+				}
+				
+				tokens = _analyzedTokens(kq.getNamespace());
+				if(!tokens.isEmpty()) {
+					tokensMap.put(RecordType.NAMESPACE, tokens);
+				}
+				
+				String queryJson = _constructQueryStringQuery(kq, tokensMap);
+				String requestUrl = sb.toString();
+				Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+				String strResponse = extractResponse(response);
+
+				List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
+						toEntity(strResponse, new TypeReference<List<String>>() {}), kq.getType());
 				
 				int fromIndex = kq.getLimit() * (kq.getPage() - 1);
 				if(records.size() <= fromIndex) {
 					return Collections.emptyList();
 				}
 				
-				return records.subList(fromIndex, records.size());
+				if(records.size() < kq.getLimit() * kq.getPage()) {
+					return records.subList(fromIndex, records.size());
+				} else {
+					return records.subList(fromIndex, kq.getLimit() * kq.getPage());
+				}
 				
-			} else {
-				return list.getRecords();
 			}
-		} catch (UnsupportedEncodingException | JsonProcessingException e) {
-			throw new SystemException("Search failed.", e);
+			
+		} catch (IOException e) {
+			throw new SystemException(e);
 		}
 	}
 	
 	
+	private List<String> _analyzedTokens(String query) {
+		
+		if(!SchemaService.containsFilter(query)) {
+			return Collections.emptyList();
+		}
+		
+		List<String> tokens = new ArrayList<>();
+		
+		String requestUrl = new StringBuilder("/").append(INDEX_NAME).append("/_analyze").toString();
+		
+		String requestBody = "{\"analyzer\" : \"metadata_analyzer\", \"text\": \"" + query + "\" }";
+		
+		try {
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+			String strResponse = extractResponse(response);
+			JsonNode tokensNode = _mapper.readTree(strResponse).get("tokens");
+			if(tokensNode.isArray()) {
+				for(JsonNode tokenNode : tokensNode) {
+					tokens.add(tokenNode.get("token").asText());
+				}
+			}
+			
+			return tokens;
+		} catch (IOException e) {
+			throw new SystemException(e);
+		}
+	}
+
+
 	private void _upsert(List<MetricSchemaRecord> records) {
 		
-		String requestUrl = new StringBuilder(_esEndpoint).append("/")
-														  .append(INDEX_NAME)
-														  .append("/")
-														  .append(TYPE_NAME)
-														  .append("/")
-														  .append("_bulk")
-														  .toString();
+		String requestUrl = new StringBuilder().append("/")
+											   .append(INDEX_NAME)
+											   .append("/")
+											   .append(TYPE_NAME)
+											   .append("/")
+											   .append("_bulk")
+											   .toString();
 		
 		String strResponse = "";
 		try {
 			String requestBody = _mapper.writeValueAsString(new MetricSchemaRecordList(records));
 			
-			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, new StringEntity(requestBody));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
 			strResponse = extractResponse(response);
 		} catch (JsonProcessingException | UnsupportedEncodingException e) {
 			throw new SystemException("Failed to parse metrics when indexing.", e);
+		} catch (IOException e) {
+			throw new SystemException(e);
 		}
 		
 		try {
@@ -358,12 +488,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 	
-	
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode queryNode = _constructQueryNode(query, mapper);
 		
-		int size = query.getLimit() * query.getPage();
+		long size = query.getLimit() * query.getPage();
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
+				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
+		
 		ObjectNode aggsNode = _constructAggsNode(type, Math.max(size, 10000), mapper);
 		
 		ObjectNode rootNode = mapper.createObjectNode();
@@ -373,7 +505,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		return rootNode.toString();
 	}
-	
 	
 	private String _constructTermQuery(MetricSchemaRecordQuery query, int from, int size) {
 		ObjectMapper mapper = new ObjectMapper();
@@ -387,35 +518,81 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		return rootNode.toString();
 	}
-
 	
-	private String _constructMultiMatchQuery(String query, int from, int size) {
+	private ObjectNode _constructSimpleQueryStringNode(List<String> tokens, RecordType... types) {
+		
+		if(tokens.isEmpty()) {
+			return null;
+		}
+		
 		ObjectMapper mapper = new ObjectMapper();
 		
-		ObjectNode multiMatchNode = mapper.createObjectNode();
-		multiMatchNode.put("query", query);
-		multiMatchNode.put("type", "best_fields");
-		multiMatchNode.put("fields", mapper.createArrayNode().add("scope").add("metric").add("tagKey").add("tagValue").add("namespace"));
-		multiMatchNode.put("operator", "and");
+		StringBuilder queryString = new StringBuilder();
+		for(String token : tokens) {
+			queryString.append('+').append(token).append(' ');
+		}
+		queryString.replace(queryString.length() - 1, queryString.length(), "*");
 		
-		ObjectNode queryNode = mapper.createObjectNode();
-		queryNode.put("multi_match", multiMatchNode);
+		ObjectNode node = mapper.createObjectNode();
+		ArrayNode fieldsNode = mapper.createArrayNode();
+		for(RecordType type : types) {
+			fieldsNode.add(type.getName());
+		}
+		node.put("fields", fieldsNode);
+		node.put("query", queryString.toString());
+		
+		ObjectNode simpleQueryStringNode = mapper.createObjectNode();
+		simpleQueryStringNode.put("simple_query_string", node);
+		
+		return simpleQueryStringNode;
+	}
+	
+	private String _constructQueryStringQuery(List<String> tokens, int from, int size) {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		ObjectNode simpleQueryStringNode = _constructSimpleQueryStringNode(tokens, RecordType.values());
 		
 		ObjectNode rootNode = mapper.createObjectNode();
-		rootNode.put("query", queryNode);
+		rootNode.put("query", simpleQueryStringNode);
 		rootNode.put("from", from);
 		rootNode.put("size", size);
 		
 		return rootNode.toString();
 	}
 	
+	private String _constructQueryStringQuery(KeywordQuery kq, Map<RecordType, List<String>> tokensMap) {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		ArrayNode mustNodes = mapper.createArrayNode();
+		for(Map.Entry<RecordType, List<String>> entry : tokensMap.entrySet()) {
+			mustNodes.add(_constructSimpleQueryStringNode(entry.getValue(), entry.getKey()));
+		}
+		
+		ObjectNode mustNode = mapper.createObjectNode();
+		mustNode.put("must", mustNodes);
+		
+		ObjectNode boolNode = mapper.createObjectNode();
+		boolNode.put("bool", mustNode);
+		
+		ObjectNode rootNode = mapper.createObjectNode();
+		rootNode.put("query", boolNode);
+		rootNode.put("size", 0);
+		
+		long size = kq.getLimit() * kq.getPage();
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
+				"(limit * page) must be greater than 0 and less than Integer.MAX_VALUE");
+		rootNode.put("aggs", _constructAggsNode(kq.getType(), Math.max(size, 10000), mapper));
+		
+		return rootNode.toString();
+		
+	}
 	
 	private ObjectNode _constructQueryNode(MetricSchemaRecordQuery query, ObjectMapper mapper) {
 		ArrayNode shouldNodes = mapper.createArrayNode();
 		if(SchemaService.containsFilter(query.getMetric())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("metric.raw", SchemaService.convertToRegex(query.getMetric()));
+			regexpNode.put(RecordType.METRIC.getName() + ".raw", SchemaService.convertToRegex(query.getMetric()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -423,7 +600,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getScope())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("scope.raw", SchemaService.convertToRegex(query.getScope()));
+			regexpNode.put(RecordType.SCOPE.getName() + ".raw", SchemaService.convertToRegex(query.getScope()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -431,7 +608,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getTagKey())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("tagKey.raw", SchemaService.convertToRegex(query.getTagKey()));
+			regexpNode.put(RecordType.TAGK.getName() + ".raw", SchemaService.convertToRegex(query.getTagKey()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -439,7 +616,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getTagValue())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("tagValue.raw", SchemaService.convertToRegex(query.getTagValue()));
+			regexpNode.put(RecordType.TAGV.getName() + ".raw", SchemaService.convertToRegex(query.getTagValue()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -447,7 +624,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		if(SchemaService.containsFilter(query.getNamespace())) {
 			ObjectNode shouldNode = mapper.createObjectNode();
 			ObjectNode regexpNode = mapper.createObjectNode();
-			regexpNode.put("namespace.raw", SchemaService.convertToRegex(query.getNamespace()));
+			regexpNode.put(RecordType.NAMESPACE.getName() + ".raw", SchemaService.convertToRegex(query.getNamespace()));
 			shouldNode.put("regexp", regexpNode);
 			shouldNodes.add(shouldNode);
 		}
@@ -466,6 +643,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		ObjectNode termsNode = mapper.createObjectNode();
 		termsNode.put("field", type.getName() + ".raw");
+		termsNode.put("order", mapper.createObjectNode().put("_term", "asc"));
 		termsNode.put("size", limit);
 		
 		ObjectNode distinctValuesNode = mapper.createObjectNode();
@@ -490,7 +668,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	/** Helper to process the response. 
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
 	 */
-    private String extractResponse(HttpResponse response) {
+    private String extractResponse(Response response) {
     	requireArgument(response != null, "HttpResponse object cannot be null.");
     	
         int status = response.getStatusLine().getStatusCode();
@@ -503,8 +681,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
         }
     }
     
-    
-    private String extractStringResponse(HttpResponse content) {
+    private String extractStringResponse(Response content) {
         requireArgument(content != null, "Response content is null.");
 
         String result;
@@ -533,7 +710,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
             }
         }
     }
-    
     
 	private ObjectMapper _createObjectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
@@ -568,6 +744,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	
     	ObjectNode indexNode = mapper.createObjectNode();
     	indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
+    	indexNode.put("number_of_replicas", NUMBER_OF_REPLICAS);
     	
     	ObjectNode settingsNode = mapper.createObjectNode();
     	settingsNode.put("analysis", analysisNode);
@@ -582,11 +759,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	ObjectMapper mapper = new ObjectMapper();
     	
     	ObjectNode propertiesNode = mapper.createObjectNode();
-    	propertiesNode.put("scope", _createFieldNode());
-    	propertiesNode.put("metric", _createFieldNode());
-    	propertiesNode.put("tagKey", _createFieldNode());
-    	propertiesNode.put("tagValue", _createFieldNode());
-    	propertiesNode.put("namespace", _createFieldNode());
+    	propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode());
     	
     	ObjectNode typeNode = mapper.createObjectNode();
     	typeNode.put("properties", propertiesNode);
@@ -615,10 +792,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     
 	private void _createIndexIfNotExists() {
 		try {
-			HttpResponse response = executeHttpRequest(HttpMethod.HEAD, _esEndpoint + "/" + INDEX_NAME, null);
+			Response response = _esRestClient.performRequest(HttpMethod.HEAD.getName(), "/" + INDEX_NAME);
 			boolean indexExists = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK ? true : false;
 			
 			if(!indexExists) {
+				_logger.info("Index [" + INDEX_NAME + "] does not exist. Will create one.");
 				ObjectMapper mapper = new ObjectMapper();
 				
 				ObjectNode rootNode = mapper.createObjectNode();
@@ -626,88 +804,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				rootNode.put("mappings", _createMappingsNode());
 				
 				String settingsAndMappingsJson = rootNode.toString();
-				String requestUrl = new StringBuilder(_esEndpoint).append("/").append(INDEX_NAME).toString();
-				response = executeHttpRequest(HttpMethod.PUT, requestUrl, new StringEntity(settingsAndMappingsJson));
+				String requestUrl = new StringBuilder().append("/").append(INDEX_NAME).toString();
+				
+				response = _esRestClient.performRequest(HttpMethod.PUT.getName(), requestUrl, Collections.emptyMap(), new StringEntity(settingsAndMappingsJson));
 				extractResponse(response);
 			}
 		} catch (Exception e) {
-			_logger.error("Failed to check/create elastic search index. ElasticSearchSchemaService may not function.", e);
+			_logger.error("Failed to check/create elasticsearch index. ElasticSearchSchemaService may not function.", e);
 		}
 	}
-	
-	
-	/* Execute a request given by type requestType. */
-    private HttpResponse executeHttpRequest(HttpMethod requestType, String url, StringEntity entity) {
-        HttpResponse httpResponse = null;
-
-        if (entity != null) {
-            entity.setContentType("application/json");
-        }
-        try {
-            switch (requestType) {
-                case POST:
-
-                    HttpPost post = new HttpPost(url);
-
-                    post.setEntity(entity);
-                    httpResponse = _httpClient.execute(post);
-                    break;
-                case GET:
-
-                    HttpGet httpGet = new HttpGet(url);
-
-                    httpResponse = _httpClient.execute(httpGet);
-                    break;
-                case DELETE:
-
-                    HttpDelete httpDelete = new HttpDelete(url);
-
-                    httpResponse = _httpClient.execute(httpDelete);
-                    break;
-                case PUT:
-
-                    HttpPut httpPut = new HttpPut(url);
-
-                    httpPut.setEntity(entity);
-                    httpResponse = _httpClient.execute(httpPut);
-                    break;
-                case HEAD:
-                	HttpHead httpHead = new HttpHead(url);
-                	
-                	httpResponse = _httpClient.execute(httpHead);
-                	break;
-                default:
-                    throw new MethodNotSupportedException(requestType.toString());
-            }
-        } catch (MethodNotSupportedException | IOException ex) {
-            throw new SystemException(ex);
-        }
-        
-        return httpResponse;
-    }
-	
-    
-	/* Helper to create http clients. */
-    private CloseableHttpClient _getClient(String endpoint, int connCount, int connTimeout, int socketTimeout) throws MalformedURLException {
-        URL url = new URL(endpoint);
-        int port = url.getPort();
-
-        requireArgument(port != -1, "Endpoint must include explicit port.");
-
-        PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
-
-        connMgr.setMaxTotal(connCount);
-        connMgr.setDefaultMaxPerRoute(connCount);
-
-        String route = endpoint.substring(0, endpoint.lastIndexOf(":"));
-        HttpHost host = new HttpHost(route, port);
-        RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
-            socketTimeout).build();
-
-        connMgr.setMaxPerRoute(new HttpRoute(host), connCount / 2);
-        return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
-    }
-	
     
     /**
      * Enumeration of supported HTTP methods.
@@ -717,15 +822,25 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     private enum HttpMethod {
 
         /** POST operation. */
-        POST,
-        /** GET operation. */
-        GET,
-        /** DELETE operation. */
-        DELETE,
+        POST("POST"),
         /** PUT operation. */
-        PUT,
+        PUT("PUT"),
         /** HEAD operation. */
-        HEAD;
+        HEAD("HEAD");
+    	
+    	private String name;
+    	
+    	HttpMethod(String name) {
+    		this.setName(name);
+    	}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
     }
     
 	
@@ -736,7 +851,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
      */
     public enum Property {
         
-        ELASTICSEARCH_ENDPOINT("service.property.schema.elasticsearch.endpoint", "http://localhost:9200"),
+        ELASTICSEARCH_ENDPOINT("service.property.schema.elasticsearch.endpoint", "http://localhost:9200,http://localhost:9201"),
     	/** The TSDB connection timeout. */
     	ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT("service.property.schema.elasticsearch.endpoint.connection.timeout", "10000"),
         /** The TSDB socket connection timeout. */

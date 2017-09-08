@@ -7,7 +7,8 @@ angular.module('argus.directives.charts.chart', [])
 		var chartNameIndex = 1;
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
-			$('#' + newChartId).empty();
+			angular.element('#' + newChartId).empty();
+			angular.element('.d3-tip').remove();
 
 			// create a new scope to pass to compiled line-chart directive
 			var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
@@ -187,21 +188,16 @@ angular.module('argus.directives.charts.chart', [])
 
 			// get start and end time for the charts as well as whether GMT/UTC scale is used or not
 			var dateConfig = {};
-			var GMTon = false;
 			for (var i = 0; i < controls.length; i++) {
 				if (controls[i].type === 'agDate') {
 					var timeValue = controls[i].value;
 					if (controls[i].name === 'start') {
 						dateConfig.startTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					} else if (controls[i].name === 'end'){
 						dateConfig.endTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					}
 				}
 			}
-			dateConfig.gmt = GMTon;
-
 			// process data for: metrics, annotations, options
 			var processedData = ChartDataProcessingService.processMetricData(data, controls);
 

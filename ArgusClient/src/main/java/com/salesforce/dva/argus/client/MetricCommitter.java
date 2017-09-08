@@ -81,7 +81,7 @@ public class MetricCommitter extends AbstractCommitter {
                     monitorService.modifyCounter(Counter.COMMIT_CLIENT_METRIC_WRITES, dequeuedMetrics.size(), new HashMap<String,String>());
                 }
                 if(noOfDatapointsCommitted>0){
-                	LOGGER.info(MessageFormat.format("Committed {0} datapoints.", noOfDatapointsCommitted));
+                	LOGGER.debug(MessageFormat.format("Committed {0} datapoints.", noOfDatapointsCommitted));
                     jobCounter.addAndGet(noOfDatapointsCommitted);
                     monitorService.modifyCounter(Counter.COMMIT_CLIENT_DATAPOINT_WRITES, noOfDatapointsCommitted, new HashMap<String,String>());
                 }
