@@ -61,7 +61,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				};
 				// read menuOption from local storage; use default one if there is none
 				$scope.menuOption = angular.copy(Storage.get('menuOption_' + $scope.dashboardId + '_' + $scope.chartConfig.chartId));
-				if ($scope.menuOption === null) {
+				if ($scope.menuOption === null || $scope.menuOption === undefined) {
 					$scope.menuOption = angular.copy(ChartToolService.defaultMenuOption);
 					$scope.updateStorage();
 				}
@@ -91,6 +91,10 @@ angular.module('argus.directives.charts.heatmap', [])
 
 				if ($scope.menuOption.tileColor === undefined){
 					$scope.menuOption.tileColor = ChartToolService.defaultTileColor;
+				}
+
+				if ($scope.menuOption.localTimezone === undefined) {
+					$scope.menuOption.localTimezone = false;
 				}
 
 				var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
@@ -271,7 +275,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				var chartId = scope.chartConfig.chartId;
 				var chartType = scope.chartConfig.chartType;
 				var series = scope.series;
-				var GMTon = scope.dateConfig.gmt;
+				var GMTon = !scope.menuOption.localTimezone;
 				var chartOptions = scope.chartConfig;
 				var extraYAxisSet = scope.extraYAxisSet;
 
@@ -374,7 +378,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				function setUpGraphs() {
 					if (isDataStacked) stack = d3.stack();
 
-					var xy = ChartToolService.getXandY(scope.dateConfig, allSize, yScaleType, yScaleConfigValue);
+					var xy = ChartToolService.getXandY(scope.dateConfig, GMTon, allSize, yScaleType, yScaleConfigValue);
 					x = xy.x;
 					y = xy.y;
 					yScalePlain = xy.yScalePlain;
@@ -1140,6 +1144,49 @@ angular.module('argus.directives.charts.heatmap', [])
 							redrawHeatmap();
 						}
 					}, inputTimeout);
+				}, true);
+
+				scope.$watch('menuOption.localTimezone', function (newValue, oldValue) {
+					if (!scope.hideMenu && newValue !== oldValue) {
+						// update x axis
+						if (newValue) {
+							GMTon = false;
+							x = d3.scaleTime().domain(x.domain()).range(x.range());
+						} else {
+							GMTon = true;
+							x = d3.scaleUtc().domain(x.domain()).range(x.range());
+						}
+						// update axis and grid
+						xAxis.scale(x);
+						xAxisG.call(xAxis);
+						xGrid.scale(x);
+						xGridG.call(xGrid);
+						if (isSmallChart) {
+							xAxisG.call(xAxis)
+								.selectAll("text")
+								.attr("y", 5)
+								.attr("x", -9)
+								.attr("dy", ".35em")
+								.attr("transform", "rotate(-65)")
+								.style("text-anchor", "end");
+						}
+						// update main chart and brush graphs
+						if (ChartElementService.customizedChartType.includes(chartType)) {
+							ChartElementService.updateCustomizedChartTypeGraphX(mainChart, graph, x, chartType);
+							for (var iSet of extraYAxisSet) {
+								ChartElementService.updateCustomizedChartTypeGraphX(mainChart, extraGraph[iSet], x, chartType);
+							}
+						} else {
+							ChartElementService.updateGraphsX(graph, x, timestampSelector);
+							for (var iSet of extraYAxisSet) {
+								ChartElementService.updateGraphsX(extraGraph[iSet], x, timestampSelector);
+							}
+
+						}
+						// update date formatter
+						dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
+						scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+					}
 				}, true);
 
 				scope.$watch(function(){return element.width();}, function () {
