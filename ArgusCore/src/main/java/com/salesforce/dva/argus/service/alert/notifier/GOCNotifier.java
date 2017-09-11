@@ -136,7 +136,7 @@ public class GOCNotifier extends AuditNotifier {
 
 				className = _truncateIfSizeGreaterThan(className, 50);
 				elementName = _truncateIfSizeGreaterThan(elementName, 100);
-				eventName = _truncateIfSizeGreaterThan(eventName, 50);
+				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
 				withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
