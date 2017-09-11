@@ -391,11 +391,13 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                             String scope = query.getScope();
                             String metric = query.getMetric();
                             Long timestamp = existing.getTimestamp();
-                            Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
+                            if(timestamp > query.getStartTimestamp() && timestamp <= query.getEndTimestamp()) {
+                            	Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
 
-                            updated.setFields(existing.getFields());
-                            updated.setTags(query.getTags());
-                            annotations.add(updated);
+                                updated.setFields(existing.getFields());
+                                updated.setTags(query.getTags());
+                                annotations.add(updated);
+                            }
                         }
                     }
                 }
