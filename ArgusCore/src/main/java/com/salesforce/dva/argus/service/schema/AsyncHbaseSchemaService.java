@@ -345,7 +345,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     	
     	_logger.info("Using FastScan. Will skip rows while scanning.");
     	
-    	final List<MetricSchemaRecord> records = new ArrayList<>();
+    	final Set<MetricSchemaRecord> records = new TreeSet<>();
     	
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
@@ -390,7 +390,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	rows = _getSingleRow(newScanStart, end, filterList, metadata.tableName);
         }
         
-    	return records;
+    	return new ArrayList<>(records);
     }
     
 
