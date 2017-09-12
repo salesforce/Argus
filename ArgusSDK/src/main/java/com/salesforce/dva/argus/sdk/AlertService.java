@@ -93,6 +93,14 @@ public class AlertService extends EndpointService {
         assertValidResponse(response, requestUrl);
         return fromJson(response.getResult(), new TypeReference<List<Alert>>() { });
     }
+    
+    public List<Alert> getAlertsMeta(boolean includeSharedAlerts) throws IOException, TokenExpiredException {
+    	String requestUrl = RESOURCE + "/meta?shared=" + includeSharedAlerts;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), new TypeReference<List<Alert>>() { });
+    }
 
     /**
      * Returns the alert for the given ID.

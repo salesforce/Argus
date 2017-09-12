@@ -85,6 +85,21 @@ public class DashboardServiceTest extends AbstractTest {
             assertEquals(expected, result);
         }
     }
+    
+    @Test
+    public void testGetDashboardsMeta() throws IOException, TokenExpiredException {
+    	try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
+            DashboardService batchService = argusService.getDashboardService();
+            List<Dashboard> result = batchService.getDashboardsMeta(false);
+            
+            Dashboard persistedDashboard = _constructPersistedDashboard();
+            persistedDashboard.setContent(null);
+            persistedDashboard.setShared(false);
+            List<Dashboard> expected = Arrays.asList(new Dashboard[] { persistedDashboard });
+
+            assertEquals(expected, result);
+        }
+    }
 
     @Test
     public void testUpdateDashboard() throws IOException, TokenExpiredException {
