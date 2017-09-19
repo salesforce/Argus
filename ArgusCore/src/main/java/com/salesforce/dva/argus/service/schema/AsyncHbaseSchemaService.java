@@ -375,8 +375,10 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	String splits[] = rowKey.split(String.valueOf(ROWKEY_SEPARATOR));
         	String record = (RecordType.METRIC.equals(type) && metadata.tableName.equals(METRIC_SCHEMA_TABLENAME)) || 
         			(RecordType.SCOPE.equals(type) && metadata.tableName.equals(SCOPE_SCHEMA_TABLENAME)) ? splits[0] : splits[1];
-        	
-        	MetricSchemaRecord schemaRecord = _constructMetricSchemaRecord(rowKey, metadata.tableName);
+        
+		MetricSchemaRecord schemaRecord = RecordType.METRIC.equals(type) ? 
+				new MetricSchemaRecord(null, record) : new MetricSchemaRecord(record, null);	
+        	//MetricSchemaRecord schemaRecord = _constructMetricSchemaRecord(rowKey, metadata.tableName);
         	records.add(schemaRecord);
         	if(records.size() == query.getLimit()) {
     			break;
