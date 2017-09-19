@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.salesforce.dva.argus.system.SystemAssert;
 import java.text.MessageFormat;
 
 /**
@@ -120,8 +119,7 @@ public class MetricSchemaRecord {
      *
      * @param  scope  The scope.  Cannot be null or empty.
      */
-    public void setScope(String scope) {
-        SystemAssert.requireArgument(scope != null && !scope.isEmpty(), "Scope cannot be null or empty");
+    public void setScope(String scope) { 
         this.scope = scope;
     }
 
@@ -139,8 +137,7 @@ public class MetricSchemaRecord {
      *
      * @param  metric  The metric name.  Cannot be null or empty.
      */
-    public void setMetric(String metric) {
-        SystemAssert.requireArgument(metric != null && !metric.isEmpty(), "Metric cannot be null or empty");
+    public void setMetric(String metric) { 
         this.metric = metric;
     }
 
