@@ -378,7 +378,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         
 		MetricSchemaRecord schemaRecord = RecordType.METRIC.equals(type) ? 
 				new MetricSchemaRecord(null, record) : new MetricSchemaRecord(record, null);	
-        	//MetricSchemaRecord schemaRecord = _constructMetricSchemaRecord(rowKey, metadata.tableName);
         	records.add(schemaRecord);
         	if(records.size() == query.getLimit()) {
     			break;
