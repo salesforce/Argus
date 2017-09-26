@@ -59,7 +59,6 @@ import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
 import com.salesforce.dva.argus.service.users.DefaultUserService;
-import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
 
 import org.slf4j.LoggerFactory;
@@ -233,6 +232,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
+        bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -248,7 +248,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultBatchService.class, BatchService.class);
         bindConcreteClass(DefaultGlobalInterlockService.class, GlobalInterlockService.class);
         bindConcreteClass(DefaultMonitorService.class, MonitorService.class);
-        bindConcreteClass(DefaultWardenService.class, WardenService.class);
         bindConcreteClass(DefaultAnnotationService.class, AnnotationService.class);
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
@@ -294,6 +293,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }
