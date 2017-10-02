@@ -40,6 +40,7 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.stat.descriptive.summary.Sum;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -161,7 +162,7 @@ public class DownsampleTransform implements Transform {
         	return downsampleDatapoints;
         }
         
-        Long windowStart = downsamplerTimestamp(sortedDatapoints.firstKey(),windowSize);
+        Long windowStart = getWindowStartTime(sortedDatapoints.firstKey(),windowUnit,windowSize);
 
         List<Double> values = new ArrayList<>();
         for (Map.Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
@@ -175,7 +176,7 @@ public class DownsampleTransform implements Transform {
                     Double fillingValue = downsamplerReducer(values, type);
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
-                    windowStart = downsamplerTimestamp(timestamp, windowSize);
+                    windowStart = getWindowStartTime(windowStart, timestamp, windowSize); 
                 }
                 values.add(value);
             }
@@ -187,6 +188,27 @@ public class DownsampleTransform implements Transform {
         return downsampleDatapoints;
     }
 
+    private long getWindowStartTime(long previousStartTime, long firstDatapoint, long windowSize){
+    	long result=previousStartTime;
+    	while(firstDatapoint>=(result+windowSize)){
+    		result+=windowSize;
+    	}
+    	return result;
+    }
+    
+    private long getWindowStartTime(long time, String windowUnit, long windowSize){
+    	switch (windowUnit) {
+		case "m":
+			return truncateTimeField(time, Calendar.SECOND);
+		case "h":
+			return truncateTimeField(time, Calendar.MINUTE);
+		case "d":
+			return truncateTimeField(time, Calendar.HOUR_OF_DAY);
+		default:
+			return truncateTimeField(time, Calendar.MILLISECOND);
+		}
+    }
+    
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.DOWNSAMPLE.name();
@@ -207,6 +229,25 @@ public class DownsampleTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Downsample doesn't need list of list!");
+    }
+    
+    private long truncateTimeField(long time, int field){
+    	long result, secondOffset=60, minuteOffset=60*secondOffset, HourOffset=24*minuteOffset;
+    	
+    	result=time/1000;
+    	switch(field){
+    	case Calendar.SECOND:
+    		result=result-(result%secondOffset);
+    		break;
+    	case Calendar.MINUTE:
+    		result=result-(result%minuteOffset);
+    		break;
+    	case Calendar.HOUR:
+    	case Calendar.HOUR_OF_DAY:
+    		result=result-(result%HourOffset);
+    	}
+    	
+    	return result*1000;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
