@@ -119,6 +119,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>rmelick</dockerImages.base.name>
         <project.version>2.10.0</project.version>
+        <logback.version>1.2.3</logback.version>
     </properties>
     <build>
         <filters>
@@ -385,6 +386,20 @@
             </build>
         </profile>
     </profiles>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <modules>
         <module>ArgusCore</module>
         <module>ArgusWeb</module>
