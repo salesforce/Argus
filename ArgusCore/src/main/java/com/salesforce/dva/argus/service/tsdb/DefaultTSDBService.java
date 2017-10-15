@@ -90,8 +90,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     private final String _readEndpoint;
     private final CloseableHttpClient _readHttpClient;
     
-    private final Set<String> _writeEndpoints;
-    private final Map<String, CloseableHttpClient> _writeHttpClients = new HashMap<>();
+    private final String[] _writeEndpoints;
+    private final CloseableHttpClient _writeHttpClient;
     
     /** Round robin iterator for write endpoitns. 
      * We will cycle through this iterator to select an endpoint from the set of available endpoints  */
@@ -126,7 +126,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                 Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
 
         _readEndpoint = config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue());
-        _writeEndpoints = new HashSet<>(Arrays.asList(config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",")));
+        _writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
         
         requireArgument((_readEndpoint != null) && (!_readEndpoint.isEmpty()), "Illegal read endpoint URL.");
         for(String writeEndpoint : _writeEndpoints) {
@@ -137,12 +137,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
         
         try {
-            _readHttpClient = getClient(_readEndpoint, connCount / 2, connTimeout, socketTimeout);
-            
-            for(String writeEndpoint : _writeEndpoints) {
-            	CloseableHttpClient writeHttpClient = getClient(writeEndpoint, connCount / 2, connTimeout, socketTimeout);
-            	_writeHttpClients.put(writeEndpoint, writeHttpClient);
-            }
+            _readHttpClient = getClient(connCount / 2, connTimeout, socketTimeout, _readEndpoint);
+            _writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout, _writeEndpoints);
             
             _roundRobinIterator = Iterables.cycle(_writeEndpoints).iterator();
             _executorService = Executors.newFixedThreadPool(connCount);
@@ -247,7 +243,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     public void dispose() {
         super.dispose();
         List<CloseableHttpClient> clients = Arrays.asList(_readHttpClient);
-        clients.addAll(_writeHttpClients.values());
+        clients.add(_writeHttpClient);
         for (CloseableHttpClient client : clients) {
             try {
                 client.close();
@@ -271,7 +267,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         requireArgument(metrics != null, "Metrics can not be null");
         
         String endpoint = _roundRobinIterator.next();
-        _logger.info("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
+        _logger.debug("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
 
         List<Metric> fracturedList = new ArrayList<>();
 
@@ -287,7 +283,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         	put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
         } catch(IOException ex) {
         	_logger.warn("IOException while trying to push metrics", ex);
-        	List<String> copy = new ArrayList<>(_writeEndpoints);
+        	List<String> copy = Arrays.asList(_writeEndpoints);
         	copy.remove(endpoint);
         	_retry(fracturedList, copy);
         }
@@ -364,7 +360,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
             	put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
             } catch(IOException ex) {
             	_logger.warn("IOException while trying to push annotations", ex);
-            	List<String> copy = new ArrayList<>(_writeEndpoints);
+            	List<String> copy = Arrays.asList(_writeEndpoints);
             	copy.remove(endpoint);
             	_retry(wrappers, copy);
             }
@@ -395,11 +391,13 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
                             String scope = query.getScope();
                             String metric = query.getMetric();
                             Long timestamp = existing.getTimestamp();
-                            Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
+                            if(timestamp > query.getStartTimestamp() && timestamp <= query.getEndTimestamp()) {
+                            	Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
 
-                            updated.setFields(existing.getFields());
-                            updated.setTags(query.getTags());
-                            annotations.add(updated);
+                                updated.setFields(existing.getFields());
+                                updated.setTags(query.getTags());
+                                annotations.add(updated);
+                            }
                         }
                     }
                 }
@@ -447,23 +445,21 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     }
 
     /* Helper to create the read and write clients. */
-    private CloseableHttpClient getClient(String endpoint, int connCount, int connTimeout, int socketTimeout) throws MalformedURLException {
-        URL url = new URL(endpoint);
-        int port = url.getPort();
-
-        requireArgument(port != -1, "Read endpoint must include explicit port.");
-
+    private CloseableHttpClient getClient(int connCount, int connTimeout, int socketTimeout, String...endpoints) throws MalformedURLException {
         PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
-
         connMgr.setMaxTotal(connCount);
-        connMgr.setDefaultMaxPerRoute(connCount);
-
-        String route = endpoint.substring(0, endpoint.lastIndexOf(":"));
-        HttpHost host = new HttpHost(route, port);
+        
+        for(String endpoint : endpoints) {
+        	URL url = new URL(endpoint);
+            int port = url.getPort();
+            requireArgument(port != -1, "TSDB endpoint must include explicit port.");
+            HttpHost host = new HttpHost(url.getHost(),	url.getPort());
+            connMgr.setMaxPerRoute(new HttpRoute(host), connCount / endpoints.length);
+        }
+        
         RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
             socketTimeout).build();
 
-        connMgr.setMaxPerRoute(new HttpRoute(host), connCount / 2);
         return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
     }
 
@@ -583,24 +579,12 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         }
         return null;
     }
-
-    private CloseableHttpClient _chooseWriteEndpoint(String url) {
-    	String defaultWriteEndpoint = "";
-    	for(String writeEndpoint : _writeEndpoints) {
-    		defaultWriteEndpoint = writeEndpoint;
-    		if(url.startsWith(writeEndpoint)) {
-    			return _writeHttpClients.get(writeEndpoint);
-    		}
-    	}
-    	
-    	return _writeHttpClients.get(defaultWriteEndpoint);
-    }
     
     /* Execute a request given by type requestType. */
     @SuppressWarnings("resource")
     private HttpResponse executeHttpRequest(HttpMethod requestType, String url, StringEntity entity) throws IOException {
         HttpResponse httpResponse = null;
-        CloseableHttpClient client = url.startsWith(_readEndpoint) ? _readHttpClient : _chooseWriteEndpoint(url);
+        CloseableHttpClient client = url.startsWith(_readEndpoint) ? _readHttpClient : _writeHttpClient;
 
         if (entity != null) {
             entity.setContentType("application/json");

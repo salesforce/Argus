@@ -66,6 +66,7 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Map.Entry;
@@ -345,7 +346,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     	
     	_logger.info("Using FastScan. Will skip rows while scanning.");
     	
-    	final List<MetricSchemaRecord> records = new ArrayList<>();
+    	final Set<MetricSchemaRecord> records = new HashSet<>();
     	
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
@@ -390,7 +391,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	rows = _getSingleRow(newScanStart, end, filterList, metadata.tableName);
         }
         
-    	return records;
+    	return new ArrayList<>(records);
     }
     
 

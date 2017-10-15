@@ -242,7 +242,9 @@ public final class SystemConfiguration extends Properties {
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
-        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties");
+        TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+        WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
+        WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "argus.properties");
 
         private final String _name;
         private final String _defaultValue;

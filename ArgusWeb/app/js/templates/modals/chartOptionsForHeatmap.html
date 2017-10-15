@@ -10,9 +10,9 @@
 		<div style="margin:.5em 0 .5em 1em;">
 			<label for="dateFormat-{{chartId}}"><strong>Date:</strong> </label>
 			<input id="dateFormat-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="%A, %b %e, %H:%M" size="25"
-				ng-model="menuOption.dateFormat"
-				ng-change="updateDateFormatOutput()"
-				/>
+				   ng-model="menuOption.dateFormat"
+				   ng-change="updateDateFormatOutput()"
+			/>
 			<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-time-format" target="_blank" title="Custom d3 date format codes"></a>
 			<div style="margin-left:3em;">
 				<span style="color:#999; margin-right:3em;">{{dateFormatOutput}}</span>
@@ -50,48 +50,83 @@
 			<input id="trailingNum-{{chartId}}" type="number" min="0" ng-model="menuOption.tooltipConfig.trailingNum" style="width:3.5em;" />
 		</div>
 
-		<h4 class="sectionTitle btmBdr">Downsampling data <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3fc/d3fc-sample" style="font-size:14px;" target="_blank" title="Custom d3 downsample data options"></a></h4>
-
-		<div style="margin:0 0 .5em 1em;">
-			<label>Select a downsample method: </label>&nbsp;
-			<select ng-model="menuOption.downSampleMethod" name="down-sample-method">
-				<option value="">[ Select a method ]</option>
-				<option value="largest-triangle-one-bucket" ng-selected="menuOption.downSampleMethod == 'largest-triangle-one-bucket'">Triangle 1 Bucket</option>
-				<option value="largest-triangle-three-bucket" ng-selected="menuOption.downSampleMethod == 'largest-triangle-three-bucket'">Triangle 3 Bucket</option>
-				<option value="mode-median" ng-selected="menuOption.downSampleMethod == 'mode-median'">Mode Median</option>
-				<option value="every-nth-point" ng-selected="menuOption.downSampleMethod == 'every-nth-point'">Every n'th point</option>
-			</select>
-		</div>
-
 		<h4 class="sectionTitle btmBdr">Synchronize charts</h4>
 
 		<div style="margin:0 0 .5em 1em;">
 			<input class="chkBox pointer" id="toggle-syncchart-{{chartConfig.chartId}}" type="checkbox" name="toggle-syncchart" ng-model="menuOption.isSyncChart" ng-click="toggleSyncChart()"/>&nbsp;
-			<label class="chkBoxLbl" for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize chart to show X-axis value for each chart</label>
+			<label for="toggle-syncchart-{{chartConfig.chartId}}" title="Synchronize this chart with other selected charts">Synchronize chart to show X-axis value for each chart</label>
 		</div>
 	</div>
 
 	<!-- right col -->
 	<div class="col-md-6" style="width:48%;">
-		<h4 class="sectionTitle btmBdr">Brushing & Zooming</h4>
+		<!--<h4 class="sectionTitle btmBdr">Brushing & Zooming</h4>-->
 
-		<input class="chkBox pointer" id="toggleBrush-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushOn" title="Show bottom brush" />
-		<label class="chkBoxLbl" for="toggleBrush-{{chartId}}">Show timeline of graphs at the bottom.</label>
+		<!--<input class="chkBox pointer" id="toggleBrush-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushOn" title="Show bottom brush" />-->
+		<!--<label class="chkBoxLbl" for="toggleBrush-{{chartId}}">Show timeline of graphs at the bottom.</label>-->
 
-		<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" ng-disabled="!menuOption.isBrushOn" />
-		<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>
+		<!--<br /><input class="chkBox pointer" id="toggleBrushMain-{{chartId}}" type="checkbox" ng-model="menuOption.isBrushMainOn" title="Enable brush selection on chart" ng-disabled="!menuOption.isBrushOn" />-->
+		<!--<label class="chkBoxLbl" for="toggleBrushMain-{{chartId}}">Enable "brushing" on the graph to create a time-range selection.</label>-->
 
-		<br /><input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;
-		<label class="chkBoxLbl" for="toggle-wheel-{{chartId}}">Use mousewheel to zoom in/out of the main graph.
-		<br /><span style="font-weight:normal;">(Move mouse off the main graph to page scroll)</span></label>
+		<!--<br /><input class="chkBox pointer" id="toggle-wheel-{{chartId}}" type="checkbox" ng-model="menuOption.isWheelOn" title="Toggle mouse wheel to zoom" />&nbsp;-->
+		<!--<label class="chkBoxLbl" for="toggle-wheel-{{chartId}}">Use mousewheel to zoom in/out of the main graph.-->
+			<!--<br /><span style="font-weight:normal;">(Move mouse off the main graph to page scroll)</span></label>-->
 
-		<h4 class="sectionTitle btmBdr">Tooltips</h4>
+		<h4 class="sectionTitle btmBdr">Heatmap Parameter</h4>
+
+		<label>Aggregation type : </label>
+		<select ng-model="menuOption.aggregateType" style="margin-left:.5em;padding:0 .25em; margin-right:.5em;">
+			<option value="avg" ng-selected="menuOption.aggregateType == 'avg'">avg</option>
+			<option value="sum" ng-selected="menuOption.aggregateType == 'sum'">sum</option>
+		</select>
+		<a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="How you aggregate the datapoints in a bucket, the default is by average.">
+			<i class='glyphicon glyphicon-question-sign'></i>
+		</a>
+
+		<label>Color : </label>
+		<select ng-model="menuOption.tileColor" style="margin-left:.5em;">
+			<option value="steelblue" ng-selected="menuOption.tileColor == 'steelblue'">Steel blue</option>
+			<option value="darkblue" ng-selected="menuOption.tileColor == 'darkblue'">Dark Blue</option>
+			<option value="red" ng-selected="menuOption.tileColor == 'red'">Red</option>
+		</select>
+
+		<br/>
+		<label for="intervalInMinutes-{{chartId}}">Aggregate data for every  </label>
+		<input id="intervalInMinutes-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.intervalInMinutes" />
+		<label> minutes</label>
+		<a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="The default is 30 minutes.">
+			<i class='glyphicon glyphicon-question-sign'></i>
+		</a>
+
+
+		<br/>
+		<label for="bucketMin-{{chartId}}">Y axis Min: </label>
+		<input id="bucketMin-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.bucketMin" />
+		<a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="Explicitly define the minimum value for y domain. The default is the minimum value of the aggregated data.">
+			<i class='glyphicon glyphicon-question-sign'></i>
+		</a>
+
+		<br/>
+		<label for="step-{{chartId}}">Bucket size for y axis : </label>
+		<input id="step-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em; width: 200px;" placeholder="" size="5" ng-model="menuOption.step" />
+		<a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="This decides the range of data in a bucket. The default is decided by the domain and number of buckets on y axis.">
+			<i class='glyphicon glyphicon-question-sign'></i>
+		</a>
+
+		</br>
+		<label for="numOfBucket-{{chartId}}">Number of buckets on y axis : </label>
+		<input id="numOfBucket-{{chartId}}" type="input" style="padding:0 .25em; margin-right:.5em;" placeholder="" size="5" ng-model="menuOption.numOfBucket" />
+		<a class='definition-tip' data-toggle="tooltip" data-placement="bottom" title="The default is 5">
+			<i class='glyphicon glyphicon-question-sign'></i>
+		</a>
+
+		</br>
+
+
+
+	<h4 class="sectionTitle btmBdr">Tooltips</h4>
 
 		<input class="chkBox pointer" id="tooltip-on-{{chartId}}" name="tooltip-on" type="checkbox" ng-model="menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-on-{{chartId}}" title="Show tooltip">Show tooltip</label>
-
-		<input class="chkBox pointer" style="margin-left:6em;" id="tooltip-sort-{{chartId}}" name="tooltip-sort" type="checkbox" ng-model="menuOption.tooltipConfig.isTooltipSortOn" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-sort-{{chartId}}" title="Sort tooltip items by value">Tooltip sorting</label>
-
-		<br /><input class="chkBox pointer" id="snap-crossline-on-{{chartId}}" name="snap-crossline-on" type="checkbox" ng-model="menuOption.isSnapCrosslineOn" />&nbsp;<label class="chkBoxLbl" for="snap-crossline-on-{{chartId}}" title="Snap crossline to dot">Snap crosshair to datapoint</label>
 
 		<br /><input class="chkBox pointer" id="tooltips-raw-{{chartId}}" type="checkbox" ng-model="menuOption.tooltipConfig.rawTooltip" title="Display raw data inside tooltips" ng-disabled="!menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltips-raw-{{chartId}}">Display raw data point value. <span style="font-weight:normal;">No formatting applied.</span></label>
 
@@ -99,14 +134,6 @@
 			<label class="chkBoxLbl" for="tooltips-custom-{{chartId}}" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}">Custom format:</label>&nbsp; <input type="text" size="5" style="margin-right:.5em; padding:0 .25em;" ng-model="menuOption.tooltipConfig.customTooltipFormat" ng-disabled="menuOption.tooltipConfig.rawTooltip" ng-class="{'disabled': menuOption.tooltipConfig.rawTooltip}" />&nbsp;<a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-format/blob/master/README.md#format" style="font-size:14px;" target="_blank" title="Custom d3 formats"></a>
 		</div>
 
-		<h4 class="sectionTitle btmBdr">Color palettes <a class="glyphicon glyphicon-info-sign" href="https://github.com/d3/d3-scale/blob/master/README.md#schemeCategory10" style="font-size:14px;" target="_blank" title="Custom d3 color schemes"></a></h4>
-		<label>Select a color palette: </label>&nbsp;
-		<select ng-model="menuOption.colorPalette" name="color-palette">
-			<option value="schemeCategory10" ng-selected="menuOption.colorPalette == 'schemeCategory10'">d3 scheme category 10</option>
-			<option value="schemeCategory20" ng-selected="menuOption.colorPalette == 'schemeCategory20'">d3 scheme category 20</option>
-			<option value="schemeCategory20b" ng-selected="menuOption.colorPalette == 'schemeCategory20b'">d3 scheme category 20b</option>
-			<option value="schemeCategory20c" ng-selected="menuOption.colorPalette == 'schemeCategory20c'">d3 scheme category 20c</option>
-		</select>
 	</div>
 
 	<div class="clearAll"></div>
@@ -115,11 +142,11 @@
 
 		<div class="col-md-6">
 			<a id="reset" class="glyphicon glyphicon-ban-circle floatL"
-				confirm-click
-				confirm-title="Reset to default settings"
-				confirm-message="Are you sure you want reset all your current chart settings?"
-				confirm-call="resetSettings()">
-					<span class="glyphIconTxt">Reset to default</span>
+			   confirm-click
+			   confirm-title="Reset to default settings"
+			   confirm-message="Are you sure you want reset all your current chart settings?"
+			   confirm-call="resetSettings()">
+				<span class="glyphIconTxt">Reset to default</span>
 			</a>
 		</div>
 

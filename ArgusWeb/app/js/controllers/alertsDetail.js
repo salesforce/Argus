@@ -206,10 +206,13 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 		};
 
 		$scope.fetchHistory = function() {
+			$scope.historyLoaded = false;
 			History.query({id: $scope.alertId}, function (history) {
 				$scope.history = history;
+				$scope.historyLoaded = true;
 			}, function () {
 				growl.error('Failed to get history for alert "' + $scope.alertId + '"');
+				$scope.historyLoaded = true;
 			});
 		};
 

@@ -56,17 +56,19 @@ angular.module('argus', [
 	'argus.directives.charts.table',
 	'argus.directives.headerMenu',
 	'argus.directives.modals.confirmClick'
-]).run(['$http', '$templateCache', function ($http, $templateCache) {
-	// template caching
-	$http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
-	$http.get('js/templates/login.html', {cache: $templateCache});
-	$http.get('js/templates/alert-list.html', {cache: $templateCache});
-	$http.get('js/templates/alert-detail.html', {cache: $templateCache});
-	$http.get('js/templates/dashboard-list.html', {cache: $templateCache});
-	$http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
-	$http.get('js/templates/viewmetrics.html', {cache: $templateCache});
-	$http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
-}]);
+]);
+// TODO: not sure if this is even used
+// .run(['$http', '$templateCache', function ($http, $templateCache) {
+// 	// template caching
+// 	$http.get('js/templates/breadcrumbs.html', {cache: $templateCache});
+// 	$http.get('js/templates/login.html', {cache: $templateCache});
+// 	$http.get('js/templates/alert-list.html', {cache: $templateCache});
+// 	$http.get('js/templates/alert-detail.html', {cache: $templateCache});
+// 	$http.get('js/templates/dashboard-list.html', {cache: $templateCache});
+// 	$http.get('js/templates/dashboard-detail.html', {cache: $templateCache});
+// 	$http.get('js/templates/viewmetrics.html', {cache: $templateCache});
+// 	$http.get('js/templates/charts/topToolbar.html', {cache: $templateCache});
+// }]);
 
 // Services
 angular.module('argus.services', [
@@ -228,3 +230,5 @@ require('./directives/agRequest');
 require('./directives/agInfiniteScroll');
 // css
 require('../css/main.css');
+// img
+require('../img/argus_logo_rgb.png');

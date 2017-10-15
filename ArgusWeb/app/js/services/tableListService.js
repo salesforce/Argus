@@ -15,8 +15,9 @@ angular.module('argus.services.tableListService', [])
 	this.getListUnderTab = function (allItems, userName, userPrivileged) {
 		var i;
 		var result = {
+			usersList: [],
 			sharedList: [],
-			usersList: []
+			privilegedList: []
 		};
 		var totNum = allItems.length;
 		if (userPrivileged) {
