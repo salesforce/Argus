@@ -121,6 +121,7 @@
         <project.version>2.10.0</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.2</jackson.version>
+        <httpclient.version>4.5.3</httpclient.version>
     </properties>
     <build>
         <filters>
@@ -428,6 +429,11 @@
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-jaxb-annotations</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
