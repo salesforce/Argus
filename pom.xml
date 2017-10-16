@@ -117,7 +117,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
-        <dockerImages.base.name>rmelick</dockerImages.base.name>
+        <dockerImages.base.name>salesforce</dockerImages.base.name>
         <project.version>2.10.0</project.version>
     </properties>
     <build>

@@ -30,7 +30,7 @@ services:
       - ADVERTISED_HOST=kafka
       - ADVERTISED_PORT=9092
   argus-web-services:
-    image: rmelick/argus-webservices
+    image: salesforce/argus-webservices
     hostname: argus-web-services
     container_name: argus-web-services
     ports:
@@ -42,7 +42,7 @@ services:
     environment:
       - "CATALINA_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dargus.config.public.location=/usr/argus/argus.properties"
   argus-web:
-    image: rmelick/argus-web
+    image: salesforce/argus-web
     hostname: argus-web
     container_name: argus-web
     ports:
@@ -50,7 +50,7 @@ services:
     volumes:
       - ./config.js:/usr/argus/argusWeb/app/js/config.js:ro
   argus-metrics-client:
-    image: rmelick/argus-client
+    image: salesforce/argus-client
     hostname: argus-metrics-client
     container_name: argus-metrics-client
     ports:
@@ -64,7 +64,7 @@ services:
       - "kafka"
     command: [COMMIT_METRICS]
   argus-alert-client:
-    image: rmelick/argus-client
+    image: salesforce/argus-client
     hostname: argus-alert-client
     container_name: argus-alert-client
     ports:
@@ -78,7 +78,7 @@ services:
       - "kafka"
     command: [ALERT]
   argus-annotations-client:
-    image: rmelick/argus-client
+    image: salesforce/argus-client
     hostname: argus-annotations-client
     container_name: argus-annotations-client
     ports:
