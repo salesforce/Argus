@@ -33,8 +33,8 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.entity.Alert;
 import com.salesforce.dva.argus.sdk.entity.Notification;
 import com.salesforce.dva.argus.sdk.entity.Trigger;
-import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import org.junit.Test;
 import java.io.IOException;
