@@ -151,27 +151,28 @@ public abstract class TSDBEntity implements Serializable {
      * @param  tags  The new tags for the metric.
      */
     public void setTags(Map<String, String> tags) {
+    	TSDBEntity.validateTags(tags);
+    	
         _tags.clear();
         if (tags != null) {
-        	requireArgument(tags.size() <= 7, "No. of tags = " + tags.size() + ". Too many tags!!!");
-            Map<String, String> updatedTags = new TreeMap<>();
-
-            for (Map.Entry<String, String> entry : tags.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-
-                requireArgument(!Metric.ReservedField.isReservedField(key), MessageFormat.format("Tag {0} is a reserved tag name.", key));
-                _validateTag(entry.getKey(), entry.getValue());
-                updatedTags.put(key, value);
-            }
-            _tags.putAll(updatedTags);
+            _tags.putAll(tags);
         }
     }
 
-    private void _validateTag(String key, String value) {
-    	requireArgument(key != null && !key.isEmpty(), "Tag key cannot be null or empty");
-        requireArgument(value != null && !value.isEmpty(), "Tag value null or empty for tag key: " + key);
-        //TODO: In future, we may want to validate that the tags contain only permissible characters.
+    public static void validateTags(Map<String, String> tags) {
+    	if(tags != null) {
+    		requireArgument(tags.size() <= 7, "No. of tags = " + tags.size() + ". Too many tags!!!");
+        	
+        	for(Map.Entry<String, String> entry : tags.entrySet()) {
+        		String key = entry.getKey();
+                String value = entry.getValue();
+                
+        		requireArgument(key != null && !key.isEmpty(), "Tag key cannot be null or empty");
+            	requireArgument(!Metric.ReservedField.isReservedField(key), MessageFormat.format("Tag {0} is a reserved tag name.", key));
+                requireArgument(value != null && !value.isEmpty(), "Tag value null or empty for tag key: " + key);
+                //TODO: Validate that the tags contain only permissible characters.
+        	}
+    	}
 	}
 
 	/**

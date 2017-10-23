@@ -34,8 +34,6 @@ package com.salesforce.dva.argus.ws.resources;
 import com.google.gson.Gson;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;

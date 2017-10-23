@@ -122,6 +122,7 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.2</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
+        <junit.version>4.12</junit.version>
     </properties>
     <build>
         <filters>
@@ -435,6 +436,12 @@
                 <artifactId>httpclient</artifactId>
                 <version>${httpclient.version}</version>
             </dependency>
+            <dependency>
+            	<groupId>junit</groupId>
+            	<artifactId>junit</artifactId>
+            	<version>${junit.version}</version>
+            	<scope>test</scope>
+        </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>
