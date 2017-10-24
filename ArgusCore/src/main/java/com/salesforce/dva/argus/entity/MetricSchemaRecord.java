@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.salesforce.dva.argus.system.SystemAssert;
 import java.text.MessageFormat;
 
 /**
@@ -109,7 +108,7 @@ public class MetricSchemaRecord {
     /**
      * Indicates the scope associated with the result.
      *
-     * @return  The scope.  Cannot be null or empty.
+     * @return  The scope.  Can be null or empty.
      */
     public String getScope() {
         return scope;
@@ -118,17 +117,16 @@ public class MetricSchemaRecord {
     /**
      * Specifies the scope associated with the result.
      *
-     * @param  scope  The scope.  Cannot be null or empty.
+     * @param  scope  The scope.  Can be null or empty.
      */
-    public void setScope(String scope) {
-        SystemAssert.requireArgument(scope != null && !scope.isEmpty(), "Scope cannot be null or empty");
+    public void setScope(String scope) { 
         this.scope = scope;
     }
 
     /**
      * Indicates the metric name associated with the result.
      *
-     * @return  The metric name.  Cannot be null or empty.
+     * @return  The metric name.  Can be null or empty.
      */
     public String getMetric() {
         return metric;
@@ -137,10 +135,9 @@ public class MetricSchemaRecord {
     /**
      * Specifies the metric name associated with the result.
      *
-     * @param  metric  The metric name.  Cannot be null or empty.
+     * @param  metric  The metric name.  Can be null or empty.
      */
-    public void setMetric(String metric) {
-        SystemAssert.requireArgument(metric != null && !metric.isEmpty(), "Metric cannot be null or empty");
+    public void setMetric(String metric) { 
         this.metric = metric;
     }
 
