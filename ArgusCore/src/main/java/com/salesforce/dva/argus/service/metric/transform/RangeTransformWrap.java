@@ -1,4 +1,5 @@
 /*
+
  * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
  *
@@ -34,6 +35,9 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.sun.tools.javac.main.Main.Result;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Calculate the difference between the maximum and minimum values at each time stamp. If a single time series is specified, the minimum and maximum
@@ -62,10 +67,38 @@ public class RangeTransformWrap implements Transform {
             return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(metrics);
         }
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	if (scanners.size() == 1) {
+    		return rangeOfOneMetricScanner(scanners.get(0));
+    	} else {
+    		return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transformScanner(scanners);
+    	}
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	if (scanners.size() == 1) {
+    		return rangeOfOneMetricToPager(scanners.get(0), start, end);
+    	} else {
+    		return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transformToPager(scanners, start, end);
+    	}
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
     }
 
     @Override
@@ -116,10 +149,129 @@ public class RangeTransformWrap implements Transform {
         result.add(metric);
         return result;
     }
+    
+    private List<Metric> rangeOfOneMetricScanner(MetricScanner scanner) {
+    	Map<Long, Double> cleanDPs = new HashMap<>();
+    	List<Metric> result = new ArrayList<>();
+    	final List<Double> dpNum = new ArrayList<>();
+    	
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		if (dp.getValue() == null) {
+    			cleanDPs.put(dp.getKey(), 0.0);
+    			dpNum.add(0.0);
+    		}
+    		else {
+    			cleanDPs.put(dp.getKey(), dp.getValue());
+    			dpNum.add(dp.getValue());
+    		}
+    	}
+    	    		
+    	Collections.sort(dpNum);
+    	
+    	@SuppressWarnings("serial")
+    	final Set<Double> minMaxSet = new HashSet<Double>() {
+    		{
+    			add(dpNum.get(0));
+    			add(dpNum.get(dpNum.size() - 1));
+    		}
+    	};
+    	
+    	Predicate<Map.Entry<Long, Double>> isMinMax = new Predicate<Map.Entry<Long, Double>>() {
+    		
+    		@Override
+    		public boolean apply(Map.Entry<Long, Double> datapoint) {
+    			return minMaxSet.contains(datapoint.getValue());
+    		}
+    	};
+    	
+    	Map<Long, Double> resultDatapoints = new HashMap<>();
+    	
+    	resultDatapoints.putAll(Maps.filterEntries(cleanDPs, isMinMax));
+    	Metric m = new Metric(scanner.getMetric());
+    	m.setDatapoints(resultDatapoints);
+    	result.add(m);
+    	return result;
+    }
+    
+    private List<Metric> rangeOfOneMetricToPager(MetricScanner scanner, Long start, Long end) {
+    	Map<Long, Double> cleanDPs = new HashMap<>();
+    	List<Metric> result = new ArrayList<>();
+    	
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	
+    	if (next == null) {
+    		for (Map.Entry<Long, Double> entry : scanner.getMetric().getDatapoints().entrySet()) {
+    			cleanDPs.put(entry.getKey(), entry.getValue() == null ? 0.0 : entry.getValue());
+    		}
+    	} else if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.firstKey();
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			for (Map.Entry<Long, Double> entry : dps.subMap(startKey, endKey).entrySet()) {
+    				cleanDPs.put(entry.getKey(), entry.getValue() == null ? 0.0 : entry.getValue());
+    			}
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			cleanDPs.put(dp.getKey(), dp.getValue() == null ? 0.0 : dp.getValue());
+    		}
+    	}
+    	
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		cleanDPs.put(dp.getKey(), dp.getValue() == null ? 0.0 : dp.getValue());
+    	}
+    	
+    	if (cleanDPs.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	@SuppressWarnings("serial")
+		final Set<Double> minMaxSet = new HashSet<Double>() {
+    		{
+    			add(Collections.max(cleanDPs.values()));
+    			add(Collections.min(cleanDPs.values()));
+    		}
+    	};
+    	    	
+    	Predicate<Map.Entry<Long, Double>> isMinMax = new Predicate<Map.Entry<Long, Double>>() {
+    		
+    		@Override
+    		public boolean apply(Map.Entry<Long, Double> datapoint) {
+    			return minMaxSet.contains(datapoint.getValue());
+    		}
+    	};
+    	
+    	TreeMap<Long, Double> resultDatapoints = new TreeMap<>();
+    	resultDatapoints.putAll(Maps.filterEntries(cleanDPs, isMinMax));
+    	Long startKey = resultDatapoints.ceilingKey(start);
+    	Long endKey = resultDatapoints.floorKey(end);
+    	Metric m = new Metric(scanner.getMetric());
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		m.setDatapoints(new TreeMap<>());
+    	} else {
+    		m.setDatapoints(resultDatapoints.subMap(startKey, endKey + 1));
+    	}
+    	result.add(m);
+    	return result;
+    }
 
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+        throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

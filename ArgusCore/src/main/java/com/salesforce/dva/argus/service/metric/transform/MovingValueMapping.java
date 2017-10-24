@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.lang.ArrayUtils;
@@ -39,6 +40,8 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -60,11 +63,22 @@ public class MovingValueMapping implements ValueMapping {
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
     }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
-        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), 
-        		"MOVING Transform must provide at least 1 constant which is windowSize of time interval.");
+        SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(),
+            "MOVING Transform must provide at least 1 constant which is windowSize of time interval.");
         
         //Default is to perform Moving Average.
         InternalReducerType type = InternalReducerType.AVG;
@@ -73,12 +87,12 @@ public class MovingValueMapping implements ValueMapping {
             
             type = InternalReducerType.fromString(constants.get(1));
             SystemAssert.requireArgument((InternalReducerType.AVG.equals(type) ||
-                    InternalReducerType.MEDIAN.equals(type) || InternalReducerType.SUM.equals(type)), "Type can be one of <avg,median,sum>");
+            		InternalReducerType.MEDIAN.equals(type) || InternalReducerType.SUM.equals(type)), "Type can be one of <avg,median,sum>");
         }
 
         long windowSizeInSeconds = getWindowInSeconds(constants.get(0));
         SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
-        
+
         Map<Long, Double> movingDatapoints = new TreeMap<>();
         Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
 
@@ -121,9 +135,9 @@ public class MovingValueMapping implements ValueMapping {
                 while (timestamps[head] - firstTimestamp < windowSizeInSeconds * 1000) {
                     try {
                         // run out of points before hitting the end of first window
-                        if (head >= timestamps.length - 1) {
-                            break;
-                        }
+                    	if (head >= timestamps.length - 1) {
+                    		break;
+                    	}
                         value = _calculateValue(sum, numberArr, count, type);
                         movingDatapoints.put(timestamps[head - 1], value);
                         sum += sortedDatapoints.get(timestamps[head]);
@@ -159,20 +173,158 @@ public class MovingValueMapping implements ValueMapping {
         } // end for
         return movingDatapoints;
     }
+    
+    private double _calculateValue(double sum, List<Double> numberArr, int count, InternalReducerType type) {
+    	
+    	if (InternalReducerType.MEDIAN.equals(type)) {
+    		double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
+    		return new Percentile().evaluate(numbers, 50.0);
+    	}
+    	
+    	if (InternalReducerType.AVG.equals(type)) {
+    		return (sum / count);
+    	}
+    	
+    	return sum;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+    	SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
+        SystemAssert.requireArgument(!constants.isEmpty(),
+            "Moving Average Transform must provide at least 1 constant which is windowSize of time interval.");
+        
+        InternalReducerType type = InternalReducerType.AVG;
+        if (constants.size() > 1) {
+        	SystemAssert.requireArgument(constants.size() == 2, "Moving Average Transform can't have more than 2 contants!");
+            
+            type = InternalReducerType.fromString(constants.get(1));
+            SystemAssert.requireArgument((InternalReducerType.AVG.equals(type) ||
+            		InternalReducerType.MEDIAN.equals(type) || InternalReducerType.SUM.equals(type)), "Type can be one of <avg,median,sum>");
+        }
 
-	private double _calculateValue(double sum, List<Double> numberArr, int count, InternalReducerType type) {
-			
-		if (InternalReducerType.MEDIAN.equals(type)) {
-		    double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
-		    return new Percentile().evaluate(numbers, 50.0);
-		} 
-		
-		if(InternalReducerType.AVG.equals(type)) {
-			return (sum / count);
-		}
-		
-		return sum;
-	}
+        long windowSizeInSeconds = getWindowInSeconds(constants.get(0));
+
+        SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
+
+        Map<Long, Double> movingDatapoints = new TreeMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
+        List<Long> times = new ArrayList<>();
+        
+        while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		if (dp.getValue() == null) {
+    			sortedDatapoints.put(dp.getKey(), 0.0);
+    		} else {
+    			sortedDatapoints.put(dp.getKey(), dp.getValue());
+    		}
+    		times.add(dp.getKey());
+        }
+        
+        Long[] timestamps = new Long[times.size()];
+        times.toArray(timestamps);
+        
+        double sum = 0.0;
+        double value = 0.0;
+        List<Double> numberArr = new ArrayList<Double>();
+        
+        try {
+        	sum = sortedDatapoints.get(timestamps[0]);
+        	numberArr.add(sortedDatapoints.get(timestamps[0]));
+        } catch (NumberFormatException | NullPointerException e) {
+        	_logger.warn("Failed to parse datapoint " + sortedDatapoints.get(timestamps[0]));
+        	throw new UnsupportedOperationException("Bad datapoint!");
+        }
+        
+        movingDatapoints.put(timestamps[0], sortedDatapoints.get(timestamps[0]));
+        
+        Long firstTimestamp = timestamps[0];
+        int count = 1;
+        
+        for (int head = 1, tail = 0; head < timestamps.length; head++) {
+    		if (tail == 0) {
+    			while (timestamps[head] - firstTimestamp < windowSizeInSeconds * 1000) {
+    				try {
+        				if (head >= timestamps.length - 1) {
+        					break;
+        				}
+        				value = _calculateValue(sum, numberArr, count, type);
+        				movingDatapoints.put(timestamps[head - 1], value);
+        				sum += sortedDatapoints.get(timestamps[head]);
+        				numberArr.add(sortedDatapoints.get(timestamps[head]));
+    				} catch (NumberFormatException | NullPointerException e) {
+    					_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[head]));
+    					throw new IllegalArgumentException("Bad datapoint!");
+    				}
+    				head++;
+    				count++;
+    			}
+    			
+    			value = _calculateValue(sum, numberArr, count, type);
+    			movingDatapoints.put(timestamps[head - 1], value);
+    		}
+    		
+    		try {
+    			sum += sortedDatapoints.get(timestamps[head]);
+    			numberArr.add(sortedDatapoints.get(timestamps[head]));
+    			while (timestamps[head] - timestamps[tail] >= windowSizeInSeconds * 1000) {
+    				sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps[tail], timestamps[head]);
+    				numberArr.remove(sortedDatapoints.get(timestamps[tail]));
+    				count--;
+    				tail++;
+    			}
+    		} catch (NumberFormatException | NullPointerException e) {
+    			_logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[head]));
+    			throw new UnsupportedOperationException("Bad datapoint");
+    		}
+    		count++;
+    		value = _calculateValue(sum, numberArr, count, type);
+    		movingDatapoints.put(timestamps[head], value);
+        }
+        return movingDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
+        SystemAssert.requireArgument(!constants.isEmpty(),
+            "Moving Average Transform must provide at least 1 constant which is windowSize of time interval.");
+        if (constants.size() > 1) {
+            SystemAssert.requireArgument(constants.size() == 2, "Moving Average Transform can't have more than 2 contants!");
+            SystemAssert.requireArgument((InternalReducerType.AVG.getName().equals(constants.get(1)) ||
+                    InternalReducerType.MEDIAN.getName().equals(constants.get(1))), "Type can only be average or median.");
+        }
+
+        long windowSizeInSeconds = getWindowInSeconds(constants.get(0));
+        SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
+
+        Map<Long, Double> movingDatapoints = new HashMap<>();
+        Map.Entry<Long, Double> next = scanner.peek();
+        
+        if (next != null && (next.getKey() > start || next.getKey() > Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+        	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+        		scanner.getNextDP();
+        	}
+        }
+        
+        if (next == null || next.getKey() > end) {
+        	TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+        	Long startKey = dps.ceilingKey(start);
+        	Long endKey = dps.floorKey(end);
+        	if (startKey == null || endKey == null || startKey > endKey) {
+        		return new TreeMap<>();
+        	}
+        	TreeMap<Long, Double> result = new TreeMap<>(mapping(dps.subMap(dps.firstKey(), endKey + 1), constants));
+        	movingDatapoints = result.subMap(startKey, endKey + 1);
+        } else {
+        	TreeMap<Long, Double> result = new TreeMap<>(mappingScanner(scanner, constants));
+        	Long startKey = result.ceilingKey(start);
+        	Long endKey = result.floorKey(end) + 1;
+        	movingDatapoints = result.subMap(startKey, endKey);
+        }
+        
+    	return movingDatapoints;
+    }
 
     @Override
     public String name() {
@@ -180,10 +332,10 @@ public class MovingValueMapping implements ValueMapping {
     }
 
     private double _subtractWithinWindow(double sum, Map<Long, Double> sortedDatapoints, long end, long start) {
-        sum -= sortedDatapoints.get(end);
+    	sum -= sortedDatapoints.get(end);
         return sum;
     }
-
+    
     private long getWindowInSeconds(String window) {
         SystemAssert.requireArgument(!window.startsWith("-"), "Window size doesn't allow negative value.");
 

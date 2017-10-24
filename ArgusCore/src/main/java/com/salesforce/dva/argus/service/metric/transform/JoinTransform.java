@@ -32,8 +32,13 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Joins multiple lists of metrics into a single list.
@@ -55,10 +60,71 @@ public class JoinTransform implements Transform {
         }
         return result;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	List<Metric> result = new ArrayList<>();
+    	
+    	for (List<MetricScanner> list : listOfList) {
+    		for (MetricScanner scanner : list) {
+    			Metric m = new Metric(scanner.getMetric());
+    			Map<Long, Double> dps = new HashMap<>();
+    			while (scanner.hasNextDP()) {
+    				Map.Entry<Long, Double> dp = scanner.getNextDP();
+    				dps.put(dp.getKey(), dp.getValue());
+    			}
+    			m.setDatapoints(dps);
+    			result.add(m);
+    		}
+    	}
+    	return result;
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	List<Metric> result = new ArrayList<>();
+    	
+    	for (List<MetricScanner> list : scanners) {
+    		for (MetricScanner scanner : list) {
+    			Metric m = buildMetricRange(scanner, start, end);
+    			result.add(m);
+    		}
+    	}
+    	return result;
+    }
+    
+    private Metric buildMetricRange(MetricScanner scanner, Long start, Long end) {
+    	Metric m = scanner.getMetric();
+    	TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    	if (dps.lastKey() < end) {
+	    	while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+	    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+	    		dps.put(dp.getKey(), dp.getValue());
+	    	}
+    	}
+    	Long startKey = dps.ceilingKey(start);
+    	Long endKey = dps.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		m.setDatapoints(new TreeMap<>());
+    		return m;
+    	}
+    	m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    	return m;
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Join transform doesn't need constant!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+        throw new UnsupportedOperationException("Join transform doesn't need constant!");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	throw new UnsupportedOperationException("Join transform doesn't need constant!");
     }
 
     @Override
@@ -69,6 +135,28 @@ public class JoinTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         return metrics;
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	List<Metric> result = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {    	
+    		while (scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+       		result.add(scanner.getMetric());
+    	}
+    	return result;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	List<Metric> result = new ArrayList<>();
+    	for (MetricScanner scanner : scanners) {
+    		Metric m = buildMetricRange(scanner, start, end);
+    		result.add(m);
+    	}
+    	return result;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

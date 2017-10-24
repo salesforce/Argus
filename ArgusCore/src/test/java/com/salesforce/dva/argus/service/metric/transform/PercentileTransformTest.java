@@ -444,7 +444,7 @@ public class PercentileTransformTest {
         List<String> constants = Arrays.asList("90", "3s");
         
         List<Metric> result = percentileTransform.transform(metrics, constants);
-        
+        System.out.println(result);
         Map<Long, Double> expected = new HashMap<Long, Double>();
         expected.put(1000L, 9.9);
         

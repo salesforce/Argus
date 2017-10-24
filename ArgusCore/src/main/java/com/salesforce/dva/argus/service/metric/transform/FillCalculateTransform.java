@@ -33,8 +33,15 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricPageScanner;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.system.SystemMain;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -78,6 +85,28 @@ public class FillCalculateTransform implements Transform {
         }
         return resultMap;
     }
+    
+    private static Map<Long, Double> fillCalculateMetricTransformScanner(MetricScanner scanner, String calculationType) {
+    	Double result = calculateResultScanner(scanner, calculationType);
+    	
+    	Map<Long, Double> resultMap = new TreeMap<>();
+    	
+    	SystemAssert.requireState(!scanner.hasNextDP(), "The scanner should be fully explored by this point.");
+    	for (Map.Entry<Long, Double> entry : scanner.getMetric().getDatapoints().entrySet()) {
+    		resultMap.put(entry.getKey(), result);
+    	}
+    	return resultMap;
+    }
+    
+    private static Map<Long, Double> fillCalculateMetricTransformToPager(MetricScanner scanner, String calculationType, Long start, Long end) {
+    	Double result = calculateResultPager(scanner, calculationType);
+    	Map<Long, Double> resultMap = new TreeMap<>();
+    	SystemAssert.requireArgument(!scanner.hasNextDP(), "The scanner should be fully explored by this point in order to reduce.");
+    	for (Long time : scanner.getMetric().getDatapoints().keySet()) {
+    		resultMap.put(time, result);
+    	}
+    	return resultMap;
+    }
 
     private static Double calculateResult(Metric metric, String calculationType) {
         // Find the values from metric
@@ -120,12 +149,123 @@ public class FillCalculateTransform implements Transform {
         }
         return result;
     }
+    
+    private static Double calculateResultScanner(MetricScanner scanner, String calculationType) {
+    	Double result = null;
+    	
+    	String rex = "^[pP](100|[0-9]{1,2})$";
+    	Pattern myPattern = Pattern.compile(rex);
+    	Matcher matcher = myPattern.matcher(calculationType);
+    	
+    	if (matcher.matches()) {
+    		Integer target = Integer.valueOf(matcher.group(1));
+    		List<Double> values = new ArrayList<>();
+    		while (scanner.hasNextDP()) {
+    			values.add(scanner.getNextDP().getValue());
+    		}
+    		result = new Percentile().evaluate(Doubles.toArray(values), target);
+    	} else {
+    		switch (calculationType) {
+    		case "min":
+    			MinValueReducer minr = new MinValueReducer();
+    			result = minr.reduceScanner(scanner);
+    			break;
+    		case "max":
+    			MaxValueReducer maxr = new MaxValueReducer();
+    			result = maxr.reduceScanner(scanner);
+    			break;
+    		case "avg":
+    			AverageValueReducer avgr = new AverageValueReducer();
+    			result = avgr.reduceScanner(scanner);
+    			break;
+    		case "dev":
+    		default:
+    			throw new UnsupportedOperationException("Deviation Transform with Fill_Calculate is not yet supported!");
+    		}
+    	}
+    	return result;
+    }
+    
+    private static Double calculateReduction(MetricScanner scanner, ValueReducer red) {
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	List<Double> vals = new ArrayList<>();
+    	if (next == null) {
+    		vals.addAll(scanner.getMetric().getDatapoints().values());
+    		return red.reduce(vals);
+    	} else if (next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		return red.reduceScanner(scanner);
+    	} else {
+    		while (scanner.hasNextDP()) {
+    			scanner.getNextDP();
+    		}
+    		vals.addAll(scanner.getMetric().getDatapoints().values());
+    		return red.reduce(vals);
+    	}
+    }
+    private static Double calculateResultPager(MetricScanner scanner, String calculationType) {
+    	Double result = null;
+    	
+    	String rex = "^[pP](100|[0-9]{1,2})$";
+    	Pattern myPattern = Pattern.compile(rex);
+    	Matcher matcher = myPattern.matcher(calculationType);
+    	
+    	if (matcher.matches()) {
+    		Integer target = Integer.valueOf(matcher.group(1));
+    		List<Double> values = new ArrayList<>();
+    		Map.Entry<Long, Double> next = scanner.peek();
+    		if (next == null) {
+    			values.addAll(scanner.getMetric().getDatapoints().values());
+    		} else {
+    			if (!next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    				TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    				Long startKey = dps.firstKey();
+    				Long endKey = dps.floorKey(next.getKey());
+    				if (startKey != null && endKey != null && startKey < endKey) {
+    					values.addAll(dps.subMap(startKey, endKey).values());
+    				}
+    			}
+    			while (scanner.hasNextDP()) {
+    				values.add(scanner.getNextDP().getValue());
+    			}
+    		}
+    		result = new Percentile().evaluate(Doubles.toArray(values), target);
+    	} else {
+    		switch (calculationType) {
+    		case "min":
+    			MinValueReducer minr = new MinValueReducer();
+    			result = calculateReduction(scanner, minr);
+    			break;
+    		case "max":
+    			MaxValueReducer maxr = new MaxValueReducer();
+    			result = calculateReduction(scanner, maxr);
+    			break;
+    		case "avg":
+    			AverageValueReducer avgr = new AverageValueReducer();
+    			result = calculateReduction(scanner, avgr);
+    			break;
+    		case "dev":
+    		default:
+    			throw new UnsupportedOperationException("Deviation Transform with Fill_Calculate is not yet supported!");
+    		}
+    	}
+    	return result;
+    }
 
     //~ Methods **************************************************************************************************************************************
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Fill Transform need a type!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	throw new UnsupportedOperationException("Fill Transform needs a type!");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Fill Transform needs a type!");
     }
 
     @Override
@@ -170,6 +310,95 @@ public class FillCalculateTransform implements Transform {
         }
         return fillCalculateMetricList;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	List<Metric> fillCalculateMetricList = new ArrayList<Metric>();
+    	
+        SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics!");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Fill_Calculate Transform needs a type!");
+        SystemAssert.requireArgument(constants.size() <= 3, "Fill Transform needs an interval, an offset and a type!");
+        
+        String calculationType = constants.get(0);
+        
+        for (MetricScanner scanner : scanners) {
+        	Metric newMetric = new Metric(scanner.getMetric());
+        	
+        	newMetric.setDatapoints(fillCalculateMetricTransformScanner(scanner, calculationType));
+        	fillCalculateMetricList.add(newMetric);
+        }
+        
+        if (constants.size() > 1 && constants.size() <= 3) {
+        	List<Metric> fillCalculateMetricListWithOffset = new ArrayList<Metric>();
+        	
+        	for (Metric metric : fillCalculateMetricList) {
+        		Transform fillTransform = new FillTransform();
+        		Double calculateResult = calculateResult(metric, calculationType);
+        		List<String> newConstants = new ArrayList<String>();
+        		
+        		newConstants.add(constants.get(1));
+        		newConstants.add(constants.get(2));
+        		newConstants.add(String.valueOf(calculateResult));
+        		
+        		List<Metric> singleMetric = new ArrayList<>();
+        		
+        		singleMetric.add(metric);
+        		fillCalculateMetricListWithOffset.addAll(fillTransform.transform(singleMetric, newConstants));
+        	}
+        	return fillCalculateMetricListWithOffset;
+        }
+        return fillCalculateMetricList;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	List<Metric> fillCalculateMetricList = new ArrayList<Metric>();
+    	
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null or empty metrics!");
+    	SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Fill_Calculate Transform needs a type!");
+    	SystemAssert.requireArgument(constants.size() <= 3, "Fill Transform needs an interval, an offset, and a type!");
+    	
+    	String calculationType = constants.get(0);
+    	
+    	for (MetricScanner scanner : scanners) {
+    		Map<Long, Double> dps = fillCalculateMetricTransformToPager(scanner, calculationType, start, end);
+    		Metric newMetric = new Metric(scanner.getMetric());
+    		newMetric.setDatapoints(dps);
+    		fillCalculateMetricList.add(newMetric);
+    	}
+    	
+    	if (constants.size() > 1 && constants.size() <= 3) {
+    		List<Metric> fillCalculateMetricListWithOffset = new ArrayList<Metric>();
+    		
+    		for (Metric metric : fillCalculateMetricList) {
+    			Transform fillTransform = new FillTransform();
+    			Double calculateResult = calculateResult(metric, calculationType);
+    			List<String> newConstants = new ArrayList<>();
+    			newConstants.add(constants.get(1));
+    			newConstants.add(constants.get(2));
+    			newConstants.add(String.valueOf(calculateResult));
+    			MetricScanner s = new MetricPageScanner(metric, (Long t) -> t);
+    			s.dispose();
+    			
+    			fillCalculateMetricListWithOffset.addAll(fillTransform.transformToPager(Arrays.asList(s), newConstants, start, end));
+    		}
+    		return fillCalculateMetricListWithOffset;
+    	}
+    	
+    	List<Metric> res = new ArrayList<>();
+    	for (Metric m : fillCalculateMetricList) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(m.getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey != null && endKey != null && startKey <= endKey) {
+    			m.setDatapoints(dps.subMap(startKey, endKey + 1));
+    		} else {
+    			m.setDatapoints(new TreeMap<>());
+    		}
+    		res.add(m);
+    	}
+    	return res;
+    }
 
     @Override
     public String getResultScopeName() {
@@ -179,6 +408,16 @@ public class FillCalculateTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Fill_Calculate doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	throw new UnsupportedOperationException("Fill_Calculate doesn't need list of list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Fill_Calculate doesn't need list of list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

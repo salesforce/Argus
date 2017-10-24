@@ -32,7 +32,10 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +61,16 @@ public class SortTransformWrapAboveAndBelow implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Sort transform need constants input.");
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+        throw new UnsupportedOperationException("Sort transform need constants input.");
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Sort transform need constants input.");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -80,7 +93,7 @@ public class SortTransformWrapAboveAndBelow implements Transform {
             try {
                 Integer.parseInt(constants.get(0));
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Please provide a valid integral value for limit!", e);
+                throw new IllegalArgumentException("Please provide a valid integer value for limit!", e);
             }
             SystemAssert.requireArgument(typeSet.contains(constants.get(1)), "Please provide a valid type!");
             SystemAssert.requireArgument(orderSet.contains(constants.get(2)), "Please provide a valid order!");
@@ -95,14 +108,94 @@ public class SortTransformWrapAboveAndBelow implements Transform {
 
         if (order.equals(ASC)) {
             sortTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-            // sortTransform = transformFactory.createMetricFilterWithInternalReducerTransform(Function.LOWEST);
         } else if (order.equals(DES)) {
             sortTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
-            // sortTransform = transformFactory.createMetricFilterWithInternalReducerTransform(Function.HIGHEST);
         } else {
             throw new UnsupportedOperationException("Only ASC or DES are suppored for ordering option.");
         }
         return sortTransform.transform(metrics, constants);
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners, List<String> constants) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    	SystemAssert.requireArgument(constants != null && constants.size() >= 2 && constants.size() <= 3, 
+    			"Sort transform require type and order. Limit is optional.");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<Metric>();
+    	}
+    	
+    	Set<String> typeSet = new HashSet<String>(Arrays.asList("maxima", "minima", "name", "dev"));
+    	Set<String> orderSet = new HashSet<String>(Arrays.asList(ASC, DES));
+    	
+    	if (constants.size() == 2) {
+    		SystemAssert.requireArgument(typeSet.contains(constants.get(0)), "Please provide a valid type!");
+    		SystemAssert.requireArgument(orderSet.contains(constants.get(1)), "Please provide a valid order!");
+    		constants.add(0, String.valueOf(Integer.MAX_VALUE));
+    	} else if (constants.size() == 3) {
+    		try {
+    			Integer.parseInt(constants.get(0));
+    		} catch (NumberFormatException e) {
+    			throw new IllegalArgumentException("Please provide a valid integer value for limit!" , e);
+    		}
+    		SystemAssert.requireArgument(typeSet.contains(constants.get(1)), "Please provide a valid type!");
+    		SystemAssert.requireArgument(orderSet.contains(constants.get(2)), "Please provide a valid order!");
+    	}
+    	
+    	String order = constants.get(constants.size() - 1);
+    	constants.remove(constants.size() - 1);
+    	
+    	Transform sortTransform;
+    	
+    	if (order.equals(ASC)) {
+    		sortTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
+    	} else if (order.equals(DES)) {
+    		sortTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
+    	} else {
+    		throw new UnsupportedOperationException("Only ASC and DES are supported for ordering option.");
+    	}
+    	return sortTransform.transformScanner(scanners, constants);
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "Cannot transform null metric scanner/scanners");
+    	SystemAssert.requireArgument(constants != null && constants.size() >= 2 && constants.size() <= 3,
+    			"Sort trnasform require type and order. Limit is optional.");
+    	if (scanners.isEmpty()) {
+    		return new ArrayList<>();
+    	}
+    	
+    	Set<String> typeSet = new HashSet<String>(Arrays.asList("maxima", "minima", "name", "dev"));
+    	Set<String> orderSet = new HashSet<String>(Arrays.asList(ASC, DES));
+    	
+    	if (constants.size() == 2) {
+    		SystemAssert.requireArgument(typeSet.contains(constants.get(0)), "Please provide a valid type!");
+    		SystemAssert.requireArgument(orderSet.contains(constants.get(1)), "Please provide a valid order!");
+    		constants.add(0, String.valueOf(Integer.MAX_VALUE));
+    	} else if (constants.size() == 3) {
+    		try {
+    			Integer.parseInt(constants.get(0));
+    		} catch (NumberFormatException e) {
+    			throw new IllegalArgumentException("Please provide a valid integer value for limit!", e);
+    		}
+    		SystemAssert.requireArgument(typeSet.contains(constants.get(1)), "Please provide a valid type!");
+    		SystemAssert.requireArgument(orderSet.contains(constants.get(2)), "Please provide a valid order!");
+    	}
+    	
+    	String order = constants.get(constants.size() - 1);
+    	constants.remove(constants.size() - 1);
+    	
+    	Transform sortTransform;
+    	
+    	if (order.equals(ASC)) {
+    		sortTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
+    	} else if (order.equals(DES)) {
+    		sortTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
+    	} else {
+    		throw new UnsupportedOperationException("Only ASC and DES are supported for ordering option.");
+    	}
+    	return sortTransform.transformToPager(scanners, constants, start, end);
     }
 
     @Override
@@ -113,6 +206,16 @@ public class SortTransformWrapAboveAndBelow implements Transform {
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Sort transform doesn't support list of metric list!");
+    }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner>... listOfList) {
+    	throw new UnsupportedOperationException("Sort transform doesn't support list of metric list!");
+    }
+    
+    @Override
+    public List<Metric> transformToPagerListOfList(List<List<MetricScanner>> scanners, Long start, Long end) {
+    	throw new UnsupportedOperationException("Sort transform doesn't support list of metric list!");
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

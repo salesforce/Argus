@@ -31,11 +31,14 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -52,10 +55,25 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     public Double reduce(List<Double> values) {
         return Reducers.sumReducer(values);
     }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner) {
+    		return Reducers.sumReducerScanner(scanner);
+    }
 
     @Override
     public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
         throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner) {
+        throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end) {
+    	throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
@@ -75,10 +93,82 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
             throw new SystemException("Illegal constant value supplied to sum transform", nfe);
         }
     }
-
+    
+    @Override
+    public Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants) {
+		SystemAssert.requireArgument(constants != null && constants.size() == 1,
+            "If constants provided for sum transform, only exactly one constant allowed.");
+		
+		Map<Long, Double> mappedDatapoints = new HashMap<>();
+		try {
+			double addend = Double.parseDouble(constants.get(0));
+			
+   			while (scanner.hasNextDP()) {
+   				Map.Entry<Long, Double> dp = scanner.getNextDP();
+   				if (dp.getValue() == null) {
+   					continue;
+    			}
+    			mappedDatapoints.put(dp.getKey(), dp.getValue() + addend);
+    		}
+		} catch (NullPointerException | NumberFormatException nfe)  {
+			throw new SystemException("Illegal constant value supplied to sum transform", nfe);
+		}
+		return mappedDatapoints;
+    }
+    
+    @Override
+    public Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end) {
+    	SystemAssert.requireArgument(constants != null && constants.size() == 1, 
+    			"If constants provided for sum transform, only exactly one constant allowed.");
+    	
+    	Map<Long, Double> mappedDatapoints = new HashMap<>();
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	if (next == null || next.getKey() > end) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(end);
+    		if (startKey == null || endKey == null || startKey > endKey) {
+    			return new TreeMap<>();
+    		}
+    		mappedDatapoints = mapping(dps.subMap(startKey, endKey + 1));
+    		return mappedDatapoints;
+    	} else if (next.getKey() > start) {
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {
+    			mappedDatapoints.putAll(mapping(dps.subMap(startKey, endKey), constants));
+    		}
+    	} else {
+    		while (scanner.peek() != null && scanner.peek().getKey() < start) {
+    			scanner.getNextDP();
+    		}
+    	}
+    	
+    	try {
+    		double addend = Double.parseDouble(constants.get(0));
+    		
+    		while (scanner.peek() != null && scanner.peek().getKey() <= end) {
+    			Map.Entry<Long, Double> dp = scanner.getNextDP();
+    			if (dp.getValue() == null) {
+    				continue;
+    			}
+    			mappedDatapoints.put(dp.getKey(), dp.getValue() + addend);
+    		}
+    	} catch (NumberFormatException nfe) {
+    		throw new SystemException("Illegal constant value supplied to sum transform", nfe);
+    	}
+    	return mappedDatapoints;
+    }
+ 
     @Override
     public Double reduce(List<Double> values, List<String> constants) {
-        throw new UnsupportedOperationException("Sum Transform with reducer is not supposed to be used without a constant");
+        throw new UnsupportedOperationException("Sum Transform with reducer is not supposed to be used with a constant");
+    }
+    
+    @Override
+    public Double reduceScanner(MetricScanner scanner, List<String> constants) {
+        throw new UnsupportedOperationException("Sum Transform with reducer is not supposed to be used with a constant");
     }
 
     @Override

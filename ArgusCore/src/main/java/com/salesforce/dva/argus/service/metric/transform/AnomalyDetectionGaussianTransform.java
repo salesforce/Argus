@@ -32,12 +32,16 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 /**
  * Abstract class for Gaussian distribution based anomaly detection transforms.
@@ -56,17 +60,17 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        if (metrics == null) {
-            throw new MissingDataException("The metrics list cannot be null or empty while performing transforms.");
-        }
-        if (metrics.size() != 1) {
-            throw new UnsupportedOperationException("Anomaly Detection Transform can only be used with one metric.");
-        }
+    	if (metrics == null) {
+    		throw new MissingDataException("The metrics list cannot be null or empty while performing transforms.");
+    	}
+    	if (metrics.size() != 1) {
+    		throw new UnsupportedOperationException("Anomaly Detection Transform can only be used with one metric.");
+    	}
 
         Metric metric = metrics.get(0);
         Map<Long, Double> metricData = metric.getDatapoints();
         if (metricData.size() == 0) {
-            throw new MissingDataException("Metric must contain data points to perform transforms.");
+        	throw new MissingDataException("Metric must contain data points to perform transforms.");
         }
 
         fitParameters(metricData);
@@ -77,11 +81,97 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         resultMetrics.add(predictionsNormalized);
         return resultMetrics;
     }
+    
+    @Override
+    public List<Metric> transformScanner(List<MetricScanner> scanners) {
+    	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing transforms.");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+    	
+    	MetricScanner scanner = scanners.get(0);
+    	SystemAssert.requireArgument(scanner.hasNextDP(), "Metric scanner must contain data points to perform transforms.");
+    	
+    	fitParametersScanner(scanner);
+    	Metric predictions = predictAnomalies(scanner.getMetric().getDatapoints());
+    	Metric predictionsNormalized = normalizePredictions(predictions);
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	resultMetrics.add(predictionsNormalized);
+    	return resultMetrics;
+    }
+    
+    @Override
+    public List<Metric> transformToPager(List<MetricScanner> scanners, Long start, Long end) {
+    	SystemAssert.requireArgument(scanners != null, "The metric scanners list cannot be null or empty while performing transforms.");
+    	SystemAssert.requireArgument(scanners.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
+    	
+    	MetricScanner scanner = scanners.get(0);
+    	SystemAssert.requireArgument(scanner.getMetric().getDatapoints().size() > 0 || scanner.hasNextDP(), "Metric scanner must contain data points to perform transforms");
+    	
+    	fitParametersPager(scanner, start, end);
+    	Metric predictions = predictAnomalies(scanner.getMetric().getDatapoints());
+    	Metric predictionsNormalized = normalizePredictions(predictions);
+    	
+    	List<Metric> resultMetrics = new ArrayList<>();
+    	TreeMap<Long, Double> dps = new TreeMap<>(predictionsNormalized.getDatapoints());
+    	Long startKey = dps.ceilingKey(start);
+    	Long endKey = dps.floorKey(end);
+    	if (startKey == null || endKey == null || startKey > endKey) {
+    		predictionsNormalized.setDatapoints(new HashMap<>());;
+    	} else {
+    		predictionsNormalized.setDatapoints(dps.subMap(startKey, endKey + 1));
+    	}
+    	resultMetrics.add(predictionsNormalized);
+    	return resultMetrics;
+    }
 
     //Fits the mean and variance parameters to the data
     private void fitParameters(Map<Long, Double> metricData) {
         mean = getMetricMean(metricData);
         variance = getMetricVariance(metricData);
+    }
+    
+    private void fitParametersScanner(MetricScanner scanner) {
+    	double sum = 0;
+    	int num = 0;
+    	
+    	while (scanner.hasNextDP()) {
+    		Map.Entry<Long, Double> dp = scanner.getNextDP();
+    		sum += dp.getValue();
+    		num++;
+    	}
+    	mean = sum / num;
+    	variance = getMetricVariance(scanner.getMetric().getDatapoints());
+    }
+    
+    private void fitParametersPager(MetricScanner scanner, Long start, Long end) {
+    	Map.Entry<Long, Double> next = scanner.peek();
+    	
+    	if (next == null) {
+    		/* metric fully explored */
+    		fitParameters(scanner.getMetric().getDatapoints());
+    	} else if (next.getKey().equals(Collections.min(scanner.getMetric().getDatapoints().keySet()))) {
+    		/* metric fully unexplored */
+    		fitParametersScanner(scanner);
+    	} else {
+    		/* need to do a mix of both */
+    		TreeMap<Long, Double> dps = new TreeMap<>(scanner.getMetric().getDatapoints());
+    		double sum = 0.0;
+    		int num = 0;
+    		Long startKey = dps.ceilingKey(start);
+    		Long endKey = dps.floorKey(next.getKey());
+    		if (startKey != null && endKey != null && startKey < endKey) {    			
+    			for (Double val : dps.subMap(startKey, endKey).values()) {
+    				sum += val;
+    				num++;
+    			}
+    		}
+    		while (scanner.hasNextDP()) {
+    			sum += scanner.getNextDP().getValue();
+    			num++;
+    		}
+    		mean = sum / num;
+    		variance = getMetricVariance(scanner.getMetric().getDatapoints());
+    	}
     }
 
     /**

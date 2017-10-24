@@ -5,6 +5,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,50 @@ public class PhoenixTSDBService extends DefaultService implements TSDBService {
 			result.put(query, phoenixEngine.selectMetrics(_connection, query));
 		}
 		return result;
+	}
+	
+	@Override
+	public Map<MetricQuery, List<MetricScanner>> getMetricScanners(List<MetricQuery> queries) {
+		SystemAssert.requireArgument(queries != null, "Metric queries list cannot be null.");
+		
+		double percentage = 0.05;
+		long start = System.currentTimeMillis();
+		Map<MetricQuery, List<MetricScanner>> scannerMap = new HashMap<>();
+		
+		for (MetricQuery query : queries) {
+			Long chunkTime = (Long) Math.round((query.getEndTimestamp() - query.getStartTimestamp()) * percentage);
+			int additionalChunks = -1;
+			scannerMap.put(query,  new ArrayList<>());
+			
+			Map<MetricQuery, List<Metric>> metricMap;
+			MetricQuery miniQuery;
+			Long startTime;
+			Long stopTime;
+			do {
+				
+				additionalChunks++;
+				startTime = query.getStartTimestamp() + chunkTime * additionalChunks;
+				stopTime = Math.min(query.getEndTimestamp(), startTime + chunkTime);
+				
+				miniQuery = new MetricQuery(query.getScope(), query.getMetric(), query.getTags(), startTime, stopTime);
+				List<MetricQuery> miniQueries = new ArrayList<>();
+				miniQueries.add(miniQuery);
+				
+				metricMap = getMetrics(miniQueries);
+				
+			} while (!metricMap.containsKey(miniQuery) && (startTime + chunkTime) < query.getEndTimestamp());
+			
+			if (!metricMap.containsKey(miniQuery)) {scannerMap.put(miniQuery, new ArrayList<>()); continue;}
+			
+			List<Metric> miniMetrics = metricMap.get(miniQuery);
+			
+			for (Metric miniMetric : miniMetrics) {
+				MetricScanner scanner = new MetricScanner(miniMetric, query, this, stopTime);
+				scannerMap.get(query).add(scanner);
+			}
+		}
+		_logger.debug("Time to get Scanners = " + (System.currentTimeMillis() - start));
+		return scannerMap;
 	}
 
 	@Override

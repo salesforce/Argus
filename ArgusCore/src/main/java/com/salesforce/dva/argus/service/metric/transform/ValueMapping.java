@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.tsdb.MetricScanner;
+
 /**
  * This interface is used to map datapoint values.
  *
@@ -51,6 +53,27 @@ public interface ValueMapping {
      * @return  The value after mapping.
      */
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints);
+    
+    /**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner);
+    
+    /**
+     * Apply function to all of the datapoints of a metric scanner within a specified window and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * @param start The Long timestamp of the start of the window in which to perform the mapping, inclusive.
+     * @param end The Long timestamp of the end of the window in which to perform the mapping, inclusive.
+     * 
+     * @return The datapoints within the window after mapping.
+     */
+    Map<Long, Double> mappingToPager(MetricScanner scanner, Long start, Long end);
+
 
     /**
      * Apply function to every datapoint of a datapoint map and return a new datapoint.
@@ -62,6 +85,27 @@ public interface ValueMapping {
      */
     Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants);
 
+    /**
+     * Apply function to every datapoint of a metric scanner and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * @param constants The input constants for the specific mapping implementation.
+     * 
+     * @return The datapoints after mapping.
+     */
+    Map<Long, Double> mappingScanner(MetricScanner scanner, List<String> constants);
+        
+    /**
+     * Apply function to all of the datapoints of a metric scanner within a specified window and return a new datapoint map.
+     * 
+     * @param scanner The metric scanner from which to map datapoints.
+     * @param constants The input constants for the specific mapping implementation.
+     * @param start The Long timestamp of the start of the window in which to perform the mapping, inclusive.
+     * @param end The Long timestamp of the end of the window in which to perform the mapping, inclusive.
+     * @return
+     */
+    Map<Long, Double> mappingToPager(MetricScanner scanner, List<String> constants, Long start, Long end);
+    
     /**
      * Returns the name of the value mapping.
      *

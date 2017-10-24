@@ -68,7 +68,7 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
     public double calculateAnomalyScore(double value) {
         double probabilityDensity = (1.0/Math.sqrt(2.0 * Math.PI * variance)) *
                 Math.exp((-1.0 * Math.pow((value - mean), 2.0)) / (2.0 * variance));
-
+        
         if (probabilityDensity == 0.0) {
             throw new ArithmeticException("Cannot take the log of 0.");
         }
