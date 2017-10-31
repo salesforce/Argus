@@ -197,7 +197,6 @@ public class DiscoveryResources extends AbstractResource {
     	MetricDiscoveryQueryDto metricDiscoveryQueryDto) {
     	
 		KeywordQuery query = new KeywordQueryBuilder().query(metricDiscoveryQueryDto.getKeywordQuery())
-													  .isNative(metricDiscoveryQueryDto.isKeywordQueryNative())
 													  .limit(metricDiscoveryQueryDto.getLimit())
 													  .page(metricDiscoveryQueryDto.getPage())
 													  .scope(metricDiscoveryQueryDto.getScope())

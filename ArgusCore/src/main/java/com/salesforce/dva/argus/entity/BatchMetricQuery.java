@@ -1,7 +1,5 @@
 package com.salesforce.dva.argus.entity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +10,8 @@ import java.util.UUID;
  *
  * @author Colby Guan (cguan@salesforce.com)
  */
+@SuppressWarnings("serial")
 public class BatchMetricQuery implements Serializable {
-
-    //~ Static fields/initializers *******************************************************************************************************************
-
-    private static final String ROOT = "batch/";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     //~ Instance fields ******************************************************************************************************************************
 

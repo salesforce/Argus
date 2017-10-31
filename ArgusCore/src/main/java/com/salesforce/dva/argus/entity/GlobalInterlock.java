@@ -65,6 +65,7 @@ import javax.persistence.Table;
  *
  * @author  Tom Valine (tvaline@salesforce.com), Raj Sarkapally (rsarkapally@salesforce.com)
  */
+@SuppressWarnings("serial")
 @Entity
 @Table(name = "GLOBAL_INTERLOCK")
 public class GlobalInterlock implements Serializable {

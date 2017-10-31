@@ -1,7 +1,6 @@
 package com.salesforce.dva.argus.service;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.IntStream;
 
 import com.salesforce.dva.argus.AbstractTest;
@@ -12,7 +11,6 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by mingzhong on 26.01.17.
