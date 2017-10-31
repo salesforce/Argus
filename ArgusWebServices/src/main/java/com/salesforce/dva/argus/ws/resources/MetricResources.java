@@ -81,7 +81,7 @@ public class MetricResources extends AbstractResource {
      * @return  The resulting metrics.
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON + ";qs=2")
+    @Produces(MediaType.APPLICATION_JSON + ";qs=1")
     @Description("Performs a metric query using the given expression.")
     public List<MetricDto> getMetricsJSON(@Context HttpServletRequest req,
         @QueryParam("expression") List<String> expressions) {
@@ -104,7 +104,7 @@ public class MetricResources extends AbstractResource {
      * @return  Metric data in CSV format
      */
     @GET
-    @Produces("application/ms-excel;qs=1")
+    @Produces("application/ms-excel;qs=0")
     @Description("Downloads the metric data in CSV format.")
     public Response getMetricsCSV(@Context HttpServletRequest req,
         @QueryParam("expression") List<String> expressions) {
