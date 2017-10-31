@@ -7,6 +7,7 @@ import static com.salesforce.dva.argus.entity.BatchMetricQuery.Status;
 /**
  * Created by cguan on 6/1/16.
  */
+@SuppressWarnings("serial")
 public class AsyncBatchedMetricQuery implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************

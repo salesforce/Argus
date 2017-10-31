@@ -5,7 +5,7 @@
 
     <appender name="ARGUS-CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>[ %boldMagenta(%cn) | %13.13replace(%X{SESSION}){'^$','*NULLSESSION*'} | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %.15thread | %highlight(%5.-5level) ] %msg%n</pattern>
+            <pattern>[ %boldMagenta(%cn) | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %.15thread | %highlight(%5.-5level) ] %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -18,7 +18,7 @@
         <file>${argus.logdir:-.}/argus.log</file>
         <append>true</append>
         <encoder>
-            <pattern>[ %cn | %13.13replace(%X{SESSION}){'^$','*NULLSESSION*'} | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %thread | %level ] %msg%n%ex</pattern>
+            <pattern>[ %boldMagenta(%cn) | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %thread | %highlight(%level) ] %msg%n%ex</pattern>
         </encoder>
     </appender>
 

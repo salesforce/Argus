@@ -18,7 +18,6 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 	    private int limit = 50;
 	    
 	    private String keywordQuery;
-	    private boolean isKeywordQueryNative;
 	    
 		public String getNamespace() {
 			return namespace == null || namespace.length() == 0 ? "*" : namespace;
@@ -100,14 +99,6 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 			this.keywordQuery = keywordQuery;
 		}
 
-		public boolean isKeywordQueryNative() {
-			return isKeywordQueryNative;
-		}
-
-		public void setKeywordQueryNative(boolean isKeywordQueryNative) {
-			this.isKeywordQueryNative = isKeywordQueryNative;
-		}
-
 		@Override
 		public Object createExample() {
 			MetricDiscoveryQueryDto query = new MetricDiscoveryQueryDto();
@@ -134,7 +125,6 @@ public class MetricDiscoveryQueryDto extends BaseDto{
 			yetAnotherResult.setKeywordQuery("cpu time");
 			yetAnotherResult.setLimit(10);
 			yetAnotherResult.setPage(1);
-			yetAnotherResult.setKeywordQueryNative(false);
 			
 			return Arrays.asList(query, anotherQuery, yetAnotherResult);
 		}

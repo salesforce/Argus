@@ -158,7 +158,6 @@ public class KeywordQuery extends SchemaQuery {
 	    private String tagValue;
 	    private RecordType type;
 		private String query;
-		private boolean isNative;
 		private int limit = 10;
 		private int page = 1;
 		
@@ -196,11 +195,6 @@ public class KeywordQuery extends SchemaQuery {
 		
 		public KeywordQueryBuilder query(String query) {
 			this.query = query;
-			return this;
-		}
-		
-		public KeywordQueryBuilder isNative(boolean isNative) {
-			this.isNative = isNative;
 			return this;
 		}
 		

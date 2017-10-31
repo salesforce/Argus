@@ -37,10 +37,10 @@ public class BatchDto {
         return result;
     }
 
-    private static class QueryDto {
-        String expression;
-        Metric result;
-        String message;
+    static class QueryDto {
+        private String expression;
+        private Metric result;
+        private String message;
 
         QueryDto(String expression, Metric result, String message) {
             this.expression = expression;
