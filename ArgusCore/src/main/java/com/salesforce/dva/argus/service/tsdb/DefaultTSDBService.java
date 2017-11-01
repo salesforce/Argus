@@ -99,6 +99,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
     
     private final ExecutorService _executorService;
     private final MonitorService _monitorService;
+    private final int RETRY_COUNT;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -127,7 +128,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
         _readEndpoint = config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue());
         _writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
-        
+        RETRY_COUNT = Integer.parseInt(config.getValue(Property.TSD_RETRY_COUNT.getName(),
+                Property.TSD_RETRY_COUNT.getDefaultValue()));
         requireArgument((_readEndpoint != null) && (!_readEndpoint.isEmpty()), "Illegal read endpoint URL.");
         for(String writeEndpoint : _writeEndpoints) {
         	requireArgument((writeEndpoint != null) && (!writeEndpoint.isEmpty()), "Illegal write endpoint URL.");
@@ -283,25 +285,23 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         	put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
         } catch(IOException ex) {
         	_logger.warn("IOException while trying to push metrics", ex);
-        	List<String> copy = Arrays.asList(_writeEndpoints);
-        	copy.remove(endpoint);
-        	_retry(fracturedList, copy);
+        	_retry(fracturedList, _roundRobinIterator);
         }
     }
     
-    public <T> void _retry(List<T> objects, List<String> endpointsToRetryWith) {
-    	
-    	for(String endpoint : endpointsToRetryWith) {
+    public <T> void _retry(List<T> objects, Iterator<String> endPointIterator) {
+    	for(int i=0;i<RETRY_COUNT;i++) {
     		try {
+    			String endpoint=endPointIterator.next();
     			_logger.info("Retrying using endpoint {}.", endpoint);
         		put(objects, endpoint + "/api/put", HttpMethod.POST);
         		return;
         	} catch(IOException ex) {
-        		_logger.warn("IOException while trying to push data", ex);
+        		_logger.warn("IOException while trying to push data. We will retry for {} more times",RETRY_COUNT-i);
         	}
     	}
     	
-    	_logger.error("Tried all available endpoints to push data and we still failed. Dropping this chunk of data.");
+    	_logger.error("Retried for {} times and we still failed. Dropping this chunk of data.", RETRY_COUNT);
     	
     }
 
@@ -360,9 +360,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
             	put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
             } catch(IOException ex) {
             	_logger.warn("IOException while trying to push annotations", ex);
-            	List<String> copy = Arrays.asList(_writeEndpoints);
-            	copy.remove(endpoint);
-            	_retry(wrappers, copy);
+            	_retry(wrappers, _roundRobinIterator);
             }
         }
     }
@@ -697,7 +695,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         /** The TSDB socket connection timeout. */
         TSD_ENDPOINT_SOCKET_TIMEOUT("service.property.tsdb.endpoint.socket.timeout", "10000"),
         /** The TSDB connection count. */
-        TSD_CONNECTION_COUNT("service.property.tsdb.connection.count", "2");
+        TSD_CONNECTION_COUNT("service.property.tsdb.connection.count", "2"),
+        TSD_RETRY_COUNT("service.property.tsdb.retry.count", "3");
 
         private final String _name;
         private final String _defaultValue;
