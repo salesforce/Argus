@@ -860,15 +860,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     public enum Property {
         
         ELASTICSEARCH_ENDPOINT("service.property.schema.elasticsearch.endpoint", "http://localhost:9200,http://localhost:9201"),
-    	/** The TSDB connection timeout. */
+    	/** Connection timeout for ES REST client. */
     	ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT("service.property.schema.elasticsearch.endpoint.connection.timeout", "10000"),
-        /** The TSDB socket connection timeout. */
+        /** Socket connection timeout for ES REST client. */
     	ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT("service.property.schema.elasticsearch.endpoint.socket.timeout", "10000"),
-        /** The TSDB connection count. */
+        /** Connection count for ES REST client. */
     	ELASTICSEARCH_CONNECTION_COUNT("service.property.schema.elasticsearch.connection.count", "10"),
-    	/** The TSDB connection count. */
+    	/** Replication factor for metadata_index. */
     	ELASTICSEARCH_REPLICATION_FACTOR("service.property.schema.elasticsearch.replication.factor", "2"),
-    	/** The TSDB connection count. */
+    	/** Shard count for metadata_index. */
     	ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10");
 
         private final String _name;
