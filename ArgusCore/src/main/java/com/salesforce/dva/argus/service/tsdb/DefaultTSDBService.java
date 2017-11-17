@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.argus.service.*;
@@ -283,7 +284,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
         	put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
         } catch(IOException ex) {
         	_logger.warn("IOException while trying to push metrics", ex);
-        	List<String> copy = Arrays.asList(_writeEndpoints);
+        	List<String> copy = Lists.newArrayList(_writeEndpoints); 
         	copy.remove(endpoint);
         	_retry(fracturedList, copy);
         }
