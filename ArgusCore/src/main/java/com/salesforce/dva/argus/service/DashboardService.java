@@ -76,9 +76,13 @@ public interface DashboardService extends Service {
     /**
      * Retrieves a list of Dashboards shared globally.
      *
+     * @param   metadataOnly  Get only metadata associated with dashboards
+     * @param   limit         The maximum number of rows to return.
+     * @param   offset        The number of rows to skip over before returning result rows.
+     *
      * @return  A list of Dashboards shared globally or an empty list if no global dashboards.
      */
-    List<Dashboard> findSharedDashboards(boolean metadataOnly);
+    List<Dashboard> findSharedDashboards(boolean metadataOnly, Integer limit, Integer offset);
 
     /**
      * Retrieves a list of all dashboards.

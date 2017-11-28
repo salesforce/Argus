@@ -239,7 +239,7 @@ public interface AlertService extends Service {
      *
      * @return  The list of all alerts. Will never be null, but may be empty.
      */
-    List<Alert> findSharedAlerts(boolean metadataOnly);
+    List<Alert> findSharedAlerts(boolean metadataOnly, Integer limit, Integer offset);
     
     /**
      * Returns the list of supported notifiers.

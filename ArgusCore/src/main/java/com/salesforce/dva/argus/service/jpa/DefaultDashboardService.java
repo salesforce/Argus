@@ -157,9 +157,10 @@ public class DefaultDashboardService extends DefaultJPAService implements Dashbo
 
     @Override
     @Transactional
-    public List<Dashboard> findSharedDashboards(boolean metadataOnly) {
+    public List<Dashboard> findSharedDashboards(boolean metadataOnly, Integer limit, Integer offset) {
         requireNotDisposed();
-        return metadataOnly ? Dashboard.findSharedDashboardsMeta(emf.get()) : Dashboard.findSharedDashboards(emf.get());
+        _logger.info("Dashboard Limit: {}, Offset: {}", limit, offset);
+        return metadataOnly ? Dashboard.findSharedDashboardsMeta(emf.get(), limit, offset) : Dashboard.findSharedDashboards(emf.get(), limit, offset);
     }
 
     @Override

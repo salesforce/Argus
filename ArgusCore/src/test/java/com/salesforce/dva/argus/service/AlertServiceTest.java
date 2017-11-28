@@ -356,7 +356,7 @@ public class AlertServiceTest extends AbstractTest {
 		
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertShared);
-		List<Alert> actualResult=alertService.findSharedAlerts(false);
+		List<Alert> actualResult=alertService.findSharedAlerts(false, null, null);
 		assertEquals(expectedSharedResult, actualResult);
 	}
 	
@@ -380,7 +380,7 @@ public class AlertServiceTest extends AbstractTest {
 		expectedSharedResult.add(alertSharedUser2);
 		
 		
-		assertEquals(expectedSharedResult, alertService.findSharedAlerts(false));
+		assertEquals(expectedSharedResult, alertService.findSharedAlerts(false, null, null));
 	}
 	
 	@Test
@@ -403,7 +403,7 @@ public class AlertServiceTest extends AbstractTest {
 		expectedSharedResult.add(alertSharedUser2);
 		
 		
-		assertEquals(expectedSharedResult, alertService.findSharedAlerts(true));
+		assertEquals(expectedSharedResult, alertService.findSharedAlerts(true, null, null));
 	}
 	
 	@Test

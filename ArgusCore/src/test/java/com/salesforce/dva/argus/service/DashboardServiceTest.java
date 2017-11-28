@@ -89,7 +89,7 @@ public class DashboardServiceTest extends AbstractTest {
 
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
-        dashboardRetrieved = dService.findSharedDashboards(false);
+        dashboardRetrieved = dService.findSharedDashboards(false, null, null);
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
         dService.deleteDashboard(dashboard.getId());
@@ -147,7 +147,7 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard1.getId());
         assertNotNull(dashboard2.getId());
         
-        List<Dashboard> dashboardsRetrieved = dService.findSharedDashboards(true);
+        List<Dashboard> dashboardsRetrieved = dService.findSharedDashboards(true, null, null);
         assertEquals(1, dashboardsRetrieved.size());
         assertEquals(dashboard1.getId(), dashboardsRetrieved.get(0).getId());
     }

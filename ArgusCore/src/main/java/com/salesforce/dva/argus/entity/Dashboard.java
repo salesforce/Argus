@@ -89,7 +89,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
     {
         @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"),
         @NamedQuery(
-            name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true"
+            name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true ORDER BY d.id"
         ), @NamedQuery(
             name = "Dashboard.getDashboardsOwnedBy", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner"
         ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC")
@@ -165,23 +165,31 @@ public class Dashboard extends JPAEntity implements Serializable {
     /**
      * Finds the list of dashboards that are marked as globally shared.
      *
-     * @param   em  The entity manager to use.
+     * @param   em       The entity manager to use.
+     * @param   limit    The maximum number of rows to return.
+     * @param   offset   The number of rows to skip over before returning result rows.
      *
      * @return  Dashboards that are shared/global within the system. Or empty list if no such dashboards exist.
      */
-    public static List<Dashboard> findSharedDashboards(EntityManager em) {
+    public static List<Dashboard> findSharedDashboards(EntityManager em, Integer limit, Integer offset) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	TypedQuery<Dashboard> query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
-
+    	
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
         try {
+        	if(limit!= null && offset != null){
+    			query.setFirstResult(offset);
+    			query.setMaxResults(limit);
+        	}
+        	
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
     }
     
-    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em) {
+    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, Integer limit, Integer offset) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	try {
@@ -196,7 +204,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         	cq.multiselect(fieldsToSelect);
         	cq.where(cb.equal(e.get("shared"), true));
         	
-        	return _readDashboards(em, cq, null);
+        	return _readDashboards(em, cq, limit, offset);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -239,7 +247,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         	cq.multiselect(fieldsToSelect);
         	cq.where(cb.equal(e.get("owner"), user));
         	
-        	return _readDashboards(em, cq, null);
+        	return _readDashboards(em, cq, null, null);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -283,21 +291,27 @@ public class Dashboard extends JPAEntity implements Serializable {
         	}
         	cq.multiselect(fieldsToSelect);
         	
-        	return _readDashboards(em, cq, limit);
+        	return _readDashboards(em, cq, limit, null);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
     }
     
-	private static List<Dashboard> _readDashboards(EntityManager em, CriteriaQuery<Tuple> cq, Integer limit) {
+	private static List<Dashboard> _readDashboards(EntityManager em, CriteriaQuery<Tuple> cq, Integer limit, Integer offset) {
 		
 		List<Dashboard> dashboards = new ArrayList<>();
 		
 		TypedQuery<Tuple> query = em.createQuery(cq);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
 		if (limit != null) {
             query.setMaxResults(limit);
         }
+		
+		if(offset != null){
+			query.setFirstResult(offset);
+		}
 		
 		List<Tuple> result = query.getResultList();
 		for(Tuple tuple : result) {
