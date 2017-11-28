@@ -109,13 +109,13 @@ public class AlertResources extends AbstractResource {
 	 * Return both owners and shared alerts (if the shared flag is true).
 	 * @return  The list of shared alerts.
 	 */
-	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
+	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit, Integer offset) {
 		
 		Set<Alert> result = new HashSet<>();
 		
 		result.addAll(_getAlertsByOwner(alertname, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true) : alertService.findSharedAlerts(false));
+			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, limit, offset) : alertService.findSharedAlerts(false,limit, offset));
 		}
 		
 		return new ArrayList<>(result);
@@ -136,10 +136,12 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts' metadata.")
 	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
 										@QueryParam("ownername") String ownerName,
-										@QueryParam("shared") boolean shared) {
+										@QueryParam("shared") boolean shared,
+										@QueryParam("limit")  Integer limit,
+										@QueryParam("offset") Integer offset) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, true);
+		List<Alert> result = getAlertsObj(alertname, owner, shared, true, limit, offset);
 		return AlertDto.transformToDto(result);
 	}
 
@@ -157,10 +159,12 @@ public class AlertResources extends AbstractResource {
 	@Description("Returns all alerts.")
 	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
 									@QueryParam("ownername") String ownerName,
-									@QueryParam("shared") boolean shared) {
+									@QueryParam("shared") boolean shared,
+									@QueryParam("limit")  Integer limit,
+									@QueryParam("offset") Integer offset){
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, false);
+		List<Alert> result = getAlertsObj(alertname, owner, shared, false, limit, offset);
 		return AlertDto.transformToDto(result);
 	}
 

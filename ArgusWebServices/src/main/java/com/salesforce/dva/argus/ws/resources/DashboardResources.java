@@ -83,15 +83,15 @@ public class DashboardResources extends AbstractResource {
 	 * @return  The list of filtered alerts in alert object.
 	 */
 	private List<Dashboard> _getDashboardsByOwner(String dashboardName, PrincipalUser owner, boolean populateMetaFieldsOnly) {
-		
+
 		List<Dashboard> result = new ArrayList<>();
-		
+
 		if (dashboardName != null && !dashboardName.isEmpty()) {
 			Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
 			if (dashboard == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 			}
-			
+
 			result.add(dashboard);
 		} else {
 			if(owner.isPrivileged()) {
@@ -100,28 +100,30 @@ public class DashboardResources extends AbstractResource {
 				result = populateMetaFieldsOnly ? dService.findDashboardsByOwner(owner, true) : dService.findDashboardsByOwner(owner, false);
 			}
 		}
-		
+
 		return result;
 	}
-	
-	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
-		
+
+	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit, Integer offset) {
+
 		Set<Dashboard> result = new HashSet<>();
-		
+
 		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true) : dService.findSharedDashboards(false));
+			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, limit, offset) : dService.findSharedDashboards(false, limit, offset));
 		}
-		
+
 		return new ArrayList<>(result);
 	}
-	
+
 	/**
 	 * Returns all dashboards' metadata filtered by owner.
 	 *
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param   limit          The maximum number of rows to return.
+	 * @param   offset         The number of rows to skip over before returning result rows.
 	 *
 	 * @return  The list of filtered dashboards' metadata.
 	 */
@@ -130,11 +132,13 @@ public class DashboardResources extends AbstractResource {
 	@Path("/meta")
 	@Description("Returns all dashboards' metadata.")
 	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
-												@QueryParam("owner") String ownerName,
-												@QueryParam("shared") @DefaultValue("true") boolean shared) {
-		
+			@QueryParam("owner") String ownerName,
+			@QueryParam("shared") @DefaultValue("true") boolean shared,
+			@QueryParam("limit")  Integer limit,
+			@QueryParam("offset") Integer offset) {
+
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true, limit, offset);
 		return DashboardDto.transformToDto(result);
 	}
 
@@ -144,18 +148,22 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
-	 *
+	 * @param   limit          The maximum number of rows to return.
+	 * @param   offset         The number of rows to skip over before returning result rows.
+	 * 
 	 * @return  The list of filtered dashboards.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all dashboards.")
 	public List<DashboardDto> getDashboards(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
-											@QueryParam("owner") String ownerName,
-											@QueryParam("shared") @DefaultValue("true") boolean shared) {
-		
+			@QueryParam("owner") String ownerName,
+			@QueryParam("shared") @DefaultValue("true") boolean shared,
+			@QueryParam("limit")  Integer limit,
+			@QueryParam("offset") Integer offset) {
+
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false, limit, offset);
 		return DashboardDto.transformToDto(result);
 	}
 
@@ -283,6 +291,6 @@ public class DashboardResources extends AbstractResource {
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
-	
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
