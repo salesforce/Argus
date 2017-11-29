@@ -236,7 +236,10 @@ public interface AlertService extends Service {
 
     /**
      * Returns a list of shared alerts.
-     *
+     * @param   metadataOnly    Get metadata only
+     * @param   owner           The owner of shared alerts to filter on. If null no filtering applied
+	 * @param   limit           The maximum number of rows to return. If null no filtering applied
+	 * 
      * @return  The list of all alerts. Will never be null, but may be empty.
      */
     List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit);

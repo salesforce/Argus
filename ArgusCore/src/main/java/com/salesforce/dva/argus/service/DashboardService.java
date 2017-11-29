@@ -76,8 +76,11 @@ public interface DashboardService extends Service {
 
 	/**
 	 * Returns a list of shared Dashboards.
-	 *
-	 * @return  The list of all shared alerts. Will never be null, but may be empty.
+     * @param   metadataOnly    Get metadata only
+     * @param   owner           The owner of shared dashboards to filter on. If null no filtering applied
+	 * @param   limit           The maximum number of rows to return. If null no filtering applied
+	 * 
+     * The list of all shared dashboards. Will never be null, but may be empty.
 	 */
 	List<Dashboard> findSharedDashboards(boolean metadataOnly, PrincipalUser owner, Integer limit);
 

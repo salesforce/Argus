@@ -175,18 +175,18 @@ public class DashboardResources extends AbstractResource {
 
 	
 	/**
-	 * Returns the list of shared alerts
+	 * Returns all shared dashboards with filtering.
 	 *
-	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
-	 * @param   ownerName  Name of the owner. It is optional.
-	 *
-	 * @return  The list of alerts created by the user.
+	 * @param   req            The HTTP request.
+	 * @param   ownerName      The owner of shared dashboards to filter on. It is optional.
+	 * @param   limit          The maximum number of results to return. It is optional.
+	 * 
+	 * @return  The list of all shared dashboards. Will never be null but may be empty.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/shared")
-	@Description("Returns all shared alerts.")
+	@Description("Returns all shared dashboards.")
 	public List<DashboardDto> getSharedDashboards(@Context HttpServletRequest req,
 									@QueryParam("ownername") String ownerName,
 									@QueryParam("limit")  Integer limit){
@@ -203,18 +203,18 @@ public class DashboardResources extends AbstractResource {
 	
 	
 	/**
-	 * Returns the list of shared alerts with only metadata
+	 * Returns the list of all shared dashboards with only metadata information.
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   limit      The maximum number of results to return. It is optional.
 	 *
-	 * @return  The list of alerts created by the user.
+	 * @return  The list of all shared dashboards with meta information only. Will never be null but may be empty.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/shared/meta")
-	@Description("Returns all shared alerts.")
+	@Description("Returns all shared dashboards.")
 	public List<DashboardDto> getSharedDashboardsMeta(@Context HttpServletRequest req,
 									@QueryParam("ownername") String ownerName,
 									@QueryParam("limit")  Integer limit){

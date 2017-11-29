@@ -31,18 +31,7 @@
 
 package com.salesforce.dva.argus.entity;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.salesforce.dva.argus.service.metric.MetricReader;
-import com.salesforce.dva.argus.util.Cron;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -59,8 +48,6 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityResult;
-import javax.persistence.FieldResult;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
@@ -68,7 +55,6 @@ import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
 import javax.persistence.OneToMany;
 import javax.persistence.Query;
-import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
@@ -79,9 +65,19 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.postgresql.util.PGobject;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.util.Cron;
 
 /**
  * The entity which encapsulates information about a Dashboard.
@@ -107,26 +103,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @SuppressWarnings("serial")
 @Entity
 @Table(name = "ALERT", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "owner_id" }))
-@SqlResultSetMapping(name="OrderAlerts",
-entities={ 
-		@EntityResult(entityClass=com.salesforce.dva.argus.entity.Alert.class, fields={
-				@FieldResult(name="id", column="id"),
-				@FieldResult(name="cronEntry", column="cronentry"), 
-				@FieldResult(name="enabled", column="enabled"),
-				@FieldResult(name="expression", column="expression"),
-				@FieldResult(name="missingDataNotificationEnabled", column="missingdataandnotificationenabled"),
-				@FieldResult(name="name", column="name"),
-				@FieldResult(name="shared", column="shared")}),
-		@EntityResult(entityClass=com.salesforce.dva.argus.entity.PrincipalUser.class, fields={
-				@FieldResult(name="id", column="id"),
-				@FieldResult(name="cronEntry", column="cronentry"), 
-				@FieldResult(name="enabled", column="enabled"),
-				@FieldResult(name="expression", column="expression"),
-				@FieldResult(name="missingDataNotificationEnabled", column="missingdataandnotificationenabled"),
-				@FieldResult(name="name", column="name"),
-				@FieldResult(name="shared", column="shared")})
-		}
-		)
 @NamedQueries(
 		{
 			@NamedQuery(
@@ -501,9 +477,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	}
 
 	/**
-	 * Finds all shared alerts.
+	 * Finds all shared alerts with filtering.
 	 *
-	 * @param   em  The entity manager to user. Cannot be null.
+	 * @param   em     The entity manager to user. Cannot be null.
+	 * @param   owner  The owner of shared alerts to filter on 
+	 * @param   limit  The maximum number of rows to return.
 	 *
 	 * @return  The list of all shared alerts. Will never be null but may be empty.
 	 */
@@ -531,6 +509,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 	}
 
+	/**
+	 * Gets all meta information of shared alerts with filtering.
+	 *
+	 * @param   em     The entity manager to user. Cannot be null.
+	 * @param   owner  The owner of shared alerts to filter on 
+	 * @param   limit  The maximum number of rows to return.
+	 *
+	 * @return  The list of all shared alerts with meta information only. Will never be null but may be empty.
+	 */	
 	public static List<Alert> findSharedAlertsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
 		requireArgument(em != null, "Entity manager can not be null.");
 
