@@ -112,7 +112,7 @@ public class DashboardResources extends AbstractResource {
 
 		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, owner, limit) : dService.findSharedDashboards(false, owner, limit));
+			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, null, limit) : dService.findSharedDashboards(false, null, limit));
 		}
 
 		return new ArrayList<>(result);
@@ -133,7 +133,6 @@ public class DashboardResources extends AbstractResource {
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
 	 * @param   limit          The maximum number of rows to return.
-	 * @param   offset         The number of rows to skip over before returning result rows.
 	 *
 	 * @return  The list of filtered dashboards' metadata.
 	 */
@@ -144,8 +143,7 @@ public class DashboardResources extends AbstractResource {
 	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
 			@QueryParam("owner") String ownerName,
 			@QueryParam("shared") @DefaultValue("true") boolean shared,
-			@QueryParam("limit")  Integer limit,
-			@QueryParam("offset") Integer offset) {
+			@QueryParam("limit")  Integer limit) {
 
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true, limit);
@@ -159,7 +157,6 @@ public class DashboardResources extends AbstractResource {
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
 	 * @param   limit          The maximum number of rows to return.
-	 * @param   offset         The number of rows to skip over before returning result rows.
 	 * 
 	 * @return  The list of filtered dashboards.
 	 */
@@ -169,8 +166,7 @@ public class DashboardResources extends AbstractResource {
 	public List<DashboardDto> getDashboards(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
 			@QueryParam("owner") String ownerName,
 			@QueryParam("shared") @DefaultValue("true") boolean shared,
-			@QueryParam("limit")  Integer limit,
-			@QueryParam("offset") Integer offset) {
+			@QueryParam("limit")  Integer limit) {
 
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false, limit);
