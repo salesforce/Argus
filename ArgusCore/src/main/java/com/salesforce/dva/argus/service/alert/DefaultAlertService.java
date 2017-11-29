@@ -691,9 +691,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	@Override
 	@Transactional
-	public List<Alert> findSharedAlerts(boolean metadataOnly, Integer limit, Integer offset) {
+	public List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit) {
 		requireNotDisposed();
-		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), limit, offset) : Alert.findSharedAlerts(_emProvider.get(), limit, offset);
+		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
 	}
 
 	/**

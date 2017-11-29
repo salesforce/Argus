@@ -31,10 +31,12 @@
 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.dto.AlertDto;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import java.math.BigInteger;
@@ -104,17 +106,25 @@ public class DashboardResources extends AbstractResource {
 		return result;
 	}
 
-	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit, Integer offset) {
+	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit) {
 
 		Set<Dashboard> result = new HashSet<>();
 
 		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, limit, offset) : dService.findSharedDashboards(false, limit, offset));
+			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, owner, limit) : dService.findSharedDashboards(false, owner, limit));
 		}
 
 		return new ArrayList<>(result);
 	}
+	
+	private List<Dashboard> getSharedDashboardsObj(boolean populateMetaFieldsOnly, PrincipalUser owner, Integer limit) {
+
+		Set<Dashboard> result = new HashSet<>();
+		result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, owner, limit) : dService.findSharedDashboards(false, owner, limit));
+		return new ArrayList<>(result);
+	}
+	
 
 	/**
 	 * Returns all dashboards' metadata filtered by owner.
@@ -138,7 +148,7 @@ public class DashboardResources extends AbstractResource {
 			@QueryParam("offset") Integer offset) {
 
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true, limit, offset);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true, limit);
 		return DashboardDto.transformToDto(result);
 	}
 
@@ -163,10 +173,66 @@ public class DashboardResources extends AbstractResource {
 			@QueryParam("offset") Integer offset) {
 
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false, limit, offset);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false, limit);
 		return DashboardDto.transformToDto(result);
 	}
 
+	
+	/**
+	 * Returns the list of shared alerts
+	 *
+	 * @param   req        The HttpServlet request object. Cannot be null.
+	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   ownerName  Name of the owner. It is optional.
+	 *
+	 * @return  The list of alerts created by the user.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared")
+	@Description("Returns all shared alerts.")
+	public List<DashboardDto> getSharedDashboards(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Dashboard> result = getSharedDashboardsObj(false, owner, limit);
+		return DashboardDto.transformToDto(result);
+	}
+	
+	
+	/**
+	 * Returns the list of shared alerts with only metadata
+	 *
+	 * @param   req        The HttpServlet request object. Cannot be null.
+	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   ownerName  Name of the owner. It is optional.
+	 *
+	 * @return  The list of alerts created by the user.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared/meta")
+	@Description("Returns all shared alerts.")
+	public List<DashboardDto> getSharedDashboardsMeta(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Dashboard> result = getSharedDashboardsObj(true, owner, limit);
+		return DashboardDto.transformToDto(result);
+	}
+	
 	/**
 	 * Returns a dashboard by its ID.
 	 *
