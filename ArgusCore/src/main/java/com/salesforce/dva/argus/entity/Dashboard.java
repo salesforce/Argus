@@ -89,10 +89,14 @@ import org.apache.commons.lang3.reflect.FieldUtils;
     {
         @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"),
         @NamedQuery(
-            name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true ORDER BY d.id"
+            name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true"
         ), @NamedQuery(
             name = "Dashboard.getDashboardsOwnedBy", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner"
-        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC")
+        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC"),
+		@NamedQuery(
+				name = "Dashboard.getSharedDashboardsByOwner", 
+				query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true"
+				)
     }
 )
 public class Dashboard extends JPAEntity implements Serializable {
@@ -171,25 +175,32 @@ public class Dashboard extends JPAEntity implements Serializable {
      *
      * @return  Dashboards that are shared/global within the system. Or empty list if no such dashboards exist.
      */
-    public static List<Dashboard> findSharedDashboards(EntityManager em, Integer limit, Integer offset) {
+    public static List<Dashboard> findSharedDashboards(EntityManager em,  PrincipalUser owner, Integer limit) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
-    	TypedQuery<Dashboard> query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
     	
+		TypedQuery<Dashboard> query;
+		if(owner == null){
+			query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
+		} else {
+			query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwner", Dashboard.class);
+			query.setParameter("owner", owner);
+		}
+		
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
+		if(limit!= null){
+			query.setMaxResults(limit);
+		}
+		
         try {
-        	if(limit!= null && offset != null){
-    			query.setFirstResult(offset);
-    			query.setMaxResults(limit);
-        	}
-        	
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
     }
     
-    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, Integer limit, Integer offset) {
+    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	try {
@@ -202,9 +213,14 @@ public class Dashboard extends JPAEntity implements Serializable {
         		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
         	}
         	cq.multiselect(fieldsToSelect);
-        	cq.where(cb.equal(e.get("shared"), true));
-        	
-        	return _readDashboards(em, cq, limit, offset);
+
+			if(owner != null){
+				cq.where(cb.equal(e.get("shared"), true), cb.equal(e.get("owner"), owner));
+			} else{
+	        	cq.where(cb.equal(e.get("shared"), true));
+			}
+
+        	return _readDashboards(em, cq, limit);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -247,7 +263,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         	cq.multiselect(fieldsToSelect);
         	cq.where(cb.equal(e.get("owner"), user));
         	
-        	return _readDashboards(em, cq, null, null);
+        	return _readDashboards(em, cq, null);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -291,14 +307,14 @@ public class Dashboard extends JPAEntity implements Serializable {
         	}
         	cq.multiselect(fieldsToSelect);
         	
-        	return _readDashboards(em, cq, limit, null);
+        	return _readDashboards(em, cq, limit);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
     }
     
-	private static List<Dashboard> _readDashboards(EntityManager em, CriteriaQuery<Tuple> cq, Integer limit, Integer offset) {
+	private static List<Dashboard> _readDashboards(EntityManager em, CriteriaQuery<Tuple> cq, Integer limit) {
 		
 		List<Dashboard> dashboards = new ArrayList<>();
 		
@@ -308,11 +324,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 		if (limit != null) {
             query.setMaxResults(limit);
         }
-		
-		if(offset != null){
-			query.setFirstResult(offset);
-		}
-		
+
 		List<Tuple> result = query.getResultList();
 		for(Tuple tuple : result) {
 			Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")), 

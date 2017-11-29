@@ -79,6 +79,7 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.postgresql.util.PGobject;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -157,10 +158,11 @@ entities={
 			@NamedQuery(
 					name = "Alert.getSharedAlerts", 
 					query = "SELECT a from Alert a where a.shared = true AND a.id not in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = true)"
+					),
+			@NamedQuery(
+					name = "Alert.getSharedAlertsByOwner", 
+					query = "SELECT a from Alert a where a.owner = :owner AND a.shared = true AND a.id not in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = true)"
 					)
-
-
-
 		}
 		)
 public class Alert extends JPAEntity implements Serializable, CronJob {
@@ -505,63 +507,31 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *
 	 * @return  The list of all shared alerts. Will never be null but may be empty.
 	 */
-	public static List<Alert> findSharedAlerts(EntityManager em, Integer limit, Integer offset) {
+	public static List<Alert> findSharedAlerts(EntityManager em, PrincipalUser owner, Integer limit) {
 		requireArgument(em != null, "Entity manager can not be null.");
 
+		TypedQuery<Alert> query;
+		if(owner == null){
+			query = em.createNamedQuery("Alert.getSharedAlerts", Alert.class);
+		} else {
+			query = em.createNamedQuery("Alert.getSharedAlertsByOwner", Alert.class);
+			query.setParameter("owner", owner);
+		}
+		
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
+		if(limit!= null){
+			query.setMaxResults(limit);
+		}
+
 		try {
-			if(limit!= null && offset != null){
-
-				// native query try
-//				Query q = em.createNativeQuery("SELECT a from Alert a where a.shared = true AND a.id not in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = true)" + 
-//						" OFFSET " + 1 + " ROWS FETCH NEXT " + 2 + " ROWS ONLY", "OrderAlerts");
-				
-				Query q = em.createNativeQuery("SELECT a from Alert a where a.shared = true AND a.id not in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = true)" + 
-						" OFFSET " + 1 + " ROWS FETCH NEXT " + 2 + " ROWS ONLY", Alert.class);
-
-				@SuppressWarnings("unchecked")
-				List<Alert> results = q.getResultList();
-
-
-				List<Alert> alerts = new ArrayList<>();
-				for(Alert a : results) {
-					int size = results.size();
-					/*
-                	objects[]
-
-                	Alert a = new Alert(PrincipalUser.class.cast(tuple.get("createdBy")), PrincipalUser.class.cast(tuple.get("owner")), 
-                			String.class.cast(tuple.get("name")), String.class.cast(tuple.get("expression")), 
-                			String.class.cast(tuple.get("cronEntry")));
-
-                	a.id = BigInteger.class.cast(tuple.get("id"));
-                	a.enabled = Boolean.class.cast(tuple.get("enabled"));
-                	a.createdDate = Date.class.cast(tuple.get("createdDate"));
-                	a.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
-                	a.shared = Boolean.class.cast(tuple.get("shared"));
-                	a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
-
-                	alerts.add(a);
-					 */
-				}
-
-				return alerts;
-
-				/*
-        		query.setFirstResult(offset);
-    			query.setMaxResults(limit);
-				 */
-			} else{
-				TypedQuery<Alert> query = em.createNamedQuery("Alert.getSharedAlerts", Alert.class);
-				query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-				return query.getResultList();
-			}
-
-
+			return query.getResultList();
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
 	}
 
-	public static List<Alert> findSharedAlertsMeta(EntityManager em, Integer limit, Integer offset) {
+	public static List<Alert> findSharedAlertsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
 		requireArgument(em != null, "Entity manager can not be null.");
 
 		try {
@@ -575,18 +545,17 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 			cq.multiselect(fieldsToSelect);
 
-			cq.where(cb.equal(e.get("deleted"), false), cb.equal(e.get("shared"), true));
-
+			if(owner != null){
+				cq.where(cb.equal(e.get("deleted"), false), cb.equal(e.get("shared"), true), cb.equal(e.get("owner"), owner));
+			} else{
+				cq.where(cb.equal(e.get("deleted"), false), cb.equal(e.get("shared"), true));
+			}
 
 			TypedQuery<Tuple> query = em.createQuery(cq);
 			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 
 			if (limit != null) {
 				query.setMaxResults(limit);
-			}
-
-			if(offset != null){
-				query.setFirstResult(offset);
 			}
 
 			List<Tuple> result = query.getResultList();
