@@ -214,7 +214,7 @@ public class DashboardResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/shared/meta")
-	@Description("Returns all shared dashboards.")
+	@Description("Returns all shared dashboards' metadata.")
 	public List<DashboardDto> getSharedDashboardsMeta(@Context HttpServletRequest req,
 									@QueryParam("ownername") String ownerName,
 									@QueryParam("limit")  Integer limit){
