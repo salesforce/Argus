@@ -115,7 +115,7 @@ public class AlertResources extends AbstractResource {
 		
 		result.addAll(_getAlertsByOwner(alertname, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, owner, limit) : alertService.findSharedAlerts(false, owner, limit));
+			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, null, limit) : alertService.findSharedAlerts(false, null, limit));
 		}
 		
 		return new ArrayList<>(result);
