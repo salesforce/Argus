@@ -170,8 +170,8 @@ public class Dashboard extends JPAEntity implements Serializable {
      * Finds the list of dashboards that are marked as globally shared.
      *
      * @param   em       The entity manager to use.
+     * @param   owner    The owner of shared dashboards to filter on 
      * @param   limit    The maximum number of rows to return.
-     * @param   offset   The number of rows to skip over before returning result rows.
      *
      * @return  Dashboards that are shared/global within the system. Or empty list if no such dashboards exist.
      */
@@ -199,7 +199,16 @@ public class Dashboard extends JPAEntity implements Serializable {
             return new ArrayList<>(0);
         }
     }
-    
+ 
+    /**
+     * Gets all meta information of shared dashboards with filtering.
+     *
+     * @param   em       The entity manager to use.
+     * @param   owner    The owner of shared dashboards to filter on 
+     * @param   limit    The maximum number of rows to return.
+     *
+     * @return  The list of all shared dashboards with meta information only. Will never be null but may be empty.
+     */    
     public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	

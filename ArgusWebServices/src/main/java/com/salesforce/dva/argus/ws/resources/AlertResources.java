@@ -136,7 +136,7 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of alerts' metadata created by the user.
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
 	 *
 	 * @return  The list of alerts' metadata created by the user.
@@ -145,13 +145,13 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta")
 	@Description("Returns all alerts' metadata.")
-	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertName,
 										@QueryParam("ownername") String ownerName,
 										@QueryParam("shared") boolean shared,
 										@QueryParam("limit")  Integer limit) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, true, limit);
+		List<Alert> result = getAlertsObj(alertName, owner, shared, true, limit);
 		return AlertDto.transformToDto(result);
 	}
 
@@ -159,7 +159,7 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of alerts created by the user.
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
 	 *
 	 * @return  The list of alerts created by the user.
@@ -167,13 +167,13 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all alerts.")
-	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertName,
 									@QueryParam("ownername") String ownerName,
 									@QueryParam("shared") boolean shared,
 									@QueryParam("limit")  Integer limit){
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, false, limit);
+		List<Alert> result = getAlertsObj(alertName, owner, shared, false, limit);
 		return AlertDto.transformToDto(result);
 	}
 
@@ -182,9 +182,9 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of shared alerts
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
-	 *
+	 * @param   limit      The maximum number of results to return.
+	 * 
 	 * @return  The list of alerts created by the user.
 	 */
 	@GET
@@ -209,8 +209,8 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of shared alerts with only metadata
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   limit      The maximum number of results to return.
 	 *
 	 * @return  The list of alerts created by the user.
 	 */
