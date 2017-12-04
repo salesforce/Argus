@@ -405,6 +405,90 @@ public class AlertServiceTest extends AbstractTest {
 		
 		assertEquals(expectedSharedResult, alertService.findSharedAlerts(true, null, null));
 	}
+
+	@Test
+	public void testFindSharedAlertsByOwner() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
+		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
+		
+		alertSharedUser1.setShared(true);
+		alertService.updateAlert(alertSharedUser1);
+		alertSharedUser2.setShared(true);
+		alertService.updateAlert(alertSharedUser2);
+		alertSharedAdmin.setShared(true);
+		alertService.updateAlert(alertSharedAdmin);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertSharedUser1);
+		expectedSharedResult.add(alertSharedUser2);
+		expectedSharedResult.add(alertSharedAdmin);
+		
+	    assertEquals(3, alertService.findSharedAlerts(false, null, null).size());
+		
+		List<Alert> expectedSharedResultUser1 = new ArrayList<>();
+		expectedSharedResultUser1.add(alertSharedUser1);
+		assertEquals(expectedSharedResultUser1, alertService.findSharedAlerts(false, user1, null));
+		
+		List<Alert> expectedSharedResultUser2 = new ArrayList<>();
+		expectedSharedResultUser2.add(alertSharedUser2);
+		assertEquals(expectedSharedResultUser2, alertService.findSharedAlerts(false, user2, null));
+
+		List<Alert> expectedSharedResultAdmin = new ArrayList<>();
+		expectedSharedResultAdmin.add(alertSharedAdmin);
+		assertEquals(expectedSharedResultAdmin, alertService.findSharedAlerts(false, admin, null));
+		
+		alertSharedAdmin.setShared(false);
+		alertService.updateAlert(alertSharedAdmin);
+		assertEquals(new ArrayList<Alert>(), alertService.findSharedAlerts(false, admin, null));
+	}
+	
+	@Test
+	public void testFindSharedAlertsMetaByOwner() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+		
+		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
+		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
+		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
+		
+		alertSharedUser1.setShared(true);
+		alertService.updateAlert(alertSharedUser1);
+		alertSharedUser2.setShared(true);
+		alertService.updateAlert(alertSharedUser2);
+		alertSharedAdmin.setShared(true);
+		alertService.updateAlert(alertSharedAdmin);
+		
+		List<Alert> expectedSharedResult = new ArrayList<>();
+		expectedSharedResult.add(alertSharedUser1);
+		expectedSharedResult.add(alertSharedUser2);
+		expectedSharedResult.add(alertSharedAdmin);
+		
+	    assertEquals(3, alertService.findSharedAlerts(true, null, null).size());
+		
+		List<Alert> expectedSharedResultUser1 = new ArrayList<>();
+		expectedSharedResultUser1.add(alertSharedUser1);
+		assertEquals(expectedSharedResultUser1, alertService.findSharedAlerts(true, user1, null));
+		
+		List<Alert> expectedSharedResultUser2 = new ArrayList<>();
+		expectedSharedResultUser2.add(alertSharedUser2);
+		assertEquals(expectedSharedResultUser2, alertService.findSharedAlerts(true, user2, null));
+
+		List<Alert> expectedSharedResultAdmin = new ArrayList<>();
+		expectedSharedResultAdmin.add(alertSharedAdmin);
+		assertEquals(expectedSharedResultAdmin, alertService.findSharedAlerts(true, admin, null));
+		
+		alertSharedAdmin.setShared(false);
+		alertService.updateAlert(alertSharedAdmin);
+		assertEquals(new ArrayList<Alert>(), alertService.findSharedAlerts(true, admin, null));
+	}
 	
 	@Test
 	public void testAlertSerDes() {
