@@ -130,7 +130,7 @@ public class Dashboard extends JPAEntity implements Serializable {
      *
      * @param  creator        The creator of this dashboard.
      * @param  dashboardName  The name for the dashboard. Cannot be null or empty.
-     * @param  owner          The owner of this dashboard. This need not be the same as the creator. Cannoy be null.
+     * @param  owner          The owner of this dashboard. This need not be the same as the creator. Cannot be null.
      */
     public Dashboard(PrincipalUser creator, String dashboardName, PrincipalUser owner) {
         super(creator);
