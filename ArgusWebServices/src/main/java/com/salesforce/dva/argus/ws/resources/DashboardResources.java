@@ -173,7 +173,6 @@ public class DashboardResources extends AbstractResource {
 		return DashboardDto.transformToDto(result);
 	}
 
-	
 	/**
 	 * Returns all shared dashboards with filtering.
 	 *
@@ -200,7 +199,6 @@ public class DashboardResources extends AbstractResource {
 		List<Dashboard> result = getSharedDashboardsObj(false, owner, limit);
 		return DashboardDto.transformToDto(result);
 	}
-	
 	
 	/**
 	 * Returns the list of all shared dashboards with only metadata information.
