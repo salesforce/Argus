@@ -355,7 +355,7 @@ public class MetricQuery extends AnnotationQuery {
 					transform = factory.getTransform(TransformFactory.Function.MAX.getName());
 					break;
 				case SUM: 
-					transform = factory.getTransform(TransformFactory.Function.SUM.getName());
+					transform = factory.getTransform(TransformFactory.Function.ZEROIFMISSINGSUM.getName());
 					break;
 				case AVG:
 					transform = factory.getTransform(TransformFactory.Function.AVERAGE.getName());
@@ -374,6 +374,9 @@ public class MetricQuery extends AnnotationQuery {
 					break;
 				case MIMMAX:
 					transform = factory.getTransform(TransformFactory.Function.MAX.getName());
+					break;
+				case NONE:
+					transform = factory.getTransform(TransformFactory.Function.IDENTITY.getName());
 					break;
 				default:
 					throw new IllegalArgumentException("Aggregator not legal: " + agg);

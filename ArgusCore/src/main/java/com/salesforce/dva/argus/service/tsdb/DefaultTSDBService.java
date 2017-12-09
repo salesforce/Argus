@@ -720,7 +720,6 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		return result;
 	}
 
-
 	/* Gets metrics for a list of queries */
 	private Map<MetricQuery, List<Metric>> getSubQueryMetrics(List<MetricQuery> queries) {
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
