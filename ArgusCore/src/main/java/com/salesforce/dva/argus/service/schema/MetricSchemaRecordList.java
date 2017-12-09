@@ -51,9 +51,8 @@ public class MetricSchemaRecordList {
 	public void setScrollID(String scrollID) {
 		this._scrollID = scrollID;
 	}
-
-
-
+	
+	
 	static class Serializer extends JsonSerializer<MetricSchemaRecordList> {
 
 		@Override
