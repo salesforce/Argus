@@ -21,8 +21,9 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	
-	private final RadixTree<VoidValue> _trie;
-    private final boolean _cacheEnabled;
+	protected final RadixTree<VoidValue> _trie;
+    protected final boolean _cacheEnabled;
+    protected final boolean _syncPut; 
 
 	protected AbstractSchemaService(SystemConfiguration systemConfiguration) {
 		super(systemConfiguration);
@@ -30,6 +31,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		_trie = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
     	_cacheEnabled = Boolean.parseBoolean(systemConfiguration.getValue(Property.CACHE_SCHEMARECORDS.getName(), 
     			Property.CACHE_SCHEMARECORDS.getDefaultValue()));
+    	_syncPut = Boolean.parseBoolean(systemConfiguration.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
 	}
 
 	@Override
@@ -136,7 +138,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
         
     	/* If set to true, schema records will be cached on writes. This helps to check if a schema records already exists,
     	 * and if it does then do not rewrite. Provide more heap space when using this option. */
-    	CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false");
+    	CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false"),
+    	SYNC_PUT("service.property.schema.sync.put", "false");
 
         private final String _name;
         private final String _defaultValue;
