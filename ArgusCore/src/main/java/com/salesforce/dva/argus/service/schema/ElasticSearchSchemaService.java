@@ -521,7 +521,22 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				
 				@Override
 				public void onSuccess(Response response) {
-					return;
+					try {
+						PutResponse putResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
+						if(putResponse.errors) {
+							for(Item item : putResponse.items) {
+								if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
+									throw new SystemException("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.errorMap));
+								}
+								
+								if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
+									throw new SystemException("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.errorMap));
+								}
+							}
+						}
+					} catch(IOException e) {
+						throw new SystemException("Failed to parse reponse of put metrics.", e);
+					}
 				}
 				
 				@Override
@@ -529,29 +544,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					_logger.warn("Failed while executing request", exception);
 				}
 			};
+			
 			_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody), responseListener);
 		} catch (JsonProcessingException | UnsupportedEncodingException e) {
 			throw new SystemException("Failed to parse metrics when indexing.", e);
 		}
-		
-		/*
-		try {
-			PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-			if(putResponse.errors) {
-				for(Item item : putResponse.items) {
-					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						throw new SystemException("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.errorMap));
-					}
-					
-					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-						throw new SystemException("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.errorMap));
-					}
-				}
-			}
-		} catch(IOException e) {
-			throw new SystemException("Failed to parse reponse of put metrics.", e);
-		}
-		*/
 	}
 	
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
@@ -697,7 +694,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		ObjectNode boolNode = mapper.createObjectNode();
 		boolNode.put("filter", shouldNodes);
-		//boolNode.put("minimum_should_match", shouldNodes.size());
 		
 		ObjectNode queryNode = mapper.createObjectNode();
 		queryNode.put("bool", boolNode);
