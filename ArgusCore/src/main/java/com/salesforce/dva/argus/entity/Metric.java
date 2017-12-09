@@ -222,21 +222,6 @@ public class Metric extends TSDBEntity implements Serializable {
         return _query;
     }
 
-    /**
-     * Constructs a native TSDB metric name for this metric.
-     * @todo This is implementation specific and should be moved to a service interface method.
-     *
-     * @return  The native TSDB metric name for this metric.  This method should never return null.
-     */
-    public String constructTSDBMetricName() {
-        StringBuilder sb = new StringBuilder(getScope());
-
-        if (_namespace != null && !_namespace.isEmpty()) {
-            sb.append(getNamespace());
-        }
-        return sb.toString();
-    }
-
     @Override
     public String toString() {
         Object[] params = {getNamespace(), getScope(), getMetric(), getTags(), getDatapoints() };

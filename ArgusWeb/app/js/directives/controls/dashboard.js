@@ -18,7 +18,7 @@ angular.module('argus.directives.controls.dashboard', [])
 
 				if (!localSubmit) {
 					for (var prop in $routeParams) {
-						if (prop == $scope.controlName) {
+						if (prop === $scope.controlName) {
 							controlValue = $routeParams[prop];
 						}
 					}
@@ -66,7 +66,7 @@ angular.module('argus.directives.controls.dashboard', [])
 			};
 		},
 		link:function(scope, element, attributes){
-			if (!attributes.onload || attributes.onload == true) {
+			if (!attributes.onload || attributes.onload === true) {
 				scope.$broadcast('submitButtonEvent', scope.controls);
 			}
 		}

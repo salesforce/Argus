@@ -34,8 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.apache.commons.math.stat.descriptive.moment.Mean;
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Filter transform is used by transform functions which cull the metric based on the result of evaluation against their datapoints.
@@ -87,7 +88,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
      */
     public static String internalReducer(Metric metric, String reducerType) {
-        Map<Long, Double> sortedDatapoints = new HashMap<>();
+        Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(metric.getDatapoints());
 

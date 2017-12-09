@@ -31,28 +31,37 @@
 
 package com.salesforce.dva.argus.service.tsdb;
 
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.inject.Inject;
+import com.salesforce.dva.argus.entity.*;
+import com.salesforce.dva.argus.service.*;
+import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
+import com.salesforce.dva.argus.service.metric.transform.Transform;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.system.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import org.apache.http.*;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.*;
+import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.*;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.net.*;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -61,42 +70,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.MethodNotSupportedException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.conn.routing.HttpRoute;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Iterables;
-import com.google.inject.Inject;
-import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
-import com.salesforce.dva.argus.service.metric.transform.Transform;
-import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
-import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.system.SystemException;
+import static com.salesforce.dva.argus.system.SystemAssert.*;
 
 /**
  * The default implementation of the TSDBService.
@@ -117,11 +91,13 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
 	private final ObjectMapper _mapper;
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
-	private final Set<String> _writeEndpoints;
-	private final Map<String, CloseableHttpClient> _writeHttpClients = new HashMap<>();
-	private final Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
+	
+	private final String[] _writeEndpoints;
+	private final CloseableHttpClient _writeHttpClient;
+
 	private final List<String> _readEndPoints;
 	private final List<String> _readBackupEndPoints;
+	private final Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
 	private final Map<String, String> _readBackupEndPointsMap = new HashMap<>();
 	private final TransformFactory _transformFactory;
 
@@ -160,6 +136,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 				Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
 
 		_readEndPoints = Arrays.asList(config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue()).split(","));
+
 		for(String readEndPoint : _readEndPoints) {
 			requireArgument((readEndPoint != null) && (!readEndPoint.isEmpty()), "Illegal read endpoint URL.");
 		}
@@ -170,7 +147,8 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			for(int i=0; i< _readEndPoints.size() - _readBackupEndPoints.size();i++)
 				_readBackupEndPoints.add("");
 		}
-		_writeEndpoints = new HashSet<>(Arrays.asList(config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",")));
+
+		_writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
 
 		for(String writeEndpoint : _writeEndpoints) {
 			requireArgument((writeEndpoint != null) && (!writeEndpoint.isEmpty()), "Illegal write endpoint URL.");
@@ -182,19 +160,16 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		try {
 			int index = 0;
 			for (String readEndpoint : _readEndPoints) {
-				_readPortMap.put(readEndpoint, getClient(readEndpoint, connCount / 2, connTimeout, socketTimeout));
+				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,readEndpoint));
 				_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
 				index ++;
 			}
 			for (String readBackupEndpoint : _readBackupEndPoints) {
 				if (!readBackupEndpoint.isEmpty())
-					_readPortMap.put(readBackupEndpoint, getClient(readBackupEndpoint, connCount / 2, connTimeout, socketTimeout));
+					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,readBackupEndpoint));
 			}
-
-			for(String writeEndpoint : _writeEndpoints) {
-				CloseableHttpClient writeHttpClient = getClient(writeEndpoint, connCount / 2, connTimeout, socketTimeout);
-				_writeHttpClients.put(writeEndpoint, writeHttpClient);
-			}
+			
+			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout, _writeEndpoints);
 
 			_roundRobinIterator = Iterables.cycle(_writeEndpoints).iterator();
 			_executorService = Executors.newFixedThreadPool(connCount);
@@ -300,7 +275,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		super.dispose();
 		List<CloseableHttpClient> clients = new ArrayList<>();
 		clients.addAll(_readPortMap.values());
-		clients.addAll(_writeHttpClients.values());
+		clients.add(_writeHttpClient);
 		for (CloseableHttpClient client : clients) {
 			try {
 				client.close();
@@ -324,7 +299,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		requireArgument(metrics != null, "Metrics can not be null");
 
 		String endpoint = _roundRobinIterator.next();
-		_logger.info("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
+		_logger.debug("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
 
 		List<Metric> fracturedList = new ArrayList<>();
 
@@ -340,7 +315,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
 		} catch(IOException ex) {
 			_logger.warn("IOException while trying to push metrics", ex);
-			List<String> copy = new ArrayList<>(_writeEndpoints);
+			List<String> copy = Lists.newArrayList(_writeEndpoints); 
 			copy.remove(endpoint);
 			_retry(fracturedList, copy);
 		}
@@ -362,10 +337,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 
 	}
 
-	/** @see  TSDBService#getMetrics(java.util.List) 
-	 * - Federation occurs for multiple endpoints (it uses backup if primary endpoint is down)
-	 * - Federation occurs for large range queries into smaller range sub queries
-	 * */
+	/** @see  TSDBService#getMetrics(java.util.List) */
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
 		requireNotDisposed();
@@ -373,7 +345,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		_logger.trace("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
-		
+
 		for (MetricQuery query : queries) {
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
@@ -432,17 +404,14 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
 			} catch(IOException ex) {
 				_logger.warn("IOException while trying to push annotations", ex);
-				List<String> copy = new ArrayList<>(_writeEndpoints);
+				List<String> copy = Arrays.asList(_writeEndpoints);
 				copy.remove(endpoint);
 				_retry(wrappers, copy);
 			}
 		}
 	}
 
-	/** @see  TSDBService#getAnnotations(java.util.List)
-	 * - Federation occurs for multiple endpoints (it uses backup if primary endpoint is down)
-	 * - Federation occurs for large range queries into smaller range sub queries 
-	 * */
+	/** @see  TSDBService#getAnnotations(java.util.List) */
 	@Override
 	public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
 		requireNotDisposed();
@@ -524,7 +493,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
 				try {
 					StringEntity entity = new StringEntity(fromEntity(objects.subList(chunkStart, chunkEnd)));
-					HttpResponse response = executeHttpRequest(method, endpoint, _chooseWriteEndpoint(endpoint),entity);
+					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
 				} catch (UnsupportedEncodingException ex) {
@@ -535,30 +504,28 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 	}
 
 	/* Helper to create the read and write clients. */
-	private CloseableHttpClient getClient(String endpoint, int connCount, int connTimeout, int socketTimeout) throws MalformedURLException {
-		URL url = new URL(endpoint);
-		int port = url.getPort();
-
-		requireArgument(port != -1, "Read endpoint must include explicit port.");
-
+	private CloseableHttpClient getClient(int connCount, int connTimeout, int socketTimeout, String...endpoints) throws MalformedURLException {
 		PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
-
 		connMgr.setMaxTotal(connCount);
-		connMgr.setDefaultMaxPerRoute(connCount);
 
-		String route = endpoint.substring(0, endpoint.lastIndexOf(":"));
-		HttpHost host = new HttpHost(route, port);
+		for(String endpoint : endpoints) {
+			URL url = new URL(endpoint);
+			int port = url.getPort();
+			requireArgument(port != -1, "TSDB endpoint must include explicit port.");
+			HttpHost host = new HttpHost(url.getHost(),	url.getPort());
+			connMgr.setMaxPerRoute(new HttpRoute(host), connCount / endpoints.length);
+		}
+
 		RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
 				socketTimeout).build();
 
-		connMgr.setMaxPerRoute(new HttpRoute(host), connCount / 2);
 		return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
 	}
 
 	/* Converts a list of annotations into a list of annotation wrappers for use in serialization.  Resulting list is sorted by target annotation
 	 * scope and timestamp.
 	 */
-	List<AnnotationWrapper> toAnnotationWrappers(List<Annotation> annotations) {
+	private List<AnnotationWrapper> toAnnotationWrappers(List<Annotation> annotations) {
 		Map<String, Set<Annotation>> sortedByUid = new TreeMap<>();
 
 		for (Annotation annotation : annotations) {
@@ -653,7 +620,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 	}
 
 	/* Helper to process the response. */
-	String extractResponse(HttpResponse response) {
+	private String extractResponse(HttpResponse response) {
 		if (response != null) {
 			int status = response.getStatusLine().getStatusCode();
 
@@ -672,20 +639,9 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		return null;
 	}
 
-	private CloseableHttpClient _chooseWriteEndpoint(String url) {
-		String defaultWriteEndpoint = "";
-		for(String writeEndpoint : _writeEndpoints) {
-			defaultWriteEndpoint = writeEndpoint;
-			if(url.startsWith(writeEndpoint)) {
-				return _writeHttpClients.get(writeEndpoint);
-			}
-		}
-
-		return _writeHttpClients.get(defaultWriteEndpoint);
-	}
-
 	/* Execute a request given by type requestType. */
-	private HttpResponse executeHttpRequest(HttpMethod requestType, String url, CloseableHttpClient client, StringEntity entity) throws IOException {
+	private HttpResponse executeHttpRequest(HttpMethod requestType, String url,  CloseableHttpClient client, StringEntity entity) throws IOException {
+		
 		HttpResponse httpResponse = null;
 
 		if (entity != null) {
@@ -764,6 +720,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		return result;
 	}
 
+
 	/* Gets metrics for a list of queries */
 	private Map<MetricQuery, List<Metric>> getSubQueryMetrics(List<MetricQuery> queries) {
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
@@ -811,7 +768,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			subQueryMetricsMap.put(entry.getKey(), metrics);
 		}
 		return subQueryMetricsMap;
-	}
+	}    
 
 	//~ Enums ****************************************************************************************************************************************
 
@@ -833,7 +790,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		/** The TSDB connection count. */
 		TSD_CONNECTION_COUNT("service.property.tsdb.connection.count", "2"),
 		/** The TSDB backup read endpoint. */
-		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467");    	
+		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467");		
 
 		private final String _name;
 		private final String _defaultValue;
@@ -862,7 +819,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		}
 	}
 
-	void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start,
+	private void instrumentQueryLatency(final MonitorService monitorService, final AnnotationQuery query, final long start,
 			final String measurementType) {
 		String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() - query.getStartTimestamp());
 		Map<String, String> tags = new HashMap<String, String>();
@@ -878,7 +835,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
-	enum HttpMethod {
+	private enum HttpMethod {
 
 		/** POST operation. */
 		POST,
@@ -910,7 +867,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		}
 
 		/* Annotations should have the same scope, metric, type and tags and timestamp. */
-		AnnotationWrapper(Set<Annotation> annotations, TSDBService service) {
+		private AnnotationWrapper(Set<Annotation> annotations, TSDBService service) {
 			this();
 			_service = service;
 			for (Annotation annotation : annotations) {
@@ -1006,10 +963,10 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 		 * Creates a new QueryWorker object.
 		 *
 		 * @param  requestUrl  The URL to which the request will be issued.
-		 * @param requestEndPoint The endpoint to which the request will be issued.		 
+		 * @param requestEndPoint The endpoint to which the request will be issued.
 		 * @param  requestBody The request body. 
 		 */
-		public QueryWorker(String requestUrl, String requestEndPoint, String requestBody) {
+		public QueryWorker(String requestUrl,  String requestEndPoint, String requestBody) {
 			this._requestUrl = requestUrl;
 			this._requestEndPoint = requestEndPoint;
 			this._requestBody = requestBody;
@@ -1020,7 +977,7 @@ public class DefaultTSDBService extends DefaultService implements TSDBService {
 			_logger.debug("TSDB Query = " + _requestBody);
 
 			try {
-				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl,  _readPortMap.get(_requestEndPoint), new StringEntity(_requestBody));
+				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl, _readPortMap.get(_requestEndPoint), new StringEntity(_requestBody));
 				List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
 				return metrics;
 			} catch (IOException e) {

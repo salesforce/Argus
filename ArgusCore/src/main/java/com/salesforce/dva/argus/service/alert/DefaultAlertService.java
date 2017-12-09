@@ -31,6 +31,9 @@
 
 package com.salesforce.dva.argus.service.alert;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.persist.Transactional;
@@ -58,6 +61,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -113,6 +117,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final HistoryService _historyService;
 	private final MonitorService _monitorService;
 	private final NotifierFactory _notifierFactory;
+	private final ObjectMapper _mapper = new ObjectMapper();
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -144,10 +149,24 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService = monitorService;
 		_notifierFactory = notifierFactory;
 		_emProvider = emProvider;
+		
+		_initializeObjectMapper();
 	}
 
 	//~ Methods **************************************************************************************************************************************
 
+	private void _initializeObjectMapper() {
+		
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(Alert.class, new Alert.Serializer());
+		module.addSerializer(Trigger.class, new Trigger.Serializer());
+		module.addSerializer(Notification.class, new Notification.Serializer());
+		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
+		module.addDeserializer(Alert.class, new Alert.Deserializer());
+		
+		_mapper.registerModule(module);
+	}
+	
 	@Override
 	@Transactional
 	public Alert updateAlert(Alert alert) {
@@ -284,26 +303,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
 
 		List<History> historyList = new ArrayList<>();
-		List<AlertIdWithTimestamp> alertIdWithTimestampList = _mqService.dequeue(ALERT.getQueueName(), AlertIdWithTimestamp.class, timeout,
+		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
 
-		List<BigInteger> alertIds = new ArrayList<>(alertIdWithTimestampList.size());
-		for(AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
-			alertIds.add(alertIdWithTimestamp.alertId);
-		}
-
-		List<Alert> alerts = alertIds.isEmpty() ? Collections.emptyList() : findAlertsByPrimaryKeys(alertIds);
-		Map<BigInteger, Alert> alertsByIds = new HashMap<>(alerts.size());
-		for(Alert alert : alerts) {
-			alertsByIds.put(alert.getId(), alert);
-		}
-
-		for (AlertIdWithTimestamp alertIdWithTimestamp : alertIdWithTimestampList) {
+		for (AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			long jobStartTime = System.currentTimeMillis();
-			BigInteger alertId = alertIdWithTimestamp.alertId;
 
-			Alert alert = alertsByIds.get(alertId);
-			if(!_shouldEvaluateAlert(alert, alertId)) {
+			String serializedAlert = alertWithTimestamp.getSerializedAlert();
+			Alert alert;
+			try {
+				alert = _mapper.readValue(serializedAlert, Alert.class);
+			} catch (IOException e) {
+				_logger.warn("Failed to deserialize alert.", e);
+				continue;
+			} 
+			
+			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 				continue;
 			}
 
@@ -312,7 +327,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertIdWithTimestamp.alertEnqueueTime);
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertWithTimestamp.getAlertEnqueueTime());
 				
 				if(metrics.isEmpty()) {
 					if (alert.isMissingDataNotificationEnabled()) {
@@ -328,8 +343,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					}
 				} else {
-					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(alert.getTriggers(), 
+					//Only evaluate those triggers which are associated with any notification. 
+					List<Trigger> triggersToEvaluate = new ArrayList<>();
+					for(Notification notification : alert.getNotifications()) {
+						triggersToEvaluate.addAll(notification.getTriggers());
+					}
+					
+					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
 							metrics, history);
+					
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
 							logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
@@ -359,7 +381,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-					_sendEmailToAdmin(alert, alertId, ex);
+					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
 				
 			} finally {
@@ -567,20 +589,28 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void enqueueAlerts(List<Alert> alerts) {
 		requireNotDisposed();
 		requireArgument(alerts != null, "The list of alerts cannot be null.");
-
-		List<AlertIdWithTimestamp> idsWithTimestamp = new ArrayList<>(alerts.size());
-
+ 		
+		List<AlertWithTimestamp> alertsWithTimestamp = new ArrayList<>(alerts.size());
 		for (Alert alert : alerts) {
-			AlertIdWithTimestamp obj = new AlertIdWithTimestamp(alert.getId(), System.currentTimeMillis());
-
-			idsWithTimestamp.add(obj);
+			AlertWithTimestamp obj;
+			try {
+				String serializedAlert = _mapper.writeValueAsString(alert);
+				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());
+			} catch (JsonProcessingException e) {
+				_logger.warn("Failed to serialize alert: {}.", alert.getId());
+				_logger.warn("", e);
+				continue;
+			}
+			
+			alertsWithTimestamp.add(obj);
 			
 			Map<String, String> tags = new HashMap<>();
 			tags.put(USERTAG, alert.getOwner().getUserName());
 			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 		
- 		_mqService.enqueue(ALERT.getQueueName(), idsWithTimestamp);
+ 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+		
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
@@ -588,7 +618,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for (Alert alert : alerts) {
 			Map<Long, Double> datapoints = new HashMap<>();
 			// convert timestamp to nearest minute since cron is Least scale resolution of minute
-			datapoints.put(1000*60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
+			datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
 			metric.setTag("host",SystemConfiguration.getHostname());
 			metric.addDatapoints(datapoints);
@@ -739,7 +769,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
 			if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
 				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
-				if(interval>=trigger.getInertia())
+				if(interval >= trigger.getInertia())
 					return sortedDatapoints.get(endIndex-1).getKey();
 			}else{
 				endIndex=startIndex;
@@ -793,21 +823,20 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	//~ Inner Classes ********************************************************************************************************************************
 
 	/**
-	 * Used to enqueue alerts to evaluate.  The timestamp is used to reconcile lag between enqueue time and evaluation time by adjusting relative
-	 * times in the alert metric expression being evaluated.
+	 * Used to enqueue alerts to evaluate.  The timestamp is used to reconcile lag between enqueue time 
+	 * and evaluation time by adjusting relative times in the alert metric expression being evaluated.
 	 *
-	 * @author  Tom Valine (tvaline@salesforce.com)
-	 * @todo Add data validation checks.
+	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
-	public static class AlertIdWithTimestamp implements Serializable {
-
+	public static class AlertWithTimestamp implements Serializable {
+		
 		/** The serial version UID. */
 		private static final long serialVersionUID = 1L;
-		protected BigInteger alertId;
+		protected String serializedAlert;
 		protected long alertEnqueueTime;
-
+		
 		/** Creates a new AlertIdWithTimestamp object. */
-		public AlertIdWithTimestamp() { }
+		public AlertWithTimestamp() { }
 
 		/**
 		 * Creates a new AlertIdWithTimestamp object.
@@ -815,47 +844,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  id         The alert ID.  Cannot be null.
 		 * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
 		 */
-		public AlertIdWithTimestamp(BigInteger id, long timestamp) {
-			this.alertId = id;
+		public AlertWithTimestamp(String serializedAlert, long timestamp) {
+			this.serializedAlert = serializedAlert;
 			this.alertEnqueueTime = timestamp;
 		}
 
-		/**
-		 * Returns the alert ID.
-		 *
-		 * @return  The alert ID.
-		 */
-		public BigInteger getAlertId() {
-			return alertId;
+		public String getSerializedAlert() {
+			return serializedAlert;
 		}
 
-		/**
-		 * Sets the alert ID.
-		 *
-		 * @param  alertId  The alert ID.
-		 */
-		public void setAlertId(BigInteger alertId) {
-			this.alertId = alertId;
+		public void setSerializedAlert(String serializedAlert) {
+			this.serializedAlert = serializedAlert;
 		}
 
-		/**
-		 * Returns the epoch timestamp at which the alert was enqueued.
-		 *
-		 * @return  The enqueue timestamp.
-		 */
 		public long getAlertEnqueueTime() {
 			return alertEnqueueTime;
 		}
 
-		/**
-		 * Sets the epoch timestamp at which the alert was enqueued.
-		 *
-		 * @param  alertEnqueueTime  The enqueue timestamp.
-		 */
 		public void setAlertEnqueueTime(long alertEnqueueTime) {
 			this.alertEnqueueTime = alertEnqueueTime;
 		}
+		
 	}
+	
 
 	/**
 	 * The context for the notification which contains relevant information for the notification occurrence.
@@ -1009,7 +1020,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setTriggeredMetric(Metric triggeredMetric) {
 			this.triggeredMetric = triggeredMetric;
 		}
-
 	}
 
 }

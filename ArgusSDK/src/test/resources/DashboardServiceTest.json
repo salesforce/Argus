@@ -33,4 +33,11 @@
     "status": 200,
     "message": "success",
     "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":\"UpdatedContent\",\"ownerName\":\"TestOwnerName\",\"shared\":true,\"description\":\"TestDescription\"}"
+},{
+	"type": "GET",
+	"endpoint": "/dashboards/meta?shared=false",
+	"jsonInput": null,
+	"status": 200,
+	"message": "success",
+	"jsonOutput": "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"name\":\"TestName\",\"content\":null,\"ownerName\":\"TestOwnerName\",\"shared\":false,\"description\":\"TestDescription\"}]" 
 }]

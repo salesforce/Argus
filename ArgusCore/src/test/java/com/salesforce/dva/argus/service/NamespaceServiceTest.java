@@ -46,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 public class NamespaceServiceTest extends AbstractTest {
 	
+	private PrincipalUser _admin;
     private NamespaceService _namespaceService;
     private UserService _userService;
 
@@ -53,6 +54,7 @@ public class NamespaceServiceTest extends AbstractTest {
     public void setupNamespaceServiceTest() {
         _namespaceService = system.getServiceFactory().getNamespaceService();
         _userService = system.getServiceFactory().getUserService();
+        _admin = system.getServiceFactory().getUserService().findAdminUser();
     }
 
     @Test
@@ -88,7 +90,7 @@ public class NamespaceServiceTest extends AbstractTest {
     @Test
     public void testAddAdditionalUsersToNamespace() {
         PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser("abc", "abc@xyz.com");
+        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
         Namespace namespace = new Namespace("namespace", user);
 
         namespace = _namespaceService.createNamespace(namespace);
@@ -100,7 +102,7 @@ public class NamespaceServiceTest extends AbstractTest {
     @Test
     public void testUserIsPermitted() {
         PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser("abc", "abc@xyz.com");
+        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
         Namespace namespace = new Namespace("namespace", user);
 
         namespace = _namespaceService.createNamespace(namespace);
@@ -111,7 +113,7 @@ public class NamespaceServiceTest extends AbstractTest {
     @Test
     public void testAdditionalUserIsPermitted() {
         PrincipalUser user = _userService.findAdminUser();
-        PrincipalUser user1 = new PrincipalUser("abc", "abc@xyz.com");
+        PrincipalUser user1 = new PrincipalUser(_admin, "abc", "abc@xyz.com");
         Namespace namespace = new Namespace("namespace", user);
 
         namespace = _namespaceService.createNamespace(namespace);

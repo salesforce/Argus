@@ -24,7 +24,7 @@ import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
  * ElasticSearchSchemaService object, the implemtationSpecificPut (which is part of ES Schema Service) has been 
  * mocked out. In essence, these tests only test the caching functionality. 
  * 
- * @author bhinav.sura
+ * @author Bhinav Sura (bhinav.sura@salesforce.com)
  *
  */
 public class AbstractSchemaServiceTest extends AbstractTest {

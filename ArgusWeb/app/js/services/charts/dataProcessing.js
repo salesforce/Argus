@@ -24,8 +24,15 @@ angular.module('argus.services.charts.dataProcessing', [])
 		return result;
 	}
 
+	function createMetricWithScopeMetricAndTags(metric){
+		return {
+			scopeMetric: metric.scope + ":" + metric.metric,
+			tags: createTagString(metric.tags)
+		}
+	}
+
 	function createSeriesName(metric) {
-		if(metric.displayName != null) {
+		if (metric.displayName !== null && metric.displayName !== undefined) {
 			return metric.displayName;
 		}
 
@@ -63,7 +70,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 					x: flagData.timestamp,
 					title: 'A',
 					text: formatFlagText(flagData.fields),
-					flagID: '_Flag'+tempID
+					flagID: '_Flag'+tempID,
+					fields: flagData.fields,
+					source: flagData.source
 				});
 				tempID++;
 			}
@@ -104,7 +113,6 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		augmentExpressionWithControlsData: function(expression, controls) {
 			var result = expression;
-
 			for (var controlIndex in controls) {
 				var controlName = controls[controlIndex].name;
 				var controlValue = controls[controlIndex].value;
@@ -218,6 +226,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 						processedMetric['expression'] = processedExpression;
 						processedMetric['name'] = metrics.name;
 						processedMetric['color'] = metrics.color;
+						processedMetric['extraYAxis'] = metrics.extraYAxis;
 						processedMetric['metricSpecificOptions'] = this.getMetricSpecificOptionsInArray(metricSpecificOptions);
 
 						// update metric list with new processed metric object
@@ -248,10 +257,11 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 		copySeriesDataNSetOptions: function(data, metricItem) {
 			var result = [];
-			if (data) {
+			if (data && data.length !== 0) {
 				for (var i = 0; i < data.length; i++) {
-					var series = [];
-
+					var series;
+					// converts json to 2D array
+					series = [];
 					for (var key in data[i].datapoints) {
 						var timestamp = parseInt(key);
 						if (data[i].datapoints[key] !== null) {
@@ -259,12 +269,13 @@ angular.module('argus.services.charts.dataProcessing', [])
 							series.push([timestamp, value]);
 						}
 					}
-
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
+					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.extraYAxis : null;
 					var objSeries = {
 						name: metricName,
 						color: metricColor,
+						extraYAxis: metricExtraYAxis,
 						data: series
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
@@ -337,6 +348,8 @@ angular.module('argus.services.charts.dataProcessing', [])
 		},
 
 		copySeries: copySeries,
+
+		createMetricWithScopeMetricAndTags: createMetricWithScopeMetricAndTags,
 
 		createSeriesName: createSeriesName,
 

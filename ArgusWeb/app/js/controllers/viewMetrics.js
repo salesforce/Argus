@@ -1,18 +1,15 @@
+/*global angular:false, console:false */
 'use strict';
-/*global angular:false, $:false, console:false */
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
 .controller('ViewMetrics', ['$location', '$routeParams', '$scope', '$compile', 'growl', 'Metrics', 'Annotations', 'SearchService', 'Controls', 'ChartDataProcessingService', 'DateHandlerService', 'InputTracker',
 	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
-
+		var lastParams;
+		var noMorePages = false;
 		$scope.expression = $routeParams.expression ? $routeParams.expression : null;
 		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
 		$scope.$watch('includeAnnotations', function (newValue) {
 			InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
-		});
-		$scope.timeZoneOption = InputTracker.getDefaultValue('viewMetricsTimeZoneOption', true);
-		$scope.$watch('timeZoneOption', function (newValue) {
-			InputTracker.updateDefaultValue('viewMetricsTimeZoneOption', true, newValue);
 		});
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
@@ -24,6 +21,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				$scope.showChart = false;
 			}
 		};
+
 		$scope.checkMetricExpression();
 
 		//sync the expression to URL param
@@ -37,8 +35,9 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			var tempSeries = [];
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
-				// clear old chart
-				$('#' + 'container').empty();
+				// clear old chart and annotation label tip
+				angular.element('#' + 'container').empty();
+				angular.element('.d3-tip').remove();
 				$scope.checkMetricExpression();
 				// show loading spinner
 				$scope.chartLoaded = false;
@@ -84,6 +83,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 
 		$scope.searchMetrics = function(value, category) {
 			// TODO: move param processing to search service
+			noMorePages = false;
 			var defaultParams = {
 				namespace: '*',
 				scope: '*',
@@ -95,7 +95,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				type: 'scope'
 			};
 
-			var newParams = JSON.parse(JSON.stringify(defaultParams));
+			var newParams = angular.copy(defaultParams);
 
 			// update params with values in $scope if they exist
 			newParams.scope = ($scope.scope) ? $scope.scope : '*';
@@ -121,12 +121,41 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			} else {
 				newParams.scope = newParams.scope + '*';
 			}
-			// end TODO
 
-			return SearchService.search(newParams)
+			lastParams = newParams;
+			// end TODO
+			//return a promise for template but later assign the data to the variable
+			var result = SearchService.search(newParams)
 				.then(function(response) {
+					if(response.data.length < newParams.limit){
+						noMorePages = true;
+					}
 					return response.data;
 				});
+			return result;
+		};
+
+		$scope.loadMore = function(matches, loadingAttr){
+			if(noMorePages) return;
+
+			lastParams.page = lastParams.page + 1;
+			eval('$scope.'+loadingAttr +'= true;');
+			SearchService.search(lastParams)
+				.then(function(response) {
+						if(response.data.length < lastParams.limit){
+							noMorePages = true;
+						}
+						response.data.forEach(function(name){
+							matches.push({
+							model: name
+							});
+						});
+						eval('$scope.'+loadingAttr +'= false;');
+
+				}, function(){
+						eval('$scope.'+loadingAttr +'= false;');
+				});
+
 		};
 
 		$scope.isSearchMetricDisabled = function () {
@@ -233,7 +262,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 					chartScope.dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
 					chartScope.dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
 				}
-				chartScope.dateConfig.gmt = $scope.timeZoneOption;
 
 				// query annotations
 				if (annotationInfo.length > 0) {

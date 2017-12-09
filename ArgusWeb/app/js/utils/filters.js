@@ -191,13 +191,13 @@ angular.module('argus.filters', [])
 	};
 }])
 
-.filter('agTableSort', function(){
+.filter('agTableSortInRow', function(){
 	return function(item, sortedIndices){
 		var newArray = [];
 
-		if(!sortedIndices || sortedIndices.length == 0){
+		if(!sortedIndices || sortedIndices.length === 0){
 			for(var key in item){
-				if(key !== 'timestamp'){
+				if(key.startsWith('value')){
 					newArray.push(item[key]);
 				}
 			}
@@ -207,5 +207,25 @@ angular.module('argus.filters', [])
 			}
 		}
 		return newArray;
+	};
+})
+
+
+.filter('truncateMetricName', function() {
+	// truncate the metric name for presentation
+	return function(metricName, menuOption) {
+		if (!metricName) return;
+
+		var startVal, endVal;
+		startVal = (menuOption.tooltipConfig.leadingNum > 0) ? menuOption.tooltipConfig.leadingNum : null;
+		endVal = (menuOption.tooltipConfig.trailingNum > 0) ? menuOption.tooltipConfig.trailingNum : null;
+
+		if (startVal && !endVal) {
+			return metricName.slice(startVal);
+		} else if (endVal) {
+			return metricName.slice(startVal, -endVal);
+		} else {
+			return metricName;
+		}
 	};
 });

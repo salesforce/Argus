@@ -34,7 +34,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Dashboard;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -144,6 +144,24 @@ public class DashboardService extends EndpointService {
      */
     public List<Dashboard> getDashboards() throws IOException, TokenExpiredException {
         String requestUrl = RESOURCE;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), new TypeReference<List<Dashboard>>() { });
+    }
+    
+    /**
+     * Returns the list of dashboards owned by the user. Each Dashboard only contains metadata (id, name, description etc.) about the dashbaord.
+     *
+     * @param	shared	True or false depending on whether shared dashboards must be retrieved along with dashboards owned by the user.
+     *
+     * @return  The list of dashboards owned by the user.
+     *
+     * @throws  IOException  If the server cannot be reached.
+     * @throws  TokenExpiredException   If the token sent along with the request has expired
+     */
+    public List<Dashboard> getDashboardsMeta(boolean shared) throws IOException, TokenExpiredException {
+        String requestUrl = RESOURCE + "/meta?shared=" + shared;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);

@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.service.SchemaService.RecordType;
 
 public class MetricSchemaRecordList {
 	
@@ -61,7 +64,7 @@ public class MetricSchemaRecordList {
 			mapper.setSerializationInclusion(Include.NON_NULL);
 			List<MetricSchemaRecord> records = list.getRecords();
 			for(MetricSchemaRecord record : records) {
-				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + MetricSchemaRecord.print(record) + "\"}}");
+				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + DigestUtils.md5Hex(MetricSchemaRecord.print(record)) + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
 				
 				jgen.writeRaw(mapper.writeValueAsString(record));
@@ -92,11 +95,18 @@ public class MetricSchemaRecordList {
 				while(iter.hasNext()) {
 					JsonNode hit = iter.next();
 					JsonNode source = hit.get("_source");
-					records.add(new MetricSchemaRecord(source.get("namespace") == null ? null : source.get("namespace").asText(), 
-													   source.get("scope").asText(), 
-													   source.get("metric").asText(), 
-													   source.get("tagKey") == null ? null : source.get("tagKey").asText(), 
-													   source.get("tagValue") == null ? null : source.get("tagValue").asText()));
+					
+					JsonNode namespaceNode = source.get(RecordType.NAMESPACE.getName());
+					JsonNode scopeNode = source.get(RecordType.SCOPE.getName());
+					JsonNode metricNode = source.get(RecordType.METRIC.getName());
+					JsonNode tagkNode = source.get(RecordType.TAGK.getName());
+					JsonNode tagvNode = source.get(RecordType.TAGV.getName());
+					
+					records.add(new MetricSchemaRecord(namespaceNode == null ? null : namespaceNode.asText(), 
+													   scopeNode.asText(), 
+													   metricNode.asText(), 
+													   tagkNode == null ? null : tagkNode.asText(), 
+													   tagvNode == null ? null : tagvNode.asText()));
 				}
 			}
 			
