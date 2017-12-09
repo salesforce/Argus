@@ -91,6 +91,7 @@ public class CollectionResources extends AbstractResource {
         for (MetricDto metricDto : metricDtos) {
             try {
                 Metric metric = new Metric(metricDto.getScope(), metricDto.getMetric());
+                metric.setTags(metricDto.getTags());
 
                 copyProperties(metric, metricDto);
                 legalMetrics.add(metric);

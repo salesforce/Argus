@@ -31,10 +31,9 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.module.SimpleModule;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
@@ -59,8 +58,7 @@ public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
     public ObjectMapperProvider() {
         mapper = new ObjectMapper();
 
-        SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null));
-
+        SimpleModule module = new SimpleModule(getClass().getName());
         module.addSerializer(PrincipalUser.class, new PrincipalUserSerializer());
         mapper.registerModule(module);
     }
@@ -69,7 +67,6 @@ public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
-        // TODO Auto-generated method stub
         return mapper;
     }
 }

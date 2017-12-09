@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
@@ -39,6 +40,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 /**
  * Creates a constant line based on the calculated value.<br/>
@@ -89,7 +92,7 @@ public class FillCalculateTransform implements Transform {
         if (matcher.matches()) {
             Integer target = Integer.valueOf(matcher.group(1));
 
-            result = PercentileTransform.calculateNthPercentile(valueList, target);
+            result = new Percentile().evaluate(Doubles.toArray(valueList), target);
         } else {
             switch (calculationType) {
                 case "min":

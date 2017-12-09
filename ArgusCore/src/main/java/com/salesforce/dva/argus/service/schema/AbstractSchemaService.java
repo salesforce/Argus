@@ -104,7 +104,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	@Override
 	public void dispose() {
-		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
 	}
 
 	@Override

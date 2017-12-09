@@ -54,7 +54,7 @@ public class LoggingFilter implements Filter {
     public void destroy() { }
 
     /**
-     * Logs basic session information, request count and timing information.
+     * Logs username, request count and timing information.
      *
      * @param   request   The HTTP request.
      * @param   response  The HTTP response.

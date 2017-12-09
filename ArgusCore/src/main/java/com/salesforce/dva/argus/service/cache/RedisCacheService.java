@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.cache;
 
 import com.google.inject.Inject;
@@ -63,285 +63,293 @@ import java.util.TreeSet;
 @Singleton
 public class RedisCacheService extends DefaultService implements CacheService {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    private final Logger _logger = LoggerFactory.getLogger(getClass());
-    private final SystemConfiguration _config;
-    private JedisCluster _jedisClusterClient;
+	private final Logger _logger = LoggerFactory.getLogger(getClass());
+	private final SystemConfiguration _config;
+	private JedisCluster _jedisClusterClient;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new RedisCacheService object.
-     *
-     * @param  config  The system configuration.  Cannot be null.
-     */
-    @Inject
-    public RedisCacheService(SystemConfiguration config) {
-    	super(config);
-        _config = config;
-        GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-        poolConfig.setMaxTotal(Integer.parseInt(
-                _config.getValue(Property.REDIS_SERVER_MAX_CONNECTIONS.getName(), Property.REDIS_SERVER_MAX_CONNECTIONS.getDefaultValue())));
+	/**
+	 * Creates a new RedisCacheService object.
+	 *
+	 * @param  config  The system configuration.  Cannot be null.
+	 */
+	@Inject
+	public RedisCacheService(SystemConfiguration config) {
+		super(config);
+		_config = config;
+		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+		poolConfig.setMaxTotal(Integer.parseInt(
+				_config.getValue(Property.REDIS_SERVER_MAX_CONNECTIONS.getName(), Property.REDIS_SERVER_MAX_CONNECTIONS.getDefaultValue())));
 
-        String[] hostsPorts = _config.getValue(Property.REDIS_CLUSTER.getName(), Property.REDIS_CLUSTER.getDefaultValue()).split(",");
+		String[] hostsPorts = _config.getValue(Property.REDIS_CLUSTER.getName(), Property.REDIS_CLUSTER.getDefaultValue()).split(",");
 
-        Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
-        for (String hostPort : hostsPorts) {
-            String[] hostPortPair = hostPort.split(":");
+		Set<HostAndPort> jedisClusterNodes = new HashSet<HostAndPort>();
+		for (String hostPort : hostsPorts) {
+			String[] hostPortPair = hostPort.split(":");
 
-            jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
-        }
-        _jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
-    }
+			jedisClusterNodes.add(new HostAndPort(hostPortPair[0], Integer.parseInt(hostPortPair[1])));
+		}
+		_jedisClusterClient = new JedisCluster(jedisClusterNodes, poolConfig);
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> V get(String key) {
-        V returnValue = null;
-        returnValue = (V) _jedisClusterClient.get(key);
-        return returnValue;
-    }
+	@SuppressWarnings("unchecked")
+	@Override
+	public <V> V get(String key) {
+		V returnValue = null;
+		try{
+			returnValue = (V) _jedisClusterClient.get(key);
+		}catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+		return returnValue;
+	}
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> Map<String, V> get(Set<String> keySet) {
-        Map<String, V> map = new HashMap<String, V>();
+	@SuppressWarnings("unchecked")
+	@Override
+	public <V> Map<String, V> get(Set<String> keySet) {
+		Map<String, V> map = new HashMap<String, V>();
 
-        try {
-            for (String key : keySet) {
-                map.put(key, (V) get(key));
-            }
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-            map = null;
-        }
-        return map;
-    }
+		try {
+			for (String key : keySet) {
+				map.put(key, (V) get(key));
+			}
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+			map = null;
+		}
+		return map;
+	}
 
-    @Override
-    public <V> void put(String key, V value, int ttl) {
+	@Override
+	public <V> void put(String key, V value, int ttl) {
 
-    	try {
-            _jedisClusterClient.set(key, (String) value);
-            _jedisClusterClient.expire(key, ttl);
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-        }
-    }
+		try {
+			_jedisClusterClient.set(key, (String) value);
+			_jedisClusterClient.expire(key, ttl);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+	}
 
-    @Override
-    public <V> void put(Map<String, V> entries, int ttl) {
-        for (Map.Entry<String, V> entry : entries.entrySet()) {
-            put(entry.getKey(), entry.getValue(), ttl);
-        }
-    }
+	@Override
+	public <V> void put(Map<String, V> entries, int ttl) {
+		for (Map.Entry<String, V> entry : entries.entrySet()) {
+			put(entry.getKey(), entry.getValue(), ttl);
+		}
+	}
 
-    @Override
-    public <V> void expire(String key, int ttl) {
-        _jedisClusterClient.expire(key, ttl);
-    }
+	@Override
+	public <V> void expire(String key, int ttl) {
+		try {
+			_jedisClusterClient.expire(key, ttl);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+	}
 
-    @Override
-    public <V> void expire(Set<String> keys, int ttl) {
-        for (String key : keys) {
-            expire(key, ttl);
-        }
-    }
+	@Override
+	public <V> void expire(Set<String> keys, int ttl) {
+		for (String key : keys) {
+			expire(key, ttl);
+		}
+	}
 
-    @Override
-    public void clear() {
-        Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
+	@Override
+	public void clear() {
+		Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
 
-        while (poolIterator.hasNext()) {
-            JedisPool pool = poolIterator.next();
-            Jedis jedis = pool.getResource();
+		while (poolIterator.hasNext()) {
+			JedisPool pool = poolIterator.next();
+			Jedis jedis = pool.getResource();
 
-            try {
-                jedis.flushAll();
-            } catch (Exception ex) {
-                _logger.error("Exception in cache service: {} ", ex.getMessage());
-            } finally {
-                jedis.close();
-            }
-        }
-    }
+			try {
+				jedis.flushAll();
+			} catch (Exception ex) {
+				_logger.error("Exception in cache service: {} ", ex.getMessage());
+			} finally {
+				jedis.close();
+			}
+		}
+	}
 
-    @Override
-    public boolean exist(String key) {
-        boolean isKeyExisting = false;
-        isKeyExisting = _jedisClusterClient.exists(key);
-        return isKeyExisting;
-    }
+	@Override
+	public boolean exist(String key) {
+		boolean isKeyExisting = false;
+		isKeyExisting = _jedisClusterClient.exists(key);
+		return isKeyExisting;
+	}
 
-    @Override
-    public Map<String, Boolean> exist(Set<String> keys) {
-        Map<String, Boolean> map = new LinkedHashMap<String, Boolean>();
+	@Override
+	public Map<String, Boolean> exist(Set<String> keys) {
+		Map<String, Boolean> map = new LinkedHashMap<String, Boolean>();
 
-        for (String key : keys) {
-            map.put(key, exist(key));
-        }
-        return map;
-    }
+		for (String key : keys) {
+			map.put(key, exist(key));
+		}
+		return map;
+	}
 
-    @Override
-    public Set<String> getKeysByPattern(String pattern) {
-        Set<String> keysMatched = new TreeSet<String>();
-        Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
+	@Override
+	public Set<String> getKeysByPattern(String pattern) {
+		Set<String> keysMatched = new TreeSet<String>();
+		Iterator<JedisPool> poolIterator = _jedisClusterClient.getClusterNodes().values().iterator();
 
-        while (poolIterator.hasNext()) {
-            JedisPool pool = poolIterator.next();
-            Jedis jedis = pool.getResource();
+		while (poolIterator.hasNext()) {
+			JedisPool pool = poolIterator.next();
+			Jedis jedis = pool.getResource();
 
-            try {
-                keysMatched.addAll(jedis.keys(pattern));
-            } catch (Exception ex) {
-                _logger.error("Exception in cache service: {} ", ex.getMessage());
-            } finally {
-                jedis.close();
-            }
-        }
-        return keysMatched;
-    }
+			try {
+				keysMatched.addAll(jedis.keys(pattern));
+			} catch (Exception ex) {
+				_logger.error("Exception in cache service: {} ", ex.getMessage());
+			} finally {
+				jedis.close();
+			}
+		}
+		return keysMatched;
+	}
 
-    @Override
-    public <V> Map<String, V> getByPattern(String pattern) {
-        return get(getKeysByPattern(pattern));
-    }
+	@Override
+	public <V> Map<String, V> getByPattern(String pattern) {
+		return get(getKeysByPattern(pattern));
+	}
 
-    @Override
-    public void delete(String key) {
-        try {
-            _jedisClusterClient.del(key);
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-        }
-    }
+	@Override
+	public void delete(String key) {
+		try {
+			_jedisClusterClient.del(key);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+	}
 
-    @Override
-    public void delete(Set<String> keySet) {
-        for (String key : keySet) {
-            delete(key);
-        }
-    }
+	@Override
+	public void delete(Set<String> keySet) {
+		for (String key : keySet) {
+			delete(key);
+		}
+	}
 
-    @Override
-    public <V> void append(String key, V value) {
-        try {
-            _jedisClusterClient.rpush(key, (String) value);
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-        }
-    }
+	@Override
+	public <V> void append(String key, V value) {
+		try {
+			_jedisClusterClient.rpush(key, (String) value);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+	}
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> List<V> getRange(String key, int startOffset, int endOffset) {
-        List<V> returnValue = null;
+	@SuppressWarnings("unchecked")
+	@Override
+	public <V> List<V> getRange(String key, int startOffset, int endOffset) {
+		List<V> returnValue = null;
 
-        try {
-            returnValue = (List<V>) _jedisClusterClient.lrange(key, startOffset, endOffset);
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-            returnValue = null;
-        }
-        return returnValue;
-    }
+		try {
+			returnValue = (List<V>) _jedisClusterClient.lrange(key, startOffset, endOffset);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+			returnValue = null;
+		}
+		return returnValue;
+	}
 
-    @Override
-    public <V> void append(String key, V value, int ttl) {
-        try {
-            append(key, value);
-            _jedisClusterClient.expire(key, ttl);
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-        }
-    }
+	@Override
+	public <V> void append(String key, V value, int ttl) {
+		try {
+			append(key, value);
+			_jedisClusterClient.expire(key, ttl);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+	}
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> Map<String, V> getRange(Set<String> keys, int startOffset, int endOffset) {
-        Map<String, V> map = new HashMap<String, V>();
+	@SuppressWarnings("unchecked")
+	@Override
+	public <V> Map<String, V> getRange(Set<String> keys, int startOffset, int endOffset) {
+		Map<String, V> map = new HashMap<String, V>();
 
-        try {
-            for (String key : keys) {
-                map.put(key, (V) getRange(key, startOffset, endOffset));
-            }
-        } catch (Exception ex) {
-            _logger.error("Exception in cache service: {} ", ex.getMessage());
-            map = null;
-        }
-        return map;
-    }
+		try {
+			for (String key : keys) {
+				map.put(key, (V) getRange(key, startOffset, endOffset));
+			}
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+			map = null;
+		}
+		return map;
+	}
 
-    @Override
-    public int getCacheExpirationTime() {
-        return Integer.parseInt(_config.getValue(Property.REDIS_CACHE_EXPIRY_IN_SEC.getName(), Property.REDIS_CACHE_EXPIRY_IN_SEC.getDefaultValue()));
-    }
-    
-    @Override
-    public Properties getServiceProperties() {
-            Properties serviceProps= new Properties();
+	@Override
+	public int getCacheExpirationTime() {
+		return Integer.parseInt(_config.getValue(Property.REDIS_CACHE_EXPIRY_IN_SEC.getName(), Property.REDIS_CACHE_EXPIRY_IN_SEC.getDefaultValue()));
+	}
 
-            for(Property property:Property.values()){
-                    serviceProps.put(property.getName(), property.getDefaultValue());
-            }
-            return serviceProps;
-    }
-    
-    @Override
-    public void dispose() {
-    	super.dispose();
-    	try {
+	@Override
+	public Properties getServiceProperties() {
+		Properties serviceProps= new Properties();
+
+		for(Property property:Property.values()){
+			serviceProps.put(property.getName(), property.getDefaultValue());
+		}
+		return serviceProps;
+	}
+
+	@Override
+	public void dispose() {
+		super.dispose();
+		try {
 			_jedisClusterClient.close();
 		} catch (IOException e) {
 			_logger.warn("IOException while trying to close JedisClusterClient", e);
 		}
-    }
+	}
 
-    //~ Enums ****************************************************************************************************************************************
+	//~ Enums ****************************************************************************************************************************************
 
-    /**
-     * Enumerates the implementation specific configuration properties.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    public enum Property {
+	/**
+	 * Enumerates the implementation specific configuration properties.
+	 *
+	 * @author  Tom Valine (tvaline@salesforce.com)
+	 */
+	public enum Property {
 
-        /** The global cache expiry in seconds. */
-        REDIS_CACHE_EXPIRY_IN_SEC("service.property.cache.redis.cache.expiry.in.sec", "3600"),
-        /** The cache endpoint. */
-        REDIS_CLUSTER("service.property.cache.redis.cluster", "default_value"),
-        /** The maximum number of cache connections. */
-        REDIS_SERVER_MAX_CONNECTIONS("service.property.cache.redis.server.max.connections", "100");
+		/** The global cache expiry in seconds. */
+		REDIS_CACHE_EXPIRY_IN_SEC("service.property.cache.redis.cache.expiry.in.sec", "3600"),
+		/** The cache endpoint. */
+		REDIS_CLUSTER("service.property.cache.redis.cluster", "default_value"),
+		/** The maximum number of cache connections. */
+		REDIS_SERVER_MAX_CONNECTIONS("service.property.cache.redis.server.max.connections", "100");
 
-        private final String _name;
-        private final String _defaultValue;
+		private final String _name;
+		private final String _defaultValue;
 
-        private Property(String name, String defaultValue) {
-            _name = name;
-            _defaultValue = defaultValue;
-        }
+		private Property(String name, String defaultValue) {
+			_name = name;
+			_defaultValue = defaultValue;
+		}
 
-        /**
-         * Returns the property name.
-         *
-         * @return  The property name.
-         */
-        public String getName() {
-            return _name;
-        }
+		/**
+		 * Returns the property name.
+		 *
+		 * @return  The property name.
+		 */
+		public String getName() {
+			return _name;
+		}
 
-        /**
-         * Returns the default value for the property.
-         *
-         * @return The default value.
-         */
-        public String getDefaultValue() {
-            return _defaultValue;
-        }
-    }
+		/**
+		 * Returns the default value for the property.
+		 *
+		 * @return The default value.
+		 */
+		public String getDefaultValue() {
+			return _defaultValue;
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

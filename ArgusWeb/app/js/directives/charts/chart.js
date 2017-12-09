@@ -1,13 +1,17 @@
 'use strict';
-/*global angular:false, $:false, console:false */
+/*global angular:false, $:false, console:false, growl:false, d3:false, window:false */
 
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile',
-	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile) {
+.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl', '$timeout',
+	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
+		var timer;
+		var resizeTimeout = 250;
 		var chartNameIndex = 1;
+
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
-			$('#' + newChartId).empty();
+			angular.element('#' + newChartId).empty();
+			angular.element('.d3-tip').remove();
 
 			// create a new scope to pass to compiled line-chart directive
 			var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
@@ -17,8 +21,7 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			lineChartScope.series = series;
-			// when there is no agDate
+			// when there is no agDate, use
 			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
 				if (series[0].data && series[0].data.length > 0) {
 					dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
@@ -26,39 +29,58 @@ angular.module('argus.directives.charts.chart', [])
 				}
 			}
 			lineChartScope.dateConfig = dateConfig;
+			scope.seriesDataLoaded = true;
+			lineChartScope.series= series;
 
-			// give each series an unique ID if it has data
 			for (var i = 0; i < series.length; i++) {
 				// use graphClassName to bind all the graph element of a metric together
 				lineChartScope.series[i].graphClassName = newChartId + '_graph' + (i + 1);
 			}
 			// sort series alphabetically
-			lineChartScope.series = lineChartScope.series.sort(function(a, b) {
-				var textA = a.name.toUpperCase();
-				var textB = b.name.toUpperCase();
-				return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
-			});
-
-			scope.seriesDataLoaded = true;
-			//TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
+			lineChartScope.series.sort(UtilService.alphabeticalSort);
 			// append, compile, & attach new scope to line-chart directive
-			angular.element('#' + newChartId).append(
-				$compile(
-					'<div ngsf-fullscreen>' +
-					'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
-					'</div>')(lineChartScope)
-			);
+			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
+			if (updatedOptionList.chartType === 'heatmap') {
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
+						'</div>')(lineChartScope)
+				);
+			} else {
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+						'</div>')(lineChartScope)
+				);
+			}
 		}
 
 		function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
 			Annotations.query({expression: annotationItem}).$promise.then(function(data) {
 				if (data && data.length > 0) {
+					var flagSeriesNotInSeries = true;
 					var forName = ChartDataProcessingService.createSeriesName(data[0]);
 					var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
 					flagSeries.linkedTo = forName;
-
-					// add flagSeries if any data exists
-					series[0].flagSeries = (flagSeries) ? flagSeries: null;
+					// bind series with its annotations(flag series)
+					series = series.map(function (item) {
+						if (item.name === flagSeries.linkedTo) {
+							item.flagSeries = flagSeries;
+							flagSeriesNotInSeries = false;
+						}
+						return item;
+					});
+					if (flagSeriesNotInSeries) {
+						series.push({
+							name: flagSeries.linkedTo,
+							color: null,
+							extraYAxis: null,
+							data: [],
+							flagSeries: flagSeries
+						});
+					}
 				}
 
 				// append, compile, & attach new scope to line-chart directive
@@ -78,7 +100,7 @@ angular.module('argus.directives.charts.chart', [])
 				compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList);
 			} else {
 				// check annotations & add to series data for line-chart
-				for (var i=0; i < updatedAnnotationList.length; i++) {
+				for (var i = 0; i < updatedAnnotationList.length; i++) {
 					var annotationItem = updatedAnnotationList[i];
 					queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList);
 				}
@@ -97,16 +119,18 @@ angular.module('argus.directives.charts.chart', [])
 					// check to update statusIndicator with correct status color
 					if (smallChart) {
 						// get the last data point
-						var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
+						// var lastStatusVal = ChartDataProcessingService.getLastDataPoint(data[0].datapoints);
 
 						// update status indicator
-						ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
+						// ChartRenderingService.updateIndicatorStatus(attributes, lastStatusVal);
 
 						// add 'smallChart' flag to scope
 						scope.chartOptions = {smallChart: smallChart};
 					}
+
 					// metric item attributes are assigned to the data (i.e. name, color, etc.)
 					tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, metricItem);
+
 					// keep metric expression info if the query succeeded
 					metricCount.expressions.push(metricItem.expression);
 				} else {
@@ -115,8 +139,8 @@ angular.module('argus.directives.charts.chart', [])
 					tempSeries = [{
 						noData: true,
 						errorMessage: 'Empty result returned for the metric expression',
-						name: JSON.stringify(metricItem.expression).slice(1, -1),
-						color: 'Maroon'
+						name: metricItem.name? metricItem.name: JSON.stringify(metricItem.expression).slice(1, -1),
+						color: (metricItem.color) ? metricItem.color: 'Maroon'
 					}];
 				}
 
@@ -131,13 +155,25 @@ angular.module('argus.directives.charts.chart', [])
 				}
 			}, function (error) {
 				// growl.error(error.message);
-				console.log('Metric expression does not exist in database');
-				var tempSeries = [{
-					invalidMetric: true,
-					errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
-					name: error.config.params.expression,
-					color: 'Black'
-				}];
+				var tempSeries = [];
+				if (error.message !== undefined) {
+					console.log('an unexpected error is caught');
+					growl.error(error.message);
+					tempSeries.push({
+						noData: true,
+						errorMessage: 'Unknown error occured',
+						name: metricItem.name? metricItem.name: '',
+						color: metricItem.color? metricItem.color: 'Maroon'
+					});
+				} else {
+					console.log('Metric expression does not exist in database');
+					tempSeries.push({
+						invalidMetric: true,
+						errorMessage: error.statusText + '(' + error.status + ') - ' + error.data.message.substring(0, 31),
+						name: metricItem.name? metricItem.name: error.config.params.expression,
+						color: metricItem.color? metricItem.color: 'Black'
+					});
+				}
 				Array.prototype.push.apply(series, tempSeries);
 
 				metricCount.tot -= 1;
@@ -161,7 +197,7 @@ angular.module('argus.directives.charts.chart', [])
 			var chartType = attributes.type ? attributes.type : 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
-			var supportedChartTypes = ['line', 'area', 'scatter'];
+			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar', 'heatmap'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
@@ -177,21 +213,16 @@ angular.module('argus.directives.charts.chart', [])
 
 			// get start and end time for the charts as well as whether GMT/UTC scale is used or not
 			var dateConfig = {};
-			var GMTon = false;
 			for (var i = 0; i < controls.length; i++) {
 				if (controls[i].type === 'agDate') {
 					var timeValue = controls[i].value;
 					if (controls[i].name === 'start') {
 						dateConfig.startTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					} else if (controls[i].name === 'end'){
 						dateConfig.endTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					}
 				}
 			}
-			dateConfig.gmt = GMTon;
-
 			// process data for: metrics, annotations, options
 			var processedData = ChartDataProcessingService.processMetricData(data, controls);
 
@@ -232,6 +263,12 @@ angular.module('argus.directives.charts.chart', [])
 			compile: function () {
 				return {
 					post: function postLink(scope, element, attributes, dashboardCtrl) {
+						d3.select(window).on('resize', function(){
+							$timeout.cancel(timer); //clear to improve performance
+							timer = $timeout(function () {
+								scope.$apply();
+							}, resizeTimeout);
+						});
 						scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 							setupChart(scope, element, attributes, controls);
 						});

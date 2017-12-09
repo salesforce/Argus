@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.ArgusHttpClient.ArgusResponse;
 import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.PrincipalUser;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 import java.math.BigInteger;

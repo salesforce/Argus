@@ -31,13 +31,27 @@
 	 
 package com.salesforce.dva.argus.entity;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -86,21 +100,104 @@ import javax.persistence.TypedQuery;
     }
 )
 public class PrincipalUser extends JPAEntity implements Serializable {
+	
+	public static class Serializer extends JsonSerializer<PrincipalUser> {
+
+	    @Override
+	    public void serialize(PrincipalUser user, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
+	        jgen.writeStartObject();
+	        jgen.writeStringField("id", user.getId().toString());
+	        jgen.writeStringField("username", user.getUserName());
+	        jgen.writeStringField("email", user.getEmail());
+	        jgen.writeBooleanField("privileged", user.isPrivileged());
+	        jgen.writeObjectField("preferences", user.getPreferences());
+	        
+	        jgen.writeArrayFieldStart("ownedDashboardIds");
+	        for(Dashboard dashboard : user.getOwnedDashboards()) {
+	        	jgen.writeNumber(dashboard.getId());
+	        }
+	        jgen.writeEndArray();
+	        
+	        jgen.writeNumberField("createdDate", user.getCreatedDate().getTime());
+	        jgen.writeNumberField("modifiedDate", user.getModifiedDate().getTime());
+	        jgen.writeFieldName("createdBy");
+	        jgen.writeNumber(user.getCreatedBy().getId());
+	        jgen.writeFieldName("modifiedBy");
+	        jgen.writeNumber(user.getModifiedBy().getId());
+	        jgen.writeEndObject();
+	    }
+	}
+	
+	public static class Deserializer extends JsonDeserializer<PrincipalUser> {
+
+		@Override
+		public PrincipalUser deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+			
+			PrincipalUser user = new PrincipalUser();
+			JsonNode rootNode = jp.getCodec().readTree(jp);
+			
+			BigInteger id = new BigInteger(rootNode.get("id").asText());
+			user.id = id;
+			
+			String username = rootNode.get("username").asText();
+			user.setUserName(username);
+			
+			String email = rootNode.get("email").asText();
+			user.setEmail(email);
+			
+			user.setPrivileged(rootNode.get("privileged").asBoolean());
+			
+			Map<Preference, String> preferences = new HashMap<>();
+			JsonNode preferencesNode = rootNode.get("preferences");
+			if(preferencesNode.isObject()) {
+				Iterator<Entry<String, JsonNode>> fieldsIter = preferencesNode.fields();
+				while(fieldsIter.hasNext()) {
+					Entry<String, JsonNode> field  = fieldsIter.next();
+					preferences.put(Preference.valueOf(field.getKey()), field.getValue().asText());
+				}
+			}
+			user.preferences = preferences;
+			
+			List<Dashboard> ownedDashboards = new ArrayList<>();
+			JsonNode ownedDashboardIds = rootNode.get("ownedDashboardIds");
+			if(ownedDashboardIds.isArray()) {
+				for(JsonNode ownedDashboardId : ownedDashboardIds) {
+					Dashboard d = new Dashboard();
+					d.id = new BigInteger(ownedDashboardId.asText());
+					ownedDashboards.add(d);
+				}
+			}
+			user.setOwnedDashboards(ownedDashboards);
+			
+			user.setCreatedBy(new PrincipalUser(new BigInteger(rootNode.get("createdBy").asText())));
+			user.createdDate = new Date(rootNode.get("createdDate").asLong());
+			
+			user.setModifiedBy(new PrincipalUser(new BigInteger(rootNode.get("modifiedBy").asText())));
+			user.modifiedDate = new Date(rootNode.get("modifiedDate").asLong());
+			
+			return user;
+		}
+		
+	}
 
     //~ Instance fields ******************************************************************************************************************************
 
     @Basic(optional = false)
     @Column(nullable = false, unique = true)
     private String userName;
+    
     @Basic(optional = false)
     @Column(nullable = false, unique = true)
     private String email;
+    
     @ElementCollection
     @MapKeyColumn(name = "name")
     @Column(name = "preference")
     private Map<Preference, String> preferences = new HashMap<>();
+    
     @OneToMany(mappedBy = "owner")
     private List<Dashboard> ownedDashboards = new ArrayList<>();
+    
     private boolean privileged = false;
 
     //~ Constructors *********************************************************************************************************************************
@@ -111,7 +208,7 @@ public class PrincipalUser extends JPAEntity implements Serializable {
      * @param  userName  The user name for the
      * @param  email     The email address for the user.
      */
-    public PrincipalUser(String userName, String email) {
+    private PrincipalUser(String userName, String email) {
         this(null, userName, email);
     }
 
@@ -131,6 +228,10 @@ public class PrincipalUser extends JPAEntity implements Serializable {
     /** Creates a new PrincipalUser object. */
     protected PrincipalUser() {
         super(null);
+    }
+    
+    private PrincipalUser(BigInteger id) {
+    	this.id = id;
     }
 
     //~ Methods **************************************************************************************************************************************

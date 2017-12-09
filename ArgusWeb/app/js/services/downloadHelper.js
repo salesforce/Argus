@@ -7,11 +7,7 @@
 angular.module('argus.services.downloadHelper', [])
 .service('DownloadHelper', function () {
 	this.downloadFile = function (data, filename) {
-		var url = window.URL.createObjectURL(new Blob([data]));
-		var a = document.createElement('a');
-		a.href = url;
-		a.download = filename;
-		a.target = '_blank';
-		a.click();
+		var blob = new Blob([data], {type: 'text/plain'});
+		saveAs(blob, filename);
 	};
 });

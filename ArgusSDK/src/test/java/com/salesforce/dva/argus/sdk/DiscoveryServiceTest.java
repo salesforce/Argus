@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.sdk;
 import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryQuery;
 import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryResult;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import org.junit.Test;
 import java.io.IOException;
@@ -98,8 +98,8 @@ public class DiscoveryServiceTest extends AbstractTest {
         result.setMetric("metReg");
         result.setNamespace("nsReg");
         result.setScope("scpReg");
-        result.setTagKey("tkReg");
-        result.setTagValue("tvReg");
+        result.setTagk("tkReg");
+        result.setTagv("tvReg");
         return result;
     }
 }

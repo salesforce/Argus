@@ -1,5 +1,5 @@
 'use strict';
-/*global angular:false */
+/*global angular:false, console:false */
 
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
 .controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
@@ -41,9 +41,11 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 		};
 
 		$scope.fetchHistory = function() {
+			$scope.historyLoaded = false;
 			History.query({id: $scope.dashboardId}, function (history) {
 				$scope.jobHistoryError='';
 				$scope.history = history;
+				$scope.historyLoaded = true;
 			}, function (error) {
 				if(error.status==404){
 					$scope.jobHistoryError = 'No job history details found.';
@@ -55,6 +57,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 					$scope.jobHistoryError = error.statusText;
 					growl.error('Failed to get history for job "' + $scope.jobId + '"');
 				}
+				$scope.historyLoaded = true;
 			});
 		};
 
@@ -67,9 +70,11 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 			};
 			Dashboards.save(tempDashboard, function (result) {
 				// add this dashboard session cache
-				result.content = '';
-				$sessionStorage.dashboards.cachedData.push(result);
 				growl.success('Cloned "' + dashboard.name + '"');
+				if ($sessionStorage.dashboard !== undefined) {
+					result.content = '';
+					$sessionStorage.dashboards.cachedData.push(result);
+				}
 			}, function (error) {
 				growl.error('Failed to clone "' + dashboard.name + '"');
 				console.log(error);

@@ -125,8 +125,6 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         List<MetricQuery> expandedQueryList = null;
         
         long start = System.nanoTime();
-        //MetricSchemaRecord scanStartRow = null;
-        
 
         if (DiscoveryService.isWildcardQuery(query)) {
             _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));

@@ -14,7 +14,7 @@ angular.module('argus.directives.controls.date', [])
 			$scope.ctrlVal = $scope.controlValue;
 
 			for (var prop in $routeParams) {
-				if (prop == $scope.controlName) {
+				if (prop === $scope.controlName) {
 					$scope.ctrlVal = $routeParams[prop];
 					// remove GMT from page refreshing
 					if( $scope.ctrlVal.indexOf('GMT') >= 0){
@@ -34,7 +34,7 @@ angular.module('argus.directives.controls.date', [])
 			};
 		},
 		require: '^agDashboard',
-		template: // TODO: move to external template
+		template:
 			'<strong>{{labelName}} </strong>' +
 			'<div class="dropdown" style="display: inline;">' +
 				'<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +

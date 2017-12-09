@@ -16,6 +16,13 @@ angular.module('argus.directives.controls.select', ['selectize'])
 			},
 			controller: function($scope) {
 				$scope.ctrlVal = $scope.controlValue;
+
+				for (var prop in $routeParams) {
+					if (prop === $scope.controlName) {
+						$scope.ctrlVal = $routeParams[prop];
+					}
+				}
+
 				$scope.selectizeOptions = [];
 				$scope.selectizeConfig = {
 					delimiter: '|',
@@ -28,7 +35,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 			template:
 			'<ng-transclude></ng-transclude>'+
 			'<B>{{labelName}} : </B>' +
-			'<div style="display: inline-block; width: 20%;">' +
+			'<div style="display: inline-block; ">' +
 			'<selectize config="selectizeConfig" options="selectizeOptions" ng-model="ctrlVal"/>' +
 			'</div>'
 			,
@@ -39,7 +46,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 				//find all option tags in the ag-select tag, and add their contents
 				element.find('ng-transclude option').each(function(){
 					selectize.addOption({
-						text: this.innerHTML,
+						text: this.innerText,
 						value: this.value
 					});
 					optionSet.add(this.value);

@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.dva.argus.sdk.excpetions;
+package com.salesforce.dva.argus.sdk.exceptions;
 
 import org.apache.http.HttpStatus;
 
