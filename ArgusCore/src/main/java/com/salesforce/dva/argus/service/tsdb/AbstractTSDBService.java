@@ -90,7 +90,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
 /**
- * The default implementation of the TSDBService.
+ * TSDB abstract class, where the put methods are implemented, and the get methods are overridden by specific implementation.
  *
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
