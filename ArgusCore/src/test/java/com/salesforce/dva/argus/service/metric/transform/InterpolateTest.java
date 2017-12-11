@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,11 +43,12 @@ import java.util.TreeMap;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
 
 public class InterpolateTest {
 
 	@Test
-	public void interpolateWithTwoTimeSeries() {
+	public void linearInterpolateWithTwoTimeSeries() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -80,7 +82,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics);
+		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(InterpolationType.LININT.toString())));
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
 		expectedDatapoints1.put(1000L, 1.0);
@@ -112,7 +114,7 @@ public class InterpolateTest {
 
 
 	@Test
-	public void interpolateWithOneTimeSeries() {
+	public void linearInterpolateWithOneTimeSeries() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -129,7 +131,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics);
+		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(InterpolationType.LININT.toString())));
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
 		expectedDatapoints1.put(1000L, 1.0);
@@ -140,7 +142,7 @@ public class InterpolateTest {
 	}
 
 	@Test
-	public void interpolateWithTwoTimeSeriesStartEndDontAlign() {
+	public void linearInterpolateWithTwoTimeSeriesStartEndDontAlign() {
 		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
 		datapoints.put(1000L, 1.0);
@@ -172,7 +174,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		InterpolateTransform interpolate = new InterpolateTransform();
-		List<Metric> result = interpolate.transform(metrics);
+		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(InterpolationType.LININT.toString())));
 
 		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
 		expectedDatapoints1.put(1000L, 1.0);
@@ -194,6 +196,71 @@ public class InterpolateTest {
 		expectedDatapoints2.put(7000L, 4.0);
 		expectedDatapoints2.put(8000L, 2.0);
 
+		assertEquals(expectedDatapoints1, result.get(0).getDatapoints());
+		assertEquals(expectedDatapoints2, result.get(1).getDatapoints());
+	}
+	
+	@Test
+	public void zimSumInterpolateWithTwoTimeSeries() {
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+		datapoints.put(1000L, 1.0);
+		datapoints.put(2000L, 2.0);
+		datapoints.put(3000L, 3.0);
+		datapoints.put(5000L, 10.0);
+		datapoints.put(6000L, 2.0);
+		datapoints.put(7000L, 3.0);
+		datapoints.put(10000L, 15.0);
+
+		Metric metric = new Metric("test-scope", "test-metric");
+
+		metric.setDatapoints(datapoints);
+		metric.setTag("user", "user1");
+		metric.setTag("host", "host1");
+
+		List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric);
+
+		datapoints = new HashMap<>();
+		datapoints.put(1000L, 2.0);
+		datapoints.put(2000L, 2.0);
+		datapoints.put(3000L, 3.0);
+		datapoints.put(4000L, 10.0);
+		datapoints.put(8000L, 2.0);
+		datapoints.put(10000L, 14.0);
+		metric = new Metric("test-scope", "test-metric");
+		metric.setDatapoints(datapoints);
+		metric.setTag("user", "user1");
+		metric.setTag("host", "host2");
+		metrics.add(metric);
+
+		InterpolateTransform interpolate = new InterpolateTransform();
+		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
+
+		Map<Long, Double> expectedDatapoints1 = new TreeMap<Long, Double>();
+		expectedDatapoints1.put(1000L, 1.0);
+		expectedDatapoints1.put(2000L, 2.0);
+		expectedDatapoints1.put(3000L, 3.0);
+		expectedDatapoints1.put(4000L, 0.0);
+		expectedDatapoints1.put(5000L, 10.0);
+		expectedDatapoints1.put(6000L, 2.0);
+		expectedDatapoints1.put(7000L, 3.0);
+		expectedDatapoints1.put(8000L, 0.0);
+		expectedDatapoints1.put(10000L, 15.0);
+
+		Map<Long, Double> expectedDatapoints2 = new TreeMap<Long, Double>();
+		expectedDatapoints2.put(1000L, 2.0);
+		expectedDatapoints2.put(2000L, 2.0);
+		expectedDatapoints2.put(3000L, 3.0);
+		expectedDatapoints2.put(4000L, 10.0);
+		expectedDatapoints2.put(5000L, 0.0);
+		expectedDatapoints2.put(6000L, 0.0);
+		expectedDatapoints2.put(7000L, 0.0);
+		expectedDatapoints2.put(8000L, 2.0);
+		expectedDatapoints2.put(10000L, 14.0);
+
+		assertEquals(expectedDatapoints1.size(), result.get(0).getDatapoints().size());
+		assertEquals(expectedDatapoints2.size(), result.get(1).getDatapoints().size());
 		assertEquals(expectedDatapoints1, result.get(0).getDatapoints());
 		assertEquals(expectedDatapoints2, result.get(1).getDatapoints());
 	}
