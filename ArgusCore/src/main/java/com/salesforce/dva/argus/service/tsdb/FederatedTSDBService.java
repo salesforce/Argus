@@ -35,6 +35,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -153,9 +155,21 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
 
 			Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
+			InterpolationType interpolationType;
+
+			switch(metricQuery.getAggregator()){
+			case ZIMSUM:
+				interpolationType = InterpolationType.ZIMSUM;
+				break;
+			default:
+				interpolationType = InterpolationType.LININT;
+				break;
+			}
+
 			InterpolateTransform interpolate = new InterpolateTransform();
+			List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(interpolationType.toString()));
 			for(List<Metric> metrics : groupedMetricsMap.values()){
-				interpolate.transform(metrics);
+				interpolate.transform(metrics, interpolateConstants);
 			}
 			Transform transform = Aggregator.correspondingTransform(metricQuery.getAggregator(), _transformFactory);
 			queryMetricsMap.put(metricQuery, TSDBService.aggregate(groupedMetricsMap, transform));

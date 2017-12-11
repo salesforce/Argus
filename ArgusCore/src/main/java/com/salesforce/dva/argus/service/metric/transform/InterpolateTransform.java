@@ -29,9 +29,21 @@ public class InterpolateTransform implements Transform {
 	private Map<Long, Double>[] addedDatapointsArray;
 	private static final long MARK_END_TIME_SERIES  = Long.MAX_VALUE;
 
-	@SuppressWarnings("unchecked")
+
+	public enum InterpolationType {
+		LININT,   /* linear interpolation */
+		ZIMSUM,      /* 0 when a data point is missing */
+	}
+
 	@Override
 	public List<Metric> transform(List<Metric> metrics) {
+		throw new UnsupportedOperationException("Interpolation Transform needs an interpolation type to be specified");
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+		InterpolationType interpolationType = InterpolationType.valueOf(constants.get(0)); 
 		int size = metrics.size();
 		timestamps = new Long[size * 2];
 		values = new Double[size * 2];
@@ -59,9 +71,9 @@ public class InterpolateTransform implements Transform {
 		while(doesAnyTimeSeriesHaveData()){
 			updateBufferChronologically();
 			indexToInterpolate = -1;
-			fillInterpolatedValues();
+			fillInterpolatedValues(interpolationType);
 			while (shouldDoInterpolation()) {
-				fillInterpolatedValues();
+				fillInterpolatedValues(interpolationType);
 			}
 		}
 
@@ -73,20 +85,15 @@ public class InterpolateTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
-	}
-
-	@Override
 	public List<Metric> transform(List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");
+		throw new UnsupportedOperationException("Interpolation Transform is not supposed to be used with a list of metric list!");
 	}
 
 	@Override
 	public String getResultScopeName() {
 		return TransformFactory.Function.INTERPOLATE.name();
 	}
-	
+
 	/**
 	 * Puts the next data point of an iterator in the next section of internal buffer.
 	 * @param i The index of the iterator.
@@ -201,7 +208,7 @@ public class InterpolateTransform implements Transform {
 	 * Fills interpolated value for a missing timestamp.
 	 * If there is already a value for a given timestamp, then don't do any operation. 
 	 */
-	private void fillInterpolatedValues() {
+	private void fillInterpolatedValues(InterpolationType interpolationType) {
 		double interpolatedValue = 0;
 		if (shouldDoInterpolation(true)) {
 			if(values[indexToInterpolate] == null){
@@ -226,8 +233,20 @@ public class InterpolateTransform implements Transform {
 				return;
 			}
 
-			interpolatedValue = (y2 - y1) / (x2 - x1) * (x - x1) + y1;
-			addedDatapointsArray[indexToInterpolate].put(x, interpolatedValue);
+			switch(interpolationType){
+			case LININT:
+				interpolatedValue = (y2 - y1) / (x2 - x1) * (x - x1) + y1;
+				break;
+			case ZIMSUM:
+				interpolatedValue = 0;
+				break;
+			default:
+				throw new IllegalArgumentException("Invaid interpolation type specified");
+			}
+
+			{
+				addedDatapointsArray[indexToInterpolate].put(x, interpolatedValue);
+			}
 		}
 	}
 }
