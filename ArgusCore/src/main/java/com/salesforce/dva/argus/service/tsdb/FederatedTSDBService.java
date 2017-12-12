@@ -163,7 +163,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 				break;
 			default:
 				interpolationType = InterpolationType.LININT;
-				break;
 			}
 
 			InterpolateTransform interpolate = new InterpolateTransform();
