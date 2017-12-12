@@ -31,15 +31,14 @@
 
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.system.SystemAssert;
 
 /**
  * A general purpose metric reducer transform. Metrics are reduced based on the ValueReducer.
