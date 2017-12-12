@@ -203,7 +203,7 @@ TOKEN : { < LEFT_CURLY : "{" > }
 TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
-TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "mimmin" | "mimmax" | "count" | "none"> }
+TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "mimmin" | "mimmax" | "count" | "none" > }
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
