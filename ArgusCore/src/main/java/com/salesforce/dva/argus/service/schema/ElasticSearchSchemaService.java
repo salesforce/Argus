@@ -22,8 +22,10 @@ import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
+import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
@@ -109,7 +111,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					int connCount = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_CONNECTION_COUNT.getName(),
 			                Property.ELASTICSEARCH_CONNECTION_COUNT.getDefaultValue()));
 					PoolingNHttpClientConnectionManager connMgr = 
-							new PoolingNHttpClientConnectionManager(new org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor());
+							new PoolingNHttpClientConnectionManager(new DefaultConnectingIOReactor());
 					connMgr.setMaxTotal(connCount);
 					connMgr.setDefaultMaxPerRoute(connCount / httpHosts.length);
 					httpClientBuilder.setConnectionManager(connMgr);
@@ -178,7 +180,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 		
 		if(!records.isEmpty()) {
-			_upsert(records);
+			if(_syncPut) {
+				_upsert(records);
+			} else {
+				_upsertAsync(records);
+			}
 		}
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, records.size(), null);
 	}
@@ -215,7 +221,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String queryJson = _constructTermQuery(query, from, scrollSize);
 		
 		try {
+			long start = System.currentTimeMillis();
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+			
 			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 			
 			if(scroll) {
@@ -244,16 +252,18 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					return Collections.emptyList();
 				}
 				
+				_logger.debug("ElasticSearchSchemaService#get: (Query with scroll) Took " + (System.currentTimeMillis() - start) + " ms");
 				return records.subList(fromIndex, records.size());
 				
 			} else {
+				_logger.debug("ElasticSearchSchemaService#get: (Query without scroll) Took " + (System.currentTimeMillis() - start) + " ms");
 				return list.getRecords();
 			}
 			
 		} catch (UnsupportedEncodingException | JsonProcessingException e) {
 			throw new SystemException("Search failed.", e);
 		} catch (IOException e) {
-			throw new SystemException(e);
+			throw new SystemException("IOException when trying to perform ES request.", e);
 		}
 	}
 
@@ -495,6 +505,52 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 	
+	private void _upsertAsync(List<MetricSchemaRecord> records) {
+		
+		String requestUrl = new StringBuilder().append("/")
+											   .append(INDEX_NAME)
+											   .append("/")
+											   .append(TYPE_NAME)
+											   .append("/")
+											   .append("_bulk")
+											   .toString();
+		try {
+			String requestBody = _mapper.writeValueAsString(new MetricSchemaRecordList(records));
+			
+			ResponseListener responseListener = new ResponseListener() {
+				
+				@Override
+				public void onSuccess(Response response) {
+					try {
+						PutResponse putResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
+						if(putResponse.errors) {
+							for(Item item : putResponse.items) {
+								if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
+									throw new SystemException("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.errorMap));
+								}
+								
+								if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
+									throw new SystemException("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.errorMap));
+								}
+							}
+						}
+					} catch(IOException e) {
+						throw new SystemException("Failed to parse reponse of put metrics.", e);
+					}
+				}
+				
+				@Override
+				public void onFailure(Exception exception) {
+					_logger.warn("Failed while executing request", exception);
+				}
+			};
+			
+			_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody), responseListener);
+		} catch (JsonProcessingException | UnsupportedEncodingException e) {
+			throw new SystemException("Failed to parse metrics when indexing.", e);
+		}
+	}
+	
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode queryNode = _constructQueryNode(query, mapper);
@@ -637,8 +693,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 		
 		ObjectNode boolNode = mapper.createObjectNode();
-		boolNode.put("should", shouldNodes);
-		boolNode.put("minimum_should_match", shouldNodes.size());
+		boolNode.put("filter", shouldNodes);
 		
 		ObjectNode queryNode = mapper.createObjectNode();
 		queryNode.put("bool", boolNode);
