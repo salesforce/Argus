@@ -352,6 +352,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
 							metrics, history);
 					
+					// Update the state of notification objects from the database since the notification contained 
+					// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts
+					// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.
+					// For example, the notification may have been updated to be on cooldown by a previous alert evaluation.
+					// Or it's active/clear status may have changed. 
+					List<BigInteger> notificationIds = new ArrayList<>(alert.getNotifications().size());
+					alert.getNotifications().forEach(item -> notificationIds.add(item.getId()));
+					alert.setNotifications(Notification.findByIDs(_emProvider.get(), notificationIds));
+					
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
 							logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
@@ -410,7 +419,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
-						_sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m));
+						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m));
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -422,7 +431,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
-						_sendClearNotification(trigger, m, history, notification, alert);
+						sendClearNotification(trigger, m, history, notification, alert);
 					} else {
 						// This is case when the notification is not active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation.
@@ -476,7 +485,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 		
-	public void _sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
+	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime) {
 		
 		double value = metric.getDatapoints().get(triggerFiredTime);
@@ -495,7 +504,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 	
-	public void _sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
+	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
 		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
