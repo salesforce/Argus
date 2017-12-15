@@ -72,12 +72,10 @@ import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
 @NamedQueries(
     {
         @NamedQuery(name = "Audit.findByJPAEntity", query = "SELECT a FROM Audit a WHERE a.entity = :jpaEntity order by a.createdDate DESC"),
-        @NamedQuery(
-            name = "Audit.findByHostName", query = "SELECT a FROM Audit a WHERE a.hostName = :hostName order by a.createdDate DESC"
-        ), @NamedQuery(name = "Audit.findAll", query = "SELECT a FROM Audit a order by a.createdDate DESC"),
-        @NamedQuery(
-            name = "Audit.findByMessage", query = "SELECT a from Audit a where a.message LIKE :message order by a.createdDate DESC"
-        ), @NamedQuery(name = "Audit.cullExpired", query = "DELETE FROM Audit AS a WHERE A.createdDate < :expirationDate"),
+        @NamedQuery(name = "Audit.findByHostName", query = "SELECT a FROM Audit a WHERE a.hostName = :hostName order by a.createdDate DESC"), 
+        @NamedQuery(name = "Audit.findAll", query = "SELECT a FROM Audit a order by a.createdDate DESC"),
+        @NamedQuery(name = "Audit.findByMessage", query = "SELECT a from Audit a where a.message LIKE :message order by a.createdDate DESC"), 
+        @NamedQuery(name = "Audit.cullExpired", query = "DELETE FROM Audit AS a WHERE A.createdDate < :expirationDate"),
         @NamedQuery(name = "Audit.cullOrphans", query = "DELETE FROM Audit AS a WHERE A.id IS NULL")
     }
 )
