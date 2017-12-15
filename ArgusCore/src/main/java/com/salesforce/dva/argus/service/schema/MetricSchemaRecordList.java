@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -62,7 +64,7 @@ public class MetricSchemaRecordList {
 			mapper.setSerializationInclusion(Include.NON_NULL);
 			List<MetricSchemaRecord> records = list.getRecords();
 			for(MetricSchemaRecord record : records) {
-				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + MetricSchemaRecord.print(record) + "\"}}");
+				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + DigestUtils.md5Hex(MetricSchemaRecord.print(record)) + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
 				
 				jgen.writeRaw(mapper.writeValueAsString(record));
