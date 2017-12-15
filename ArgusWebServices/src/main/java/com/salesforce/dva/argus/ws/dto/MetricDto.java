@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.ws.dto;
 
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -189,8 +188,6 @@ public class MetricDto extends TSDBEntityDto {
      * @param  datapoints  The metric data points.
      */
     public void setDatapoints(Map<Long, Double> datapoints) {
-    	SystemAssert.requireArgument(datapoints != null && !datapoints.isEmpty(), "Datapoints cannot be null or empty.");
-    	
         this.datapoints = datapoints;
     }
 }

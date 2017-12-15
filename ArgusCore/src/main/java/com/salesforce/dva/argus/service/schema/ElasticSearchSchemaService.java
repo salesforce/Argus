@@ -66,13 +66,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
 	private static final int INDEX_MAX_RESULT_WINDOW = 10000;
-	private static final int NUMBER_OF_REPLICAS = 2; 
 	
 	
 	private final ObjectMapper _mapper;
     private Logger _logger = LoggerFactory.getLogger(getClass());
     private final MonitorService _monitorService;
     private final RestClient _esRestClient;
+    private final int _replicationFactor;
+	private final int _numShards;
     
     @Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -80,6 +81,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		_monitorService = monitorService;
 		_mapper = _createObjectMapper();
+		
+		_replicationFactor = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_REPLICATION_FACTOR.getName(), Property.ELASTICSEARCH_REPLICATION_FACTOR.getDefaultValue()));
+		
+		_numShards = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT.getName(), Property.ELASTICSEARCH_SHARDS_COUNT.getDefaultValue()));
 		
 		String[] nodes = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue()).split(",");
 		HttpHost[] httpHosts = new HttpHost[nodes.length];
@@ -744,7 +751,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	
     	ObjectNode indexNode = mapper.createObjectNode();
     	indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
-    	indexNode.put("number_of_replicas", NUMBER_OF_REPLICAS);
+    	indexNode.put("number_of_replicas", _replicationFactor);
+    	indexNode.put("number_of_shards", _numShards);
     	
     	ObjectNode settingsNode = mapper.createObjectNode();
     	settingsNode.put("analysis", analysisNode);
@@ -852,12 +860,16 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     public enum Property {
         
         ELASTICSEARCH_ENDPOINT("service.property.schema.elasticsearch.endpoint", "http://localhost:9200,http://localhost:9201"),
-    	/** The TSDB connection timeout. */
+    	/** Connection timeout for ES REST client. */
     	ELASTICSEARCH_ENDPOINT_CONNECTION_TIMEOUT("service.property.schema.elasticsearch.endpoint.connection.timeout", "10000"),
-        /** The TSDB socket connection timeout. */
+        /** Socket connection timeout for ES REST client. */
     	ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT("service.property.schema.elasticsearch.endpoint.socket.timeout", "10000"),
-        /** The TSDB connection count. */
-    	ELASTICSEARCH_CONNECTION_COUNT("service.property.schema.elasticsearch.connection.count", "10");
+        /** Connection count for ES REST client. */
+    	ELASTICSEARCH_CONNECTION_COUNT("service.property.schema.elasticsearch.connection.count", "10"),
+    	/** Replication factor for metadata_index. */
+    	ELASTICSEARCH_REPLICATION_FACTOR("service.property.schema.elasticsearch.replication.factor", "2"),
+    	/** Shard count for metadata_index. */
+    	ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10");
 
         private final String _name;
         private final String _defaultValue;

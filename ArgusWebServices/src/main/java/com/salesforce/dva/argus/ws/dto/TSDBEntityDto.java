@@ -128,8 +128,7 @@ public abstract class TSDBEntityDto extends BaseDto {
      *
      * @param  tags  The metric tags.
      */
-    public void setTags(Map<String, String> tags) {
-    	TSDBEntity.validateTags(tags);
+    public void setTags(Map<String, String> tags) { 
         this.tags = tags;
     }
 }
