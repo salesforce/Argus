@@ -143,6 +143,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 																						            			  .tagKey("*")
 																						            			  .tagValue("*")
 																						            			  .limit(limit)
+																						            			  .page(1)
 																						            			  .build();
 
                 while (true) {
@@ -169,6 +170,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     
                     //scanStartRow = records.get(records.size() - 1);
                     schemaQuery.setScanFrom(records.get(records.size() - 1));
+                    schemaQuery.setPage(schemaQuery.getPage()+1);
                 }
                 
                 expandedQueryList = new ArrayList<>(queries.values());
@@ -182,6 +184,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
 																							            			  .tagKey(tag.getKey())
 																							            			  .tagValue(tag.getValue())
 																							            			  .limit(limit)
+																							            			  .page(1)
 																							            			  .build();
                     
                     boolean containsWildcard = SchemaService.containsWildcard(query.getScope())
@@ -239,6 +242,8 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                         
                         //scanStartRow = records.get(records.size() - 1);
                         schemaQuery.setScanFrom(records.get(records.size() - 1));
+                        schemaQuery.setPage(schemaQuery.getPage()+1);
+                        
                     }
                 }
                 

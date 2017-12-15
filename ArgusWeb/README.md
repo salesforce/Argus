@@ -49,7 +49,7 @@ $ bower -v
 
 ##### Build Commands
 #
-###### Run npm to install:
+###### Run npm to build and install:
 #
 ```sh
 $ npm install
