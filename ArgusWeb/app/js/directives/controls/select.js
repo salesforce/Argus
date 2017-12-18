@@ -65,7 +65,7 @@ angular.module('argus.directives.controls.select', ['selectize'])
 				element.find('ng-transclude').remove();
 				selectize.refreshOptions(false);
 
-				dashboardCtrl.updateControl(scope.controlName, scope.controlValue, 'agSelect');
+				dashboardCtrl.updateControl(scope.controlName, scope.ctrlVal, 'agSelect');
 				scope.$watch('ctrlVal', function(newValue){
 					dashboardCtrl.updateControl(scope.controlName, newValue, 'agSelect');
 				});
