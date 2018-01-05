@@ -28,12 +28,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.tsdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.salesforce.dva.argus.service.metric.transform.Transform;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -50,273 +52,395 @@ import java.util.Map;
 @JsonInclude(Include.NON_NULL)
 public class MetricQuery extends AnnotationQuery {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    private String _namespace;
-    private Aggregator _aggregator;
-    private Aggregator _downsampler;
-    private Long _downsamplingPeriod;
+	private String _namespace;
+	private Aggregator _aggregator;
+	private Aggregator _downsampler;
+	private Long _downsamplingPeriod;
+	private MetricQueryContext _metricQueryContext;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new MetricQuery object by performing a shallow copy of the given MetricQuery object.
-     *
-     * @param  clone  The MetricQuery object to clone. Cannot be null.
-     */
-    public MetricQuery(MetricQuery clone) {
-        SystemAssert.requireArgument(clone != null, "The object to clone cannot be null.");
-        _scope = clone.getScope();
-        _metric = clone.getMetric();
-        setTags(clone.getTags());
-        setStartTimestamp(clone.getStartTimestamp());
-        setEndTimestamp(clone.getEndTimestamp());
-        setNamespace(clone.getNamespace());
-        setAggregator(clone.getAggregator());
-        setDownsampler(clone.getDownsampler());
-        setDownsamplingPeriod(clone.getDownsamplingPeriod());
-    }
+	/**
+	 * Creates a new MetricQuery object by performing a shallow copy of the given MetricQuery object.
+	 *
+	 * @param  clone  The MetricQuery object to clone. Cannot be null.
+	 */
+	public MetricQuery(MetricQuery clone) {
+		SystemAssert.requireArgument(clone != null, "The object to clone cannot be null.");
+		_scope = clone.getScope();
+		_metric = clone.getMetric();
+		setTags(clone.getTags());
+		setStartTimestamp(clone.getStartTimestamp());
+		setEndTimestamp(clone.getEndTimestamp());
+		setNamespace(clone.getNamespace());
+		setAggregator(clone.getAggregator());
+		setDownsampler(clone.getDownsampler());
+		setDownsamplingPeriod(clone.getDownsamplingPeriod());
+		setMetricQueryContext(clone.getMetricQueryContext());
+	}
 
-    /**
-     * Creates a new Metric Query object.
-     *
-     * @param  scope           The scope of the metric. Cannot be null or empty.
-     * @param  metric          The name of the metric. Cannot be null or empty.
-     * @param  tags            The tags associated with the metric. Can be null or empty.
-     * @param  startTimestamp  The start time stamp for the query. Cannot be null.
-     * @param  endTimestamp    The end time for the query. If null, defaults to the current system time.
-     */
-    public MetricQuery(String scope, String metric, Map<String, String> tags, Long startTimestamp, Long endTimestamp) {
-        super(scope, metric, tags, startTimestamp, endTimestamp);
-        SystemAssert.requireArgument(metric != null, "Metric cannot be null");
-    }
+	/**
+	 * Creates a new Metric Query object.
+	 *
+	 * @param  scope           The scope of the metric. Cannot be null or empty.
+	 * @param  metric          The name of the metric. Cannot be null or empty.
+	 * @param  tags            The tags associated with the metric. Can be null or empty.
+	 * @param  startTimestamp  The start time stamp for the query. Cannot be null.
+	 * @param  endTimestamp    The end time for the query. If null, defaults to the current system time.
+	 */
+	public MetricQuery(String scope, String metric, Map<String, String> tags, Long startTimestamp, Long endTimestamp) {
+		super(scope, metric, tags, startTimestamp, endTimestamp);
+		SystemAssert.requireArgument(metric != null, "Metric cannot be null");
+	}
 
-    /** Creates a new Metric object. */
-    protected MetricQuery() {
-        super();
-    }
+	/** Creates a new Metric object. */
+	protected MetricQuery() {
+		super();
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    /**
-     * Returns the namespace of the query.
-     *
-     * @return  The query namespace.  Can be null.
-     */
-    public String getNamespace() {
-        return _namespace;
-    }
+	/**
+	 * Returns the namespace of the query.
+	 *
+	 * @return  The query namespace.  Can be null.
+	 */
+	public String getNamespace() {
+		return _namespace;
+	}
 
-    /**
-     * Sets the query namespace.
-     *
-     * @param  namespace  The namespace.  May be null.
-     */
-    public void setNamespace(String namespace) {
-        _namespace = namespace;
-    }
+	/**
+	 * Sets the query namespace.
+	 *
+	 * @param  namespace  The namespace.  May be null.
+	 */
+	public void setNamespace(String namespace) {
+		_namespace = namespace;
+	}
 
-    /**
-     * Returns the method used to aggregate query results.
-     *
-     * @return  The aggregator method used.
-     */
-    public Aggregator getAggregator() {
-        return _aggregator;
-    }
+	/**
+	 * Returns the method used to aggregate query results.
+	 *
+	 * @return  The aggregator method used.
+	 */
+	public Aggregator getAggregator() {
+		return _aggregator;
+	}
 
-    /**
-     * Sets the method used to aggregate query results.
-     *
-     * @param  aggregator  The aggregator method to use.
-     */
-    public void setAggregator(Aggregator aggregator) {
-        _aggregator = aggregator;
-    }
+	/**
+	 * Sets the method used to aggregate query results.
+	 *
+	 * @param  aggregator  The aggregator method to use.
+	 */
+	public void setAggregator(Aggregator aggregator) {
+		_aggregator = aggregator;
+	}
 
-    /**
-     * Returns the method used to downsample query results.
-     *
-     * @return  The method used to downsample the query results.
-     */
-    public Aggregator getDownsampler() {
-        return _downsampler;
-    }
+	/**
+	 * Returns the method used to downsample query results.
+	 *
+	 * @return  The method used to downsample the query results.
+	 */
+	public Aggregator getDownsampler() {
+		return _downsampler;
+	}
 
-    /**
-     * Sets the method used to downsample the query results.
-     *
-     * @param  downsampler  The method used to downsample the query results.
-     */
-    public void setDownsampler(Aggregator downsampler) {
-        _downsampler = downsampler;
-    }
+	/**
+	 * Sets the method used to downsample the query results.
+	 *
+	 * @param  downsampler  The method used to downsample the query results.
+	 */
+	public void setDownsampler(Aggregator downsampler) {
+		_downsampler = downsampler;
+	}
 
-    /**
-     * Returns the time interval in milliseconds used to downsample the query results.
-     *
-     * @return  The downsample interval.
-     */
-    public Long getDownsamplingPeriod() {
-        return _downsamplingPeriod;
-    }
+	/**
+	 * Returns the time interval in milliseconds used to downsample the query results.
+	 *
+	 * @return  The downsample interval.
+	 */
+	public Long getDownsamplingPeriod() {
+		return _downsamplingPeriod;
+	}
 
-    /**
-     * Sets the time interval in milliseconds used to downsample the query results.
-     *
-     * @param  downsamplingPeriod  The downsample interval.
-     */
-    public void setDownsamplingPeriod(Long downsamplingPeriod) {
-        _downsamplingPeriod = downsamplingPeriod;
-    }
+	/**
+	 * Sets the time interval in milliseconds used to downsample the query results.
+	 *
+	 * @param  downsamplingPeriod  The downsample interval.
+	 */
+	public void setDownsamplingPeriod(Long downsamplingPeriod) {
+		_downsamplingPeriod = downsamplingPeriod;
+	}
 
-    /**
-     * Returns the TSDB metric name.
-     *
-     * @return  The TSDB metric name.
-     */
-    @JsonIgnore
-    public String getTSDBMetricName() {
-        StringBuilder sb = new StringBuilder();
-        
-        sb.append(getMetric()).append(DefaultTSDBService.DELIMITER).append(getScope());
+	/**
+	 * Returns the context for this query
+	 *
+	 * @return  The context for query
+	 */
+	public MetricQueryContext getMetricQueryContext() {
+		return _metricQueryContext;
+	}
 
-        if (_namespace != null && !_namespace.isEmpty()) {
-            sb.append(DefaultTSDBService.DELIMITER).append(getNamespace());
-        }
-        return sb.toString();
-    }
+	/**
+	 * Sets any extra context for this query
+	 *
+	 * @param  readEndPoint  The context for query
+	 */
+	public void setMetricQueryContext(MetricQueryContext metricQueryContext) {
+		_metricQueryContext = metricQueryContext;
+	}
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = super.hashCode();
+	/**
+	 * Returns the TSDB metric name.
+	 *
+	 * @return  The TSDB metric name.
+	 */
+	@JsonIgnore
+	public String getTSDBMetricName() {
+		StringBuilder sb = new StringBuilder();
 
-        result = prime * result + ((_aggregator == null) ? 0 : _aggregator.hashCode());
-        result = prime * result + ((_downsampler == null) ? 0 : _downsampler.hashCode());
-        result = prime * result + ((_downsamplingPeriod == null) ? 0 : _downsamplingPeriod.hashCode());
-        result = prime * result + ((_namespace == null) ? 0 : _namespace.hashCode());
-        return result;
-    }
+		sb.append(getMetric()).append(DefaultTSDBService.DELIMITER).append(getScope());
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
+		if (_namespace != null && !_namespace.isEmpty()) {
+			sb.append(DefaultTSDBService.DELIMITER).append(getNamespace());
+		}
+		return sb.toString();
+	}
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
 
-        MetricQuery other = (MetricQuery) obj;
+		result = prime * result + ((_aggregator == null) ? 0 : _aggregator.hashCode());
+		result = prime * result + ((_downsampler == null) ? 0 : _downsampler.hashCode());
+		result = prime * result + ((_downsamplingPeriod == null) ? 0 : _downsamplingPeriod.hashCode());
+		result = prime * result + ((_namespace == null) ? 0 : _namespace.hashCode());
+		result = prime * result + ((_metricQueryContext == null) ? 0 : _metricQueryContext.hashCode());
+		return result;
+	}
 
-        if (_aggregator != other._aggregator) {
-            return false;
-        }
-        if (_downsampler != other._downsampler) {
-            return false;
-        }
-        if (_downsamplingPeriod == null) {
-            if (other._downsamplingPeriod != null) {
-                return false;
-            }
-        } else if (!_downsamplingPeriod.equals(other._downsamplingPeriod)) {
-            return false;
-        }
-        if (_namespace == null) {
-            if (other._namespace != null) {
-                return false;
-            }
-        } else if (!_namespace.equals(other._namespace)) {
-            return false;
-        }
-        return true;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!super.equals(obj)) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
 
-    /**
-     * Returns the TSDB formatted representation of the query.
-     * @todo This is implementation specific and needs to be moved to the service interface.
-     *
-     * @return  The TSDB formatted representation of the query.
-     *
-     * @throws  SystemException  If UTF-8 encoding is not supported on the system.
-     */
-    @Override
-    public String toString() {
-        String pattern = "start={0,number,#}&end={1,number,#}&m={2}{3}&ms=true&show_tsuids=true";
-        long start = Math.max(0, getStartTimestamp() - 1);
-        long end = Math.max(start, getEndTimestamp() + 1);
-        StringBuilder sb = new StringBuilder();
+		MetricQuery other = (MetricQuery) obj;
 
-        sb.append(getAggregator() == null ? "avg" : getAggregator().getDescription()).append(":");
-        if (getDownsampler() != null) {
-            sb.append(getDownsamplingPeriod()).append("ms").append("-").append(getDownsampler().getDescription()).append(":");
-        }
-        sb.append(getTSDBMetricName());
+		if (_aggregator != other._aggregator) {
+			return false;
+		}
+		if (_downsampler != other._downsampler) {
+			return false;
+		}
+		if (_downsamplingPeriod == null) {
+			if (other._downsamplingPeriod != null) {
+				return false;
+			}
+		} else if (!_downsamplingPeriod.equals(other._downsamplingPeriod)) {
+			return false;
+		}
+		if (_namespace == null) {
+			if (other._namespace != null) {
+				return false;
+			}
+		} else if (!_namespace.equals(other._namespace)) {
+			return false;
+		} else if (!_metricQueryContext.equals(other._metricQueryContext)) {
+			return false;
+		}
+		return true;
+	}
 
-        Map<String, String> tags = new HashMap<>(getTags());
-        
-        try {
-            return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
-        } catch (UnsupportedEncodingException ex) {
-            throw new SystemException(ex);
-        }
-    }
+	/**
+	 * Returns the TSDB formatted representation of the query.
+	 * @todo This is implementation specific and needs to be moved to the service interface.
+	 *
+	 * @return  The TSDB formatted representation of the query.
+	 *
+	 * @throws  SystemException  If UTF-8 encoding is not supported on the system.
+	 */
+	@Override
+	public String toString() {
+		String pattern = "start={0,number,#}&end={1,number,#}&m={2}{3}&ms=true&show_tsuids=true";
+		long start = Math.max(0, getStartTimestamp() - 1);
+		long end = Math.max(start, getEndTimestamp() + 1);
+		StringBuilder sb = new StringBuilder();
 
-    //~ Enums ****************************************************************************************************************************************
+		sb.append(getAggregator() == null ? "avg" : getAggregator().getDescription()).append(":");
+		if (getDownsampler() != null) {
+			sb.append(getDownsamplingPeriod()).append("ms").append("-").append(getDownsampler().getDescription()).append(":");
+		}
+		sb.append(getTSDBMetricName());
 
-    /**
-     * The supported methods for aggregation and downsampling.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
-     */
-    public enum Aggregator {
+		Map<String, String> tags = new HashMap<>(getTags());
 
-        MIN("min"),
-        MAX("max"),
-        SUM("sum"),
-        AVG("avg"),
-        DEV("dev"),
-        ZIMSUM("zimsum"),
-        COUNT("count"),
-        MIMMIN("mimmin"),
-        MIMMAX("mimmax");
+		try {
+			return MessageFormat.format(pattern, start, end, sb.toString(), toTagParameterArray(tags));
+		} catch (UnsupportedEncodingException ex) {
+			throw new SystemException(ex);
+		}
+	}
 
-        private final String _description;
+	//~ Enums ****************************************************************************************************************************************
 
-        private Aggregator(String description) {
-            _description = description;
-        }
+	/**
+	 * The supported methods for aggregation and downsampling.
+	 *
+	 * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
+	 */
+	public enum Aggregator {
 
-        /**
-         * Returns the element corresponding to the given name.
-         *
-         * @param   name  The aggregator name.
-         *
-         * @return  The corresponding aggregator element.
-         */
-        public static Aggregator fromString(String name) {
-            if (name != null && !name.isEmpty()) {
-                for (Aggregator aggregator : Aggregator.values()) {
-                    if (name.equalsIgnoreCase(aggregator.name())) {
-                        return aggregator;
-                    }
-                }
-            }
-            return null;
-        }
+		MIN("min"),
+		MAX("max"),
+		SUM("sum"),
+		AVG("avg"),
+		DEV("dev"),
+		ZIMSUM("zimsum"),
+		COUNT("count"),
+		MIMMIN("mimmin"),
+		MIMMAX("mimmax"),
+		NONE("none");
 
-        /**
-         * Returns the short hand description of the method.
-         *
-         * @return  The method description.
-         */
-        public String getDescription() {
-            return _description;
-        }
-    }
+		private final String _description;
+
+		private Aggregator(String description) {
+			_description = description;
+		}
+
+		/**
+		 * Returns the element corresponding to the given name.
+		 *
+		 * @param   name  The aggregator name.
+		 *
+		 * @return  The corresponding aggregator element.
+		 */
+		public static Aggregator fromString(String name) {
+			if (name != null && !name.isEmpty()) {
+				for (Aggregator aggregator : Aggregator.values()) {
+					if (name.equalsIgnoreCase(aggregator.name())) {
+						return aggregator;
+					}
+				}
+			}
+			return null;
+		}
+
+		/**
+		 * Returns the short hand description of the method.
+		 *
+		 * @return  The method description.
+		 */
+		public String getDescription() {
+			return _description;
+		}
+		
+	    public static Transform correspondingTransform(Aggregator agg, TransformFactory factory) {
+	    	
+	    	Transform transform;
+			switch(agg) {    			
+				case MIN:
+					transform = factory.getTransform(TransformFactory.Function.MIN.getName());
+					break;
+				case MAX:
+					transform = factory.getTransform(TransformFactory.Function.MAX.getName());
+					break;
+				case SUM: 
+					transform = factory.getTransform(TransformFactory.Function.ZEROIFMISSINGSUM.getName());
+					break;
+				case AVG:
+					transform = factory.getTransform(TransformFactory.Function.AVERAGE.getName());
+					break;
+				case DEV:
+					transform = factory.getTransform(TransformFactory.Function.DEVIATION.getName());
+					break;
+				case ZIMSUM: 
+					transform = factory.getTransform(TransformFactory.Function.ZEROIFMISSINGSUM.getName());
+					break;
+				case COUNT:
+					transform = factory.getTransform(TransformFactory.Function.COUNT.getName());
+					break;
+				case MIMMIN:
+					transform = factory.getTransform(TransformFactory.Function.MIN.getName());
+					break;
+				case MIMMAX:
+					transform = factory.getTransform(TransformFactory.Function.MAX.getName());
+					break;
+				case NONE:
+					transform = factory.getTransform(TransformFactory.Function.IDENTITY.getName());
+					break;
+				default:
+					throw new IllegalArgumentException("Aggregator not legal: " + agg);
+			}
+	    	
+			return transform;
+	    }		
+	}
+	
+	/**
+	 * Encapsulates parameters used to provide additional context to a metric query if needed
+	 *
+	 * @author  Dilip Devaraj(ddevaraj@salesforce.com)
+	 */	
+	class MetricQueryContext {
+		private String _readEndPoint;
+		
+		/**
+		 * Returns the endpoint for this query
+		 *
+		 * @return  The endpoint for query
+		 */
+		public String getReadEndPoint() {
+			return _readEndPoint;
+		}
+
+		/**
+		 * Sets the endpoint for this query
+		 *
+		 * @param  readEndPoint  The endpoint for query
+		 */
+		public void setReadEndPoint(String readEndPoint) {
+			_readEndPoint = readEndPoint;
+		}
+		
+		@Override
+		public String toString() {
+			return "MetricQueryContext [_readEndPoint=" + _readEndPoint + "]";
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((_readEndPoint == null) ? 0 : _readEndPoint.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			MetricQueryContext other = (MetricQueryContext) obj;
+			if (_readEndPoint == null) {
+				if (other._readEndPoint != null)
+					return false;
+			} else if (!_readEndPoint.equals(other._readEndPoint))
+				return false;
+			return true;
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
