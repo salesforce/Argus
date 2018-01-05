@@ -98,7 +98,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
     private Logger _logger = LoggerFactory.getLogger(AsyncHbaseSchemaService.class);
     private final HBaseClient _client;
-    private final boolean _syncPut; 
     private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
@@ -108,7 +107,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     	super(systemConfig);
         
     	_monitorService = monitorService;
-    	_syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
     	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(), 
     													Property.HBASE_METRICSCHEMA_TABLE.getDefaultValue());
     	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(), 
@@ -779,7 +777,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
      */
     public enum Property {
         
-        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false"),
         HBASE_METRICSCHEMA_TABLE("service.property.schema.hbase.metricschema.table", "metric-schema"),
     	HBASE_SCOPESCHEMA_TABLE("service.property.schema.hbase.scopeschema.table", "scope-schema");
 
