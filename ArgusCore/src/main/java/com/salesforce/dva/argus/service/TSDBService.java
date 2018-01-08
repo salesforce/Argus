@@ -33,11 +33,17 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Provides methods to read, write and modify TSDB entity data.
@@ -79,6 +85,80 @@ public interface TSDBService extends Service {
      * @return  The query results. Will never be null, but may be empty.
      */
     List<Annotation> getAnnotations(List<AnnotationQuery> queries);
+    
+    static void collate(List<Metric> metrics) {
+		
+		Map<String, Metric> collated = new HashMap<>();
+		
+		for(Metric m : metrics) {
+			if(!collated.containsKey(m.getIdentifier())) {
+				collated.put(m.getIdentifier(), m);
+			} else {
+				collated.get(m.getIdentifier()).addDatapoints(m.getDatapoints());
+			}
+		}
+		
+		metrics.clear();
+		metrics.addAll(collated.values());
+	}
+    
+    static Map<String, List<Metric>> groupMetricsForAggregation(List<Metric> metrics, MetricQuery query) {
+		
+		Set<String> queryTags = query.getTags().keySet();
+		final Map<String, List<Metric>> groupedMetricsMap = new HashMap<>();
+		
+		for(Metric m : metrics) {
+			
+			Map<String, String> tags = new TreeMap<>(m.getTags());
+			
+			StringBuilder sb = new StringBuilder();
+			for(Map.Entry<String, String> entry : tags.entrySet()) {
+				if(queryTags.contains(entry.getKey())) {
+					sb.append(entry.getValue());
+				}
+			}
+			
+			if(!groupedMetricsMap.containsKey(sb.toString())) {
+				List<Metric> groupedMetrics = new ArrayList<>();
+				groupedMetricsMap.put(sb.toString(), groupedMetrics);
+			}
+			
+			groupedMetricsMap.get(sb.toString()).add(m);
+			
+		}
+		
+		return groupedMetricsMap;
+	}
+    
+    static List<Metric> aggregate(Map<String, List<Metric>> groupedMetricsMap, Transform transform) {
+		
+		final List<Metric> aggregated = new ArrayList<>(groupedMetricsMap.size());
+		
+		for(Map.Entry<String, List<Metric>> entry : groupedMetricsMap.entrySet()) {
+			aggregated.addAll(_aggregate(entry.getValue(), transform));
+		}
+		
+		return aggregated;
+	}
+
+	static List<Metric> _aggregate(List<Metric> metrics, Transform transform) {
+		if(metrics.size() == 1) {
+			//Nothing to aggregate
+			return metrics;
+		}
+		
+		
+		return transform.transform(metrics);
+	}
+    
+	static void downsample(MetricQuery query, List<Metric> metrics, Transform downsampleTransform) {
+		if(query.getDownsampler() == null) {
+			return;
+		}
+		
+		String downsampler = query.getDownsamplingPeriod() / 1000 + "s-" + query.getDownsampler().getDescription();
+		metrics = downsampleTransform.transform(metrics, Arrays.asList(downsampler));
+	}    
     
     /**
      * Enumeration of time window for a query
