@@ -352,14 +352,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
 							metrics, history);
 					
-					// Update the state of notification objects from the database since the notification contained 
-					// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts
-					// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.
-					// For example, the notification may have been updated to be on cooldown by a previous alert evaluation.
-					// Or it's active/clear status may have changed. 
-					List<BigInteger> notificationIds = new ArrayList<>(alert.getNotifications().size());
-					alert.getNotifications().forEach(item -> notificationIds.add(item.getId()));
-					alert.setNotifications(Notification.findByIDs(_emProvider.get(), notificationIds));
+					alert.setNotifications(updateNotifications(alert.getNotifications()));
 					
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
@@ -404,6 +397,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 	
+	
+	public List<Notification> updateNotifications(List<Notification> notifications) {
+		// Update the state of notification objects from the database since the notification contained 
+		// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts
+		// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.
+		// For example, the notification may have been updated to be on cooldown by a previous alert evaluation.
+		// Or it's active/clear status may have changed. 
+		List<BigInteger> notificationIds = new ArrayList<>(notifications.size());
+		notifications.forEach(item -> notificationIds.add(item.getId()));
+		return Notification.findByIDs(_emProvider.get(), notificationIds);
+	}
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
