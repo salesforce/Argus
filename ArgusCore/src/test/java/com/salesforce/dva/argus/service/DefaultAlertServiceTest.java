@@ -662,6 +662,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 			}
 		}).when(spyAlertService).mergeEntity(em, notification);
 		
+		doReturn(Arrays.asList(notification)).when(spyAlertService).updateNotifications(Arrays.asList(notification));
+		
 		doAnswer(new Answer<Void>() {
 
 			@Override
