@@ -621,8 +621,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
 		assertNull(actualValue);
 	}
-
 	
+		
 	private DefaultAlertService _initializeSpyAlertServiceWithStubs(final AtomicInteger notificationCount, final AtomicInteger clearCount,
 			List<Metric> metrics, Alert alert, Notification notification) {
 		DefaultAlertService spyAlertService = spy(alertService);
@@ -662,6 +662,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 			}
 		}).when(spyAlertService).mergeEntity(em, notification);
 		
+		doReturn(Arrays.asList(notification)).when(spyAlertService).updateNotifications(Arrays.asList(notification));
+		
 		doAnswer(new Answer<Void>() {
 
 			@Override
@@ -669,7 +671,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 				notificationCount.incrementAndGet();
 				return null;
 			}
-		}).when(spyAlertService)._sendNotification(any(Trigger.class), 
+		}).when(spyAlertService).sendNotification(any(Trigger.class), 
 															any(Metric.class), 
 															any(History.class), 
 															any(Notification.class), 
@@ -683,7 +685,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 				clearCount.incrementAndGet();
 				return null;
 			}
-		}).when(spyAlertService)._sendClearNotification(any(Trigger.class), 
+		}).when(spyAlertService).sendClearNotification(any(Trigger.class), 
 															any(Metric.class), 
 															any(History.class), 
 															any(Notification.class), 
