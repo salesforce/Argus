@@ -207,7 +207,7 @@ public abstract class AbstractResource {
         }
         throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
     }
-
+    
     /**
      * Validates the resource authorization. Throws exception if the user is not authorized to access the resource.
      *

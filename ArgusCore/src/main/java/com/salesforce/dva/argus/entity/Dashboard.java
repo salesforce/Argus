@@ -92,7 +92,11 @@ import org.apache.commons.lang3.reflect.FieldUtils;
             name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true"
         ), @NamedQuery(
             name = "Dashboard.getDashboardsOwnedBy", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner"
-        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC")
+        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC"),
+		@NamedQuery(
+				name = "Dashboard.getSharedDashboardsByOwner", 
+				query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true"
+				)
     }
 )
 public class Dashboard extends JPAEntity implements Serializable {
@@ -126,7 +130,7 @@ public class Dashboard extends JPAEntity implements Serializable {
      *
      * @param  creator        The creator of this dashboard.
      * @param  dashboardName  The name for the dashboard. Cannot be null or empty.
-     * @param  owner          The owner of this dashboard. This need not be the same as the creator. Cannoy be null.
+     * @param  owner          The owner of this dashboard. This need not be the same as the creator. Cannot be null.
      */
     public Dashboard(PrincipalUser creator, String dashboardName, PrincipalUser owner) {
         super(creator);
@@ -165,23 +169,47 @@ public class Dashboard extends JPAEntity implements Serializable {
     /**
      * Finds the list of dashboards that are marked as globally shared.
      *
-     * @param   em  The entity manager to use.
+     * @param   em       The entity manager to use.
+     * @param   owner    The owner of shared dashboards to filter on 
+     * @param   limit    The maximum number of rows to return.
      *
      * @return  Dashboards that are shared/global within the system. Or empty list if no such dashboards exist.
      */
-    public static List<Dashboard> findSharedDashboards(EntityManager em) {
+    public static List<Dashboard> findSharedDashboards(EntityManager em,  PrincipalUser owner, Integer limit) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
-    	TypedQuery<Dashboard> query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
-
+    	
+		TypedQuery<Dashboard> query;
+		if(owner == null){
+			query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
+		} else {
+			query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwner", Dashboard.class);
+			query.setParameter("owner", owner);
+		}
+		
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
+		if(limit!= null){
+			query.setMaxResults(limit);
+		}
+		
         try {
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
     }
-    
-    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em) {
+ 
+    /**
+     * Gets all meta information of shared dashboards with filtering.
+     *
+     * @param   em       The entity manager to use.
+     * @param   owner    The owner of shared dashboards to filter on 
+     * @param   limit    The maximum number of rows to return.
+     *
+     * @return  The list of all shared dashboards with meta information only. Will never be null but may be empty.
+     */    
+    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	try {
@@ -194,9 +222,14 @@ public class Dashboard extends JPAEntity implements Serializable {
         		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
         	}
         	cq.multiselect(fieldsToSelect);
-        	cq.where(cb.equal(e.get("shared"), true));
-        	
-        	return _readDashboards(em, cq, null);
+
+			if(owner != null){
+				cq.where(cb.equal(e.get("shared"), true), cb.equal(e.get("owner"), owner));
+			} else{
+	        	cq.where(cb.equal(e.get("shared"), true));
+			}
+
+        	return _readDashboards(em, cq, limit);
         	
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -295,10 +328,12 @@ public class Dashboard extends JPAEntity implements Serializable {
 		List<Dashboard> dashboards = new ArrayList<>();
 		
 		TypedQuery<Tuple> query = em.createQuery(cq);
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
 		if (limit != null) {
             query.setMaxResults(limit);
         }
-		
+
 		List<Tuple> result = query.getResultList();
 		for(Tuple tuple : result) {
 			Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")), 
