@@ -186,29 +186,34 @@ public class GusNotifier extends AuditNotifier {
 	}
 
 	private void postToGus(Set<String> to, String feed) {
-		// So far works for only one group, will accept a set of string in future.
-		String groupId = to.toArray(new String[to.size()])[0];
-		PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
+		
+		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
+			// So far works for only one group, will accept a set of string in future.
+			String groupId = to.toArray(new String[to.size()])[0];
+			PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
 
-		try {
-			gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken());
-			String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
-					_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
-					URLEncoder.encode(feed.toString(), "UTF-8"));
+			try {
+				gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken());
+				String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
+						_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
+						URLEncoder.encode(feed.toString(), "UTF-8"));
 
-			gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
-			HttpClient httpclient = getHttpClient(_config);
-			int respCode = httpclient.executeMethod(gusPost);
-			_logger.info("Gus message response code '{}'", respCode);
-			if (respCode == 201 || respCode == 204) {
-				_logger.info("Success - send to GUS group {}", groupId);
-			} else {
-				_logger.error("Failure - send to GUS group {}. Cause {}", groupId, gusPost.getResponseBodyAsString());
+				gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
+				HttpClient httpclient = getHttpClient(_config);
+				int respCode = httpclient.executeMethod(gusPost);
+				_logger.info("Gus message response code '{}'", respCode);
+				if (respCode == 201 || respCode == 204) {
+					_logger.info("Success - send to GUS group {}", groupId);
+				} else {
+					_logger.error("Failure - send to GUS group {}. Cause {}", groupId, gusPost.getResponseBodyAsString());
+				}
+			} catch (Exception e) {
+				_logger.error("Throws Exception {} when posting to gus group {}", e, groupId);
+			} finally {
+				gusPost.releaseConnection();
 			}
-		} catch (Exception e) {
-			_logger.error("Throws Exception {} when posting to gus group {}", e, groupId);
-		} finally {
-			gusPost.releaseConnection();
+		} else {
+			_logger.info("Sending GUS notification is disabled.  Not sending message to groups '{}'.", to);
 		}
 	}
 
