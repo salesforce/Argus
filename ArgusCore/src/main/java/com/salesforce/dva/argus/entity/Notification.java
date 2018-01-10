@@ -49,12 +49,17 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.EntityManager;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.NoResultException;
 import javax.persistence.Table;
+import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -77,6 +82,9 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @SuppressWarnings("serial")
 @Entity
 @Table(name = "NOTIFICATION", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
+@NamedQueries(
+		{ @NamedQuery(name = "Notification.findByIDs", query = "SELECT n FROM Notification n WHERE n.id IN :notificationIds") }
+)
 public class Notification extends JPAEntity implements Serializable {
 	
 	
@@ -276,6 +284,23 @@ public class Notification extends JPAEntity implements Serializable {
     /** Creates a new Notification object. */
     protected Notification() {
         super(null);
+    }
+    
+    //~ Static Methods *******************************************************************************************************************************
+    
+    public static List<Notification> findByIDs(EntityManager em, List<BigInteger> ids) {
+    	requireArgument(em != null, "Entity manager can not be null.");
+		requireArgument(ids != null, "Notification IDs list cannot be null.");
+		
+		TypedQuery<Notification> query = em.createNamedQuery("Notification.findByIDs", Notification.class);
+
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		try {
+			query.setParameter("notificationIds", ids);
+			return query.getResultList();
+		} catch (NoResultException ex) {
+			return Collections.emptyList();
+		}
     }
 
     //~ Methods **************************************************************************************************************************************
