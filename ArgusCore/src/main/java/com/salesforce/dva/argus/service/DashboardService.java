@@ -28,9 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service;
 
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import java.math.BigInteger;
@@ -43,82 +44,85 @@ import java.util.List;
  */
 public interface DashboardService extends Service {
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    /**
-     * Retrieves a Dashboard by its name and its owner(PrincipalUSer).
-     *
-     * @param   name   The name of the Dashboard to retrieve. Cannot be null of empty.
-     * @param   owner  The owner of the Dashboard to retrieve. Cannoy be null.
-     *
-     * @return  The Dashboard if one exists or null if no such Dashboard exists.
-     */
-    Dashboard findDashboardByNameAndOwner(String name, PrincipalUser owner);
+	/**
+	 * Retrieves a Dashboard by its name and its owner(PrincipalUSer).
+	 *
+	 * @param   name   The name of the Dashboard to retrieve. Cannot be null of empty.
+	 * @param   owner  The owner of the Dashboard to retrieve. Cannoy be null.
+	 *
+	 * @return  The Dashboard if one exists or null if no such Dashboard exists.
+	 */
+	Dashboard findDashboardByNameAndOwner(String name, PrincipalUser owner);
 
-    /**
-     * Retrieves a Dashboard based on the primary key ID.
-     *
-     * @param   id  The primary key ID. Cannot be null and must be a positive non-zero number.
-     *
-     * @return  The Dashboard or null if no Dashboard exists for the give primary key ID.
-     */
-    Dashboard findDashboardByPrimaryKey(BigInteger id);
+	/**
+	 * Retrieves a Dashboard based on the primary key ID.
+	 *
+	 * @param   id  The primary key ID. Cannot be null and must be a positive non-zero number.
+	 *
+	 * @return  The Dashboard or null if no Dashboard exists for the give primary key ID.
+	 */
+	Dashboard findDashboardByPrimaryKey(BigInteger id);
 
-    /**
-     * Retrieves a list of Dashboards owned by a user.
-     *
-     * @param   owner  The user for which to retrieve dashboards. Cannot be null.
-     *
-     * @return  A list of Dashboards owner by this user or an empty list if none are owned.
-     */
-    List<Dashboard> findDashboardsByOwner(PrincipalUser owner, boolean metadataOnly);
+	/**
+	 * Retrieves a list of Dashboards owned by a user.
+	 *
+	 * @param   owner  The user for which to retrieve dashboards. Cannot be null.
+	 *
+	 * @return  A list of Dashboards owner by this user or an empty list if none are owned.
+	 */
+	List<Dashboard> findDashboardsByOwner(PrincipalUser owner, boolean metadataOnly);
 
-    /**
-     * Retrieves a list of Dashboards shared globally.
-     *
-     * @return  A list of Dashboards shared globally or an empty list if no global dashboards.
-     */
-    List<Dashboard> findSharedDashboards(boolean metadataOnly);
+	/**
+	 * Returns a list of shared Dashboards.
+	 * @param   metadataOnly    Get metadata only
+	 * @param   owner           The owner of shared dashboards to filter on. If null no filtering applied
+	 * @param   limit           The maximum number of rows to return. If null no filtering applied
+	 * 
+	 * The list of all shared dashboards. Will never be null, but may be empty.
+	 */
+	List<Dashboard> findSharedDashboards(boolean metadataOnly, PrincipalUser owner, Integer limit);
 
-    /**
-     * Retrieves a list of all dashboards.
-     *
-     * @param   limit  The maximum number of records to return.
-     *
-     * @return  The list of dashboards.
-     */
-    List<Dashboard> findDashboards(Integer limit, boolean metadataOnly);
+	/**
+	 * Retrieves a list of all dashboards.
+	 *
+	 * @param   limit  The maximum number of records to return.
+	 *
+	 * @return  The list of dashboards.
+	 */
+	List<Dashboard> findDashboards(Integer limit, boolean metadataOnly);
 
-    /**
-     * Updates a dashboard, creating it if necessary.
-     *
-     * @param   dashboard  The dashboard to update. Cannot be null.
-     *
-     * @return  The updated dashboard. Will never return null.
-     */
-    Dashboard updateDashboard(Dashboard dashboard);
+	/**
+	 * Updates a dashboard, creating it if necessary.
+	 *
+	 * @param   dashboard  The dashboard to update. Cannot be null.
+	 *
+	 * @return  The updated dashboard. Will never return null.
+	 */
+	Dashboard updateDashboard(Dashboard dashboard);
 
-    /**
-     * Deletes a dashboard.
-     *
-     * @param  dashboard  The dashboard to delete. Cannot be null.
-     */
-    void deleteDashboard(Dashboard dashboard);
+	/**
+	 * Deletes a dashboard.
+	 *
+	 * @param  dashboard  The dashboard to delete. Cannot be null.
+	 */
+	void deleteDashboard(Dashboard dashboard);
 
-    /**
-     * Deletes a dashboard given a name and its owner.
-     *
-     * @param  dashboardName  The name of the dashboard to delete. Cannot be null or empty.
-     * @param  owner          The owner of the dashboard to delete. Cannot be null.
-     */
-    void deleteDashboard(String dashboardName, PrincipalUser owner);
+	/**
+	 * Deletes a dashboard given a name and its owner.
+	 *
+	 * @param  dashboardName  The name of the dashboard to delete. Cannot be null or empty.
+	 * @param  owner          The owner of the dashboard to delete. Cannot be null.
+	 */
+	void deleteDashboard(String dashboardName, PrincipalUser owner);
 
-    /**
-     * Deletes a dashboard given its primary key ID.
-     *
-     * @param  id  The primary key ID. Cannot be null and must be a positive non-zero number.
-     */
-    void deleteDashboard(BigInteger id);
+	/**
+	 * Deletes a dashboard given its primary key ID.
+	 *
+	 * @param  id  The primary key ID. Cannot be null and must be a positive non-zero number.
+	 */
+	void deleteDashboard(BigInteger id);
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
