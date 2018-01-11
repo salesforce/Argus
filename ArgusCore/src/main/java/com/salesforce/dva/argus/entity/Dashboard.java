@@ -31,6 +31,8 @@
 	 
 package com.salesforce.dva.argus.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -39,13 +41,20 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import javax.persistence.Basic;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
@@ -118,6 +127,15 @@ public class Dashboard extends JPAEntity implements Serializable {
     @Basic
     @Metadata
     private boolean shared;
+    
+    @Column(nullable = true)
+    @Enumerated(EnumType.STRING)
+    private LayoutType layout = LayoutType.SMALL;
+    
+    @ElementCollection
+    @Embedded
+    @Column(nullable = true)
+    private List<TemplateVar> templateVars = new ArrayList<>(0);
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -139,7 +157,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         super(null);
     }
 
-    //~ Methods **************************************************************************************************************************************
+    //~ Static Methods **************************************************************************************************************************************
 
     /**
      * Finds Dashboard in the database with the specified dashboard name and owned by the specified owner.
@@ -414,7 +432,46 @@ public class Dashboard extends JPAEntity implements Serializable {
         this.shared = shared;
     }
 
-    @Override
+    /**
+     * Returns the layout of this dashboard. It can be either LayoutType.SMALL, LayoutType.MEDIUM or LayoutType.LARGE.  
+     * 
+     * @return The dashboard layout
+     */
+    public LayoutType getLayout() {
+		return layout;
+	}
+
+    /**
+     * Sets the layout for this dashboard. It can be either LayoutType.SMALL, LayoutType.MEDIUM or LayoutType.LARGE.
+     * 
+     * @param layout  The layout for this dashboard.
+     */
+	public void setLayout(LayoutType layout) {
+		this.layout = layout;
+	}
+
+	/**
+	 * Returns the template variables used in this dashboard.
+	 * 
+	 * @return  The template variables.
+	 */
+	public List<TemplateVar> getTemplateVars() {
+		return Collections.unmodifiableList(this.templateVars);
+	}
+
+	/**
+	 * Sets the template variables used in this dashboard.
+	 * 
+	 * @param templateVars  A list of template variables. If the list is null or empty then this is a no-op.
+	 */
+	public void setTemplateVars(List<TemplateVar> templateVars) {
+		this.templateVars.clear();
+		if(templateVars != null && !templateVars.isEmpty()) {
+			this.templateVars.addAll(templateVars);
+		}
+	}
+
+	@Override
     public int hashCode() {
         int hash = 3;
 
@@ -448,5 +505,106 @@ public class Dashboard extends JPAEntity implements Serializable {
         return "Dashboard{" + "name=" + name + ", owner=" + owner + ", content=" + content + ", description=" + description + ", shared=" + shared +
             '}';
     }
+    
+    //~ Nested Classes **************************************************************************************************************************************
+    
+    @Embeddable
+    public static class TemplateVar implements Serializable {
+    	
+    	@Basic
+    	@Column(name = "var_key")
+    	private String key;
+    	
+    	@Basic
+    	private String displayName;
+    	
+    	@Basic
+    	private String defaultValue;
+    	
+    	@Basic
+    	private String[] options;
+    	
+    	protected TemplateVar() {}
+    	
+    	public TemplateVar(String key, String defaultValue) {
+    		setKey(key);
+    		setDisplayName(key);
+    		setDefaultValue(defaultValue);
+    	}
+
+		public String getKey() {
+			return key;
+		}
+
+		public void setKey(String key) {
+			SystemAssert.requireArgument(key != null && !key.isEmpty(), "Template variable key cannot be null or empty.");
+			this.key = key;
+		}
+
+		public String getDisplayName() {
+			return displayName;
+		}
+
+		public void setDisplayName(String displayName) {
+			this.displayName = displayName;
+		}
+
+		public String getDefaultValue() {
+			return defaultValue;
+		}
+
+		public void setDefaultValue(String defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		public String[] getOptions() {
+			return options;
+		}
+
+		public void setOptions(List<String> options) {
+			if(options != null && !options.isEmpty()) {
+				this.options = new String[options.size()];
+				for(int i=0; i<options.size(); i++) {
+					this.options[i] = options.get(i);
+				}
+			}
+		}
+    }
+    
+    //~ Enuns **************************************************************************************************************************************
+    
+    public enum LayoutType {
+    	
+    	/** Denotes a dashboard with small charts */
+    	SMALL,
+    	/** Denotes a dashboard with medium sized charts */
+    	MEDIUM,
+    	/** Denotes a dashboard with large charts */
+    	LARGE;
+    	
+    	@JsonCreator
+        public static LayoutType fromString(String name) {
+            for (LayoutType t : LayoutType.values()) {
+                if (t.toString().equalsIgnoreCase(name)) {
+                    return t;
+                }
+            }
+            
+            throw new IllegalArgumentException("LayoutType " + name + " does not exist. Allowed values are: " + Arrays.asList(LayoutType.values()));
+        }
+
+        /**
+         * Returns the name of the layout type.
+         *
+         * @return  The name of the layout type.
+         */
+        @JsonValue
+        public String value() {
+            return this.toString();
+        }
+    }
+    
 }
+
+
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
