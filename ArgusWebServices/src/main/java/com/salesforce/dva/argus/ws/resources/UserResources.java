@@ -32,7 +32,6 @@
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
@@ -40,7 +39,6 @@ import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
@@ -57,12 +55,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 /**
- * Provides methods to manipulate users.
+ * Provides methods to perform CRUD on PrincipalUser objects.
  *
  * @author  Bhinav Sura (bsura@salesforce.com)
  */
 @Path("/users")
-@Description("Provides methods to manipulate users.")
+@Description("Provides methods to perform CRUD on PrincipalUser objects.")
 public class UserResources extends AbstractResource {
 
     //~ Instance fields ******************************************************************************************************************************
@@ -243,43 +241,6 @@ public class UserResources extends AbstractResource {
         user = _uService.updateUser(user);
         return PrincipalUserDto.transformToDto(user);
     }
-
-    /**
-     * Updates user preferences.
-     *
-     * @param   req     The HTTP request.
-     * 
-     * @param   userId  The ID of the user to update.
-     * @param   prefs   The updated preferences.
-     *
-     * @return  The updated user DTO.
-     *
-     * @throws  WebApplicationException  If an error occurs.
-     */
-    @PUT
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Path("{userId}/preferences")
-    @Description("Update user preferences.")
-    public PrincipalUserDto updateUserPreferences(@Context HttpServletRequest req,
-        @PathParam("userId") final BigInteger userId, final Map<Preference, String> prefs) {
-        if (userId == null || userId.compareTo(BigInteger.ZERO) < 1) {
-            throw new WebApplicationException("User Id cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
-        }
-        if (prefs == null) {
-            throw new WebApplicationException("Cannot update with null prefs.", Status.BAD_REQUEST);
-        }
-
-        PrincipalUser remoteUser = getRemoteUser(req);
-        PrincipalUser user = _uService.findUserByPrimaryKey(userId);
-
-        validateResourceAuthorization(req, user, remoteUser);
-        if (user == null) {
-            throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
-        }
-        user.getPreferences().putAll(prefs);
-        user = _uService.updateUser(user);
-        return PrincipalUserDto.transformToDto(user);
-    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

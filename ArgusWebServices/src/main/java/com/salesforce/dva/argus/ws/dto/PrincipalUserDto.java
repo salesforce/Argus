@@ -34,12 +34,9 @@ package com.salesforce.dva.argus.ws.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
 
@@ -56,7 +53,6 @@ public class PrincipalUserDto extends EntityDTO {
 
     private String userName;
     private String email;
-    private Map<Preference, String> preferences = new HashMap<>();
     private List<BigInteger> ownedDashboardIds = new ArrayList<>();
     private boolean privileged;
 
@@ -142,25 +138,6 @@ public class PrincipalUserDto extends EntityDTO {
      */
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    /**
-     * Returns the user preferences.
-     *
-     * @return  The user preferences.
-     * 
-     */
-    public Map<Preference, String> getPreferences() {
-        return preferences;
-    }
-
-    /**
-     * Sets the user preferences.
-     *
-     * @param  preferences  The user preferences.
-     */
-    public void setPreferences(Map<Preference, String> preferences) {
-        this.preferences = preferences;
     }
 
     /**
