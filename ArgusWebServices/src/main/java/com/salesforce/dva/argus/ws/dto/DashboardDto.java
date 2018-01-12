@@ -33,6 +33,9 @@ package com.salesforce.dva.argus.ws.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Dashboard;
+import com.salesforce.dva.argus.entity.Dashboard.LayoutType;
+import com.salesforce.dva.argus.entity.Dashboard.TemplateVar;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,15 +59,17 @@ public class DashboardDto extends EntityDTO {
     private String ownerName;
     private boolean shared;
     private String description;
+    private LayoutType layout;
+    private List<TemplateVar> templateVars = new ArrayList<>();
 
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Converts alert entity to alertDto.
+     * Converts dashboard entity to dashboardDto.
      *
-     * @param   dashboard  The alert object. Cannot be null.
+     * @param   dashboard  The dashboard object. Cannot be null.
      *
-     * @return  AlertDto object.
+     * @return  DashboardDto object.
      *
      * @throws  WebApplicationException  If an error occurs.
      */
@@ -80,11 +85,11 @@ public class DashboardDto extends EntityDTO {
     }
 
     /**
-     * Converts list of alert entity objects to list of alertDto objects.
+     * Converts list of dashboard entity objects to list of dashboardDto objects.
      *
-     * @param   dashboards  List of alert entities. Cannot be null.
+     * @param   dashboards  List of dashboard entities. Cannot be null.
      *
-     * @return  List of alertDto objects.
+     * @return  List of dashboard objects.
      *
      * @throws  WebApplicationException  If an error occurs.
      */
@@ -192,6 +197,45 @@ public class DashboardDto extends EntityDTO {
     public void setDescription(String description) {
         this.description = description;
     }
+    
+    /**
+     * Returns the layout of this dashboard. It can be either LayoutType.SMALL, LayoutType.MEDIUM or LayoutType.LARGE.  
+     * 
+     * @return The dashboard layout
+     */
+    public LayoutType getLayout() {
+		return layout;
+	}
+
+    /**
+     * Sets the layout for this dashboard. It can be either LayoutType.SMALL, LayoutType.MEDIUM or LayoutType.LARGE.
+     * 
+     * @param layout  The layout for this dashboard.
+     */
+	public void setLayout(LayoutType layout) {
+		this.layout = layout;
+	}
+
+	/**
+	 * Returns the template variables used in this dashboard.
+	 * 
+	 * @return  The template variables.
+	 */
+	public List<TemplateVar> getTemplateVars() {
+		return templateVars;
+	}
+
+	/**
+	 * Sets the template variables used in this dashboard.
+	 * 
+	 * @param templateVars  A list of template variables. If the list is null or empty then existing templateVars are cleared.
+	 */
+	public void setTemplateVars(List<TemplateVar> templateVars) {
+		this.templateVars.clear();
+		if(templateVars != null && !templateVars.isEmpty()) {
+			this.templateVars.addAll(templateVars);
+		}
+	}
 
     @Override
     public Object createExample() {
