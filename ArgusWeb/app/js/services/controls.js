@@ -23,6 +23,6 @@ angular.module('argus.services')
 					urlStr += '&';
 				}
 			}
-			return urlStr;
+			return urlStr.replace(/\+/g, "%2B");
 		};
 	}]);
