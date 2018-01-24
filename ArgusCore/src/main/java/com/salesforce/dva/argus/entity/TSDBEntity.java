@@ -47,6 +47,8 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 @SuppressWarnings("serial")
 public abstract class TSDBEntity implements Serializable {
+	
+    private static final int NUM_TAGS = 50;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -161,7 +163,7 @@ public abstract class TSDBEntity implements Serializable {
 
     public static void validateTags(Map<String, String> tags) {
     	if(tags != null) {
-    		requireArgument(tags.size() <= 7, "No. of tags = " + tags.size() + ". Too many tags!!!");
+    		requireArgument(tags.size() <= NUM_TAGS, "No. of tags = " + tags.size() + ". Too many tags!!!");
         	
         	for(Map.Entry<String, String> entry : tags.entrySet()) {
         		String key = entry.getKey();
@@ -247,7 +249,7 @@ public abstract class TSDBEntity implements Serializable {
         if (value == null || value.isEmpty()) {
             _tags.remove(key);
         } else {
-        	requireArgument(_tags.size() < 7 || _tags.containsKey(key), "No. of tags = " + _tags.size() + ". Cannot add more tags!!!");
+        	requireArgument(_tags.size() < NUM_TAGS || _tags.containsKey(key), "No. of tags = " + _tags.size() + ". Cannot add more tags!!!");
             _tags.put(key, value);
         }
     }
