@@ -60,6 +60,7 @@ import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
+import com.salesforce.dva.argus.service.tsdb.CachedTSDBService.MetricQueryTimestamp;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -150,28 +151,29 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation1.join(mapQuerySubQueries, subQueryMetricsMap1);
 
 		for(Entry<MetricQuery, List<Metric>> entry : queryMetricsMap.entrySet()){
+			List<Metric> aggregatedMetrics = new ArrayList<Metric>();
 			MetricQuery metricQuery = entry.getKey();
 			Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
 			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
 
-			Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
-			InterpolationType interpolationType;
+			long beforeTime = System.currentTimeMillis();
+			if(metricQuery.getAggregator() != Aggregator.NONE){
+				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
+				InterpolateTransform interpolate = new InterpolateTransform();
+				List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(metricQuery.getAggregator().toString()));
 
-			switch(metricQuery.getAggregator()){
-			case ZIMSUM:
-				interpolationType = InterpolationType.ZIMSUM;
-				break;
-			default:
-				interpolationType = InterpolationType.LININT;
+				
+				for(List<Metric> metrics : groupedMetricsMap.values()){
+					aggregatedMetrics.add(interpolate.transform(metrics, interpolateConstants).get(0));
+				}
+			} else {
+				aggregatedMetrics.addAll(entry.getValue());
 			}
+            
+            long afterTime = System.currentTimeMillis();
+            _logger.info("Time spent in interpolation: {}", afterTime - beforeTime);
 
-			InterpolateTransform interpolate = new InterpolateTransform();
-			List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(interpolationType.toString()));
-			for(List<Metric> metrics : groupedMetricsMap.values()){
-				interpolate.transform(metrics, interpolateConstants);
-			}
-			Transform transform = Aggregator.correspondingTransform(metricQuery.getAggregator(), _transformFactory);
-			queryMetricsMap.put(metricQuery, TSDBService.aggregate(groupedMetricsMap, transform));
+			queryMetricsMap.put(metricQuery, aggregatedMetrics);
 		}
 
 		for (MetricQuery query : queries) {
