@@ -59,8 +59,6 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
-import com.salesforce.dva.argus.service.tsdb.CachedTSDBService.MetricQueryTimestamp;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -129,6 +127,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
 
+		
 		QueryFederation queryFederation1 = new TimeQueryFederation();
 		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation1.federateQueries(queries);
 
@@ -145,18 +144,28 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			queriesSplit2.addAll(subQueries);
 		}
 
+		long beforeTime = System.currentTimeMillis();		
 		Map<MetricQuery, List<Metric>>  subQueryMetricsMap2 = getSubQueryMetrics(queriesSplit2);
-
+		long afterTime = System.currentTimeMillis();
+		_logger.info("Time spent in waiting for all sub query results: {}", afterTime - beforeTime);
+		
+		beforeTime = System.currentTimeMillis();
 		Map<MetricQuery, List<Metric>> subQueryMetricsMap1 = queryFederation2.join(mapQueryEndPointSubQueries, subQueryMetricsMap2);
 		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation1.join(mapQuerySubQueries, subQueryMetricsMap1);
-
+		afterTime = System.currentTimeMillis();
+		_logger.info("Time spent in joining results: {}", afterTime - beforeTime);
+		
 		for(Entry<MetricQuery, List<Metric>> entry : queryMetricsMap.entrySet()){
 			List<Metric> aggregatedMetrics = new ArrayList<Metric>();
 			MetricQuery metricQuery = entry.getKey();
+			
+			beforeTime = System.currentTimeMillis();
 			Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
 			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
+			afterTime = System.currentTimeMillis();
+			_logger.info("Time spent in downsampling: {}", afterTime - beforeTime);
 
-			long beforeTime = System.currentTimeMillis();
+			beforeTime = System.currentTimeMillis();
 			if(metricQuery.getAggregator() != Aggregator.NONE){
 				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
 				InterpolateTransform interpolate = new InterpolateTransform();
@@ -170,8 +179,8 @@ public class FederatedTSDBService extends AbstractTSDBService{
 				aggregatedMetrics.addAll(entry.getValue());
 			}
             
-            long afterTime = System.currentTimeMillis();
-            _logger.info("Time spent in interpolation: {}", afterTime - beforeTime);
+            afterTime = System.currentTimeMillis();
+            _logger.info("Time spent in grouping and interpolation: {}", afterTime - beforeTime);
 
 			queryMetricsMap.put(metricQuery, aggregatedMetrics);
 		}
@@ -248,6 +257,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		for (MetricQuery query : queries) {
 			MetricQuery queryNoneAgg = new MetricQuery(query);
 			queryNoneAgg.setAggregator(Aggregator.NONE);
+			queryNoneAgg.setDownsampler(null);
 			String requestBody = fromEntity(queryNoneAgg);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));

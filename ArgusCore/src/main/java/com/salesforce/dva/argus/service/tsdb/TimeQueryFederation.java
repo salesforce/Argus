@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
+
 /**
  * Federation by forking large range queries into smaller range sub queries
  *
@@ -13,6 +15,7 @@ import java.util.Map;
 public class TimeQueryFederation extends QueryFederation{
 
 	private static final long TIME_FEDERATE_LIMIT_MILLIS = 86400000L;
+	// private static final long TIME_FEDERATE_LIMIT_MILLIS = 3600000L;
 
 	@Override
 	public Map<MetricQuery, List<MetricQuery>> federateQueries(List<MetricQuery> queries) {
@@ -21,6 +24,7 @@ public class TimeQueryFederation extends QueryFederation{
 
 			List<MetricQuery> metricSubQueries = new ArrayList<>();
 			if (query.getEndTimestamp() - query.getStartTimestamp() > TIME_FEDERATE_LIMIT_MILLIS) {
+				LoggerFactory.getLogger(getClass()).info("Federating into multiple sub queries based on time " + TIME_FEDERATE_LIMIT_MILLIS);
 				for (long time = query.getStartTimestamp(); time <= query.getEndTimestamp(); time = time + TIME_FEDERATE_LIMIT_MILLIS) {
 					MetricQuery mq = new MetricQuery(query);
 					mq.setStartTimestamp(time);
