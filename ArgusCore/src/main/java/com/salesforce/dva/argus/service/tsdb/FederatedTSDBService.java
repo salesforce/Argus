@@ -334,7 +334,13 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		case MIN:
 			return Aggregator.MIN;
 		case MAX:
-			return Aggregator.MAX;			
+			return Aggregator.MAX;
+		case ZIMSUM:
+			return Aggregator.ZIMSUM;
+		case COUNT:
+			return Aggregator.COUNT;
+		case AVG:
+			return Aggregator.AVG;			
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
