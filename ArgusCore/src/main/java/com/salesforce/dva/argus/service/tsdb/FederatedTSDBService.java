@@ -127,63 +127,23 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
 
-		
-		QueryFederation queryFederation1 = new TimeQueryFederation();
-		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation1.federateQueries(queries);
+		QueryFederation queryFederation = new EndPointQueryFederation(_readEndPoints);
+		Map<MetricQuery, List<MetricQuery>> mapQueryEndPointSubQueries = queryFederation.federateQueries(queries);
 
 		List<MetricQuery> queriesSplit = new ArrayList<>();
-		for(List<MetricQuery> subQueries  :  mapQuerySubQueries.values()){
+		for(List<MetricQuery> subQueries  :  mapQueryEndPointSubQueries.values()){
 			queriesSplit.addAll(subQueries);
 		}
 
-		QueryFederation queryFederation2 = new EndPointQueryFederation(_readEndPoints);
-		Map<MetricQuery, List<MetricQuery>> mapQueryEndPointSubQueries = queryFederation2.federateQueries(queriesSplit);
-
-		List<MetricQuery> queriesSplit2 = new ArrayList<>();
-		for(List<MetricQuery> subQueries  :  mapQueryEndPointSubQueries.values()){
-			queriesSplit2.addAll(subQueries);
-		}
-
 		long beforeTime = System.currentTimeMillis();		
-		Map<MetricQuery, List<Metric>>  subQueryMetricsMap2 = getSubQueryMetrics(queriesSplit2);
+		Map<MetricQuery, List<Metric>>  subQueryMetricsMap = getSubQueryMetrics(queriesSplit);
 		long afterTime = System.currentTimeMillis();
 		_logger.info("Time spent in waiting for all sub query results: {}", afterTime - beforeTime);
-		
+
 		beforeTime = System.currentTimeMillis();
-		Map<MetricQuery, List<Metric>> subQueryMetricsMap1 = queryFederation2.join(mapQueryEndPointSubQueries, subQueryMetricsMap2);
-		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation1.join(mapQuerySubQueries, subQueryMetricsMap1);
+		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQueryEndPointSubQueries, subQueryMetricsMap);
 		afterTime = System.currentTimeMillis();
 		_logger.info("Time spent in joining results: {}", afterTime - beforeTime);
-		
-		for(Entry<MetricQuery, List<Metric>> entry : queryMetricsMap.entrySet()){
-			List<Metric> aggregatedMetrics = new ArrayList<Metric>();
-			MetricQuery metricQuery = entry.getKey();
-			
-			beforeTime = System.currentTimeMillis();
-			Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
-			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
-			afterTime = System.currentTimeMillis();
-			_logger.info("Time spent in downsampling: {}", afterTime - beforeTime);
-
-			beforeTime = System.currentTimeMillis();
-			if(metricQuery.getAggregator() != Aggregator.NONE){
-				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
-				InterpolateTransform interpolate = new InterpolateTransform();
-				List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(metricQuery.getAggregator().toString()));
-
-				
-				for(List<Metric> metrics : groupedMetricsMap.values()){
-					aggregatedMetrics.add(interpolate.transform(metrics, interpolateConstants).get(0));
-				}
-			} else {
-				aggregatedMetrics.addAll(entry.getValue());
-			}
-            
-            afterTime = System.currentTimeMillis();
-            _logger.info("Time spent in grouping and interpolation: {}", afterTime - beforeTime);
-
-			queryMetricsMap.put(metricQuery, aggregatedMetrics);
-		}
 
 		for (MetricQuery query : queries) {
 			instrumentQueryLatency(_monitorService, query, queryStartExecutionTime.get(query), "metrics");
@@ -255,12 +215,16 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
 
 		for (MetricQuery query : queries) {
-			MetricQuery queryNoneAgg = new MetricQuery(query);
-			queryNoneAgg.setAggregator(Aggregator.NONE);
-			queryNoneAgg.setDownsampler(null);
-			String requestBody = fromEntity(queryNoneAgg);
+			MetricQuery querySubstitutedAgg = new MetricQuery(query);
+			querySubstitutedAgg.setAggregator(getSubstitutedAggregator(query.getAggregator()));
+			if(query.getDownsampler() !=null){
+				querySubstitutedAgg.setDownsampler(getSubstitutedDownsampler(query.getDownsampler()));
+			}
+			String requestBody = fromEntity(querySubstitutedAgg);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
+			
+			// Perform an additional query to get count so we can compute average 
 		}
 
 		Map<MetricQuery, List<Metric>> subQueryMetricsMap = new HashMap<>();
@@ -276,9 +240,12 @@ public class FederatedTSDBService extends AbstractTSDBService{
 					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getMetricQueryContext().getReadEndPoint()); 
 					if (!readBackupEndPoint.isEmpty()) {
 						_logger.warn("Trying to read from Backup endpoint");
-						MetricQuery queryNoneAgg = new MetricQuery(entry.getKey());
-						queryNoneAgg.setAggregator(Aggregator.NONE);
-						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(queryNoneAgg)).call();
+						MetricQuery querySubstitutedAgg = new MetricQuery(entry.getKey());
+						querySubstitutedAgg.setAggregator(getSubstitutedAggregator(entry.getKey().getAggregator()));
+						if(entry.getKey().getDownsampler() !=null){						
+							querySubstitutedAgg.setDownsampler(getSubstitutedDownsampler(entry.getKey().getDownsampler()));
+						}
+						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(querySubstitutedAgg)).call();
 					}
 				} catch (Exception ex) {
 					_logger.warn("Failed to get metrics from Backup TSDB. Reason: " + ex.getMessage());
@@ -298,7 +265,38 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			subQueryMetricsMap.put(entry.getKey(), metrics);
 		}
 		return subQueryMetricsMap;
-	}    
+	}
+
+	private Aggregator getSubstitutedAggregator(Aggregator aggregator){
+
+		switch(aggregator){
+		case SUM:
+			return Aggregator.ZIMSUM;
+		case MIN:
+			return Aggregator.MIMMIN;
+		case MAX:
+			return Aggregator.MIMMAX;
+		case AVG:
+			return Aggregator.ZIMSUM;
+		default:
+			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
+		}
+	}
+
+
+	private Aggregator getSubstitutedDownsampler(Aggregator aggregator){
+
+		switch(aggregator){
+		case SUM:
+			return Aggregator.SUM;
+		case MIN:
+			return Aggregator.MIN;
+		case MAX:
+			return Aggregator.MAX;			
+		default:
+			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
+		}
+	}
 
 	@Override
 	public Properties getServiceProperties() {

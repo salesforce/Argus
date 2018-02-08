@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 /**
  * The base class for performing query federations/forks and metric result merge/join.
@@ -48,7 +49,19 @@ public abstract class QueryFederation{
 								metric.setQuery(query);
 								metricMergeMap.put(metricIdentifier, metric);
 							} else {
-								finalMetric.addDatapoints(metric.getDatapoints());
+								switch(query.getAggregator()){
+								case SUM:
+									finalMetric.sumExistingDatapoints(metric.getDatapoints());
+									break;
+								case MIN:
+									finalMetric.minimumExistingDatapoints(metric.getDatapoints());
+									break;
+								case MAX:
+									finalMetric.maximumExistingDatapoints(metric.getDatapoints());
+									break;
+								default:
+									throw new UnsupportedOperationException("Unsupported aggregator specified"); 
+								}
 							}
 						}
 					}
