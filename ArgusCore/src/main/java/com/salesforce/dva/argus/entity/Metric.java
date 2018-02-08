@@ -39,6 +39,7 @@ import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -168,6 +169,68 @@ public class Metric extends TSDBEntity implements Serializable {
         }
     }
 
+    
+    /**
+     * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp, 
+     * else adds the new data points to the current set.  
+     *
+     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     */
+    public void sumExistingDatapoints(Map<Long, Double> datapoints) {
+        if (datapoints != null) {
+        	
+            for(Entry<Long, Double> entry : datapoints.entrySet()){
+            	Double existingValue = _datapoints.get(entry.getKey());
+            	if(existingValue == null){
+            		_datapoints.put(entry.getKey(), entry.getValue());
+            	} else {
+            		_datapoints.put(entry.getKey(), entry.getValue() + existingValue);
+            	}
+            }
+        }
+    }
+
+    
+    /**
+     * If current set already has a value at that timestamp then sets the minimum of the two values for that timestamp, 
+     * else adds the new data points to the current set.  
+     *
+     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     */
+    public void minimumExistingDatapoints(Map<Long, Double> datapoints) {
+        if (datapoints != null) {
+        	
+            for(Entry<Long, Double> entry : datapoints.entrySet()){
+            	Double existingValue = _datapoints.get(entry.getKey());
+            	if(existingValue == null){
+            		_datapoints.put(entry.getKey(), entry.getValue());
+            	} else if (existingValue > entry.getValue()) {
+            		_datapoints.put(entry.getKey(), entry.getValue());
+            	}
+            }
+        }
+    }
+
+    /**
+     * If current set already has a value at that timestamp then sets the maximum of the two values for that timestamp, 
+     * else adds the new data points to the current set.  
+     *
+     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     */
+    public void maximumExistingDatapoints(Map<Long, Double> datapoints) {
+        if (datapoints != null) {
+        	
+            for(Entry<Long, Double> entry : datapoints.entrySet()){
+            	Double existingValue = _datapoints.get(entry.getKey());
+            	if(existingValue == null){
+            		_datapoints.put(entry.getKey(), entry.getValue());
+            	} else if (existingValue < entry.getValue()) {
+            		_datapoints.put(entry.getKey(), entry.getValue());
+            	}
+            }
+        }
+    }
+    
     /**
      * Sets the display name for the metric.
      *
