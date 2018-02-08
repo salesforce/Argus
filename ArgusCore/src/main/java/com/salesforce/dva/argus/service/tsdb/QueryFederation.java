@@ -32,12 +32,14 @@ public abstract class QueryFederation{
 	 */
 	public Map<MetricQuery, List<Metric>> join(Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries, Map<MetricQuery, List<Metric>> subQueryMetricsMap) {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = new HashMap<>();
-		Map<String, Metric> metricMergeMap = new HashMap<>();
+
 		String metricIdentifier = null;
 		for (Map.Entry<MetricQuery, List<MetricQuery>> entry : mapQuerySubQueries.entrySet()) {
+			Map<String, Metric> metricMergeMap = new HashMap<>();
 			List<Metric> metrics = new ArrayList<>();
 			MetricQuery query = entry.getKey();
 			List<MetricQuery> subQueries = entry.getValue();
+
 			for (MetricQuery subQuery : subQueries) {
 				List<Metric> metricsFromSubQuery = subQueryMetricsMap.get(subQuery);
 				if (metricsFromSubQuery != null) {
@@ -59,6 +61,12 @@ public abstract class QueryFederation{
 								case MAX:
 									finalMetric.maximumExistingDatapoints(metric.getDatapoints());
 									break;
+								case COUNT:
+									finalMetric.sumExistingDatapoints(metric.getDatapoints());
+									break;
+								case ZIMSUM:
+									finalMetric.sumExistingDatapoints(metric.getDatapoints());
+									break;									
 								default:
 									throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 								}

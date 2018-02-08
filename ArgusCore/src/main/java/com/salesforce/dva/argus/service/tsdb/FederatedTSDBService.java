@@ -60,6 +60,7 @@ import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.MetricQueryContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -117,9 +118,50 @@ public class FederatedTSDBService extends AbstractTSDBService{
 	/** @see  TSDBService#getMetrics(java.util.List) */
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
-		requireNotDisposed();
-		requireArgument(queries != null, "Metric Queries cannot be null.");
-		_logger.trace("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
+
+		List<MetricQuery> additionalQueries = new ArrayList<>();
+		List<MetricQuery> removeQueries = new ArrayList<>();
+		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
+
+		for(MetricQuery query: queries){
+			if(query.getAggregator().equals(Aggregator.AVG)){
+				MetricQuery mq1 = new MetricQuery(query);
+				mq1.setAggregator(Aggregator.ZIMSUM);
+				additionalQueries.add(mq1);
+
+				MetricQuery mq2 = new MetricQuery(query);
+				mq2.setAggregator(Aggregator.COUNT);
+				additionalQueries.add(mq2);
+			
+				removeQueries.add(query);
+				
+				removeAdditionalQueryMap.put(query, additionalQueries);
+			}
+		}
+		
+		queries.removeAll(removeQueries);
+		queries.addAll(additionalQueries);
+		
+		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(queries);
+		
+		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
+			additionalQueries = entry.getValue();
+			
+			List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
+			averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
+			
+			Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
+			List<Metric> result = divideTransform.transform(averageMetrics);
+		
+			queryMetricsMap.put(entry.getKey(), result);
+			queryMetricsMap.remove(additionalQueries.get(0));
+			queryMetricsMap.remove(additionalQueries.get(1));
+		}
+		
+       return queryMetricsMap;
+	}
+
+	public Map<MetricQuery, List<Metric>> federateJoinMetrics(List<MetricQuery> queries) {
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
 
@@ -150,7 +192,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		}
 
 		return queryMetricsMap;
-	}
+	}	
 
 	/** @see  TSDBService#getAnnotations(java.util.List) */
 	@Override
@@ -223,8 +265,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			String requestBody = fromEntity(querySubstitutedAgg);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
-			
-			// Perform an additional query to get count so we can compute average 
 		}
 
 		Map<MetricQuery, List<Metric>> subQueryMetricsMap = new HashMap<>();
@@ -276,8 +316,10 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			return Aggregator.MIMMIN;
 		case MAX:
 			return Aggregator.MIMMAX;
-		case AVG:
+		case ZIMSUM:
 			return Aggregator.ZIMSUM;
+		case COUNT:
+			return Aggregator.COUNT;			
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
