@@ -60,6 +60,7 @@ public class DashboardDto extends EntityDTO {
     private boolean shared;
     private String description;
     private LayoutType layout;
+    private String version;
     private List<TemplateVar> templateVars = new ArrayList<>();
 
     //~ Methods **************************************************************************************************************************************
@@ -216,7 +217,25 @@ public class DashboardDto extends EntityDTO {
 		this.layout = layout;
 	}
 
-	/**
+    /**
+     * Returns the version of the dashboard.
+     *
+     * @return The dashboard version
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets the Dashboard Version
+     *
+     * @param version The dashboard version
+     */
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    /**
 	 * Returns the template variables used in this dashboard.
 	 * 
 	 * @return  The template variables.
