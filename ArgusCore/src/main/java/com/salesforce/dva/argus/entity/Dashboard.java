@@ -124,7 +124,7 @@ public class Dashboard extends JPAEntity implements Serializable {
     
     @Lob
     private String content;
-    
+
     @Metadata
     private String description;
     
@@ -135,6 +135,9 @@ public class Dashboard extends JPAEntity implements Serializable {
     @Column(nullable = true)
     @Enumerated(EnumType.STRING)
     private LayoutType layout = LayoutType.SMALL;
+
+    @Metadata
+    private String version;
     
     @ElementCollection
     @Embedded
@@ -485,7 +488,26 @@ public class Dashboard extends JPAEntity implements Serializable {
 		this.layout = layout;
 	}
 
-	/**
+    /**
+     * Returns the version of the dashboard.
+     *
+     * @return The dashboard version
+     */
+    public String getVersion() {
+        return version;
+    }
+
+    /**
+     * Sets the Dashboard Version
+     *
+     * @param version The dashbaord version
+     */
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    /**
 	 * Returns the template variables used in this dashboard.
 	 * 
 	 * @return  The template variables.
@@ -537,7 +559,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "Dashboard{" + "name=" + name + ", owner=" + owner + ", content=" + content + ", description=" + description + ", shared=" + shared +
+        return "Dashboard{" + "name=" + name + ", owner=" + owner + ", content=" + content + ", description=" + description + ", shared=" + shared + ", version=" +version+
             '}';
     }
     
