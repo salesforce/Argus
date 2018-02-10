@@ -124,7 +124,22 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
 
 		for(MetricQuery query: queries){
-			if(query.getAggregator().equals(Aggregator.AVG)){
+			// If downsample is average then get downsampled raw metrics
+			if(query.getDownsampler() != null && query.getDownsampler().equals(Aggregator.AVG)){
+				MetricQuery mq1 = new MetricQuery(query);
+				mq1.setAggregator(Aggregator.NONE);
+				mq1.setDownsampler(Aggregator.SUM);
+				additionalQueries.add(mq1);
+
+				MetricQuery mq2 = new MetricQuery(query);
+				mq2.setAggregator(Aggregator.NONE);
+				mq2.setDownsampler(Aggregator.COUNT);
+				additionalQueries.add(mq2);
+
+				removeQueries.add(query);
+
+				removeAdditionalQueryMap.put(query, additionalQueries);
+			} else if(query.getAggregator().equals(Aggregator.AVG)){
 				MetricQuery mq1 = new MetricQuery(query);
 				mq1.setAggregator(Aggregator.ZIMSUM);
 				additionalQueries.add(mq1);
@@ -132,33 +147,60 @@ public class FederatedTSDBService extends AbstractTSDBService{
 				MetricQuery mq2 = new MetricQuery(query);
 				mq2.setAggregator(Aggregator.COUNT);
 				additionalQueries.add(mq2);
-			
+
 				removeQueries.add(query);
-				
+
 				removeAdditionalQueryMap.put(query, additionalQueries);
 			}
 		}
-		
+
 		queries.removeAll(removeQueries);
 		queries.addAll(additionalQueries);
-		
+
 		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(queries);
-		
+
 		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
+			MetricQuery originalMetricQuery = entry.getKey();
 			additionalQueries = entry.getValue();
 			
-			List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
-			averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
+			if(originalMetricQuery.getDownsampler() != null && originalMetricQuery.getDownsampler().equals(Aggregator.AVG)){
+				List<Metric> aggregatedMetrics = new ArrayList<Metric>();
+
+				List<Metric> averageDownsampledMetrics = queryMetricsMap.get(additionalQueries.get(0));
+				averageDownsampledMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
+
+				Transform grouByDivideTransform = _transformFactory.getTransform(TransformFactory.Function.GROUPBY.getName());
+				List<String> transformConstants = new ArrayList<String>();
+				
+				transformConstants.add("(.*)");
+				transformConstants.add("DIVIDE_V");
+				List<Metric> result = grouByDivideTransform.transform(averageDownsampledMetrics,transformConstants); 
+
+				// Now do grouping and aggregation
+				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(result, originalMetricQuery);
+				InterpolateTransform interpolate = new InterpolateTransform();
+				List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(originalMetricQuery.getAggregator().toString()));
+				for(List<Metric> metrics : groupedMetricsMap.values()){
+					aggregatedMetrics.add(interpolate.transform(metrics, interpolateConstants).get(0));
+				}
+				
+				queryMetricsMap.put(originalMetricQuery, aggregatedMetrics);
+			} else{
+
+				List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
+				averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
+
+				Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
+				List<Metric> result = divideTransform.transform(averageMetrics);
+
+				queryMetricsMap.put(originalMetricQuery, result);
+			}
 			
-			Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
-			List<Metric> result = divideTransform.transform(averageMetrics);
-		
-			queryMetricsMap.put(entry.getKey(), result);
 			queryMetricsMap.remove(additionalQueries.get(0));
 			queryMetricsMap.remove(additionalQueries.get(1));
 		}
-		
-       return queryMetricsMap;
+
+		return queryMetricsMap;
 	}
 
 	public Map<MetricQuery, List<Metric>> federateJoinMetrics(List<MetricQuery> queries) {
@@ -319,7 +361,9 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		case ZIMSUM:
 			return Aggregator.ZIMSUM;
 		case COUNT:
-			return Aggregator.COUNT;			
+			return Aggregator.COUNT;
+		case NONE:
+			return Aggregator.NONE;			
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
@@ -339,8 +383,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			return Aggregator.ZIMSUM;
 		case COUNT:
 			return Aggregator.COUNT;
-		case AVG:
-			return Aggregator.AVG;			
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
