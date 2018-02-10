@@ -33,8 +33,10 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import org.junit.Test;
 import java.math.BigInteger;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -53,14 +55,14 @@ public class UserServiceTest extends AbstractTest {
         user.setEmail("someotheruser@mycompany.abc");
         user = userService.updateUser(user);
 
-        //Map<String, Preferences> preferences = user.getPreferences();
+        Map<Preference, String> preferences = user.getPreferences();
 
-        //assertTrue(preferences.isEmpty());
-        //preferences.put("display.name", new Preferences("some.value"));
-        //user.setPreferences(preferences);
+        assertTrue(preferences.isEmpty());
+        preferences.put(Preference.DISPLAY_NAME, "some.value");
+        user.setPreferences(preferences);
         userService.updateUser(user);
         user = userService.findUserByPrimaryKey(user.getId());
-        //assertEquals(preferences, user.getPreferences());
+        assertEquals(preferences, user.getPreferences());
         userService.deleteUser(user);
         assertNull(userService.findUserByPrimaryKey(user.getId()));
     }

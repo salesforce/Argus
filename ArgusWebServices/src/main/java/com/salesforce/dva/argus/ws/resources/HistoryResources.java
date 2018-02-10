@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.ws.resources;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.History.JobStatus;
+import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.ws.annotation.Description;

@@ -46,12 +46,18 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
+import javax.persistence.MapKeyColumn;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
@@ -104,7 +110,7 @@ public class PrincipalUser extends JPAEntity implements Serializable {
 	        jgen.writeStringField("username", user.getUserName());
 	        jgen.writeStringField("email", user.getEmail());
 	        jgen.writeBooleanField("privileged", user.isPrivileged());
-	        //jgen.writeObjectField("preferences", user.getPreferences());
+	        jgen.writeObjectField("preferences", user.getPreferences());
 	        
 	        jgen.writeArrayFieldStart("ownedDashboardIds");
 	        for(Dashboard dashboard : user.getOwnedDashboards()) {
@@ -141,7 +147,6 @@ public class PrincipalUser extends JPAEntity implements Serializable {
 			
 			user.setPrivileged(rootNode.get("privileged").asBoolean());
 			
-			/*
 			Map<Preference, String> preferences = new HashMap<>();
 			JsonNode preferencesNode = rootNode.get("preferences");
 			if(preferencesNode.isObject()) {
@@ -152,7 +157,6 @@ public class PrincipalUser extends JPAEntity implements Serializable {
 				}
 			}
 			user.preferences = preferences;
-			*/
 			
 			List<Dashboard> ownedDashboards = new ArrayList<>();
 			JsonNode ownedDashboardIds = rootNode.get("ownedDashboardIds");
@@ -186,10 +190,10 @@ public class PrincipalUser extends JPAEntity implements Serializable {
     @Column(nullable = false, unique = true)
     private String email;
     
-//    @ElementCollection
-//    @MapKeyColumn(name = "name")
-//    @Column(name = "preference")
-//    private Map<Preference, String> preferences = new HashMap<>();
+    @ElementCollection
+    @MapKeyColumn(name = "name")
+    @Column(name = "preference")
+    private Map<Preference, String> preferences = new HashMap<>();
     
     @OneToMany(mappedBy = "owner")
     private List<Dashboard> ownedDashboards = new ArrayList<>();
@@ -322,23 +326,23 @@ public class PrincipalUser extends JPAEntity implements Serializable {
         return email;
     }
 
-//    /**
-//     * Updates the preferences for the user.
-//     *
-//     * @param  preferences  The preferences for the user.
-//     */
-//    public void setPreferences(Map<Preference, String> preferences) {
-//        this.preferences = preferences;
-//    }
-//
-//    /**
-//     * Updates the preferences for the user.
-//     *
-//     * @return  The new preferences for the user.
-//     */
-//    public Map<Preference, String> getPreferences() {
-//        return preferences;
-//    }
+    /**
+     * Updates the preferences for the user.
+     *
+     * @param  preferences  The preferences for the user.
+     */
+    public void setPreferences(Map<Preference, String> preferences) {
+        this.preferences = preferences;
+    }
+
+    /**
+     * Updates the preferences for the user.
+     *
+     * @return  The new preferences for the user.
+     */
+    public Map<Preference, String> getPreferences() {
+        return preferences;
+    }
 
     /**
      * Returns the list of owned dashboards.
@@ -403,8 +407,19 @@ public class PrincipalUser extends JPAEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "PrincipalUser{" + "userName=" + userName + ", email=" + email + ", privileged=" + privileged + '}';
+        return "PrincipalUser{" + "userName=" + userName + ", email=" + email + ", preferences=" + preferences + ", privileged=" + privileged + '}';
     }
-    
+
+    //~ Enums ****************************************************************************************************************************************
+
+    /**
+     * Enumerates the valid preference fields.
+     *
+     * @author  Tom Valine (tvaline@salesforce.com)
+     */
+    public enum Preference {
+
+        DISPLAY_NAME;
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
