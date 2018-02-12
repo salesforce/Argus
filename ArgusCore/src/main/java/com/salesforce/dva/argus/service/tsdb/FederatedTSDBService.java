@@ -166,6 +166,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			if(originalMetricQuery.getDownsampler() != null && originalMetricQuery.getDownsampler().equals(Aggregator.AVG)){
 				List<Metric> aggregatedMetrics = new ArrayList<Metric>();
 
+				// Group metrics so we can divide downsampled sum with downsampled count to get downsampled average
 				List<Metric> averageDownsampledMetrics = queryMetricsMap.get(additionalQueries.get(0));
 				averageDownsampledMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
 
@@ -176,7 +177,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 				transformConstants.add("DIVIDE_V");
 				List<Metric> result = grouByDivideTransform.transform(averageDownsampledMetrics,transformConstants); 
 
-				// Now do grouping and aggregation
+				// Now do grouping based on user query and aggregation
 				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(result, originalMetricQuery);
 				InterpolateTransform interpolate = new InterpolateTransform();
 				List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(originalMetricQuery.getAggregator().toString()));
