@@ -174,7 +174,7 @@ public class Metric extends TSDBEntity implements Serializable {
      * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp, 
      * else adds the new data points to the current set.  
      *
-     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
      */
     public void sumExistingDatapoints(Map<Long, Double> datapoints) {
         if (datapoints != null) {
@@ -195,7 +195,7 @@ public class Metric extends TSDBEntity implements Serializable {
      * If current set already has a value at that timestamp then sets the minimum of the two values for that timestamp, 
      * else adds the new data points to the current set.  
      *
-     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
      */
     public void minimumExistingDatapoints(Map<Long, Double> datapoints) {
         if (datapoints != null) {
@@ -215,7 +215,7 @@ public class Metric extends TSDBEntity implements Serializable {
      * If current set already has a value at that timestamp then sets the maximum of the two values for that timestamp, 
      * else adds the new data points to the current set.  
      *
-     * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
+     * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
      */
     public void maximumExistingDatapoints(Map<Long, Double> datapoints) {
         if (datapoints != null) {

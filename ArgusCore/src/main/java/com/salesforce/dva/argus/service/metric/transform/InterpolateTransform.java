@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 /**
@@ -31,11 +30,7 @@ public class InterpolateTransform implements Transform {
 	int current = 0;
 	/** The index of time series to interpolate. */
 	private int indexToInterpolate;
-	/** Datapoints that are added to each time series as a result of interpolation. */
-	private Map<Long, Double>[] addedDatapointsArray;
 	private static final long MARK_END_TIME_SERIES  = Long.MAX_VALUE;
-
-
 
 	public enum InterpolationType {
 		LININT,   /* linear interpolation */
@@ -86,7 +81,6 @@ public class InterpolateTransform implements Transform {
 			putDataPoint(size + i, datapoint);
 		}
 
-
 		switch(aggregator){
 		case NONE:
 			break;
@@ -109,7 +103,7 @@ public class InterpolateTransform implements Transform {
 			interpolateCount(resultDatapoints, InterpolationType.ZIMSUM);
 			break;			
 		default:
-			break;
+			throw new UnsupportedOperationException("Unsupported aggregator specified");
 		}
 
 		result.addDatapoints(resultDatapoints);
@@ -239,7 +233,6 @@ public class InterpolateTransform implements Transform {
 	private boolean doesAnyTimeSeriesHaveData() {
 		for (int i = 0; i < iterators.length; i++) {
 			if ((timestamps[iterators.length + i]) !=  MARK_END_TIME_SERIES) {
-				// LoggerFactory.getLogger(getClass()).info(("TimeSeries with data # " + (i)));
 				return true;
 			}
 		}
@@ -256,7 +249,6 @@ public class InterpolateTransform implements Transform {
 		// Mark the internal timestamp buffer as done, when we have reached the end of that time series
 		for (int i = current; i < iterators.length; i++) {
 			if (timestamps[i] != 0L && timestamps[i + iterators.length] == MARK_END_TIME_SERIES) {
-				// LoggerFactory.getLogger(getClass()).info(("Mark end time series# " + (i)));
 				timestamps[i] = 0L;
 			}
 		}
@@ -293,7 +285,6 @@ public class InterpolateTransform implements Transform {
 	 * @param i The index of the iterator.
 	 */
 	private void updateCurrentAndNextSectionOfBuffer(int i) {
-		// LoggerFactory.getLogger(getClass()).info(("Next time series populated# " + i));
 		int next = iterators.length + i;
 		timestamps[i] = timestamps[next];
 		values[i] = values[next];
