@@ -52,8 +52,6 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
-import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 public class MetricFederationTest extends AbstractTest {
 	private ObjectMapper _mapper;

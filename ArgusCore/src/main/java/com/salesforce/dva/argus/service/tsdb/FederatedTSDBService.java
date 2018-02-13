@@ -43,7 +43,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
@@ -60,7 +59,6 @@ import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery.MetricQueryContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
