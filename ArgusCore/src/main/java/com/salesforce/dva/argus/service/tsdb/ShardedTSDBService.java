@@ -65,12 +65,14 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
 /**
- * The federated implementation of the TSDBService.
+ * The sharded implementation of the TSDBService.
+ * Data queried for a given time series in different shards is disjoint wrt. time 
+ *  - ie. data for a given time range is present completely in some shard.
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
 @Singleton
-public class FederatedTSDBService extends AbstractTSDBService{
+public class ShardedTSDBService extends AbstractTSDBService{
 
 	//~ Instance fields ******************************************************************************************************************************
 	private final TransformFactory _transformFactory;
@@ -78,7 +80,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 
 	//~ Constructors *********************************************************************************************************************************
 	/**
-	 * Creates a new Federated TSDB Service having an equal number of read and write routes.
+	 * Creates a new sharded TSDB Service having an equal number of read and write routes.
 	 *
 	 * @param   config               The system _configuration used to configure the service.
 	 * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
@@ -87,7 +89,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 	 * @throws  SystemException  If an error occurs configuring the service.
 	 */
 	@Inject
-	public FederatedTSDBService(SystemConfiguration config, MonitorService monitorService, TransformFactory transformFactory) {
+	public ShardedTSDBService(SystemConfiguration config, MonitorService monitorService, TransformFactory transformFactory) {
 		super(config, monitorService);
 		_transformFactory = transformFactory;
 	}
@@ -124,22 +126,9 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
 
 		for(MetricQuery query: queries){
-			// If downsample is average then get downsampled raw metrics
-			if(query.getDownsampler() != null && query.getDownsampler().equals(Aggregator.AVG)){
-				MetricQuery mq1 = new MetricQuery(query);
-				mq1.setAggregator(Aggregator.NONE);
-				mq1.setDownsampler(Aggregator.SUM);
-				additionalQueries.add(mq1);
-
-				MetricQuery mq2 = new MetricQuery(query);
-				mq2.setAggregator(Aggregator.NONE);
-				mq2.setDownsampler(Aggregator.COUNT);
-				additionalQueries.add(mq2);
-
-				removeQueries.add(query);
-
-				removeAdditionalQueryMap.put(query, additionalQueries);
-			} else if(query.getAggregator().equals(Aggregator.AVG)){
+			// If query is avergae then first get zimsum data and then divide that by count. 
+			// This is because the time series that needs to be aggregated can live in multiple shards.
+			if(query.getAggregator().equals(Aggregator.AVG)){
 				MetricQuery mq1 = new MetricQuery(query);
 				mq1.setAggregator(Aggregator.ZIMSUM);
 				additionalQueries.add(mq1);
@@ -149,7 +138,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 				additionalQueries.add(mq2);
 
 				removeQueries.add(query);
-
 				removeAdditionalQueryMap.put(query, additionalQueries);
 			}
 		}
@@ -160,43 +148,19 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(queries);
 
 		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
+			
+			// Only for case when average aggregator is used.
 			MetricQuery originalMetricQuery = entry.getKey();
 			additionalQueries = entry.getValue();
-			
-			if(originalMetricQuery.getDownsampler() != null && originalMetricQuery.getDownsampler().equals(Aggregator.AVG)){
-				List<Metric> aggregatedMetrics = new ArrayList<Metric>();
 
-				// Group metrics so we can divide downsampled sum with downsampled count to get downsampled average
-				List<Metric> averageDownsampledMetrics = queryMetricsMap.get(additionalQueries.get(0));
-				averageDownsampledMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
+			List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
+			averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
 
-				Transform grouByDivideTransform = _transformFactory.getTransform(TransformFactory.Function.GROUPBY.getName());
-				List<String> transformConstants = new ArrayList<String>();
-				
-				transformConstants.add("(.*)");
-				transformConstants.add("DIVIDE_V");
-				List<Metric> result = grouByDivideTransform.transform(averageDownsampledMetrics,transformConstants); 
+			Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
+			List<Metric> result = divideTransform.transform(averageMetrics);
 
-				// Now do grouping based on user query and aggregation
-				Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(result, originalMetricQuery);
-				InterpolateTransform interpolate = new InterpolateTransform();
-				List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(originalMetricQuery.getAggregator().toString()));
-				for(List<Metric> metrics : groupedMetricsMap.values()){
-					aggregatedMetrics.add(interpolate.transform(metrics, interpolateConstants).get(0));
-				}
-				
-				queryMetricsMap.put(originalMetricQuery, aggregatedMetrics);
-			} else{
+			queryMetricsMap.put(originalMetricQuery, result);
 
-				List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
-				averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
-
-				Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
-				List<Metric> result = divideTransform.transform(averageMetrics);
-
-				queryMetricsMap.put(originalMetricQuery, result);
-			}
-			
 			queryMetricsMap.remove(additionalQueries.get(0));
 			queryMetricsMap.remove(additionalQueries.get(1));
 		}
@@ -302,9 +266,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		for (MetricQuery query : queries) {
 			MetricQuery querySubstitutedAgg = new MetricQuery(query);
 			querySubstitutedAgg.setAggregator(getSubstitutedAggregator(query.getAggregator()));
-			if(query.getDownsampler() !=null){
-				querySubstitutedAgg.setDownsampler(getSubstitutedDownsampler(query.getDownsampler()));
-			}
 			String requestBody = fromEntity(querySubstitutedAgg);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
@@ -326,7 +287,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 						MetricQuery querySubstitutedAgg = new MetricQuery(entry.getKey());
 						querySubstitutedAgg.setAggregator(getSubstitutedAggregator(entry.getKey().getAggregator()));
 						if(entry.getKey().getDownsampler() !=null){						
-							querySubstitutedAgg.setDownsampler(getSubstitutedDownsampler(entry.getKey().getDownsampler()));
+							querySubstitutedAgg.setDownsampler(entry.getKey().getDownsampler());
 						}
 						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(querySubstitutedAgg)).call();
 					}
@@ -365,25 +326,6 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			return Aggregator.COUNT;
 		case NONE:
 			return Aggregator.NONE;			
-		default:
-			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
-		}
-	}
-
-
-	private Aggregator getSubstitutedDownsampler(Aggregator aggregator){
-
-		switch(aggregator){
-		case SUM:
-			return Aggregator.SUM;
-		case MIN:
-			return Aggregator.MIN;
-		case MAX:
-			return Aggregator.MAX;
-		case ZIMSUM:
-			return Aggregator.ZIMSUM;
-		case COUNT:
-			return Aggregator.COUNT;
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
