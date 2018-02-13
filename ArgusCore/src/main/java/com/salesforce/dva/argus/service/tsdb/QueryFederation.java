@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 /**
  * The base class for performing query federations/forks and metric result merge/join.
