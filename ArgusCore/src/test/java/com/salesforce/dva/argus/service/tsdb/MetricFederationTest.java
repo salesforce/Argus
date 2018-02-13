@@ -110,6 +110,64 @@ public class MetricFederationTest extends AbstractTest {
 		assertEquals("{host=machineHost3}", queryMetricsMap.get(queries.get(0)).get(2).getTags().toString());
 		assertEquals("{1477386500=4.940423168E9, 1477386600=4.940423168E9}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
 	}
+	
+	@Test
+	public void testEndPointFederationForkJoinMinAggregator() {
+		MetricService metricService = system.getServiceFactory().getMetricService();
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:min:15m-avg");
+		List<String> readEndPoints = new ArrayList<String>();
+		readEndPoints.add("http://localhost:4477");
+		readEndPoints.add("http://localhost:4488");
+
+		String content1 = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":3}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386500\":6}}]";
+		String content2 = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":4}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386600\":7}}]";
+
+		QueryFederation queryFederation = new EndPointQueryFederation(readEndPoints);
+		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation.federateQueries(queries);
+		assertEquals(2, mapQuerySubQueries.get(queries.get(0)).size());
+
+		Map<MetricQuery, List<Metric>>  subQueryMetricsMap = new HashMap<MetricQuery, List<Metric>>();
+		List<MetricQuery> subQueries = mapQuerySubQueries.get(queries.get(0));
+		subQueryMetricsMap.put(subQueries.get(0), getMetricsFromMetricString(content1));
+		subQueryMetricsMap.put(subQueries.get(1), getMetricsFromMetricString(content2));
+
+		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
+		assertEquals(1, queryMetricsMap.size());
+		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
+		
+		// One time series, since no tag specified
+		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
+		assertEquals("{1477386300=3.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+	}
+	
+	@Test
+	public void testEndPointFederationForkJoinMaxAggregator() {
+		MetricService metricService = system.getServiceFactory().getMetricService();
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:max:15m-avg");
+		List<String> readEndPoints = new ArrayList<String>();
+		readEndPoints.add("http://localhost:4477");
+		readEndPoints.add("http://localhost:4488");
+
+		String content1 = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":3}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386500\":6}}]";
+		String content2 = "[{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E000000000001000000000003000000000002000000000002\"],\"dps\":{\"1477386300\":4}},{\"metric\":\"mem.heap.used-__-argus.jvm\",\"tags\":{\"meta\":\"eyJkaXNwbGF5TmFtZSI6bnVsbCwidW5pdHMiOiJieXRlcyJ9\"},\"aggregateTags\":[],\"tsuids\":[\"00000000000E00000000000100000000000300000000000200000000000A\"],\"dps\":{\"1477386600\":7}}]";
+
+		QueryFederation queryFederation = new EndPointQueryFederation(readEndPoints);
+		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation.federateQueries(queries);
+		assertEquals(2, mapQuerySubQueries.get(queries.get(0)).size());
+
+		Map<MetricQuery, List<Metric>>  subQueryMetricsMap = new HashMap<MetricQuery, List<Metric>>();
+		List<MetricQuery> subQueries = mapQuerySubQueries.get(queries.get(0));
+		subQueryMetricsMap.put(subQueries.get(0), getMetricsFromMetricString(content1));
+		subQueryMetricsMap.put(subQueries.get(1), getMetricsFromMetricString(content2));
+
+		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQuerySubQueries, subQueryMetricsMap);
+		assertEquals(1, queryMetricsMap.size());
+		assertEquals(1, queryMetricsMap.get(queries.get(0)).size());
+		
+		// One time series, since no tag specified
+		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
+		assertEquals("{1477386300=4.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+	}
 
 	@Test
 	public void testEndPointFederationForkJoinCountAggregator() {
