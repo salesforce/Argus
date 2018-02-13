@@ -35,7 +35,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
@@ -56,11 +54,9 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery.MetricQueryContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -121,12 +117,14 @@ public class ShardedTSDBService extends AbstractTSDBService{
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
 
+		List<MetricQuery> copyQueries = new ArrayList<>();
+		copyQueries.addAll(queries);
 		List<MetricQuery> additionalQueries = new ArrayList<>();
 		List<MetricQuery> removeQueries = new ArrayList<>();
 		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
 
-		for(MetricQuery query: queries){
-			// If query is avergae then first get zimsum data and then divide that by count. 
+		for(MetricQuery query: copyQueries){
+			// If query is average then first get zimsum data and then divide that by count. 
 			// This is because the time series that needs to be aggregated can live in multiple shards.
 			if(query.getAggregator().equals(Aggregator.AVG)){
 				MetricQuery mq1 = new MetricQuery(query);
@@ -142,10 +140,10 @@ public class ShardedTSDBService extends AbstractTSDBService{
 			}
 		}
 
-		queries.removeAll(removeQueries);
-		queries.addAll(additionalQueries);
+		copyQueries.removeAll(removeQueries);
+		copyQueries.addAll(additionalQueries);
 
-		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(queries);
+		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(copyQueries);
 
 		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
 			
