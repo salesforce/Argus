@@ -118,12 +118,14 @@ public class FederatedTSDBService extends AbstractTSDBService{
 	/** @see  TSDBService#getMetrics(java.util.List) */
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
-
+		List<MetricQuery> copyQueries = new ArrayList<>();
+		copyQueries.addAll(queries);
+		
 		List<MetricQuery> additionalQueries = new ArrayList<>();
 		List<MetricQuery> removeQueries = new ArrayList<>();
 		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
 
-		for(MetricQuery query: queries){
+		for(MetricQuery query: copyQueries){
 			// If downsample is average then get downsampled raw metrics
 			if(query.getDownsampler() != null && query.getDownsampler().equals(Aggregator.AVG)){
 				MetricQuery mq1 = new MetricQuery(query);
@@ -154,10 +156,10 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			}
 		}
 
-		queries.removeAll(removeQueries);
-		queries.addAll(additionalQueries);
+		copyQueries.removeAll(removeQueries);
+		copyQueries.addAll(additionalQueries);
 
-		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(queries);
+		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(copyQueries);
 
 		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
 			MetricQuery originalMetricQuery = entry.getKey();

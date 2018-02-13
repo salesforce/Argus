@@ -169,7 +169,6 @@ public class ShardedTSDBService extends AbstractTSDBService{
 	public Map<MetricQuery, List<Metric>> federateJoinMetrics(List<MetricQuery> queries) {
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
-
 		for (MetricQuery query : queries) {
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
@@ -322,8 +321,6 @@ public class ShardedTSDBService extends AbstractTSDBService{
 			return Aggregator.ZIMSUM;
 		case COUNT:
 			return Aggregator.COUNT;
-		case NONE:
-			return Aggregator.NONE;			
 		default:
 			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
 		}
