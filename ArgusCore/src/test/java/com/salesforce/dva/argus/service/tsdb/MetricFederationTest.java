@@ -50,6 +50,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.TSDBService;
+import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
+import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 public class MetricFederationTest extends AbstractTest {
 	private ObjectMapper _mapper;
@@ -138,6 +142,19 @@ public class MetricFederationTest extends AbstractTest {
 		assertEquals("{1477386300=1.0}", queryMetricsMap.get(queries.get(0)).get(1).getDatapoints().toString());
 		assertEquals("{host=machineHost3}", queryMetricsMap.get(queries.get(0)).get(2).getTags().toString());
 		assertEquals("{1477386500=1.0, 1477386600=1.0}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
+	}
+	
+	
+	@Test
+	public void testAverageAggregatorIsUnmodifiedWhileQuerying() {
+		MetricService metricService = system.getServiceFactory().getMetricService();
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:avg:15m-avg");
+		
+		TSDBService tsdbService = new ShardedTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService(), new TransformFactory(null));
+		
+		Map<MetricQuery, List<Metric>> queryMetricsMap = tsdbService.getMetrics(queries);
+		assertEquals(1, queryMetricsMap.keySet().size());
+		assertEquals(true, queryMetricsMap.keySet().contains(queries.get(0)));
 	}
 	
 	private  List<Metric> getMetricsFromMetricString(String content){
