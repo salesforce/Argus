@@ -77,9 +77,9 @@ public class MetricFederationTest extends AbstractTest {
 	}
 
 	@Test
-	public void testEndPointFederationForkJoinSumAggregatorWithTag() {
+	public void testEndPointFederationForkJoinSumDownsamplerWithTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-sum");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -110,9 +110,9 @@ public class MetricFederationTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testEndPointFederationForkJoinSumAggregatorWithNoTag() {
+	public void testEndPointFederationForkJoinSumDownsamplerWithNoTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-sum");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -139,9 +139,9 @@ public class MetricFederationTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testEndPointFederationForkJoinMinAggregator() {
+	public void testEndPointFederationForkJoinMinDownsampler() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:min:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-min");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -168,9 +168,9 @@ public class MetricFederationTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testEndPointFederationForkJoinMaxAggregator() {
+	public void testEndPointFederationForkJoinMaxDownsampler() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:max:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:sum:15m-max");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -197,9 +197,9 @@ public class MetricFederationTest extends AbstractTest {
 	}
 
 	@Test
-	public void testEndPointFederationForkJoinCountAggregator() {
+	public void testEndPointFederationForkJoinCountDownsampler() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:count:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:count:15m-count");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -232,7 +232,7 @@ public class MetricFederationTest extends AbstractTest {
 	@Test
 	public void testEndPointFederationForkJoinCountAggregatorWithNoTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:count:15m-avg");
+		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:count:15m-count");
 		List<String> readEndPoints = new ArrayList<String>();
 		readEndPoints.add("http://localhost:4477");
 		readEndPoints.add("http://localhost:4488");
@@ -256,18 +256,6 @@ public class MetricFederationTest extends AbstractTest {
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
 		assertEquals("{1477386300=7.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
-	}
-	
-	@Test
-	public void testAverageAggregatorIsUnmodifiedWhileQuerying() {
-		MetricService metricService = system.getServiceFactory().getMetricService();
-		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:avg:15m-avg");
-		
-		TSDBService tsdbService = new ShardedTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService(), new TransformFactory(null));
-		
-		Map<MetricQuery, List<Metric>> queryMetricsMap = tsdbService.getMetrics(queries);
-		assertEquals(1, queryMetricsMap.keySet().size());
-		assertEquals(true, queryMetricsMap.keySet().contains(queries.get(0)));
 	}
 	
 	private  List<Metric> getMetricsFromMetricString(String content){
