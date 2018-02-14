@@ -117,56 +117,8 @@ public class ShardedTSDBService extends AbstractTSDBService{
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
 
-		List<MetricQuery> copyQueries = new ArrayList<>();
-		copyQueries.addAll(queries);
-		List<MetricQuery> additionalQueries = new ArrayList<>();
-		List<MetricQuery> removeQueries = new ArrayList<>();
-		Map<MetricQuery, List<MetricQuery>> removeAdditionalQueryMap = new HashMap<>();
-
-		for(MetricQuery query: copyQueries){
-			// If query is average then first get zimsum data and then divide that by count. 
-			// This is because the time series that needs to be aggregated can live in multiple shards.
-			if(query.getAggregator().equals(Aggregator.AVG)){
-				MetricQuery mq1 = new MetricQuery(query);
-				mq1.setAggregator(Aggregator.ZIMSUM);
-				additionalQueries.add(mq1);
-
-				MetricQuery mq2 = new MetricQuery(query);
-				mq2.setAggregator(Aggregator.COUNT);
-				additionalQueries.add(mq2);
-
-				removeQueries.add(query);
-				removeAdditionalQueryMap.put(query, additionalQueries);
-			}
-		}
-
-		copyQueries.removeAll(removeQueries);
-		copyQueries.addAll(additionalQueries);
-
-		Map<MetricQuery, List<Metric>> queryMetricsMap = federateJoinMetrics(copyQueries);
-
-		for(Map.Entry<MetricQuery, List<MetricQuery>> entry : removeAdditionalQueryMap.entrySet()){
-			
-			// Only for case when average aggregator is used.
-			MetricQuery originalMetricQuery = entry.getKey();
-			additionalQueries = entry.getValue();
-
-			List<Metric> averageMetrics = queryMetricsMap.get(additionalQueries.get(0));
-			averageMetrics.addAll(queryMetricsMap.get(additionalQueries.get(1)));
-
-			Transform divideTransform = _transformFactory.getTransform(TransformFactory.Function.DIVIDE_V.getName());
-			List<Metric> result = divideTransform.transform(averageMetrics);
-
-			queryMetricsMap.put(originalMetricQuery, result);
-
-			queryMetricsMap.remove(additionalQueries.get(0));
-			queryMetricsMap.remove(additionalQueries.get(1));
-		}
-
-		return queryMetricsMap;
-	}
-
-	public Map<MetricQuery, List<Metric>> federateJoinMetrics(List<MetricQuery> queries) {
+		// For a given time series all the tags corresponding to that time series is present in that shard at any given time.
+		// Hence we can directly query with the user's specified aggregator
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
 		for (MetricQuery query : queries) {
@@ -196,7 +148,7 @@ public class ShardedTSDBService extends AbstractTSDBService{
 		}
 
 		return queryMetricsMap;
-	}	
+	}
 
 	/** @see  TSDBService#getAnnotations(java.util.List) */
 	@Override
@@ -261,9 +213,7 @@ public class ShardedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
 
 		for (MetricQuery query : queries) {
-			MetricQuery querySubstitutedAgg = new MetricQuery(query);
-			querySubstitutedAgg.setAggregator(getSubstitutedAggregator(query.getAggregator()));
-			String requestBody = fromEntity(querySubstitutedAgg);
+			String requestBody = fromEntity(query);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
 		}
@@ -281,12 +231,7 @@ public class ShardedTSDBService extends AbstractTSDBService{
 					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getMetricQueryContext().getReadEndPoint()); 
 					if (!readBackupEndPoint.isEmpty()) {
 						_logger.warn("Trying to read from Backup endpoint");
-						MetricQuery querySubstitutedAgg = new MetricQuery(entry.getKey());
-						querySubstitutedAgg.setAggregator(getSubstitutedAggregator(entry.getKey().getAggregator()));
-						if(entry.getKey().getDownsampler() !=null){						
-							querySubstitutedAgg.setDownsampler(entry.getKey().getDownsampler());
-						}
-						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(querySubstitutedAgg)).call();
+						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(entry.getKey())).call();
 					}
 				} catch (Exception ex) {
 					_logger.warn("Failed to get metrics from Backup TSDB. Reason: " + ex.getMessage());
@@ -306,24 +251,6 @@ public class ShardedTSDBService extends AbstractTSDBService{
 			subQueryMetricsMap.put(entry.getKey(), metrics);
 		}
 		return subQueryMetricsMap;
-	}
-
-	private Aggregator getSubstitutedAggregator(Aggregator aggregator){
-
-		switch(aggregator){
-		case SUM:
-			return Aggregator.ZIMSUM;
-		case MIN:
-			return Aggregator.MIMMIN;
-		case MAX:
-			return Aggregator.MIMMAX;
-		case ZIMSUM:
-			return Aggregator.ZIMSUM;
-		case COUNT:
-			return Aggregator.COUNT;
-		default:
-			throw new UnsupportedOperationException("Unsupported aggregator specified"); 
-		}
 	}
 
 	@Override
