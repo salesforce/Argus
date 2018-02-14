@@ -49,27 +49,31 @@ public abstract class QueryFederation{
 								metric.setQuery(query);
 								metricMergeMap.put(metricIdentifier, metric);
 							} else {
-								switch(query.getDownsampler()){
-								case SUM:
-									finalMetric.sumExistingDatapoints(metric.getDatapoints());
-									break;
-								case MIN:
-									finalMetric.minimumExistingDatapoints(metric.getDatapoints());
-									break;
-								case MAX:
-									finalMetric.maximumExistingDatapoints(metric.getDatapoints());
-									break;
-								case COUNT:
-									finalMetric.sumExistingDatapoints(metric.getDatapoints());
-									break;
-								case ZIMSUM:
-									finalMetric.sumExistingDatapoints(metric.getDatapoints());
-									break;
-								case AVG:
-									finalMetric.averageExistingDatapoints(metric.getDatapoints());
-									break;									
-								default:
-									throw new UnsupportedOperationException("Unsupported aggregator specified"); 
+								if(query.getDownsampler() !=null){
+									switch(query.getDownsampler()){
+									case SUM:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case MIN:
+										finalMetric.minimumExistingDatapoints(metric.getDatapoints());
+										break;
+									case MAX:
+										finalMetric.maximumExistingDatapoints(metric.getDatapoints());
+										break;
+									case COUNT:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case ZIMSUM:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case AVG:
+										finalMetric.averageExistingDatapoints(metric.getDatapoints());
+										break;									
+									default:
+										finalMetric.addDatapoints(metric.getDatapoints()); 
+									}
+								} else{
+									finalMetric.addDatapoints(metric.getDatapoints());
 								}
 							}
 						}

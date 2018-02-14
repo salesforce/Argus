@@ -230,7 +230,7 @@ public class MetricFederationTest extends AbstractTest {
 	}
 	
 	@Test
-	public void testEndPointFederationForkJoinCountAggregatorWithNoTag() {
+	public void testEndPointFederationForkJoinCountDownsamplerWithNoTag() {
 		MetricService metricService = system.getServiceFactory().getMetricService();
 		List<MetricQuery> queries = metricService.getQueries("-1h:scope:metric{tagk=tagv}:count:15m-count");
 		List<String> readEndPoints = new ArrayList<String>();
