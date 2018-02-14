@@ -49,7 +49,7 @@ public abstract class QueryFederation{
 								metric.setQuery(query);
 								metricMergeMap.put(metricIdentifier, metric);
 							} else {
-								switch(query.getAggregator()){
+								switch(query.getDownsampler()){
 								case SUM:
 									finalMetric.sumExistingDatapoints(metric.getDatapoints());
 									break;
@@ -64,6 +64,9 @@ public abstract class QueryFederation{
 									break;
 								case ZIMSUM:
 									finalMetric.sumExistingDatapoints(metric.getDatapoints());
+									break;
+								case AVG:
+									finalMetric.averageExistingDatapoints(metric.getDatapoints());
 									break;									
 								default:
 									throw new UnsupportedOperationException("Unsupported aggregator specified"); 
