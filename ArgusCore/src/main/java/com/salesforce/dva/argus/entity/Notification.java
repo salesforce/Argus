@@ -633,10 +633,14 @@ public class Notification extends JPAEntity implements Serializable {
 
 
 	private String _hashTriggerAndMetric(Trigger trigger, Metric metric) {
-        requireArgument(trigger != null, "Trigger cannot be null.");
-        requireArgument(metric != null, "Metric cannot be null");
+		requireArgument(trigger != null, "Trigger cannot be null.");
+		requireArgument(metric != null, "Metric cannot be null");
 
-        return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
+		if(trigger.getId()!=null) {
+			return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
+		}else {
+			return "0$$" + metric.getIdentifier().hashCode();
+		}
 	}
 
 }
