@@ -331,10 +331,15 @@ public class AlertServiceTest extends AbstractTest {
 		
 		Alert alert2 = new Alert(user, user, "alert_2", EXPRESSION, "* * * * *");
 		alertService.updateAlert(alert2);
+		
+		Alert alert3 = new Alert(user, user, "alert_3", EXPRESSION, "* * * * *");
+		Trigger trig3 = new Trigger(alert3, TriggerType.LESS_THAN, "trigger_3", 40, 0);
+		alert3.setTriggers(Arrays.asList(new Trigger[] {trig3}));
+		alertService.updateAlert(alert3);
 
 		List<Alert> actualAlerts = alertService.findAlertsByStatus(false);
 
-		assertEquals(actualAlerts.size(), 2);
+		assertEquals(actualAlerts.size(), 3);
 		Alert fetchedAlert1 = actualAlerts.get(0);
 		assertEquals(fetchedAlert1.getName(), "alert_1");
 		assertEquals(fetchedAlert1.getNotifications().size(), 2);
@@ -364,6 +369,12 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(fetchedAlert2.getName(), "alert_2");
 		assertEquals(fetchedAlert2.getNotifications().size(), 0);
 		assertEquals(fetchedAlert2.getTriggers().size(), 0);
+		
+		Alert fetchedAlert3 = actualAlerts.get(2);
+		assertEquals(fetchedAlert3.getName(), "alert_3");
+		assertEquals(fetchedAlert3.getNotifications().size(), 0);
+		assertEquals(fetchedAlert3.getTriggers().size(), 1);
+		assertEquals(fetchedAlert3.getTriggers().get(0).getName(), "trigger_3");
 	}
 
 	@Test
