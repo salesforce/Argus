@@ -305,7 +305,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					_logger.info("All jobs are scheduled. Scheduler {} is sleeping for {} millis", _getSchedulerName(scheduler), distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
 					_logger.info("Next schedule time is {}", distributedSchedulingLock.getNextScheduleStartTime()); 
 					_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
-					
+
 					/* Dispose the scheduler for current run, once you have slept until the start of next run */
 					_disposeScheduler(scheduler);
 				}
@@ -340,11 +340,13 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				return result;
 			if (!isDisposed()) {
 				if (LockType.ALERT_SCHEDULING.equals(lockType)) {
-					_logger.info("Retreiving enabled alerts in the range - " + fromIndex + " to " + toIndex + " to schedule.");
-					synchronized (_alertService) {
-						result.addAll(_alertService.findAlertsByRangeAndStatus(jobIds.get(fromIndex), jobIds.get(toIndex-1), true));
+					if((fromIndex > toIndex) && toIndex<=jobIds.size()) {
+						_logger.info("Retreiving enabled alerts in the range - " + fromIndex + " to " + toIndex + " to schedule.");
+						synchronized (_alertService) {
+							result.addAll(_alertService.findAlertsByRangeAndStatus(jobIds.get(fromIndex), jobIds.get(toIndex-1), true));
+						}
+						_logger.info("Retrieved {} alerts.", result.size());
 					}
-					_logger.info("Retrieved {} alerts.", result.size());
 				}
 			}
 			return result;
