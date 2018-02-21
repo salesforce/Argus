@@ -410,7 +410,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.activeStatusByTriggerAndMetric");
-		query.setHint("eclipselink.left-join-fetch", "a.notifications.cooldownExpirationByTriggerAndMetric");
+		// Not getting the cooldown expiration as part of initial fetch as it might lead to OOM during jpa joins
+		//query.setHint("eclipselink.left-join-fetch", "a.notifications.cooldownExpirationByTriggerAndMetric");
 		
 		try {
 			query.setParameter("enabled", enabled);
@@ -436,7 +437,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
 		query.setHint("eclipselink.left-join-fetch", "a.notifications.activeStatusByTriggerAndMetric");
-		query.setHint("eclipselink.left-join-fetch", "a.notifications.cooldownExpirationByTriggerAndMetric");
+		// Not getting the cooldown expiration as part of initial fetch as it might lead to OOM during jpa joins
+		//query.setHint("eclipselink.left-join-fetch", "a.notifications.cooldownExpirationByTriggerAndMetric");
 		
 		try {
 			query.setParameter("fromId", fromId);
