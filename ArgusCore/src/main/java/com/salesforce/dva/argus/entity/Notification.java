@@ -196,7 +196,8 @@ public class Notification extends JPAEntity implements Serializable {
 			}
 			notification.setTriggers(triggers);
 			
-			Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
+			// Commenting this part out as these fields are not currently serialized
+			/*Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 			JsonNode activeStatusByTriggerAndMetricNode = rootNode.get("activeStatusByTriggerAndMetric");
 			if(activeStatusByTriggerAndMetricNode.isObject()) {
 				Iterator<Entry<String, JsonNode>> fieldsIter = activeStatusByTriggerAndMetricNode.fields();
@@ -216,7 +217,7 @@ public class Notification extends JPAEntity implements Serializable {
 					cooldownExpirationByTriggerAndMetric.put(field.getKey(), field.getValue().asLong());
 				}
 			}
-			notification.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;
+			notification.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;*/
 			
 			return notification;
 		}
