@@ -47,6 +47,7 @@ update_tomcat.sh
 update_views.sh
 
 #webpack
+/ArgusWeb/dist
 /ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/AnnotationReaderConstants.java
 /ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/AnnotationReaderTokenManager.java
 /ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/ParseException.java

@@ -124,8 +124,10 @@ public class Notification extends JPAEntity implements Serializable {
 			}
 			jgen.writeEndArray();
 			
-			jgen.writeObjectField("cooldownExpirationByTriggerAndMetric", notification.getCooldownExpirationMap());
-			jgen.writeObjectField("activeStatusByTriggerAndMetric", notification.getActiveStatusMap());
+			// Getting these values requires a lot of queries to rdbms at runtime, and so these are excluded for now 
+			// as the current usecases do not need these values to be serialized
+			//jgen.writeObjectField("cooldownExpirationByTriggerAndMetric", notification.getCooldownExpirationMap());
+			//jgen.writeObjectField("activeStatusByTriggerAndMetric", notification.getActiveStatusMap());
 			
 			jgen.writeEndObject();
 			
