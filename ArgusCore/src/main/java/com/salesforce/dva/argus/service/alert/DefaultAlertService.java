@@ -667,6 +667,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return Alert.findIDsByStatus(_emProvider.get(), enabled);
 	}
+	
+	@Override
+	@Transactional
+	public List<Alert> findAlertsByRangeAndStatus(BigInteger fromId, BigInteger toId, boolean enabled) {
+		requireNotDisposed();
+		return Alert.findByRangeAndStatus(_emProvider.get(), fromId, toId, enabled);
+	}
 
 	@Override
 	@Transactional
