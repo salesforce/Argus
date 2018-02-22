@@ -259,7 +259,15 @@ public interface AlertService extends Service {
 	 * @return  The notifier instance.
 	 */
 	Notifier getNotifier(SupportedNotifier notifier);
+	
+	/**
+	 * Update activeStatusByTriggerAndMetric and cooldownExpirationByTriggerAndMetric for the given notifications.
+	 * 
+	 * @param notifications  The notifications to update.	
+	 */
+	void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications);
 
+	
 	//~ Enums ****************************************************************************************************************************************
 
 	/**
