@@ -50,16 +50,15 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
+import javax.persistence.Query;
 import javax.persistence.Table;
-import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -82,9 +81,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @SuppressWarnings("serial")
 @Entity
 @Table(name = "NOTIFICATION", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
-@NamedQueries(
-		{ @NamedQuery(name = "Notification.findByIDs", query = "SELECT n FROM Notification n WHERE n.id IN :notificationIds") }
-)
 public class Notification extends JPAEntity implements Serializable {
 	
 	
@@ -238,7 +234,7 @@ public class Notification extends JPAEntity implements Serializable {
 	
     long cooldownPeriod;
     
-	@ManyToOne(optional = false)
+	@ManyToOne(optional = false, fetch=FetchType.LAZY)
     @JoinColumn(name = "alert_id")
     private Alert alert;
     
@@ -288,19 +284,55 @@ public class Notification extends JPAEntity implements Serializable {
     
     //~ Static Methods *******************************************************************************************************************************
     
-    public static List<Notification> findByIDs(EntityManager em, List<BigInteger> ids) {
+    @SuppressWarnings("unchecked")
+	public static void updateActiveStatusAndCooldown(EntityManager em, List<Notification> notifications) {
     	requireArgument(em != null, "Entity manager can not be null.");
-		requireArgument(ids != null, "Notification IDs list cannot be null.");
-		
-		TypedQuery<Notification> query = em.createNamedQuery("Notification.findByIDs", Notification.class);
+    	
+    	if(notifications.isEmpty()) return;
+    	
+    	Map<BigInteger, Notification> notificationsByIds = new HashMap<>(notifications.size());
+    	
+    	StringBuilder sb = new StringBuilder();
+    	for(Notification n : notifications) {
+    		notificationsByIds.put(n.getId(), n);
+    		n.activeStatusByTriggerAndMetric.clear();
+    		n.cooldownExpirationByTriggerAndMetric.clear();
+    		sb.append(n.getId()).append(","); 
+    	}
 
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-		try {
-			query.setParameter("notificationIds", ids);
-			return query.getResultList();
-		} catch (NoResultException ex) {
-			return Collections.emptyList();
-		}
+    	String ids = sb.substring(0, sb.length()-1);
+    	try {
+    		Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric where notification_id IN (" + ids + ")");
+        	List<Object[]> objects = q.getResultList();
+        	
+        	for(Object[] object : objects) {
+        		BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
+        		Long cooldownExpiration = Long.class.cast(object[1]);
+        		String key = String.class.cast(object[2]);
+        		notificationsByIds.get(notificationId).cooldownExpirationByTriggerAndMetric.put(key, cooldownExpiration);
+        	}
+        	
+        	q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric where notification_id IN (" + ids + ")");
+        	objects = q.getResultList();
+        	
+        	for(Object[] object : objects) {
+        		BigInteger notificationId = new BigInteger(String.valueOf(Long.class.cast(object[0])));
+        		Boolean isActive;
+        		try {
+        			isActive = Boolean.class.cast(object[1]);
+        		} catch (ClassCastException e) {
+        			// This is because Embedded Derby stores booleans as 0, 1.
+        			isActive = Integer.class.cast(object[1]) == 0 ? Boolean.FALSE : Boolean.TRUE;
+        		}
+        		
+        		String key = String.class.cast(object[2]);
+        		notificationsByIds.get(notificationId).activeStatusByTriggerAndMetric.put(key, isActive);
+        	}
+        	
+    	} catch(NoResultException ex) {
+    		return;
+    	}
+    	
     }
 
     //~ Methods **************************************************************************************************************************************
