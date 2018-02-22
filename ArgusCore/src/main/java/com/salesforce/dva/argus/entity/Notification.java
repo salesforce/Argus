@@ -124,8 +124,10 @@ public class Notification extends JPAEntity implements Serializable {
 			}
 			jgen.writeEndArray();
 			
-			jgen.writeObjectField("cooldownExpirationByTriggerAndMetric", notification.getCooldownExpirationMap());
-			jgen.writeObjectField("activeStatusByTriggerAndMetric", notification.getActiveStatusMap());
+			// Getting these values requires a lot of queries to rdbms at runtime, and so these are excluded for now 
+			// as the current usecases do not need these values to be serialized
+			//jgen.writeObjectField("cooldownExpirationByTriggerAndMetric", notification.getCooldownExpirationMap());
+			//jgen.writeObjectField("activeStatusByTriggerAndMetric", notification.getActiveStatusMap());
 			
 			jgen.writeEndObject();
 			
@@ -194,7 +196,8 @@ public class Notification extends JPAEntity implements Serializable {
 			}
 			notification.setTriggers(triggers);
 			
-			Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
+			// Commenting this part out as these fields are not currently serialized
+			/*Map<String, Boolean> activeStatusByTriggerAndMetric = new HashMap<>();
 			JsonNode activeStatusByTriggerAndMetricNode = rootNode.get("activeStatusByTriggerAndMetric");
 			if(activeStatusByTriggerAndMetricNode.isObject()) {
 				Iterator<Entry<String, JsonNode>> fieldsIter = activeStatusByTriggerAndMetricNode.fields();
@@ -214,7 +217,7 @@ public class Notification extends JPAEntity implements Serializable {
 					cooldownExpirationByTriggerAndMetric.put(field.getKey(), field.getValue().asLong());
 				}
 			}
-			notification.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;
+			notification.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;*/
 			
 			return notification;
 		}
@@ -633,10 +636,14 @@ public class Notification extends JPAEntity implements Serializable {
 
 
 	private String _hashTriggerAndMetric(Trigger trigger, Metric metric) {
-        requireArgument(trigger != null, "Trigger cannot be null.");
-        requireArgument(metric != null, "Metric cannot be null");
+		requireArgument(trigger != null, "Trigger cannot be null.");
+		requireArgument(metric != null, "Metric cannot be null");
 
-        return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
+		if(trigger.getId()!=null) {
+			return trigger.getId().toString() + "$$" + metric.getIdentifier().hashCode();
+		}else {
+			return "0$$" + metric.getIdentifier().hashCode();
+		}
 	}
 
 }

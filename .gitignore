@@ -47,4 +47,25 @@ update_tomcat.sh
 update_views.sh
 
 #webpack
-ArgusWeb/dist
+/ArgusWeb/dist
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/AnnotationReaderConstants.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/AnnotationReaderTokenManager.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/ParseException.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/SimpleCharStream.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/Token.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/TokenMgrError.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/MetricReader.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/MetricReaderConstants.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/MetricReaderTokenManager.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/ParseException.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/SimpleCharStream.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/Token.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/metric/TokenMgrError.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/CronTabEntry.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/CronTabEntryConstants.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/CronTabEntryTokenManager.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/ParseException.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/SimpleCharStream.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/Token.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/util/TokenMgrError.java
+/ArgusCore/src/main/java/com/salesforce/dva/argus/service/annotation/AnnotationReader.java

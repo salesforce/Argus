@@ -35,11 +35,14 @@ import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -267,6 +270,111 @@ public class AlertServiceTest extends AbstractTest {
 		for (Alert alert : expectedAlerts) {
 			assertTrue(actualSet.contains(alert));
 		}
+	}
+
+	@Test
+	public void findAlertsInRange() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		String userName = createRandomName();
+		int alertsCount = 50;
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
+
+		user = userService.updateUser(user);
+
+		List<Alert> insertedAlerts = new ArrayList<>();
+
+		for (int i = 0; i < alertsCount; i++) {
+			insertedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
+		}
+        List<Alert> expectedAlerts = insertedAlerts.subList(0, 20);
+
+		List<Alert> actualAlerts = alertService.findAlertsByRangeAndStatus(new BigInteger("100002"), new BigInteger("100021"), false);
+        
+		assertEquals(actualAlerts.size(), 20);
+
+		Set<Alert> actualSet = new HashSet<>();
+
+		actualSet.addAll(actualAlerts);
+		for (Alert alert : expectedAlerts) {
+			assertTrue(actualSet.remove(alert));
+		}
+		
+        assertEquals(actualSet.size(), 0);
+	}
+	
+	@Test
+	public void findFullAlertObjectRetrieval() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		String userName = createRandomName();
+
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
+
+		user = userService.updateUser(user);
+
+		Alert alert1 = new Alert(user, user, "alert_1", EXPRESSION, "* * * * *");
+		Notification not1 = new Notification("notification_1", alert1, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", null, 5000);
+		Notification not2 = new Notification("notification_2", alert1, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", null, 5000);
+		Trigger trig1 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_1", 20, 0);
+		Trigger trig2 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_2", 40, 0);
+		alert1.setNotifications(Arrays.asList(new Notification[] {not1, not2}));
+		alert1.setTriggers(Arrays.asList(new Trigger[] {trig1, trig2}));
+		not1.setTriggers(Arrays.asList(new Trigger[] {trig1}));
+		not1.setSubscriptions(Arrays.asList(new String[] {"subscription_1"}));
+		not1.setMetricsToAnnotate(Arrays.asList(new String[] {"logbus.was.SP3.cs21:Logstash.rate_15m:sum"}));
+		Metric sampleMetric = new Metric("argus", "cpu");
+		long currTime = System.currentTimeMillis();
+		not1.setCooldownExpirationByTriggerAndMetric(trig1, sampleMetric, currTime);
+		not1.setActiveForTriggerAndMetric(trig1, sampleMetric, true);
+		alertService.updateAlert(alert1);
+		
+		Alert alert2 = new Alert(user, user, "alert_2", EXPRESSION, "* * * * *");
+		alertService.updateAlert(alert2);
+		
+		Alert alert3 = new Alert(user, user, "alert_3", EXPRESSION, "* * * * *");
+		Trigger trig3 = new Trigger(alert3, TriggerType.LESS_THAN, "trigger_3", 40, 0);
+		alert3.setTriggers(Arrays.asList(new Trigger[] {trig3}));
+		alertService.updateAlert(alert3);
+
+		List<Alert> actualAlerts = alertService.findAlertsByStatus(false);
+
+		assertEquals(actualAlerts.size(), 3);
+		Alert fetchedAlert1 = actualAlerts.get(0);
+		assertEquals(fetchedAlert1.getName(), "alert_1");
+		assertEquals(fetchedAlert1.getNotifications().size(), 2);
+		assertEquals(fetchedAlert1.getTriggers().size(), 2);
+		
+		Map<String, Notification> notificationsMap = fetchedAlert1.getNotifications().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
+		Map<String, Trigger> triggersMap = fetchedAlert1.getTriggers().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
+		assertTrue(notificationsMap.containsKey("notification_1"));
+		assertTrue(notificationsMap.containsKey("notification_2"));
+		assertTrue(triggersMap.containsKey("trigger_1"));
+		assertTrue(triggersMap.containsKey("trigger_2"));
+		assertEquals(notificationsMap.get("notification_1").getTriggers().size(), 1);
+		assertEquals(notificationsMap.get("notification_2").getTriggers().size(), 0);
+		assertEquals(triggersMap.get("trigger_1").getNotifications().size(), 1);
+		assertEquals(triggersMap.get("trigger_2").getNotifications().size(), 0);	
+		assertEquals(notificationsMap.get("notification_1").getTriggers().get(0).getName(), "trigger_1");
+		assertEquals(triggersMap.get("trigger_1").getNotifications().get(0).getName(), "notification_1");
+		Notification fetchedNotification1 = notificationsMap.get("notification_1");
+		assertEquals(fetchedNotification1.getSubscriptions().size(),1);
+		assertEquals(fetchedNotification1.getSubscriptions().get(0),"subscription_1");
+		assertEquals(fetchedNotification1.getMetricsToAnnotate().size(),1);
+		assertEquals(fetchedNotification1.getMetricsToAnnotate().get(0),"logbus.was.SP3.cs21:Logstash.rate_15m:sum");
+		assertEquals(fetchedNotification1.getCooldownExpirationByTriggerAndMetric(trig1, sampleMetric), currTime);
+		assertEquals(fetchedNotification1.getActiveStatusMap().keySet().size(), 1);
+		
+		Alert fetchedAlert2 = actualAlerts.get(1);
+		assertEquals(fetchedAlert2.getName(), "alert_2");
+		assertEquals(fetchedAlert2.getNotifications().size(), 0);
+		assertEquals(fetchedAlert2.getTriggers().size(), 0);
+		
+		Alert fetchedAlert3 = actualAlerts.get(2);
+		assertEquals(fetchedAlert3.getName(), "alert_3");
+		assertEquals(fetchedAlert3.getNotifications().size(), 0);
+		assertEquals(fetchedAlert3.getTriggers().size(), 1);
+		assertEquals(fetchedAlert3.getTriggers().get(0).getName(), "trigger_3");
 	}
 
 	@Test
@@ -509,9 +617,6 @@ public class AlertServiceTest extends AbstractTest {
 		
 		notification = alert.getNotifications().get(0);
 		trigger = alert.getTriggers().get(0);
-		
-		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("scope", "metric1"),  System.currentTimeMillis());
-		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("scope", "metric2"),  System.currentTimeMillis());
 		
 		ObjectMapper mapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
