@@ -618,9 +618,6 @@ public class AlertServiceTest extends AbstractTest {
 		notification = alert.getNotifications().get(0);
 		trigger = alert.getTriggers().get(0);
 		
-		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("scope", "metric1"),  System.currentTimeMillis());
-		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("scope", "metric2"),  System.currentTimeMillis());
-		
 		ObjectMapper mapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
 		module.addSerializer(Alert.class, new Alert.Serializer());
