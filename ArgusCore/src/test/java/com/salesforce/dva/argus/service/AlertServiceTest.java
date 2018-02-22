@@ -575,5 +575,36 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(expected.getInertia(), actual.getInertia());
 	}
 	
+	@Test
+	public void testUpdateNotification() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		
+		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
+		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
+		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
+
+		notification.setAlert(expected);
+		expected.setNotifications(Arrays.asList(new Notification[] { notification }));
+		expected.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+		assertTrue(!expected.isEnabled());
+		expected = alertService.updateAlert(expected);
+		
+		notification = expected.getNotifications().get(0);
+		trigger = expected.getTriggers().get(0);
+		
+		notification.setActiveForTriggerAndMetric(trigger, new Metric("s", "m"), false);
+		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("s", "m"), 0);
+		expected = alertService.updateAlert(expected);
+
+		expected.getNotifications().get(0).getActiveStatusMap().clear();
+		expected.getNotifications().get(0).getCooldownExpirationMap().clear();
+		alertService.updateNotificationsActiveStatusAndCooldown(Arrays.asList(expected.getNotifications().get(0)));
+		
+		Notification n = expected.getNotifications().get(0);
+		assertTrue(n.getActiveStatusMap().size() == 1);
+		assertTrue(n.getCooldownExpirationMap().size() == 1);
+	}
+	
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
