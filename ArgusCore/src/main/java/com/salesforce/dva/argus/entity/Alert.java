@@ -755,7 +755,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param notification	The notification to add.
 	 */
 	public void addNotification(Notification notification) {
-		if(this.notifications != null) {
+		if(notification != null) {
 			this.notifications.add(notification);
 		}
 	}
