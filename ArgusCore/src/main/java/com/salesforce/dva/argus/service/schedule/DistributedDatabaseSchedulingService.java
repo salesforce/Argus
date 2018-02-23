@@ -35,7 +35,6 @@ import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.CronJob;
 import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
-import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -417,10 +416,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					jobDetail.getJobDataMap().put("AuditService", _auditService);
 					scheduler.scheduleJob(jobDetail, cronTrigger);
 				} catch (Exception ex) {
-					String msg = "Failed to schedule job {0} : {1}";
-					JPAEntity entity = JPAEntity.class.cast(job);
-
-					_auditService.createAudit(msg, entity, entity, ex.getMessage());
+					//String msg = "Failed to schedule job {0} : {1}";
+					//JPAEntity entity = JPAEntity.class.cast(job);
+					//_auditService.createAudit(msg, entity, entity, ex.getMessage());
 					_logger.error("Failed to schedule job {} : {}", job, ex.getMessage());
 				}
 			}
