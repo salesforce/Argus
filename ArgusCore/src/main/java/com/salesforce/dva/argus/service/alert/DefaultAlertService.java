@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 
@@ -297,6 +298,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	
 	@Override
 	@Transactional
+	public void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications) {
+		List<BigInteger> ids = notifications.stream().map(x -> x.getId()).collect(Collectors.toList());
+		_logger.debug("Updating notifications: {}", ids);
+		Notification.updateActiveStatusAndCooldown(_emProvider.get(), notifications);
+	}
+	
+	@Override
+	@Transactional
 	public List<History> executeScheduledAlerts(int alertCount, int timeout) {
 		requireNotDisposed();
 		requireArgument(alertCount > 0, "Alert count must be greater than zero.");
@@ -305,10 +314,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		List<History> historyList = new ArrayList<>();
 		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
-
-		for (AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
-			long jobStartTime = System.currentTimeMillis();
-
+		
+		List<Notification> allNotifications = new ArrayList<>();
+		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
+		Map<BigInteger, Long> alertEnqueueTimestampsByAlertId = new HashMap<>();
+		
+		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
 			Alert alert;
 			try {
@@ -321,13 +332,37 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 				continue;
 			}
-
+			
+			alertEnqueueTimestampsByAlertId.put(alert.getId(), alertWithTimestamp.getAlertEnqueueTime());
+			
+			List<Notification> notifications = new ArrayList<>(alert.getNotifications());
+			alert.setNotifications(null);
+			for(Notification n : notifications) {
+				alertsByNotificationId.put(n.getId(), alert);
+			}
+			allNotifications.addAll(notifications);
+		}
+		
+		// Update the state of notification objects from the database since the notification contained 	
+		// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts	
+		// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.	
+		// For example, the notification may have been updated to be on cooldown by a previous alert evaluation.	
+		// Or it's active/clear status may have changed. 
+		updateNotificationsActiveStatusAndCooldown(allNotifications);
+		for(Notification n : allNotifications) {
+			alertsByNotificationId.get(n.getId()).addNotification(n);
+		}
+		
+		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
+		for (Alert alert : alerts) {
+			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
+			
 			String logMessage = null;
 			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertWithTimestamp.getAlertEnqueueTime());
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
 				
 				if(metrics.isEmpty()) {
 					if (alert.isMissingDataNotificationEnabled()) {
@@ -351,8 +386,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
 							metrics, history);
-					
-					alert.setNotifications(updateNotifications(alert.getNotifications()));
 					
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
@@ -397,18 +430,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 	
-	
-	public List<Notification> updateNotifications(List<Notification> notifications) {
-		// Update the state of notification objects from the database since the notification contained 
-		// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts
-		// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.
-		// For example, the notification may have been updated to be on cooldown by a previous alert evaluation.
-		// Or it's active/clear status may have changed. 
-		List<BigInteger> notificationIds = new ArrayList<>(notifications.size());
-		notifications.forEach(item -> notificationIds.add(item.getId()));
-		return Notification.findByIDs(_emProvider.get(), notificationIds);
-	}
-
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
 	 */
