@@ -37,7 +37,7 @@ angular.module('argus.directives.controls.date', [])
 		template:
 			'<strong>{{labelName}} </strong>' +
 			'<div class="dropdown" style="display: inline;">' +
-				'<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="">' +
+				'<a class="dropdown-toggle my-toggle-select" id="dLabel" role="button" data-toggle="dropdown">' +
 					'<input type="text" class="input-medium" style="color:#000;" ng-model="ctrlVal">' +
 				'</a>' +
 				'<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">' +

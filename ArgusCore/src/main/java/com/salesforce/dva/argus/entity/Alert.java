@@ -119,11 +119,15 @@ import com.salesforce.dva.argus.util.Cron;
 					),
 			@NamedQuery(
 					name = "Alert.findByStatus",
-					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT a FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
 					),
 			@NamedQuery(
+					name = "Alert.findByRangeAndStatus",
+					query = "SELECT a FROM Alert a where a.id BETWEEN :fromId and :toId AND a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					),			
+			@NamedQuery(
 					name = "Alert.findIDsByStatus",
-					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
+					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByPrefix",
@@ -401,7 +405,38 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		query.setHint("eclipselink.join-fetch", "a.triggers");
 		query.setHint("eclipselink.join-fetch", "a.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
+		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
+
 		try {
+			query.setParameter("enabled", enabled);
+			return query.getResultList();
+		} catch (NoResultException ex) {
+			return new ArrayList<>(0);
+		}
+	}
+	
+
+	public static List<Alert> findByRangeAndStatus(EntityManager em, BigInteger fromId, BigInteger toId, boolean enabled) {
+		requireArgument(em != null, "Entity manager cannot be null.");
+		requireArgument(fromId != null, "fromId cannot be null.");
+		requireArgument(toId != null, "toId cannot be null.");
+		
+		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByRangeAndStatus", Alert.class);
+
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint("eclipselink.join-fetch", "a.triggers");
+		query.setHint("eclipselink.join-fetch", "a.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
+		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
+		
+		try {
+			query.setParameter("fromId", fromId);
+			query.setParameter("toId", toId);
 			query.setParameter("enabled", enabled);
 			return query.getResultList();
 		} catch (NoResultException ex) {
@@ -420,7 +455,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	public static List<BigInteger> findIDsByStatus(EntityManager em, boolean enabled) {
 		requireArgument(em != null, "Entity manager can not be null.");
 
-		TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDByStatus", BigInteger.class);
+		TypedQuery<BigInteger> query = em.createNamedQuery("Alert.findIDsByStatus", BigInteger.class);
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
 			query.setParameter("enabled", enabled);
