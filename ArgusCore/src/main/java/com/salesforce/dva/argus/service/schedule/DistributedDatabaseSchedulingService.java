@@ -339,8 +339,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				return result;
 			if (!isDisposed()) {
 				if (LockType.ALERT_SCHEDULING.equals(lockType)) {
-					if((fromIndex > toIndex) && toIndex<=jobIds.size()) {
-						_logger.info("Retreiving enabled alerts in the range - " + fromIndex + " to " + toIndex + " to schedule.");
+					if((fromIndex < toIndex) && toIndex<=jobIds.size()) {
+						_logger.info("Retreiving enabled alerts in the id range - " + jobIds.get(fromIndex) + " to " + jobIds.get(toIndex-1) + " to schedule.");
 						synchronized (_alertService) {
 							result.addAll(_alertService.findAlertsByRangeAndStatus(jobIds.get(fromIndex), jobIds.get(toIndex-1), true));
 						}
