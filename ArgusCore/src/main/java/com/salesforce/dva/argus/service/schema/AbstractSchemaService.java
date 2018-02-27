@@ -63,7 +63,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				String key = _constructTrieKey(metric, null);
 				boolean found = _trie.getValueForExactKey(key) != null;
 		    	if(!found) {
-		    		//_trie.putIfAbsent(key, VoidValue.SINGLETON);
 		    		keys.add(key);
 		    		metricsToPut.add(metric);
 		    	}
@@ -74,7 +73,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					boolean found = _trie.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
-			    		//_trie.putIfAbsent(key, VoidValue.SINGLETON);
 			    		keys.add(key);
 			    	}
 				}
