@@ -173,6 +173,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		List<MetricSchemaRecord> records = new ArrayList<>();
 		for(Metric metric : metrics) {
+			if(metric.getTags().isEmpty()) {
+				MetricSchemaRecord msr = new MetricSchemaRecord(metric.getScope(), metric.getMetric());
+				msr.setNamespace(metric.getNamespace());
+				records.add(msr);
+				continue;
+			}
+			
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
 				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
 													entry.getKey(), entry.getValue()));
@@ -540,8 +547,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				}
 				
 				@Override
-				public void onFailure(Exception exception) {
-					_logger.warn("Failed while executing request", exception);
+				public void onFailure(Exception e) {
+					throw new SystemException("Failed while executing request", e);
 				}
 			};
 			
