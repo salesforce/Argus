@@ -205,6 +205,19 @@ public interface AlertService extends Service {
 	 */
 	List<BigInteger> findAlertIdsByStatus(boolean enabled);
 
+    /**
+     * Returns a list of alerts that are in the range of ids and also filtered by status (enabled alerts or disabled alerts).
+     *
+     * @param   fromId - starting alert id in range
+     *
+     * @param   toId  - ending alert id in range
+     * 
+     * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
+     *
+     * @return  The list of alerts for the given status. Will never be null but may be empty.
+     */
+    List<Alert> findAlertsByRangeAndStatus(BigInteger fromId, BigInteger toId, boolean enabled);
+	
 	/**
 	 * Returns the total count of alerts by status (enabled alerts or disabled alerts).
 	 *
@@ -259,7 +272,15 @@ public interface AlertService extends Service {
 	 * @return  The notifier instance.
 	 */
 	Notifier getNotifier(SupportedNotifier notifier);
+	
+	/**
+	 * Update activeStatusByTriggerAndMetric and cooldownExpirationByTriggerAndMetric for the given notifications.
+	 * 
+	 * @param notifications  The notifications to update.	
+	 */
+	void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications);
 
+	
 	//~ Enums ****************************************************************************************************************************************
 
 	/**
