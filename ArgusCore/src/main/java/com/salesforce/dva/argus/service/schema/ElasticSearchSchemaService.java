@@ -548,7 +548,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				
 				@Override
 				public void onFailure(Exception e) {
-					throw new SystemException("Failed while executing request", e);
+					_logger.warn("Failed while executing request", e);
 				}
 			};
 			
