@@ -35,7 +35,6 @@ import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.CronJob;
 import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
-import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -52,6 +51,8 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -264,26 +265,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			this.lockType = lockType;
 		}
 
-		/**
-		 * It fetches all enabled CRON jobs from database.
-		 *
-		 * @return  returns all enabled jobs for the given job type.
-		 */
-		protected List<CronJob> getEnabledJobs() {
-			List<CronJob> result = new ArrayList<>();
-
-			if (!isDisposed()) {
-				if (LockType.ALERT_SCHEDULING.equals(lockType)) {
-					_logger.info("Retreiving all enabled alerts to schedule.");
-					synchronized (_alertService) {
-						result.addAll(_alertService.findAlertsByStatus(true));
-					}
-					_logger.info("Retrieved {} alerts.", result.size());
-				}
-			}
-			return result;
-		}
-
 		@Override
 		public void run() {
 
@@ -296,7 +277,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 			while (!isInterrupted()) {
 				if (_isSchedulingServiceEnabled()) {
-					List<CronJob> jobs = null;
+					List<BigInteger> jobIds = null;
 					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,schedulingRefreshTime);
 
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
@@ -307,12 +288,12 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 							scheduler = _createScheduler();
 							_logger.info("Creating a new scheduler with name {}", _getSchedulerName(scheduler));
 							currentScheduleEndTime=distributedSchedulingLock.getNextScheduleStartTime();
-							jobs = getEnabledJobs();
+							jobIds = getEnabledJobIds();
 						}
-						int jobsToIndex = jobs.size()<(jobsFromIndex+jobsBlockSize)?jobs.size():jobsFromIndex+jobsBlockSize;
+						int jobsToIndex = jobIds.size()<(jobsFromIndex+jobsBlockSize)?jobIds.size():jobsFromIndex+jobsBlockSize;
 						numberOfJobsScheduledByScheduler+= jobsToIndex - jobsFromIndex;
 						_logger.info("Adding jobs between {} and {} to scheduler {}",  jobsFromIndex, jobsToIndex,_getSchedulerName(scheduler)); 
-						addJobsToScheduler(scheduler, _drainTo(jobs, jobsFromIndex, jobsToIndex));
+						addJobsToScheduler(scheduler, fetchJobsInRange(jobIds, jobsFromIndex, jobsToIndex));
 
 						if(numberOfJobsScheduledByScheduler >= maxJobsPerScheduler) break;
 
@@ -323,7 +304,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					_logger.info("All jobs are scheduled. Scheduler {} is sleeping for {} millis", _getSchedulerName(scheduler), distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
 					_logger.info("Next schedule time is {}", distributedSchedulingLock.getNextScheduleStartTime()); 
 					_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
-					
+
 					/* Dispose the scheduler for current run, once you have slept until the start of next run */
 					_disposeScheduler(scheduler);
 				}
@@ -331,10 +312,43 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			_disposeScheduler(scheduler);
 		}
 
-		private List<CronJob> _drainTo(List<CronJob> jobs,int fromIndex, int toIndex){
-			if(fromIndex>=jobs.size())
-				return new ArrayList<>();
-			return jobs.subList(fromIndex, toIndex);
+
+		/**
+		 * It fetches all enabled CRON job ids from database.
+		 *
+		 * @return  returns all enabled jobs for the given job type.
+		 */
+		protected List<BigInteger> getEnabledJobIds() {
+			List<BigInteger> result = new ArrayList<>();
+
+			if (!isDisposed()) {
+				if (LockType.ALERT_SCHEDULING.equals(lockType)) {
+					_logger.info("Retreiving all enabled alert ids to schedule.");
+					synchronized (_alertService) {
+						result.addAll(_alertService.findAlertIdsByStatus(true));
+					}
+					_logger.info("Retrieved {} alerts.", result.size());
+				}
+			}
+			return result;
+		}
+
+		private List<CronJob> fetchJobsInRange(List<BigInteger> jobIds, int fromIndex, int toIndex){
+			List<CronJob> result = new ArrayList<>();
+			if(fromIndex>=jobIds.size())
+				return result;
+			if (!isDisposed()) {
+				if (LockType.ALERT_SCHEDULING.equals(lockType)) {
+					if((fromIndex < toIndex) && toIndex<=jobIds.size()) {
+						_logger.info("Retreiving enabled alerts in the id range - " + jobIds.get(fromIndex) + " to " + jobIds.get(toIndex-1) + " to schedule.");
+						synchronized (_alertService) {
+							result.addAll(_alertService.findAlertsByRangeAndStatus(jobIds.get(fromIndex), jobIds.get(toIndex-1), true));
+						}
+						_logger.info("Retrieved {} alerts.", result.size());
+					}
+				}
+			}
+			return result;
 		}
 
 		private Scheduler _createScheduler(){
@@ -402,10 +416,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					jobDetail.getJobDataMap().put("AuditService", _auditService);
 					scheduler.scheduleJob(jobDetail, cronTrigger);
 				} catch (Exception ex) {
-					String msg = "Failed to schedule job {0} : {1}";
-					JPAEntity entity = JPAEntity.class.cast(job);
-
-					_auditService.createAudit(msg, entity, entity, ex.getMessage());
+					//String msg = "Failed to schedule job {0} : {1}";
+					//JPAEntity entity = JPAEntity.class.cast(job);
+					//_auditService.createAudit(msg, entity, entity, ex.getMessage());
 					_logger.error("Failed to schedule job {} : {}", job, ex.getMessage());
 				}
 			}

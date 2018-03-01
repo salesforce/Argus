@@ -216,34 +216,48 @@ public final class SystemConfiguration extends Properties {
         LOG_LEVEL("system.property.log.level", "INFO"),
         VERSION("system.property.version", "X.X"),
         ADMIN_EMAIL("system.property.admin.email", "someone@mycompany.com"),
+        
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
-        GUS_ENABLED("system.property.gus.enabled", "true"),
+        GUS_ENABLED("system.property.gus.enabled", "false"),
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
+        
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
+        
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
         CACHE_SERVICE_PROPERTY_FILE("service.config.cache","argus.properties"),
+        
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
         MQ_SERVICE_PROPERTY_FILE("service.config.mq","argus.properties"),
+        
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),
         ALERT_SERVICE_PROPERTY_FILE("service.config.alert","argus.properties"),
         NOTIFIER_PROPERTY_FILE("service.config.notifier","notifier.properties"),
+        
         SCHEDULING_SERVICE_IMPL_CLASS("service.binding.scheduling", "com.salesforce.dva.argus.service.schedule.DefaultSchedulingService"),
         SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","argus.properties"),
+        
         MAIL_SERVICE_IMPL_CLASS("service.binding.mail", "com.salesforce.dva.argus.service.mail.DefaultMailService"),
         MAIL_SERVICE_PROPERTY_FILE("service.config.mail","argus.properties"),
+        
         CALLBACK_SERVICE_IMPL_CLASS("service.binding.callback", "com.salesforce.dva.argus.service.callback.DefaultCallbackService"),
         CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "argus.properties"),
+        
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
+        
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
+        
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
+        
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
+        
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
+        
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "argus.properties");
 
