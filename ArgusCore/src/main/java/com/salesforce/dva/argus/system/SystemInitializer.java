@@ -46,6 +46,7 @@ import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
 import com.salesforce.dva.argus.service.audit.DefaultAuditService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
+import com.salesforce.dva.argus.service.jpa.DefaultChartService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
 import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
@@ -255,6 +256,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
+        bindConcreteClass(DefaultChartService.class, ChartService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {
