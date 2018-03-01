@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Map.Entry;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -190,7 +191,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			if(_syncPut) {
 				_upsert(records);
 			} else {
-				_upsertAsync(records);
+				_upsertAsync(records, metrics);
 			}
 		}
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, records.size(), null);
@@ -512,7 +513,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 	
-	private void _upsertAsync(List<MetricSchemaRecord> records) {
+	private void _upsertAsync(List<MetricSchemaRecord> records, List<Metric> metrics) {
 		
 		String requestUrl = new StringBuilder().append("/")
 											   .append(INDEX_NAME)
@@ -531,6 +532,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					try {
 						PutResponse putResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 						if(putResponse.errors) {
+							_removeFromTrie(metrics);
 							for(Item item : putResponse.items) {
 								if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
 									throw new SystemException("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.errorMap));
@@ -548,13 +550,29 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				
 				@Override
 				public void onFailure(Exception e) {
-					throw new SystemException("Failed while executing request", e);
+					_logger.warn("Failed while executing request", e);
+					_removeFromTrie(metrics);
 				}
 			};
 			
 			_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody), responseListener);
 		} catch (JsonProcessingException | UnsupportedEncodingException e) {
 			throw new SystemException("Failed to parse metrics when indexing.", e);
+		}
+	}
+	
+	private void _removeFromTrie(List<Metric> metrics) {
+		for(Metric metric : metrics) {
+			if(metric.getTags().isEmpty()) {
+				String key = constructTrieKey(metric, null);
+				_trie.remove(key);
+				continue;
+			} 
+				
+			for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
+				String key = constructTrieKey(metric, tagEntry);
+				_trie.remove(key);
+			}
 		}
 	}
 	

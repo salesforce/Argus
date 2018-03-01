@@ -60,7 +60,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
-				String key = _constructTrieKey(metric, null);
+				String key = constructTrieKey(metric, null);
 				boolean found = _trie.getValueForExactKey(key) != null;
 		    	if(!found) {
 		    		keys.add(key);
@@ -69,7 +69,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			} else {
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
-					String key = _constructTrieKey(metric, tagEntry);
+					String key = constructTrieKey(metric, tagEntry);
 					boolean found = _trie.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
@@ -96,7 +96,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	
 	protected abstract void implementationSpecificPut(List<Metric> metrics);
 
-	private String _constructTrieKey(Metric metric, Entry<String, String> tagEntry) {
+	protected String constructTrieKey(Metric metric, Entry<String, String> tagEntry) {
 		StringBuilder sb = new StringBuilder(metric.getScope());
 		sb.append('\0').append(metric.getMetric());
 		
