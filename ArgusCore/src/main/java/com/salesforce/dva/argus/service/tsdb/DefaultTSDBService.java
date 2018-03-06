@@ -141,8 +141,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
-                _logger.warn("Failed to get metrics from TSDB. Reason: " + e.getMessage());
-                throw new SystemException("Failed to get metrics from TSDB. Reason: " + e.getMessage());
+                throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
         _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));

@@ -83,10 +83,12 @@ public class FillTransformTest {
         metrics.add(metric);
 
         List<String> constants = new ArrayList<String>();
-
         constants.add("1w");
         constants.add("2s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
+        
         fillTransform.transform(metrics, constants);
     }
 
@@ -99,10 +101,11 @@ public class FillTransformTest {
         metrics.add(metric);
 
         List<String> constants = new ArrayList<String>();
-
         constants.add("-1s");
         constants.add("2s");
         constants.add("100.0");
+        constants.add("false");
+        
         fillTransform.transform(metrics, constants);
     }
 
@@ -115,10 +118,12 @@ public class FillTransformTest {
         metrics.add(metric);
 
         List<String> constants = new ArrayList<String>();
-
         constants.add("1s");
         constants.add("2w");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
+        
         fillTransform.transform(metrics, constants);
     }
 
@@ -172,6 +177,8 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -210,6 +217,8 @@ public class FillTransformTest {
         constants.add("2s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -248,6 +257,8 @@ public class FillTransformTest {
         constants.add("3s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -284,6 +295,8 @@ public class FillTransformTest {
         constants.add("100s");
         constants.add("1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -330,6 +343,8 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("-1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
@@ -373,6 +388,8 @@ public class FillTransformTest {
         constants.add("100s");
         constants.add("1s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -406,6 +423,8 @@ public class FillTransformTest {
         constants.add("5m");
         constants.add("2s");
         constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -430,6 +449,7 @@ public class FillTransformTest {
         constants.add("1s");
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -454,6 +474,7 @@ public class FillTransformTest {
         constants.add("-1s");
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -477,6 +498,7 @@ public class FillTransformTest {
         constants.add("-1s");
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -500,6 +522,7 @@ public class FillTransformTest {
         constants.add("0s");
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
@@ -524,6 +547,7 @@ public class FillTransformTest {
         constants.add("0m");
         constants.add("100.0");
         constants.add(String.valueOf(now));
+        constants.add("true");
 
         Long expectedStartTimestamp = now - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 12L * 3600L * 1000L;
@@ -553,6 +577,7 @@ public class FillTransformTest {
         constants.add("0m");
         constants.add("100.0");
         constants.add(String.valueOf(now));
+        constants.add("true");
         
         Long expectedStartTimestamp = now - 7L * 86400L * 1000L;
         Long expectedEndTimestamp = now - 0L * 60L * 1000L;
@@ -580,6 +605,7 @@ public class FillTransformTest {
         constants.add("0m");
         constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
 
         Long expectedStartTimestamp = System.currentTimeMillis() - 1L * 86400L * 1000L;
         Long expectedEndTimestamp = System.currentTimeMillis();
@@ -595,5 +621,38 @@ public class FillTransformTest {
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
         assertEquals(new HashSet<Double>(Arrays.asList(100.0)), new HashSet<Double>(result.get(0).getDatapoints().values()));
     }
+    
+    @Test
+    public void testFillTransform_MetricWithEmptyDatapointsMap() {
+    	Transform fillTransform = new FillTransform();
+    	List<String> constants = new ArrayList<>();
+    	
+    	Metric m = new Metric("scope", "metric");
+    	
+    	constants.add("100s");
+        constants.add("1s");
+        constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
+        
+        List<Metric> metrics = fillTransform.transform(Arrays.asList(m), constants);
+    	assertEquals(metrics.size(), 1);
+    }
+    
+    @Test
+    public void testFillTransform_EmptyMetricsList() {
+    	Transform fillTransform = new FillTransform();
+    	List<String> constants = new ArrayList<>();
+    	
+    	constants.add("100s");
+        constants.add("1s");
+        constants.add("100.0");
+        constants.add(System.currentTimeMillis() + "");
+        constants.add("false");
+        
+        List<Metric> metrics = fillTransform.transform(Arrays.asList(), constants);
+    	assertEquals(metrics.size(), 0);
+    }
+    
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
