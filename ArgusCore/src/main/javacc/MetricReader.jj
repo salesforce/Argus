@@ -253,16 +253,23 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	List<String> constants = new ArrayList<String>();
   	String functionName, constant = "";
   	Token t = null;
+  	boolean constantsOnly = true;
 }
 {
 	functionName = functionName()
 	<LEFT_PARENTHESIS>
 		(
 		result = expression(relativeTo, syntaxOnly, clazz)
-		{ totalResult.addAll(result); }
+		{ 
+			totalResult.addAll(result);
+			constantsOnly = false;
+		}
 		| 
 		result = function(relativeTo, syntaxOnly, clazz)
-		{ totalResult.addAll(result); }
+		{ 
+			totalResult.addAll(result);
+			constantsOnly = false;
+		}
 		| 
 		t = <CONSTANT>
 			{
@@ -290,7 +297,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 		)*
 	<RIGHT_PARENTHESIS>
 	{
-	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz);
+	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly);
 	}
 }
 
@@ -472,7 +479,7 @@ private String functionName() :
     { return t.image; }    
 }
 
-private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly) :
 {}
 {
   	{
@@ -482,8 +489,11 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
   	  	  	if(syntaxOnly) {
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
-	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName)) {
+	  	  	    	constants.add(String.valueOf(relativeTo));
+	  	  	      	constants.add(String.valueOf(constantsOnly));
+	  	  	    }
+	  	  	    
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
