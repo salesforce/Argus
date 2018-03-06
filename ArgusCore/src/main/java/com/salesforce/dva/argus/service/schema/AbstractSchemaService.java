@@ -56,14 +56,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
         //If cache is enabled, create a list of metricsToPut that do not exist on the TRIE and then call implementation 
         // specific put with only those subset of metricsToPut. 
         List<Metric> metricsToPut = new ArrayList<>(metrics.size());
-        List<String> keys = new ArrayList<>();
 		
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
 				boolean found = _trie.getValueForExactKey(key) != null;
 		    	if(!found) {
-		    		keys.add(key);
+		    		_trie.putIfAbsent(key, VoidValue.SINGLETON);
 		    		metricsToPut.add(metric);
 		    	}
 			} else {
@@ -73,7 +72,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					boolean found = _trie.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
-			    		keys.add(key);
+			    		_trie.putIfAbsent(key, VoidValue.SINGLETON);
 			    	}
 				}
 				
@@ -84,13 +83,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 		
 		implementationSpecificPut(metricsToPut);
-		
-		// Add keys to the TRIE after implementationSpecificPut has finished, so that we do not unnecessarily cache 
-		// these keys if the implementationSpecificPut fails.
-		for(String key : keys) {
-			_trie.putIfAbsent(key, VoidValue.SINGLETON);
-		}
-		
 	}
 	
 	
