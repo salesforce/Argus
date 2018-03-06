@@ -201,9 +201,6 @@ public class FillTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
     	
-    	// Last constant for FILL Transform is added by MetricReader. It is used to distinguish 
-    	// between FILL(expr, #constants#) and FILL(#constants#).
-    	
     	// Last 2 constants for FILL Transform are added by MetricReader. 
     	// The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
     	// The second last transform is the timestamp using which relative start and end timestamps 
