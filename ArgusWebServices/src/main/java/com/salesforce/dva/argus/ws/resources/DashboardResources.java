@@ -31,12 +31,10 @@
 
 package com.salesforce.dva.argus.ws.resources;
 
-import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
-import com.salesforce.dva.argus.ws.dto.AlertDto;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import java.math.BigInteger;
