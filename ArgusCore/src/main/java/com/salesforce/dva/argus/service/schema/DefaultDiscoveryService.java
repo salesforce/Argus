@@ -121,7 +121,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
-        int limit = 500;
+        int limit = 10000;
         List<MetricQuery> expandedQueryList = null;
         
         long start = System.nanoTime();
