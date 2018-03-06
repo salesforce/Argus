@@ -203,7 +203,7 @@ public class FillTransform implements Transform {
     	
     	// Last 2 constants for FILL Transform are added by MetricReader. 
     	// The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
-    	// The second last transform is the timestamp using which relative start and end timestamps 
+    	// The second last constant is the timestamp using which relative start and end timestamps 
     	// should be calculated for fillLine ( FILL(#constants#) ).
     	
     	boolean constantsOnly = false;
