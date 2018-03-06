@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 
 /**
  * The base class for performing query federations/forks and metric result merge/join.
@@ -31,12 +30,14 @@ public abstract class QueryFederation{
 	 */
 	public Map<MetricQuery, List<Metric>> join(Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries, Map<MetricQuery, List<Metric>> subQueryMetricsMap) {
 		Map<MetricQuery, List<Metric>> queryMetricsMap = new HashMap<>();
-		Map<String, Metric> metricMergeMap = new HashMap<>();
+
 		String metricIdentifier = null;
 		for (Map.Entry<MetricQuery, List<MetricQuery>> entry : mapQuerySubQueries.entrySet()) {
+			Map<String, Metric> metricMergeMap = new HashMap<>();
 			List<Metric> metrics = new ArrayList<>();
 			MetricQuery query = entry.getKey();
 			List<MetricQuery> subQueries = entry.getValue();
+
 			for (MetricQuery subQuery : subQueries) {
 				List<Metric> metricsFromSubQuery = subQueryMetricsMap.get(subQuery);
 				if (metricsFromSubQuery != null) {
@@ -48,7 +49,32 @@ public abstract class QueryFederation{
 								metric.setQuery(query);
 								metricMergeMap.put(metricIdentifier, metric);
 							} else {
-								finalMetric.addDatapoints(metric.getDatapoints());
+								if(query.getDownsampler() !=null){
+									switch(query.getDownsampler()){
+									case SUM:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case MIN:
+										finalMetric.minimumExistingDatapoints(metric.getDatapoints());
+										break;
+									case MAX:
+										finalMetric.maximumExistingDatapoints(metric.getDatapoints());
+										break;
+									case COUNT:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case ZIMSUM:
+										finalMetric.sumExistingDatapoints(metric.getDatapoints());
+										break;
+									case AVG:
+										finalMetric.averageExistingDatapoints(metric.getDatapoints());
+										break;									
+									default:
+										finalMetric.addDatapoints(metric.getDatapoints()); 
+									}
+								} else{
+									finalMetric.addDatapoints(metric.getDatapoints());
+								}
 							}
 						}
 					}

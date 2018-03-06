@@ -36,6 +36,8 @@ import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -61,6 +63,7 @@ public class DashboardServiceTest extends AbstractTest {
     public void testDashboardCrud() {
         PrincipalUser owner = new PrincipalUser(admin, "owner", "owner@mycompany.abc");
         Dashboard dashboard = new Dashboard(uService.findAdminUser(), "Test Dashboard", owner);
+        dashboard.setTemplateVars(Arrays.asList(new Dashboard.TemplateVar("scope", "argus.jvm")));
 
         dashboard = dService.updateDashboard(dashboard);
         assertNotNull(dashboard.getId());

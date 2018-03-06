@@ -35,7 +35,6 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,6 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
@@ -56,21 +54,21 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.TSDBService;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform;
 import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
-import com.salesforce.dva.argus.service.metric.transform.InterpolateTransform.InterpolationType;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
 /**
- * The federated implementation of the TSDBService.
+ * The sharded implementation of the TSDBService.
+ * Data queried for a given time series in different shards is disjoint wrt. time 
+ *  - ie. data for a given time range is present completely in some shard.
  *
  * @author  Dilip Devaraj (ddevaraj@salesforce.com)
  */
 @Singleton
-public class FederatedTSDBService extends AbstractTSDBService{
+public class ShardedTSDBService extends AbstractTSDBService{
 
 	//~ Instance fields ******************************************************************************************************************************
 	private final TransformFactory _transformFactory;
@@ -78,7 +76,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 
 	//~ Constructors *********************************************************************************************************************************
 	/**
-	 * Creates a new Default TSDB Service having an equal number of read and write routes.
+	 * Creates a new sharded TSDB Service having an equal number of read and write routes.
 	 *
 	 * @param   config               The system _configuration used to configure the service.
 	 * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
@@ -87,7 +85,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 	 * @throws  SystemException  If an error occurs configuring the service.
 	 */
 	@Inject
-	public FederatedTSDBService(SystemConfiguration config, MonitorService monitorService, TransformFactory transformFactory) {
+	public ShardedTSDBService(SystemConfiguration config, MonitorService monitorService, TransformFactory transformFactory) {
 		super(config, monitorService);
 		_transformFactory = transformFactory;
 	}
@@ -118,61 +116,32 @@ public class FederatedTSDBService extends AbstractTSDBService{
 	/** @see  TSDBService#getMetrics(java.util.List) */
 	@Override
 	public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
-		requireNotDisposed();
-		requireArgument(queries != null, "Metric Queries cannot be null.");
-		_logger.trace("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
+
+		// For a given time series all the tags corresponding to that time series is present in that shard at any given time.
+		// Hence we can directly query with the user's specified aggregator
 
 		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
-
 		for (MetricQuery query : queries) {
 			queryStartExecutionTime.put(query, System.currentTimeMillis());
 		}
 
-		QueryFederation queryFederation1 = new TimeQueryFederation();
-		Map<MetricQuery, List<MetricQuery>> mapQuerySubQueries = queryFederation1.federateQueries(queries);
+		QueryFederation queryFederation = new EndPointQueryFederation(_readEndPoints);
+		Map<MetricQuery, List<MetricQuery>> mapQueryEndPointSubQueries = queryFederation.federateQueries(queries);
 
 		List<MetricQuery> queriesSplit = new ArrayList<>();
-		for(List<MetricQuery> subQueries  :  mapQuerySubQueries.values()){
+		for(List<MetricQuery> subQueries  :  mapQueryEndPointSubQueries.values()){
 			queriesSplit.addAll(subQueries);
 		}
 
-		QueryFederation queryFederation2 = new EndPointQueryFederation(_readEndPoints);
-		Map<MetricQuery, List<MetricQuery>> mapQueryEndPointSubQueries = queryFederation2.federateQueries(queriesSplit);
+		long beforeTime = System.currentTimeMillis();		
+		Map<MetricQuery, List<Metric>>  subQueryMetricsMap = getSubQueryMetrics(queriesSplit);
+		long afterTime = System.currentTimeMillis();
+		_logger.info("Time spent in waiting for all sub query results: {}", afterTime - beforeTime);
 
-		List<MetricQuery> queriesSplit2 = new ArrayList<>();
-		for(List<MetricQuery> subQueries  :  mapQueryEndPointSubQueries.values()){
-			queriesSplit2.addAll(subQueries);
-		}
-
-		Map<MetricQuery, List<Metric>>  subQueryMetricsMap2 = getSubQueryMetrics(queriesSplit2);
-
-		Map<MetricQuery, List<Metric>> subQueryMetricsMap1 = queryFederation2.join(mapQueryEndPointSubQueries, subQueryMetricsMap2);
-		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation1.join(mapQuerySubQueries, subQueryMetricsMap1);
-
-		for(Entry<MetricQuery, List<Metric>> entry : queryMetricsMap.entrySet()){
-			MetricQuery metricQuery = entry.getKey();
-			Transform downsampleTransform = _transformFactory.getTransform(TransformFactory.Function.DOWNSAMPLE.getName());
-			TSDBService.downsample(metricQuery, entry.getValue(), downsampleTransform);
-
-			Map<String, List<Metric>>groupedMetricsMap = TSDBService.groupMetricsForAggregation(entry.getValue(), metricQuery);
-			InterpolationType interpolationType;
-
-			switch(metricQuery.getAggregator()){
-			case ZIMSUM:
-				interpolationType = InterpolationType.ZIMSUM;
-				break;
-			default:
-				interpolationType = InterpolationType.LININT;
-			}
-
-			InterpolateTransform interpolate = new InterpolateTransform();
-			List<String> interpolateConstants = new ArrayList<String>(Arrays.asList(interpolationType.toString()));
-			for(List<Metric> metrics : groupedMetricsMap.values()){
-				interpolate.transform(metrics, interpolateConstants);
-			}
-			Transform transform = Aggregator.correspondingTransform(metricQuery.getAggregator(), _transformFactory);
-			queryMetricsMap.put(metricQuery, TSDBService.aggregate(groupedMetricsMap, transform));
-		}
+		beforeTime = System.currentTimeMillis();
+		Map<MetricQuery, List<Metric>> queryMetricsMap = queryFederation.join(mapQueryEndPointSubQueries, subQueryMetricsMap);
+		afterTime = System.currentTimeMillis();
+		_logger.info("Time spent in joining results: {}", afterTime - beforeTime);
 
 		for (MetricQuery query : queries) {
 			instrumentQueryLatency(_monitorService, query, queryStartExecutionTime.get(query), "metrics");
@@ -244,9 +213,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 		Map<MetricQuery, Future<List<Metric>>> queryFutureMap = new HashMap<>();
 
 		for (MetricQuery query : queries) {
-			MetricQuery queryNoneAgg = new MetricQuery(query);
-			queryNoneAgg.setAggregator(Aggregator.NONE);
-			String requestBody = fromEntity(queryNoneAgg);
+			String requestBody = fromEntity(query);
 			String requestUrl = query.getMetricQueryContext().getReadEndPoint() + "/api/query";
 			queryFutureMap.put(query, _executorService.submit(new QueryWorker(requestUrl, query.getMetricQueryContext().getReadEndPoint(), requestBody)));
 		}
@@ -264,9 +231,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 					String readBackupEndPoint = _readBackupEndPointsMap.get(entry.getKey().getMetricQueryContext().getReadEndPoint()); 
 					if (!readBackupEndPoint.isEmpty()) {
 						_logger.warn("Trying to read from Backup endpoint");
-						MetricQuery queryNoneAgg = new MetricQuery(entry.getKey());
-						queryNoneAgg.setAggregator(Aggregator.NONE);
-						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(queryNoneAgg)).call();
+						m = new QueryWorker(readBackupEndPoint + "/api/query", readBackupEndPoint, fromEntity(entry.getKey())).call();
 					}
 				} catch (Exception ex) {
 					_logger.warn("Failed to get metrics from Backup TSDB. Reason: " + ex.getMessage());
@@ -286,7 +251,7 @@ public class FederatedTSDBService extends AbstractTSDBService{
 			subQueryMetricsMap.put(entry.getKey(), metrics);
 		}
 		return subQueryMetricsMap;
-	}    
+	}
 
 	@Override
 	public Properties getServiceProperties() {
