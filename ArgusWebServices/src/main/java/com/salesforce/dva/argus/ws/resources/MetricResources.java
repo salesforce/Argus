@@ -184,7 +184,7 @@ public class MetricResources extends AbstractResource {
         SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
+        return metricService.getAsyncMetrics(expressions, System.currentTimeMillis(), ttl, owner.getUserName());
     }
 
     private String _convertToCSV(List<Metric> metrics) {

@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.batch;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -37,7 +38,6 @@ public class DefaultBatchService extends DefaultService implements BatchService 
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private final SystemConfiguration _config;
     private final CacheService _cacheService;
     private final MQService _mqService;
     private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
@@ -49,7 +49,6 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         super(config);
         requireArgument(cacheService != null, "Cache service cannot be null.");
         requireArgument(mqService != null, "MQ service cannot be null.");
-        _config = config;
         _cacheService = cacheService;
         _mqService = mqService;
         _metricReaderProviderForMetrics = metricsprovider;
@@ -64,7 +63,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             return null;
         }
         try {
-            Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
+            Map<String, Object> batchData = MAPPER.readValue(json, new TypeReference<HashMap<String, Object>>() {});
             Status status = BatchMetricQuery.Status.fromInt((Integer) batchData.get("status"));
             int ttl = Integer.valueOf(batchData.get("ttl").toString());
             long createdDate = Long.valueOf(batchData.get("createdDate").toString());
@@ -90,7 +89,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         	return null;
         }
         try {
-            Map<String, String> userBatches = MAPPER.readValue(userBatchesJson, Map.class);
+            Map<String, String> userBatches = MAPPER.readValue(userBatchesJson, new TypeReference<HashMap<String, String>>() {});
             List<String> toRemove = new LinkedList<>();
             for (String id: userBatches.keySet()) {
                 BatchMetricQuery userBatch = findBatchById(id);
@@ -158,7 +157,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
         requireArgument(json != null, "No such batch exists");
         _cacheService.delete(ROOT + id);
         try {
-            Map<String, Object> batchData = MAPPER.readValue(json, Map.class);
+            Map<String, Object> batchData = MAPPER.readValue(json, new TypeReference<HashMap<String, Object>>() {});
 
             int[] indices = MAPPER.readValue((String) batchData.get("indices"), int[].class);
             for (int index: indices) {
@@ -214,7 +213,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             if (userBatchesJson == null) {
                 userBatches = new HashMap<>();
             } else {
-                userBatches = MAPPER.readValue(userBatchesJson, Map.class);
+                userBatches = MAPPER.readValue(userBatchesJson, new TypeReference<HashMap<String, Object>>() {});
             }
             userBatches.put(batch.getBatchId(), null);
             String updatedBatchesJson = MAPPER.writeValueAsString(userBatches);
@@ -230,7 +229,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
             return null;
         }
         try {
-            Map<String, Object> queryData = MAPPER.readValue(json, Map.class);
+            Map<String, Object> queryData = MAPPER.readValue(json, new TypeReference<HashMap<String, Object>>() {});
             String expression = (String) queryData.get("expression");
             long relativeTo = Long.valueOf(queryData.get("relativeTo").toString());
             BatchMetricQuery.Status status = BatchMetricQuery.Status.fromInt((Integer) queryData.get("status"));
