@@ -500,7 +500,7 @@ public class Dashboard extends JPAEntity implements Serializable {
     /**
      * Sets the Dashboard Version
      *
-     * @param version The dashbaord version
+     * @param version The dashboard version
      */
 
     public void setVersion(String version) {
