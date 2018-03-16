@@ -88,11 +88,11 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard.getId());
         owner = uService.findUserByUsername("owner1");
 
-        List<Dashboard> dashboardRetrieved = dService.findDashboardsByOwner(owner, false);
+        List<Dashboard> dashboardRetrieved = dService.findDashboardsByOwner(owner, false, null);
 
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
-        dashboardRetrieved = dService.findSharedDashboards(false, null, null);
+        dashboardRetrieved = dService.findSharedDashboards(false, null, null, null);
         assertEquals(1, dashboardRetrieved.size());
         assertEquals(dashboard.getId(), dashboardRetrieved.get(0).getId());
         dService.deleteDashboard(dashboard.getId());
@@ -109,7 +109,7 @@ public class DashboardServiceTest extends AbstractTest {
         dashboard = dService.updateDashboard(dashboard);
         assertNotNull(dashboard.getId());
         
-        List<Dashboard> retrieved = dService.findDashboards(1, true);
+        List<Dashboard> retrieved = dService.findDashboards(1, true, null);
         assertEquals(1, retrieved.size());
         assertEquals(dashboard.getId(), retrieved.get(0).getId());
     }
@@ -129,7 +129,7 @@ public class DashboardServiceTest extends AbstractTest {
         
         owner1 = uService.findUserByUsername("owner1");
 
-        List<Dashboard> dashboardsRetrieved = dService.findDashboardsByOwner(owner1, true);
+        List<Dashboard> dashboardsRetrieved = dService.findDashboardsByOwner(owner1, true, null);
         assertEquals(1, dashboardsRetrieved.size());
         assertEquals(dashboard1.getId(), dashboardsRetrieved.get(0).getId());
     }
@@ -150,7 +150,7 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard1.getId());
         assertNotNull(dashboard2.getId());
         
-        List<Dashboard> dashboardsRetrieved = dService.findSharedDashboards(true, null, null);
+        List<Dashboard> dashboardsRetrieved = dService.findSharedDashboards(true, null, null, null);
         assertEquals(1, dashboardsRetrieved.size());
         assertEquals(dashboard1.getId(), dashboardsRetrieved.get(0).getId());
     }
@@ -194,18 +194,18 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard5.getId());
         assertNotNull(dashboard6.getId());
         
-        List<Dashboard> allSharedDashboardsRetrieved = dService.findSharedDashboards(false, null, null);
+        List<Dashboard> allSharedDashboardsRetrieved = dService.findSharedDashboards(false, null, null, null);
         assertEquals(3, allSharedDashboardsRetrieved.size());
         
-        List<Dashboard> allSharedOwner1DashboardsRetrieved = dService.findSharedDashboards(false, owner1, null);
+        List<Dashboard> allSharedOwner1DashboardsRetrieved = dService.findSharedDashboards(false, owner1, null, null);
         assertEquals(1, allSharedOwner1DashboardsRetrieved.size());
         assertEquals(dashboard1.getId(), allSharedOwner1DashboardsRetrieved.get(0).getId());
 
-        List<Dashboard> allSharedAdminDashboardsRetrieved = dService.findSharedDashboards(false, admin, null);
+        List<Dashboard> allSharedAdminDashboardsRetrieved = dService.findSharedDashboards(false, admin, null, null);
         assertEquals(1, allSharedAdminDashboardsRetrieved.size());
         assertEquals(dashboard3.getId(), allSharedAdminDashboardsRetrieved.get(0).getId());
         
-        List<Dashboard> allSharedOwner2DashboardsRetrieved = dService.findSharedDashboards(false, owner2, null);
+        List<Dashboard> allSharedOwner2DashboardsRetrieved = dService.findSharedDashboards(false, owner2, null, null);
         assertEquals(1, allSharedOwner2DashboardsRetrieved.size());
         assertEquals(dashboard5.getId(), allSharedOwner2DashboardsRetrieved.get(0).getId());
     }    
@@ -249,18 +249,18 @@ public class DashboardServiceTest extends AbstractTest {
         assertNotNull(dashboard5.getId());
         assertNotNull(dashboard6.getId());
         
-        List<Dashboard> allSharedDashboardsRetrieved = dService.findSharedDashboards(true, null, null);
+        List<Dashboard> allSharedDashboardsRetrieved = dService.findSharedDashboards(true, null, null, null);
         assertEquals(3, allSharedDashboardsRetrieved.size());
         
-        List<Dashboard> allSharedOwner1DashboardsRetrieved = dService.findSharedDashboards(true, owner1, null);
+        List<Dashboard> allSharedOwner1DashboardsRetrieved = dService.findSharedDashboards(true, owner1, null, null);
         assertEquals(1, allSharedOwner1DashboardsRetrieved.size());
         assertEquals(dashboard1.getId(), allSharedOwner1DashboardsRetrieved.get(0).getId());
 
-        List<Dashboard> allSharedAdminDashboardsRetrieved = dService.findSharedDashboards(true, admin, null);
+        List<Dashboard> allSharedAdminDashboardsRetrieved = dService.findSharedDashboards(true, admin, null, null);
         assertEquals(1, allSharedAdminDashboardsRetrieved.size());
         assertEquals(dashboard3.getId(), allSharedAdminDashboardsRetrieved.get(0).getId());
         
-        List<Dashboard> allSharedOwner2DashboardsRetrieved = dService.findSharedDashboards(true, owner2, null);
+        List<Dashboard> allSharedOwner2DashboardsRetrieved = dService.findSharedDashboards(true, owner2, null, null);
         assertEquals(1, allSharedOwner2DashboardsRetrieved.size());
         assertEquals(dashboard5.getId(), allSharedOwner2DashboardsRetrieved.get(0).getId());
     }
