@@ -1,10 +1,16 @@
 package com.salesforce.dva.argus.service.schema;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
@@ -21,17 +27,24 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	
+	private static final long POLL_INTERVAL_MS = 60 * 1000L;
+    private static boolean WRITES_TO_TRIE_ENABLED = true;
+    private Logger _logger = LoggerFactory.getLogger(getClass());
+	private Thread _oldGenMonitorThread;
+    
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
-	
     protected final boolean _cacheEnabled;
     protected final boolean _syncPut; 
 
-	protected AbstractSchemaService(SystemConfiguration systemConfiguration) {
-		super(systemConfiguration);
+	protected AbstractSchemaService(SystemConfiguration config) {
+		super(config);
 		
-    	_cacheEnabled = Boolean.parseBoolean(systemConfiguration.getValue(Property.CACHE_SCHEMARECORDS.getName(), 
-    			Property.CACHE_SCHEMARECORDS.getDefaultValue()));
-    	_syncPut = Boolean.parseBoolean(systemConfiguration.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
+    	_cacheEnabled = Boolean.parseBoolean(
+    			config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
+    	_syncPut = Boolean.parseBoolean(
+    			config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
+    	_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
+    	_oldGenMonitorThread.start();
 	}
 
 	@Override
@@ -62,8 +75,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				String key = constructTrieKey(metric, null);
 				boolean found = TRIE.getValueForExactKey(key) != null;
 		    	if(!found) {
-		    		TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 		    		metricsToPut.add(metric);
+		    		if(WRITES_TO_TRIE_ENABLED) {
+                        TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+		    		}
 		    	}
 			} else {
 				boolean newTags = false;
@@ -72,7 +87,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					boolean found = TRIE.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
-			    		TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+			    		if(WRITES_TO_TRIE_ENABLED) {
+	                        TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+			    		}
 			    	}
 				}
 				
@@ -106,27 +123,34 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	@Override
 	public void dispose() {
+		requireNotDisposed();
+        if (_oldGenMonitorThread != null && _oldGenMonitorThread.isAlive()) {
+            _logger.info("Stopping old gen monitor thread.");
+            _oldGenMonitorThread.interrupt();
+            _logger.info("Old gen monitor thread interrupted.");
+            try {
+                _logger.info("Waiting for old gen monitor thread to terminate.");
+                _oldGenMonitorThread.join();
+            } catch (InterruptedException ex) {
+                _logger.warn("Old gen monitor thread was interrupted while shutting down.");
+            }
+            _logger.info("System monitoring stopped.");
+        } else {
+            _logger.info("Requested shutdown of old gen monitor thread aborted, as it is not yet running.");
+        }
 	}
 
 	@Override
-	public Properties getServiceProperties() {
-		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
-	}
+	public abstract Properties getServiceProperties();
 	
 	@Override
-	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
-		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
-	}
+	public abstract List<MetricSchemaRecord> get(MetricSchemaRecordQuery query);
 
 	@Override
-	public List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type) {
-		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
-	}
+	public abstract List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
 
 	@Override
-	public List<MetricSchemaRecord> keywordSearch(KeywordQuery query) {
-		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
-	}
+	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 	
 	
 	/**
@@ -167,5 +191,56 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
             return _defaultValue;
         }
     }
+    
+    
+    //~ Inner Classes ********************************************************************************************************************************
+
+    /**
+     * Old Generation monitoring thread.
+     *
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     */
+	private class OldGenMonitorThread implements Runnable {
+
+		@Override
+		public void run() {
+			while (!Thread.currentThread().isInterrupted()) {
+				_sleepForPollPeriod();
+				if (!Thread.currentThread().isInterrupted()) {
+					try {
+						_checkOldGenUsage();
+					} catch (Exception ex) {
+						_logger.warn("Exception occurred while checking old generation usage.", ex);
+					}
+				}
+			}
+		}
+
+		private void _checkOldGenUsage() {
+			List<MemoryPoolMXBean> memoryPoolBeans = ManagementFactory.getMemoryPoolMXBeans();
+			for (MemoryPoolMXBean bean : memoryPoolBeans) {
+				if (bean.getType() == MemoryType.HEAP) {
+					String name = bean.getName().toLowerCase();
+					if (name.contains("old") || name.contains("tenured")) {
+						long oldGenUsed = bean.getUsage().getUsed();
+						long maxMemory = Runtime.getRuntime().maxMemory();
+						if (oldGenUsed > 0.95 * maxMemory) {
+							WRITES_TO_TRIE_ENABLED = false;
+						}
+					}
+				}
+			}
+		}
+
+		private void _sleepForPollPeriod() {
+			try {
+				_logger.info("Sleeping for {}s before checking old gen usage.", POLL_INTERVAL_MS / 1000);
+				Thread.sleep(POLL_INTERVAL_MS);
+			} catch (InterruptedException ex) {
+				_logger.warn("AbstractSchemaService memory monitor thread was interrupted.");
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
 
 }
