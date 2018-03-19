@@ -77,6 +77,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     private final RestClient _esRestClient;
     private final int _replicationFactor;
 	private final int _numShards;
+	private final int _bulkIndexingSize;
     
     @Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -90,6 +91,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		
 		_numShards = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT.getName(), Property.ELASTICSEARCH_SHARDS_COUNT.getDefaultValue()));
+		
+		_bulkIndexingSize = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getName(), Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getDefaultValue()));
 		
 		String[] nodes = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue()).split(",");
 		HttpHost[] httpHosts = new HttpHost[nodes.length];
@@ -172,31 +176,52 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	protected void implementationSpecificPut(List<Metric> metrics) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
 		
-		List<MetricSchemaRecord> records = new ArrayList<>();
+		List<List<MetricSchemaRecord>> fracturedList = _fracture(metrics);
+		
+		for(List<MetricSchemaRecord> records : fracturedList) {
+			if(!records.isEmpty()) {
+				if(_syncPut) {
+					_upsert(records, metrics);
+				} else {
+					_upsertAsync(records, metrics);
+				}
+			}
+			_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, records.size(), null);
+		}
+	}
+	
+	/* Convert the given list of metrics to a list of metric schema records. At the same time, fracture the records list
+	 * if its size is greater than INDEXING_BATCH_SIZE.
+	 */
+	private List<List<MetricSchemaRecord>> _fracture(List<Metric> metrics) {
+		List<List<MetricSchemaRecord>> fracturedList = new ArrayList<>();
+		
+		List<MetricSchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				MetricSchemaRecord msr = new MetricSchemaRecord(metric.getScope(), metric.getMetric());
 				msr.setNamespace(metric.getNamespace());
 				records.add(msr);
+				if(records.size() == _bulkIndexingSize) {
+					fracturedList.add(records);
+					records = new ArrayList<>(_bulkIndexingSize);
+				}
 				continue;
 			}
 			
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
 				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
 													entry.getKey(), entry.getValue()));
+				if(records.size() == _bulkIndexingSize) {
+					fracturedList.add(records);
+					records = new ArrayList<>(_bulkIndexingSize);
+				}
 			}
 		}
 		
-		if(!records.isEmpty()) {
-			if(_syncPut) {
-				_upsert(records, metrics);
-			} else {
-				_upsertAsync(records, metrics);
-			}
-		}
-		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, records.size(), null);
+		return fracturedList;
 	}
-	
+
 
 	@Override
 	public List<MetricSchemaRecord> get(MetricSchemaRecordQuery query) {
@@ -568,13 +593,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
-				_trie.remove(key);
+				TRIE.remove(key);
 				continue;
 			} 
 				
 			for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
 				String key = constructTrieKey(metric, tagEntry);
-				_trie.remove(key);
+				TRIE.remove(key);
 			}
 		}
 	}
@@ -879,7 +904,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	fieldNode.put("fields", fieldsNode);
     	return fieldNode;
     }
-
+    
     
 	private void _createIndexIfNotExists() {
 		try {
@@ -952,7 +977,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	/** Replication factor for metadata_index. */
     	ELASTICSEARCH_REPLICATION_FACTOR("service.property.schema.elasticsearch.replication.factor", "2"),
     	/** Shard count for metadata_index. */
-    	ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10");
+    	ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10"),
+    	/** The no. of records to batch for bulk indexing requests.
+    	 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests 
+    	 */
+    	ELASTICSEARCH_INDEXING_BATCH_SIZE("service.property.schema.elasticsearch.indexing.batch.size", "50000");
 
         private final String _name;
         private final String _defaultValue;
