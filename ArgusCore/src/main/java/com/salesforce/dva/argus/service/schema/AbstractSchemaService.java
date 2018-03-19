@@ -21,14 +21,14 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	
-	protected final RadixTree<VoidValue> _trie;
+	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
+	
     protected final boolean _cacheEnabled;
     protected final boolean _syncPut; 
 
 	protected AbstractSchemaService(SystemConfiguration systemConfiguration) {
 		super(systemConfiguration);
 		
-		_trie = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
     	_cacheEnabled = Boolean.parseBoolean(systemConfiguration.getValue(Property.CACHE_SCHEMARECORDS.getName(), 
     			Property.CACHE_SCHEMARECORDS.getDefaultValue()));
     	_syncPut = Boolean.parseBoolean(systemConfiguration.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
@@ -60,19 +60,19 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
-				boolean found = _trie.getValueForExactKey(key) != null;
+				boolean found = TRIE.getValueForExactKey(key) != null;
 		    	if(!found) {
-		    		_trie.putIfAbsent(key, VoidValue.SINGLETON);
+		    		TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 		    		metricsToPut.add(metric);
 		    	}
 			} else {
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
 					String key = constructTrieKey(metric, tagEntry);
-					boolean found = _trie.getValueForExactKey(key) != null;
+					boolean found = TRIE.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
-			    		_trie.putIfAbsent(key, VoidValue.SINGLETON);
+			    		TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 			    	}
 				}
 				
