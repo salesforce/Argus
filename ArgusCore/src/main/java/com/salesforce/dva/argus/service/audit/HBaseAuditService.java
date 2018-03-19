@@ -1,4 +1,4 @@
-package com.salesforce.dva.argus.service.history;
+package com.salesforce.dva.argus.service.audit;
 
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -12,11 +12,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.HBaseClient;
 import org.hbase.async.KeyValue;
 import org.hbase.async.PutRequest;
-import org.hbase.async.RegexStringComparator;
-import org.hbase.async.RowFilter;
 import org.hbase.async.ScanFilter;
 import org.hbase.async.Scanner;
-import org.hbase.async.CompareFilter.CompareOp;
 import org.slf4j.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,13 +21,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.entity.History;
-import com.salesforce.dva.argus.entity.History.JobStatus;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
+import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
-import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -40,8 +37,8 @@ import com.stumbleupon.async.Deferred;
 import com.stumbleupon.async.TimeoutException;
 
 @Singleton
-public class HBaseHistoryService extends DefaultService implements HistoryService {
-	
+public class HBaseAuditService extends DefaultService implements AuditService {
+
 	//~ Static fields/initializers *******************************************************************************************************************
 	
 	private static byte[] tablename;
@@ -67,7 +64,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
     //~ Constructors *********************************************************************************************************************************
     
     @Inject
-	protected HBaseHistoryService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory) {
+	protected HBaseAuditService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory) {
 		super(systemConfig);
         _client = factory.getClient();
         _mapper = new ObjectMapper();
@@ -75,38 +72,28 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         tablename = systemConfig.getValue(Property.HBASE_TABLE.getName(), Property.HBASE_TABLE.getDefaultValue())
         			.getBytes(Charset.forName("UTF-8"));
 	}
-    
-    
-    //~ Public/API Methods **************************************************************************************************************************************
 
 	@Override
-	public void deleteExpiredHistory() {
-		requireNotDisposed();
-		_logger.info("Deleting expired history for HBaseHistoryService is not explicitly needed.");
-		return;
+	public Audit createAudit(String message, JPAEntity entity, Object... params) {
+        Audit audit = new Audit(MessageFormat.format(message, params), SystemConfiguration.getHostname(), entity);
+        return createAudit(audit);
 	}
-
+	
 	@Override
-	public History createHistory(final JPAEntity entity, final String message, final JobStatus jobStatus, 
-									final long executionTime) {
+	public Audit createAudit(Audit audit) {
 		requireNotDisposed();
-		SystemAssert.requireArgument(entity != null, "entity cannot be null.");
-		SystemAssert.requireArgument(jobStatus != null, "jobStatus cannot be null.");
+		SystemAssert.requireArgument(audit != null, "audit cannot be null.");
 		
 		long creationTime = System.currentTimeMillis();
-		String rowKey = new StringBuilder(entity.getId().toString()).
+		String rowKey = new StringBuilder(audit.getEntity().getId().toString()).
 						append(ROWKEY_SEPARATOR).
 						append(HBaseUtils._9sComplement(creationTime)).
 						append(ROWKEY_SEPARATOR).
-						append(jobStatus).
 						toString();
 		_logger.debug("Creating history with row key: {}", rowKey);
 		
-		History history = new History(message, SystemConfiguration.getHostname(), entity.getId(), jobStatus, 
-				executionTime, creationTime);
-		
 		try {
-			byte[] value = _mapper.writeValueAsBytes(Arrays.asList(history));
+			byte[] value = _mapper.writeValueAsBytes(Arrays.asList(audit));
 			final PutRequest put = new PutRequest(tablename, Bytes.toBytes(rowKey), COLUMN_FAMILY, 
 					COLUMN_QUALIFIER, value);
 			
@@ -139,55 +126,67 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			_logger.warn("Interrupted while waiting for put to finish.", e);
 			return null;
 		} catch (Exception e) {
-			_logger.error("Exception while trying to create history.", e);
+			_logger.error("Exception while trying to create audit.", e);
 			throw new SystemException(e);
 		}
 		
-		return history;
+		return audit;
 	}
 
 	@Override
-	public List<History> findByJob(BigInteger entityId) {
-		return findByJob(entityId, Integer.MAX_VALUE);
+	public void deleteExpiredAudits() {
+		requireNotDisposed();
+		_logger.info("Deleting expired audits for HBaseAuditService is not explicitly needed.");
+		return;
 	}
 
 	@Override
-	public List<History> findByJob(BigInteger entityId, int limit) {
+	public List<Audit> findByEntity(BigInteger entityId) {
+		return findByEntity(entityId, new BigInteger(Integer.MAX_VALUE+""));
+	}
+
+	@Override
+	public List<Audit> findByEntity(BigInteger entityId, BigInteger limit) {
 		requireNotDisposed();
         SystemAssert.requireArgument(entityId != null, "entityId cannot be null.");
-        SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
+        SystemAssert.requireArgument(limit.intValue()>0, "Limit must be a positive integer.");
 
         long startTime = System.currentTimeMillis();
-        List<History> records = _scanRecords(entityId, limit, null);
+        List<Audit> records = _scanRecords(entityId, limit.intValue(), null);
         _logger.debug("Time taken to read {} history records: {}", limit, (System.currentTimeMillis() - startTime));
         return records;
 	}
 
 	@Override
-	public List<History> findByJobAndStatus(BigInteger entityId, int limit, JobStatus jobStatus) {
-		requireNotDisposed();
-        SystemAssert.requireArgument(entityId != null, "entityId cannot be null.");
-        SystemAssert.requireArgument(limit > 0, "Limit must be a positive integer.");
-        SystemAssert.requireArgument(jobStatus != null, "jobStatus cannot be null.");
+	public List<Audit> findByHostName(String hostName) {
+        throw new UnsupportedOperationException();
+	}
 
-        long startTime = System.currentTimeMillis();
-        String rowKeyRegex = new StringBuilder("^").
-        					append(entityId.toString()).
-        					append(".*").
-        					append(jobStatus).
-        					append("$").
-        					toString();
-        ScanFilter filter = new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex));
-        List<History> records = _scanRecords(entityId, limit, filter);
-        _logger.debug("Time taken to read {} history records: {}", limit, (System.currentTimeMillis() - startTime));
-        return records;
+	@Override
+	public Audit findAuditByPrimaryKey(BigInteger id) {
+        throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<Audit> findAll() {
+        throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<Audit> findByMessage(String message) {
+        throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<Audit> findByEntityHostnameMessage(BigInteger entityId, String hostName, String message) {
+        throw new UnsupportedOperationException();
 	}
 	
 	@Override
 	public void dispose() {
 		super.dispose();
 		if (_client != null) {
-            _logger.info("HBaseHistoryService: Shutting down asynchbase client.");
+            _logger.info("HBaseAuditService: Shutting down asynchbase client.");
 
             Deferred<Object> deferred = _client.shutdown();
 
@@ -215,10 +214,9 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         }
 	}
 	
-	
 	//~ Private Methods **************************************************************************************************************************************
 	
-	private List<History> _scanRecords(BigInteger entityId, int limit, ScanFilter filter) {
+	private List<Audit> _scanRecords(BigInteger entityId, int limit, ScanFilter filter) {
 		
 		final Scanner scanner = _client.newScanner(tablename);
 
@@ -229,8 +227,8 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         scanner.setMaxNumRows(Math.min(limit, MAX_NUM_ROWS));
         scanner.setFilter(filter);
 		
-		final List<History> records = new ArrayList<>(limit);
-        final Deferred<List<History>> results = new Deferred<List<History>>();
+		final List<Audit> records = new ArrayList<>(limit);
+        final Deferred<List<Audit>> results = new Deferred<List<Audit>>();
 		
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
@@ -259,7 +257,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
                     for (ArrayList<KeyValue> row : rows) {
                         for(KeyValue kv : row) {
                         	byte[] value = kv.value();
-                        	List<History> histories = _mapper.readValue(value, new TypeReference<List<History>>() {});
+                        	List<Audit> histories = _mapper.readValue(value, new TypeReference<List<Audit>>() {});
                         	records.addAll(histories);
                         }
                         
@@ -280,12 +278,12 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
         new ScannerCB().scan();
         
         try {
-			List<History> histories = results.join(SCAN_TIMEOUT_MS);
-			if(histories.size() <= limit) {
-				return histories;
+			List<Audit> audits = results.join(SCAN_TIMEOUT_MS);
+			if(audits.size() <= limit) {
+				return audits;
 			}
 			
-			return histories.subList(0, limit);
+			return audits.subList(0, limit);
 			
 		} catch (InterruptedException e) {
 			throw new SystemException("Interrupted while waiting to obtain results for jobId: " + entityId, e);
@@ -296,18 +294,18 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			throw new SystemException("Exception occurred in getting results for jobId: " + entityId, e);
 		}
 	}
-	
+
 	//~ Enums ****************************************************************************************************************************************
 	
 	/**
      * The set of implementation specific configuration properties.
      *
-     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+     * @author  Sundeep Tiyyagura (stiyyagura@salesforce.com)
      */
     public enum Property {
     	
-        HBASE_SYNC_PUT("service.property.history.hbase.sync.put", "true"),
-    	HBASE_TABLE("service.property.history.hbase.table", "history");
+        HBASE_SYNC_PUT("service.property.audit.hbase.sync.put", "true"),
+    	    HBASE_TABLE("service.property.audit.hbase.table", "audit");
 
         private final String _name;
         private final String _defaultValue;
@@ -335,5 +333,4 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
             return _defaultValue;
         }
     }
-
 }
