@@ -232,6 +232,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
+        bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
         bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
 
@@ -252,7 +253,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultAnnotationService.class, AnnotationService.class);
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
-        bindConcreteClass(HBaseAuditService.class, AuditService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
