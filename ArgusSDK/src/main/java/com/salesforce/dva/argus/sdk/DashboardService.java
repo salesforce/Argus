@@ -151,7 +151,7 @@ public class DashboardService extends EndpointService {
     }
     
     /**
-     * Returns the list of dashboards owned by the user. Each Dashboard only contains metadata (id, name, description etc.) about the dashbaord.
+     * Returns the list of dashboards owned by the user. Each Dashboard only contains metadata (id, name, description etc.) about the dashboard.
      *
      * @param	shared	True or false depending on whether shared dashboards must be retrieved along with dashboards owned by the user.
      *
