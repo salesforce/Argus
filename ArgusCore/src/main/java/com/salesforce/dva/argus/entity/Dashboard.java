@@ -95,14 +95,14 @@ import org.eclipse.persistence.internal.jpa.querydef.PredicateImpl;
 @NamedQueries(
     {
            @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"
-        ), @NamedQuery(name = "Dashboard.getOldSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version IS NULL"
-        ), @NamedQuery(name = "Dashboard.getNewSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version = :version"
-        ), @NamedQuery(name = "Dashboard.getOldDashboardsByOwner", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version IS NULL"
-        ), @NamedQuery(name = "Dashboard.getNewDashboardsByOwner", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version = :version"
-        ), @NamedQuery(name = "Dashboard.getOldDashboards", query = "SELECT d FROM Dashboard d WHERE d.version IS NULL ORDER BY d.owner.userName,d.name ASC"
-        ), @NamedQuery(name = "Dashboard.getNewDashboards", query = "SELECT d FROM Dashboard d WHERE d.version = :version ORDER BY d.owner.userName,d.name ASC"
-        ), @NamedQuery(name = "Dashboard.getOldSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version IS NULL"
-		), @NamedQuery(name = "Dashboard.getNewSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwner", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwnerAndByVersion", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d WHERE d.version IS NULL ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.version = :version ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version IS NULL"
+		), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwnerAndByVersion",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version = :version"
         )
     }
 )
@@ -201,19 +201,19 @@ public class Dashboard extends JPAEntity implements Serializable {
 		TypedQuery<Dashboard> query;
 		if(owner == null){
 		    if (version==null) {
-			    query = em.createNamedQuery("Dashboard.getOldSharedDashboards", Dashboard.class);
+			    query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
             }
             else {
-                query = em.createNamedQuery("Dashboard.getNewSharedDashboards", Dashboard.class);
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByVersion", Dashboard.class);
                 query.setParameter("version",version);
             }
 		} else {
 		    if(version==null) {
-                query = em.createNamedQuery("Dashboard.getOldSharedDashboardsByOwner", Dashboard.class);
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwner", Dashboard.class);
                 query.setParameter("owner", owner);
             }
             else {
-                query = em.createNamedQuery("Dashboard.getNewSharedDashboardsByOwner", Dashboard.class);
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwnerAndByVersion", Dashboard.class);
                 query.setParameter("owner", owner);
                 query.setParameter("version",version);
             }
@@ -282,11 +282,11 @@ public class Dashboard extends JPAEntity implements Serializable {
     	requireArgument(em != null, "Entity manager can not be null.");
         TypedQuery<Dashboard> query;
         if(version==null) {
-            query = em.createNamedQuery("Dashboard.getOldDashboardsByOwner", Dashboard.class);
+            query = em.createNamedQuery("Dashboard.getDashboardsByOwner", Dashboard.class);
         }
         else
         {
-            query = em.createNamedQuery("Dashboard.getNewDashboardsByOwner", Dashboard.class);
+            query = em.createNamedQuery("Dashboard.getDashboardsByOwnerAndByVersion", Dashboard.class);
             query.setParameter("version",version);
         }
 
@@ -333,11 +333,11 @@ public class Dashboard extends JPAEntity implements Serializable {
         TypedQuery<Dashboard> query;
 
         if(version==null) {
-            query= em.createNamedQuery("Dashboard.getOldDashboards", Dashboard.class);
+            query= em.createNamedQuery("Dashboard.getDashboards", Dashboard.class);
         }
         else
         {
-            query = em.createNamedQuery("Dashboard.getNewDashboards", Dashboard.class);
+            query = em.createNamedQuery("Dashboard.getDashboardsByVersion", Dashboard.class);
             query.setParameter("version",version);
         }
         try {
