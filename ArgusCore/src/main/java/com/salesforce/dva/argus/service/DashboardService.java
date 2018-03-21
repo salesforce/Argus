@@ -69,29 +69,32 @@ public interface DashboardService extends Service {
 	 * Retrieves a list of Dashboards owned by a user.
 	 *
 	 * @param   owner  The user for which to retrieve dashboards. Cannot be null.
+     * @param   version The version of the dashboard to retrieve. It is either null or not empty
 	 *
 	 * @return  A list of Dashboards owner by this user or an empty list if none are owned.
 	 */
-	List<Dashboard> findDashboardsByOwner(PrincipalUser owner, boolean metadataOnly);
+	List<Dashboard> findDashboardsByOwner(PrincipalUser owner, boolean metadataOnly,String version);
 
 	/**
 	 * Returns a list of shared Dashboards.
 	 * @param   metadataOnly    Get metadata only
 	 * @param   owner           The owner of shared dashboards to filter on. If null no filtering applied
 	 * @param   limit           The maximum number of rows to return. If null no filtering applied
+     * @param   version         The version of the dashboard to retrieve. It is either null or not empty
 	 * 
 	 * The list of all shared dashboards. Will never be null, but may be empty.
 	 */
-	List<Dashboard> findSharedDashboards(boolean metadataOnly, PrincipalUser owner, Integer limit);
+	List<Dashboard> findSharedDashboards(boolean metadataOnly, PrincipalUser owner, Integer limit, String version);
 
 	/**
 	 * Retrieves a list of all dashboards.
 	 *
 	 * @param   limit  The maximum number of records to return.
+     * @param   version The version of the dashboard to retrieve. It is either null or not empty
 	 *
 	 * @return  The list of dashboards.
 	 */
-	List<Dashboard> findDashboards(Integer limit, boolean metadataOnly);
+	List<Dashboard> findDashboards(Integer limit, boolean metadataOnly, String version);
 
 	/**
 	 * Updates a dashboard, creating it if necessary.
