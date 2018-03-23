@@ -65,12 +65,10 @@ import javax.persistence.Table;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
+import javax.persistence.criteria.*;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.eclipse.persistence.internal.jpa.querydef.PredicateImpl;
 
 /**
  * The entity which encapsulates information about a Dashboard.
@@ -96,16 +94,16 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 @Table(name = "DASHBOARD", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "owner_id" }))
 @NamedQueries(
     {
-        @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"),
-        @NamedQuery(
-            name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true"
-        ), @NamedQuery(
-            name = "Dashboard.getDashboardsOwnedBy", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner"
-        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d ORDER BY d.owner.userName,d.name ASC"),
-		@NamedQuery(
-				name = "Dashboard.getSharedDashboardsByOwner", 
-				query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true"
-				)
+           @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwner", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwnerAndByVersion", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d WHERE d.version IS NULL ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.version = :version ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version IS NULL"
+		), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwnerAndByVersion",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version = :version"
+        )
     }
 )
 public class Dashboard extends JPAEntity implements Serializable {
@@ -193,23 +191,37 @@ public class Dashboard extends JPAEntity implements Serializable {
      * @param   em       The entity manager to use.
      * @param   owner    The owner of shared dashboards to filter on 
      * @param   limit    The maximum number of rows to return.
+     * @param   version  The version of the dashboard to retrieve. It is either null or not empty
      *
      * @return  Dashboards that are shared/global within the system. Or empty list if no such dashboards exist.
      */
-    public static List<Dashboard> findSharedDashboards(EntityManager em,  PrincipalUser owner, Integer limit) {
+    public static List<Dashboard> findSharedDashboards(EntityManager em,  PrincipalUser owner, Integer limit, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
-    	
-    	
+
 		TypedQuery<Dashboard> query;
 		if(owner == null){
-			query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
+		    if (version==null) {
+			    query = em.createNamedQuery("Dashboard.getSharedDashboards", Dashboard.class);
+            }
+            else {
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByVersion", Dashboard.class);
+                query.setParameter("version",version);
+            }
 		} else {
-			query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwner", Dashboard.class);
-			query.setParameter("owner", owner);
+		    if(version==null) {
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwner", Dashboard.class);
+                query.setParameter("owner", owner);
+            }
+            else {
+                query = em.createNamedQuery("Dashboard.getSharedDashboardsByOwnerAndByVersion", Dashboard.class);
+                query.setParameter("owner", owner);
+                query.setParameter("version",version);
+            }
+
 		}
 		
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-		
+
 		if(limit!= null){
 			query.setMaxResults(limit);
 		}
@@ -227,10 +239,11 @@ public class Dashboard extends JPAEntity implements Serializable {
      * @param   em       The entity manager to use.
      * @param   owner    The owner of shared dashboards to filter on 
      * @param   limit    The maximum number of rows to return.
+     * @param   version  The version of the dashboard to retrieve. It is either null or not empty
      *
      * @return  The list of all shared dashboards with meta information only. Will never be null but may be empty.
      */    
-    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, PrincipalUser owner, Integer limit) {
+    public static List<Dashboard> findSharedDashboardsMeta(EntityManager em, PrincipalUser owner, Integer limit, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	try {
@@ -243,11 +256,10 @@ public class Dashboard extends JPAEntity implements Serializable {
         		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
         	}
         	cq.multiselect(fieldsToSelect);
-
 			if(owner != null){
-				cq.where(cb.equal(e.get("shared"), true), cb.equal(e.get("owner"), owner));
+				cq.where(cb.equal(e.get("shared"), true), cb.equal(e.get("owner"), owner), version==null?cb.isNull(e.get("version")):cb.equal(e.get("version"), version));
 			} else{
-	        	cq.where(cb.equal(e.get("shared"), true));
+	        	cq.where(cb.equal(e.get("shared"), true),version==null?cb.isNull(e.get("version")):cb.equal(e.get("version"), version));
 			}
 
         	return _readDashboards(em, cq, limit);
@@ -262,13 +274,21 @@ public class Dashboard extends JPAEntity implements Serializable {
      *
      * @param   em    The entity manager to use. Cannot be null.
      * @param   user  The user to retrieve dashboards for. Cannot be null.
+     * @param   version The version of the dashboard to retrieve. It is either null or not empty
      *
      * @return  The list of owned dashboards. Will not be null, but may be empty.
      */
-    public static List<Dashboard> findDashboardsByOwner(EntityManager em, PrincipalUser user) {
+    public static List<Dashboard> findDashboardsByOwner(EntityManager em, PrincipalUser user, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
-    	
-        TypedQuery<Dashboard> query = em.createNamedQuery("Dashboard.getDashboardsOwnedBy", Dashboard.class);
+        TypedQuery<Dashboard> query;
+        if(version==null) {
+            query = em.createNamedQuery("Dashboard.getDashboardsByOwner", Dashboard.class);
+        }
+        else
+        {
+            query = em.createNamedQuery("Dashboard.getDashboardsByOwnerAndByVersion", Dashboard.class);
+            query.setParameter("version",version);
+        }
 
         try {
             query.setParameter("owner", user);
@@ -278,7 +298,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         }
     }
     
-    public static List<Dashboard> findDashboardsByOwnerMeta(EntityManager em, PrincipalUser user) {
+    public static List<Dashboard> findDashboardsByOwnerMeta(EntityManager em, PrincipalUser user, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
     	
     	try {
@@ -291,8 +311,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
         	}
         	cq.multiselect(fieldsToSelect);
-        	cq.where(cb.equal(e.get("owner"), user));
-        	
+        	cq.where(cb.equal(e.get("owner"), user),version==null?cb.isNull(e.get("version")):cb.equal(e.get("version"), version));
         	return _readDashboards(em, cq, null);
         	
         } catch (NoResultException ex) {
@@ -305,14 +324,22 @@ public class Dashboard extends JPAEntity implements Serializable {
      *
      * @param   em     The entity manager to use.  Cannot be null.
      * @param   limit  The maximum number of dashboards to retrieve.  If null, all records will be returned, otherwise must be a positive non-zero number.
+     * @param   version The version of the dashboard to retrieve. It is either null or not empty
      *
      * @return  The list of dashboards.  Will never be null but may be empty.
      */
-    public static List<Dashboard> findDashboards(EntityManager em, Integer limit) {
+    public static List<Dashboard> findDashboards(EntityManager em, Integer limit, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
-    	
-        TypedQuery<Dashboard> query = em.createNamedQuery("Dashboard.getDashboards", Dashboard.class);
+        TypedQuery<Dashboard> query;
 
+        if(version==null) {
+            query= em.createNamedQuery("Dashboard.getDashboards", Dashboard.class);
+        }
+        else
+        {
+            query = em.createNamedQuery("Dashboard.getDashboardsByVersion", Dashboard.class);
+            query.setParameter("version",version);
+        }
         try {
             if (limit != null) {
                 query.setMaxResults(limit);
@@ -323,7 +350,7 @@ public class Dashboard extends JPAEntity implements Serializable {
         }
     }
     
-    public static List<Dashboard> findDashboardsMeta(EntityManager em, Integer limit) {
+    public static List<Dashboard> findDashboardsMeta(EntityManager em, Integer limit, String version) {
     	requireArgument(em != null, "Entity manager can not be null.");
         
         try {
@@ -336,7 +363,12 @@ public class Dashboard extends JPAEntity implements Serializable {
         		fieldsToSelect.add(e.get(field.getName()).alias(field.getName()));
         	}
         	cq.multiselect(fieldsToSelect);
-        	
+        	if(version==null) {
+                cq.where(cb.isNull(e.get("version")));
+            }
+        	else {
+                cq.where(cb.equal(e.get("version"), version));
+            }
         	return _readDashboards(em, cq, limit);
         	
         } catch (NoResultException ex) {
@@ -369,6 +401,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 			d.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
 			d.shared = Boolean.class.cast(tuple.get("shared"));
 			d.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+			d.version = String.class.cast(tuple.get("version"));
 			
 			dashboards.add(d);
 		}
