@@ -29,12 +29,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	
 	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
-    private static boolean WRITES_TO_TRIE_ENABLED = true;
-    private Logger _logger = LoggerFactory.getLogger(getClass());
-	private Thread _oldGenMonitorThread;
-    
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
-    protected final boolean _cacheEnabled;
+	
+	private static boolean _writesToTrieEnabled = true;
+    
+    private final Logger _logger = LoggerFactory.getLogger(getClass());
+	private final Thread _oldGenMonitorThread;
+	private final boolean _cacheEnabled;
     protected final boolean _syncPut;
 
 	protected AbstractSchemaService(SystemConfiguration config) {
@@ -45,8 +46,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     	_syncPut = Boolean.parseBoolean(
     			config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
     	
+    	_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
     	if(_cacheEnabled) {
-    		_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
         	_oldGenMonitorThread.start();
     	}
 	}
@@ -80,7 +81,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				boolean found = TRIE.getValueForExactKey(key) != null;
 		    	if(!found) {
 		    		metricsToPut.add(metric);
-		    		if(WRITES_TO_TRIE_ENABLED) {
+		    		if(_writesToTrieEnabled) {
                         TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 		    		}
 		    	}
@@ -91,7 +92,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					boolean found = TRIE.getValueForExactKey(key) != null;
 			    	if(!found) {
 			    		newTags = true;
-			    		if(WRITES_TO_TRIE_ENABLED) {
+			    		if(_writesToTrieEnabled) {
 	                        TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 			    		}
 			    	}
@@ -250,11 +251,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 						_logger.info("Max JVM Memory = {} bytes", MAX_MEMORY);
 						if (oldGenUsed > 0.90 * MAX_MEMORY) {
 							_logger.info("JVM heap memory usage has exceeded 90% of the allocated heap memory. Disabling writes to TRIE.");
-							WRITES_TO_TRIE_ENABLED = false;
-						} else if(oldGenUsed < 0.50 * MAX_MEMORY && !WRITES_TO_TRIE_ENABLED) {
+							_writesToTrieEnabled = false;
+						} else if(oldGenUsed < 0.50 * MAX_MEMORY && !_writesToTrieEnabled) {
 							_logger.info("JVM heap memory usage is below 50% of the allocated heap memory and writes to TRIE is disabled. "
 									+ "Enabling writes to TRIE now.");
-							WRITES_TO_TRIE_ENABLED = true;
+							_writesToTrieEnabled = true;
 						}
 					}
 				}
