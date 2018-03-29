@@ -27,6 +27,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	
+	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
     private static boolean WRITES_TO_TRIE_ENABLED = true;
     private Logger _logger = LoggerFactory.getLogger(getClass());
@@ -34,7 +35,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
     protected final boolean _cacheEnabled;
-    protected final boolean _syncPut; 
+    protected final boolean _syncPut;
 
 	protected AbstractSchemaService(SystemConfiguration config) {
 		super(config);
@@ -43,8 +44,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     			config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
     	_syncPut = Boolean.parseBoolean(
     			config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
-    	_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
-    	_oldGenMonitorThread.start();
+    	
+    	if(_cacheEnabled) {
+    		_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
+        	_oldGenMonitorThread.start();
+    	}
 	}
 
 	@Override
@@ -115,6 +119,25 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		
 		if(tagEntry != null) {
 			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
+		}
+		
+		return sb.toString();
+	}
+	
+	protected String constructTrieKey(String scope, String metric, String tagk, String tagv, String namespace) {
+		StringBuilder sb = new StringBuilder(scope);
+		sb.append('\0').append(metric);
+		
+		if(namespace != null) {
+			sb.append('\0').append(namespace);
+		}
+		
+		if(tagk != null) {
+			sb.append('\0').append(tagk);
+		}
+		
+		if(tagv != null) {
+			sb.append('\0').append(tagv);
 		}
 		
 		return sb.toString();
@@ -223,9 +246,15 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					String name = bean.getName().toLowerCase();
 					if (name.contains("old") || name.contains("tenured")) {
 						long oldGenUsed = bean.getUsage().getUsed();
-						long maxMemory = Runtime.getRuntime().maxMemory();
-						if (oldGenUsed > 0.95 * maxMemory) {
+						_logger.info("Old Gen Memory = {} bytes", oldGenUsed);
+						_logger.info("Max JVM Memory = {} bytes", MAX_MEMORY);
+						if (oldGenUsed > 0.90 * MAX_MEMORY) {
+							_logger.info("JVM heap memory usage has exceeded 90% of the allocated heap memory. Disabling writes to TRIE.");
 							WRITES_TO_TRIE_ENABLED = false;
+						} else if(oldGenUsed < 0.50 * MAX_MEMORY && !WRITES_TO_TRIE_ENABLED) {
+							_logger.info("JVM heap memory usage is below 50% of the allocated heap memory and writes to TRIE is disabled. "
+									+ "Enabling writes to TRIE now.");
+							WRITES_TO_TRIE_ENABLED = true;
 						}
 					}
 				}
