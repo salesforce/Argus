@@ -3,8 +3,10 @@ package com.salesforce.dva.argus.service.schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -22,26 +24,35 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 
+import net.openhft.hashing.LongHashFunction;
+
 public class MetricSchemaRecordList {
 	
-	private List<MetricSchemaRecord> _records;
+	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
 	
-	public MetricSchemaRecordList(List<MetricSchemaRecord> records) {
-		setRecords(records);
+	public MetricSchemaRecordList(List<MetricSchemaRecord> records, HashAlgorithm algorithm) {
+		for(MetricSchemaRecord record : records) {
+			String id = null;
+			if(HashAlgorithm.MD5.equals(algorithm)) {
+				id = DigestUtils.md5Hex(MetricSchemaRecord.print(record));
+			} else {
+				id = String.valueOf(LongHashFunction.xx().hashChars(MetricSchemaRecord.print(record)));
+			}
+			_idToSchemaRecordMap.put(id, record);
+		}
 	}
 	
 	private MetricSchemaRecordList(List<MetricSchemaRecord> records, String scrollID) {
-		setRecords(records);
+		int count = 0;
+		for(MetricSchemaRecord record : records) {
+			_idToSchemaRecordMap.put(String.valueOf(count++), record);
+		}
 		setScrollID(scrollID);
 	}
 
 	public List<MetricSchemaRecord> getRecords() {
-		return _records;
-	}
-
-	public void setRecords(List<MetricSchemaRecord> records) {
-		this._records = records;
+		return new ArrayList<>(_idToSchemaRecordMap.values());
 	}
 	
 	public String getScrollID() {
@@ -50,6 +61,26 @@ public class MetricSchemaRecordList {
 
 	public void setScrollID(String scrollID) {
 		this._scrollID = scrollID;
+	}
+	
+	MetricSchemaRecord getRecord(String id) {
+		return _idToSchemaRecordMap.get(id);
+	}
+	
+	
+	enum HashAlgorithm {
+		MD5,
+		XXHASH;
+		
+		static HashAlgorithm fromString(String str) throws IllegalArgumentException {
+			for(HashAlgorithm algo : HashAlgorithm.values()) {
+				if(algo.name().equalsIgnoreCase(str)) {
+					return algo;
+				}
+			}
+			
+			throw new IllegalArgumentException(str + " does not match any of the available algorithms.");
+		}
 	}
 	
 	
@@ -61,17 +92,19 @@ public class MetricSchemaRecordList {
 			
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
-			List<MetricSchemaRecord> records = list.getRecords();
-			for(MetricSchemaRecord record : records) {
-				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + DigestUtils.md5Hex(MetricSchemaRecord.print(record)) + "\"}}");
+			
+			for(Map.Entry<String, MetricSchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
 				
-				jgen.writeRaw(mapper.writeValueAsString(record));
+				jgen.writeRaw(mapper.writeValueAsString(entry.getValue()));
 				jgen.writeRaw(System.lineSeparator());
 			}
+			
 		}
     	
     }
+	
 	
 	static class Deserializer extends JsonDeserializer<MetricSchemaRecordList> {
 
@@ -113,6 +146,7 @@ public class MetricSchemaRecordList {
 		}
 		
 	}
+	
 	
 	static class AggDeserializer extends JsonDeserializer<List<String>> {
 

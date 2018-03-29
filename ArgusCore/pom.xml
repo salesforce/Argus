@@ -429,6 +429,11 @@
 		    <artifactId>rest</artifactId>
 		    <version>5.5.1</version>
 		</dependency>
+		<dependency>
+		  	<groupId>net.openhft</groupId>
+		  	<artifactId>zero-allocation-hashing</artifactId>
+		  	<version>0.8</version>
+		</dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
