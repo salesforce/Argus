@@ -45,9 +45,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
-import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
@@ -248,7 +246,7 @@ public class Audit implements Serializable, Identifiable {
 
         if (entity != null) {
             isAndrequired = true;
-            queryString.append(" WHERE a.entity=:entity ");
+            queryString.append(" WHERE a.entityId=:entityId ");
         }
         if (hostName != null && !hostName.isEmpty()) {
             if (isAndrequired) {
@@ -272,7 +270,7 @@ public class Audit implements Serializable, Identifiable {
         Query query = em.createQuery(queryString.toString(), Audit.class);
 
         if (entity != null) {
-            query.setParameter("entity", entity);
+            query.setParameter("entityId", entity.getId());
         }
         if (hostName != null && !hostName.isEmpty()) {
             query.setParameter("hostName", hostName);
