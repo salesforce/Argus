@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.ws.resources;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
@@ -88,6 +89,10 @@ public class MetricResources extends AbstractResource {
         
     	try {
     		List<Metric> metrics = _getMetrics(req, expressions);
+    		
+    		// Add tag of metric query time range back to request
+    		String timeWindow = QueryTimeWindow.getWindow(metrics.get(0).getQuery().getEndTimestamp() -  metrics.get(0).getQuery().getStartTimestamp());
+    		req.setAttribute("timeWindow", timeWindow);
 
             return MetricDto.transformToDto(metrics);
     	} catch(Exception ex) {
@@ -166,7 +171,7 @@ public class MetricResources extends AbstractResource {
 
         for (String expression : expressions) {
         	try {
-        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
         		metrics.addAll(metricsForThisExpression);
         	} catch(WildcardExpansionLimitExceededException e) {
         		metricService.dispose();

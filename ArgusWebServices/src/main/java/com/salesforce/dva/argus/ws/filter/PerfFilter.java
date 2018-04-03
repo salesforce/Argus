@@ -130,6 +130,12 @@ public class PerfFilter implements Filter {
             int reqBytes = ((req.getContentLength() > 0) ? req.getContentLength() : 0);
 
             if (method.equals("GET")) {
+
+            	if(endPoint.equals("metrics")){
+                	String timeWindow = (String) req.getAttribute("timeWindow");
+                	tags.put("timeWindow", timeWindow);
+                }
+
                 monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
                 monitorService.modifyCustomCounter(DATA_READ_QUERY_LATENCY, delta, tags);
                 monitorService.modifyCustomCounter(DATA_READ_REQ_BYTES, reqBytes, tags);
@@ -153,5 +159,14 @@ public class PerfFilter implements Filter {
 		
 		return null;
 	}
+	
+/*	private String _getQueryBucket(HttpServletRequest req) {
+		String queryString = req.getQueryString();
+		if(queryString != null) {
+			return pathInfo.replaceFirst("/", "").replaceAll("[0-9]+", "-");
+		}
+		
+		return null;
+	}*/
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
