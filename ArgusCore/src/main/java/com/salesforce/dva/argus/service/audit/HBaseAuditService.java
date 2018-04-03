@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Audit;
-import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
@@ -85,12 +84,12 @@ public class HBaseAuditService extends DefaultService implements AuditService {
 		SystemAssert.requireArgument(audit != null, "audit cannot be null.");
 		
 		long creationTime = System.currentTimeMillis();
-		String rowKey = new StringBuilder(audit.getEntity().getId().toString()).
+		String rowKey = new StringBuilder(audit.getEntityId().toString()).
 						append(ROWKEY_SEPARATOR).
 						append(HBaseUtils._9sComplement(creationTime)).
 						append(ROWKEY_SEPARATOR).
 						toString();
-		_logger.debug("Creating history with row key: {}", rowKey);
+		_logger.debug("Creating audit with row key: {}", rowKey);
 		
 		try {
 			byte[] value = _mapper.writeValueAsBytes(Arrays.asList(audit));
@@ -120,7 +119,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
 			}
 		
 		} catch (JsonProcessingException e) {
-			_logger.warn("Failed to parse history object to bytes.", e);
+			_logger.warn("Failed to parse audit object to bytes.", e);
 			return null;
 		} catch (InterruptedException e) {
 			_logger.warn("Interrupted while waiting for put to finish.", e);
@@ -153,7 +152,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
 
         long startTime = System.currentTimeMillis();
         List<Audit> records = _scanRecords(entityId, limit.intValue(), null);
-        _logger.debug("Time taken to read {} history records: {}", limit, (System.currentTimeMillis() - startTime));
+        _logger.debug("Time taken to read {} audit records: {}", limit, (System.currentTimeMillis() - startTime));
         return records;
 	}
 
@@ -235,7 +234,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
             /**
              * Scans rows.
              *
-             * @return  The list of history records.
+             * @return  The list of audit records.
              */
             public Object scan() {
             	_logger.debug("Getting next set of rows.");
@@ -257,8 +256,8 @@ public class HBaseAuditService extends DefaultService implements AuditService {
                     for (ArrayList<KeyValue> row : rows) {
                         for(KeyValue kv : row) {
                         	byte[] value = kv.value();
-                        	List<Audit> histories = _mapper.readValue(value, new TypeReference<List<Audit>>() {});
-                        	records.addAll(histories);
+                        	List<Audit> audits = _mapper.readValue(value, new TypeReference<List<Audit>>() {});
+                        	records.addAll(audits);
                         }
                         
                         if (records.size() >= limit) {
