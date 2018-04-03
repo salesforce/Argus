@@ -120,7 +120,7 @@
         <dockerImages.base.name>salesforce</dockerImages.base.name>
         <project.version>2.12.0</project.version>
         <logback.version>1.2.3</logback.version>
-        <jackson.version>2.9.2</jackson.version>
+        <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
         <junit.version>4.12</junit.version>
     </properties>
