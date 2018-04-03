@@ -133,7 +133,8 @@ public class PerfFilter implements Filter {
 
             	if(endPoint.equals("metrics")){
                 	String timeWindow = (String) req.getAttribute("timeWindow");
-                	tags.put("timeWindow", timeWindow);
+                	if(timeWindow !=null)
+                		tags.put("timeWindow", timeWindow);
                 }
 
                 monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
