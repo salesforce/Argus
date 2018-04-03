@@ -71,7 +71,7 @@ import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
 @Entity
 @NamedQueries(
     {
-        @NamedQuery(name = "Audit.findByJPAEntity", query = "SELECT a FROM Audit a WHERE a.entity = :jpaEntity order by a.createdDate DESC"),
+        @NamedQuery(name = "Audit.findByJPAEntity", query = "SELECT a FROM Audit a WHERE a.entityId = :jpaEntityId order by a.createdDate DESC"),
         @NamedQuery(name = "Audit.findByHostName", query = "SELECT a FROM Audit a WHERE a.hostName = :hostName order by a.createdDate DESC"), 
         @NamedQuery(name = "Audit.findAll", query = "SELECT a FROM Audit a order by a.createdDate DESC"),
         @NamedQuery(name = "Audit.findByMessage", query = "SELECT a from Audit a where a.message LIKE :message order by a.createdDate DESC"), 
@@ -98,9 +98,8 @@ public class Audit implements Serializable, Identifiable {
     @Basic(optional = false)
     @Column(nullable = false)
     private String hostName;
-    @ManyToOne(optional = true)
-    @JoinColumn(nullable = true, name = "entity_id")
-    private JPAEntity entity;
+    @Column(nullable = false, updatable = false, name = "entity_id")
+    private BigInteger entityId;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -114,7 +113,7 @@ public class Audit implements Serializable, Identifiable {
     public Audit(String message, String hostname, JPAEntity entity) {
         setMessage(message);
         setHostName(hostname);
-        setEntity(entity);
+        setEntityId(entity.getId());
     }
 
     /** Creates a new Audit object. */
@@ -153,7 +152,7 @@ public class Audit implements Serializable, Identifiable {
             query.setMaxResults(limit.intValue());
         }
         try {
-            query.setParameter("jpaEntity", entity);
+            query.setParameter("jpaEntityId", entity.getId());
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<Audit>(0);
@@ -374,21 +373,21 @@ public class Audit implements Serializable, Identifiable {
     }
 
     /**
-     * Returns the JPA entity.
+     * Returns the JPA entity id.
      *
      * @return  The JPA entity which caused exception. Cannot be null or empty.
      */
-    public JPAEntity getEntity() {
-        return entity;
+    public BigInteger getEntityId() {
+        return entityId;
     }
 
     /**
-     * Sets the JPA entity.
+     * Sets the JPA entity id.
      *
      * @param  entity  The JPA entity. Cannot be null or empty.
      */
-    public void setEntity(JPAEntity entity) {
-        this.entity = entity;
+    public void setEntityId(BigInteger entityId) {
+        this.entityId = entityId;
     }
 
     @Override
@@ -419,7 +418,7 @@ public class Audit implements Serializable, Identifiable {
     @Override
     public String toString() {
         return "Audit{" + "id=" + id + ", createdDate=" + createdDate + ", message=" + message + ", hostName=" + hostName + ", object=" +
-            (entity == null ? null : entity.id) + '}';
+            (entityId == null ? null : entityId) + '}';
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

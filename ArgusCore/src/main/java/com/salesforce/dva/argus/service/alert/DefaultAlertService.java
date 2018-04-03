@@ -241,14 +241,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsMarkedForDeletion() {
 		requireNotDisposed();
 		return findEntitiesMarkedForDeletion(_emProvider.get(), Alert.class, -1);
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsMarkedForDeletion(final int limit) {
 		requireNotDisposed();
 		requireArgument(limit > 0, "Limit must be greater than 0.");
@@ -256,7 +254,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
@@ -265,7 +262,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public Alert findAlertByPrimaryKey(BigInteger id) {
 		requireNotDisposed();
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be a positive non-zero value.");
@@ -281,7 +277,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsByPrimaryKeys(List<BigInteger> ids) {
 		requireNotDisposed();
 		requireArgument(ids != null && !ids.isEmpty(), "IDs list cannot be null or empty.");
@@ -297,7 +292,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	@Transactional
 	public void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications) {
 		List<BigInteger> ids = notifications.stream().map(x -> x.getId()).collect(Collectors.toList());
 		_logger.debug("Updating notifications: {}", ids);
@@ -367,12 +361,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if(metrics.isEmpty()) {
 					if (alert.isMissingDataNotificationEnabled()) {
 						_sendNotificationForMissingData(alert);
-						logMessage = MessageFormat.format("Metric data does not exit for alert expression: {0}. Sent notification for missing data.",
+						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
 								alert.getExpression());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					} else {
-						logMessage = MessageFormat.format("Metric data does not exit for alert expression: {0}. Missing data notification was not enabled.",
+						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Missing data notification was not enabled.",
 								alert.getExpression());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -668,7 +662,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 
 	@Override
-	@Transactional
 	public List<Alert> findAllAlerts(boolean metadataOnly) {
 		requireNotDisposed();
 		
@@ -676,28 +669,24 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsByStatus(boolean enabled) {
 		requireNotDisposed();
 		return Alert.findByStatus(_emProvider.get(), enabled);
 	}
 
 	@Override
-	@Transactional
 	public List<BigInteger> findAlertIdsByStatus(boolean enabled) {
 		requireNotDisposed();
 		return Alert.findIDsByStatus(_emProvider.get(), enabled);
 	}
 	
 	@Override
-	@Transactional
 	public List<Alert> findAlertsByRangeAndStatus(BigInteger fromId, BigInteger toId, boolean enabled) {
 		requireNotDisposed();
 		return Alert.findByRangeAndStatus(_emProvider.get(), fromId, toId, enabled);
 	}
 
 	@Override
-	@Transactional
 	public int alertCountByStatus(boolean enabled) {
 		requireNotDisposed();
 		return Alert.alertCountByStatus(_emProvider.get(), enabled);
@@ -711,7 +700,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	@Transactional
 	public List<Alert> findAlertsByNameWithPrefix(String prefix) {
 		requireNotDisposed();
 		requireArgument(prefix != null && !prefix.isEmpty(), "Name prefix cannot be null or empty.");
@@ -731,7 +719,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	@Transactional
 	public List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit) {
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);

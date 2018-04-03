@@ -103,18 +103,9 @@ public abstract class DefaultJPAService extends DefaultService {
         requireArgument(entity != null, "The entity cannot be null.");
         if (!em.contains(entity)) {
             Identifiable attached = findEntity(em, entity.getId(), entity.getClass());
-
-            _deleteGlobalRecords(attached, em);
             em.remove(attached);
         } else {
-            _deleteGlobalRecords(entity, em);
             em.remove(entity);
-        }
-    }
-
-    private <E extends Identifiable> void _deleteGlobalRecords(E entity, EntityManager em) {
-        if (JPAEntity.class.isAssignableFrom(entity.getClass())) {
-            _deleteGlobalRecordsForType(entity, em, Audit.class);
         }
     }
 
