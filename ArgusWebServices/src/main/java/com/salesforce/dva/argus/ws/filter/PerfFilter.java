@@ -159,14 +159,5 @@ public class PerfFilter implements Filter {
 		
 		return null;
 	}
-	
-/*	private String _getQueryBucket(HttpServletRequest req) {
-		String queryString = req.getQueryString();
-		if(queryString != null) {
-			return pathInfo.replaceFirst("/", "").replaceAll("[0-9]+", "-");
-		}
-		
-		return null;
-	}*/
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
