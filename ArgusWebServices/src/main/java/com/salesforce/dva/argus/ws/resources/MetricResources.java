@@ -174,12 +174,6 @@ public class MetricResources extends AbstractResource {
 			}
 		}
 
-		// Add tag of metric query time range back to request
-		if(metrics.get(0).getQuery() !=null){
-			String timeWindow = QueryTimeWindow.getWindow(metrics.get(0).getQuery().getEndTimestamp() -  metrics.get(0).getQuery().getStartTimestamp());
-			req.setAttribute("timeWindow", timeWindow);
-		}
-		
 		metricService.dispose();
 		return metrics;
 	}
