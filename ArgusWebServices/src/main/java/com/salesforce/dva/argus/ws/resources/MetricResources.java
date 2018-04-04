@@ -28,13 +28,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
+	 
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
 import com.salesforce.dva.argus.service.schema.WildcardExpansionLimitExceededException;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
@@ -64,181 +63,182 @@ import java.util.Map.Entry;
 @Description("Provides methods to query and transform metrics.")
 public class MetricResources extends AbstractResource {
 
-	//~ Instance fields ******************************************************************************************************************************
+    //~ Instance fields ******************************************************************************************************************************
 
-	private final String COMMA = ",";
-	private final String NEW_LINE = "\n";
-	private final String EMPTY = "";
-	private final int DEFAULT_TTL = 1800;
+    private final String COMMA = ",";
+    private final String NEW_LINE = "\n";
+    private final String EMPTY = "";
+    private final int DEFAULT_TTL = 1800;
 
-	//~ Methods **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
-	/**
-	 * Performs a metric query using the given expression.
-	 *
-	 * @param   req          The HttpServlet request object. Cannot be null.
-	 * @param   expressions  The expressions to evaluate.
-	 *
-	 * @return  The resulting metrics.
-	 */
-	@GET
-	@Produces(MediaType.APPLICATION_JSON + ";qs=1")
-	@Description("Performs a metric query using the given expression.")
-	public List<MetricDto> getMetricsJSON(@Context HttpServletRequest req,
-			@QueryParam("expression") List<String> expressions) {
+    /**
+     * Performs a metric query using the given expression.
+     *
+     * @param   req          The HttpServlet request object. Cannot be null.
+     * @param   expressions  The expressions to evaluate.
+     *
+     * @return  The resulting metrics.
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON + ";qs=1")
+    @Description("Performs a metric query using the given expression.")
+    public List<MetricDto> getMetricsJSON(@Context HttpServletRequest req,
+        @QueryParam("expression") List<String> expressions) {
+        
+    	try {
+    		List<Metric> metrics = _getMetrics(req, expressions);
 
-		try {
-			List<Metric> metrics = _getMetrics(req, expressions);
-			return MetricDto.transformToDto(metrics);
-		} catch(Exception ex) {
-			throw new WebApplicationException(ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
-		}
-	}
+            return MetricDto.transformToDto(metrics);
+    	} catch(Exception ex) {
+    		throw new WebApplicationException(ex.getMessage(), Status.INTERNAL_SERVER_ERROR);
+    	}
+    }
 
-	/**
-	 * Download the metric data for one or more metric expressions.
-	 *
-	 * @param   req          HTTPServlet request. Cannot be null.
-	 * @param   expressions  Expressions for metrics. Cannot be null but may be empty.
-	 *
-	 * @return  Metric data in CSV format
-	 */
-	@GET
-	@Produces("application/ms-excel;qs=0")
-	@Description("Downloads the metric data in CSV format.")
-	public Response getMetricsCSV(@Context HttpServletRequest req,
-			@QueryParam("expression") List<String> expressions) {
-		ResponseBuilder response = null;
+    /**
+     * Download the metric data for one or more metric expressions.
+     *
+     * @param   req          HTTPServlet request. Cannot be null.
+     * @param   expressions  Expressions for metrics. Cannot be null but may be empty.
+     *
+     * @return  Metric data in CSV format
+     */
+    @GET
+    @Produces("application/ms-excel;qs=0")
+    @Description("Downloads the metric data in CSV format.")
+    public Response getMetricsCSV(@Context HttpServletRequest req,
+        @QueryParam("expression") List<String> expressions) {
+        ResponseBuilder response = null;
 
-		try {
-			List<Metric> metrics = _getMetrics(req, expressions);
+        try {
+            List<Metric> metrics = _getMetrics(req, expressions);
 
-			response = Response.ok(_convertToCSV(metrics));
-		} catch (Exception ex) {
-			response = Response.status(Status.INTERNAL_SERVER_ERROR).encoding(ex.getMessage());
-		}
-		response.header("Content-Disposition", "attachment; filename=metrics.csv");
-		return response.build();
-	}
+            response = Response.ok(_convertToCSV(metrics));
+        } catch (Exception ex) {
+            response = Response.status(Status.INTERNAL_SERVER_ERROR).encoding(ex.getMessage());
+        }
+        response.header("Content-Disposition", "attachment; filename=metrics.csv");
+        return response.build();
+    }
 
-	/**
-	 * Start an async batch metric query
-	 *
-	 * @param   req          HTTPServlet request. Cannot be null.
-	 * @param   ttl          Time to live for the batch results when all computation finishes
-	 * @param   expressions  Expressions for metrics. Cannot be null but may be empty.
-	 *
-	 * @return  Batch ID and path to where metric-processing metadata is returned
-	 */
-	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	@Path("/batch")
-	@Description("Start an async batch metric query")
-	public Response getAsyncMetricsJSON(@Context HttpServletRequest req,
-			@QueryParam("ttl") int ttl,
-			@QueryParam("expression") List<String> expressions) {
-		if (ttl == 0) {
-			ttl = DEFAULT_TTL;
-		}
-		Map<String, Object> body = new HashMap<>();
-		String batchId = _getAsyncResponse(req, expressions, ttl);
-		body.put("href", "/batches/" + batchId);
-		body.put("id", batchId);
-		return Response.accepted(body).build();
-	}
+    /**
+     * Start an async batch metric query
+     *
+     * @param   req          HTTPServlet request. Cannot be null.
+     * @param   ttl          Time to live for the batch results when all computation finishes
+     * @param   expressions  Expressions for metrics. Cannot be null but may be empty.
+     *
+     * @return  Batch ID and path to where metric-processing metadata is returned
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/batch")
+    @Description("Start an async batch metric query")
+    public Response getAsyncMetricsJSON(@Context HttpServletRequest req,
+        @QueryParam("ttl") int ttl,
+        @QueryParam("expression") List<String> expressions) {
+        if (ttl == 0) {
+            ttl = DEFAULT_TTL;
+        }
+        Map<String, Object> body = new HashMap<>();
+        String batchId = _getAsyncResponse(req, expressions, ttl);
+        body.put("href", "/batches/" + batchId);
+        body.put("id", batchId);
+        return Response.accepted(body).build();
+    }
 
 
-	/**
-	 * Download the metric data for a given query. 
-	 * Single expression can consist of multiple queries. We will take the query with the longest time and instrument that.
-	 *
-	 * @param   req          HTTPServlet request. Cannot be null.
-	 * @param   expressions  Expressions for metrics. Cannot be null but may be empty. 
-	 *
-	 * @return  Metric data for given metric expressions. Will never return null but may be empty.
-	 */
-	private List<Metric> _getMetrics(HttpServletRequest req, List<String> expressions) {
-		validateAndGetOwner(req, null);
-		SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
+    /**
+     * Download the metric data for a given query. 
+     * Single expression can consist of multiple queries. We will take the query with the longest time and instrument that.
+     *
+     * @param   req          HTTPServlet request. Cannot be null.
+     * @param   expressions  Expressions for metrics. Cannot be null but may be empty. 
+     *
+     * @return  Metric data for given metric expressions. Will never return null but may be empty.
+     */
+    private List<Metric> _getMetrics(HttpServletRequest req, List<String> expressions) {
+        validateAndGetOwner(req, null);
+        SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
 
-		final MetricService metricService = system.getServiceFactory().getMetricService();
-		List<Metric> metrics = new ArrayList<Metric>();
+        final MetricService metricService = system.getServiceFactory().getMetricService();
+        List<Metric> metrics = new ArrayList<Metric>();
 
-		for (String expression : expressions) {
-			try {
-				List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
-				metrics.addAll(metricsForThisExpression);
-			} catch(WildcardExpansionLimitExceededException e) {
-				metricService.dispose();
-				throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
-			}
-		}
+        for (String expression : expressions) {
+        	try {
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		metrics.addAll(metricsForThisExpression);
+        	} catch(WildcardExpansionLimitExceededException e) {
+        		metricService.dispose();
+        		throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
+        	}
+        }
+        
+        metricService.dispose();
+        return metrics;
+    }
 
-		metricService.dispose();
-		return metrics;
-	}
+    private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, int ttl) {
+        SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
+        PrincipalUser owner = validateAndGetOwner(req, null);
+        SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 
-	private String _getAsyncResponse(HttpServletRequest req, List<String> expressions, int ttl) {
-		SystemAssert.requireArgument(expressions != null && !expressions.isEmpty(), "Expression list cannot be null or empty");
-		PrincipalUser owner = validateAndGetOwner(req, null);
-		SystemAssert.requireArgument(owner != null, "Owner cannot be null");
+        final MetricService metricService = system.getServiceFactory().getMetricService();
+        return metricService.getAsyncMetrics(expressions, System.currentTimeMillis(), ttl, owner.getUserName());
+    }
 
-		final MetricService metricService = system.getServiceFactory().getMetricService();
-		return metricService.getAsyncMetrics(expressions, System.currentTimeMillis(), ttl, owner.getUserName());
-	}
+    private String _convertToCSV(List<Metric> metrics) {
+        if (metrics == null || metrics.size() == 0) {
+            return EMPTY;
+        }
 
-	private String _convertToCSV(List<Metric> metrics) {
-		if (metrics == null || metrics.size() == 0) {
-			return EMPTY;
-		}
+        StringBuilder result = new StringBuilder();
 
-		StringBuilder result = new StringBuilder();
+        result.append("Timestamp");
+        result.append(COMMA);
+        for (Metric metric : metrics) {
+            result.append(_getMetricExpression(metric));
+            result.append(COMMA);
+        }
+        result.deleteCharAt(result.length() - 1);
 
-		result.append("Timestamp");
-		result.append(COMMA);
-		for (Metric metric : metrics) {
-			result.append(_getMetricExpression(metric));
-			result.append(COMMA);
-		}
-		result.deleteCharAt(result.length() - 1);
+        TreeSet<Long> timestamps = new TreeSet<Long>();
 
-		TreeSet<Long> timestamps = new TreeSet<Long>();
+        for (Metric metric : metrics) {
+            timestamps.addAll(metric.getDatapoints().keySet());
+        }
+        for (Long timestamp : timestamps) {
+            result.append(NEW_LINE);
+            result.append(timestamp);
+            result.append(COMMA);
+            for (Metric metric : metrics) {
+                result.append(metric.getDatapoints().get(timestamp) != null ? metric.getDatapoints().get(timestamp) : EMPTY);
+                result.append(COMMA);
+            }
+            result.deleteCharAt(result.length() - 1);
+        }
+        return result.toString();
+    }
 
-		for (Metric metric : metrics) {
-			timestamps.addAll(metric.getDatapoints().keySet());
-		}
-		for (Long timestamp : timestamps) {
-			result.append(NEW_LINE);
-			result.append(timestamp);
-			result.append(COMMA);
-			for (Metric metric : metrics) {
-				result.append(metric.getDatapoints().get(timestamp) != null ? metric.getDatapoints().get(timestamp) : EMPTY);
-				result.append(COMMA);
-			}
-			result.deleteCharAt(result.length() - 1);
-		}
-		return result.toString();
-	}
+    private String _getMetricExpression(Metric metric) {
+        StringBuilder result = new StringBuilder();
 
-	private String _getMetricExpression(Metric metric) {
-		StringBuilder result = new StringBuilder();
-
-		result.append("\"");
-		if (metric != null) {
-			result.append(metric.getScope());
-			result.append(":" + metric.getMetric());
-			if (metric.getTags() != null && metric.getTags().size() > 0) {
-				result.append("{");
-				for (Entry<String, String> tag : metric.getTags().entrySet()) {
-					result.append(tag.getKey() + "=" + tag.getValue());
-					result.append(COMMA);
-				}
-				result.deleteCharAt(result.length() - 1);
-				result.append("}");
-			}
-		}
-		result.append("\"");
-		return result.toString();
-	}
+        result.append("\"");
+        if (metric != null) {
+            result.append(metric.getScope());
+            result.append(":" + metric.getMetric());
+            if (metric.getTags() != null && metric.getTags().size() > 0) {
+                result.append("{");
+                for (Entry<String, String> tag : metric.getTags().entrySet()) {
+                    result.append(tag.getKey() + "=" + tag.getValue());
+                    result.append(COMMA);
+                }
+                result.deleteCharAt(result.length() - 1);
+                result.append("}");
+            }
+        }
+        result.append("\"");
+        return result.toString();
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
