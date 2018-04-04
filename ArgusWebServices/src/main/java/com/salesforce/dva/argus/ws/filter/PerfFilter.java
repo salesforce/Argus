@@ -28,10 +28,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.ws.filter;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +48,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.service.MonitorService;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
+import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
@@ -57,107 +60,110 @@ import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
  */
 public class PerfFilter implements Filter {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    protected final SystemMain system = ArgusWebServletListener.getSystem();
-    private MonitorService monitorService = system.getServiceFactory().getMonitorService();
-    private final String DATA_READ_PER_MIN = "perf.ws.read.count";
-    private final String DATA_READ_QUERY_LATENCY = "perf.ws.read.latency";
-    private final String DATA_WRITE_PER_MIN = "perf.ws.write.count";
-    private final String DATA_WRITE_LATENCY = "perf.ws.write.latency";
-    private final String DATA_READ_REQ_BYTES = "perf.ws.read.rxbytes";
-    private final String DATA_READ_RESP_BYTES = "perf.ws.read.txbytes";
-    private final String DATA_WRITE_REQ_BYTES = "perf.ws.write.rxbytes";
-    private final String DATA_WRITE_RESP_BYTES = "perf.ws.write.txbytes";
-    private final String TAGS_METHOD_KEY = "method";
-    private final String TAGS_ENDPOINT_KEY = "endpoint";
-    private final String TAGS_USER_KEY = "user";
+	protected final SystemMain system = ArgusWebServletListener.getSystem();
+	private MonitorService monitorService = system.getServiceFactory().getMonitorService();
+	private final String DATA_READ_PER_MIN = "perf.ws.read.count";
+	private final String DATA_READ_QUERY_LATENCY = "perf.ws.read.latency";
+	private final String DATA_WRITE_PER_MIN = "perf.ws.write.count";
+	private final String DATA_WRITE_LATENCY = "perf.ws.write.latency";
+	private final String DATA_READ_REQ_BYTES = "perf.ws.read.rxbytes";
+	private final String DATA_READ_RESP_BYTES = "perf.ws.read.txbytes";
+	private final String DATA_WRITE_REQ_BYTES = "perf.ws.write.rxbytes";
+	private final String DATA_WRITE_RESP_BYTES = "perf.ws.write.txbytes";
+	private final String TAGS_METHOD_KEY = "method";
+	private final String TAGS_ENDPOINT_KEY = "endpoint";
+	private final String TAGS_USER_KEY = "user";
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public void destroy() { }
+	@Override
+	public void destroy() { }
 
-    /**
-     * Updates performance counters using the Argus monitoring service.
-     *
-     * @param   request   The HTTP request.
-     * @param   response  The HTTP response.
-     * @param   chain     The filter chain to execute.
-     *
-     * @throws  IOException       If an I/O error occurs.
-     * @throws  ServletException  If an unknown error occurs.
-     * 
-     */
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest req = HttpServletRequest.class.cast(request);
-        long start = System.currentTimeMillis();
+	/**
+	 * Updates performance counters using the Argus monitoring service.
+	 *
+	 * @param   request   The HTTP request.
+	 * @param   response  The HTTP response.
+	 * @param   chain     The filter chain to execute.
+	 *
+	 * @throws  IOException       If an I/O error occurs.
+	 * @throws  ServletException  If an unknown error occurs.
+	 * 
+	 */
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+		HttpServletRequest req = HttpServletRequest.class.cast(request);
+		long start = System.currentTimeMillis();
 
-        try {
-            chain.doFilter(request, response);
-        } finally {
-            long delta = System.currentTimeMillis() - start;
-            HttpServletResponse resp = HttpServletResponse.class.cast(response);
+		try {
+			chain.doFilter(request, response);
+		} finally {
+			long delta = System.currentTimeMillis() - start;
+			HttpServletResponse resp = HttpServletResponse.class.cast(response);
 
-            updateCounters(req, resp, delta);
-        }
-    }
+			updateCounters(req, resp, delta);
+		}
+	}
 
-    @Override
-    public void init(FilterConfig filterConfig) throws ServletException { }
+	@Override
+	public void init(FilterConfig filterConfig) throws ServletException { }
 
-    private void updateCounters(HttpServletRequest req, HttpServletResponse resp, long delta) {
-        try {
-        	Map<String, String> tags = new HashMap<>();
-        	
-        	String method = req.getMethod();
-        	tags.put(TAGS_METHOD_KEY, method);
-        	
-            String endPoint = _getEndpoint(req);
-            if (endPoint != null && !endPoint.isEmpty()) {
-                tags.put(TAGS_ENDPOINT_KEY, endPoint);
-            }
-            
-            Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-            String username = user != null ? String.class.cast(user) : "NULLUSER";
-            if(!username.isEmpty()) {
-            	tags.put(TAGS_USER_KEY, username);
-            }
+	private void updateCounters(HttpServletRequest req, HttpServletResponse resp, long delta) {
+		try {
+			Map<String, String> tags = new HashMap<>();
 
-            String contentLength = resp.getHeader("Content-Length");
-            int respBytes = ((contentLength != null && contentLength.matches("[0-9]+")) ? Integer.parseInt(contentLength) : 0);
-            int reqBytes = ((req.getContentLength() > 0) ? req.getContentLength() : 0);
+			String method = req.getMethod();
+			tags.put(TAGS_METHOD_KEY, method);
 
-            if (method.equals("GET")) {
+			String endPoint = _getEndpoint(req);
+			if (endPoint != null && !endPoint.isEmpty()) {
+				tags.put(TAGS_ENDPOINT_KEY, endPoint);
+			}
 
-            	if(endPoint.equals("metrics")){
-                	String timeWindow = (String) req.getAttribute("timeWindow");
-                	if(timeWindow !=null)
-                		tags.put("timeWindow", timeWindow);
-                }
+			Object user = req.getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
+			String username = user != null ? String.class.cast(user) : "NULLUSER";
+			if(!username.isEmpty()) {
+				tags.put(TAGS_USER_KEY, username);
+			}
 
-                monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
-                monitorService.modifyCustomCounter(DATA_READ_QUERY_LATENCY, delta, tags);
-                monitorService.modifyCustomCounter(DATA_READ_REQ_BYTES, reqBytes, tags);
-                monitorService.modifyCustomCounter(DATA_READ_RESP_BYTES, respBytes, tags);
-            } else if (method.equals("POST") || method.equals("PUT") || method.equals("DELETE")) {
-                monitorService.modifyCustomCounter(DATA_WRITE_PER_MIN, 1, tags);
-                monitorService.modifyCustomCounter(DATA_WRITE_LATENCY, delta, tags);
-                monitorService.modifyCustomCounter(DATA_WRITE_REQ_BYTES, reqBytes, tags);
-                monitorService.modifyCustomCounter(DATA_WRITE_RESP_BYTES, respBytes, tags);
-            }
-        } catch (Exception e) {
-            LoggerFactory.getLogger(getClass()).error(e.getMessage(), e);
-        }
-    }
+			String contentLength = resp.getHeader("Content-Length");
+			int respBytes = ((contentLength != null && contentLength.matches("[0-9]+")) ? Integer.parseInt(contentLength) : 0);
+			int reqBytes = ((req.getContentLength() > 0) ? req.getContentLength() : 0);
+
+			if (method.equals("GET")) {
+				if(endPoint.equals("metrics")){
+					// queryString starts with  expression=
+					String encodedQuery = req.getQueryString().substring(11);
+					String decodedQuery = URLDecoder.decode(encodedQuery, "UTF-8");
+					// Take first query in metric expression to compute time window
+					MetricQuery query = system.getServiceFactory().getMetricService().getQueries(decodedQuery).get(0);
+					String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
+					tags.put("timeWindow", timeWindow);
+				}
+
+				monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
+				monitorService.modifyCustomCounter(DATA_READ_QUERY_LATENCY, delta, tags);
+				monitorService.modifyCustomCounter(DATA_READ_REQ_BYTES, reqBytes, tags);
+				monitorService.modifyCustomCounter(DATA_READ_RESP_BYTES, respBytes, tags);
+			} else if (method.equals("POST") || method.equals("PUT") || method.equals("DELETE")) {
+				monitorService.modifyCustomCounter(DATA_WRITE_PER_MIN, 1, tags);
+				monitorService.modifyCustomCounter(DATA_WRITE_LATENCY, delta, tags);
+				monitorService.modifyCustomCounter(DATA_WRITE_REQ_BYTES, reqBytes, tags);
+				monitorService.modifyCustomCounter(DATA_WRITE_RESP_BYTES, respBytes, tags);
+			}
+		} catch (Exception e) {
+			LoggerFactory.getLogger(getClass()).error(e.getMessage(), e);
+		}
+	}
 
 	private String _getEndpoint(HttpServletRequest req) {
 		String pathInfo = req.getPathInfo();
 		if(pathInfo != null) {
 			return pathInfo.replaceFirst("/", "").replaceAll("[0-9]+", "-");
 		}
-		
+
 		return null;
 	}
 }
