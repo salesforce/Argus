@@ -546,6 +546,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	private void _updateNotificationClearActiveStatus(Trigger trigger, Metric metric, Notification notification) {
+		notification.setCooldownExpirationByTriggerAndMetric(trigger, metric, System.currentTimeMillis());
 		notification.setActiveForTriggerAndMetric(trigger, metric, false);
 		notification = mergeEntity(_emProvider.get(), notification);
 	}
