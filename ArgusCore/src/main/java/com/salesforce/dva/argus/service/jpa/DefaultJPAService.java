@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.jpa;
 
 import com.google.inject.Inject;
@@ -56,104 +56,108 @@ import static java.math.BigInteger.ZERO;
  */
 public abstract class DefaultJPAService extends DefaultService {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    protected final AuditService _auditService;
+	protected final AuditService _auditService;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new DefaultJPAService object.
-     *
-     * @param  auditService  The audit service. Can be null if audits are not required.
-     * @param config The system configuration.  Cannot be null.
-     */
-    @Inject
-    protected DefaultJPAService(AuditService auditService, SystemConfiguration config) {
-    	super(config);
-        _auditService = auditService;
-    }
+	/**
+	 * Creates a new DefaultJPAService object.
+	 *
+	 * @param  auditService  The audit service. Can be null if audits are not required.
+	 * @param config The system configuration.  Cannot be null.
+	 */
+	@Inject
+	protected DefaultJPAService(AuditService auditService, SystemConfiguration config) {
+		super(config);
+		_auditService = auditService;
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    /**
-     * Persists an entity to the database.
-     *
-     * @param   <E>     The entity type.
-     * @param   em      The entity manager to use. Cannot be null.
-     * @param   entity  The entity to persist. Cannot be null.
-     *
-     * @return  The persisted entity having all updates applied.
-     */
-    public <E extends Identifiable> E mergeEntity(EntityManager em, E entity) {
-        requireArgument(em != null, "The entity manager cannot be null.");
-        requireArgument(entity != null, "The entity cannot be null.");
-        return em.merge(entity);
-    }
+	/**
+	 * Persists an entity to the database.
+	 *
+	 * @param   <E>     The entity type.
+	 * @param   em      The entity manager to use. Cannot be null.
+	 * @param   entity  The entity to persist. Cannot be null.
+	 *
+	 * @return  The persisted entity having all updates applied.
+	 */
+	public <E extends Identifiable> E mergeEntity(EntityManager em, E entity) {
+		requireArgument(em != null, "The entity manager cannot be null.");
+		requireArgument(entity != null, "The entity cannot be null.");
+		return em.merge(entity);
+	}
 
-    /**
-     * Removes an entity from the database.
-     *
-     * @param  <E>     The entity type.
-     * @param  em      The entity manager to use. Cannot be null.
-     * @param  entity  The entity to remove. Cannot be null.
-     */
-    protected <E extends Identifiable> void deleteEntity(EntityManager em, E entity) {
-        requireArgument(em != null, "The entity manager cannot be null.");
-        requireArgument(entity != null, "The entity cannot be null.");
-        if (!em.contains(entity)) {
-            Identifiable attached = findEntity(em, entity.getId(), entity.getClass());
-            em.remove(attached);
-        } else {
-            em.remove(entity);
-        }
-    }
+	/**
+	 * Removes an entity from the database.
+	 *
+	 * @param  <E>     The entity type.
+	 * @param  em      The entity manager to use. Cannot be null.
+	 * @param  entity  The entity to remove. Cannot be null.
+	 */
+	protected <E extends Identifiable> void deleteEntity(EntityManager em, E entity) {
+		requireArgument(em != null, "The entity manager cannot be null.");
+		requireArgument(entity != null, "The entity cannot be null.");
+		if (!em.contains(entity)) {
+			Identifiable attached = findEntity(em, entity.getId(), entity.getClass());
+			em.remove(attached);
+		} else {
+			em.remove(entity);
+		}
+	}
 
-    private <E extends Identifiable, T> void _deleteGlobalRecordsForType(E entity, EntityManager em, Class<T> clazz) {
-        JPAEntity jpaEntity = JPAEntity.class.cast(entity);
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaDelete<T> update = cb.createCriteriaDelete(clazz);
-        Root<T> from = update.from(clazz);
+	protected <E extends Identifiable, T> void _deleteGlobalRecordsForType(E entity, EntityManager em, Class<T> clazz) {
+		if(JPAEntity.class.isAssignableFrom(entity.getClass())) {
+			JPAEntity jpaEntity = JPAEntity.class.cast(entity);
+			CriteriaBuilder cb = em.getCriteriaBuilder();
+			CriteriaDelete<T> update = cb.createCriteriaDelete(clazz);
+			Root<T> from = update.from(clazz);
 
-        update.where(cb.equal(from.get("entity"), jpaEntity));
-        em.createQuery(update).executeUpdate();
-    }
+			update.where(cb.equal(from.get("entity"), jpaEntity));
+			em.createQuery(update).executeUpdate();
+		}else {
+			throw new IllegalArgumentException("Entity - " + entity.getClass() + " is not of type JPAEntity");
+		}
+	}
 
-    /**
-     * Locates an entity based on it's primary key value.
-     *
-     * @param   <E>   The type of the entity.
-     * @param   em    The entity manager to use. Cannot be null.
-     * @param   id    The primary key of the entity. Cannot be null and must be a positive non-zero number.
-     * @param   type  The runtime type of the entity. Cannot be null.
-     *
-     * @return  The entity or null if no entity exists for the primary key.
-     */
-    protected <E extends Identifiable> E findEntity(EntityManager em, BigInteger id, Class<E> type) {
-        requireArgument(em != null, "The entity manager cannot be null.");
-        requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
-        requireArgument(type != null, "The entity cannot be null.");
-        em.getEntityManagerFactory().getCache().evictAll();
-        return em.find(type, id);
-    }
+	/**
+	 * Locates an entity based on it's primary key value.
+	 *
+	 * @param   <E>   The type of the entity.
+	 * @param   em    The entity manager to use. Cannot be null.
+	 * @param   id    The primary key of the entity. Cannot be null and must be a positive non-zero number.
+	 * @param   type  The runtime type of the entity. Cannot be null.
+	 *
+	 * @return  The entity or null if no entity exists for the primary key.
+	 */
+	protected <E extends Identifiable> E findEntity(EntityManager em, BigInteger id, Class<E> type) {
+		requireArgument(em != null, "The entity manager cannot be null.");
+		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be positive and non-zero");
+		requireArgument(type != null, "The entity cannot be null.");
+		em.getEntityManagerFactory().getCache().evictAll();
+		return em.find(type, id);
+	}
 
-    /**
-     * Returns a list of entities of the given type that are marked for deletion, but have not yet been physically deleted.
-     *
-     * @param   <E>   	The entity type.
-     * @param   em    	The entity manager to use.  Cannot be null.
-     * @param   type  	The runtime type of the values to return.
-     * @param	limit	The number of entities to find. If -1, finds all such entities.
-     *
-     * @return  The list of entities marked for deletion.  Will never return null, but may be empty.
-     */
-    protected <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type, final int limit) {
-        requireArgument(em != null, "The entity manager cannot be null.");
-        requireArgument(type != null, "The entity cannot be null.");
-        requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
-        
-        em.getEntityManagerFactory().getCache().evictAll();
-        return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
-    }
+	/**
+	 * Returns a list of entities of the given type that are marked for deletion, but have not yet been physically deleted.
+	 *
+	 * @param   <E>   	The entity type.
+	 * @param   em    	The entity manager to use.  Cannot be null.
+	 * @param   type  	The runtime type of the values to return.
+	 * @param	limit	The number of entities to find. If -1, finds all such entities.
+	 *
+	 * @return  The list of entities marked for deletion.  Will never return null, but may be empty.
+	 */
+	protected <E extends Identifiable> List<E> findEntitiesMarkedForDeletion(EntityManager em, Class<E> type, final int limit) {
+		requireArgument(em != null, "The entity manager cannot be null.");
+		requireArgument(type != null, "The entity cannot be null.");
+		requireArgument(limit == -1 || limit > 0, "Limit if not -1, must be greater than 0.");
+
+		em.getEntityManagerFactory().getCache().evictAll();
+		return JPAEntity.findEntitiesMarkedForDeletion(em, type, limit);
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

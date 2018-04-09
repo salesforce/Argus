@@ -15,6 +15,7 @@ import org.hbase.async.PutRequest;
 import org.hbase.async.ScanFilter;
 import org.hbase.async.Scanner;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,7 +24,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.salesforce.dva.argus.entity.Audit;
 import com.salesforce.dva.argus.entity.JPAEntity;
-import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
@@ -53,8 +53,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
     
     //~ Instance fields ******************************************************************************************************************************
     
-	@SLF4JTypeListener.InjectLogger
-    private Logger _logger;
+    private Logger _logger = LoggerFactory.getLogger(getClass());
     private final HBaseClient _client;
     private final ObjectMapper _mapper;
     private final boolean _syncPut;
