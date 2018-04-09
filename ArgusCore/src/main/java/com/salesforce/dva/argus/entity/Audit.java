@@ -96,7 +96,8 @@ public class Audit implements Serializable, Identifiable {
     @Basic(optional = false)
     @Column(nullable = false)
     private String hostName;
-    @Column(nullable = false, updatable = false, name = "entity_id")
+
+	@Column(nullable = false, updatable = false, name = "entity_id")
     private BigInteger entityId;
 
     //~ Constructors *********************************************************************************************************************************
@@ -331,6 +332,15 @@ public class Audit implements Serializable, Identifiable {
     public Date getCreatedDate() {
         return createdDate == null ? null : new Date(createdDate.getTime());
     }
+    
+    /**
+     * Sets the creation date
+     *
+     * @param  createdDate
+     */
+    public void setCreatedDate(long createdDateMillis) {
+		this.createdDate = new Date(createdDateMillis);
+	}
 
     /**
      * Returns the exception message.
