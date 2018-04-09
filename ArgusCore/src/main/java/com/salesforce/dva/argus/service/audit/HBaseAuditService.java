@@ -46,7 +46,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
     private static final char ROWKEY_SEPARATOR = ':';
     private static final int MAX_NUM_ROWS = 500;
     
-    private static final long PUT_TIMEOUT_MS = 10 * 1000;
+    private static final long PUT_TIMEOUT_MS = 30 * 1000;
     private static final long SCAN_TIMEOUT_MS = 60 * 1000;
     private static final long SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 	
@@ -89,8 +89,10 @@ public class HBaseAuditService extends DefaultService implements AuditService {
 						append(HBaseUtils._9sComplement(creationTime)).
 						append(ROWKEY_SEPARATOR).
 						toString();
-		_logger.debug("Creating audit with row key: {}", rowKey);
+		audit.setCreatedDate(creationTime);
 		
+		_logger.debug("Creating audit with row key: {}", rowKey);
+
 		try {
 			byte[] value = _mapper.writeValueAsBytes(Arrays.asList(audit));
 			final PutRequest put = new PutRequest(tablename, Bytes.toBytes(rowKey), COLUMN_FAMILY, 
@@ -255,9 +257,9 @@ public class HBaseAuditService extends DefaultService implements AuditService {
                     
                     for (ArrayList<KeyValue> row : rows) {
                         for(KeyValue kv : row) {
-                        	byte[] value = kv.value();
-                        	List<Audit> audits = _mapper.readValue(value, new TypeReference<List<Audit>>() {});
-                        	records.addAll(audits);
+                            byte[] value = kv.value();
+                        	   List<Audit> audits = _mapper.readValue(value, new TypeReference<List<Audit>>() {});
+                        	   records.addAll(audits);
                         }
                         
                         if (records.size() >= limit) {
