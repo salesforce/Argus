@@ -304,7 +304,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
      */
     public enum Property {
     	
-        HBASE_SYNC_PUT("service.property.audit.hbase.sync.put", "true"),
+        HBASE_SYNC_PUT("service.property.audit.hbase.sync.put", "false"),
     	    HBASE_TABLE("service.property.audit.hbase.table", "audit");
 
         private final String _name;
