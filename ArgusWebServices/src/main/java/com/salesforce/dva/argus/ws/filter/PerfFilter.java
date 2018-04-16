@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.ws.filter;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -138,9 +139,12 @@ public class PerfFilter implements Filter {
 					String encodedQuery = req.getQueryString().substring(11);
 					String decodedQuery = URLDecoder.decode(encodedQuery, "UTF-8");
 					// Take first query in metric expression to compute time window
-					MetricQuery query = system.getServiceFactory().getMetricService().getQueries(decodedQuery).get(0);
-					String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
-					tags.put("timeWindow", timeWindow);
+					List<MetricQuery> metricQuerys = system.getServiceFactory().getMetricService().getQueries(decodedQuery);
+					if(! metricQuerys.isEmpty()){
+						MetricQuery query = metricQuerys.get(0);
+						String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
+						tags.put("timeWindow", timeWindow);
+					}
 				}
 
 				monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
