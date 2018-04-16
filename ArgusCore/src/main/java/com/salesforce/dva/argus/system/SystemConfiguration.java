@@ -253,6 +253,9 @@ public final class SystemConfiguration extends Properties {
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
         
+        AUDIT_SERVICE_IMPL_CLASS("service.binding.audit", "com.salesforce.dva.argus.service.audit.DefaultAuditService"),
+        AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","argus.properties"),
+        
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
         
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
