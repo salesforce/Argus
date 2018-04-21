@@ -171,21 +171,6 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	}
 
 	@Override
-	public void dispose() {
-		super.dispose();
-		// _tsdbService.dispose();
-	}
-
-	private long _getDatapointsAcrossMetrics(List<Metric> metrics) {
-		long dataPointsSize = 0;
-
-		for (Metric metric : metrics) {
-			dataPointsSize += metric.getDatapoints().size();
-		}
-		return dataPointsSize;
-	}
-
-	@Override
 	public String getExpandedTimeSeriesRange()
 	{
 		{
@@ -199,6 +184,21 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		{
 			return queryTimeWindow;
 		}
+	}	
+	
+	@Override
+	public void dispose() {
+		super.dispose();
+		// _tsdbService.dispose();
+	}
+
+	private long _getDatapointsAcrossMetrics(List<Metric> metrics) {
+		long dataPointsSize = 0;
+
+		for (Metric metric : metrics) {
+			dataPointsSize += metric.getDatapoints().size();
+		}
+		return dataPointsSize;
 	}
 }
 	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
