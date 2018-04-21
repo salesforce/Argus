@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric;
 
 import com.google.inject.Inject;
@@ -58,127 +58,147 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  */
 public class DefaultMetricService extends DefaultService implements MetricService {
 
-    //~ Instance fields ******************************************************************************************************************************
-    private final Logger _logger = LoggerFactory.getLogger(DefaultMetricService.class);
-    private final MonitorService _monitorService;
-    private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
-    private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
+	//~ Instance fields ******************************************************************************************************************************
+	private final Logger _logger = LoggerFactory.getLogger(DefaultMetricService.class);
+	private final MonitorService _monitorService;
+	private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
+	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
+	private String expandedTimeSeriesRange;
+	private String queryTimeWindow;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new DefaultMetricService object.
-     *
-     * @param  monitorService   The monitor service instance to use. Cannot be null.
-     * @param  metricsprovider  The metric reader provider used to perform metric operations.  Cannot be null.
-     * @param  queryprovider    The metric reader provider used to construct metric queries without fetching data. Cannot be null.
-     * @param  config           The system configuration.  Cannot be null.
-     */
-    @Inject
-    protected DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
-        Provider<MetricReader<MetricQuery>> queryprovider, SystemConfiguration config) {
-    	super(config);
-        requireArgument(monitorService != null, "Monitor service cannot be null.");
-        _monitorService = monitorService;
-        _metricReaderProviderForMetrics = metricsprovider;
-        _metricReaderProviderForQueries = queryprovider;
-    }
+	/**
+	 * Creates a new DefaultMetricService object.
+	 *
+	 * @param  monitorService   The monitor service instance to use. Cannot be null.
+	 * @param  metricsprovider  The metric reader provider used to perform metric operations.  Cannot be null.
+	 * @param  queryprovider    The metric reader provider used to construct metric queries without fetching data. Cannot be null.
+	 * @param  config           The system configuration.  Cannot be null.
+	 */
+	@Inject
+	protected DefaultMetricService(MonitorService monitorService, Provider<MetricReader<Metric>> metricsprovider,
+			Provider<MetricReader<MetricQuery>> queryprovider, SystemConfiguration config) {
+		super(config);
+		requireArgument(monitorService != null, "Monitor service cannot be null.");
+		_monitorService = monitorService;
+		_metricReaderProviderForMetrics = metricsprovider;
+		_metricReaderProviderForQueries = queryprovider;
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public List<Metric> getMetrics(String expression) {
-        requireNotDisposed();
-        return getMetrics(expression, System.currentTimeMillis());
-    }
+	@Override
+	public List<Metric> getMetrics(String expression) {
+		requireNotDisposed();
+		return getMetrics(expression, System.currentTimeMillis());
+	}
 
-    @Override
-    public List<Metric> getMetrics(String expression, long relativeTo) {
-        requireNotDisposed();
-        return getMetrics(Arrays.asList(new String[] { expression }), relativeTo);
-    }
+	@Override
+	public List<Metric> getMetrics(String expression, long relativeTo) {
+		requireNotDisposed();
+		return getMetrics(Arrays.asList(new String[] { expression }), relativeTo);
+	}
 
-    @Override
-    public List<Metric> getMetrics(List<String> expressions) {
-        requireNotDisposed();
-        return getMetrics(expressions, System.currentTimeMillis());
-    }
+	@Override
+	public List<Metric> getMetrics(List<String> expressions) {
+		requireNotDisposed();
+		return getMetrics(expressions, System.currentTimeMillis());
+	}
 
-    @Override
-    public List<Metric> getMetrics(List<String> expressions, long relativeTo) {
-        requireNotDisposed();
-        SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
+	@Override
+	public List<Metric> getMetrics(List<String> expressions, long relativeTo) {
+		requireNotDisposed();
+		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
-        MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
-        List<Metric> metrics = new ArrayList<>(expressions.size());
+		MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
+		List<Metric> metrics = new ArrayList<>(expressions.size());
 
-        try {
-            for (String expression : expressions) {
-                _logger.debug("Reading metric for expression {}", expression);
-                metrics.addAll(reader.parse(expression, relativeTo, Metric.class));
-            }
-        } catch (ParseException ex) {
-            throw new SystemException("Failed to parse the given expression", ex);
-        }
-        _monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
-        return metrics;
-    }
+		try {
+			for (String expression : expressions) {
+				_logger.debug("Reading metric for expression {}", expression);
+				metrics.addAll(reader.parse(expression, relativeTo, Metric.class));
+				expandedTimeSeriesRange = reader.getExpandedTimeSeriesRange();
+				queryTimeWindow = reader.getQueryTimeWindow();
+			}
+		} catch (ParseException ex) {
+			throw new SystemException("Failed to parse the given expression", ex);
+		}
+		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
+		return metrics;
+	}
 
-    @Override
-    public String getAsyncMetrics(List<String> expressions, long relativeTo, int ttl, String ownerName) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String getAsyncMetrics(List<String> expressions, long relativeTo, int ttl, String ownerName) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public List<MetricQuery> getQueries(String expression) {
-        requireNotDisposed();
-        return getQueries(expression, System.currentTimeMillis());
-    }
+	@Override
+	public List<MetricQuery> getQueries(String expression) {
+		requireNotDisposed();
+		return getQueries(expression, System.currentTimeMillis());
+	}
 
-    @Override
-    public List<MetricQuery> getQueries(String expression, long relativeTo) {
-        requireNotDisposed();
-        return getQueries(Arrays.asList(new String[] { expression }), relativeTo);
-    }
+	@Override
+	public List<MetricQuery> getQueries(String expression, long relativeTo) {
+		requireNotDisposed();
+		return getQueries(Arrays.asList(new String[] { expression }), relativeTo);
+	}
 
-    @Override
-    public List<MetricQuery> getQueries(List<String> expressions) {
-        requireNotDisposed();
-        return getQueries(expressions, System.currentTimeMillis());
-    }
+	@Override
+	public List<MetricQuery> getQueries(List<String> expressions) {
+		requireNotDisposed();
+		return getQueries(expressions, System.currentTimeMillis());
+	}
 
-    @Override
-    public List<MetricQuery> getQueries(List<String> expressions, long relativeTo) {
-        requireNotDisposed();
-        SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
+	@Override
+	public List<MetricQuery> getQueries(List<String> expressions, long relativeTo) {
+		requireNotDisposed();
+		SystemAssert.requireArgument(MetricReader.isValid(expressions), "Illegal metric expression found: " + expressions);
 
-        MetricReader<MetricQuery> reader = _metricReaderProviderForQueries.get();
-        List<MetricQuery> queries = new ArrayList<>(expressions.size());
+		MetricReader<MetricQuery> reader = _metricReaderProviderForQueries.get();
+		List<MetricQuery> queries = new ArrayList<>(expressions.size());
 
-        try {
-            for (String expression : expressions) {
-                _logger.debug("Creating metric query for expression {}", expression);
-                queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class));
-            }
-        } catch (ParseException ex) {
-            throw new SystemException("Failed to parse the given expression", ex);
-        }
-        return queries;
-    }
+		try {
+			for (String expression : expressions) {
+				_logger.debug("Creating metric query for expression {}", expression);
+				queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class));
+			}
+		} catch (ParseException ex) {
+			throw new SystemException("Failed to parse the given expression", ex);
+		}
+		return queries;
+	}
 
-    @Override
-    public void dispose() {
-        super.dispose();
-        // _tsdbService.dispose();
-    }
+	@Override
+	public void dispose() {
+		super.dispose();
+		// _tsdbService.dispose();
+	}
 
-    private long _getDatapointsAcrossMetrics(List<Metric> metrics) {
-        long dataPointsSize = 0;
+	private long _getDatapointsAcrossMetrics(List<Metric> metrics) {
+		long dataPointsSize = 0;
 
-        for (Metric metric : metrics) {
-            dataPointsSize += metric.getDatapoints().size();
-        }
-        return dataPointsSize;
-    }
+		for (Metric metric : metrics) {
+			dataPointsSize += metric.getDatapoints().size();
+		}
+		return dataPointsSize;
+	}
+
+	@Override
+	public String getExpandedTimeSeriesRange()
+	{
+		{
+			return expandedTimeSeriesRange;
+		}
+	}
+	
+	@Override
+	public String getQueryTimeWindow()
+	{
+		{
+			return queryTimeWindow;
+		}
+	}
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -158,5 +158,21 @@ public interface MetricService extends Service {
      * @return  The corresponding list of metric query objects.  Will never return null.
      */
     List<MetricQuery> getQueries(List<String> expression, long relativeTo);
+    
+    /**
+     * Returns the range of time series that current query has expanded to.
+     *
+     *
+     * @return  The range of time series that current query has expanded to.
+     */    
+    String getExpandedTimeSeriesRange();
+    
+    /**
+     * Returns the query time window of current query
+     *
+     *
+     * @return  The query time window corresponding to current query.
+     */    
+    String getQueryTimeWindow();
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
