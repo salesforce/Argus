@@ -32,9 +32,7 @@
 package com.salesforce.dva.argus.ws.filter;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -49,8 +47,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
-import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 
@@ -76,6 +72,8 @@ public class PerfFilter implements Filter {
 	private final String TAGS_METHOD_KEY = "method";
 	private final String TAGS_ENDPOINT_KEY = "endpoint";
 	private final String TAGS_USER_KEY = "user";
+	private final String TAGS_TIME_WINDOW_KEY = "timeWindow";
+	private final String TAGS_EXPANDED_TIME_SERIES_RANGE_KEY = "expandedTimeSeriesRange";
 
 	//~ Methods **************************************************************************************************************************************
 
@@ -135,16 +133,18 @@ public class PerfFilter implements Filter {
 
 			if (method.equals("GET")) {
 				if(endPoint.equals("metrics")){
-					// queryString starts with  expression=
-					String encodedQuery = req.getQueryString().substring(11);
-					String decodedQuery = URLDecoder.decode(encodedQuery, "UTF-8");
-					// Take first query in metric expression to compute time window
-					List<MetricQuery> metricQuerys = system.getServiceFactory().getMetricService().getQueries(decodedQuery);
-					if(! metricQuerys.isEmpty()){
-						MetricQuery query = metricQuerys.get(0);
-						String timeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
-						tags.put("timeWindow", timeWindow);
+
+					String timeWindow = (String) req.getAttribute(TAGS_TIME_WINDOW_KEY);
+					if(timeWindow == null){
+						timeWindow = "NULL_TIME_WINDOW";
 					}
+					tags.put(TAGS_TIME_WINDOW_KEY, timeWindow);
+
+					String expandedTimeSeriesRange = (String) req.getAttribute(TAGS_EXPANDED_TIME_SERIES_RANGE_KEY);
+					if(expandedTimeSeriesRange == null){
+						expandedTimeSeriesRange = "NULL_EXPANDED_TIME_SERIES_RANGE";
+					}
+					tags.put(TAGS_EXPANDED_TIME_SERIES_RANGE_KEY, expandedTimeSeriesRange);
 				}
 
 				monitorService.modifyCustomCounter(DATA_READ_PER_MIN, 1, tags);
