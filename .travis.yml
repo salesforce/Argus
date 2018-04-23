@@ -21,13 +21,16 @@ addons:
     build_command_prepend: "mvn clean"
     build_command:   "mvn -DskipTests=true install"
     branch_pattern: master
+cache:
+  directories:
+  - $HOME/.m2/repository
 before_script:
   - pip install --user codecov
 after_success:
   - codecov
 deploy:
   provider: script
-  script: ./travis.deploy.sh
+  script: sh $TRAVIS_BUILD_DIR/.travis.deploy.sh
   skip_cleanup: true
   on:
     branch: master
