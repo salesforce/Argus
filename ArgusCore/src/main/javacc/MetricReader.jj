@@ -195,6 +195,7 @@ TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
 TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
+TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
 
 TOKEN : { < COLON : ":" > }
@@ -473,6 +474,9 @@ private String functionName() :
     { return t.image; }
     | 
     t = <GROUPBY>
+    { return t.image; }
+    |
+    t = <GROUPBYTAG>
     { return t.image; }
     |
     t = <INTERPOLATE>
