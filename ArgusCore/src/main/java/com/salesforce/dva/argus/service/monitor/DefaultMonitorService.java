@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.monitor;
 
 import com.google.inject.Inject;
@@ -46,6 +46,8 @@ import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.DashboardService;
+import com.salesforce.dva.argus.service.MailService;
+import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
@@ -84,604 +86,621 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Singleton
 public class DefaultMonitorService extends DefaultJPAService implements MonitorService {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+	//~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String NOTIFICATION_NAME = "monitor_notification";
-    private static final String PHYSICAL_MEMORY_ALERT = "physical_memory";
-    private static final String SWAP_SPACE_ALERT = "swap_space";
-    private static final String FILE_DESCRIPTORS_ALERT = "file_descriptors";
-    private static final String ALERT_NAME_PREFIX = "monitor-";
-    private static final String HOSTNAME;
-    private static long TIME_BETWEEN_RECORDINGS = 60 * 1000;
+	private static final String NOTIFICATION_NAME = "monitor_notification";
+	private static final String PHYSICAL_MEMORY_ALERT = "physical_memory";
+	private static final String SWAP_SPACE_ALERT = "swap_space";
+	private static final String FILE_DESCRIPTORS_ALERT = "file_descriptors";
+	private static final String ALERT_NAME_PREFIX = "monitor-";
+	private static final String HOSTNAME;
+	private static long TIME_BETWEEN_RECORDINGS = 60 * 1000;
 
-    static {
-        HOSTNAME = SystemConfiguration.getHostname();
-    }
+	static {
+		HOSTNAME = SystemConfiguration.getHostname();
+	}
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    @SLF4JTypeListener.InjectLogger
-    private Logger _logger;
-    private final TSDBService _tsdbService;
-    private final UserService _userService;
-    private final AlertService _alertService;
-    private final ServiceManagementService _serviceManagementService;
-    private final DashboardService _dashboardService;
-    private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
-    private final PrincipalUser _adminUser;
-    private Thread _monitorThread;
+	@SLF4JTypeListener.InjectLogger
+	private Logger _logger;
+	private final TSDBService _tsdbService;
+	private final UserService _userService;
+	private final AlertService _alertService;
+	private final ServiceManagementService _serviceManagementService;
+	private final DashboardService _dashboardService;
+	private final MetricService _metricService;
+	private final MailService _mailService;
+	private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
+	private final PrincipalUser _adminUser;
+	private final SystemConfiguration _sysConfig;
+	private Thread _monitorThread;
+	private DataLagMonitor _dataLagMonitorThread;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new DefaultMonitorService object.
-     *
-     * @param  tsdbService               The TSDB service. Cannot be null.
-     * @param  userService               The user service. Cannot be null.
-     * @param  alertService              The alert service. Cannot be null.
-     * @param  serviceManagementService  The service management service. Cannot be null.
-     * @param  dashboardService          The dashboard service. Cannot be null.
-     * @param _sysConfig Service properties.
-     */
-    @Inject
-    public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
-        ServiceManagementService serviceManagementService, DashboardService dashboardService, SystemConfiguration _sysConfig) {
-        super(null, _sysConfig);
-        requireArgument(tsdbService != null, "TSDB service cannot be null.");
-        requireArgument(userService != null, "User service cannot be null.");
-        requireArgument(alertService != null, "Alert service cannot be null.");
-        requireArgument(serviceManagementService != null, "Service management service cannot be null.");
-        requireArgument(dashboardService != null, "Dashboard service cannot be null.");
-        _tsdbService = tsdbService;
-        _userService = userService;
-        _alertService = alertService;
-        _serviceManagementService = serviceManagementService;
-        _dashboardService = dashboardService;
-        _adminUser = _userService.findAdminUser();
-    }
+	/**
+	 * Creates a new DefaultMonitorService object.
+	 *
+	 * @param  tsdbService               The TSDB service. Cannot be null.
+	 * @param  userService               The user service. Cannot be null.
+	 * @param  alertService              The alert service. Cannot be null.
+	 * @param  serviceManagementService  The service management service. Cannot be null.
+	 * @param  dashboardService          The dashboard service. Cannot be null.
+	 * @param _sysConfig Service properties.
+	 */
+	@Inject
+	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
+			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, SystemConfiguration sysConfig) {
+		super(null, sysConfig);
+		requireArgument(tsdbService != null, "TSDB service cannot be null.");
+		requireArgument(userService != null, "User service cannot be null.");
+		requireArgument(alertService != null, "Alert service cannot be null.");
+		requireArgument(serviceManagementService != null, "Service management service cannot be null.");
+		requireArgument(dashboardService != null, "Dashboard service cannot be null.");
+		_tsdbService = tsdbService;
+		_userService = userService;
+		_alertService = alertService;
+		_serviceManagementService = serviceManagementService;
+		_dashboardService = dashboardService;
+		_sysConfig = sysConfig;
+		_metricService = metricService;
+		_mailService = mailService;
+		_adminUser = _userService.findAdminUser();
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    private static String _constructAlertName(String type) {
-        return ALERT_NAME_PREFIX + type + "-" + HOSTNAME;
-    }
+	private static String _constructAlertName(String type) {
+		return ALERT_NAME_PREFIX + type + "-" + HOSTNAME;
+	}
 
-    private static Metric _constructCounterKey(String metricName, Map<String, String> tags) {
-        SystemAssert.requireArgument(metricName != null, "Cannot create a Metric with null metric name");
+	private static Metric _constructCounterKey(String metricName, Map<String, String> tags) {
+		SystemAssert.requireArgument(metricName != null, "Cannot create a Metric with null metric name");
 
-        Counter counter = Counter.fromMetricName(metricName);
-        String scope = counter == null ? "argus.custom" : counter.getScope();
-        Metric metric = new Metric(scope, metricName);
+		Counter counter = Counter.fromMetricName(metricName);
+		String scope = counter == null ? "argus.custom" : counter.getScope();
+		Metric metric = new Metric(scope, metricName);
 
-        metric.setTags(tags);
-        metric.setTag("host", HOSTNAME);
-        return metric;
-    }
+		metric.setTags(tags);
+		metric.setTag("host", HOSTNAME);
+		return metric;
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    @Transactional
-    public synchronized void enableMonitoring() {
-        requireNotDisposed();
-        _logger.info("Globally enabling all system monitoring.");
-        _setServiceEnabled(true);
-        _checkAlertExistence(true);
-        _logger.info("All system monitoring globally enabled.");
-    }
+	@Override
+	@Transactional
+	public synchronized void enableMonitoring() {
+		requireNotDisposed();
+		_logger.info("Globally enabling all system monitoring.");
+		_setServiceEnabled(true);
+		_checkAlertExistence(true);
+		_logger.info("All system monitoring globally enabled.");
+	}
 
-    @Override
-    @Transactional
-    public synchronized void disableMonitoring() {
-        requireNotDisposed();
-        _logger.info("Globally disabling all system monitoring.");
-        _setServiceEnabled(false);
-        _checkAlertExistence(false);
-        _logger.info("All system monitoring globally disabled.");
-    }
+	@Override
+	@Transactional
+	public synchronized void disableMonitoring() {
+		requireNotDisposed();
+		_logger.info("Globally disabling all system monitoring.");
+		_setServiceEnabled(false);
+		_checkAlertExistence(false);
+		_logger.info("All system monitoring globally disabled.");
+	}
 
-    @Override
-    @Transactional
-    public synchronized void startRecordingCounters() {
-        requireNotDisposed();
-        if (_monitorThread != null && _monitorThread.isAlive()) {
-            _logger.info("Request to start system monitoring aborted as it is already running.");
-        } else {
-            _logger.info("Starting system monitor thread.");
-            _checkAlertExistence(true);
-            _monitorThread = new MonitorThread("system-monitor");
-            
-            _monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-				
+	@Override
+	@Transactional
+	public synchronized void startRecordingCounters() {
+		requireNotDisposed();
+		if (_monitorThread != null && _monitorThread.isAlive()) {
+			_logger.info("Request to start system monitoring aborted as it is already running.");
+		} else {
+			_logger.info("Starting system monitor thread.");
+			_checkAlertExistence(true);
+			_monitorThread = new MonitorThread("system-monitor");
+
+			_monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+
 				@Override
 				public void uncaughtException(Thread t, Throwable e) {
 					_logger.error("Uncaught exception occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, e.getMessage());
 					t.interrupt();
 				}
 			});
-            
-            _monitorThread.start();
-            _logger.info("System monitor thread started.");
-        }
-    }
 
-    @Override
-    @Transactional
-    public synchronized void stopRecordingCounters() {
-        requireNotDisposed();
-        if (_monitorThread != null && _monitorThread.isAlive()) {
-            _logger.info("Stopping system monitoring.");
-            _monitorThread.interrupt();
-            _logger.info("System monitor thread interrupted.");
-            try {
-                _logger.info("Waiting for system monitor thread to terminate.");
-                _monitorThread.join();
-            } catch (InterruptedException ex) {
-                _logger.warn("System monitoring was interrupted while shutting down.");
-            }
-            _checkAlertExistence(false);
-            _logger.info("System monitoring stopped.");
-        } else {
-            _logger.info("Requested shutdown of system monitoring aborted as it is not yet running.");
-        }
-    }
+			_monitorThread.start();
+			_logger.info("System monitor thread started.");
 
-    @Override
-    public void updateCustomCounter(String name, double value, Map<String, String> tags) {
-        requireNotDisposed();
-        requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
+			if (Boolean.valueOf(_sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+				_dataLagMonitorThread = new DataLagMonitor(_sysConfig, _metricService, _mailService);
+				_dataLagMonitorThread.start();
+			}
+		}
+	}
 
-        Metric metric = _constructCounterKey(name, tags);
+	@Override
+	@Transactional
+	public synchronized void stopRecordingCounters() {
+		requireNotDisposed();
+		if (_monitorThread != null && _monitorThread.isAlive()) {
+			_logger.info("Stopping system monitoring.");
+			_monitorThread.interrupt();
+			_logger.info("System monitor thread interrupted.");
+			try {
+				_logger.info("Waiting for system monitor thread to terminate.");
+				_monitorThread.join();
+			} catch (InterruptedException ex) {
+				_logger.warn("System monitoring was interrupted while shutting down.");
+			}
+			_checkAlertExistence(false);
+			_logger.info("System monitoring stopped.");
+		} else {
+			_logger.info("Requested shutdown of system monitoring aborted as it is not yet running.");
+		}
+	}
 
-        _logger.debug("Updating {} counter for {} to {}.", name, tags, value);
-        _metrics.put(metric, value);
-    }
+	@Override
+	public void updateCustomCounter(String name, double value, Map<String, String> tags) {
+		requireNotDisposed();
+		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
-    @Override
-    public void updateCounter(Counter counter, double value, Map<String, String> tags) {
-        requireNotDisposed();
-        requireArgument(counter != null, "Cannot update a null counter.");
-        requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot update JVM counters");
-        updateCustomCounter(counter.getMetric(), value, tags);
-    }
+		Metric metric = _constructCounterKey(name, tags);
 
-    @Override
-    public double modifyCustomCounter(String name, double delta, Map<String, String> tags) {
-        requireNotDisposed();
-        SystemAssert.requireArgument(name != null && !name.isEmpty(), "Cannot modify a counter with null or empty name.");
+		_logger.debug("Updating {} counter for {} to {}.", name, tags, value);
+		_metrics.put(metric, value);
+	}
 
-        Metric key = _constructCounterKey(name, tags);
+	@Override
+	public void updateCounter(Counter counter, double value, Map<String, String> tags) {
+		requireNotDisposed();
+		requireArgument(counter != null, "Cannot update a null counter.");
+		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot update JVM counters");
+		updateCustomCounter(counter.getMetric(), value, tags);
+	}
 
-        synchronized (_metrics) {
-            Double value = _metrics.get(key);
-            double newValue = value == null ? delta : value + delta;
+	@Override
+	public double modifyCustomCounter(String name, double delta, Map<String, String> tags) {
+		requireNotDisposed();
+		SystemAssert.requireArgument(name != null && !name.isEmpty(), "Cannot modify a counter with null or empty name.");
 
-            _logger.debug("Modifying {} counter for {} to {}.", name, tags, newValue);
-            _metrics.put(key, newValue);
-            return newValue;
-        }
-    }
+		Metric key = _constructCounterKey(name, tags);
 
-    @Override
-    public double modifyCounter(Counter counter, double delta, Map<String, String> tags) {
-        requireNotDisposed();
-        requireArgument(counter != null, "Cannot modify a null counter.");
-        requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot modify JVM counters");
-        return modifyCustomCounter(counter.getMetric(), delta, tags);
-    }
+		synchronized (_metrics) {
+			Double value = _metrics.get(key);
+			double newValue = value == null ? delta : value + delta;
 
-    @Override
-    public double getCounter(Counter counter, Map<String, String> tags) {
-        requireArgument(counter != null, "Cannot get value for a null counter.");
-        return getCustomCounter(counter.getMetric(), tags);
-    }
+			_logger.debug("Modifying {} counter for {} to {}.", name, tags, newValue);
+			_metrics.put(key, newValue);
+			return newValue;
+		}
+	}
 
-    @Override
-    public double getCustomCounter(String name, Map<String, String> tags) {
-        requireNotDisposed();
-        requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
+	@Override
+	public double modifyCounter(Counter counter, double delta, Map<String, String> tags) {
+		requireNotDisposed();
+		requireArgument(counter != null, "Cannot modify a null counter.");
+		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot modify JVM counters");
+		return modifyCustomCounter(counter.getMetric(), delta, tags);
+	}
 
-        Metric metric = _constructCounterKey(name, tags);
-        Double value;
+	@Override
+	public double getCounter(Counter counter, Map<String, String> tags) {
+		requireArgument(counter != null, "Cannot get value for a null counter.");
+		return getCustomCounter(counter.getMetric(), tags);
+	}
 
-        synchronized (_metrics) {
-            value = _metrics.get(metric);
-            if (value == null) {
-                value = Double.NaN;
-            }
-        }
-        _logger.debug("Value for {} counter having tags {} is {}.", name, tags, value);
-        return value;
-    }
+	@Override
+	public double getCustomCounter(String name, Map<String, String> tags) {
+		requireNotDisposed();
+		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
-    @Override
-    public void resetCustomCounters() {
-        requireNotDisposed();
-        _resetCountersForScope("argus.custom");
-    }
+		Metric metric = _constructCounterKey(name, tags);
+		Double value;
 
-    @Override
-    public void resetSystemCounters() {
-        requireNotDisposed();
-        _resetCountersForScope("argus.core");
-    }
+		synchronized (_metrics) {
+			value = _metrics.get(metric);
+			if (value == null) {
+				value = Double.NaN;
+			}
+		}
+		_logger.debug("Value for {} counter having tags {} is {}.", name, tags, value);
+		return value;
+	}
 
-    @Override
-    public void resetRuntimeCounters() {
-        requireNotDisposed();
-        _resetCountersForScope("argus.jvm");
-    }
+	@Override
+	public void resetCustomCounters() {
+		requireNotDisposed();
+		_resetCountersForScope("argus.custom");
+	}
 
-    @Override
-    @Transactional
-    public Dashboard getSystemDashboard() {
-        requireNotDisposed();
-        return _getDashboardForScope("System Dashboard", "argus.core");
-    }
+	@Override
+	public void resetSystemCounters() {
+		requireNotDisposed();
+		_resetCountersForScope("argus.core");
+	}
 
-    @Override
-    @Transactional
-    public Dashboard getRuntimeDashboard() {
-        requireNotDisposed();
-        return _getDashboardForScope("Runtime Dashboard", "argus.jvm");
-    }
+	@Override
+	public void resetRuntimeCounters() {
+		requireNotDisposed();
+		_resetCountersForScope("argus.jvm");
+	}
 
-    @Override
-    public synchronized void dispose() {
-        stopRecordingCounters();
-        super.dispose();
-        _userService.dispose();
-        _dashboardService.dispose();
-        _alertService.dispose();
-        _serviceManagementService.dispose();
-    }
+	@Override
+	@Transactional
+	public Dashboard getSystemDashboard() {
+		requireNotDisposed();
+		return _getDashboardForScope("System Dashboard", "argus.core");
+	}
 
-    private void _setServiceEnabled(boolean enabled) {
-        synchronized (_serviceManagementService) {
-            ServiceManagementRecord record = _serviceManagementService.findServiceManagementRecord(Service.MONITORING);
+	@Override
+	@Transactional
+	public Dashboard getRuntimeDashboard() {
+		requireNotDisposed();
+		return _getDashboardForScope("Runtime Dashboard", "argus.jvm");
+	}
 
-            if (record == null) {
-                record = new ServiceManagementRecord(_userService.findAdminUser(), Service.MONITORING, enabled);
-            }
-            record.setEnabled(enabled);
-            _serviceManagementService.updateServiceManagementRecord(record);
-        }
-    }
+	@Override
+	public synchronized void dispose() {
+		stopRecordingCounters();
+		super.dispose();
+		_userService.dispose();
+		_dashboardService.dispose();
+		_alertService.dispose();
+		_serviceManagementService.dispose();
+	}
+	
+	@Override
+	public boolean isDataLagging() {
+		return _dataLagMonitorThread.isDataLagging();
+	}
 
-    private boolean _isMonitoringServiceEnabled() {
-        //return _serviceManagementService.isServiceEnabled(Service.MONITORING);
-    	return true;
-    }
+	private void _setServiceEnabled(boolean enabled) {
+		synchronized (_serviceManagementService) {
+			ServiceManagementRecord record = _serviceManagementService.findServiceManagementRecord(Service.MONITORING);
 
-    private void _resetCountersForScope(String scope) {
-        assert (scope != null) : "Scope can not be null.";
-        _logger.info("Resetting {} counters.", scope);
+			if (record == null) {
+				record = new ServiceManagementRecord(_userService.findAdminUser(), Service.MONITORING, enabled);
+			}
+			record.setEnabled(enabled);
+			_serviceManagementService.updateServiceManagementRecord(record);
+		}
+	}
 
-        List<Metric> toRemove = new LinkedList<>();
+	private boolean _isMonitoringServiceEnabled() {
+		//return _serviceManagementService.isServiceEnabled(Service.MONITORING);
+		return true;
+	}
 
-        synchronized (_metrics) {
-            for (Metric metric : _metrics.keySet()) {
-                if (scope.equalsIgnoreCase(metric.getScope())) {
-                    toRemove.add(metric);
-                }
-            }
-            for (Metric metric : toRemove) {
-                _logger.debug("Resetting counter {}.", metric);
-                _metrics.remove(metric);
-            }
-        }
-    }
+	private void _resetCountersForScope(String scope) {
+		assert (scope != null) : "Scope can not be null.";
+		_logger.info("Resetting {} counters.", scope);
 
-    private void _updateJVMStatsCounters() {
-        Counter[] counters = Counter.values();
-        List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
-        List<MemoryPoolMXBean> memoryPoolBeans = ManagementFactory.getMemoryPoolMXBeans();
-        OperatingSystemMXBean osBean = ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean());
+		List<Metric> toRemove = new LinkedList<>();
 
-        for (Counter counter : counters) {
-            if ("argus.jvm".equalsIgnoreCase(counter.getScope())) {
-                Double value = null;
-                String units = "count";
+		synchronized (_metrics) {
+			for (Metric metric : _metrics.keySet()) {
+				if (scope.equalsIgnoreCase(metric.getScope())) {
+					toRemove.add(metric);
+				}
+			}
+			for (Metric metric : toRemove) {
+				_logger.debug("Resetting counter {}.", metric);
+				_metrics.remove(metric);
+			}
+		}
+	}
 
-                switch (counter) {
-                    case ACTIVE_CORES:
-                        value = (double) Runtime.getRuntime().availableProcessors();
-                        break;
-                    case LOADED_CLASSES:
-                        value = (double) ManagementFactory.getClassLoadingMXBean().getLoadedClassCount();
-                        break;
-                    case UNLOAED_CLASSES:
-                        value = (double) ManagementFactory.getClassLoadingMXBean().getUnloadedClassCount();
-                        break;
-                    case MARKSWEEP_COUNT:
-                        for (GarbageCollectorMXBean bean : gcBeans) {
-                            if (bean.getName().toLowerCase().contains("mark")) {
-                                value = (double) bean.getCollectionCount();
-                                break;
-                            }
-                        }
-                        break;
-                    case SCAVENGE_COUNT:
-                        for (GarbageCollectorMXBean bean : gcBeans) {
-                            if (bean.getName().toLowerCase().contains("scavenge")) {
-                                value = (double) bean.getCollectionCount();
-                                break;
-                            }
-                        }
-                        break;
-                    case HEAP_USED:
-                        value = (double) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
-                        units = "bytes";
-                        break;
-                    case NONHEAP_USED:
-                        value = (double) ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed();
-                        units = "bytes";
-                        break;
-                    case CODECACHE_USED:
-                        for (MemoryPoolMXBean bean : memoryPoolBeans) {
-                            if (bean.getName().toLowerCase().contains("code")) {
-                                value = (double) bean.getUsage().getUsed();
-                                units = "bytes";
-                                break;
-                            }
-                        }
-                        break;
-                    case EDEN_USED:
-                        for (MemoryPoolMXBean bean : memoryPoolBeans) {
-                            if (bean.getName().toLowerCase().contains("eden")) {
-                                value = (double) bean.getUsage().getUsed();
-                                units = "bytes";
-                                break;
-                            }
-                        }
-                        break;
-                    case OLDGEN_USED:
-                        for (MemoryPoolMXBean bean : memoryPoolBeans) {
-                            if (bean.getName().toLowerCase().contains("old")) {
-                                value = (double) bean.getUsage().getUsed();
-                                units = "bytes";
-                                break;
-                            }
-                        }
-                        break;
-                    case PERMGEN_USED:
-                        for (MemoryPoolMXBean bean : memoryPoolBeans) {
-                            if (bean.getName().toLowerCase().contains("perm")) {
-                                value = (double) bean.getUsage().getUsed();
-                                units = "bytes";
-                                break;
-                            }
-                        }
-                        break;
-                    case SURVIVOR_USED:
-                        for (MemoryPoolMXBean bean : memoryPoolBeans) {
-                            if (bean.getName().toLowerCase().contains("survivor")) {
-                                value = (double) bean.getUsage().getUsed();
-                                units = "bytes";
-                                break;
-                            }
-                        }
-                        break;
-                    case FREE_PHYSICAL_MEM:
-                        value = (double) osBean.getFreePhysicalMemorySize();
-                        units = "bytes";
-                        break;
-                    case FREE_SWAP_SPACE:
-                        value = (double) osBean.getFreeSwapSpaceSize();
-                        units = "bytes";
-                        break;
-                    case MAX_PHYSICAL_MEM:
-                        value = (double) osBean.getTotalPhysicalMemorySize();
-                        units = "bytes";
-                        break;
-                    case MAX_SWAP_SPACE:
-                        value = (double) osBean.getTotalSwapSpaceSize();
-                        units = "bytes";
-                        break;
-                    case OPEN_DESCRIPTORS:
-                        if (osBean instanceof UnixOperatingSystemMXBean) {
-                            value = (double) ((UnixOperatingSystemMXBean) osBean).getOpenFileDescriptorCount();
-                        }
-                        break;
-                    case MAX_DESCRIPTORS:
-                        value = (double) ((UnixOperatingSystemMXBean) osBean).getMaxFileDescriptorCount();
-                        break;
-                    case THREADS:
-                        value = (double) ManagementFactory.getThreadMXBean().getThreadCount();
-                        break;
-                    case PEAK_THREADS:
-                        value = (double) ManagementFactory.getThreadMXBean().getPeakThreadCount();
-                        break;
-                    case DAEMON_THREADS:
-                        value = (double) ManagementFactory.getThreadMXBean().getDaemonThreadCount();
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unexpected Counter: This should never happen");
-                } // end switch
-                if (value != null) {
-                    Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
+	private void _updateJVMStatsCounters() {
+		Counter[] counters = Counter.values();
+		List<GarbageCollectorMXBean> gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
+		List<MemoryPoolMXBean> memoryPoolBeans = ManagementFactory.getMemoryPoolMXBeans();
+		OperatingSystemMXBean osBean = ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean());
 
-                    metric.setUnits(units);
-                    _metrics.put(metric, value);
-                }
-            } // end if
-        } // end for
-    }
+		for (Counter counter : counters) {
+			if ("argus.jvm".equalsIgnoreCase(counter.getScope())) {
+				Double value = null;
+				String units = "count";
 
-    private Dashboard _getDashboardForScope(String name, String scope) {
-        String dashboardName = name + HOSTNAME;
-        Dashboard dashboard;
+				switch (counter) {
+				case ACTIVE_CORES:
+					value = (double) Runtime.getRuntime().availableProcessors();
+					break;
+				case LOADED_CLASSES:
+					value = (double) ManagementFactory.getClassLoadingMXBean().getLoadedClassCount();
+					break;
+				case UNLOAED_CLASSES:
+					value = (double) ManagementFactory.getClassLoadingMXBean().getUnloadedClassCount();
+					break;
+				case MARKSWEEP_COUNT:
+					for (GarbageCollectorMXBean bean : gcBeans) {
+						if (bean.getName().toLowerCase().contains("mark")) {
+							value = (double) bean.getCollectionCount();
+							break;
+						}
+					}
+					break;
+				case SCAVENGE_COUNT:
+					for (GarbageCollectorMXBean bean : gcBeans) {
+						if (bean.getName().toLowerCase().contains("scavenge")) {
+							value = (double) bean.getCollectionCount();
+							break;
+						}
+					}
+					break;
+				case HEAP_USED:
+					value = (double) ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+					units = "bytes";
+					break;
+				case NONHEAP_USED:
+					value = (double) ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed();
+					units = "bytes";
+					break;
+				case CODECACHE_USED:
+					for (MemoryPoolMXBean bean : memoryPoolBeans) {
+						if (bean.getName().toLowerCase().contains("code")) {
+							value = (double) bean.getUsage().getUsed();
+							units = "bytes";
+							break;
+						}
+					}
+					break;
+				case EDEN_USED:
+					for (MemoryPoolMXBean bean : memoryPoolBeans) {
+						if (bean.getName().toLowerCase().contains("eden")) {
+							value = (double) bean.getUsage().getUsed();
+							units = "bytes";
+							break;
+						}
+					}
+					break;
+				case OLDGEN_USED:
+					for (MemoryPoolMXBean bean : memoryPoolBeans) {
+						if (bean.getName().toLowerCase().contains("old")) {
+							value = (double) bean.getUsage().getUsed();
+							units = "bytes";
+							break;
+						}
+					}
+					break;
+				case PERMGEN_USED:
+					for (MemoryPoolMXBean bean : memoryPoolBeans) {
+						if (bean.getName().toLowerCase().contains("perm")) {
+							value = (double) bean.getUsage().getUsed();
+							units = "bytes";
+							break;
+						}
+					}
+					break;
+				case SURVIVOR_USED:
+					for (MemoryPoolMXBean bean : memoryPoolBeans) {
+						if (bean.getName().toLowerCase().contains("survivor")) {
+							value = (double) bean.getUsage().getUsed();
+							units = "bytes";
+							break;
+						}
+					}
+					break;
+				case FREE_PHYSICAL_MEM:
+					value = (double) osBean.getFreePhysicalMemorySize();
+					units = "bytes";
+					break;
+				case FREE_SWAP_SPACE:
+					value = (double) osBean.getFreeSwapSpaceSize();
+					units = "bytes";
+					break;
+				case MAX_PHYSICAL_MEM:
+					value = (double) osBean.getTotalPhysicalMemorySize();
+					units = "bytes";
+					break;
+				case MAX_SWAP_SPACE:
+					value = (double) osBean.getTotalSwapSpaceSize();
+					units = "bytes";
+					break;
+				case OPEN_DESCRIPTORS:
+					if (osBean instanceof UnixOperatingSystemMXBean) {
+						value = (double) ((UnixOperatingSystemMXBean) osBean).getOpenFileDescriptorCount();
+					}
+					break;
+				case MAX_DESCRIPTORS:
+					value = (double) ((UnixOperatingSystemMXBean) osBean).getMaxFileDescriptorCount();
+					break;
+				case THREADS:
+					value = (double) ManagementFactory.getThreadMXBean().getThreadCount();
+					break;
+				case PEAK_THREADS:
+					value = (double) ManagementFactory.getThreadMXBean().getPeakThreadCount();
+					break;
+				case DAEMON_THREADS:
+					value = (double) ManagementFactory.getThreadMXBean().getDaemonThreadCount();
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected Counter: This should never happen");
+				} // end switch
+				if (value != null) {
+					Metric metric = _constructCounterKey(counter.getMetric(), Collections.<String, String>emptyMap());
 
-        synchronized (_dashboardService) {
-            dashboard = _dashboardService.findDashboardByNameAndOwner(dashboardName, _adminUser);
-        }
-        if (dashboard == null) {
-            dashboard = new Dashboard(_adminUser, dashboardName, _adminUser);
+					metric.setUnits(units);
+					_metrics.put(metric, value);
+				}
+			} // end if
+		} // end for
+	}
 
-            /* @todo: create dashboard content. */
-            synchronized (_dashboardService) {
-                dashboard = _dashboardService.updateDashboard(dashboard);
-            }
-        }
-        return dashboard;
-    }
+	private Dashboard _getDashboardForScope(String name, String scope) {
+		String dashboardName = name + HOSTNAME;
+		Dashboard dashboard;
 
-    /**
-     * Determines if an alert exists, creates it if it doesn't and then sets it to be enabled or disabled, as required.
-     *
-     * @param   enabled  Enables or disables the alert.
-     *
-     * @throws  SystemException  If an error creating the alert occurs.
-     */
-    @Transactional
-    protected synchronized void _checkAlertExistence(boolean enabled) {
-        for (String alertName : new String[] { FILE_DESCRIPTORS_ALERT, PHYSICAL_MEMORY_ALERT, SWAP_SPACE_ALERT }) {
-            if (_alertService.findAlertByNameAndOwner(_constructAlertName(alertName), _adminUser) == null) {
-                String metricExpression = null;
-                TriggerType triggerType = null;
-                String triggerName = null;
-                double triggerThreshold = Double.NaN;
+		synchronized (_dashboardService) {
+			dashboard = _dashboardService.findDashboardByNameAndOwner(dashboardName, _adminUser);
+		}
+		if (dashboard == null) {
+			dashboard = new Dashboard(_adminUser, dashboardName, _adminUser);
 
-                switch (alertName) {
-                    case FILE_DESCRIPTORS_ALERT:
+			/* @todo: create dashboard content. */
+			synchronized (_dashboardService) {
+				dashboard = _dashboardService.updateDashboard(dashboard);
+			}
+		}
+		return dashboard;
+	}
 
-                        String openFileDescMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.OPEN_DESCRIPTORS.getScope(),
-                            Counter.OPEN_DESCRIPTORS.getMetric(), HOSTNAME);
-                        String maxFileDescMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_DESCRIPTORS.getScope(),
-                            Counter.MAX_DESCRIPTORS.getMetric(), HOSTNAME);
+	/**
+	 * Determines if an alert exists, creates it if it doesn't and then sets it to be enabled or disabled, as required.
+	 *
+	 * @param   enabled  Enables or disables the alert.
+	 *
+	 * @throws  SystemException  If an error creating the alert occurs.
+	 */
+	@Transactional
+	protected synchronized void _checkAlertExistence(boolean enabled) {
+		for (String alertName : new String[] { FILE_DESCRIPTORS_ALERT, PHYSICAL_MEMORY_ALERT, SWAP_SPACE_ALERT }) {
+			if (_alertService.findAlertByNameAndOwner(_constructAlertName(alertName), _adminUser) == null) {
+				String metricExpression = null;
+				TriggerType triggerType = null;
+				String triggerName = null;
+				double triggerThreshold = Double.NaN;
 
-                        metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), openFileDescMetricExp,
-                            maxFileDescMetricExp);
-                        triggerType = TriggerType.GREATER_THAN;
-                        triggerName = "Open FD > 95% of Max FD";
-                        triggerThreshold = 0.95;
-                        break;
-                    case PHYSICAL_MEMORY_ALERT:
+				switch (alertName) {
+				case FILE_DESCRIPTORS_ALERT:
 
-                        String freeMemMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.FREE_PHYSICAL_MEM.getScope(),
-                            Counter.FREE_PHYSICAL_MEM.getMetric(), HOSTNAME);
-                        String maxMemMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_PHYSICAL_MEM.getScope(),
-                            Counter.MAX_PHYSICAL_MEM.getMetric(), HOSTNAME);
+					String openFileDescMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.OPEN_DESCRIPTORS.getScope(),
+							Counter.OPEN_DESCRIPTORS.getMetric(), HOSTNAME);
+					String maxFileDescMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_DESCRIPTORS.getScope(),
+							Counter.MAX_DESCRIPTORS.getMetric(), HOSTNAME);
 
-                        metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), freeMemMetricExp, maxMemMetricExp);
-                        triggerType = TriggerType.LESS_THAN;
-                        triggerName = "Free Mem < 5% of Tot Mem";
-                        triggerThreshold = 0.05;
-                        break;
-                    case SWAP_SPACE_ALERT:
+					metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), openFileDescMetricExp,
+							maxFileDescMetricExp);
+					triggerType = TriggerType.GREATER_THAN;
+					triggerName = "Open FD > 95% of Max FD";
+					triggerThreshold = 0.95;
+					break;
+				case PHYSICAL_MEMORY_ALERT:
 
-                        String freeSSMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.FREE_SWAP_SPACE.getScope(),
-                            Counter.FREE_SWAP_SPACE.getMetric(), HOSTNAME);
-                        String maxSSMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_SWAP_SPACE.getScope(),
-                            Counter.MAX_SWAP_SPACE.getMetric(), HOSTNAME);
+					String freeMemMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.FREE_PHYSICAL_MEM.getScope(),
+							Counter.FREE_PHYSICAL_MEM.getMetric(), HOSTNAME);
+					String maxMemMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_PHYSICAL_MEM.getScope(),
+							Counter.MAX_PHYSICAL_MEM.getMetric(), HOSTNAME);
 
-                        metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), freeSSMetricExp, maxSSMetricExp);
-                        triggerType = TriggerType.LESS_THAN;
-                        triggerName = "Free Swap Space < 5% of Tot Swap Space";
-                        triggerThreshold = 0.05;
-                        break;
-                    default:
-                        throw new SystemException("Attempting to create an unsupported monitoring alert" + alertName);
-                }
-                requireArgument(metricExpression != null && triggerType != null & triggerName != null, "Unsupported monitor alert " + alertName);
+					metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), freeMemMetricExp, maxMemMetricExp);
+					triggerType = TriggerType.LESS_THAN;
+					triggerName = "Free Mem < 5% of Tot Mem";
+					triggerThreshold = 0.05;
+					break;
+				case SWAP_SPACE_ALERT:
 
-                Alert alert = new Alert(_adminUser, _adminUser, _constructAlertName(alertName), metricExpression, "0 * * * *");
-                Notification notification = new Notification(NOTIFICATION_NAME, alert, AuditNotifier.class.getName(), new ArrayList<String>(),
-                    60000L);
-                Trigger trigger = new Trigger(alert, triggerType, triggerName, triggerThreshold, 0);
-                List<Trigger> triggers = Arrays.asList(new Trigger[] { trigger });
+					String freeSSMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.FREE_SWAP_SPACE.getScope(),
+							Counter.FREE_SWAP_SPACE.getMetric(), HOSTNAME);
+					String maxSSMetricExp = MessageFormat.format("-1h:{0}:{1}'{'host={2}'}':avg", Counter.MAX_SWAP_SPACE.getScope(),
+							Counter.MAX_SWAP_SPACE.getMetric(), HOSTNAME);
 
-                notification.setTriggers(triggers);
-                alert.setNotifications(Arrays.asList(new Notification[] { notification }));
-                alert.setTriggers(triggers);
-                alert.setEnabled(enabled);
-                _alertService.updateAlert(alert);
-            } else { // end if
+					metricExpression = MessageFormat.format("{0}({1}, {2})", Function.DIVIDE.getName(), freeSSMetricExp, maxSSMetricExp);
+					triggerType = TriggerType.LESS_THAN;
+					triggerName = "Free Swap Space < 5% of Tot Swap Space";
+					triggerThreshold = 0.05;
+					break;
+				default:
+					throw new SystemException("Attempting to create an unsupported monitoring alert" + alertName);
+				}
+				requireArgument(metricExpression != null && triggerType != null & triggerName != null, "Unsupported monitor alert " + alertName);
 
-                Alert alert = _alertService.findAlertByNameAndOwner(_constructAlertName(alertName), _adminUser);
+				Alert alert = new Alert(_adminUser, _adminUser, _constructAlertName(alertName), metricExpression, "0 * * * *");
+				Notification notification = new Notification(NOTIFICATION_NAME, alert, AuditNotifier.class.getName(), new ArrayList<String>(),
+						60000L);
+				Trigger trigger = new Trigger(alert, triggerType, triggerName, triggerThreshold, 0);
+				List<Trigger> triggers = Arrays.asList(new Trigger[] { trigger });
 
-                alert.setEnabled(enabled);
-                _alertService.updateAlert(alert);
-            } // end if-else
-        } // end for
-    }
+				notification.setTriggers(triggers);
+				alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+				alert.setTriggers(triggers);
+				alert.setEnabled(enabled);
+				_alertService.updateAlert(alert);
+			} else { // end if
 
-    //~ Inner Classes ********************************************************************************************************************************
+				Alert alert = _alertService.findAlertByNameAndOwner(_constructAlertName(alertName), _adminUser);
 
-    /**
-     * Monitoring thread.
-     *
-     * @author  Tom Valine (tvaline@salesforce.com)
-     */
-    private class MonitorThread extends Thread {
+				alert.setEnabled(enabled);
+				_alertService.updateAlert(alert);
+			} // end if-else
+		} // end for
+	}
 
-        /**
-         * Creates a new MonitorThread object.
-         *
-         * @param  name  The thread name.
-         */
-        public MonitorThread(String name) {
-            super(name);
-        }
+	//~ Inner Classes ********************************************************************************************************************************
 
-        @Override
-        public void run() {
-            while (!isInterrupted()) {
-                _sleepForPollPeriod();
-                if (!isInterrupted() && _isMonitoringServiceEnabled()) {
-                    try {
-                        _pushCounters();
-                    } catch (Exception ex) {
-                        _logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
-                    }
-                }
-            }
-        }
+	/**
+	 * Monitoring thread.
+	 *
+	 * @author  Tom Valine (tvaline@salesforce.com)
+	 */
+	private class MonitorThread extends Thread {
 
-        private void _pushCounters() {
-        	int sizeJVMMetrics = 0;
-            _logger.debug("Pushing monitor service counters for {}.", HOSTNAME);
+		/**
+		 * Creates a new MonitorThread object.
+		 *
+		 * @param  name  The thread name.
+		 */
+		public MonitorThread(String name) {
+			super(name);
+		}
 
-            Map<Metric, Double> counters = new HashMap<>();
-            
-            _updateJVMStatsCounters();
+		@Override
+		public void run() {
+			while (!isInterrupted()) {
+				_sleepForPollPeriod();
+				if (!isInterrupted() && _isMonitoringServiceEnabled()) {
+					try {
+						_pushCounters();
+					} catch (Exception ex) {
+						_logger.error("Error occurred while pushing monitor counters for {}. Reason: {}", HOSTNAME, ex.getMessage());
+					}
+				}
+			}
+		}
 
-            synchronized (_metrics) {
-                sizeJVMMetrics = _metrics.size();
-                counters.putAll(_metrics);
-                _metrics.clear();
-            }
-            
-            if(counters.size() != sizeJVMMetrics){
-            	_logger.warn("Monitoring Service JVM Metrics and counters size are not equal");
-            	_logger.warn("JVM Metrics size = {}", sizeJVMMetrics);
-            	_logger.warn("counters size = {}", counters.size());
-            }
-            
+		private void _pushCounters() {
+			int sizeJVMMetrics = 0;
+			_logger.debug("Pushing monitor service counters for {}.", HOSTNAME);
 
-            long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
+			Map<Metric, Double> counters = new HashMap<>();
 
-            for (Entry<Metric, Double> entry : counters.entrySet()) {
-                Map<Long, Double> dataPoints = new HashMap<>(1);
+			_updateJVMStatsCounters();
 
-                dataPoints.put(timestamp, entry.getValue());
-                entry.getKey().setDatapoints(dataPoints);
-            }
-            if (!isDisposed()) {
-            	_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());
-                _tsdbService.putMetrics(new ArrayList<>(counters.keySet()));
-            }
-        }
+			synchronized (_metrics) {
+				sizeJVMMetrics = _metrics.size();
+				counters.putAll(_metrics);
+				_metrics.clear();
+			}
 
-        private void _sleepForPollPeriod() {
-            try {
-                _logger.info("Sleeping for {}s before pushing counters.", TIME_BETWEEN_RECORDINGS / 1000);
-                sleep(TIME_BETWEEN_RECORDINGS);
-            } catch (InterruptedException ex) {
-                _logger.warn("System monitoring was interrupted.");
-                interrupt();
-            }
-        }
-    }
+			if(counters.size() != sizeJVMMetrics){
+				_logger.warn("Monitoring Service JVM Metrics and counters size are not equal");
+				_logger.warn("JVM Metrics size = {}", sizeJVMMetrics);
+				_logger.warn("counters size = {}", counters.size());
+			}
+
+
+			long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
+
+			for (Entry<Metric, Double> entry : counters.entrySet()) {
+				Map<Long, Double> dataPoints = new HashMap<>(1);
+
+				dataPoints.put(timestamp, entry.getValue());
+				entry.getKey().setDatapoints(dataPoints);
+			}
+			if (!isDisposed()) {
+				_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());
+				_tsdbService.putMetrics(new ArrayList<>(counters.keySet()));
+			}
+		}
+
+		private void _sleepForPollPeriod() {
+			try {
+				_logger.info("Sleeping for {}s before pushing counters.", TIME_BETWEEN_RECORDINGS / 1000);
+				sleep(TIME_BETWEEN_RECORDINGS);
+			} catch (InterruptedException ex) {
+				_logger.warn("System monitoring was interrupted.");
+				interrupt();
+			}
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

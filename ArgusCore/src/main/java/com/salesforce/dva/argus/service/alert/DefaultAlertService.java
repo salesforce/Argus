@@ -355,6 +355,20 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			String logMessage = null;
 			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			
+			if(Boolean.valueOf(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
+				if(_monitorService.isDataLagging()) {
+					logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+					_logger.info(logMessage);
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+					history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+					historyList.add(history);
+					Map<String, String> tags = new HashMap<>();
+					tags.put(USERTAG, alert.getOwner().getUserName());
+					_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+					continue;
+				}
+			}
+			
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
 				
@@ -403,6 +417,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), ex.getMessage());
@@ -412,7 +429,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
-				
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
