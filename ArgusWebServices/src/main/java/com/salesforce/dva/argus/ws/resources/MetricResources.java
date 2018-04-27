@@ -166,7 +166,9 @@ public class MetricResources extends AbstractResource {
 
         for (String expression : expressions) {
         	try {
-        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
+        		req.setAttribute("expandedTimeSeriesRange", metricService.getExpandedTimeSeriesRange());
+        		req.setAttribute("timeWindow", metricService.getQueryTimeWindow());
         		metrics.addAll(metricsForThisExpression);
         	} catch(WildcardExpansionLimitExceededException e) {
         		metricService.dispose();
