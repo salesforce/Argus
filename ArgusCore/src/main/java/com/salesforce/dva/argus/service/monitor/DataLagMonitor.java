@@ -66,7 +66,10 @@ public class DataLagMonitor extends Thread{
 				Metric currMetric = metrics.get(0);
 				if(currMetric.getDatapoints()==null || currMetric.getDatapoints().size()==0) {
 					_logger.info("Data lag detected as data point list is empty");
-					isDataLagging=true;
+					if(!isDataLagging) {
+						isDataLagging=true;
+						sendDataLagEmailNotification();
+					}
 					continue;
 				}else {
 					long lastDataPointTime = 0L;
