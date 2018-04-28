@@ -18,6 +18,10 @@ Argus uses the `argus-build.properties` file as a resource filter for the build 
 ```
 mvn -DskipTests=true --non-recursive install
 ```
+or
+```
+mvn -Dmaven.test.skip=true --non-recursive install
+```
 
 ### Running The Unit Tests
 
