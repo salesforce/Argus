@@ -353,10 +353,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			long jobEndTime = 0;
 			
 			String logMessage = null;
-			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			History history = null;
 			
 			if(Boolean.valueOf(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
+					history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
 					logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
 					_logger.info(logMessage);
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -369,6 +370,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			}
 			
+			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
 				
