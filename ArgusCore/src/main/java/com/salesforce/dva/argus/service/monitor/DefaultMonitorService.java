@@ -238,6 +238,22 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		} else {
 			_logger.info("Requested shutdown of system monitoring aborted as it is not yet running.");
 		}
+		
+		if (_dataLagMonitorThread != null && _dataLagMonitorThread.isAlive()) {
+			_logger.info("Stopping data lag monitoring.");
+			_dataLagMonitorThread.interrupt();
+			_logger.info("System data lag monitoring thread interrupted.");
+			try {
+				_logger.info("Waiting for data lag monitor thread to terminate.");
+				_dataLagMonitorThread.join();
+			} catch (InterruptedException ex) {
+				_logger.warn("Data lag monitoring thread was interrupted while shutting down.");
+			}
+			_logger.info("Data lag monitoring stopped.");
+		} else {
+			_logger.info("Requested shutdown of data lag monitoring thread aborted as it is not yet running.");
+		}
+		
 	}
 
 	@Override
