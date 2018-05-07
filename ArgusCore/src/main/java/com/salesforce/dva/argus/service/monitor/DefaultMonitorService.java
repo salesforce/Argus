@@ -213,8 +213,10 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			_logger.info("System monitor thread started.");
 
 			if (Boolean.valueOf(_sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))) {
+				_logger.info("Starting data lag monitor thread.");
 				_dataLagMonitorThread = new DataLagMonitor(_sysConfig, _metricService, _mailService);
 				_dataLagMonitorThread.start();
+				_logger.info("Data lag monitor thread started.");
 			}
 		}
 	}
@@ -238,7 +240,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		} else {
 			_logger.info("Requested shutdown of system monitoring aborted as it is not yet running.");
 		}
-		
+
 		if (_dataLagMonitorThread != null && _dataLagMonitorThread.isAlive()) {
 			_logger.info("Stopping data lag monitoring.");
 			_dataLagMonitorThread.interrupt();
@@ -253,7 +255,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		} else {
 			_logger.info("Requested shutdown of data lag monitoring thread aborted as it is not yet running.");
 		}
-		
+
 	}
 
 	@Override
@@ -365,10 +367,14 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		_alertService.dispose();
 		_serviceManagementService.dispose();
 	}
-	
+
 	@Override
 	public boolean isDataLagging() {
-		return _dataLagMonitorThread.isDataLagging();
+		if(_dataLagMonitorThread!=null) {
+			return _dataLagMonitorThread.isDataLagging();
+		}else {
+			return false;
+		}
 	}
 
 	private void _setServiceEnabled(boolean enabled) {

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,13 +42,15 @@ public class DataLagMonitor extends Thread{
 		_metricService = metricService;
 		_mailService = mailService;
 		_dataLagQueryExpression = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION);
-		_dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION));
+		_dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		_dataLagNotificationEmailId = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_NOTIFICATION_EMAIL_ADDRESS);
 		_hostName = sysConfig.getHostname();
+		_logger.info("Data lag monitor initialized");
 	}
 
 	@Override
 	public void run() {
+		_logger.info("Data lag monitor thread started");
 		while (!isInterrupted()) {
 			try {
 				sleep(SLEEP_INTERVAL_MILLIS);
@@ -92,7 +95,7 @@ public class DataLagMonitor extends Thread{
 					sendDataLagEmailNotification();
 				}
 			}catch(Exception e) {
-				_logger.error("Data lag monitor thread sleep interrupted - " + e.getMessage());
+				_logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
 			}
 		}
 	}

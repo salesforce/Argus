@@ -67,6 +67,7 @@ import java.math.BigInteger;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -409,8 +410,19 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 				
 				jobEndTime = System.currentTimeMillis();
-				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, jobEndTime - jobStartTime);
+				long evalLatency = jobEndTime - jobStartTime;
+				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 				
+				// publishing evaluation latency as a metric
+				Map<Long, Double> datapoints = new HashMap<>();
+				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
+				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
+				metric.addDatapoints(datapoints);
+				try {
+					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
+				} catch (Exception ex) {
+					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
+				}		
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), mde.getMessage());
