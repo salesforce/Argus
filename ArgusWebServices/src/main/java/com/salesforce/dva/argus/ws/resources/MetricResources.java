@@ -166,7 +166,9 @@ public class MetricResources extends AbstractResource {
 
         for (String expression : expressions) {
         	try {
-        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
+        		req.setAttribute("expandedTimeSeriesRange", metricService.getExpandedTimeSeriesRange());
+        		req.setAttribute("timeWindow", metricService.getQueryTimeWindow());
         		metrics.addAll(metricsForThisExpression);
         	} catch(WildcardExpansionLimitExceededException e) {
         		metricService.dispose();
@@ -184,7 +186,7 @@ public class MetricResources extends AbstractResource {
         SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
+        return metricService.getAsyncMetrics(expressions, System.currentTimeMillis(), ttl, owner.getUserName());
     }
 
     private String _convertToCSV(List<Metric> metrics) {

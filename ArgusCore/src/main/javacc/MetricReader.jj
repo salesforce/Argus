@@ -35,6 +35,8 @@ import com.salesforce.dva.argus.service.metric.transform.Transform;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeWindow;
+import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
@@ -44,6 +46,8 @@ public class MetricReader<T> {
   	private TSDBService tsdbService;
   	private DiscoveryService discoveryService;
   	private TransformFactory factory;
+  	private String expandedTimeSeriesRange;
+  	private String queryTimeWindow;
 
 	@Inject
     MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
@@ -75,6 +79,14 @@ public class MetricReader<T> {
     public static boolean isValid(String expression) {
         return isValid(Arrays.asList(new String[] {expression}));
     }
+
+	public String getExpandedTimeSeriesRange() {
+  	 	return expandedTimeSeriesRange; 
+  	}
+
+	public String getQueryTimeWindow() {
+  	 	return queryTimeWindow; 
+  	}
 
 	public enum TimeUnit {
 
@@ -110,7 +122,14 @@ public class MetricReader<T> {
 			throw new SystemException(text + ": This time unit is not supported.", new UnsupportedOperationException());
         }
     }
+    
+    private void setExpandedTimeSeriesRange(Integer noExpandedTimeSeries){
+  		this.expandedTimeSeriesRange = QueryTimeSeriesExpansion.getExpandedTimeSeriesRange(noExpandedTimeSeries);
+  	}
 
+	private void setQueryTimeWindow(MetricQuery query){
+		this.queryTimeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
+	}
 }
 
 PARSER_END(MetricReader)
@@ -195,6 +214,7 @@ TOKEN : { < ANOMALY_ZSCORE : "ANOMALY_ZSCORE" > }
 TOKEN : { < ANOMALY_KMEANS : "ANOMALY_KMEANS" > }
 TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
+TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
 
 TOKEN : { < COLON : ":" > }
@@ -253,16 +273,23 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	List<String> constants = new ArrayList<String>();
   	String functionName, constant = "";
   	Token t = null;
+  	boolean constantsOnly = true;
 }
 {
 	functionName = functionName()
 	<LEFT_PARENTHESIS>
 		(
 		result = expression(relativeTo, syntaxOnly, clazz)
-		{ totalResult.addAll(result); }
+		{ 
+			totalResult.addAll(result);
+			constantsOnly = false;
+		}
 		| 
 		result = function(relativeTo, syntaxOnly, clazz)
-		{ totalResult.addAll(result); }
+		{ 
+			totalResult.addAll(result);
+			constantsOnly = false;
+		}
 		| 
 		t = <CONSTANT>
 			{
@@ -290,7 +317,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 		)*
 	<RIGHT_PARENTHESIS>
 	{
-	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz);
+	  	return evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly);
 	}
 }
 
@@ -468,11 +495,14 @@ private String functionName() :
     t = <GROUPBY>
     { return t.image; }
     |
+    t = <GROUPBYTAG>
+    { return t.image; }
+    |
     t = <INTERPOLATE>
     { return t.image; }    
 }
 
-private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly) :
 {}
 {
   	{
@@ -482,8 +512,11 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
   	  	  	if(syntaxOnly) {
 				return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	  	  	} else {
-	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName) && result.isEmpty()) {
-	  	  	      	constants.add(String.valueOf(relativeTo));	  	  	    }
+	  	  	    if(TransformFactory.Function.FILL.getName().equals(functionName)) {
+	  	  	    	constants.add(String.valueOf(relativeTo));
+	  	  	      	constants.add(String.valueOf(constantsOnly));
+	  	  	    }
+	  	  	    
 	  	  	  	Transform transform = factory.getTransform(functionName);
 				return (List<T>) ((constants == null || constants.isEmpty()) ? transform.transform((List<Metric>) result) : transform.transform((List<Metric>) result, constants));
 	  	  	}
@@ -550,12 +583,15 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
 		        query.setAggregator(aggregator);
 		        query.setDownsampler(downsampler);
 		        query.setDownsamplingPeriod(downsamplingPeriod);
+		        setQueryTimeWindow(query);
 		        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
+		        
 				List<Metric> metrics = new ArrayList<Metric>();
 	            Map<MetricQuery, List<Metric>> metricsMap = tsdbService.getMetrics(queries);
 	            for(List<Metric> m : metricsMap.values()) {
 					metrics.addAll(m);
 	            }
+	            setExpandedTimeSeriesRange(metrics.size());
 	            return (List<T>) metrics;
 	        }
 	  	} else {

@@ -79,8 +79,11 @@ public class AuditDto extends BaseDto implements Serializable {
         AuditDto auditDto = new AuditDto();
 
         try {
-            BeanUtils.copyProperties(auditDto, audit);
-            auditDto.setEntityId(audit.getEntity());
+        	    auditDto.setId(audit.getId());
+        	    auditDto.setHostName(audit.getHostName());
+        	    auditDto.setMessage(audit.getMessage());
+        	    auditDto.setCreatedDate(audit.getCreatedDate());
+            auditDto.setEntityId(audit.getEntityId());
         } catch (Exception ex) {
             throw new WebApplicationException("DTO transformation failed.", Status.INTERNAL_SERVER_ERROR);
         }
@@ -104,6 +107,7 @@ public class AuditDto extends BaseDto implements Serializable {
         List<AuditDto> result = new ArrayList<AuditDto>();
 
         for (Audit audit : audits) {
+        	    
             result.add(transformToDto(audit));
         }
         return result;
@@ -197,8 +201,8 @@ public class AuditDto extends BaseDto implements Serializable {
      *
      * @param  jpaEntity  The entity ID.
      */
-    public void setEntityId(JPAEntity jpaEntity) {
-        this.entityId = jpaEntity.getId();
+    public void setEntityId(BigInteger entityId) {
+        this.entityId = entityId;
     }
 
     @Override
