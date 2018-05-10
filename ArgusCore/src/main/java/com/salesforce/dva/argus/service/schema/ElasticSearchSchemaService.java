@@ -939,11 +939,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	ObjectMapper mapper = new ObjectMapper();
     	
     	ObjectNode propertiesNode = mapper.createObjectNode();
-    	propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode());
-    	propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode());
-    	propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode());
-    	propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode());
-    	propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode());
+    	propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode("text"));
+    	propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode("text"));
+    	propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode("text"));
+    	propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode("text"));
+    	propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode("text"));
+    	
+    	propertiesNode.put("mts", _createFieldNode("date"));
     	
     	ObjectNode typeNode = mapper.createObjectNode();
     	typeNode.put("properties", propertiesNode);
@@ -955,11 +957,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     }
     
     
-    private ObjectNode _createFieldNode() {
+    private ObjectNode _createFieldNode(String type) {
     	ObjectMapper mapper = new ObjectMapper();
     	
     	ObjectNode fieldNode = mapper.createObjectNode();
-    	fieldNode.put("type", "text");
+    	fieldNode.put("type", type);
     	fieldNode.put("analyzer", "metadata_analyzer");
     	ObjectNode keywordNode = mapper.createObjectNode();
     	keywordNode.put("type", "keyword");
@@ -968,7 +970,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	fieldNode.put("fields", fieldsNode);
     	return fieldNode;
     }
-    
     
 	private void _createIndexIfNotExists() {
 		try {
