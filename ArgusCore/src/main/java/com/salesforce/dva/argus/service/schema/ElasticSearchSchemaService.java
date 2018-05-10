@@ -945,7 +945,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
     	propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode("text"));
     	propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode("text"));
     	
-    	propertiesNode.put("ts", _createFieldNode("date"));
+    	propertiesNode.put("mts", _createFieldNode("date"));
     	
     	ObjectNode typeNode = mapper.createObjectNode();
     	typeNode.put("properties", propertiesNode);
