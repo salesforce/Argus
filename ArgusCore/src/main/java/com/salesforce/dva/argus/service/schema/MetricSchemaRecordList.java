@@ -97,7 +97,7 @@ public class MetricSchemaRecordList {
 				jgen.writeRaw("{ \"index\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
 				String fieldsData = mapper.writeValueAsString(entry.getValue());
-				String timeStampField = "\"ts\":" + System.currentTimeMillis();
+				String timeStampField = "\"mts\":" + System.currentTimeMillis();
 				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + timeStampField + "}");
 				jgen.writeRaw(System.lineSeparator());
 			}
