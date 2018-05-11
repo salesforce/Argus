@@ -397,6 +397,7 @@ public class History implements Serializable, Identifiable {
 
         DEQUEUED("Job dequeued from the message queue."),
         STARTED("Job started."),
+        SKIPPED("Job skipped."),
         SUCCESS("Job successfully completed."),
         FAILURE("Job failed."),
         ERROR("Exception occurred."),
