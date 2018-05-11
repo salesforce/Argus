@@ -140,6 +140,13 @@ public interface MonitorService extends Service {
      * @return  The runtime dashboard. Will not be null.
      */
     Dashboard getRuntimeDashboard();
+    
+    /**
+     * Returns boolean to indicate whether the data is lagging currently or not
+     * 
+     * @return isDataLagging boolean flag
+     */
+    boolean isDataLagging();
 
     //~ Enums ****************************************************************************************************************************************
 
@@ -182,6 +189,8 @@ public interface MonitorService extends Service {
         JOBS_MAX("argus.core", "jobs.max"),
         ALERTS_SCHEDULED("argus.core", "alerts.scheduled"),
         ALERTS_EVALUATED("argus.core", "alerts.evaluated"),
+        ALERTS_FAILED("argus.core", "alerts.failed"),
+        ALERTS_SKIPPED("argus.core", "alerts.skipped"),
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),
