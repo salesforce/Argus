@@ -67,6 +67,7 @@ import java.math.BigInteger;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -353,8 +354,24 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			long jobEndTime = 0;
 			
 			String logMessage = null;
-			History history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			History history = null;
 			
+			if(Boolean.valueOf(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
+				if(_monitorService.isDataLagging()) {
+					history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
+					logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+					_logger.info(logMessage);
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+					history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+					historyList.add(history);
+					Map<String, String> tags = new HashMap<>();
+					tags.put(USERTAG, alert.getOwner().getUserName());
+					_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+					continue;
+				}
+			}
+			
+			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
 				
@@ -393,8 +410,19 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 				
 				jobEndTime = System.currentTimeMillis();
-				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, jobEndTime - jobStartTime);
+				long evalLatency = jobEndTime - jobStartTime;
+				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 				
+				// publishing evaluation latency as a metric
+				Map<Long, Double> datapoints = new HashMap<>();
+				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
+				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
+				metric.addDatapoints(datapoints);
+				try {
+					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
+				} catch (Exception ex) {
+					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
+				}		
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), mde.getMessage());
@@ -403,6 +431,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), ex.getMessage());
@@ -412,7 +443,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
-				
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
