@@ -41,6 +41,7 @@ angular.module('argus', [
 	'argus.directives.breadcrumbs',
 	'argus.directives.confirm',
 	'argus.directives.dashboardResource',
+	'argus.directives.controls.compute',
 	'argus.directives.controls.dashboard',
 	'argus.directives.controls.date',
 	'argus.directives.controls.submit',
@@ -207,6 +208,7 @@ require('./directives/tableList');
 require('./directives/tableTabs');
 require('./directives/breadcrumbs');
 require('./directives/dashboardResource');
+require('./directives/controls/compute');
 require('./directives/controls/dashboard');
 require('./directives/controls/date');
 require('./directives/controls/submit');
