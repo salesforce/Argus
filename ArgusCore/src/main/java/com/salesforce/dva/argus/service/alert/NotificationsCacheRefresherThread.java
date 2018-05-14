@@ -33,8 +33,9 @@ public class NotificationsCacheRefresherThread extends Thread{
 	public void run() {
 		while (!isInterrupted()) {
 			try {
+				sleep(SLEEP_INTERVAL_MILLIS);
 				_logger.info("Starting notifications cache refresh");
-				
+	
 				EntityManager em = _emProvider.get();
 				// populating notifications cooldown cache
 				Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
@@ -76,8 +77,7 @@ public class NotificationsCacheRefresherThread extends Thread{
 				notificationsCache.setNotificationActiveStatusMap(currNotificationActiveStatusMap);
 				
 				notificationsCache.setNotificationsCacheRefreshed(true);
-				_logger.info("Notifications cache refresh successful. Sleeping before refreshing again");
-				sleep(SLEEP_INTERVAL_MILLIS);
+				_logger.info("Notifications cache refresh successful.");
 			}catch(Exception e) {
 				_logger.error("Exception occured when trying to refresh notifications cache - " + ExceptionUtils.getFullStackTrace(e));
 				notificationsCache.setNotificationsCacheRefreshed(false);
