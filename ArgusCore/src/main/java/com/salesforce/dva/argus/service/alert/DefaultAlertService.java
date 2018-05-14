@@ -300,7 +300,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if(notificationsCache == null) {
 			synchronized(this) {
 				if(notificationsCache == null) {
-					notificationsCache = new NotificationsCache(_emProvider.get());
+					notificationsCache = new NotificationsCache(_emProvider);
 				}
 			}
 		}

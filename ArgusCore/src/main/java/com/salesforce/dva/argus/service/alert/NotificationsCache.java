@@ -6,6 +6,8 @@ import java.util.Map;
 
 import javax.persistence.EntityManager;
 
+import com.google.inject.Provider;
+
 public class NotificationsCache {
 	
 	private NotificationsCacheRefresherThread refresherThread;
@@ -16,7 +18,7 @@ public class NotificationsCache {
 
 	private boolean isNotificationsCacheRefreshed = false;
 	
-	public NotificationsCache(EntityManager em) {
+	public NotificationsCache(Provider<EntityManager> em) {
 		refresherThread = new NotificationsCacheRefresherThread(this, em);
 		refresherThread.setDaemon(true);
 		refresherThread.start();
