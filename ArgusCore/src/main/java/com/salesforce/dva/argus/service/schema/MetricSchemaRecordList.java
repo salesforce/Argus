@@ -94,15 +94,14 @@ public class MetricSchemaRecordList {
 			mapper.setSerializationInclusion(Include.NON_NULL);
 			
 			for(Map.Entry<String, MetricSchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
-				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
+				jgen.writeRaw("{ \"index\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
-				
-				jgen.writeRaw(mapper.writeValueAsString(entry.getValue()));
+				String fieldsData = mapper.writeValueAsString(entry.getValue());
+				String timeStampField = "\"mts\":" + System.currentTimeMillis();
+				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + timeStampField + "}");
 				jgen.writeRaw(System.lineSeparator());
 			}
-			
 		}
-    	
     }
 	
 	
