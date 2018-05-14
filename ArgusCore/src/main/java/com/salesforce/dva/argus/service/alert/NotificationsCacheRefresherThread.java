@@ -12,6 +12,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Provider;
+
 public class NotificationsCacheRefresherThread extends Thread{
 
 	private final Logger _logger = LoggerFactory.getLogger(NotificationsCacheRefresherThread.class);
@@ -20,20 +22,22 @@ public class NotificationsCacheRefresherThread extends Thread{
 	
 	private NotificationsCache notificationsCache = null;
 	
-	private EntityManager _em;
+	private Provider<EntityManager> _emProvider;
 	
-	public NotificationsCacheRefresherThread(NotificationsCache cache, EntityManager em) {
+	public NotificationsCacheRefresherThread(NotificationsCache cache, Provider<EntityManager> em) {
         this.notificationsCache = cache;
-        this._em = em;
+        this._emProvider = em;
 	}
 
 	@Override
 	public void run() {
-		_logger.info("Notifications cache fetcher thread started");
 		while (!isInterrupted()) {
 			try {
+				_logger.info("Starting notifications cache refresh");
+				
+				EntityManager em = _emProvider.get();
 				// populating notifications cooldown cache
-				Query q = _em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
+				Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
 				List<Object[]> objects = q.getResultList();
 
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> currNotificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
@@ -47,10 +51,10 @@ public class NotificationsCacheRefresherThread extends Thread{
 					}
 					currNotificationCooldownExpirationMap.get(notificationId).put(key, cooldownExpiration);
 				}
-				
 				notificationsCache.setNotificationCooldownExpirationMap(currNotificationCooldownExpirationMap);
 
-				q = _em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
+				// populating the active status cache
+				q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
 				objects = q.getResultList();
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Boolean/*activeStatus*/>> currNotificationActiveStatusMap = new HashMap<BigInteger, Map<String, Boolean>>();
 
@@ -70,7 +74,9 @@ public class NotificationsCacheRefresherThread extends Thread{
 					currNotificationActiveStatusMap.get(notificationId).put(key, isActive);
 				}
 				notificationsCache.setNotificationActiveStatusMap(currNotificationActiveStatusMap);
+				
 				notificationsCache.setNotificationsCacheRefreshed(true);
+				_logger.info("Notifications cache refresh successful. Sleeping before refreshing again");
 				sleep(SLEEP_INTERVAL_MILLIS);
 			}catch(Exception e) {
 				_logger.error("Exception occured when trying to refresh notifications cache - " + ExceptionUtils.getFullStackTrace(e));
