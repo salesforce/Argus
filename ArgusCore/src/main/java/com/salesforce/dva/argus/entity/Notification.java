@@ -246,7 +246,7 @@ public class Notification extends JPAEntity implements Serializable {
         name = "NOTIFICATION_TRIGGER", joinColumns = @JoinColumn(name = "TRIGGER_ID"), inverseJoinColumns = @JoinColumn(name = "NOTIFICATION_ID")
     )
     List<Trigger> triggers = new ArrayList<>(0);
-    
+
 	boolean isSRActionable = false;
     
 	int severityLevel = 5;
@@ -481,7 +481,11 @@ public class Notification extends JPAEntity implements Serializable {
 		return cooldownExpirationByTriggerAndMetric;
 	}
 
-    /**
+    public void setCooldownExpirationMap(Map<String, Long> cooldownExpirationByTriggerAndMetric) {
+		this.cooldownExpirationByTriggerAndMetric = cooldownExpirationByTriggerAndMetric;
+	}
+
+	/**
      * Returns all metrics to be annotated.
      *
      * @return  list of metrics
@@ -613,6 +617,10 @@ public class Notification extends JPAEntity implements Serializable {
 
 	public Map<String, Boolean> getActiveStatusMap() {
 		return activeStatusByTriggerAndMetric;
+	}
+	
+	public void setActiveStatusMap(Map<String, Boolean> activeStatusByTriggerAndMetric) {
+		this.activeStatusByTriggerAndMetric = activeStatusByTriggerAndMetric;
 	}
 
     /**
