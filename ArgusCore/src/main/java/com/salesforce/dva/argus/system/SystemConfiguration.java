@@ -222,6 +222,11 @@ public final class SystemConfiguration extends Properties {
         GUS_ENABLED("system.property.gus.enabled", "false"),
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
         
+        DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
+        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
+        DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
+        DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
+        
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
         
