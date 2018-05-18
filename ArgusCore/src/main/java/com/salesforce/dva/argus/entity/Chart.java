@@ -261,12 +261,18 @@ public class Chart extends JPAEntity implements Serializable {
 	//~ Enuns **************************************************************************************************************************************
 	
 	public enum ChartType {
-		
+
 		LINE,
 		AREA,
 		HEATMAP,
 		STACKED_AREA,
-		SANKEY;
+		SANKEY,
+		BAR,
+		STACKED_BAR,
+		INDICATOR,
+		SCATTER_PLOT,
+		DISTRIBUTION_LIST,
+		TOP_LIST;
 		
 		/**
 		 * 
