@@ -33,7 +33,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
-	protected static final BloomFilter<CharSequence> bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), (long) 400000000);
+	protected static final BloomFilter<CharSequence> bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+			(long) 400000000 , 0.00001);
 	
 	private static boolean _writesToTrieEnabled = true;
     
@@ -84,6 +85,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				String key = constructTrieKey(metric, null);
 				// boolean found = TRIE.getValueForExactKey(key) != null;
 				boolean found = bloomFilter.mightContain(key);
+				_logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 		    	if(!found) {
 		    		metricsToPut.add(metric);
 		    		if(_writesToTrieEnabled) {
@@ -97,6 +99,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					String key = constructTrieKey(metric, tagEntry);
 					// boolean found = TRIE.getValueForExactKey(key) != null;
 					boolean found = bloomFilter.mightContain(key);
+					// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 			    	if(!found) {
 			    		newTags = true;
 			    		if(_writesToTrieEnabled) {
