@@ -3,6 +3,7 @@ package com.salesforce.dva.argus.service.schema;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
 import java.lang.management.MemoryType;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,6 +13,8 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.hash.BloomFilter;
+import com.google.common.hash.Funnels;
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
 import com.googlecode.concurrenttrees.radix.node.concrete.SmartArrayBasedNodeFactory;
@@ -30,6 +33,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
+	protected static final BloomFilter<CharSequence> bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), (long) 400000000);
 	
 	private static boolean _writesToTrieEnabled = true;
     
@@ -78,22 +82,26 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
-				boolean found = TRIE.getValueForExactKey(key) != null;
+				// boolean found = TRIE.getValueForExactKey(key) != null;
+				boolean found = bloomFilter.mightContain(key);
 		    	if(!found) {
 		    		metricsToPut.add(metric);
 		    		if(_writesToTrieEnabled) {
-                        TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+		    			bloomFilter.put(key);
+                        // TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 		    		}
 		    	}
 			} else {
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
 					String key = constructTrieKey(metric, tagEntry);
-					boolean found = TRIE.getValueForExactKey(key) != null;
+					// boolean found = TRIE.getValueForExactKey(key) != null;
+					boolean found = bloomFilter.mightContain(key);
 			    	if(!found) {
 			    		newTags = true;
 			    		if(_writesToTrieEnabled) {
-	                        TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+			    			bloomFilter.put(key);
+	                        //TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 			    		}
 			    	}
 				}
