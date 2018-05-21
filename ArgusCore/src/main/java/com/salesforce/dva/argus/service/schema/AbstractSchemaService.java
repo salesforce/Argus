@@ -85,7 +85,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				String key = constructTrieKey(metric, null);
 				// boolean found = TRIE.getValueForExactKey(key) != null;
 				boolean found = bloomFilter.mightContain(key);
-				_logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
+				// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 		    	if(!found) {
 		    		metricsToPut.add(metric);
 		    		if(_writesToTrieEnabled) {
