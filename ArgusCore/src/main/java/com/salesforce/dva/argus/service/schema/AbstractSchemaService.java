@@ -25,6 +25,7 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService.Property;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
@@ -33,8 +34,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
-	protected static final BloomFilter<CharSequence> bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
-			(long) 400000000 , 0.00001);
+	protected static BloomFilter<CharSequence> BLOOMFILTER;
 	
 	private static boolean _writesToTrieEnabled = true;
     
@@ -45,6 +45,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	protected AbstractSchemaService(SystemConfiguration config) {
 		super(config);
+
+		int expectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(), 
+				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
+		double errorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_ERROR_RATE.getName(), 
+				Property.BLOOMFILTER_ERROR_RATE.getDefaultValue()));
+		BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), expectedNumberInsertions , errorRate);
 		
     	_cacheEnabled = Boolean.parseBoolean(
     			config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
@@ -84,12 +90,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
 				// boolean found = TRIE.getValueForExactKey(key) != null;
-				boolean found = bloomFilter.mightContain(key);
+				boolean found = BLOOMFILTER.mightContain(key);
 				// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 		    	if(!found) {
 		    		metricsToPut.add(metric);
 		    		if(_writesToTrieEnabled) {
-		    			bloomFilter.put(key);
+		    			BLOOMFILTER.put(key);
                         // TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 		    		}
 		    	}
@@ -98,12 +104,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
 					String key = constructTrieKey(metric, tagEntry);
 					// boolean found = TRIE.getValueForExactKey(key) != null;
-					boolean found = bloomFilter.mightContain(key);
+					boolean found = BLOOMFILTER.mightContain(key);
 					// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 			    	if(!found) {
 			    		newTags = true;
 			    		if(_writesToTrieEnabled) {
-			    			bloomFilter.put(key);
+			    			BLOOMFILTER.put(key);
 	                        //TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 			    		}
 			    	}
@@ -198,7 +204,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
     	/* If set to true, schema records will be cached on writes. This helps to check if a schema records already exists,
     	 * and if it does then do not rewrite. Provide more heap space when using this option. */
     	CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false"),
-    	SYNC_PUT("service.property.schema.sync.put", "false");
+    	SYNC_PUT("service.property.schema.sync.put", "false"),
+    	
+    	BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
+    	BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001");
 
         private final String _name;
         private final String _defaultValue;
