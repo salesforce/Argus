@@ -120,7 +120,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final MonitorService _monitorService;
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
-	private NotificationsCache notificationsCache = null;
+	private static NotificationsCache _notificationsCache = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -297,23 +297,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications) {
 		List<BigInteger> ids = notifications.stream().map(x -> x.getId()).collect(Collectors.toList());
 		_logger.debug("Updating notifications: {}", ids);
-		if(notificationsCache == null) {
-			synchronized(this) {
-				if(notificationsCache == null) {
-					notificationsCache = new NotificationsCache(_emProvider);
+		if(_notificationsCache == null) {
+			synchronized(DefaultAlertService.class) {
+				if(_notificationsCache == null) {
+					_notificationsCache = new NotificationsCache(_emProvider);
 				}
 			}
 		}
 
-		if(notificationsCache.isNotificationsCacheRefreshed()) {
+		if(_notificationsCache.isNotificationsCacheRefreshed()) {
 			for(Notification notification : notifications) {
-				if(notificationsCache.getNotificationActiveStatusMap().get(notification.getId())!=null) {
-					notification.setActiveStatusMap(notificationsCache.getNotificationActiveStatusMap().get(notification.getId()));
+				if(_notificationsCache.getNotificationActiveStatusMap().get(notification.getId())!=null) {
+					notification.setActiveStatusMap(_notificationsCache.getNotificationActiveStatusMap().get(notification.getId()));
 				}else {
 					notification.getActiveStatusMap().clear();
 				}
-				if(notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId())!=null) {
-					notification.setCooldownExpirationMap(notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId()));
+				if(_notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId())!=null) {
+					notification.setCooldownExpirationMap(_notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId()));
 				}else {
 					notification.getCooldownExpirationMap().clear();
 				}
