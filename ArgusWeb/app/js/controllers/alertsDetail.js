@@ -27,7 +27,10 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 					$scope.fetchHistory();
 					$scope.fetchJobExecutionDetails();
 					// remove existing session storage for update
-					if ($sessionStorage.alerts !== undefined) delete $sessionStorage.alerts.cachedData;
+					if ($sessionStorage.alerts !== undefined) {
+						delete $sessionStorage.alerts.cachedData;
+						$sessionStorage.alerts.emptyData = true;
+					}
 				}, function () {
 					growl.error('Failed to update "' + alert.name + '"');
 				});
