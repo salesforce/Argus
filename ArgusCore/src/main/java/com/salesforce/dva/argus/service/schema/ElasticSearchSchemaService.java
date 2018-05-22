@@ -572,7 +572,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			strResponse = extractResponse(response);
 		} catch (IOException e) {
 			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
-			_removeFromTrie(records);
 			throw new SystemException(e);
 		}
 		
@@ -592,10 +591,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 						recordsToRemove.add(msrList.getRecord(item.index._id));
 					}
 				}
-				_removeFromTrie(recordsToRemove);
 			}
 		} catch(IOException e) {
-			_removeFromTrie(records);
 			throw new SystemException("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
 		}
 	}
@@ -616,7 +613,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			String requestBody = _mapper.writeValueAsString(msrList);
 			entity = new StringEntity(requestBody);
 		} catch (JsonProcessingException | UnsupportedEncodingException e) {
-			_removeFromTrie(records);
 			throw new SystemException("Failed to parse metrics to schema records when indexing.", e);
 		}
 		
@@ -641,10 +637,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 								recordsToRemove.add(msrList.getRecord(item.index._id));
 							}
 						}
-						_removeFromTrie(recordsToRemove);
 					}
 				} catch(IOException e) {
-					_removeFromTrie(records);
 					_logger.warn("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
 				}
 			}
@@ -652,20 +646,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			@Override
 			public void onFailure(Exception e) {
 				//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
-				_removeFromTrie(records);
 				_logger.warn("Failed to execute the indexing request.", e);
 			}
 		};
 		
 		_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), entity, responseListener);
-	}
-	
-	private void _removeFromTrie(List<MetricSchemaRecord> records) {
-		_logger.info("Removing {} records from trie.", records.size());
-		for(MetricSchemaRecord record : records) {
-			String key = constructTrieKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
-			TRIE.remove(key);
-		}
 	}
 	
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
