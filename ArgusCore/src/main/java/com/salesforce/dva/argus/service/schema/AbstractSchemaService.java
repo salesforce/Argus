@@ -1,8 +1,5 @@
 package com.salesforce.dva.argus.service.schema;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryPoolMXBean;
-import java.lang.management.MemoryType;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,75 +26,77 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
-	
-	private static final long MAX_MEMORY = Runtime.getRuntime().maxMemory();
+
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
+	private static final long BLOOM_FILTER_FLUSH_INTERVAL = 6 * 60 * 60 * 1000L;
 	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
 	protected static BloomFilter<CharSequence> BLOOMFILTER;
-	
+	private int bloomFilterExpectedNumberInsertions;
+	private double bloomFilterErrorRate;
+
 	private static boolean _writesToTrieEnabled = true;
-    
-    private final Logger _logger = LoggerFactory.getLogger(getClass());
-	private final Thread _oldGenMonitorThread;
+
+	private final Logger _logger = LoggerFactory.getLogger(getClass());
+	private final Thread _bloomFilterMonitorThread;
 	private final boolean _cacheEnabled;
-    protected final boolean _syncPut;
+	protected final boolean _syncPut;
 
 	protected AbstractSchemaService(SystemConfiguration config) {
 		super(config);
 
-		int expectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(), 
+		bloomFilterExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(), 
 				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
-		double errorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_ERROR_RATE.getName(), 
+		bloomFilterErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_ERROR_RATE.getName(), 
 				Property.BLOOMFILTER_ERROR_RATE.getDefaultValue()));
-		BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), expectedNumberInsertions , errorRate);
-		
-    	_cacheEnabled = Boolean.parseBoolean(
-    			config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
-    	_syncPut = Boolean.parseBoolean(
-    			config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
-    	
-    	_oldGenMonitorThread = new Thread(new OldGenMonitorThread(), "old-gen-monitor");
-    	if(_cacheEnabled) {
-        	_oldGenMonitorThread.start();
-    	}
+		BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+
+		_cacheEnabled = Boolean.parseBoolean(
+				config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
+		_syncPut = Boolean.parseBoolean(
+				config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
+
+		_bloomFilterMonitorThread = new Thread(new BloomFilterMonitorThread(), "bloom-filter-monitor");
+		if(_cacheEnabled) {
+			_bloomFilterMonitorThread.start();
+		}
 	}
 
 	@Override
 	public void put(Metric metric) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(metric != null, "Metric cannot be null.");
-		
+
 		put(Arrays.asList(metric));
 	}
 
 	@Override	
 	public void put(List<Metric> metrics) {
 		requireNotDisposed();
-        SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
-		
-        //If cache is not enabled, call implementation specific put with the list of metrics. 
-        if(!_cacheEnabled) {
-        	implementationSpecificPut(metrics);
-        	return;
-        }
-        
-        //If cache is enabled, create a list of metricsToPut that do not exist on the TRIE and then call implementation 
-        // specific put with only those subset of metricsToPut. 
-        List<Metric> metricsToPut = new ArrayList<>(metrics.size());
-		
+		SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
+
+		//If cache is not enabled, call implementation specific put with the list of metrics. 
+		if(!_cacheEnabled) {
+			implementationSpecificPut(metrics);
+			return;
+		}
+
+		//If cache is enabled, create a list of metricsToPut that do not exist on the TRIE and then call implementation 
+		// specific put with only those subset of metricsToPut. 
+		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
+
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructTrieKey(metric, null);
 				// boolean found = TRIE.getValueForExactKey(key) != null;
 				boolean found = BLOOMFILTER.mightContain(key);
 				// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
-		    	if(!found) {
-		    		metricsToPut.add(metric);
-		    		if(_writesToTrieEnabled) {
-		    			BLOOMFILTER.put(key);
-                        // TRIE.putIfAbsent(key, VoidValue.SINGLETON);
-		    		}
-		    	}
+				if(!found) {
+					metricsToPut.add(metric);
+					if(_writesToTrieEnabled) {
+						BLOOMFILTER.put(key);
+						// TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+					}
+				}
 			} else {
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
@@ -105,58 +104,58 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					// boolean found = TRIE.getValueForExactKey(key) != null;
 					boolean found = BLOOMFILTER.mightContain(key);
 					// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
-			    	if(!found) {
-			    		newTags = true;
-			    		if(_writesToTrieEnabled) {
-			    			BLOOMFILTER.put(key);
-	                        //TRIE.putIfAbsent(key, VoidValue.SINGLETON);
-			    		}
-			    	}
+					if(!found) {
+						newTags = true;
+						if(_writesToTrieEnabled) {
+							BLOOMFILTER.put(key);
+							//TRIE.putIfAbsent(key, VoidValue.SINGLETON);
+						}
+					}
 				}
-				
+
 				if(newTags) {
 					metricsToPut.add(metric);
 				}
 			}
 		}
-		
+
 		implementationSpecificPut(metricsToPut);
 	}
-	
-	
+
+
 	protected abstract void implementationSpecificPut(List<Metric> metrics);
 
 	protected String constructTrieKey(Metric metric, Entry<String, String> tagEntry) {
 		StringBuilder sb = new StringBuilder(metric.getScope());
 		sb.append('\0').append(metric.getMetric());
-		
+
 		if(metric.getNamespace() != null) {
 			sb.append('\0').append(metric.getNamespace());
 		}
-		
+
 		if(tagEntry != null) {
 			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
 		}
-		
+
 		return sb.toString();
 	}
-	
+
 	protected String constructTrieKey(String scope, String metric, String tagk, String tagv, String namespace) {
 		StringBuilder sb = new StringBuilder(scope);
 		sb.append('\0').append(metric);
-		
+
 		if(namespace != null) {
 			sb.append('\0').append(namespace);
 		}
-		
+
 		if(tagk != null) {
 			sb.append('\0').append(tagk);
 		}
-		
+
 		if(tagv != null) {
 			sb.append('\0').append(tagv);
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -164,25 +163,25 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public void dispose() {
 		requireNotDisposed();
-        if (_oldGenMonitorThread != null && _oldGenMonitorThread.isAlive()) {
-            _logger.info("Stopping old gen monitor thread.");
-            _oldGenMonitorThread.interrupt();
-            _logger.info("Old gen monitor thread interrupted.");
-            try {
-                _logger.info("Waiting for old gen monitor thread to terminate.");
-                _oldGenMonitorThread.join();
-            } catch (InterruptedException ex) {
-                _logger.warn("Old gen monitor thread was interrupted while shutting down.");
-            }
-            _logger.info("System monitoring stopped.");
-        } else {
-            _logger.info("Requested shutdown of old gen monitor thread aborted, as it is not yet running.");
-        }
+		if (_bloomFilterMonitorThread != null && _bloomFilterMonitorThread.isAlive()) {
+			_logger.info("Stopping old gen monitor thread.");
+			_bloomFilterMonitorThread.interrupt();
+			_logger.info("Old gen monitor thread interrupted.");
+			try {
+				_logger.info("Waiting for old gen monitor thread to terminate.");
+				_bloomFilterMonitorThread.join();
+			} catch (InterruptedException ex) {
+				_logger.warn("Old gen monitor thread was interrupted while shutting down.");
+			}
+			_logger.info("System monitoring stopped.");
+		} else {
+			_logger.info("Requested shutdown of old gen monitor thread aborted, as it is not yet running.");
+		}
 	}
 
 	@Override
 	public abstract Properties getServiceProperties();
-	
+
 	@Override
 	public abstract List<MetricSchemaRecord> get(MetricSchemaRecordQuery query);
 
@@ -191,99 +190,98 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
-	
-	
+
+
 	/**
-     * The set of implementation specific configuration properties.
-     *
-     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
-     */
-    public enum Property {
-        
-    	/* If set to true, schema records will be cached on writes. This helps to check if a schema records already exists,
-    	 * and if it does then do not rewrite. Provide more heap space when using this option. */
-    	CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false"),
-    	SYNC_PUT("service.property.schema.sync.put", "false"),
-    	
-    	BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
-    	BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001");
+	 * The set of implementation specific configuration properties.
+	 *
+	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+	 */
+	public enum Property {
 
-        private final String _name;
-        private final String _defaultValue;
+		/* If set to true, schema records will be cached on writes. This helps to check if a schema records already exists,
+		 * and if it does then do not rewrite. Provide more heap space when using this option. */
+		CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false"),
+		SYNC_PUT("service.property.schema.sync.put", "false"),
 
-        private Property(String name, String defaultValue) {
-            _name = name;
-            _defaultValue = defaultValue;
-        }
+		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
+		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001");
 
-        /**
-         * Returns the property name.
-         *
-         * @return  The property name.
-         */
-        public String getName() {
-            return _name;
-        }
+		private final String _name;
+		private final String _defaultValue;
 
-        /**
-         * Returns the default value for the property.
-         *
-         * @return  The default value.
-         */
-        public String getDefaultValue() {
-            return _defaultValue;
-        }
-    }
-    
-    
-    //~ Inner Classes ********************************************************************************************************************************
+		private Property(String name, String defaultValue) {
+			_name = name;
+			_defaultValue = defaultValue;
+		}
 
-    /**
-     * Old Generation monitoring thread.
-     *
-     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
-     */
-	private class OldGenMonitorThread implements Runnable {
+		/**
+		 * Returns the property name.
+		 *
+		 * @return  The property name.
+		 */
+		public String getName() {
+			return _name;
+		}
+
+		/**
+		 * Returns the default value for the property.
+		 *
+		 * @return  The default value.
+		 */
+		public String getDefaultValue() {
+			return _defaultValue;
+		}
+	}
+
+
+	//~ Inner Classes ********************************************************************************************************************************
+
+	/**
+	 * Bloom Filter monitoring thread.
+	 *
+	 * @author  Dilip Devaraj (ddevaraj@salesforce.com)
+	 */
+	private class BloomFilterMonitorThread implements Runnable {
+
+		long startTimeBeforeFlushInMillis;
 
 		@Override
 		public void run() {
+			startTimeBeforeFlushInMillis = System.currentTimeMillis();
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
 					try {
-						_checkOldGenUsage();
+						_checkBloomFilterUsage();
+
+						//  flush out bloom filter every K hours
+						_flushBloomFilter();
 					} catch (Exception ex) {
-						_logger.warn("Exception occurred while checking old generation usage.", ex);
+						_logger.warn("Exception occurred while checking bloom filter usage.", ex);
 					}
 				}
 			}
 		}
 
-		private void _checkOldGenUsage() {
-			List<MemoryPoolMXBean> memoryPoolBeans = ManagementFactory.getMemoryPoolMXBeans();
-			for (MemoryPoolMXBean bean : memoryPoolBeans) {
-				if (bean.getType() == MemoryType.HEAP) {
-					String name = bean.getName().toLowerCase();
-					if (name.contains("old") || name.contains("tenured")) {
-						long oldGenUsed = bean.getUsage().getUsed();
-						_logger.info("Old Gen Memory = {} bytes", oldGenUsed);
-						_logger.info("Max JVM Memory = {} bytes", MAX_MEMORY);
-						if (oldGenUsed > 0.90 * MAX_MEMORY) {
-							_logger.info("JVM heap memory usage has exceeded 90% of the allocated heap memory. Disabling writes to TRIE.");
-							_writesToTrieEnabled = false;
-						} else if(oldGenUsed < 0.50 * MAX_MEMORY && !_writesToTrieEnabled) {
-							_logger.info("JVM heap memory usage is below 50% of the allocated heap memory and writes to TRIE is disabled. "
-									+ "Enabling writes to TRIE now.");
-							_writesToTrieEnabled = true;
-						}
-					}
-				}
+		private void _checkBloomFilterUsage() {
+			_logger.info("Bloom approx no. elements = {}", BLOOMFILTER.approximateElementCount());
+			_logger.info("Bloom expected error rate = {}", BLOOMFILTER.expectedFpp());
+		}
+
+
+		private void _flushBloomFilter() {
+			long currentTimeInMillis = System.currentTimeMillis();
+			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL){
+				_logger.info("Flushing out bloom filter entries");
+				BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+				startTimeBeforeFlushInMillis = currentTimeInMillis;
 			}
 		}
 
 		private void _sleepForPollPeriod() {
 			try {
-				_logger.info("Sleeping for {}s before checking old gen usage.", POLL_INTERVAL_MS / 1000);
+				_logger.info("Sleeping for {}s before checking bloom filter statistics.", POLL_INTERVAL_MS / 1000);
 				Thread.sleep(POLL_INTERVAL_MS);
 			} catch (InterruptedException ex) {
 				_logger.warn("AbstractSchemaService memory monitor thread was interrupted.");
