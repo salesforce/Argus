@@ -12,10 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
-import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
-import com.googlecode.concurrenttrees.radix.RadixTree;
-import com.googlecode.concurrenttrees.radix.node.concrete.SmartArrayBasedNodeFactory;
-import com.googlecode.concurrenttrees.radix.node.concrete.voidvalue.VoidValue;
+
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -29,13 +26,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private static final long POLL_INTERVAL_MS = 60 * 1000L;
 	private static final long BLOOM_FILTER_FLUSH_INTERVAL = 6 * 60 * 60 * 1000L;
-	protected static final RadixTree<VoidValue> TRIE = new ConcurrentRadixTree<>(new SmartArrayBasedNodeFactory());
 	protected static BloomFilter<CharSequence> BLOOMFILTER;
+	private static boolean _writesToBloomFilterEnabled = true;
+
 	private int bloomFilterExpectedNumberInsertions;
 	private double bloomFilterErrorRate;
-
-	private static boolean _writesToTrieEnabled = true;
-
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
 	private final boolean _cacheEnabled;
@@ -80,35 +75,29 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			return;
 		}
 
-		//If cache is enabled, create a list of metricsToPut that do not exist on the TRIE and then call implementation 
+		//If cache is enabled, create a list of metricsToPut that do not exist on the BLOOMFILTER and then call implementation 
 		// specific put with only those subset of metricsToPut. 
 		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
 
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
-				String key = constructTrieKey(metric, null);
-				// boolean found = TRIE.getValueForExactKey(key) != null;
+				String key = constructKey(metric, null);
 				boolean found = BLOOMFILTER.mightContain(key);
-				// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 				if(!found) {
 					metricsToPut.add(metric);
-					if(_writesToTrieEnabled) {
+					if(_writesToBloomFilterEnabled) {
 						BLOOMFILTER.put(key);
-						// TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 					}
 				}
 			} else {
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
-					String key = constructTrieKey(metric, tagEntry);
-					// boolean found = TRIE.getValueForExactKey(key) != null;
+					String key = constructKey(metric, tagEntry);
 					boolean found = BLOOMFILTER.mightContain(key);
-					// _logger.info("Bloom approx elements = {}", bloomFilter.approximateElementCount());
 					if(!found) {
 						newTags = true;
-						if(_writesToTrieEnabled) {
+						if(_writesToBloomFilterEnabled) {
 							BLOOMFILTER.put(key);
-							//TRIE.putIfAbsent(key, VoidValue.SINGLETON);
 						}
 					}
 				}
@@ -122,10 +111,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		implementationSpecificPut(metricsToPut);
 	}
 
-
 	protected abstract void implementationSpecificPut(List<Metric> metrics);
 
-	protected String constructTrieKey(Metric metric, Entry<String, String> tagEntry) {
+	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
 		StringBuilder sb = new StringBuilder(metric.getScope());
 		sb.append('\0').append(metric.getMetric());
 
@@ -140,42 +128,22 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		return sb.toString();
 	}
 
-	protected String constructTrieKey(String scope, String metric, String tagk, String tagv, String namespace) {
-		StringBuilder sb = new StringBuilder(scope);
-		sb.append('\0').append(metric);
-
-		if(namespace != null) {
-			sb.append('\0').append(namespace);
-		}
-
-		if(tagk != null) {
-			sb.append('\0').append(tagk);
-		}
-
-		if(tagv != null) {
-			sb.append('\0').append(tagv);
-		}
-
-		return sb.toString();
-	}
-
-
 	@Override
 	public void dispose() {
 		requireNotDisposed();
 		if (_bloomFilterMonitorThread != null && _bloomFilterMonitorThread.isAlive()) {
-			_logger.info("Stopping old gen monitor thread.");
+			_logger.info("Stopping bloom filter monitor thread.");
 			_bloomFilterMonitorThread.interrupt();
-			_logger.info("Old gen monitor thread interrupted.");
+			_logger.info("Bloom filter monitor thread interrupted.");
 			try {
-				_logger.info("Waiting for old gen monitor thread to terminate.");
+				_logger.info("Waiting for bloom filter monitor thread to terminate.");
 				_bloomFilterMonitorThread.join();
 			} catch (InterruptedException ex) {
-				_logger.warn("Old gen monitor thread was interrupted while shutting down.");
+				_logger.warn("Bloom filter monitor thread was interrupted while shutting down.");
 			}
 			_logger.info("System monitoring stopped.");
 		} else {
-			_logger.info("Requested shutdown of old gen monitor thread aborted, as it is not yet running.");
+			_logger.info("Requested shutdown of bloom filter monitor thread aborted, as it is not yet running.");
 		}
 	}
 
@@ -269,7 +237,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			_logger.info("Bloom expected error rate = {}", BLOOMFILTER.expectedFpp());
 		}
 
-
 		private void _flushBloomFilter() {
 			long currentTimeInMillis = System.currentTimeMillis();
 			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL){
@@ -289,5 +256,4 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			}
 		}
 	}
-
 }
