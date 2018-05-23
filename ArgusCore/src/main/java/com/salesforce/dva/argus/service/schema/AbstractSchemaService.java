@@ -24,8 +24,10 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 
-	private static final long POLL_INTERVAL_MS = 60 * 1000L;
-	private static final long BLOOM_FILTER_FLUSH_INTERVAL = 6 * 60 * 60 * 1000L;
+	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
+	private static final long BLOOM_FILTER_FLUSH_INTERVAL_HOUR = 60 * 60 * 1000L;
+	private static final int MIN_FLUSH_HOUR_INTERVAL = 6;
+	private static final int MAX_FLUSH_HOUR_INTERVAL = 15;
 	protected static BloomFilter<CharSequence> BLOOMFILTER;
 	private static boolean _writesToBloomFilterEnabled = true;
 
@@ -213,10 +215,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private class BloomFilterMonitorThread implements Runnable {
 
 		long startTimeBeforeFlushInMillis;
+		int flushAtHour;
 
 		@Override
 		public void run() {
 			startTimeBeforeFlushInMillis = System.currentTimeMillis();
+			flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
+			_logger.info("Initialized bloom filter flushing out, after {} hours", flushAtHour);
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
@@ -239,13 +244,18 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		private void _flushBloomFilter() {
 			long currentTimeInMillis = System.currentTimeMillis();
-			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL){
-				_logger.info("Flushing out bloom filter entries");
+			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL_HOUR * flushAtHour){
+				_logger.info("Flushing out bloom filter entries, after {} hours", flushAtHour);
 				BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+				flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
 				startTimeBeforeFlushInMillis = currentTimeInMillis;
 			}
 		}
 
+		private int getRandomHourBetweenRange(int minHour, int maxHour){
+			return (int) (Math.random() * (maxHour - minHour +1) + minHour); 
+		}
+		
 		private void _sleepForPollPeriod() {
 			try {
 				_logger.info("Sleeping for {}s before checking bloom filter statistics.", POLL_INTERVAL_MS / 1000);
