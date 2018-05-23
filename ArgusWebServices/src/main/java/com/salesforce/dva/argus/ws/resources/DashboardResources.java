@@ -31,8 +31,10 @@
 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.salesforce.dva.argus.entity.Chart;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.service.ChartService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
@@ -71,6 +73,7 @@ public class DashboardResources extends AbstractResource {
 	//~ Instance fields ******************************************************************************************************************************
 
 	private DashboardService dService = ArgusWebServletListener.getSystem().getServiceFactory().getDashboardService();
+	private ChartService _chartService = system.getServiceFactory().getChartService();
 
 	//~ Methods **************************************************************************************************************************************
 
@@ -354,7 +357,11 @@ public class DashboardResources extends AbstractResource {
 
 		if (dashboard != null) {
 			validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
-			dService.deleteDashboard(dashboard);
+			dService.markDashboardForDeletion(dashboard);
+			for(Chart c:_chartService.getChartsByOwnerForEntity(getRemoteUser(req),dashboard.getId()))
+			{
+				_chartService.markChartForDeletion(c);
+			}
 			return Response.status(Status.OK).build();
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
