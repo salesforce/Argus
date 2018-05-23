@@ -48,9 +48,9 @@ import com.salesforce.dva.argus.system.SystemAssert;
 @Table(name = "CHART")
 @NamedQueries(
 	    {
-	        @NamedQuery(name = "Chart.getChartsByOwner", query = "SELECT c FROM Chart c WHERE c.owner = :owner"),
-	        @NamedQuery(name = "Chart.getChartsForEntity", query = "SELECT c FROM Chart c WHERE c.entity.id = :entityId"),
-	        @NamedQuery(name = "Chart.getChartsByOwnerForEntity", query = "SELECT c FROM Chart c WHERE c.entity.id = :entityId AND c.owner = :owner")
+	        @NamedQuery(name = "Chart.getChartsByOwner", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.owner = :owner AND c.id=j.id AND j.deleted= :deleted"),
+	        @NamedQuery(name = "Chart.getChartsForEntity", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.entity.id = :entityId AND c.id=j.id AND j.deleted= :deleted"),
+	        @NamedQuery(name = "Chart.getChartsByOwnerForEntity", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.entity.id = :entityId AND c.owner = :owner AND c.id=j.id AND j.deleted= :deleted")
 	    }
 	)
 public class Chart extends JPAEntity implements Serializable {
@@ -106,6 +106,7 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		try {
             query.setParameter("owner", user);
+			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -119,6 +120,7 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		try {
             query.setParameter("entityId", entityId);
+			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -134,6 +136,7 @@ public class Chart extends JPAEntity implements Serializable {
 		try {
 			query.setParameter("owner", user);
             query.setParameter("entityId", entityId);
+			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);

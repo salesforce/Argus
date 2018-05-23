@@ -26,6 +26,7 @@ import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.ChartService;
+import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.ChartDto;
 
@@ -41,6 +42,7 @@ public class ChartResources extends AbstractResource {
 	//~ Instance fields ******************************************************************************************************************************
 
 	private ChartService _chartService = system.getServiceFactory().getChartService();
+    private DashboardService _dService = system.getServiceFactory().getDashboardService();
 
 	//~ Methods **************************************************************************************************************************************
 	
@@ -290,7 +292,18 @@ public class ChartResources extends AbstractResource {
 		if(entityId == null) {
 			result.addAll(_chartService.getChartsByOwner(owner));
 		} else {
-			result.addAll(_chartService.getChartsByOwnerForEntity(owner, entityId));
+		    Dashboard dashboard = _dService.findDashboardByPrimaryKey(entityId);
+		    if(dashboard==null)
+            {
+                throw new WebApplicationException(entityId + ": Dashboard does not exist.", Status.NOT_FOUND);
+            }
+		    else if(dashboard.isShared() || remoteUser.isPrivileged())
+            {
+                result.addAll(_chartService.getChartsForEntity(entityId));
+            }
+            else {
+                result.addAll(_chartService.getChartsByOwnerForEntity(owner, entityId));
+            }
 		}
 
 		return ChartDto.transformToDto(result);
