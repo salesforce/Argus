@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +31,15 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private static final int MAX_FLUSH_HOUR_INTERVAL = 15;
 	protected static BloomFilter<CharSequence> BLOOMFILTER;
 	private static boolean _writesToBloomFilterEnabled = true;
+	private static Random rand = new Random();
+	private static int randomNumber = rand.nextInt();
 
 	private int bloomFilterExpectedNumberInsertions;
 	private double bloomFilterErrorRate;
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
 	private final boolean _cacheEnabled;
+
 	protected final boolean _syncPut;
 
 	protected AbstractSchemaService(SystemConfiguration config) {
@@ -115,21 +119,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	protected abstract void implementationSpecificPut(List<Metric> metrics);
 
-	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
-		StringBuilder sb = new StringBuilder(metric.getScope());
-		sb.append('\0').append(metric.getMetric());
-
-		if(metric.getNamespace() != null) {
-			sb.append('\0').append(metric.getNamespace());
-		}
-
-		if(tagEntry != null) {
-			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
-		}
-
-		return sb.toString();
-	}
-
 	@Override
 	public void dispose() {
 		requireNotDisposed();
@@ -161,6 +150,24 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
+	private String constructKey(Metric metric, Entry<String, String> tagEntry) {
+		StringBuilder sb = new StringBuilder(metric.getScope());
+		sb.append('\0').append(metric.getMetric());
+
+		if(metric.getNamespace() != null) {
+			sb.append('\0').append(metric.getNamespace());
+		}
+
+		if(tagEntry != null) {
+			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
+		}
+		
+		// Add randomness for each instance of bloom filter running on different 
+		// schema clients to reduce probability of false positives that metric schemas are not written to ES
+		sb.append('\0').append(randomNumber);
+
+		return sb.toString();
+	}
 
 	/**
 	 * The set of implementation specific configuration properties.
@@ -222,6 +229,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			startTimeBeforeFlushInMillis = System.currentTimeMillis();
 			flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
 			_logger.info("Initialized bloom filter flushing out, after {} hours", flushAtHour);
+			_logger.info("Initialized random number for bloom filter key = {}", randomNumber);
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
@@ -247,7 +255,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL_HOUR * flushAtHour){
 				_logger.info("Flushing out bloom filter entries, after {} hours", flushAtHour);
 				BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+				randomNumber = rand.nextInt();
 				flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
+				_logger.info("New random number for bloom filter key = {}", randomNumber);
+				_logger.info("New flush interva = {} hours", flushAtHour);
 				startTimeBeforeFlushInMillis = currentTimeInMillis;
 			}
 		}
