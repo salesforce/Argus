@@ -89,6 +89,8 @@ public final class ServiceFactory {
     Provider<BatchService> _batchServiceProvider;
     @Inject
     Provider<ChartService> _chartServiceProvider;
+    @Inject
+    Provider<PreferencesService> _preferencesServiceProvider;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -298,6 +300,15 @@ public final class ServiceFactory {
      */
     public synchronized ChartService getChartService() {
         return _chartServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of the preferences service.
+     *
+     * @return  An instance of the preferences service.
+     */
+    public synchronized PreferencesService getPreferencesService() {
+        return _preferencesServiceProvider.get();
     }
 
 }
