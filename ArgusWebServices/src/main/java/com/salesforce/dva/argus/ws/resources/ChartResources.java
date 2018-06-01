@@ -20,13 +20,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.salesforce.dva.argus.entity.Alert;
-import com.salesforce.dva.argus.entity.Chart;
-import com.salesforce.dva.argus.entity.Dashboard;
-import com.salesforce.dva.argus.entity.JPAEntity;
-import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.entity.*;
 import com.salesforce.dva.argus.service.ChartService;
 import com.salesforce.dva.argus.service.DashboardService;
+import com.salesforce.dva.argus.service.PreferencesService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.ChartDto;
 
@@ -43,6 +40,7 @@ public class ChartResources extends AbstractResource {
 
 	private ChartService _chartService = system.getServiceFactory().getChartService();
     private DashboardService _dService = system.getServiceFactory().getDashboardService();
+    private PreferencesService _pService = system.getServiceFactory().getPreferencesService();
 
 	//~ Methods **************************************************************************************************************************************
 	
@@ -94,6 +92,8 @@ public class ChartResources extends AbstractResource {
 		
 		copyProperties(chart, chartDto);
 		chart = _chartService.updateChart(chart);
+      //  Preferences prefs= new Preferences(remoteUser,remoteUser,chart,"{ 'key':'value'}");
+      //  _pService.updatePreferences(prefs);
 		chartDto = ChartDto.transformToDto(chart);
 		chartDto.setHref(req.getRequestURL().append('/').append(chartDto.getId()).toString());
 		return chartDto;
