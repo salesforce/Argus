@@ -91,9 +91,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				boolean found = BLOOMFILTER.mightContain(key);
 				if(!found) {
 					metricsToPut.add(metric);
-					if(_writesToBloomFilterEnabled) {
-						BLOOMFILTER.put(key);
-					}
 				}
 			} else {
 				boolean newTags = false;
@@ -102,9 +99,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 					boolean found = BLOOMFILTER.mightContain(key);
 					if(!found) {
 						newTags = true;
-						if(_writesToBloomFilterEnabled) {
-							BLOOMFILTER.put(key);
-						}
 					}
 				}
 
@@ -150,7 +144,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
-	private String constructKey(Metric metric, Entry<String, String> tagEntry) {
+	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
 		StringBuilder sb = new StringBuilder(metric.getScope());
 		sb.append('\0').append(metric.getMetric());
 
@@ -168,7 +162,29 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		return sb.toString();
 	}
-
+	
+	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace) {
+		StringBuilder sb = new StringBuilder(scope);
+		sb.append('\0').append(metric);
+		
+		if(namespace != null) {
+			sb.append('\0').append(namespace);
+		}
+		
+		if(tagk != null) {
+			sb.append('\0').append(tagk);
+		}
+		
+		if(tagv != null) {
+			sb.append('\0').append(tagv);
+		}
+		
+		// Add randomness for each instance of bloom filter running on different 
+		// schema clients to reduce probability of false positives that metric schemas are not written to ES
+		sb.append('\0').append(randomNumber);
+		
+		return sb.toString();
+	}
 	/**
 	 * The set of implementation specific configuration properties.
 	 *
