@@ -570,6 +570,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			String requestBody = _mapper.writeValueAsString(msrList);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
 			strResponse = extractResponse(response);
+			
+			//add to bloom filter
 		} catch (IOException e) {
 			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
 			throw new SystemException(e);
@@ -579,16 +581,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
 			//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
 			if(putResponse.errors) {
-				List<MetricSchemaRecord> recordsToRemove = new ArrayList<>();
 				for(Item item : putResponse.items) {
 					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
 						_logger.warn("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-						recordsToRemove.add(msrList.getRecord(item.create._id));
 					}
 					
 					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
 						_logger.warn("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-						recordsToRemove.add(msrList.getRecord(item.index._id));
 					}
 				}
 			}
@@ -625,16 +624,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
 					//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
 					if(putResponse.errors) {
-						List<MetricSchemaRecord> recordsToRemove = new ArrayList<>();
 						for(Item item : putResponse.items) {
 							if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
 								_logger.warn("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-								recordsToRemove.add(msrList.getRecord(item.create._id));
 							}
 							
 							if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
 								_logger.warn("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-								recordsToRemove.add(msrList.getRecord(item.index._id));
 							}
 						}
 					}
