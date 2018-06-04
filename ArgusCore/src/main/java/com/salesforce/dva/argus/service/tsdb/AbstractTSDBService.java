@@ -54,7 +54,9 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -65,11 +67,13 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,6 +152,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				Property.TSD_ENDPOINT_CONNECTION_TIMEOUT.getDefaultValue()));
 		int socketTimeout = Integer.parseInt(config.getValue(Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getName(),
 				Property.TSD_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
+		int tsdbConnectionReuseCount=Integer.parseInt(config.getValue(Property.TSDB_READ_CONNECTION_REUSE_COUNT.getName(),
+				Property.TSDB_READ_CONNECTION_REUSE_COUNT.getDefaultValue()));
 
 		_readEndPoints = Arrays.asList(config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue()).split(","));
 
@@ -176,16 +182,16 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		try {
 			int index = 0;
 			for (String readEndpoint : _readEndPoints) {
-				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,readEndpoint));
+				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount ,readEndpoint));
 				_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
 				index ++;
 			}
 			for (String readBackupEndpoint : _readBackupEndPoints) {
 				if (!readBackupEndpoint.isEmpty())
-					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,readBackupEndpoint));
+					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, readBackupEndpoint));
 			}
 			
-			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout, _writeEndpoints);
+			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
 
 			_roundRobinIterator = Iterables.cycle(_writeEndpoints).iterator();
 			_executorService = Executors.newFixedThreadPool(connCount);
@@ -386,7 +392,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	/* Helper to create the read and write clients. */
-	protected CloseableHttpClient getClient(int connCount, int connTimeout, int socketTimeout, String...endpoints) throws MalformedURLException {
+	protected CloseableHttpClient getClient(int connCount, int connTimeout, int socketTimeout, int connectionReuseCount, String...endpoints) throws MalformedURLException {
 		PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
 		connMgr.setMaxTotal(connCount);
 
@@ -401,7 +407,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
 				socketTimeout).build();
 
-		return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
+		return HttpClients.custom().setConnectionManager(connMgr).setConnectionReuseStrategy(new TSDBReadConnectionReuseStrategy(connectionReuseCount)).setDefaultRequestConfig(reqConfig).build();
 	}
 
 	/* Converts a list of annotations into a list of annotation wrappers for use in serialization.  Resulting list is sorted by target annotation
@@ -623,7 +629,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		TSD_CONNECTION_COUNT("service.property.tsdb.connection.count", "2"),
 		TSD_RETRY_COUNT("service.property.tsdb.retry.count", "3"),
 		/** The TSDB backup read endpoint. */
-		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467");		
+		TSD_ENDPOINT_BACKUP_READ("service.property.tsdb.endpoint.backup.read", "http://localhost:4466,http://localhost:4467"),	
+		TSDB_READ_CONNECTION_REUSE_COUNT("service.property.tsdb.read.connection.reuse.count", "100");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -832,6 +839,29 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	@Override
 	public List<Annotation> getAnnotations(List<AnnotationQuery> queries) {
 		throw new UnsupportedOperationException("This method should be overriden by a specific implementation.");
+	}
+	/**
+	 * Used to close http connections after reusing the same connection for certain number of times 
+	 * @author rsarkapally
+	 *
+	 */
+	class TSDBReadConnectionReuseStrategy implements ConnectionReuseStrategy{
+		int connectionReuseCount;
+		AtomicInteger numOfTimesReused = new AtomicInteger(1);
+		public TSDBReadConnectionReuseStrategy(int connectionReuseCount) {
+			this.connectionReuseCount=connectionReuseCount;
+		}
+		
+		@Override
+		public boolean keepAlive(HttpResponse response, HttpContext context) {
+			HttpClientContext httpContext = (HttpClientContext) context;
+			_logger.debug("http connection {} reused for {} times", httpContext.getConnection(), httpContext.getConnection().getMetrics().getRequestCount()); 
+			if (numOfTimesReused.getAndIncrement() % connectionReuseCount == 0) {
+				numOfTimesReused.set(1);
+				return false;
+			}
+			return true;
+		}
 	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
