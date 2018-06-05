@@ -3,10 +3,14 @@ package com.salesforce.dva.argus.service.schema;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +30,6 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
-	private static final long BLOOM_FILTER_FLUSH_INTERVAL_HOUR = 60 * 60 * 1000L;
-	private static final int MIN_FLUSH_HOUR_INTERVAL = 6;
-	private static final int MAX_FLUSH_HOUR_INTERVAL = 15;
 	protected static BloomFilter<CharSequence> BLOOMFILTER;
 	private static boolean _writesToBloomFilterEnabled = true;
 	private static Random rand = new Random();
@@ -39,9 +40,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
 	private final boolean _cacheEnabled;
-
 	protected final boolean _syncPut;
-
+	private int bloomFilterFlushHourToStartAt;
+	private ScheduledExecutorService scheduledExecutorService;
+	
 	protected AbstractSchemaService(SystemConfiguration config) {
 		super(config);
 
@@ -60,6 +62,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		if(_cacheEnabled) {
 			_bloomFilterMonitorThread.start();
 		}
+
+		bloomFilterFlushHourToStartAt = Integer.parseInt(config.getValue(Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getName(), 
+				Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getDefaultValue()));
+		createScheduledExecutorService(bloomFilterFlushHourToStartAt);
 	}
 
 	@Override
@@ -130,6 +136,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		} else {
 			_logger.info("Requested shutdown of bloom filter monitor thread aborted, as it is not yet running.");
 		}
+		shutdownScheduledExecutorService();
 	}
 
 	@Override
@@ -155,36 +162,62 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		if(tagEntry != null) {
 			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
 		}
-		
+
 		// Add randomness for each instance of bloom filter running on different 
 		// schema clients to reduce probability of false positives that metric schemas are not written to ES
 		sb.append('\0').append(randomNumber);
 
 		return sb.toString();
 	}
-	
+
 	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace) {
 		StringBuilder sb = new StringBuilder(scope);
 		sb.append('\0').append(metric);
-		
+
 		if(namespace != null) {
 			sb.append('\0').append(namespace);
 		}
-		
+
 		if(tagk != null) {
 			sb.append('\0').append(tagk);
 		}
-		
+
 		if(tagv != null) {
 			sb.append('\0').append(tagv);
 		}
-		
+
 		// Add randomness for each instance of bloom filter running on different 
 		// schema clients to reduce probability of false positives that metric schemas are not written to ES
 		sb.append('\0').append(randomNumber);
-		
+
 		return sb.toString();
 	}
+
+	private void createScheduledExecutorService(int targetHourToStartAt){
+		scheduledExecutorService = Executors.newScheduledThreadPool(1);
+		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * 60 * 60;
+		BloomFilterFlushThread bloomFilterFlushThread = new BloomFilterFlushThread();
+		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, 24 * 60 *60, TimeUnit.SECONDS);
+	}
+
+	private void shutdownScheduledExecutorService(){
+		_logger.info("Shutting down scheduled bloom filter flush executor service");
+		scheduledExecutorService.shutdown();
+		try {
+			scheduledExecutorService.awaitTermination(10, TimeUnit.SECONDS);
+		} catch (InterruptedException ex) {
+			_logger.warn("Shutdown of executor service was interrupted.");
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private int getNumHoursUntilTargetHour(int targetHour){
+		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
+		Calendar calendar = Calendar.getInstance();
+		int hour = calendar.get(Calendar.HOUR_OF_DAY);
+		return hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+	}
+
 	/**
 	 * The set of implementation specific configuration properties.
 	 *
@@ -198,7 +231,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		SYNC_PUT("service.property.schema.sync.put", "false"),
 
 		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
-		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001");
+		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
+		BLOOM_FILTER_FLUSH_HOUR_TO_START_AT("service.property.schema.bloomfilter.flush.hour.to.start.at","2");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -236,24 +270,14 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * @author  Dilip Devaraj (ddevaraj@salesforce.com)
 	 */
 	private class BloomFilterMonitorThread implements Runnable {
-
-		long startTimeBeforeFlushInMillis;
-		int flushAtHour;
-
 		@Override
 		public void run() {
-			startTimeBeforeFlushInMillis = System.currentTimeMillis();
-			flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
-			_logger.info("Initialized bloom filter flushing out, after {} hours", flushAtHour);
 			_logger.info("Initialized random number for bloom filter key = {}", randomNumber);
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
 					try {
 						_checkBloomFilterUsage();
-
-						//  flush out bloom filter every K hours
-						_flushBloomFilter();
 					} catch (Exception ex) {
 						_logger.warn("Exception occurred while checking bloom filter usage.", ex);
 					}
@@ -266,23 +290,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			_logger.info("Bloom expected error rate = {}", BLOOMFILTER.expectedFpp());
 		}
 
-		private void _flushBloomFilter() {
-			long currentTimeInMillis = System.currentTimeMillis();
-			if((currentTimeInMillis - startTimeBeforeFlushInMillis) > BLOOM_FILTER_FLUSH_INTERVAL_HOUR * flushAtHour){
-				_logger.info("Flushing out bloom filter entries, after {} hours", flushAtHour);
-				BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
-				randomNumber = rand.nextInt();
-				flushAtHour = getRandomHourBetweenRange(MIN_FLUSH_HOUR_INTERVAL, MAX_FLUSH_HOUR_INTERVAL);
-				_logger.info("New random number for bloom filter key = {}", randomNumber);
-				_logger.info("New flush interva = {} hours", flushAtHour);
-				startTimeBeforeFlushInMillis = currentTimeInMillis;
-			}
-		}
-
-		private int getRandomHourBetweenRange(int minHour, int maxHour){
-			return (int) (Math.random() * (maxHour - minHour +1) + minHour); 
-		}
-		
 		private void _sleepForPollPeriod() {
 			try {
 				_logger.info("Sleeping for {}s before checking bloom filter statistics.", POLL_INTERVAL_MS / 1000);
@@ -291,6 +298,23 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				_logger.warn("AbstractSchemaService memory monitor thread was interrupted.");
 				Thread.currentThread().interrupt();
 			}
+		}
+	}
+
+	private class BloomFilterFlushThread implements Runnable {
+		@Override
+		public void run() {
+			try{
+				_flushBloomFilter();
+			} catch (Exception ex) {
+				_logger.warn("Exception occurred while flushing bloom filter.", ex);
+			}
+		}
+
+		private void _flushBloomFilter() {
+			_logger.info("Flushing out bloom filter entries");
+			BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+			randomNumber = rand.nextInt();
 		}
 	}
 }

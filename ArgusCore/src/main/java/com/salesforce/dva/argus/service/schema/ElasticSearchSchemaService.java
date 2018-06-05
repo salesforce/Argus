@@ -591,8 +591,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 						recordsToRemove.add(msrList.getRecord(item.index._id));
 					}
 				}
-				_logger.info("{} records were not written to ES", recordsToRemove.size());
-				records.removeAll(recordsToRemove);
+				if(recordsToRemove.size() != 0) {
+					_logger.info("{} records were not written to ES", recordsToRemove.size());
+					records.removeAll(recordsToRemove);
+				}
 			}
 			//add to bloom filter
 			_addToBloomFilter(records);
@@ -641,8 +643,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 								recordsToRemove.add(msrList.getRecord(item.index._id));
 							}
 						}
-						_logger.info("{} records were not written to ES", recordsToRemove.size());
-						records.removeAll(recordsToRemove);
+						if(recordsToRemove.size() != 0) {
+							_logger.info("{} records were not written to ES", recordsToRemove.size());
+							records.removeAll(recordsToRemove);
+						}
 					} 
 					//add to bloom filter
 					_addToBloomFilter(records);
