@@ -858,7 +858,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		@Override
 		public boolean keepAlive(HttpResponse response, HttpContext context) {
 			HttpClientContext httpContext = (HttpClientContext) context;
-			_logger.error("http connection {} reused for {} times", httpContext.getConnection(), httpContext.getConnection().getMetrics().getRequestCount()); 
+			_logger.debug("http connection {} reused for {} times", httpContext.getConnection(), httpContext.getConnection().getMetrics().getRequestCount()); 
 			if (numOfTimesReused.getAndIncrement() % connectionReuseCount == 0) {
 				numOfTimesReused.set(1);
 				return false;
