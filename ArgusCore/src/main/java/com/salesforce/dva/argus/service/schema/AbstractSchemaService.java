@@ -29,9 +29,9 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
-	private static int DAY_IN_SECONDS = 24 * 60 * 60;
-	private static int HOUR_IN_SECONDS = 60 * 60;
-	protected BloomFilter<CharSequence> bloomFilter;
+	private static final int DAY_IN_SECONDS = 24 * 60 * 60;
+	private static final int HOUR_IN_SECONDS = 60 * 60;
+	protected static BloomFilter<CharSequence> bloomFilter;
 	private Random rand = new Random();
 	private int randomNumber = rand.nextInt();
 	private int bloomFilterExpectedNumberInsertions;

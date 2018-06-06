@@ -3,6 +3,8 @@ package com.salesforce.dva.argus.service.schema;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +18,7 @@ import org.mockito.stubbing.Answer;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
 
 
@@ -34,11 +37,11 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		
 		List<Metric> metrics = createRandomMetrics("test-scope", "test-metric", 10);
 		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		_enableCaching(service);
 		final AtomicInteger count = new AtomicInteger();
 		ElasticSearchSchemaService spyService = _initializeSpyService(service, count);
 		
 		spyService.put(metrics);
+		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
 		assertTrue(count.get() == metrics.size());
 		spyService.put(metrics);
 		assertTrue(count.get() == metrics.size());
@@ -53,11 +56,11 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		total.addAll(newMetrics);
 		
 		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		_enableCaching(service);
 		final AtomicInteger count = new AtomicInteger();
 		ElasticSearchSchemaService spyService = _initializeSpyService(service, count);
 		
 		spyService.put(metrics);
+		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
 		assertTrue(count.get() == metrics.size());
 		spyService.put(new ArrayList<>(total));
 		assertTrue(count.get() == total.size());
@@ -71,7 +74,6 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		List<Metric> newMetrics = createRandomMetrics("test-scope", "test-metric1", 5);
 		
 		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
-		_enableCaching(service);
 		final AtomicInteger count = new AtomicInteger();
 		ElasticSearchSchemaService spyService = _initializeSpyService(service, count);
 		
@@ -111,17 +113,26 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		return spyService;
 	}
 	
-
-	
-	private void _enableCaching(ElasticSearchSchemaService service) {
+/*	private void _addToBloomFilter(ElasticSearchSchemaService service,List<MetricSchemaRecord> schemaRecords) {
 		try {
-			Field field = service.getClass().getSuperclass().getDeclaredField("_cacheEnabled");
-			field.setAccessible(true);
-			field.set(service, true);
-		} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			Method method= service.getClass().getDeclaredMethod("_addToBloomFilter",null);
+			method.setAccessible(true);
+			method.invoke(service, null);
+		} catch (NoSuchMethodException | InvocationTargetException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}*/
+	
+	
+/*	private void _fracture(ElasticSearchSchemaService service){
+		try {
+			Method method= service.getClass().getDeclaredMethod("_fracture",List<Metric>);
+			method.setAccessible(true);
+			method.invoke(service, null);
+		} catch (NoSuchMethodException | InvocationTargetException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-
+	}*/
 }
