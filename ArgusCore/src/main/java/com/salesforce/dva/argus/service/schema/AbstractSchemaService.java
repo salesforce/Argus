@@ -28,22 +28,20 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
-
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
-	protected static BloomFilter<CharSequence> BLOOMFILTER;
-	private static boolean _writesToBloomFilterEnabled = true;
-	private static Random rand = new Random();
-	private static int randomNumber = rand.nextInt();
 
+
+	protected BloomFilter<CharSequence> bloomFilter;
+	private Random rand = new Random();
+	private int randomNumber = rand.nextInt();
 	private int bloomFilterExpectedNumberInsertions;
 	private double bloomFilterErrorRate;
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
-	private final boolean _cacheEnabled;
 	protected final boolean _syncPut;
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
-	
+
 	protected AbstractSchemaService(SystemConfiguration config) {
 		super(config);
 
@@ -51,17 +49,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
 		bloomFilterErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_ERROR_RATE.getName(), 
 				Property.BLOOMFILTER_ERROR_RATE.getDefaultValue()));
-		BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+		bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
 
-		_cacheEnabled = Boolean.parseBoolean(
-				config.getValue(Property.CACHE_SCHEMARECORDS.getName(), Property.CACHE_SCHEMARECORDS.getDefaultValue()));
 		_syncPut = Boolean.parseBoolean(
 				config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
 
 		_bloomFilterMonitorThread = new Thread(new BloomFilterMonitorThread(), "bloom-filter-monitor");
-		if(_cacheEnabled) {
-			_bloomFilterMonitorThread.start();
-		}
+		_bloomFilterMonitorThread.start();
 
 		bloomFilterFlushHourToStartAt = Integer.parseInt(config.getValue(Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getName(), 
 				Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getDefaultValue()));
@@ -81,20 +75,14 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		requireNotDisposed();
 		SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
 
-		//If cache is not enabled, call implementation specific put with the list of metrics. 
-		if(!_cacheEnabled) {
-			implementationSpecificPut(metrics);
-			return;
-		}
-
-		//If cache is enabled, create a list of metricsToPut that do not exist on the BLOOMFILTER and then call implementation 
+		// Create a list of metricsToPut that do not exist on the BLOOMFILTER and then call implementation 
 		// specific put with only those subset of metricsToPut. 
 		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
 
 		for(Metric metric : metrics) {
 			if(metric.getTags().isEmpty()) {
 				String key = constructKey(metric, null);
-				boolean found = BLOOMFILTER.mightContain(key);
+				boolean found = bloomFilter.mightContain(key);
 				if(!found) {
 					metricsToPut.add(metric);
 				}
@@ -102,7 +90,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
 					String key = constructKey(metric, tagEntry);
-					boolean found = BLOOMFILTER.mightContain(key);
+					boolean found = bloomFilter.mightContain(key);
 					if(!found) {
 						newTags = true;
 					}
@@ -224,14 +212,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
 	public enum Property {
-
-		/* If set to true, schema records will be cached on writes. This helps to check if a schema records already exists,
-		 * and if it does then do not rewrite. Provide more heap space when using this option. */
-		CACHE_SCHEMARECORDS("service.property.schema.cache.schemarecords", "false"),
 		SYNC_PUT("service.property.schema.sync.put", "false"),
-
 		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
 		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
+		/*
+		 *  Have a different configured flush start hour for different machines to prevent thundering herd problem. 
+		 */
 		BLOOM_FILTER_FLUSH_HOUR_TO_START_AT("service.property.schema.bloomfilter.flush.hour.to.start.at","2");
 
 		private final String _name;
@@ -286,8 +272,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 
 		private void _checkBloomFilterUsage() {
-			_logger.info("Bloom approx no. elements = {}", BLOOMFILTER.approximateElementCount());
-			_logger.info("Bloom expected error rate = {}", BLOOMFILTER.expectedFpp());
+			_logger.info("Bloom approx no. elements = {}", bloomFilter.approximateElementCount());
+			_logger.info("Bloom expected error rate = {}", bloomFilter.expectedFpp());
 		}
 
 		private void _sleepForPollPeriod() {
@@ -313,7 +299,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		private void _flushBloomFilter() {
 			_logger.info("Flushing out bloom filter entries");
-			BLOOMFILTER = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+			bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+			/* Don't need explicit synchronization to prevent slowness majority of the time*/
 			randomNumber = rand.nextInt();
 		}
 	}
