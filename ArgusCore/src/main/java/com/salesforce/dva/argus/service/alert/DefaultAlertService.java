@@ -305,6 +305,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		}
 
+		// if cache is refreshed, we read the cooldown and trigger info from cache, else we query the db directly
 		if(_notificationsCache.isNotificationsCacheRefreshed()) {
 			for(Notification notification : notifications) {
 				if(_notificationsCache.getNotificationActiveStatusMap().get(notification.getId())!=null) {
@@ -446,10 +447,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
 				} catch (Exception ex) {
 					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
-				}		
+				}
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), mde.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId().intValue(), mde.getMessage());
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
@@ -460,7 +464,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), ex.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId().intValue(), ex.getMessage());
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 
@@ -528,7 +532,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return false;
 		}
 		if(!alert.isEnabled()) {
-			_logger.warn(MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alert.getId()));
+			_logger.warn(MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alert.getId().intValue()));
 			return false;
 		}
 
@@ -649,7 +653,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		StringBuilder message = new StringBuilder();
 
 		message.append("<p>This is a missing data notification. </p>");
-		message.append(MessageFormat.format("Alert Id: {0}", alert.getId()));
+		message.append(MessageFormat.format("Alert Id: {0}", alert.getId().intValue()));
 		message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
 		message.append(MessageFormat.format("<br> No data found for the following metric expression: ", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
@@ -683,16 +687,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				String serializedAlert = _mapper.writeValueAsString(alert);
 				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());
 			} catch (JsonProcessingException e) {
-				_logger.warn("Failed to serialize alert: {}.", alert.getId());
+				_logger.warn("Failed to serialize alert: {}.", alert.getId().intValue());
 				_logger.warn("", e);
 				continue;
 			}
 
 			alertsWithTimestamp.add(obj);
-
-			Map<String, String> tags = new HashMap<>();
-			tags.put(USERTAG, alert.getOwner().getUserName());
-			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
@@ -709,6 +709,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.setTag("host",SystemConfiguration.getHostname());
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
+			
+			Map<String, String> tags = new HashMap<>();
+			tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 
 		try {
