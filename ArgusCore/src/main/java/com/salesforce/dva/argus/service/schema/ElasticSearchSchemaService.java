@@ -218,7 +218,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	/* Convert the given list of metrics to a list of metric schema records. At the same time, fracture the records list
 	 * if its size is greater than INDEXING_BATCH_SIZE.
 	 */
-	private List<List<MetricSchemaRecord>> _fracture(List<Metric> metrics) {
+	public List<List<MetricSchemaRecord>> _fracture(List<Metric> metrics) {
 		List<List<MetricSchemaRecord>> fracturedList = new ArrayList<>();
 
 		List<MetricSchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
@@ -665,7 +665,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), entity, responseListener);
 	}
 
-	private void _addToBloomFilter(List<MetricSchemaRecord> records){
+	public void _addToBloomFilter(List<MetricSchemaRecord> records){
 		_logger.info("Adding {} records into bloom filter.", records.size());
 		for(MetricSchemaRecord record : records) {		
 			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());		
