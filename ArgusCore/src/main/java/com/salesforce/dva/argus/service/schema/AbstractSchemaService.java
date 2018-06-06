@@ -199,7 +199,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 	}
 
-	private int getNumHoursUntilTargetHour(int targetHour){
+	protected int getNumHoursUntilTargetHour(int targetHour){
 		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
 		Calendar calendar = Calendar.getInstance();
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
