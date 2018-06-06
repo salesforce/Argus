@@ -29,8 +29,8 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 
 public abstract class AbstractSchemaService extends DefaultService implements SchemaService {
 	private static final long POLL_INTERVAL_MS = 10 * 60 * 1000L;
-
-
+	private static int DAY_IN_SECONDS = 24 * 60 * 60;
+	private static int HOUR_IN_SECONDS = 60 * 60;
 	protected BloomFilter<CharSequence> bloomFilter;
 	private Random rand = new Random();
 	private int randomNumber = rand.nextInt();
@@ -183,9 +183,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
-		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * 60 * 60;
+		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
 		BloomFilterFlushThread bloomFilterFlushThread = new BloomFilterFlushThread();
-		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, 24 * 60 *60, TimeUnit.SECONDS);
+		scheduledExecutorService.scheduleAtFixedRate(bloomFilterFlushThread, initialDelayInSeconds, DAY_IN_SECONDS, TimeUnit.SECONDS);
 	}
 
 	private void shutdownScheduledExecutorService(){
