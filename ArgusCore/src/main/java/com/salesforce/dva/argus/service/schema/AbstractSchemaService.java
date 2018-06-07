@@ -213,7 +213,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 */
 	public enum Property {
 		SYNC_PUT("service.property.schema.sync.put", "false"),
-		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "400000000"),
+		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "40"),
 		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
 		/*
 		 *  Have a different configured flush start hour for different machines to prevent thundering herd problem. 
