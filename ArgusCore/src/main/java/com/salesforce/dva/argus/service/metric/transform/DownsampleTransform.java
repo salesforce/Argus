@@ -124,6 +124,11 @@ public class DownsampleTransform implements Transform {
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("Downsample transform need constant input!");
     }
+    
+    @Override
+    public List<Metric> transformNew(List<Metric> metrics) {
+        throw new UnsupportedOperationException("Downsample transform need constant input!");
+    }
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
