@@ -50,7 +50,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					alertDefinitionsCache.setAlertsMapById(enabledAlertsMap);
 					alertDefinitionsCache.setAlertsCacheInitialized(true);
 				}else {
-					List<Alert> modifiedAlerts = alertService.findAlertsModifiedAfterDate(new Date(startTime - Math.max(executionTime, LOOKBACK_PERIOD_FOR_REFRESH_MILLIS)));
+					List<Alert> modifiedAlerts = alertService.findAlertsModifiedAfterDate(new Date(startTime - Math.max(executionTime + REFRESH_INTERVAL_MILLIS, LOOKBACK_PERIOD_FOR_REFRESH_MILLIS)));
 
 					// updating only the modified/deleted alerts in the cache
 					if(modifiedAlerts!=null && modifiedAlerts.size()>0) {

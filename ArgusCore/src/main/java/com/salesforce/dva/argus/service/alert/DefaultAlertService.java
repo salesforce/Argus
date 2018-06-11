@@ -57,6 +57,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.Cron;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.quartz.CronScheduleBuilder;
@@ -179,7 +180,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public Alert updateAlert(Alert alert) {
 		requireNotDisposed();
 		requireArgument(alert != null, "Cannot update a null alert");
-		validateCronEntry(alert.getCronEntry());
+		boolean isCronValid = Cron.isCronEntryValid(alert.getCronEntry());
+		if(!isCronValid) {
+			throw new RuntimeException("Input cron entry - " + alert.getCronEntry() + " is invalid");
+		}
 		alert.setModifiedDate(new Date());
 		
 		EntityManager em = _emProvider.get();
@@ -189,17 +193,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.debug("Updated alert to : {}", result);
 		_auditService.createAudit("Updated alert to : {0}", result, result);
 		return result;
-	}
-
-	private void validateCronEntry(String cronEntry) {
-		String quartzCronEntry = "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
-
-		try {
-			// throws runtime exception if the cronEntry is invalid
-			TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
-		}catch(Exception e) {
-			_logger.error("Exception occured when trying to validate the cron entry - " + cronEntry + " Exception - " + ExceptionUtils.getFullStackTrace(e));
-		}
 	}
 
 	@Override

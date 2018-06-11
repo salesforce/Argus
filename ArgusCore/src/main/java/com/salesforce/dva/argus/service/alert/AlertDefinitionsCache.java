@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.util.Cron;
 
 public class AlertDefinitionsCache {
 
@@ -66,7 +67,7 @@ public class AlertDefinitionsCache {
 
 		for(String cronEntry : alertsMapByCronEntry.keySet()) {
 			try {
-				String quartzCronEntry = "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
+				String quartzCronEntry = Cron.convertToQuartzCronEntry(cronEntry);
 				CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
 				Date nextFireTime = cronTrigger.getFireTimeAfter(new Date(minuteStartTimeMillis-1000));
 				if(nextFireTime.equals(new Date(minuteStartTimeMillis))) {
