@@ -35,6 +35,7 @@ import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
@@ -43,8 +44,10 @@ import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchedulingService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
+import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -54,7 +57,9 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,13 +87,16 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	private final UserService _userService;
 	private final ServiceManagementService _serviceManagementRecordService;
 	private final AuditService _auditService;
+	private final TSDBService _tsdbService;
 	private final BlockingQueue<Alert> alertsQueue = new LinkedBlockingQueue<Alert>();
 	private ExecutorService _schedulerService;
 	private Thread _alertSchedulingThread;
 	private SystemConfiguration _configuration;
 	private final DistributedSchedulingLockService _distributedSchedulingService;
 	private AlertDefinitionsCache _alertDefinitionsCache;
+	private AlertsKPIReporter _alertsKpiReporter;
 	private static final Integer ALERT_SCHEDULING_BATCH_SIZE = 100;
+	private static final Long SCHEDULING_REFRESH_INTERVAL_IN_MILLS = 60000L;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -102,7 +110,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	 * @param  config                          The system configuration used to configure the service.
 	 */
 	@Inject
-	DistributedDatabaseSchedulingService(AlertService alertService, UserService userService,
+	DistributedDatabaseSchedulingService(AlertService alertService, UserService userService, TSDBService tsdbService,
 			ServiceManagementService serviceManagementRecordService, AuditService auditService, SystemConfiguration config, DistributedSchedulingLockService distributedSchedulingLockService) {
 		super(config);
 		requireArgument(alertService != null, "Alert service cannot be null.");
@@ -114,12 +122,13 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		_userService = userService;
 		_serviceManagementRecordService = serviceManagementRecordService;
 		_auditService = auditService;
+		_tsdbService = tsdbService;
 		_configuration = config;
 		_distributedSchedulingService=distributedSchedulingLockService;
 		_alertDefinitionsCache = new AlertDefinitionsCache(_alertService);
 
 		// initializing the alert scheduler tasks
-		int numThreads = Integer.parseInt(_configuration.getValue(Property.QUARTZ_THREADPOOL_COUNT.getName(), Property.QUARTZ_THREADPOOL_COUNT.getDefaultValue()));
+		int numThreads = Integer.parseInt(_configuration.getValue(Property.SCHEDULER_THREADPOOL_COUNT.getName(), Property.SCHEDULER_THREADPOOL_COUNT.getDefaultValue()));
 		_schedulerService = Executors.newFixedThreadPool(numThreads,
 				new ThreadFactory() {
 			public Thread newThread(Runnable r) {
@@ -128,9 +137,14 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				return t;
 			}
 		});
+
 		for(int i=0;i<numThreads;i++) {
 			_schedulerService.submit(new AlertScheduler());
 		}
+
+		_alertsKpiReporter = new AlertsKPIReporter();
+		_alertsKpiReporter.setDaemon(true);
+		_alertsKpiReporter.start();
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -229,9 +243,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	public enum Property {
 
 		/** Specifies the number of threads used for scheduling.  Defaults to 1. */
-		QUARTZ_THREADPOOL_COUNT("service.property.scheduling.quartz.threadPool.threadCount", "10"),
+		SCHEDULER_THREADPOOL_COUNT("service.property.scheduling.quartz.threadPool.threadCount", "10"),
 		JOBS_BLOCK_SIZE("service.property.scheduling.jobsBlockSize", "1000"),
-		SCHEDULING_REFRESH_INTERVAL_IN_MILLS("service.property.scheduling.schedulingRefeshInterval", "60000"),
 		SLEEP_TIME_BEFORE_GETTING_NEXT_JOB_BLOCK_IN_MILLS("service.property.scheduling.sleepTimeBeforeGettingNextJobBlock", "100"),
 		MAX_JOBS_PER_SCHEDULER("service.property.scheduling.maxJobsPerScheduler", "10000");
 
@@ -288,42 +301,44 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		public void run() {
 
 			int jobsBlockSize=Integer.parseInt(_configuration.getValue(Property.JOBS_BLOCK_SIZE.getName(), Property.JOBS_BLOCK_SIZE.getDefaultValue()));
-			long schedulingRefreshTime = Long.parseLong(_configuration.getValue(Property.SCHEDULING_REFRESH_INTERVAL_IN_MILLS.getName(), Property.SCHEDULING_REFRESH_INTERVAL_IN_MILLS.getDefaultValue()));
 
 			if (_isSchedulingServiceEnabled()) {
 				// wait for the alert definitions cache to be loaded
 				while(!_alertDefinitionsCache.isAlertsCacheInitialized()) {
-					_logger.info("Waiting for alerts cache to be initialized. Sleeping for 5 seconds..");
+					_logger.info("Waiting for alerts cache to be initialized. Sleeping for 2 seconds..");
 					try {
-						Thread.sleep(5*1000);
+						Thread.sleep(2*1000);
 					} catch (InterruptedException e) {
-		                _logger.error("Thread interrupted when sleeping - " + ExceptionUtils.getFullStackTrace(e));
+						_logger.error("Thread interrupted when sleeping - " + ExceptionUtils.getFullStackTrace(e));
 					}
 				}
+
 				while (!isInterrupted()) {
-					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,schedulingRefreshTime);
+					DistributedSchedulingLock distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
 					long nextStartTime = distributedSchedulingLock.getNextScheduleStartTime();
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 
-					if(jobsFromIndex < distributedSchedulingLock.getJobCount()){
+					if(System.currentTimeMillis() < nextStartTime) {
+						_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
+						_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
+					}else {
 						long startTimeForCurrMinute = nextStartTime;
 						if(startTimeForCurrMinute>System.currentTimeMillis()) {
 							startTimeForCurrMinute = startTimeForCurrMinute - 60*1000;
 						}
 						List<Alert> enabledAlerts = _alertDefinitionsCache.getEnabledAlertsForMinute(startTimeForCurrMinute);
-						// schedule all the jobs by putting them in scheduling queue
-						_logger.info("Scheduling {} enabled alerts for the minute starting at {}", enabledAlerts.size(), startTimeForCurrMinute);
-						alertsQueue.addAll(enabledAlerts);
+						while(jobsFromIndex < enabledAlerts.size()){
+							int jobsToIndex = enabledAlerts.size()<(jobsFromIndex+jobsBlockSize)?enabledAlerts.size():jobsFromIndex+jobsBlockSize;
 
-						if(System.currentTimeMillis()<nextStartTime) {
-							_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
-							_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
+							// schedule all the jobs by putting them in scheduling queue
+							_logger.info("Scheduling enabled alerts for the minute starting at {}", startTimeForCurrMinute);
+							_logger.info("Adding alerts between {} and {} to scheduler {}",  jobsFromIndex, jobsToIndex);
+							alertsQueue.addAll(enabledAlerts.subList(jobsFromIndex, jobsToIndex));
+
+							distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
+							jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 						}
-					} else if(System.currentTimeMillis() < nextStartTime) {
-						_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
-						_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
 					}
-
 				}
 			}
 		}
@@ -345,9 +360,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			while(true) {
 				try {
 					Alert alert = alertsQueue.poll(10, TimeUnit.MILLISECONDS);
-                    if(alert!=null) {
-                    	    alertsBatch.add(alert);
-                    }
+					if(alert!=null) {
+						alertsBatch.add(alert);
+					}
 					if((alert==null && alertsBatch.size()>0) || alertsBatch.size()==ALERT_SCHEDULING_BATCH_SIZE) {
 						_alertService.enqueueAlerts(alertsBatch);
 						alertsBatch = new ArrayList<Alert>();
@@ -357,7 +372,42 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				}
 			}
 		}
+	}
 
+	class AlertsKPIReporter extends Thread{
+
+		@Override
+		public void run() {
+			while (!isInterrupted()) {
+				try {
+					long nextMinuteStartTime = 60*1000*(System.currentTimeMillis()/(60*1000)) + 60*1000;
+					sleep(nextMinuteStartTime - System.currentTimeMillis());
+					if(_alertDefinitionsCache.isAlertsCacheInitialized()) {
+
+						Metric schedulingQueueSizeMetric = new Metric(MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getScope(), MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getMetric());
+						schedulingQueueSizeMetric.setTag("host",SystemConfiguration.getHostname());
+						Map<Long, Double> datapoints = new HashMap<>();
+						datapoints.put(nextMinuteStartTime, Double.valueOf(alertsQueue.size()));
+						schedulingQueueSizeMetric.addDatapoints(datapoints);
+
+						Metric enabledAlertsMetric = new Metric(MonitorService.Counter.ALERTS_ENABLED.getScope(), MonitorService.Counter.ALERTS_ENABLED.getMetric());
+						enabledAlertsMetric.setTag("host",SystemConfiguration.getHostname());
+						datapoints = new HashMap<>();
+						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertDefinitionsCache.getEnabledAlertsForMinute(nextMinuteStartTime).size()));
+						enabledAlertsMetric.addDatapoints(datapoints);
+
+						try {
+							_tsdbService.putMetrics(Arrays.asList(new Metric[] {schedulingQueueSizeMetric, enabledAlertsMetric}));
+						} catch (Exception ex) {
+							_logger.error("Error occurred while pushing alert audit scheduling time series. Reason: {}", ex.getMessage());
+						}		
+					}
+				}
+				catch(Exception e) {
+					_logger.error("Exception occured when scheduling alerts - "+ ExceptionUtils.getFullStackTrace(e));
+				}
+			}
+		}
 	}
 }
 /* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

@@ -293,6 +293,17 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     public Date getModifiedDate() {
         return (modifiedDate == null) ? null : Date.class.cast(modifiedDate.clone());
     }
+    
+    /**
+     * Sets the date the entity was last modified.
+     *
+     * @param  The date the entity was last modified.
+     */
+    public void setModifiedDate(Date modifiedDate) {
+        if(modifiedDate!=null) {
+        	    this.modifiedDate = modifiedDate;
+        }
+    }
 
     /**
      * Updates the user that created the entity.

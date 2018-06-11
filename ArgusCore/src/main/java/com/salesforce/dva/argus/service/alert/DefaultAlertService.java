@@ -58,6 +58,10 @@ import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.CronTrigger;
+import org.quartz.TriggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +179,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public Alert updateAlert(Alert alert) {
 		requireNotDisposed();
 		requireArgument(alert != null, "Cannot update a null alert");
-
+		validateCronEntry(alert.getCronEntry());
+		alert.setModifiedDate(new Date());
+		
 		EntityManager em = _emProvider.get();
 		Alert result = mergeEntity(em, alert);
 
@@ -183,6 +189,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.debug("Updated alert to : {}", result);
 		_auditService.createAudit("Updated alert to : {0}", result, result);
 		return result;
+	}
+
+	private void validateCronEntry(String cronEntry) {
+		String quartzCronEntry = "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
+
+		try {
+			// throws runtime exception if the cronEntry is invalid
+			TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
+		}catch(Exception e) {
+			_logger.error("Exception occured when trying to validate the cron entry - " + cronEntry + " Exception - " + ExceptionUtils.getFullStackTrace(e));
+		}
 	}
 
 	@Override
@@ -709,7 +726,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.setTag("host",SystemConfiguration.getHostname());
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
-			
+
 			Map<String, String> tags = new HashMap<>();
 			tags.put(USERTAG, alert.getOwner().getUserName());
 			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
@@ -748,6 +765,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return Alert.findByRangeAndStatus(_emProvider.get(), fromId, toId, enabled);
 	}
 
+	@Override
+	public List<Alert> findAlertsModifiedAfterDate(Date modifiedDate) {
+		requireNotDisposed();
+		return Alert.findAlertsModifiedAfterDate(_emProvider.get(), modifiedDate);
+	}
+	
 	@Override
 	public int alertCountByStatus(boolean enabled) {
 		requireNotDisposed();

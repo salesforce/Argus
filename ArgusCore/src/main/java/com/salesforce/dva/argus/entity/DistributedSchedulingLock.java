@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
+import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
 
 /**
  * DistributedSchedulingLock object uses database record to distribute the jobs across schedulers. 
@@ -139,14 +140,14 @@ public class DistributedSchedulingLock {
 			if(distributedSchedulingLock == null){
 				distributedSchedulingLock = new DistributedSchedulingLock(id);
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
-				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, type)); 
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval)); 
+				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
 			}else if(System.currentTimeMillis() > distributedSchedulingLock.getNextScheduleStartTime()){
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
-				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em,type)); 
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
+				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
 			}else{
@@ -169,10 +170,10 @@ public class DistributedSchedulingLock {
 
 	}
 
-	private static long getTotalEnabledJobCount(EntityManager em, LockType type){
+	private static long getTotalEnabledJobCount(EntityManager em, long schedulingStartTimeMillis, LockType type){
 		switch(type){
 		case ALERT_SCHEDULING:
-			return Alert.alertCountByStatus(em, true);
+			return AlertDefinitionsCache.getEnabledAlertsForMinute(schedulingStartTimeMillis).size();
 		default:
 			return 0;
 		}

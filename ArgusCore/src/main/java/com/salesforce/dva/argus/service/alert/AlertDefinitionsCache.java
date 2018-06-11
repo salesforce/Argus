@@ -20,13 +20,13 @@ import com.salesforce.dva.argus.service.AlertService;
 
 public class AlertDefinitionsCache {
 
-	private final Logger _logger = LoggerFactory.getLogger(AlertDefinitionsCache.class);
+	private static final Logger _logger = LoggerFactory.getLogger(AlertDefinitionsCache.class);
 	
 	private AlertDefinitionsCacheRefresherThread refresherThread;
 
-	private Map<BigInteger/*alertId*/, Alert> alertsMapById = new HashMap<BigInteger, Alert>();
+	private static Map<BigInteger/*alertId*/, Alert> alertsMapById = new HashMap<BigInteger, Alert>();
 
-	private Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new HashMap<String, List<BigInteger>>();
+	private static Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new HashMap<String, List<BigInteger>>();
 	
 	private boolean alertsCacheInitialized = false;
 
@@ -60,14 +60,13 @@ public class AlertDefinitionsCache {
 		this.alertsCacheInitialized = alertsCacheInitialized;
 	}
 
-	public List<Alert> getEnabledAlertsForMinute(long minuteStartTimeMillis){
+	public static List<Alert> getEnabledAlertsForMinute(long minuteStartTimeMillis){
 		List<Alert> enabledAlerts = new ArrayList<Alert>();
 		List<BigInteger> enabledAlertIds = new ArrayList<BigInteger>();
 
 		for(String cronEntry : alertsMapByCronEntry.keySet()) {
 			try {
 				String quartzCronEntry = "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
-				_logger.info("Parsing cron entry - " + quartzCronEntry);
 				CronTrigger cronTrigger = TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
 				Date nextFireTime = cronTrigger.getFireTimeAfter(new Date(minuteStartTimeMillis-1000));
 				if(nextFireTime.equals(new Date(minuteStartTimeMillis))) {
@@ -79,7 +78,10 @@ public class AlertDefinitionsCache {
 		}
 		Collections.sort(enabledAlertIds);
 		for(BigInteger alertId : enabledAlertIds) {
-			enabledAlerts.add(alertsMapById.get(alertId));
+			Alert a = alertsMapById.get(alertId);
+			if(a!=null) {
+			    enabledAlerts.add(alertsMapById.get(alertId));
+			}
 		}
 		return enabledAlerts;
 	}
