@@ -242,11 +242,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	 */
 	public enum Property {
 
-		/** Specifies the number of threads used for scheduling.  Defaults to 1. */
 		SCHEDULER_THREADPOOL_COUNT("service.property.scheduling.quartz.threadPool.threadCount", "10"),
-		JOBS_BLOCK_SIZE("service.property.scheduling.jobsBlockSize", "1000"),
-		SLEEP_TIME_BEFORE_GETTING_NEXT_JOB_BLOCK_IN_MILLS("service.property.scheduling.sleepTimeBeforeGettingNextJobBlock", "100"),
-		MAX_JOBS_PER_SCHEDULER("service.property.scheduling.maxJobsPerScheduler", "10000");
+		JOBS_BLOCK_SIZE("service.property.scheduling.jobsBlockSize", "100000");
 
 		private final String _name;
 		private final String _defaultValue;

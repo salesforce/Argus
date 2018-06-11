@@ -66,17 +66,17 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 
 								if(!a.getCronEntry().equals(prevAlert.getCronEntry())) {
 									alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
-									if(!a.isDeleted() && !a.isEnabled()) {
+									if(!a.isDeleted() && a.isEnabled()) {
 										addEntrytoCronMap(a);
 									}
 								}   
-							}else {
+							}else if(a.isEnabled() && !a.isDeleted()) {
 								alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);
 								addEntrytoCronMap(a);
 							}
 						}
-						_logger.info("Number of modified alerts since last refresh - " + modifiedAlerts.size());
 					}
+					_logger.info("Number of modified alerts since last refresh - " + modifiedAlerts.size());
 				}
 				executionTime = System.currentTimeMillis() - startTime;
 				_logger.info("Alerts cache refreshed successfully in {} millis", executionTime);

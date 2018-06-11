@@ -180,8 +180,7 @@ public class DistributedSchedulingLock {
 	}
 
 	private static long _toBeginOfMinute(long millis){
-		long ret = millis-(millis % (60*1000));
-		return ret;
+		return millis-(millis % (60*1000));
 	}
 
 	public Long getId() {
