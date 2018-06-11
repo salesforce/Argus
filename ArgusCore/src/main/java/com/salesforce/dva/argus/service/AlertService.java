@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
 import com.salesforce.dva.argus.service.warden.WardenPostingNotifier;
 
 import java.math.BigInteger;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -218,7 +219,16 @@ public interface AlertService extends Service {
      */
     List<Alert> findAlertsByRangeAndStatus(BigInteger fromId, BigInteger toId, boolean enabled);
 	
-	/**
+    /**
+     * Returns a list of alerts that are created/modified/deleted after the specified date
+     *
+     * @param   modifiedDate - modifiedDate of alert object
+     *
+     * @return  The list of alerts modified after the input date
+     */
+	List<Alert> findAlertsModifiedAfterDate(Date modifiedDate);
+	
+    /**
 	 * Returns the total count of alerts by status (enabled alerts or disabled alerts).
 	 *
 	 * @param   enabled  Alert status (true for enabled alerts and false for disabled alerts)
