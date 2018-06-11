@@ -315,9 +315,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					long nextStartTime = distributedSchedulingLock.getNextScheduleStartTime();
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 
-					if(System.currentTimeMillis() < nextStartTime) {
+					if(jobsFromIndex > distributedSchedulingLock.getJobCount() && System.currentTimeMillis() < nextStartTime) {
 						_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
-						_sleep(distributedSchedulingLock.getNextScheduleStartTime()-System.currentTimeMillis());
+						_sleep(nextStartTime-System.currentTimeMillis());
 					}else {
 						long startTimeForCurrMinute = nextStartTime;
 						if(startTimeForCurrMinute>System.currentTimeMillis()) {
@@ -329,7 +329,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 							// schedule all the jobs by putting them in scheduling queue
 							_logger.info("Scheduling enabled alerts for the minute starting at {}", startTimeForCurrMinute);
-							_logger.info("Adding alerts between {} and {} to scheduler {}",  jobsFromIndex, jobsToIndex);
+							_logger.info("Adding alerts between {} and {} to scheduler",  jobsFromIndex, jobsToIndex);
 							alertsQueue.addAll(enabledAlerts.subList(jobsFromIndex, jobsToIndex));
 
 							distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);

@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2018, Salesforce.com, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Salesforce.com nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.salesforce.dva.argus.service.alert;
 
 import java.math.BigInteger;
@@ -42,11 +72,9 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 				if(!alertDefinitionsCache.isAlertsCacheInitialized()) {
 					List<Alert> enabledAlerts = alertService.findAlertsByStatus(true);
 					Map<BigInteger, Alert> enabledAlertsMap = enabledAlerts.stream().collect(Collectors.toMap(alert -> alert.getId(), alert -> alert));
-					Map<String/*cronEnty*/, List<BigInteger>> alertsByCronEntry = new HashMap<String, List<BigInteger>>();
 					for(Alert a : enabledAlerts) {
 						addEntrytoCronMap(a);
 					}
-					alertDefinitionsCache.setAlertsMapByCronEntry(alertsByCronEntry);
 					alertDefinitionsCache.setAlertsMapById(enabledAlertsMap);
 					alertDefinitionsCache.setAlertsCacheInitialized(true);
 				}else {
@@ -59,7 +87,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 								Alert prevAlert = alertDefinitionsCache.getAlertsMapById().get(a.getId());
 								if(a.isDeleted() || !a.isEnabled()) {
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
-									alertDefinitionsCache.getAlertsMapByCronEntry().get(a.getCronEntry()).remove(a.getId());
+									alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
 								}else {
 									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);                	 
 								}
@@ -79,7 +107,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					_logger.info("Number of modified alerts since last refresh - " + modifiedAlerts.size());
 				}
 				executionTime = System.currentTimeMillis() - startTime;
-				_logger.info("Alerts cache refreshed successfully in {} millis", executionTime);
+				_logger.info("Alerts cache refreshed successfully in {} millis. Number of alerts in cache - {}", executionTime, alertDefinitionsCache.getAlertsMapById().keySet().size());
 				if(executionTime < REFRESH_INTERVAL_MILLIS) {
 					sleep(REFRESH_INTERVAL_MILLIS - executionTime);
 				}
