@@ -89,15 +89,12 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
 									alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
 								}else {
-									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);                	 
-								}
-
-								if(!a.getCronEntry().equals(prevAlert.getCronEntry())) {
-									alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
-									if(!a.isDeleted() && a.isEnabled()) {
+									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);     
+									if(!a.getCronEntry().equals(prevAlert.getCronEntry())) {
+										alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
 										addEntrytoCronMap(a);
-									}
-								}   
+									}   
+								}
 							}else if(a.isEnabled() && !a.isDeleted()) {
 								alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);
 								addEntrytoCronMap(a);
