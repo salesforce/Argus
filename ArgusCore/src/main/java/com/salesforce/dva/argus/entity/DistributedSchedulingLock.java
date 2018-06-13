@@ -144,10 +144,10 @@ public class DistributedSchedulingLock {
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
-			}else if(System.currentTimeMillis() > distributedSchedulingLock.getNextScheduleStartTime()){
+			}else if(System.currentTimeMillis() >= distributedSchedulingLock.getNextScheduleStartTime()){
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
-				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
+				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
 			}else{
