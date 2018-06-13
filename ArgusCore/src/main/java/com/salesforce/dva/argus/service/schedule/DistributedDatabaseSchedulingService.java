@@ -88,7 +88,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	private final ServiceManagementService _serviceManagementRecordService;
 	private final AuditService _auditService;
 	private final TSDBService _tsdbService;
-	private final BlockingQueue<Alert> alertsQueue = new LinkedBlockingQueue<Alert>();
+	private final BlockingQueue<Alert> _alertsQueue = new LinkedBlockingQueue<Alert>();
 	private ExecutorService _schedulerService;
 	private Thread _alertSchedulingThread;
 	private SystemConfiguration _configuration;
@@ -315,7 +315,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					long nextStartTime = distributedSchedulingLock.getNextScheduleStartTime();
 					int jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
 
-					if(jobsFromIndex > distributedSchedulingLock.getJobCount() && System.currentTimeMillis() < nextStartTime) {
+					if(jobsFromIndex >= distributedSchedulingLock.getJobCount() && System.currentTimeMillis() < nextStartTime) {
 						_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
 						_sleep(nextStartTime-System.currentTimeMillis());
 					}else {
@@ -330,7 +330,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 							// schedule all the jobs by putting them in scheduling queue
 							_logger.info("Scheduling enabled alerts for the minute starting at {}", startTimeForCurrMinute);
 							_logger.info("Adding alerts between {} and {} to scheduler",  jobsFromIndex, jobsToIndex);
-							alertsQueue.addAll(enabledAlerts.subList(jobsFromIndex, jobsToIndex));
+							_alertsQueue.addAll(enabledAlerts.subList(jobsFromIndex, jobsToIndex));
 
 							distributedSchedulingLock = _distributedSchedulingService.updateNGetDistributedScheduleByType(LockType.ALERT_SCHEDULING,jobsBlockSize,SCHEDULING_REFRESH_INTERVAL_IN_MILLS);
 							jobsFromIndex = distributedSchedulingLock.getCurrentIndex() - jobsBlockSize; 
@@ -356,7 +356,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			List<Alert> alertsBatch = new ArrayList<Alert>();
 			while(true) {
 				try {
-					Alert alert = alertsQueue.poll(10, TimeUnit.MILLISECONDS);
+					Alert alert = _alertsQueue.poll(10, TimeUnit.MILLISECONDS);
 					if(alert!=null) {
 						alertsBatch.add(alert);
 					}
@@ -384,7 +384,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						Metric schedulingQueueSizeMetric = new Metric(MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getScope(), MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getMetric());
 						schedulingQueueSizeMetric.setTag("host",SystemConfiguration.getHostname());
 						Map<Long, Double> datapoints = new HashMap<>();
-						datapoints.put(nextMinuteStartTime, Double.valueOf(alertsQueue.size()));
+						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertsQueue.size()));
 						schedulingQueueSizeMetric.addDatapoints(datapoints);
 
 						Metric enabledAlertsMetric = new Metric(MonitorService.Counter.ALERTS_ENABLED.getScope(), MonitorService.Counter.ALERTS_ENABLED.getMetric());
