@@ -28,33 +28,66 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
-package com.salesforce.dva.argus.service.tsdb;
-
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.system.SystemConfiguration;
+package com.salesforce.dva.argus.sdk.exceptions;
 
 /**
- * A Singleton implementation of the TSDBService.
+ * Exception class for the Argus SDK.
  *
- * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com)
  */
-@Singleton
-public class SingletonTSDBService extends DefaultTSDBService {
+public class ArgusServiceException extends RuntimeException {
+
+    //~ Instance fields ******************************************************************************************************************************
+	
+	private static final long serialVersionUID = 1L;
+	private final int _status;
+    private final String _url;
+    private final String _json;
 
     //~ Constructors *********************************************************************************************************************************
 
     /**
-     * Creates a new SingletonTSDBService object.
+     * Creates a new ArgusServiceException object.
      *
-     * @param  config               The system configuration.  Cannot be null.
-     * @param  monitorService       The monitor service used to collect query time window counters. Cannot be null.
+     * @param  status   The corresponding HTTP status code.
+     * @param  message  The exception message.
+     * @param  url      The request URL.
+     * @param  json     The JSON request payload.
      */
-    @Inject
-    private SingletonTSDBService(SystemConfiguration config, MonitorService monitorService) {
-        super(config, monitorService);
+    public ArgusServiceException(int status, String message, String url, String json) {
+        super(message);
+        _status = status;
+        _url = url;
+        _json = json;
+    }
+
+    //~ Methods **************************************************************************************************************************************
+
+    /**
+     * Returns the status code.
+     *
+     * @return  The status code.
+     */
+    public int getStatus() {
+        return _status;
+    }
+
+    /**
+     * Returns the request URL.
+     *
+     * @return  The request URL.
+     */
+    public String getUrl() {
+        return _url;
+    }
+
+    /**
+     * Returns the JSON payload.
+     *
+     * @return  The JSON payload.
+     */
+    public String getJson() {
+        return _json;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

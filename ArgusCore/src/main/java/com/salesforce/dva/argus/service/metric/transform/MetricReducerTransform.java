@@ -28,16 +28,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.system.SystemAssert;
 
 /**
  * A general purpose metric reducer transform. Metrics are reduced based on the ValueReducer.
@@ -46,99 +47,102 @@ import java.util.Map;
  */
 public class MetricReducerTransform implements Transform {
 
-    //~ Instance fields ******************************************************************************************************************************
+	//~ Instance fields ******************************************************************************************************************************
 
-    private final ValueReducer valueReducer;
-    private final String defaultScope;
-    private final String defaultMetricName;
+	private final ValueReducer valueReducer;
+	private final String defaultScope;
+	private final String defaultMetricName;
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    /**
-     * Creates a new ReduceTransform object.
-     *
-     * @param  valueReducer  The valueReducer.
-     */
-    protected MetricReducerTransform(ValueReducer valueReducer) {
-        this.valueReducer = valueReducer;
-        this.defaultScope = valueReducer.name();
-        this.defaultMetricName = TransformFactory.DEFAULT_METRIC_NAME;
-    }
+	/**
+	 * Creates a new ReduceTransform object.
+	 *
+	 * @param  valueReducer  The valueReducer.
+	 */
+	protected MetricReducerTransform(ValueReducer valueReducer) {
+		this.valueReducer = valueReducer;
+		this.defaultScope = valueReducer.name();
+		this.defaultMetricName = TransformFactory.DEFAULT_METRIC_NAME;
+	}
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics) {
-        return Arrays.asList(reduce(metrics));
-    }
+	@Override
+	public List<Metric> transform(List<Metric> metrics) {
+		return Arrays.asList(reduce(metrics));
+	}
 
-    @Override
-    public String getResultScopeName() {
-        return defaultScope;
-    }
+	@Override
+	public String getResultScopeName() {
+		return defaultScope;
+	}
 
-    /**
-     * O(n * m), where n is the max number of data points and m is the number of metrics. This becomes O(n) as the number of data points becomes
-     * large.
-     *
-     * @param   metrics  The list of metrics to reduce.
-     *
-     * @return  The reduced metric.
-     */
-    private Metric reduce(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+	/**
+	 * O(n * m), where n is the max number of data points and m is the number of metrics. This becomes O(n) as the number of data points becomes
+	 * large.
+	 *
+	 * @param   metrics  The list of metrics to reduce.
+	 *
+	 * @return  The reduced metric.
+	 */
+	private Metric reduce(List<Metric> metrics) {
+		SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
 
-        /*
-         * if (metrics.isEmpty()) { return new Metric(defaultScope, defaultMetricName); }
-         */
-        MetricDistiller distiller = new MetricDistiller();
+		/*
+		 * if (metrics.isEmpty()) { return new Metric(defaultScope, defaultMetricName); }
+		 */
+		MetricDistiller distiller = new MetricDistiller();
 
-        distiller.distill(metrics);
+		distiller.distill(metrics);
 
-        Map<Long, List<Double>> collated = collate(metrics);
-        Map<Long, Double> minDatapoints = reduce(collated);
-        String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
-        String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
-        Metric newMetric = new Metric(newScopeName, newMetricName);
+		Map<Long, List<Double>> collated = collate(metrics);
+		Map<Long, Double> minDatapoints = reduce(collated);
+		String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
+		String newScopeName = distiller.getScope() == null ? defaultScope : distiller.getScope();
+		Metric newMetric = new Metric(newScopeName, newMetricName);
 
-        newMetric.setDisplayName(distiller.getDisplayName());
-        newMetric.setUnits(distiller.getUnits());
-        newMetric.setTags(distiller.getTags());
-        newMetric.setDatapoints(minDatapoints);
-        return newMetric;
-    }
+		newMetric.setDisplayName(distiller.getDisplayName());
+		newMetric.setUnits(distiller.getUnits());
+		newMetric.setTags(distiller.getTags());
+		newMetric.setDatapoints(minDatapoints);
+		return newMetric;
+	}
 
-    private Map<Long, List<Double>> collate(List<Metric> metrics) {
-        Map<Long, List<Double>> collated = new HashMap<>();
+	/*
+	 * Collate all datapoint values for a given timestamp 
+	 */
+	private Map<Long, List<Double>> collate(List<Metric> metrics) {
+		Map<Long, List<Double>> collated = new HashMap<>();
 
-        for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
-                if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), new ArrayList<Double>());
-                }
-                collated.get(point.getKey()).add(point.getValue());
-            }
-        }
-        return collated;
-    }
+		for (Metric metric : metrics) {
+			for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
+				if (!collated.containsKey(point.getKey())) {
+					collated.put(point.getKey(), new ArrayList<Double>());
+				}
+				collated.get(point.getKey()).add(point.getValue());
+			}
+		}
+		return collated;
+	}
 
-    private Map<Long, Double> reduce(Map<Long, List<Double>> collated) {
-        Map<Long, Double> reducedDatapoints = new HashMap<>();
+	private Map<Long, Double> reduce(Map<Long, List<Double>> collated) {
+		Map<Long, Double> reducedDatapoints = new HashMap<>();
 
-        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
-            reducedDatapoints.put(entry.getKey(), this.valueReducer.reduce(entry.getValue()));
-        }
-        return reducedDatapoints;
-    }
+		for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+			reducedDatapoints.put(entry.getKey(), this.valueReducer.reduce(entry.getValue()));
+		}
+		return reducedDatapoints;
+	}
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Metric Reducer Transform is not supposed to be used with a constant");
-    }
+	@Override
+	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+		throw new UnsupportedOperationException("Metric Reducer Transform is not supposed to be used with a constant");
+	}
 
-    @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("Reducer doesn't need list of list!");
-    }
+	@Override
+	public List<Metric> transform(List<Metric>... listOfList) {
+		throw new UnsupportedOperationException("Reducer doesn't need list of list!");
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

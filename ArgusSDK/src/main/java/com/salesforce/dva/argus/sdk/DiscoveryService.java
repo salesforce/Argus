@@ -38,7 +38,7 @@ import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryQuery;
 import com.salesforce.dva.argus.sdk.entity.MetricDiscoveryResult;
 import com.salesforce.dva.argus.sdk.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 import java.util.List;

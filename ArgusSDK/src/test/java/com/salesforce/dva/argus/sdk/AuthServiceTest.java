@@ -32,8 +32,8 @@ package com.salesforce.dva.argus.sdk;
 
 import org.junit.Test;
 
-import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 

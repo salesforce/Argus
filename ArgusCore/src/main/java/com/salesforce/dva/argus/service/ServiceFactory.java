@@ -87,6 +87,8 @@ public final class ServiceFactory {
     Provider<DiscoveryService> _discoveryServiceProvider;
     @Inject
     Provider<BatchService> _batchServiceProvider;
+    @Inject
+    Provider<ChartService> _chartServiceProvider;
 
 
     //~ Methods **************************************************************************************************************************************
@@ -288,5 +290,15 @@ public final class ServiceFactory {
     public synchronized BatchService getBatchService() {
         return _batchServiceProvider.get();
     }
+    
+    /**
+     * Returns an instance of the chart service.
+     *
+     * @return  An instance of the chart service.
+     */
+    public synchronized ChartService getChartService() {
+        return _chartServiceProvider.get();
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

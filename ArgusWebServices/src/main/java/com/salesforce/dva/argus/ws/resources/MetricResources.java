@@ -81,7 +81,7 @@ public class MetricResources extends AbstractResource {
      * @return  The resulting metrics.
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON + ";qs=2")
+    @Produces(MediaType.APPLICATION_JSON + ";qs=1")
     @Description("Performs a metric query using the given expression.")
     public List<MetricDto> getMetricsJSON(@Context HttpServletRequest req,
         @QueryParam("expression") List<String> expressions) {
@@ -104,7 +104,7 @@ public class MetricResources extends AbstractResource {
      * @return  Metric data in CSV format
      */
     @GET
-    @Produces("application/ms-excel;qs=1")
+    @Produces("application/ms-excel;qs=0")
     @Description("Downloads the metric data in CSV format.")
     public Response getMetricsCSV(@Context HttpServletRequest req,
         @QueryParam("expression") List<String> expressions) {
@@ -166,7 +166,9 @@ public class MetricResources extends AbstractResource {
 
         for (String expression : expressions) {
         	try {
-        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression); 
+        		List<Metric> metricsForThisExpression = metricService.getMetrics(expression);
+        		req.setAttribute("expandedTimeSeriesRange", metricService.getExpandedTimeSeriesRange());
+        		req.setAttribute("timeWindow", metricService.getQueryTimeWindow());
         		metrics.addAll(metricsForThisExpression);
         	} catch(WildcardExpansionLimitExceededException e) {
         		metricService.dispose();
@@ -184,7 +186,7 @@ public class MetricResources extends AbstractResource {
         SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 
         final MetricService metricService = system.getServiceFactory().getMetricService();
-        return metricService.getAsyncMetrics(expressions, 0, ttl, owner.getUserName());
+        return metricService.getAsyncMetrics(expressions, System.currentTimeMillis(), ttl, owner.getUserName());
     }
 
     private String _convertToCSV(List<Metric> metrics) {

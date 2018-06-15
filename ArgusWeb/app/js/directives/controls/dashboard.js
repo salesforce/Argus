@@ -15,10 +15,15 @@ angular.module('argus.directives.controls.dashboard', [])
 
 			this.updateControl = function(controlName, controlValue, controlType, localSubmit) {
 				var controlExists = false;
+				var control = {
+					name: controlName,
+					value: controlValue,
+					type: controlType
+				};
 
 				if (!localSubmit) {
 					for (var prop in $routeParams) {
-						if (prop == $scope.controlName) {
+						if (prop === $scope.controlName) {
 							controlValue = $routeParams[prop];
 						}
 					}
@@ -33,16 +38,14 @@ angular.module('argus.directives.controls.dashboard', [])
 				}
 
 				if (!controlExists) {
-					var control = {
-						name: controlName,
-						value: controlValue,
-						type: controlType
-					};
 					$scope.controls.push(control);
 				}
 
 				//add controls to url
 				this.addControlsToUrl();
+
+				// broadcast update
+				this.broadcastEvent(this.getControlChangeEventName(), control);
 			};
 
 			this.addControlsToUrl = function () {
@@ -60,13 +63,17 @@ angular.module('argus.directives.controls.dashboard', [])
 				return 'submitButtonEvent';
 			};
 
+			this.getControlChangeEventName = function() {
+				return 'updateControl';
+			};
+
 			this.broadcastEvent = function(eventName, data){
 				console.log(eventName + ' was broadcast');
 				$scope.$broadcast(eventName, data);
 			};
 		},
 		link:function(scope, element, attributes){
-			if (!attributes.onload || attributes.onload == true) {
+			if (!attributes.onload || attributes.onload === true) {
 				scope.$broadcast('submitButtonEvent', scope.controls);
 			}
 		}

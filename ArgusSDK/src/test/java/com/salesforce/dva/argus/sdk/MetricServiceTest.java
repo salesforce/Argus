@@ -33,7 +33,7 @@ package com.salesforce.dva.argus.sdk;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.salesforce.dva.argus.sdk.ArgusService.PutResult;
 import com.salesforce.dva.argus.sdk.entity.Metric;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import org.junit.Test;
 import java.io.IOException;

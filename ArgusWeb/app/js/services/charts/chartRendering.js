@@ -82,6 +82,9 @@ angular.module('argus.services.charts.rendering', [])
 
 			// show numerical value if set
 			if (showNum) {
+				if (lastStatusVal !== undefined) {
+					lastStatusVal = lastStatusValNum.toLocaleString();
+				}
 				$('#' + UtilService.cssNotationCharactersConverter(attributes.name) + '-numVal').removeClass('hide').addClass('inlineBlock').html(lastStatusVal);
 			}
 
