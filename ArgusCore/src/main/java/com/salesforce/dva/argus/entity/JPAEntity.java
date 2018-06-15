@@ -59,6 +59,8 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.TypedQuery;
 
+import org.eclipse.persistence.annotations.Index;
+
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static java.math.BigInteger.ZERO;
 
@@ -96,6 +98,7 @@ import static java.math.BigInteger.ZERO;
 @SuppressWarnings("serial")
 @DiscriminatorColumn(name = "DTYPE", discriminatorType = DiscriminatorType.STRING)
 @Entity
+@Index(name="jpaEntity_modifiedDate_idx", columnNames={"modifiedDate"}, unique = false) 
 @Inheritance(strategy = InheritanceType.JOINED)
 @NamedQueries(
     {
