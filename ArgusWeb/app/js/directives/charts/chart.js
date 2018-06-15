@@ -1,13 +1,17 @@
 'use strict';
-/*global angular:false, $:false, console:false, growl:false */
+/*global angular:false, $:false, console:false, growl:false, d3:false, window:false */
 
 angular.module('argus.directives.charts.chart', [])
-.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl',
-	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl) {
+.directive('agChart', ['Metrics', 'Annotations', 'ChartRenderingService', 'ChartDataProcessingService', 'ChartOptionService', 'DateHandlerService', 'CONFIG', 'VIEWELEMENT', '$compile', 'UtilService', 'growl', '$timeout',
+	function(Metrics, Annotations, ChartRenderingService, ChartDataProcessingService, ChartOptionService, DateHandlerService, CONFIG, VIEWELEMENT, $compile, UtilService, growl, $timeout) {
+		var timer;
+		var resizeTimeout = 250;
 		var chartNameIndex = 1;
+
 		function compileLineChart(scope, newChartId, series, dateConfig, updatedOptionList) {
 			// empty any previous content
-			$('#' + newChartId).empty();
+			angular.element('#' + newChartId).empty();
+			angular.element('.d3-tip').remove();
 
 			// create a new scope to pass to compiled line-chart directive
 			var lineChartScope = scope.$new(false);     // true will set isolate scope, false = inherit
@@ -17,7 +21,7 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			// when there is no agDate
+			// when there is no agDate, use
 			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
 				if (series[0].data && series[0].data.length > 0) {
 					dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
@@ -36,25 +40,47 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.series.sort(UtilService.alphabeticalSort);
 			// append, compile, & attach new scope to line-chart directive
 			// TODO: bind ngsf-fullscreen to the outer container i.e. elements_chartID
-			angular.element('#' + newChartId).append(
-				$compile(
-					'<div ngsf-fullscreen>' +
-					'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
-					'</div>')(lineChartScope)
-			);
+			if (updatedOptionList.chartType === 'heatmap') {
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<heatmap chartConfig="chartConfig" series="series" dateconfig="dateConfig"></heatmap>' +
+						'</div>')(lineChartScope)
+				);
+			} else {
+				angular.element('#' + newChartId).append(
+					$compile(
+						'<div ngsf-fullscreen>' +
+						'<line-chart chartConfig="chartConfig" series="series" dateconfig="dateConfig"></line-chart>' +
+						'</div>')(lineChartScope)
+				);
+			}
 		}
 
 		function queryAnnotationData(scope, annotationItem, newChartId, series, dateConfig, updatedOptionList) {
 			Annotations.query({expression: annotationItem}).$promise.then(function(data) {
 				if (data && data.length > 0) {
+					var flagSeriesNotInSeries = true;
 					var forName = ChartDataProcessingService.createSeriesName(data[0]);
 					var flagSeries = ChartDataProcessingService.copyFlagSeries(data);
 					flagSeries.linkedTo = forName;
 					// bind series with its annotations(flag series)
 					series = series.map(function (item) {
-						if (item.name === flagSeries.linkedTo) item.flagSeries = flagSeries;
+						if (item.name === flagSeries.linkedTo) {
+							item.flagSeries = flagSeries;
+							flagSeriesNotInSeries = false;
+						}
 						return item;
 					});
+					if (flagSeriesNotInSeries) {
+						series.push({
+							name: flagSeries.linkedTo,
+							color: null,
+							extraYAxis: null,
+							data: [],
+							flagSeries: flagSeries
+						});
+					}
 				}
 
 				// append, compile, & attach new scope to line-chart directive
@@ -161,7 +187,7 @@ angular.module('argus.directives.charts.chart', [])
 		// TODO: below functions 'should' be refactored to the chart services.
 		function setupChart(scope, element, attributes, controls) {
 			// remove/clear any previous chart rendering from DOM
-			var lastEl = element.context.querySelector('[id^=element_chart]');
+			var lastEl = element[0].querySelector('[id^=element_chart]');
 			var lastId = lastEl? lastEl.id: null;
 			element.empty();
 			// generate a new chart ID, set css options for main chart container
@@ -171,7 +197,7 @@ angular.module('argus.directives.charts.chart', [])
 			var chartType = attributes.type ? attributes.type : 'line';
 			chartType = chartType.toLowerCase();
 			// TODO: make this a constant somewhere else
-			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar'];
+			var supportedChartTypes = ['line', 'area', 'scatter', 'stackarea', 'bar', 'stackbar', 'heatmap'];
 			// check if a supported chartType is used
 			if (!supportedChartTypes.includes(chartType)) chartType = 'line';
 			var cssOpts = ( attributes.smallchart ) ? 'smallChart' : '';
@@ -187,21 +213,16 @@ angular.module('argus.directives.charts.chart', [])
 
 			// get start and end time for the charts as well as whether GMT/UTC scale is used or not
 			var dateConfig = {};
-			var GMTon = false;
 			for (var i = 0; i < controls.length; i++) {
 				if (controls[i].type === 'agDate') {
 					var timeValue = controls[i].value;
 					if (controls[i].name === 'start') {
 						dateConfig.startTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					} else if (controls[i].name === 'end'){
 						dateConfig.endTime = DateHandlerService.timeProcessingHelper(timeValue);
-						GMTon = GMTon || DateHandlerService.GMTVerifier(timeValue);
 					}
 				}
 			}
-			dateConfig.gmt = GMTon;
-
 			// process data for: metrics, annotations, options
 			var processedData = ChartDataProcessingService.processMetricData(data, controls);
 
@@ -242,6 +263,12 @@ angular.module('argus.directives.charts.chart', [])
 			compile: function () {
 				return {
 					post: function postLink(scope, element, attributes, dashboardCtrl) {
+						d3.select(window).on('resize', function(){
+							$timeout.cancel(timer); //clear to improve performance
+							timer = $timeout(function () {
+								scope.$apply();
+							}, resizeTimeout);
+						});
 						scope.$on(dashboardCtrl.getSubmitBtnEventName(), function(event, controls) {
 							setupChart(scope, element, attributes, controls);
 						});

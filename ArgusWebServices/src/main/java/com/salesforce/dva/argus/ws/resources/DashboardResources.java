@@ -79,49 +79,60 @@ public class DashboardResources extends AbstractResource {
 	 * @param   dashboardName  				The dashboard name filter.
 	 * @param   owner          				The principlaUser owner for owner name filter.
 	 * @param	populateMetaFieldsOnly		The flag to determine if only meta fields should be populated.
+     * @param   version                     The version of the dashboard to return. It is either null or not empty
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
-	private List<Dashboard> _getDashboardsByOwner(String dashboardName, PrincipalUser owner, boolean populateMetaFieldsOnly) {
-		
+	private List<Dashboard> _getDashboardsByOwner(String dashboardName, PrincipalUser owner, boolean populateMetaFieldsOnly, String version) {
+
 		List<Dashboard> result = new ArrayList<>();
-		
+
 		if (dashboardName != null && !dashboardName.isEmpty()) {
 			Dashboard dashboard = dService.findDashboardByNameAndOwner(dashboardName, owner);
 			if (dashboard == null) {
 				throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 			}
-			
+
 			result.add(dashboard);
 		} else {
 			if(owner.isPrivileged()) {
-				result = populateMetaFieldsOnly ? dService.findDashboards(null, true) : dService.findDashboards(null, false);
+				result = populateMetaFieldsOnly ? dService.findDashboards(null, true, version) : dService.findDashboards(null, false, version);
 			} else {
-				result = populateMetaFieldsOnly ? dService.findDashboardsByOwner(owner, true) : dService.findDashboardsByOwner(owner, false);
+				result = populateMetaFieldsOnly ? dService.findDashboardsByOwner(owner, true, version) : dService.findDashboardsByOwner(owner, false, version);
 			}
 		}
-		
+
 		return result;
 	}
-	
-	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
-		
+
+	private List<Dashboard> getDashboardsObj(String dashboardName, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit,String version) {
+
 		Set<Dashboard> result = new HashSet<>();
-		
-		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly));
+
+		result.addAll(_getDashboardsByOwner(dashboardName, owner, populateMetaFieldsOnly,version));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true) : dService.findSharedDashboards(false));
+			result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, null, limit, version) : dService.findSharedDashboards(false, null, limit, version));
 		}
-		
+
 		return new ArrayList<>(result);
 	}
 	
+	private List<Dashboard> getSharedDashboardsObj(boolean populateMetaFieldsOnly, PrincipalUser owner, Integer limit, String version) {
+
+		Set<Dashboard> result = new HashSet<>();
+		result.addAll(populateMetaFieldsOnly ? dService.findSharedDashboards(true, owner, limit, version) : dService.findSharedDashboards(false, owner, limit,version));
+		return new ArrayList<>(result);
+	}
+	
+
 	/**
 	 * Returns all dashboards' metadata filtered by owner.
 	 *
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param   limit          The maximum number of rows to return.
+     * @param   version        The version of the dashboard to return. It is either null or not empty
 	 *
 	 * @return  The list of filtered dashboards' metadata.
 	 */
@@ -130,11 +141,14 @@ public class DashboardResources extends AbstractResource {
 	@Path("/meta")
 	@Description("Returns all dashboards' metadata.")
 	public List<DashboardDto> getDashboardsMeta(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
-												@QueryParam("owner") String ownerName,
-												@QueryParam("shared") @DefaultValue("true") boolean shared) {
-		
+			@QueryParam("owner") String ownerName,
+			@QueryParam("shared") @DefaultValue("true") boolean shared,
+			@QueryParam("limit")  Integer limit,
+            @QueryParam("version")  String version) {
+
+
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, true, limit,version);
 		return DashboardDto.transformToDto(result);
 	}
 
@@ -144,21 +158,83 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
-	 *
+	 * @param   limit          The maximum number of rows to return.
+     * @param   version        The version of the dashboard to return. It is either null or not empty
+	 * 
 	 * @return  The list of filtered dashboards.
 	 */
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all dashboards.")
 	public List<DashboardDto> getDashboards(@Context HttpServletRequest req, @QueryParam("dashboardName") String dashboardName,
-											@QueryParam("owner") String ownerName,
-											@QueryParam("shared") @DefaultValue("true") boolean shared) {
-		
+			@QueryParam("owner") String ownerName,
+			@QueryParam("shared") @DefaultValue("true") boolean shared,
+			@QueryParam("limit")  Integer limit,
+            @QueryParam("version") String version) {
+
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false);
+		List<Dashboard> result = getDashboardsObj(dashboardName, owner, shared, false, limit, version);
 		return DashboardDto.transformToDto(result);
 	}
 
+	/**
+	 * Returns all shared dashboards with filtering.
+	 *
+	 * @param   req            The HTTP request.
+	 * @param   ownerName      The owner of shared dashboards to filter on. It is optional.
+	 * @param   limit          The maximum number of results to return. It is optional.
+     * @param   version        The version of the dashboard to return. It is either null or not empty.
+	 * 
+	 * @return  The list of all shared dashboards. Will never be null but may be empty.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared")
+	@Description("Returns all shared dashboards.")
+	public List<DashboardDto> getSharedDashboards(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit,
+                                    @QueryParam("version") String version){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Dashboard> result = getSharedDashboardsObj(false, owner, limit,version);
+		return DashboardDto.transformToDto(result);
+	}
+	
+	/**
+	 * Returns the list of all shared dashboards with only metadata information.
+	 *
+	 * @param   req        The HttpServlet request object. Cannot be null.
+	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   limit      The maximum number of results to return. It is optional.
+     * @param   version    The version of the dashboard to return. It is either null or not empty
+	 *
+	 * @return  The list of all shared dashboards with meta information only. Will never be null but may be empty.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared/meta")
+	@Description("Returns all shared dashboards' metadata.")
+	public List<DashboardDto> getSharedDashboardsMeta(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit,
+                                    @QueryParam("version") String version){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Dashboard> result = getSharedDashboardsObj(true, owner, limit,version);
+		return DashboardDto.transformToDto(result);
+	}
+	
 	/**
 	 * Returns a dashboard by its ID.
 	 *
@@ -283,6 +359,6 @@ public class DashboardResources extends AbstractResource {
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 	}
-	
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

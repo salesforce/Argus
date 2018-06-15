@@ -6,7 +6,7 @@ angular.module('argus.directives')
 
 		function processJS(js){
 			if(!js) return undefined;
-			return (new Function('return ' + js.trim()))()
+			return (new Function('return ' + js.trim()))();
 		}
 
 		return {
@@ -21,7 +21,7 @@ angular.module('argus.directives')
 				if(successJS){
 					successJS = successJS.innerText;
 				}
-				var errorJS = element.find('error')[0]
+				var errorJS = element.find('error')[0];
 				if(errorJS){
 					errorJS = errorJS.innerText;
 				}

@@ -1,4 +1,4 @@
-/*global angular:false, $:false, console:false */
+/*global angular:false, console:false */
 'use strict';
 
 angular.module('argus.controllers.viewMetrics', ['ngResource'])
@@ -10,10 +10,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
 		$scope.$watch('includeAnnotations', function (newValue) {
 			InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
-		});
-		$scope.timeZoneOption = InputTracker.getDefaultValue('viewMetricsTimeZoneOption', true);
-		$scope.$watch('timeZoneOption', function (newValue) {
-			InputTracker.updateDefaultValue('viewMetricsTimeZoneOption', true, newValue);
 		});
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
@@ -36,11 +32,12 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		});
 
 		$scope.getMetricData = function () {
-			var tempSeries = []
+			var tempSeries = [];
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
-				// clear old chart
-				$('#' + 'container').empty();
+				// clear old chart and annotation label tip
+				angular.element('#' + 'container').empty();
+				angular.element('.d3-tip').remove();
 				$scope.checkMetricExpression();
 				// show loading spinner
 				$scope.chartLoaded = false;
@@ -265,7 +262,6 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 					chartScope.dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
 					chartScope.dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
 				}
-				chartScope.dateConfig.gmt = $scope.timeZoneOption;
 
 				// query annotations
 				if (annotationInfo.length > 0) {

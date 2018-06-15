@@ -35,8 +35,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.salesforce.dva.argus.sdk.excpetions.ArgusServiceException;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.ArgusServiceException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 import java.util.ArrayList;

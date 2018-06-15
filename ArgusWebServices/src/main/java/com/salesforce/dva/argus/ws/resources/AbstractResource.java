@@ -36,7 +36,6 @@ import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemMain;
 import com.salesforce.dva.argus.ws.dto.EndpointHelpDto;
 import com.salesforce.dva.argus.ws.dto.MethodHelpDto;
-import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.filter.AuthFilter;
 import com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener;
 import org.apache.commons.beanutils.BeanUtils;
@@ -117,23 +116,9 @@ public abstract class AbstractResource {
 	            result = userService.findUserByUsername(String.class.cast(username));
 	        }
 	        return result;
-        } 
-        
-        return _getRemoteUserFromSession(req);
-    }
-    
-    private PrincipalUser _getRemoteUserFromSession(HttpServletRequest req) {
-    	requireArgument(req != null, "Request cannot be null.");
-
-        PrincipalUser result = null;
-        Object principalAttribute = req.getSession(true).getAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-
-        if (principalAttribute != null) {
-            PrincipalUserDto user = PrincipalUserDto.class.cast(principalAttribute);
-
-            result = userService.findUserByUsername(user.getUserName());
         }
-        return result;
+        
+        return null;
     }
 
     /**
@@ -222,7 +207,7 @@ public abstract class AbstractResource {
         }
         throw new WebApplicationException(Status.FORBIDDEN.getReasonPhrase(), Status.FORBIDDEN);
     }
-
+    
     /**
      * Validates the resource authorization. Throws exception if the user is not authorized to access the resource.
      *

@@ -24,6 +24,13 @@ angular.module('argus.services.charts.dataProcessing', [])
 		return result;
 	}
 
+	function createMetricWithScopeMetricAndTags(metric){
+		return {
+			scopeMetric: metric.scope + ":" + metric.metric,
+			tags: createTagString(metric.tags)
+		}
+	}
+
 	function createSeriesName(metric) {
 		if (metric.displayName !== null && metric.displayName !== undefined) {
 			return metric.displayName;
@@ -63,7 +70,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 					x: flagData.timestamp,
 					title: 'A',
 					text: formatFlagText(flagData.fields),
-					flagID: '_Flag'+tempID
+					flagID: '_Flag'+tempID,
+					fields: flagData.fields,
+					source: flagData.source
 				});
 				tempID++;
 			}
@@ -339,6 +348,8 @@ angular.module('argus.services.charts.dataProcessing', [])
 		},
 
 		copySeries: copySeries,
+
+		createMetricWithScopeMetricAndTags: createMetricWithScopeMetricAndTags,
 
 		createSeriesName: createSeriesName,
 

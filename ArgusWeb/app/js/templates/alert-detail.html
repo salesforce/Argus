@@ -218,6 +218,7 @@
                 <td ng-bind-html='entry.message | trustedhtml'></td>
             </tr>
         </table>
+        <div ng-loading="historyLoaded"></div>
     </div>
 
     <div ng-show='isTabSelected(5)'>

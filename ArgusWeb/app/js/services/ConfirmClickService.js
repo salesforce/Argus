@@ -2,7 +2,7 @@
  * Created by pfu on 6/8/17.
  */
 'use strict';
-/*global angular:false, jwt_decode:false */
+/*global angular:false, jwt_decode:false, $:false */
 
 angular.module('argus.services.confirmClick', [])
 	.service('ConfirmClick', ['$uibModal', function($uibModal){
@@ -13,7 +13,7 @@ angular.module('argus.services.confirmClick', [])
 				controller: ['$scope', '$sce', function ($scope, $sce) {
 					$scope.toTrustedHTML = function( html ){
 						return $sce.trustAsHtml( html );
-					}
+					};
 					// Attach details to scope so they can be rendered in the modal
 					$scope.confirmTitle = confirmTitle;
 					$scope.confirmMessage = confirmMessage;

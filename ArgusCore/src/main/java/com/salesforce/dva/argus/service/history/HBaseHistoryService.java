@@ -34,6 +34,7 @@ import com.salesforce.dva.argus.service.HistoryService;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.HBaseUtils;
 import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
 import com.stumbleupon.async.TimeoutException;
@@ -95,7 +96,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		long creationTime = System.currentTimeMillis();
 		String rowKey = new StringBuilder(entity.getId().toString()).
 						append(ROWKEY_SEPARATOR).
-						append(_9sComplement(creationTime)).
+						append(HBaseUtils._9sComplement(creationTime)).
 						append(ROWKEY_SEPARATOR).
 						append(jobStatus).
 						toString();
@@ -222,7 +223,7 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 		final Scanner scanner = _client.newScanner(tablename);
 
 		String startRow = entityId.toString();
-        String stopRow = _plusOne(startRow);
+        String stopRow = HBaseUtils._plusOne(startRow);
         scanner.setStartKey(startRow);
         scanner.setStopKey(stopRow);
         scanner.setMaxNumRows(Math.min(limit, MAX_NUM_ROWS));
@@ -295,31 +296,6 @@ public class HBaseHistoryService extends DefaultService implements HistoryServic
 			throw new SystemException("Exception occurred in getting results for jobId: " + entityId, e);
 		}
 	}
-	
-	/**
-	 * Return a 9's complement of the given timestamp. Since AsyncHBase doesn't allow a reverse scan and we want to scan data in descending order
-	 * of creation time.  
-	 * 
-	 * @param 	creationTime
-	 * @return 	The 9's complement of the given timestamp. 
-	 */
-	private static long _9sComplement(long creationTime) {
-		String time = String.valueOf(creationTime);
-		char[] timeArr = time.toCharArray();
-		StringBuilder sb = new StringBuilder();
-		for(char c : timeArr) {
-			sb.append(9 - Character.getNumericValue(c));
-		}
-		
-		return Long.parseLong(sb.toString());
-	}
-	
-	private static String _plusOne(String prefix) {
-		char newChar = (char) (prefix.charAt(prefix.length() - 1) + 1);
-    	String end = prefix.substring(0, prefix.length() - 1) + newChar;
-		return end;
-	}
-	
 	
 	//~ Enums ****************************************************************************************************************************************
 	

@@ -45,9 +45,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
-import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
@@ -71,13 +69,11 @@ import static org.joda.time.DateTimeConstants.MILLIS_PER_WEEK;
 @Entity
 @NamedQueries(
     {
-        @NamedQuery(name = "Audit.findByJPAEntity", query = "SELECT a FROM Audit a WHERE a.entity = :jpaEntity order by a.createdDate DESC"),
-        @NamedQuery(
-            name = "Audit.findByHostName", query = "SELECT a FROM Audit a WHERE a.hostName = :hostName order by a.createdDate DESC"
-        ), @NamedQuery(name = "Audit.findAll", query = "SELECT a FROM Audit a order by a.createdDate DESC"),
-        @NamedQuery(
-            name = "Audit.findByMessage", query = "SELECT a from Audit a where a.message LIKE :message order by a.createdDate DESC"
-        ), @NamedQuery(name = "Audit.cullExpired", query = "DELETE FROM Audit AS a WHERE A.createdDate < :expirationDate"),
+        @NamedQuery(name = "Audit.findByJPAEntity", query = "SELECT a FROM Audit a WHERE a.entityId = :jpaEntityId order by a.createdDate DESC"),
+        @NamedQuery(name = "Audit.findByHostName", query = "SELECT a FROM Audit a WHERE a.hostName = :hostName order by a.createdDate DESC"), 
+        @NamedQuery(name = "Audit.findAll", query = "SELECT a FROM Audit a order by a.createdDate DESC"),
+        @NamedQuery(name = "Audit.findByMessage", query = "SELECT a from Audit a where a.message LIKE :message order by a.createdDate DESC"), 
+        @NamedQuery(name = "Audit.cullExpired", query = "DELETE FROM Audit AS a WHERE A.createdDate < :expirationDate"),
         @NamedQuery(name = "Audit.cullOrphans", query = "DELETE FROM Audit AS a WHERE A.id IS NULL")
     }
 )
@@ -100,9 +96,9 @@ public class Audit implements Serializable, Identifiable {
     @Basic(optional = false)
     @Column(nullable = false)
     private String hostName;
-    @ManyToOne(optional = true)
-    @JoinColumn(nullable = true, name = "entity_id")
-    private JPAEntity entity;
+
+	@Column(nullable = false, updatable = false, name = "entity_id")
+    private BigInteger entityId;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -116,7 +112,7 @@ public class Audit implements Serializable, Identifiable {
     public Audit(String message, String hostname, JPAEntity entity) {
         setMessage(message);
         setHostName(hostname);
-        setEntity(entity);
+        setEntityId(entity.getId());
     }
 
     /** Creates a new Audit object. */
@@ -155,7 +151,7 @@ public class Audit implements Serializable, Identifiable {
             query.setMaxResults(limit.intValue());
         }
         try {
-            query.setParameter("jpaEntity", entity);
+            query.setParameter("jpaEntityId", entity.getId());
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<Audit>(0);
@@ -251,7 +247,7 @@ public class Audit implements Serializable, Identifiable {
 
         if (entity != null) {
             isAndrequired = true;
-            queryString.append(" WHERE a.entity=:entity ");
+            queryString.append(" WHERE a.entityId=:entityId ");
         }
         if (hostName != null && !hostName.isEmpty()) {
             if (isAndrequired) {
@@ -275,7 +271,7 @@ public class Audit implements Serializable, Identifiable {
         Query query = em.createQuery(queryString.toString(), Audit.class);
 
         if (entity != null) {
-            query.setParameter("entity", entity);
+            query.setParameter("entityId", entity.getId());
         }
         if (hostName != null && !hostName.isEmpty()) {
             query.setParameter("hostName", hostName);
@@ -336,6 +332,15 @@ public class Audit implements Serializable, Identifiable {
     public Date getCreatedDate() {
         return createdDate == null ? null : new Date(createdDate.getTime());
     }
+    
+    /**
+     * Sets the creation date
+     *
+     * @param  createdDate
+     */
+    public void setCreatedDate(long createdDateMillis) {
+		this.createdDate = new Date(createdDateMillis);
+	}
 
     /**
      * Returns the exception message.
@@ -376,21 +381,21 @@ public class Audit implements Serializable, Identifiable {
     }
 
     /**
-     * Returns the JPA entity.
+     * Returns the JPA entity id.
      *
      * @return  The JPA entity which caused exception. Cannot be null or empty.
      */
-    public JPAEntity getEntity() {
-        return entity;
+    public BigInteger getEntityId() {
+        return entityId;
     }
 
     /**
-     * Sets the JPA entity.
+     * Sets the JPA entity id.
      *
      * @param  entity  The JPA entity. Cannot be null or empty.
      */
-    public void setEntity(JPAEntity entity) {
-        this.entity = entity;
+    public void setEntityId(BigInteger entityId) {
+        this.entityId = entityId;
     }
 
     @Override
@@ -421,7 +426,7 @@ public class Audit implements Serializable, Identifiable {
     @Override
     public String toString() {
         return "Audit{" + "id=" + id + ", createdDate=" + createdDate + ", message=" + message + ", hostName=" + hostName + ", object=" +
-            (entity == null ? null : entity.id) + '}';
+            (entityId == null ? null : entityId) + '}';
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
