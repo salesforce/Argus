@@ -34,9 +34,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.quartz.CronScheduleBuilder;
@@ -55,9 +55,9 @@ public class AlertDefinitionsCache {
 	
 	private AlertDefinitionsCacheRefresherThread refresherThread;
 
-	private static Map<BigInteger/*alertId*/, Alert> alertsMapById = new HashMap<BigInteger, Alert>();
+	private static Map<BigInteger/*alertId*/, Alert> alertsMapById = new ConcurrentHashMap<BigInteger, Alert>();
 
-	private static Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new HashMap<String, List<BigInteger>>();
+	private static Map<String/*cronEntry*/, List<BigInteger/*alertId*/>> alertsMapByCronEntry = new ConcurrentHashMap<String, List<BigInteger>>();
 	
 	private boolean alertsCacheInitialized = false;
 
