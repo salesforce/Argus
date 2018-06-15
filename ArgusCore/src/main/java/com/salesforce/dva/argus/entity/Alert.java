@@ -56,6 +56,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.OneToMany;
 import javax.persistence.Query;
 import javax.persistence.Table;
+import javax.persistence.TemporalType;
 import javax.persistence.Tuple;
 import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
@@ -128,6 +129,10 @@ import com.salesforce.dva.argus.util.Cron;
 			@NamedQuery(
 					name = "Alert.findIDsByStatus",
 					query = "SELECT a.id FROM Alert a where a.enabled= :enabled AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false and TYPE(jpa)= Alert) order by a.id asc"
+					),
+			@NamedQuery(
+					name = "Alert.findAlertsModifiedAfterDate",
+					query = "SELECT a FROM Alert a where a.id in (SELECT jpa.id from JPAEntity jpa where TYPE(jpa)= Alert and jpa.modifiedDate >= :modifiedDate) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.findByPrefix",
@@ -443,6 +448,29 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			return new ArrayList<>(0);
 		}
 	}
+	
+	public static List<Alert> findAlertsModifiedAfterDate(EntityManager em, Date modifiedDate) {
+		requireArgument(em != null, "Entity manager cannot be null.");
+		requireArgument(modifiedDate != null, "modifiedDate cannot be null.");
+		
+		TypedQuery<Alert> query = em.createNamedQuery("Alert.findAlertsModifiedAfterDate", Alert.class);
+
+		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		query.setHint("eclipselink.join-fetch", "a.triggers");
+		query.setHint("eclipselink.join-fetch", "a.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.triggers");
+		query.setHint("eclipselink.left-join-fetch", "a.triggers.notifications");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.metricsToAnnotate");
+		query.setHint("eclipselink.left-join-fetch", "a.notifications.subscriptions");
+		
+		try {
+			query.setParameter("modifiedDate",modifiedDate,TemporalType.TIMESTAMP);
+			return query.getResultList();
+		} catch (NoResultException ex) {
+			return new ArrayList<>(0);
+		}
+	}
+
 
 	/**
 	 * Finds alert ids by status (enabled/disabled).
@@ -646,7 +674,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param  cronEntry  The new CRON entry. Cannot be null and must be valid CRON entry syntax.
 	 */
 	public void setCronEntry(String cronEntry) {
-		requireArgument(Cron.isValid(cronEntry), "Invalid CRON entry." + cronEntry);
 		this.cronEntry = cronEntry;
 	}
 
