@@ -136,7 +136,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
 
         for (MetricQuery query : queryList) {
             if (compulsoryCacheMiss(query)) {
-                _logger.info("Not using cache for this metric query");
+                _logger.debug("Not using cache for this metric query");
                 filterMetricQueries.add(query);
             }
         }
