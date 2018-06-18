@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -60,6 +61,10 @@ public class FillTransform implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     private static Map<Long, Double> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, double value) {
+    	if(metric == null || metric.getDatapoints() == null || metric.getDatapoints().isEmpty()) {
+    		return Collections.emptyMap();
+    	}
+    	
         Map<Long, Double> filledDatapoints = new TreeMap<>();
         Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
@@ -196,17 +201,28 @@ public class FillTransform implements Transform {
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
     	
-        if (metrics == null || metrics.isEmpty()) {
-        	// Last constant is added by MetricReader. It is the timestamp using which relative start and end timestamps 
-        	// should be calculated
-        	String relativeTo = "";
-        	if(constants != null && !constants.isEmpty()) {
-        		relativeTo = constants.remove(constants.size() - 1);
-        	}
-            return _fillLine(constants, Long.parseLong(relativeTo));
+    	// Last 2 constants for FILL Transform are added by MetricReader. 
+    	// The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
+    	// The second last constant is the timestamp using which relative start and end timestamps 
+    	// should be calculated for fillLine ( FILL(#constants#) ).
+    	
+    	boolean constantsOnly = false;
+    	if(constants != null && !constants.isEmpty()) {
+    		constantsOnly = Boolean.parseBoolean(constants.get(constants.size()-1));
+    		constants.remove(constants.size()-1);
+    	}
+    	
+    	long relativeTo = System.currentTimeMillis();
+    	if(constants != null && !constants.isEmpty()) {
+    		relativeTo = Long.parseLong(constants.get(constants.size()-1));
+    		constants.remove(constants.size() - 1);
+    	}
+    	
+        if (constantsOnly) {
+            return _fillLine(constants, relativeTo);
         }
         
-        SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics!");
+        SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics list!");
         SystemAssert.requireArgument(constants != null && constants.size() == 3, 
         		"Fill Transform needs exactly three constants: interval, offset, value");
 

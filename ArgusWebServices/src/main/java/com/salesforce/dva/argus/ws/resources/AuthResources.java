@@ -31,14 +31,8 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
-import com.salesforce.dva.argus.entity.PrincipalUser;
-import com.salesforce.dva.argus.service.AuthService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.CredentialsDto;
-import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
-import com.salesforce.dva.argus.ws.filter.AuthFilter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -48,6 +42,8 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import javax.ws.rs.core.UriInfo;
 
 /**
  * Provides methods to authenticate users.
@@ -60,45 +56,30 @@ public class AuthResources extends AbstractResource {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private AuthService authService = system.getServiceFactory().getAuthService();
-
     //~ Methods **************************************************************************************************************************************
 
     /**
-     * Authenticates a user session.
+     * Authenticates a user principal.
      *
      * @param   req    The HTTP request.
      * @param   creds  The credentials with which to authenticate.
      *
-     * @return  The authenticated user or null if authentication fails.
+     * @return  Response containing the required information.
      *
      * @throws  WebApplicationException  If the user is not authenticated.
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @Description("Authenticates a user session.")
+    @Description("Authenticates a user principal.")
     @Path("/login")
-    public PrincipalUserDto login(@Context HttpServletRequest req, final CredentialsDto creds) {
-        try {
-            PrincipalUserDto result = null;
-            PrincipalUser user = authService.getUser(creds.getUsername(), creds.getPassword());
-
-            if (user != null) {
-            	req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, user.getUserName());
-                result = PrincipalUserDto.transformToDto(user);
-            } else {
-                throw new WebApplicationException(Response.Status.UNAUTHORIZED.getReasonPhrase(), Response.Status.UNAUTHORIZED);
-            }
-            req.getSession(true).setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, result);
-            return result;
-        } catch (Exception ex) {
-            throw new WebApplicationException(ex.getMessage(), Response.Status.UNAUTHORIZED);
-        }
+    public Response login(@Context UriInfo uriInfo, final CredentialsDto creds) {
+    	Response response = Response.temporaryRedirect(UriBuilder.fromUri(uriInfo.getBaseUri() + "v2/auth/login").build()).build();
+    	return response;
     }
 
     /**
-     * Terminates a user session
+     * Terminates a user session. Not needed for existing auth api. This is just a placeholder method. 
      *
      * @param   req  The HTTP request.
      *
@@ -106,14 +87,10 @@ public class AuthResources extends AbstractResource {
      */
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Description("Terminates a user session.")
+    @Description("Terminates a user session. Not needed for existing auth api. This is just a placeholder method.")
     @Path("/logout")
-    public String logout(@Context HttpServletRequest req) {
-        HttpSession session = req.getSession(true);
-
-        session.removeAttribute(AuthFilter.USER_ATTRIBUTE_NAME);
-        session.invalidate();
-        return "You have logged out.";
+    public Response logout(@Context UriInfo uriInfo) {
+    	 return Response.ok("You have logged out.").build();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -80,7 +80,7 @@ public class AlertResources extends AbstractResource {
 
 	/**
 	 * Return all alerts in alert objects filtered by owner.
-	 * @param   alertname  The alert name filter.
+	 * @param   alertname  	   The alert name filter.
 	 * @param   owner          The principlaUser owner for owner name filter.
 	 *
 	 * @return  The list of filtered alerts in alert object.
@@ -109,15 +109,26 @@ public class AlertResources extends AbstractResource {
 	 * Return both owners and shared alerts (if the shared flag is true).
 	 * @return  The list of shared alerts.
 	 */
-	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly) {
+	private List<Alert> getAlertsObj(String alertname, PrincipalUser owner, boolean shared, boolean populateMetaFieldsOnly, Integer limit) {
 		
 		Set<Alert> result = new HashSet<>();
 		
 		result.addAll(_getAlertsByOwner(alertname, owner, populateMetaFieldsOnly));
 		if(shared) {
-			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true) : alertService.findSharedAlerts(false));
+			result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, null, limit) : alertService.findSharedAlerts(false, null, limit));
 		}
 		
+		return new ArrayList<>(result);
+	}
+	
+	/**
+	 * Returns list of shared alerts.
+	 * @return  The list of shared alerts.
+	 */
+	private List<Alert> getSharedAlertsObj(boolean populateMetaFieldsOnly, PrincipalUser owner, Integer limit) {
+		
+		Set<Alert> result = new HashSet<>();
+		result.addAll(populateMetaFieldsOnly ? alertService.findSharedAlerts(true, owner, limit) : alertService.findSharedAlerts(false, owner, limit));
 		return new ArrayList<>(result);
 	}
 
@@ -125,7 +136,7 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of alerts' metadata created by the user.
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
 	 *
 	 * @return  The list of alerts' metadata created by the user.
@@ -134,12 +145,13 @@ public class AlertResources extends AbstractResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta")
 	@Description("Returns all alerts' metadata.")
-	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+	public List<AlertDto> getAlertsMeta(@Context HttpServletRequest req, @QueryParam("alertname") String alertName,
 										@QueryParam("ownername") String ownerName,
-										@QueryParam("shared") boolean shared) {
+										@QueryParam("shared") boolean shared,
+										@QueryParam("limit")  Integer limit) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, true);
+		List<Alert> result = getAlertsObj(alertName, owner, shared, true, limit);
 		return AlertDto.transformToDto(result);
 	}
 
@@ -147,7 +159,7 @@ public class AlertResources extends AbstractResource {
 	 * Returns the list of alerts created by the user.
 	 *
 	 * @param   req        The HttpServlet request object. Cannot be null.
-	 * @param   alertname  Name of the alert. It is optional.
+	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
 	 *
 	 * @return  The list of alerts created by the user.
@@ -155,15 +167,71 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Description("Returns all alerts.")
-	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertname,
+	public List<AlertDto> getAlerts(@Context HttpServletRequest req, @QueryParam("alertname") String alertName,
 									@QueryParam("ownername") String ownerName,
-									@QueryParam("shared") boolean shared) {
+									@QueryParam("shared") boolean shared,
+									@QueryParam("limit")  Integer limit){
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		List<Alert> result = getAlertsObj(alertname, owner, shared, false);
+		List<Alert> result = getAlertsObj(alertName, owner, shared, false, limit);
 		return AlertDto.transformToDto(result);
 	}
 
+	
+	/**
+	 * Returns the list of shared alerts
+	 *
+	 * @param   req        The HttpServlet request object. Cannot be null.
+	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   limit      The maximum number of results to return.
+	 * 
+	 * @return  The list of alerts created by the user.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared")
+	@Description("Returns all shared alerts.")
+	public List<AlertDto> getSharedAlerts(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Alert> result = getSharedAlertsObj(false, owner, limit);
+		return AlertDto.transformToDto(result);
+	}
+	
+	/**
+	 * Returns the list of shared alerts with only metadata
+	 *
+	 * @param   req        The HttpServlet request object. Cannot be null.
+	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   limit      The maximum number of results to return.
+	 *
+	 * @return  The list of alerts created by the user.
+	 */
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/shared/meta")
+	@Description("Returns all shared alerts' metadata.")
+	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
+									@QueryParam("ownername") String ownerName,
+									@QueryParam("limit")  Integer limit){
+		PrincipalUser owner = null;
+		if(ownerName != null){
+			owner = userService.findUserByUsername(ownerName);
+			if(owner == null){
+				throw new WebApplicationException("Owner not found", Response.Status.NOT_FOUND);
+			}
+		}
+		List<Alert> result = getSharedAlertsObj(true, owner, limit);
+		return AlertDto.transformToDto(result);
+	}
+	
 	/**
 	 * Finds an alert by alert ID.
 	 *

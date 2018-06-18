@@ -1,6 +1,7 @@
 {
     "env": {
-        "browser": true
+        "browser": true,
+        "node": true
     },
     "extends": "eslint:recommended",
     "rules": {
@@ -20,5 +21,12 @@
             "error",
             "always"
         ]
+    },
+    "globals": {
+        "document": false,
+        "console": false,
+        "angular": false,
+        "$": false,
+        "d3":false
     }
 }

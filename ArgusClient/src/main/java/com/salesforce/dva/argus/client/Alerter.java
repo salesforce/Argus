@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.service.AlertService;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.text.MessageFormat;
@@ -84,7 +86,7 @@ class Alerter implements Runnable {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable ex) {
-                LOGGER.warn("Exception in alerter: {}", ex.toString());
+                LOGGER.warn("Exception in alerter: {}", ExceptionUtils.getFullStackTrace(ex));
             }
         }
         LOGGER.warn(MessageFormat.format("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get()));

@@ -35,7 +35,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Namespace;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.system.SystemAssert;
+
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -152,8 +156,17 @@ public class NamespaceDto extends EntityDTO {
 
     @Override
     public Object createExample() {
-        // TODO Auto-generated method stub
-        return null;
+        NamespaceDto result = new NamespaceDto();
+        
+        result.setCreatedById(BigInteger.ONE);
+        result.setCreatedDate(new Date());
+        result.setId(BigInteger.ONE);
+        result.setModifiedById(BigInteger.TEN);
+        result.setModifiedDate(new Date());
+        result.setQualifier("example-namespace");
+        result.setUsernames(new HashSet<>(Arrays.asList("aUser", "bUser", "cUSer")));
+        
+        return result;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

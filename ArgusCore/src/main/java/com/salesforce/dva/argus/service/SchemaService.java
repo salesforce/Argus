@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -221,7 +222,7 @@ public interface SchemaService extends Service {
     /**
      * Indicates the schema record field to be used for matching.
      *
-     * @author  Tom Valine (tvaline@salesforce.com)
+     * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
     public static enum RecordType {
 
@@ -249,13 +250,15 @@ public interface SchemaService extends Service {
          *
          * @return  The corresponding record type or null if no matching record type exists.
          */
+        @JsonCreator
         public static RecordType fromName(String name) {
             for (RecordType type : RecordType.values()) {
-                if (type.getName().equals(name)) {
+                if (type.getName().equalsIgnoreCase(name)) {
                     return type;
                 }
             }
-            return null;
+            
+            throw new IllegalArgumentException("Illegal record type: " + name);
         }
 
         /**

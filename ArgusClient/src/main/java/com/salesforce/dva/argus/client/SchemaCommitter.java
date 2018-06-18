@@ -49,7 +49,7 @@ class SchemaCommitter extends AbstractCommitter {
 
     //~ Static fields/initializers *******************************************************************************************************************
 
-    private static final int METRIC_MESSAGES_CHUNK_SIZE = 100;
+    private static final int METRIC_MESSAGES_CHUNK_SIZE = 2000;
 
     //~ Constructors *********************************************************************************************************************************
 

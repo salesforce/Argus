@@ -67,8 +67,7 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        // TODO Auto-generated method stub
-        return null;
+    	throw new UnsupportedOperationException("HoltWintersDeviation is not supposed to be used without a constant");
     }
 
     @Override
@@ -116,8 +115,7 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
-        // TODO Auto-generated method stub
-        return null;
+    	throw new UnsupportedOperationException("HoltWintersDeviation doesn't need list of list!");
     }
 
     @Override

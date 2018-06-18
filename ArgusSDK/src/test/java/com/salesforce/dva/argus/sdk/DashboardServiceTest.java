@@ -31,7 +31,7 @@
 package com.salesforce.dva.argus.sdk;
 
 import com.salesforce.dva.argus.sdk.entity.Dashboard;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import org.junit.Test;
 import java.io.IOException;
@@ -81,6 +81,21 @@ public class DashboardServiceTest extends AbstractTest {
             DashboardService batchService = argusService.getDashboardService();
             List<Dashboard> result = batchService.getDashboards();
             List<Dashboard> expected = Arrays.asList(new Dashboard[] { _constructPersistedDashboard() });
+
+            assertEquals(expected, result);
+        }
+    }
+    
+    @Test
+    public void testGetDashboardsMeta() throws IOException, TokenExpiredException {
+    	try(ArgusService argusService = new ArgusService(getMockedClient("/DashboardServiceTest.json"))) {
+            DashboardService batchService = argusService.getDashboardService();
+            List<Dashboard> result = batchService.getDashboardsMeta(false);
+            
+            Dashboard persistedDashboard = _constructPersistedDashboard();
+            persistedDashboard.setContent(null);
+            persistedDashboard.setShared(false);
+            List<Dashboard> expected = Arrays.asList(new Dashboard[] { persistedDashboard });
 
             assertEquals(expected, result);
         }

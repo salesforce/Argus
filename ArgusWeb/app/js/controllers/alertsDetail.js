@@ -27,7 +27,10 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 					$scope.fetchHistory();
 					$scope.fetchJobExecutionDetails();
 					// remove existing session storage for update
-					if ($sessionStorage.alerts !== undefined) delete $sessionStorage.alerts.cachedData;
+					if ($sessionStorage.alerts !== undefined) {
+						delete $sessionStorage.alerts.cachedData;
+						$sessionStorage.alerts.emptyData = true;
+					}
 				}, function () {
 					growl.error('Failed to update "' + alert.name + '"');
 				});
@@ -206,10 +209,13 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 		};
 
 		$scope.fetchHistory = function() {
+			$scope.historyLoaded = false;
 			History.query({id: $scope.alertId}, function (history) {
 				$scope.history = history;
+				$scope.historyLoaded = true;
 			}, function () {
 				growl.error('Failed to get history for alert "' + $scope.alertId + '"');
+				$scope.historyLoaded = true;
 			});
 		};
 
@@ -246,7 +252,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 			{label: 'Audit', value: 'com.salesforce.dva.argus.service.alert.notifier.AuditNotifier'},
 			{label: 'Mail', value: 'com.salesforce.dva.argus.service.alert.notifier.EmailNotifier'},
 			{label: 'GOC++', value: 'com.salesforce.dva.argus.service.alert.notifier.GOCNotifier'},
-			{label: 'Gus', value: 'com.salesforce.dva.argus.service.alert.notifier.GusNotifier'}
+			{label: 'GUS', value: 'com.salesforce.dva.argus.service.alert.notifier.GusNotifier'}
 		];
 
 		$scope.getTriggerIds = function () {
