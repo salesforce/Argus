@@ -33,6 +33,10 @@ package com.salesforce.dva.argus.util;
 
 import java.util.Date;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.TriggerBuilder;
+
 /**
  * CRON utilities.
  *
@@ -135,6 +139,22 @@ public class Cron {
             result = false;
         }
         return result;
+    }
+    
+	public static boolean isCronEntryValid(String cronEntry) {
+		String quartzCronEntry = convertToQuartzCronEntry(cronEntry);
+
+		try {
+			// throws runtime exception if the cronEntry is invalid
+			TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(quartzCronEntry)).build();
+		}catch(Exception e) {
+			return false;
+		}
+		return true;
+	}
+	
+    public static String convertToQuartzCronEntry(String cronEntry) {
+       	return "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
