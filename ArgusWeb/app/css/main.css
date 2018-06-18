@@ -353,6 +353,10 @@ h5.bcDesc {margin-bottom:20px; font-weight:normal;}
     fill: lightskyblue;
     opacity: 0.2;
 }
+.highlightTile {
+    fill: yellow;
+    opacity: 0.2;
+}
 
 .tick {will-change: transform;}
 .tick line {stroke: lightgrey;}
@@ -370,19 +374,32 @@ g.brush rect.overlay {stroke:#CCC;}
 g.brush rect.handle {fill:#999; stroke:#333;}
 
 /* flags (annotations) */
-.flagItem .flag {fill:white; stroke-width:2px;}
-.d3-tip {
-  padding: 2px;
-  border: 2px solid;
-  border-radius: 5px;
-  background: #fff;
+.flagItem {
+    stroke-width: 2px;
+}
+.flagItem circle {
+    fill: white
+}
+.flagItem text {
+    text-anchor: middle;
+    stroke: black;
+    stroke-width: 1px;
+}
+.flagLabel text {
+    text-anchor: start;
+    stroke: none;
+}
+.flagLabel rect {
+    fill: #ffffff;
+    opacity: 0.95;
+    will-change: transform;
 }
 
 /* tooltip stuff */
 .tooltip rect {
-	fill:#F1F1F1;
-	stroke:steelblue;
-	opacity:0.9;
+	fill: #F1F1F1;
+	stroke: steelblue;
+	opacity: 0.9;
 	will-change: transform;
 }
 g.tooltip-items text {color: #444; font-size: 12px;}
@@ -402,8 +419,8 @@ ag-dashboard table {width: 100%; table-layout:fixed;}
 /* for ag-table */
 .agTable {border:solid 2px #CCC; border-radius:5px; display: block; position: relative; min-height:200px; max-height: 600px; overflow: scroll;}
 .agTableHead {position:absolute; background-color: #eee;}
-.agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; width: 50px;}
-.agTable td {min-width: 180px; max-width: 180px; height: 40px;  word-wrap: break-word; width: 50px;}
+.agTable th {min-width: 180px; max-width: 180px; min-height: 60px; word-wrap: break-word; word-break: break-all}
+.agTable td {min-width: 180px; max-width: 180px; height: 1px;  word-wrap: break-word; word-break: break-all}
 
 /* view metrics page */
 .search-options {
@@ -451,3 +468,11 @@ ag-select > div {min-width: 152px; word-wrap: break-word;}
     max-height: 350px;
     overflow: auto;
 }
+
+a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
+    color: steelblue;
+}
+
+.tooltip > .tooltip-inner {background-color: steelblue; text-align: left}
+.tooltip.bottom > .tooltip-arrow {border-bottom-color: steelblue;}
+.tooltip.in {opacity: 1}

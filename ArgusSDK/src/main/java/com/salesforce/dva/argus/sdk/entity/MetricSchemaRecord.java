@@ -46,8 +46,8 @@ public final class MetricSchemaRecord {
     private String namespace;
     private String scope;
     private String metric;
-    private String tagKey;
-    private String tagValue;
+    private String tagk;
+    private String tagv;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -70,15 +70,15 @@ public final class MetricSchemaRecord {
      * @param  namespace  The metric schema namespace.
      * @param  scope      The metric schema scope.
      * @param  metric     The metric schema name.
-     * @param  tagKey     The metric schema tag key.
-     * @param  tagValue   The metric schema tag value.
+     * @param  tagk       The metric schema tag key.
+     * @param  tagv   	  The metric schema tag value.
      */
-    public MetricSchemaRecord(String namespace, String scope, String metric, String tagKey, String tagValue) {
+    public MetricSchemaRecord(String namespace, String scope, String metric, String tagk, String tagv) {
         setNamespace(namespace);
         setScope(scope);
         setMetric(metric);
-        setTagKey(tagKey);
-        setTagValue(tagValue);
+        setTagk(tagk);
+        setTagv(tagv);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -143,16 +143,16 @@ public final class MetricSchemaRecord {
      * @return  The tag key. Can be null.
      */
     public String getTagKey() {
-        return tagKey;
+        return tagk;
     }
 
     /**
      * Specifies the tag key associated with the result.
      *
-     * @param  tagKey  The tag key. Can be null.
+     * @param  tagk  The tag key. Can be null.
      */
-    public void setTagKey(String tagKey) {
-        this.tagKey = tagKey;
+    public void setTagk(String tagk) {
+        this.tagk = tagk;
     }
 
     /**
@@ -161,16 +161,16 @@ public final class MetricSchemaRecord {
      * @return  The tag value. Can be null.
      */
     public String getTagValue() {
-        return tagValue;
+        return tagv;
     }
 
     /**
      * Specifies the tag value associated with the result.
      *
-     * @param  tagValue  The tag value. Can be null.
+     * @param  tagv  The tag value. Can be null.
      */
-    public void setTagValue(String tagValue) {
-        this.tagValue = tagValue;
+    public void setTagv(String tagv) {
+        this.tagv = tagv;
     }
 
     @Override
@@ -180,8 +180,8 @@ public final class MetricSchemaRecord {
         hash = 89 * hash + Objects.hashCode(this.namespace);
         hash = 89 * hash + Objects.hashCode(this.scope);
         hash = 89 * hash + Objects.hashCode(this.metric);
-        hash = 89 * hash + Objects.hashCode(this.tagKey);
-        hash = 89 * hash + Objects.hashCode(this.tagValue);
+        hash = 89 * hash + Objects.hashCode(this.tagk);
+        hash = 89 * hash + Objects.hashCode(this.tagv);
         return hash;
     }
 
@@ -208,10 +208,10 @@ public final class MetricSchemaRecord {
         if (!Objects.equals(this.metric, other.metric)) {
             return false;
         }
-        if (!Objects.equals(this.tagKey, other.tagKey)) {
+        if (!Objects.equals(this.tagk, other.tagk)) {
             return false;
         }
-        return Objects.equals(this.tagValue, other.tagValue);
+        return Objects.equals(this.tagv, other.tagv);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

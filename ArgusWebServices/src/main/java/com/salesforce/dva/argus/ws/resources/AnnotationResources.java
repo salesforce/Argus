@@ -34,8 +34,6 @@ package com.salesforce.dva.argus.ws.resources;
 import com.google.gson.Gson;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.service.AnnotationService;
-import com.salesforce.dva.argus.service.MonitorService;
-import com.salesforce.dva.argus.service.tsdb.AnnotationQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
@@ -81,7 +79,7 @@ public class AnnotationResources extends AbstractResource {
      * @return  The resulting annotations.
      */
     @GET
-    @Produces(MediaType.APPLICATION_JSON + ";qs=2")
+    @Produces(MediaType.APPLICATION_JSON + ";qs=1")
     @Description("Performs an annotation query using the given expression.")
     public List<AnnotationDto> getAnnotationsJSON(@Context HttpServletRequest req,
         @QueryParam("expression") final List<String> expressions) {
@@ -99,7 +97,7 @@ public class AnnotationResources extends AbstractResource {
      * @return  Annotations in CSV format
      */
     @GET
-    @Produces({ "application/ms-excel;qs=1" })
+    @Produces({ "application/ms-excel;qs=0" })
     @Description("Downloads annotations in CSV format.")
     public Response getAnnotationsCSV(@Context HttpServletRequest req,
         @QueryParam("expression") final List<String> expressions) {

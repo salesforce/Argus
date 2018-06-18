@@ -29,11 +29,33 @@ angular.module('argus.services.charts.tools', [])
 		marginRight= 60;
 	var mainChartRatio = 0.8, //ratio of height
 		brushChartRatio = 0.15;
-	var extraYAxisPadding = 35;
+
+
+
 	var bufferRatio = 0.2; // the ratio of buffer above/below max/min on yAxis for better showing experience
 
-	this.getExtraYAxisPadding = function(){
-		return extraYAxisPadding;
+	this.extraYAxisPadding = 35;
+	this.defaultHeatmapIntervalInMinutes = 30;
+	this.defaultHeatmapNumOfBucket = 5;
+	this.defaultAggregateType = 'avg';
+	this.syncChartJobs = {};
+	this.defaultTileColor = 'steelblue';
+
+	this.getOrCreateSyncChartJobs = function(dashboardId){
+		if(!this.syncChartJobs[dashboardId]){
+			this.syncChartJobs[dashboardId] = {};
+		}
+		return this.syncChartJobs[dashboardId];
+	};
+
+	this.destroySyncChartJobs = function(dashboardId){
+		delete this.syncChartJobs[dashboardId];
+	};
+
+	this.addSyncChartJob = function(dashboarId, chartId, syncChartJob){
+		if(syncChartJob[dashboarId]){
+			syncChartJob[dashboarId][chartId] = syncChartJob;
+		}
 	};
 
 	this.calculateDimensions = function (newContainerWidth, newContainerHeight, isSmallChart, isBrushOn, extraYAxisNum) {
@@ -66,7 +88,7 @@ angular.module('argus.services.charts.tools', [])
 			left: marginLeft
 		};
 		return {
-			width: newWidth - extraYAxisNum * extraYAxisPadding,
+			width: newWidth - extraYAxisNum * this.extraYAxisPadding,
 			widthFull: newWidth,
 			height: newHeight,
 			height2: newHeight2,
@@ -80,14 +102,13 @@ angular.module('argus.services.charts.tools', [])
 	var smallChartDate = '%x';  // %x = %m/%d/%Y  11/5/2016
 
 	this.generateDateFormatter = function (isGMT, customizedFormat, isSmallChart) {
-		var result, tmpDate;
-		if (isSmallChart) {
-			result = isGMT? d3.utcFormat(smallChartDate): d3.timeFormat(smallChartDate);
+		var tmpDate;
+		if (customizedFormat === undefined) {
+			tmpDate = isSmallChart ? smallChartDate : numericalDate;
 		} else {
-			tmpDate = customizedFormat === undefined? numericalDate: customizedFormat;
-			result = isGMT? d3.utcFormat(tmpDate): d3.timeFormat(tmpDate);
+			tmpDate = customizedFormat;
 		}
-		return result;
+		return isGMT? d3.utcFormat(tmpDate): d3.timeFormat(tmpDate);
 	};
 
 	this.bisectDate = d3.bisector(function (d) {
@@ -112,6 +133,29 @@ angular.module('argus.services.charts.tools', [])
 		isBrushMainOn: false,
 		isWheelOn: false,
 		isBrushOn: true,
+		isTooltipOn: true,
+		tooltipConfig: {
+			rawTooltip: true,
+			customTooltipFormat: sampleCustomFormat,
+			leadingNum: null,
+			trailingNum: null,
+			isTooltipSortOn: true
+		},
+		yAxisConfig: {
+			formatYaxis: defaultYaxis,
+			numTicksYaxis: defaultTicksYaxis
+		},
+		isSnapCrosslineOn: true,
+		localTimezone: false
+	};
+	this.defaultMenuOptionSmallChart = {
+		dateFormat: numericalDate,
+		colorPalette: 'schemeCategory20',
+		downSampleMethod: '',
+		isSyncChart: false,
+		isBrushMainOn: false,
+		isWheelOn: true,
+		isBrushOn: false,
 		isTooltipOn: true,
 		tooltipConfig: {
 			rawTooltip: true,
@@ -157,14 +201,18 @@ angular.module('argus.services.charts.tools', [])
 	// other things
 	this.defaultEmptyGraphMessage = 'No graph available';
 
-	this.getXandY = function (timeInfo, sizeInfo, yScaleType, yScaleConfigValue) {
-		var xScale = timeInfo.gmt? d3.scaleUtc(): d3.scaleTime();
+	this.getXandY = function (timeInfo, isGMT, sizeInfo, yScaleType, yScaleConfigValue) {
+		var xScale = isGMT? d3.scaleUtc(): d3.scaleTime();
 		var y = this.getY(sizeInfo, yScaleType, yScaleConfigValue);
 		return {
 			x: xScale.domain([timeInfo.startTime, timeInfo.endTime]).range([0, sizeInfo.width]),
 			y: y.y,
 			yScalePlain: y.yScalePlain
 		};
+	};
+
+	this.getColorScale = function(sizeInfo){
+		return  d3.scaleLiner().range([0, sizeInfo.width]);
 	};
 
 	this.getY = function (sizeInfo, yScaleType, yScaleConfigValue){
@@ -499,6 +547,187 @@ angular.module('argus.services.charts.tools', [])
 		return result;
 	};
 
+	this.getAggregatedSeriesAndXYZDomain = function(series, names, aggr, intervalInMinutes){
+		var timeBasedSeries = this.convertSeriesToTimeBasedFormatKeepUndefined(series);
+		return this.getAggregatedTimeBasedSeriesAndXYZDomain(timeBasedSeries, names, aggr, intervalInMinutes);
+	};
+
+	this.convertSeriesToTimeBasedFormatKeepUndefined = function (series) {
+		var result = [];
+		var allTimestamps = [];
+		var valuesAtPreviousTimestampWithIndex = {};
+
+		series.map(function(metric) {
+			valuesAtPreviousTimestampWithIndex[metric.name] = {value: 0, index: 0};
+			metric.data.map(function(d) {
+				var timestamp = d[0];
+				if (!allTimestamps.includes(timestamp)) allTimestamps.push(timestamp);
+			});
+		});
+
+		// sort the timestamps and add values from each source
+		allTimestamps.sort(function(a, b) { return a - b; });
+		allTimestamps.map(function(timestamp) {
+			var valuesAtThisTimestamp = {timestamp: timestamp};
+
+			series.map(function(metric) {
+				var tempValueWithIndex = findValueAtAGivenTimestamp(metric, timestamp, valuesAtPreviousTimestampWithIndex[metric.name].index);
+				if(tempValueWithIndex !== undefined){
+					valuesAtPreviousTimestampWithIndex[metric.name] = tempValueWithIndex;
+					valuesAtThisTimestamp[metric.name] = tempValueWithIndex.value;
+				}
+			});
+			result.push(valuesAtThisTimestamp);
+		});
+		return result;
+	};
+
+	this.getAggregatedTimeBasedSeriesAndXYZDomain = function(timeBasedSeries, names, aggr, intervalInMinutes) {
+		intervalInMinutes = intervalInMinutes || this.defaultHeatmapIntervalInMinutes;
+		var startOfInterval = timeBasedSeries[0].timestamp;
+		var endOfInterval = startOfInterval + intervalInMinutes * 60000;
+		var aggregatedSeries = [];
+		var tempSum = {};
+		var tempCount = {};
+		var yDomain = [Number.MAX_VALUE, Number.MIN_VALUE];
+
+		function aggregate() {
+			if (aggr === 'sum') {
+				var sum = {timestamp: startOfInterval};
+				names.forEach(function (name) {
+					if (tempSum[name] !== undefined) {
+						var val = tempSum[name];
+						if (val < yDomain[0]) {
+							yDomain[0] = val;
+						}
+						if (val > yDomain[1]) {
+							yDomain[1] = val;
+						}
+						sum[name] = val;
+					}
+				});
+				aggregatedSeries.push(sum);
+			} else if (aggr === 'avg') {
+				var avg = {timestamp: startOfInterval};
+				names.forEach(function (name) {
+					if (tempSum[name] !== undefined) {
+						var val = tempSum[name] / tempCount[name];
+						if (val < yDomain[0]) {
+							yDomain[0] = val;
+						}
+						if (val > yDomain[1]) {
+							yDomain[1] = val;
+						}
+						avg[name] = val;
+					}
+				});
+				aggregatedSeries.push(avg);
+			}
+		}
+
+		timeBasedSeries.forEach(function (d) {
+			if (d.timestamp < endOfInterval) {
+				//keep adding
+				names.forEach(function (name) {
+					var val = d[name];
+					if (val !== undefined) {
+						if (tempSum[name]) {
+							tempSum[name] += val;
+							tempCount[name] += 1;
+						} else {
+							tempSum[name] = val;
+							tempCount[name] = 1;
+						}
+					}
+				});
+			} else {
+				//sum/avg this interval
+				aggregate();
+				startOfInterval = endOfInterval;
+				endOfInterval = startOfInterval + intervalInMinutes * 60000;
+
+				//start adding
+				names.forEach(function (name) {
+					var val = d[name];
+					if (val !== undefined) {
+						tempSum[name] = val;
+						tempCount[name] = 1;
+					}
+				});
+			}
+		});
+
+
+		//last interval
+		if(timeBasedSeries[timeBasedSeries.length - 1].timestamp < endOfInterval){
+			//sum/avg this interval
+			aggregate();
+		}
+		return {
+			aggregatedSeries: aggregatedSeries,
+			xDomain: [timeBasedSeries[0].timestamp, timeBasedSeries[timeBasedSeries.length-1].timestamp],
+			yDomain: yDomain,
+			zDomain: [0, names.length]
+		};
+	};
+
+
+	this.getHeatmapDataAndBucketInfo = function(aggregatedSeriesAndYDomain, bucketMin, step, numOfBucket){
+		var heatmapData = [];
+		var aggregatedSeries = aggregatedSeriesAndYDomain.aggregatedSeries;
+		var yDomain = aggregatedSeriesAndYDomain.yDomain;
+		numOfBucket = numOfBucket || this.defaultHeatmapNumOfBucket;
+		bucketMin = this.getTheNumberValueFromTwo(bucketMin, yDomain[0]);
+		step = step || (yDomain[1] - bucketMin) / numOfBucket;
+		var bucketMax = bucketMin + step * numOfBucket;
+
+		//transfer to time, bucket, frequency
+		aggregatedSeries.forEach(function(d){
+			var temp = [];
+			for(var i = 0; i < numOfBucket; i++){
+				temp[i] = {
+					bucket: bucketMin + i * step,
+					count: 0,
+					names: []
+				};
+			}
+			for(var k in d){
+				if(d.hasOwnProperty(k)){
+					if (k !== 'timestamp'){
+						for(i = 0; i < numOfBucket; i++){
+							if(d[k] < bucketMin + step * (i + 1)){
+								temp[i].count += 1;
+								temp[i].names.push(k);
+								break;
+							}
+						}
+						if(d[k] === bucketMax){
+							temp[numOfBucket - 1].count += 1;
+							temp[numOfBucket - 1].names.push(k);
+						}
+					}
+				}
+			}
+			temp.forEach(function(e){
+				heatmapData.push({
+					timestamp: d.timestamp,
+					bucket: e.bucket,
+					frequency: e.count,
+					names: e.names
+				});
+			});
+
+		});
+
+		return{
+			newYDomain: [bucketMin, bucketMin + step * numOfBucket],
+			heatmapData: heatmapData,
+			numOfBucket: numOfBucket,
+			bucketMin: bucketMin,
+			step: step
+		};
+	};
+
 	this.addStackedDataToSeries = function (series, stack, metricsToIgnore) {
 		var stackedData = stack(this.convertSeriesToTimeBasedFormat(series, metricsToIgnore));
 		var newSeries = series.map(function (metric, index) {
@@ -557,5 +786,44 @@ angular.module('argus.services.charts.tools', [])
 		}
 
 		return [finalYMin, finalYMax];
+	};
+
+	this.getTileData = function(heatmapData, graph, mouseData, bucketInfo){
+		var xIndex = Math.floor((mouseData.mouseX - graph.x.domain()[0])/bucketInfo.xStep);
+		var yIndex = Math.floor((mouseData.mouseY - graph.y.domain()[0])/bucketInfo.yStep);
+		var index = bucketInfo.numOfYStep * xIndex + yIndex;
+		var tileData = heatmapData[index];
+		return {
+			data: tileData,
+			xIndex: xIndex,
+			yIndex: yIndex
+		};
+	};
+
+	this.getGraphClassNamesMap = function(series){
+		var map = {};
+		series.forEach(function(metric){
+			map[metric.name] = metric.graphClassName;
+		});
+		return map;
+	};
+
+	this.Number = function(a){
+		if(typeof(a) === "string" && a.trim() === "") return NaN;
+		return Number(a);
+	};
+
+	this.isNaN = function (a) {
+		if(typeof(a) === "string" && a.trim() === "") return true;
+		return isNaN(a);
+	};
+
+	this.getTheNumberValueFromTwo = function(a, b){
+		return (this.isNaN(a) ? Number(b) : Number(a));
+	};
+
+	this.getTheNumberValueFromThree = function(a, b, c){
+		var temp = (this.isNaN(a) ? Number(b) : Number(a));
+		return this.isNaN(temp) ? Number(c) : temp;
 	};
 }]);

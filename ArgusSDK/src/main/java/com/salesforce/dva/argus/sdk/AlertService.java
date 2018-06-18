@@ -36,7 +36,7 @@ import com.salesforce.dva.argus.sdk.ArgusService.EndpointService;
 import com.salesforce.dva.argus.sdk.entity.Alert;
 import com.salesforce.dva.argus.sdk.entity.Notification;
 import com.salesforce.dva.argus.sdk.entity.Trigger;
-import com.salesforce.dva.argus.sdk.excpetions.TokenExpiredException;
+import com.salesforce.dva.argus.sdk.exceptions.TokenExpiredException;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -88,6 +88,14 @@ public class AlertService extends EndpointService {
      */
     public List<Alert> getAlerts(boolean includeSharedAlerts) throws IOException, TokenExpiredException {
     	String requestUrl = RESOURCE+"?shared=" + includeSharedAlerts;
+        ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
+
+        assertValidResponse(response, requestUrl);
+        return fromJson(response.getResult(), new TypeReference<List<Alert>>() { });
+    }
+    
+    public List<Alert> getAlertsMeta(boolean includeSharedAlerts) throws IOException, TokenExpiredException {
+    	String requestUrl = RESOURCE + "/meta?shared=" + includeSharedAlerts;
         ArgusResponse response = getClient().executeHttpRequest(ArgusHttpClient.RequestType.GET, requestUrl, null);
 
         assertValidResponse(response, requestUrl);

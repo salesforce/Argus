@@ -49,14 +49,14 @@ public class Notification extends Entity {
 
     private String name;
     private String notifierName;
-    private List<String> subscriptions;
-    private List<String> metricsToAnnotate;
+    private List<String> subscriptions = new ArrayList<>();
+    private List<String> metricsToAnnotate = new ArrayList<>();
     private long cooldownPeriod;
     private long cooldownExpiration;
     private List<BigInteger> triggersIds = new ArrayList<>();
     private BigInteger alertId;
     private String customText;
-    private int severityLevel;
+    private int severityLevel = 5;
     private boolean isSRActionable;
     
 

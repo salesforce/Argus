@@ -66,6 +66,7 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Map.Entry;
@@ -97,7 +98,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
     private Logger _logger = LoggerFactory.getLogger(AsyncHbaseSchemaService.class);
     private final HBaseClient _client;
-    private final boolean _syncPut; 
     private final MonitorService _monitorService;
 
     //~ Constructors *********************************************************************************************************************************
@@ -107,7 +107,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     	super(systemConfig);
         
     	_monitorService = monitorService;
-    	_syncPut = Boolean.parseBoolean(systemConfig.getValue(Property.HBASE_SYNC_PUT.getName(), Property.HBASE_SYNC_PUT.getDefaultValue()));
     	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(), 
     													Property.HBASE_METRICSCHEMA_TABLE.getDefaultValue());
     	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(), 
@@ -345,7 +344,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     	
     	_logger.info("Using FastScan. Will skip rows while scanning.");
     	
-    	final List<MetricSchemaRecord> records = new ArrayList<>();
+    	final Set<MetricSchemaRecord> records = new HashSet<>();
     	
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
@@ -374,8 +373,9 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	String splits[] = rowKey.split(String.valueOf(ROWKEY_SEPARATOR));
         	String record = (RecordType.METRIC.equals(type) && metadata.tableName.equals(METRIC_SCHEMA_TABLENAME)) || 
         			(RecordType.SCOPE.equals(type) && metadata.tableName.equals(SCOPE_SCHEMA_TABLENAME)) ? splits[0] : splits[1];
-        	
-        	MetricSchemaRecord schemaRecord = _constructMetricSchemaRecord(rowKey, metadata.tableName);
+        
+		MetricSchemaRecord schemaRecord = RecordType.METRIC.equals(type) ? 
+				new MetricSchemaRecord(null, record) : new MetricSchemaRecord(record, null);	
         	records.add(schemaRecord);
         	if(records.size() == query.getLimit()) {
     			break;
@@ -390,7 +390,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	rows = _getSingleRow(newScanStart, end, filterList, metadata.tableName);
         }
         
-    	return records;
+    	return new ArrayList<>(records);
     }
     
 
@@ -777,7 +777,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
      */
     public enum Property {
         
-        HBASE_SYNC_PUT("service.property.schema.hbase.sync.put", "false"),
         HBASE_METRICSCHEMA_TABLE("service.property.schema.hbase.metricschema.table", "metric-schema"),
     	HBASE_SCOPESCHEMA_TABLE("service.property.schema.hbase.scopeschema.table", "scope-schema");
 

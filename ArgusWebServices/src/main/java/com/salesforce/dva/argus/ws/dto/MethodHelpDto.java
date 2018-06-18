@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -77,44 +78,51 @@ public class MethodHelpDto implements Comparable<MethodHelpDto> {
             Annotation[] annotations = parameterAnnotations[i];
 
             if (annotations.length > 0) {
+            	
+            	if (Context.class.isAssignableFrom(annotations[0].getClass())) {
+                	continue;
+                }
+            	
+            	MethodParameterDto param = new MethodParameterDto();
                 for (int j = 0; j < annotations.length; j++) {
                     Annotation annotation = annotations[j];
+                        
+                    if (QueryParam.class.isAssignableFrom(annotation.getClass())) {
+                        QueryParam queryParam = QueryParam.class.cast(annotation);
 
-                    if (!Context.class.isAssignableFrom(annotation.getClass())) {
-                        MethodParameterDto param = new MethodParameterDto();
+                        param.setName(queryParam.value());
+                        param.setParamType("query");
+                    } else if (FormParam.class.isAssignableFrom(annotation.getClass())) {
+                        FormParam queryParam = FormParam.class.cast(annotation);
 
-                        if (QueryParam.class.isAssignableFrom(annotation.getClass())) {
-                            QueryParam queryParam = QueryParam.class.cast(annotation);
+                        param.setName(queryParam.value());
+                        param.setParamType("form");
+                    } else if (PathParam.class.isAssignableFrom(annotation.getClass())) {
+                        PathParam queryParam = PathParam.class.cast(annotation);
 
-                            param.setName(queryParam.value());
-                            param.setParamType("query");
-                        } else if (FormParam.class.isAssignableFrom(annotation.getClass())) {
-                            FormParam queryParam = FormParam.class.cast(annotation);
-
-                            param.setName(queryParam.value());
-                            param.setParamType("form");
-                        } else if (PathParam.class.isAssignableFrom(annotation.getClass())) {
-                            PathParam queryParam = PathParam.class.cast(annotation);
-
-                            param.setName(queryParam.value());
-                            param.setParamType("path");
-                        }
-                        try {
-                            if (BaseDto.class.isAssignableFrom(parameterType)) {
-                                param.setSchema(BaseDto.class.cast(parameterType.newInstance()).createExample());
-                            }
-                        } catch (Exception ex) {
-                            param.setSchema(parameterType);
-                        }
-
-                        String paramName = parameterType.getSimpleName().toLowerCase();
-
-                        param.setDataType(paramName.toLowerCase().replaceAll("dto", ""));
-                        result.add(param);
+                        param.setName(queryParam.value());
+                        param.setParamType("path");
+                    } else if (DefaultValue.class.isAssignableFrom(annotation.getClass())) {
+                    	DefaultValue defaultValue = DefaultValue.class.cast(annotation);
+                    	
+                    	param.setDefaultValue(defaultValue.value());
                     }
+                    
+                    try {
+                        if (BaseDto.class.isAssignableFrom(parameterType)) {
+                            param.setSchema(BaseDto.class.cast(parameterType.newInstance()).createExample());
+                        }
+                    } catch (Exception ex) {
+                        param.setSchema(parameterType);
+                    }
+
+                    String paramName = parameterType.getSimpleName().toLowerCase();
+                    param.setDataType(paramName.toLowerCase().replaceAll("dto", ""));
                 }
+                
+                result.add(param);
             } else {
-                MethodParameterDto param = new MethodParameterDto();
+            	MethodParameterDto param = new MethodParameterDto();
                 String paramName = parameterType.getSimpleName().toLowerCase();
 
                 param.setDataType(paramName.toLowerCase().replaceAll("dto", ""));
@@ -352,7 +360,8 @@ public class MethodHelpDto implements Comparable<MethodHelpDto> {
         String paramType;
         String name;
         String dataType;
-        Object schema;
+        String defaultValue;
+		Object schema;
 
         /**
          * Returns a representation of the schema of the parameter.
@@ -426,6 +435,25 @@ public class MethodHelpDto implements Comparable<MethodHelpDto> {
         public void setDataType(String dataType) {
             this.dataType = dataType;
         }
+        
+        /**
+         * Returns the default value for the parameter.
+         *
+         * @return  The default value.
+         * 
+         */
+        public String getDefaultValue() {
+			return defaultValue;
+		}
+
+        /**
+         * Sets the default value for this param.
+         *
+         * @param  defaultValue  The default value for this parameter.
+         */
+		public void setDefaultValue(String defaultValue) {
+			this.defaultValue = defaultValue;
+		}
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

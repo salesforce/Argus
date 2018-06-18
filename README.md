@@ -5,9 +5,9 @@ Argus is a time-series monitoring and alerting platform. It consists of discrete
 
 Its architecture allows any and all of these services to be retargeted to new technology as it becomes available, with little to no impact on the users.
 
-To find out more [see the wiki.](https://github.com/salesforce/Argus/wiki)
+To find out more [see the wiki](https://github.com/salesforce/Argus/wiki) and check out the [release notes](https://github.com/salesforce/Argus/releases).
 
-![Argus UI](https://cloud.githubusercontent.com/assets/15337203/12775758/53f98b02-ca05-11e5-88b0-1fd11afe335f.png)
+![Argus UI](ArgusUIScreenshot.png "Viewing metric with default UI")
 
 ## Building Argus
 

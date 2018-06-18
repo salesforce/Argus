@@ -43,9 +43,10 @@ import com.google.inject.persist.jpa.JpaPersistModule;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
-import com.salesforce.dva.argus.service.audit.DefaultAuditService;
+import com.salesforce.dva.argus.service.audit.HBaseAuditService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
+import com.salesforce.dva.argus.service.jpa.DefaultChartService;
 import com.salesforce.dva.argus.service.jpa.DefaultDashboardService;
 import com.salesforce.dva.argus.service.jpa.DefaultDistributedSchedulingLockService;
 import com.salesforce.dva.argus.service.jpa.DefaultGlobalInterlockService;
@@ -59,7 +60,6 @@ import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
 import com.salesforce.dva.argus.service.users.CachedUserService;
 import com.salesforce.dva.argus.service.users.DefaultUserService;
-import com.salesforce.dva.argus.service.warden.DefaultWardenService;
 import com.salesforce.dva.argus.system.SystemConfiguration.Property;
 
 import org.slf4j.LoggerFactory;
@@ -232,7 +232,9 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(Property.AUTH_SERVICE_IMPL_CLASS, AuthService.class);
         bindConcreteClass(Property.SCHEMA_SERVICE_IMPL_CLASS, SchemaService.class);
         bindConcreteClass(Property.HISTORY_SERVICE_IMPL_CLASS, HistoryService.class);
+        bindConcreteClass(Property.AUDIT_SERVICE_IMPL_CLASS, AuditService.class);
         bindConcreteClass(Property.CALLBACK_SERVICE_IMPL_CLASS, CallbackService.class);
+        bindConcreteClass(Property.WARDEN_SERVICE_IMPL_CLASS, WardenService.class);
 
         // Named annotation binding
         bindConcreteClassWithNamedAnnotation(getConcreteClassToBind(Property.TSDB_SERVICE_IMPL_CLASS, TSDBService.class), TSDBService.class);
@@ -248,14 +250,13 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(DefaultBatchService.class, BatchService.class);
         bindConcreteClass(DefaultGlobalInterlockService.class, GlobalInterlockService.class);
         bindConcreteClass(DefaultMonitorService.class, MonitorService.class);
-        bindConcreteClass(DefaultWardenService.class, WardenService.class);
         bindConcreteClass(DefaultAnnotationService.class, AnnotationService.class);
         bindConcreteClass(DefaultManagementService.class, ManagementService.class);
         bindConcreteClass(DefaultServiceManagementService.class, ServiceManagementService.class);
-        bindConcreteClass(DefaultAuditService.class, AuditService.class);
         bindConcreteClass(DefaultNamespaceService.class, NamespaceService.class);
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
+        bindConcreteClass(DefaultChartService.class, ChartService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {
@@ -294,6 +295,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }
