@@ -65,6 +65,8 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
 	private String expandedTimeSeriesRange;
 	private String queryTimeWindow;
+	private Integer numDiscoveryResults;
+	private Integer numDiscoveryQueries;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -115,11 +117,15 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		List<Metric> metrics = new ArrayList<>(expressions.size());
 
 		try {
+			numDiscoveryResults = 0;
+			numDiscoveryQueries = 0;
 			for (String expression : expressions) {
 				_logger.debug("Reading metric for expression {}", expression);
 				metrics.addAll(reader.parse(expression, relativeTo, Metric.class));
 				expandedTimeSeriesRange = reader.getExpandedTimeSeriesRange();
 				queryTimeWindow = reader.getQueryTimeWindow();
+				numDiscoveryResults += reader.getNumDiscoveryResults();
+				numDiscoveryQueries += reader.getNumDiscoveryQueries();
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
@@ -184,7 +190,23 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		{
 			return queryTimeWindow;
 		}
-	}	
+	}
+	
+	@Override
+	public Integer getNumDiscoveryResults()
+	{
+		{
+			return numDiscoveryResults;
+		}
+	}
+	
+	@Override
+	public Integer getNumDiscoveryQueries()
+	{
+		{
+			return numDiscoveryQueries;
+		}
+	}
 	
 	@Override
 	public void dispose() {
