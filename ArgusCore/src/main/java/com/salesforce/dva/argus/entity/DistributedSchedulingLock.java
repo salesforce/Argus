@@ -141,6 +141,7 @@ public class DistributedSchedulingLock {
 				distributedSchedulingLock = new DistributedSchedulingLock(id);
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval)); 
+				_logger.info("Setting the first schedule start time to {} , refresh interval - {}", distributedSchedulingLock.getNextScheduleStartTime(), schedulingRefreshInterval);
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime() - schedulingRefreshInterval, type)); 
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
@@ -148,11 +149,13 @@ public class DistributedSchedulingLock {
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
+				_logger.info("Setting the next schedule start time to {} , refresh interval - {}", distributedSchedulingLock.getNextScheduleStartTime(), schedulingRefreshInterval);
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
 			}else{
 				if((distributedSchedulingLock.getCurrentIndex()-jobsBlockSize) < distributedSchedulingLock.getJobCount()){
 					distributedSchedulingLock.setCurrentIndex(distributedSchedulingLock.getCurrentIndex() + jobsBlockSize); 
+					_logger.info("Setting current index to {} , refresh interval - {}", distributedSchedulingLock.getCurrentIndex(), schedulingRefreshInterval);
 					distributedSchedulingLock = em.merge(distributedSchedulingLock);	
 					em.flush();
 				}
