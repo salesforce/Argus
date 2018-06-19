@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -63,12 +64,12 @@ public class AlertServiceTest extends AbstractTest {
 	private static final String EXPRESSION =
 			"DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
 	private PrincipalUser admin;
-	
+
 	@Before
 	public void setup() {
 		admin = system.getServiceFactory().getUserService().findAdminUser();
 	}
-	
+
 	@Test
 	public void testUpdateAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -187,7 +188,7 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualSet.contains(alert));
 		}
 	}
-	
+
 	@Test
 	public void testfindAlertsByOwnerMeta() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -243,7 +244,7 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualSet.contains(alert));
 		}
 	}
-	
+
 	@Test
 	public void testFindAllAlertsMeta() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -287,10 +288,10 @@ public class AlertServiceTest extends AbstractTest {
 		for (int i = 0; i < alertsCount; i++) {
 			insertedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
 		}
-        List<Alert> expectedAlerts = insertedAlerts.subList(0, 20);
+		List<Alert> expectedAlerts = insertedAlerts.subList(0, 20);
 
 		List<Alert> actualAlerts = alertService.findAlertsByRangeAndStatus(new BigInteger("100002"), new BigInteger("100021"), false);
-        
+
 		assertEquals(actualAlerts.size(), 20);
 
 		Set<Alert> actualSet = new HashSet<>();
@@ -299,10 +300,51 @@ public class AlertServiceTest extends AbstractTest {
 		for (Alert alert : expectedAlerts) {
 			assertTrue(actualSet.remove(alert));
 		}
-		
-        assertEquals(actualSet.size(), 0);
+
+		assertEquals(actualSet.size(), 0);
 	}
-	
+
+	@Test
+	public void findAlertsModifiedAfterDate() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		String userName = createRandomName();
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
+
+		user = userService.updateUser(user);
+
+		List<Alert> insertedAlerts = new ArrayList<>();
+
+		for (int i = 0; i < 25; i++) {
+			insertedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
+		}
+
+		try {
+			Thread.sleep(5000);
+		}catch(Exception e) {
+             
+		}
+		
+		Date currentDate = new Date();
+		for (int i = 25; i < 50; i++) {
+			insertedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
+		}
+		
+		List<Alert> expectedAlerts = insertedAlerts.subList(25, 50);
+
+		List<Alert> actualAlerts = alertService.findAlertsModifiedAfterDate(currentDate);
+
+		assertEquals(actualAlerts.size(), 25);
+
+		Set<Alert> actualSet = new HashSet<>();
+
+		actualSet.addAll(actualAlerts);
+		for (Alert alert : expectedAlerts) {
+			assertTrue(actualSet.remove(alert));
+		}
+		assertEquals(actualSet.size(), 0);
+	}
+
 	@Test
 	public void findFullAlertObjectRetrieval() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -328,10 +370,10 @@ public class AlertServiceTest extends AbstractTest {
 		not1.setCooldownExpirationByTriggerAndMetric(trig1, sampleMetric, currTime);
 		not1.setActiveForTriggerAndMetric(trig1, sampleMetric, true);
 		alertService.updateAlert(alert1);
-		
+
 		Alert alert2 = new Alert(user, user, "alert_2", EXPRESSION, "* * * * *");
 		alertService.updateAlert(alert2);
-		
+
 		Alert alert3 = new Alert(user, user, "alert_3", EXPRESSION, "* * * * *");
 		Trigger trig3 = new Trigger(alert3, TriggerType.LESS_THAN, "trigger_3", 40, 0);
 		alert3.setTriggers(Arrays.asList(new Trigger[] {trig3}));
@@ -344,7 +386,7 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(fetchedAlert1.getName(), "alert_1");
 		assertEquals(fetchedAlert1.getNotifications().size(), 2);
 		assertEquals(fetchedAlert1.getTriggers().size(), 2);
-		
+
 		Map<String, Notification> notificationsMap = fetchedAlert1.getNotifications().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
 		Map<String, Trigger> triggersMap = fetchedAlert1.getTriggers().stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
 		assertTrue(notificationsMap.containsKey("notification_1"));
@@ -364,12 +406,12 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(fetchedNotification1.getMetricsToAnnotate().get(0),"logbus.was.SP3.cs21:Logstash.rate_15m:sum");
 		assertEquals(fetchedNotification1.getCooldownExpirationByTriggerAndMetric(trig1, sampleMetric), currTime);
 		assertEquals(fetchedNotification1.getActiveStatusMap().keySet().size(), 1);
-		
+
 		Alert fetchedAlert2 = actualAlerts.get(1);
 		assertEquals(fetchedAlert2.getName(), "alert_2");
 		assertEquals(fetchedAlert2.getNotifications().size(), 0);
 		assertEquals(fetchedAlert2.getTriggers().size(), 0);
-		
+
 		Alert fetchedAlert3 = actualAlerts.get(2);
 		assertEquals(fetchedAlert3.getName(), "alert_3");
 		assertEquals(fetchedAlert3.getNotifications().size(), 0);
@@ -431,7 +473,7 @@ public class AlertServiceTest extends AbstractTest {
 		alert = alertService.updateAlert(alert);
 		assertNotNull((alertService.findAlertByNameAndOwner(alertName, user)));
 	}
-	
+
 	@Test
 	public void testAlertEnqueue() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -449,68 +491,68 @@ public class AlertServiceTest extends AbstractTest {
 
 		assertEquals(actualAlertList.size(), expectedList.size());
 	}
-	
+
 	@Test
 	public void testSharedAlertWhenOneSharedAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
-		
+
 		alertService.updateAlert(new Alert(user1, user1, "alert-name1", EXPRESSION, "* * * * *"));
 		Alert alertShared = alertService.updateAlert(new Alert(user1, user1, "alert-name-shared2", EXPRESSION, "* * * * *"));
-		
+
 		alertShared.setShared(true);
 		alertService.updateAlert(alertShared);
-		
+
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertShared);
 		List<Alert> actualResult=alertService.findSharedAlerts(false, null, null);
 		assertEquals(expectedSharedResult, actualResult);
 	}
-	
+
 	@Test
 	public void testSharedAlertWhenTwoSharedAlert() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
-		
+
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
-		
+
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
 		alertSharedUser2.setShared(true);
 		alertService.updateAlert(alertSharedUser2);
-		
+
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertSharedUser1);
 		expectedSharedResult.add(alertSharedUser2);
-		
-		
+
+
 		assertEquals(expectedSharedResult, alertService.findSharedAlerts(false, null, null));
 	}
-	
+
 	@Test
 	public void testFindSharedAlertsMeta() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
-		
+
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
-		
+
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
 		alertSharedUser2.setShared(true);
 		alertService.updateAlert(alertSharedUser2);
-		
+
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertSharedUser1);
 		expectedSharedResult.add(alertSharedUser2);
-		
-		
+
+
 		assertEquals(expectedSharedResult, alertService.findSharedAlerts(true, null, null));
 	}
 
@@ -520,29 +562,29 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
-		
+
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
 		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
-		
+
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
 		alertSharedUser2.setShared(true);
 		alertService.updateAlert(alertSharedUser2);
 		alertSharedAdmin.setShared(true);
 		alertService.updateAlert(alertSharedAdmin);
-		
+
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertSharedUser1);
 		expectedSharedResult.add(alertSharedUser2);
 		expectedSharedResult.add(alertSharedAdmin);
-		
-	    assertEquals(3, alertService.findSharedAlerts(false, null, null).size());
-		
+
+		assertEquals(3, alertService.findSharedAlerts(false, null, null).size());
+
 		List<Alert> expectedSharedResultUser1 = new ArrayList<>();
 		expectedSharedResultUser1.add(alertSharedUser1);
 		assertEquals(expectedSharedResultUser1, alertService.findSharedAlerts(false, user1, null));
-		
+
 		List<Alert> expectedSharedResultUser2 = new ArrayList<>();
 		expectedSharedResultUser2.add(alertSharedUser2);
 		assertEquals(expectedSharedResultUser2, alertService.findSharedAlerts(false, user2, null));
@@ -550,41 +592,41 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> expectedSharedResultAdmin = new ArrayList<>();
 		expectedSharedResultAdmin.add(alertSharedAdmin);
 		assertEquals(expectedSharedResultAdmin, alertService.findSharedAlerts(false, admin, null));
-		
+
 		alertSharedAdmin.setShared(false);
 		alertService.updateAlert(alertSharedAdmin);
 		assertEquals(new ArrayList<Alert>(), alertService.findSharedAlerts(false, admin, null));
 	}
-	
+
 	@Test
 	public void testFindSharedAlertsMetaByOwner() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
 		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
-		
+
 		Alert alertSharedUser1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_shared1", EXPRESSION, "* * * * *"));
 		Alert alertSharedUser2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared2", EXPRESSION, "* * * * *"));
 		Alert alertSharedAdmin = alertService.updateAlert(new Alert(admin, admin, "alert-name-shared3", EXPRESSION, "* * * * *"));
-		
+
 		alertSharedUser1.setShared(true);
 		alertService.updateAlert(alertSharedUser1);
 		alertSharedUser2.setShared(true);
 		alertService.updateAlert(alertSharedUser2);
 		alertSharedAdmin.setShared(true);
 		alertService.updateAlert(alertSharedAdmin);
-		
+
 		List<Alert> expectedSharedResult = new ArrayList<>();
 		expectedSharedResult.add(alertSharedUser1);
 		expectedSharedResult.add(alertSharedUser2);
 		expectedSharedResult.add(alertSharedAdmin);
-		
-	    assertEquals(3, alertService.findSharedAlerts(true, null, null).size());
-		
+
+		assertEquals(3, alertService.findSharedAlerts(true, null, null).size());
+
 		List<Alert> expectedSharedResultUser1 = new ArrayList<>();
 		expectedSharedResultUser1.add(alertSharedUser1);
 		assertEquals(expectedSharedResultUser1, alertService.findSharedAlerts(true, user1, null));
-		
+
 		List<Alert> expectedSharedResultUser2 = new ArrayList<>();
 		expectedSharedResultUser2.add(alertSharedUser2);
 		assertEquals(expectedSharedResultUser2, alertService.findSharedAlerts(true, user2, null));
@@ -592,15 +634,15 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> expectedSharedResultAdmin = new ArrayList<>();
 		expectedSharedResultAdmin.add(alertSharedAdmin);
 		assertEquals(expectedSharedResultAdmin, alertService.findSharedAlerts(true, admin, null));
-		
+
 		alertSharedAdmin.setShared(false);
 		alertService.updateAlert(alertSharedAdmin);
 		assertEquals(new ArrayList<Alert>(), alertService.findSharedAlerts(true, admin, null));
 	}
-	
+
 	@Test
 	public void testAlertSerDes() {
-		
+
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
@@ -612,12 +654,12 @@ public class AlertServiceTest extends AbstractTest {
 
 		notification.setAlert(alert);
 		notification.setTriggers(Arrays.asList(trigger));
-		
+
 		alert = alertService.updateAlert(alert);
-		
+
 		notification = alert.getNotifications().get(0);
 		trigger = alert.getTriggers().get(0);
-		
+
 		ObjectMapper mapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
 		module.addSerializer(Alert.class, new Alert.Serializer());
@@ -625,13 +667,13 @@ public class AlertServiceTest extends AbstractTest {
 		module.addSerializer(Notification.class, new Notification.Serializer());
 		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
 		module.addDeserializer(Alert.class, new Alert.Deserializer());
-		
+
 		mapper.registerModule(module);
-		
+
 		try {
 			String serializedAlert = mapper.writeValueAsString(alert);
 			Alert deserializedAlert = mapper.readValue(serializedAlert, Alert.class);
-			
+
 			assertEquals(alert.getId(), deserializedAlert.getId());
 			assertEquals(alert.getName(),  deserializedAlert.getName());
 			assertEquals(alert.getExpression(), deserializedAlert.getExpression());
@@ -639,21 +681,21 @@ public class AlertServiceTest extends AbstractTest {
 			assertEquals(alert.isEnabled(), deserializedAlert.isEnabled());
 			assertEquals(alert.isMissingDataNotificationEnabled(), deserializedAlert.isMissingDataNotificationEnabled());
 			assertEquals(alert.getOwner(), deserializedAlert.getOwner());
-			
+
 			assertEquals(alert.getTriggers().size(), deserializedAlert.getTriggers().size());
 			for(int i=0; i<alert.getTriggers().size(); i++) {
 				_assertEquals(alert.getTriggers().get(i), deserializedAlert.getTriggers().get(i));
 			}
-			
+
 			assertEquals(alert.getNotifications().size(), deserializedAlert.getNotifications().size());
 			for(int i=0; i<alert.getNotifications().size(); i++) {
 				_assertEquals(alert.getNotifications().get(i), deserializedAlert.getNotifications().get(i));
 			}
-			
+
 		} catch (IOException e) {
 			fail("IOException while serializing/deserializing alert.");
 		} 
-		
+
 	}
 
 	private void _assertEquals(Notification expected, Notification actual) {
@@ -679,12 +721,12 @@ public class AlertServiceTest extends AbstractTest {
 		assertEquals(expected.getSecondaryThreshold(), actual.getSecondaryThreshold());
 		assertEquals(expected.getInertia(), actual.getInertia());
 	}
-	
+
 	@Test
 	public void testUpdateNotification() {
 		UserService userService = system.getServiceFactory().getUserService();
 		AlertService alertService = system.getServiceFactory().getAlertService();
-		
+
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
 		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
@@ -694,10 +736,10 @@ public class AlertServiceTest extends AbstractTest {
 		expected.setTriggers(Arrays.asList(new Trigger[] { trigger }));
 		assertTrue(!expected.isEnabled());
 		expected = alertService.updateAlert(expected);
-		
+
 		notification = expected.getNotifications().get(0);
 		trigger = expected.getTriggers().get(0);
-		
+
 		notification.setActiveForTriggerAndMetric(trigger, new Metric("s", "m"), false);
 		notification.setCooldownExpirationByTriggerAndMetric(trigger, new Metric("s", "m"), 0);
 		expected = alertService.updateAlert(expected);
@@ -705,11 +747,11 @@ public class AlertServiceTest extends AbstractTest {
 		expected.getNotifications().get(0).getActiveStatusMap().clear();
 		expected.getNotifications().get(0).getCooldownExpirationMap().clear();
 		alertService.updateNotificationsActiveStatusAndCooldown(Arrays.asList(expected.getNotifications().get(0)));
-		
+
 		Notification n = expected.getNotifications().get(0);
 		assertTrue(n.getActiveStatusMap().size() == 1);
 		assertTrue(n.getCooldownExpirationMap().size() == 1);
 	}
-	
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
