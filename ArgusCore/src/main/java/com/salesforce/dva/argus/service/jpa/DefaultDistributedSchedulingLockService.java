@@ -53,40 +53,40 @@ public class DefaultDistributedSchedulingLockService extends DefaultJPAService i
 	 * 
 	 * @author Raj Sarkapally rsarkapally@salesforce.com
 	 */
-	
-	 @SLF4JTypeListener.InjectLogger
-	    private Logger _logger;
-	    @Inject
-	    Provider<EntityManager> emf;
-	    AlertService _alertService;
-	    
-	    //~ Constructors *********************************************************************************************************************************
-	    
-	    @Inject
-	    protected DefaultDistributedSchedulingLockService(AuditService auditService, SystemConfiguration config, AlertService alertService) {
-			super(auditService, config);
-			_alertService=alertService;
-		}
-	 
-	    //~ Methods **************************************************************************************************************************************
 
-	    
-	    @Override
-	    public DistributedSchedulingLock updateNGetDistributedScheduleByType(LockType type,int jobsBlockSize, long schedulingRefreshInterval) {
-	    	 requireNotDisposed();
-	         requireArgument(type != null, "Lock type cannot be null.");
-	         
-	         EntityManager em = emf.get();
-	         while(true){
-		         try{
-		        	 DistributedSchedulingLock distributedSchedulingLock = DistributedSchedulingLock.updateNGetDistributedScheduleByType(em, type, jobsBlockSize,  schedulingRefreshInterval);
-		        	 return distributedSchedulingLock;
-		         }catch(OptimisticLockException ex){
-		        	_logger.debug("Optimistic lock exception " + ex.toString());  
-		         }catch(Throwable th){
-		        	 _logger.error("Optimistic lock exception " + th.toString());   
-		         }
-	         }
-	      
-	    }
+	@SLF4JTypeListener.InjectLogger
+	private Logger _logger;
+	@Inject
+	Provider<EntityManager> emf;
+	AlertService _alertService;
+
+	//~ Constructors *********************************************************************************************************************************
+
+	@Inject
+	protected DefaultDistributedSchedulingLockService(AuditService auditService, SystemConfiguration config, AlertService alertService) {
+		super(auditService, config);
+		_alertService=alertService;
+	}
+
+	//~ Methods **************************************************************************************************************************************
+
+
+	@Override
+	public DistributedSchedulingLock updateNGetDistributedScheduleByType(LockType type,int jobsBlockSize, long schedulingRefreshInterval) {
+		requireNotDisposed();
+		requireArgument(type != null, "Lock type cannot be null.");
+
+		EntityManager em = emf.get();
+		while(true){
+			try{
+				DistributedSchedulingLock distributedSchedulingLock = DistributedSchedulingLock.updateNGetDistributedScheduleByType(em, type, jobsBlockSize,  schedulingRefreshInterval);
+				return distributedSchedulingLock;
+			}catch(OptimisticLockException ex){
+				_logger.info("Optimistic lock exception " + ex.toString());  
+			}catch(Throwable th){
+				_logger.error("Optimistic lock exception " + th.toString());   
+			}
+		}
+
+	}
 }

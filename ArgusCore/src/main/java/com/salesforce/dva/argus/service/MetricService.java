@@ -174,5 +174,21 @@ public interface MetricService extends Service {
      * @return  The query time window corresponding to current query.
      */    
     String getQueryTimeWindow();
+    
+    /**
+     * Returns the number of discovery results that current query has expanded to.
+     *
+     *
+     * @return  The number of discovery results that current query has expanded to.
+     */    
+    Integer getNumDiscoveryResults();
+    
+    /**
+     * Returns the number of discovery  queries that has been made to the discovery service.
+     *
+     *
+     * @return  The number of discovery  queries that has been made to the discovery service.
+     */    
+    Integer getNumDiscoveryQueries();
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
