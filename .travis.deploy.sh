@@ -2,6 +2,7 @@
 # Generate & push code signing keys to keyserver.ubuntu.com, source into environment
 source ${TRAVIS_BUILD_DIR}/.travis.gpg.sh
 
+set -ex
 # Utilize tokenized `.travis.settings.xml` to do deployment
 cp ${TRAVIS_BUILD_DIR}/.travis.settings.xml ${HOME}/.m2/settings.xml
 
