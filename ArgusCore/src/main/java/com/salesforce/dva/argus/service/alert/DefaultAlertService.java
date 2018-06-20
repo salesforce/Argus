@@ -401,7 +401,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						}
 					}
 					
-					if(_whiteListedScopes.isEmpty() || isScopePresentInWhiteList(alert.getExpression())) {
+					if(_whiteListedScopes.isEmpty() || !isScopePresentInWhiteList(alert.getExpression())) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
 						_logger.info(logMessage);
