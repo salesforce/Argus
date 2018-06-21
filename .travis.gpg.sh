@@ -3,7 +3,7 @@
 # Original work by James Ward: https://github.com/jamesward/travis-central-test/blob/master/.travis.gpg.sh
 set -e
 
-if [[ ! -z "$TRAVIS" && ! -z "$GPG_NAME" && ! -z "$GPG_EMAIL" ]]; then
+if [[ ! -z "${TRAVIS}" && ! -z "${GPG_NAME}" && ! -z "${GPG_EMAIL}" ]]; then
 
     export GPG_PASSPHRASE=$(echo "$RANDOM$(date)" | md5sum | cut -d\  -f1)
 
