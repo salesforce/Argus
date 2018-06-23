@@ -13,5 +13,5 @@ cp ${TRAVIS_BUILD_DIR}/.travis.settings.xml ${HOME}/.m2/settings.xml
 echo "Setting Maven version to ${PROJECT_VERSION}"
 mvn versions:set -DnewVersion=${PROJECT_VERSION}
 # Builds top level pom w/ zip
-mvn --batch-mode --non-recursive -DskipTests -DskipDockerBuild -U -Prelease -Dproject.version=${PROJECT_VERSION} clean install
-mvn --batch-mode -DskipDockerBuild -DskipTests -Dproject.version=${PROJECT_VERSION} -Prelease clean deploy
+mvn --batch-mode --non-recursive -Dmaven.javadoc.skip=true -DskipTests -DskipDockerBuild -U -Prelease -Dproject.version=${PROJECT_VERSION} clean install
+mvn --batch-mode -Dmaven.javadoc.skip=true -DskipDockerBuild -DskipTests -Dproject.version=${PROJECT_VERSION} -Prelease clean deploy
