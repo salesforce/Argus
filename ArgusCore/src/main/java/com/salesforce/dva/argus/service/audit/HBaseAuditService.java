@@ -103,7 +103,7 @@ public class HBaseAuditService extends DefaultService implements AuditService {
 			deferred.addCallback(new Callback<Object, Object>() {
 				@Override
 				public Object call(Object arg) throws Exception {
-					_logger.trace(MessageFormat.format("Put to {0} successful.", tablename));
+					_logger.debug(MessageFormat.format("Put to {0} successful.", tablename));
 					return null;
 				}
 			});

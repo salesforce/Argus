@@ -177,6 +177,9 @@ public class MetricResources extends AbstractResource {
         }
         
         metricService.dispose();
+        req.setAttribute("numTimeSeries", metrics.size());
+        req.setAttribute("numDiscoveryResults", metricService.getNumDiscoveryResults());
+        req.setAttribute("numDiscoveryQueries", metricService.getNumDiscoveryQueries());
         return metrics;
     }
 
