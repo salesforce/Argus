@@ -40,6 +40,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final int EXPIRY_TIME_SECS = 3600;
+	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -55,6 +56,10 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
     	super(config);
     	SystemAssert.requireArgument(cacheService != null, "Cache Service cannot be null.");
         SystemAssert.requireArgument(discoveryService != null, "Discovery Service cannot be null.");
+		
+        UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS = Integer.parseInt(config.getValue(Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getName(), 
+				Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getDefaultValue()));
+        
         _cacheService = cacheService;
         _discoveryService = discoveryService;
         _executorService = Executors.newCachedThreadPool();
@@ -129,8 +134,48 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 			queries.add(query);
 		}
 		
-		_logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
+		long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
+		_logger.info("Time to get matching queries in ms: " + timeToGetQueriesMillis);
+		if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS){
+			_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
+		}
 		return queries;
+	}
+	
+	//~ Enums ****************************************************************************************************************************************
+	/**
+	 * The set of implementation specific configuration properties.
+	 *
+	 * @author Dilip Devaraj (ddevaraj@salesforce.com)
+	 */
+	public enum Property {
+		UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS("service.property.schema.upper.limit.time.get.queries.in.millis", "3000");
+
+		private final String _name;
+		private final String _defaultValue;
+
+		private Property(String name, String defaultValue) {
+			_name = name;
+			_defaultValue = defaultValue;
+		}
+
+		/**
+		 * Returns the property name.
+		 *
+		 * @return  The property name.
+		 */
+		public String getName() {
+			return _name;
+		}
+
+		/**
+		 * Returns the default value for the property.
+		 *
+		 * @return  The default value.
+		 */
+		public String getDefaultValue() {
+			return _defaultValue;
+		}
 	}
 	
 	private void _checkIfExceedsLimits(MetricQuery query, List<MetricQuery> matchedQueries) {
