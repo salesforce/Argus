@@ -40,7 +40,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final int EXPIRY_TIME_SECS = 3600;
-	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS;
+	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -57,7 +57,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
     	SystemAssert.requireArgument(cacheService != null, "Cache Service cannot be null.");
         SystemAssert.requireArgument(discoveryService != null, "Discovery Service cannot be null.");
 		
-        UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS = Integer.parseInt(config.getValue(Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getName(), 
+        UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS = Long.parseLong(config.getValue(Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getName(), 
 				Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getDefaultValue()));
         
         _cacheService = cacheService;
@@ -136,7 +136,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 		
 		long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
 		_logger.info("Time to get matching queries in ms: " + timeToGetQueriesMillis);
-		if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS){
+		if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS){
 			_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
 		}
 		return queries;
