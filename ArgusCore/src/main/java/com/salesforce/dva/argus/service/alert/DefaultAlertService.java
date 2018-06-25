@@ -59,10 +59,7 @@ import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.Cron;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.CronTrigger;
-import org.quartz.TriggerBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +81,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
@@ -126,6 +124,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
+	private static Set<String> _whiteListedScopes = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -185,7 +184,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			throw new RuntimeException("Input cron entry - " + alert.getCronEntry() + " is invalid");
 		}
 		alert.setModifiedDate(new Date());
-		
+
 		EntityManager em = _emProvider.get();
 		Alert result = mergeEntity(em, alert);
 
@@ -391,18 +390,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			String logMessage = null;
 			History history = null;
 
-			if(Boolean.valueOf(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
+			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
-					history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
-					logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
-					_logger.info(logMessage);
-					_appendMessageNUpdateHistory(history, logMessage, null, 0);
-					history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
-					historyList.add(history);
-					Map<String, String> tags = new HashMap<>();
-					tags.put(USERTAG, alert.getOwner().getUserName());
-					_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
-					continue;
+					if(_whiteListedScopes==null) {
+						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
+						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
+							_whiteListedScopes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
+						}else {
+							_whiteListedScopes = new HashSet<String>();
+						}
+					}
+					
+					if(_whiteListedScopes.isEmpty() || !isScopePresentInWhiteList(alert.getExpression())) {
+						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
+						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+						_logger.info(logMessage);
+						_appendMessageNUpdateHistory(history, logMessage, null, 0);
+						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+						historyList.add(history);
+						Map<String, String> tags = new HashMap<>();
+						tags.put(USERTAG, alert.getOwner().getUserName());
+						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+						continue;
+					}
 				}
 			}
 
@@ -495,6 +505,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
+	private boolean isScopePresentInWhiteList(String expression) {
+		for(String scope : _whiteListedScopes) {
+			if(expression.toLowerCase().contains(":"+scope+":")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
 	 */
@@ -522,10 +541,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
 						sendClearNotification(trigger, m, history, notification, alert);
-					} else {
-						// This is case when the notification is not active for the given trigger, metric combination
-						// and the metric did not violate triggering condition on current evaluation.
-						;
 					}
 				}
 			}
@@ -763,7 +778,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return Alert.findAlertsModifiedAfterDate(_emProvider.get(), modifiedDate);
 	}
-	
+
 	@Override
 	public int alertCountByStatus(boolean enabled) {
 		requireNotDisposed();
