@@ -1,0 +1,14 @@
+[
+  {
+    "displayName": null,
+    "datapoints": {
+      "1529945373000": 9223372036854775807,
+      "1529945374000": 1003,
+      "1529945375000": 1001
+    },
+    "units": null,
+    "scope": "argus.custom",
+    "metric": "long.testing",
+    "namespace": null
+  }
+]
