@@ -118,7 +118,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>2.14.0</project.version>
+        <project.version>2.15.0</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
@@ -322,21 +322,7 @@
     </reporting>
     <profiles>
         <profile>
-            <!-- This profile uploads to sonatype (which is used to get artifacts into maven central) -->
-            <id>sonatype-staging</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
+            <id>release</id>
             <build>
                 <plugins>
                     <plugin>
@@ -350,13 +336,6 @@
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                         </configuration>
                     </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>release</id>
-            <build>
-                <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
@@ -466,4 +445,16 @@
         <module>ArgusClient</module>
         <module>ArgusSDK</module>
     </modules>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
 </project>

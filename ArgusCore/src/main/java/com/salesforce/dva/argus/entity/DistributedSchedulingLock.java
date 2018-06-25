@@ -39,13 +39,18 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityNotFoundException;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.NoResultException;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.Table;
+import javax.persistence.TypedQuery;
 import javax.persistence.Version;
 
+import org.eclipse.persistence.config.HintValues;
+import org.eclipse.persistence.config.QueryHints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +65,15 @@ import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
  */
 @Entity
 @Table(name = "DISTRIBUTED_SCHEDULING_LOCK")
-
+@NamedQueries(
+		{
+			@NamedQuery(
+					name = "DistributedSchedulingLock.GetEntryById",
+					query =
+					"SELECT d FROM DistributedSchedulingLock d WHERE d.id = :type"
+					)
+		}
+		)
 public class DistributedSchedulingLock { 
 
 	//~ Instance fields ******************************************************************************************************************************
@@ -112,9 +125,13 @@ public class DistributedSchedulingLock {
 	 */
 	public static DistributedSchedulingLock getDistributedScheduleByType(EntityManager em, long type) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		TypedQuery<DistributedSchedulingLock> query = em.createNamedQuery("DistributedSchedulingLock.GetEntryById", DistributedSchedulingLock.class);
+		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
 		try {
-			return em.find(DistributedSchedulingLock.class, type);
-		} catch (EntityNotFoundException ex) {
+			query.setParameter("type", type);
+			return query.getSingleResult();
+		} catch (NoResultException ex) {
 			return null;
 		}
 	}
@@ -137,10 +154,15 @@ public class DistributedSchedulingLock {
 			tx.begin();
 
 			DistributedSchedulingLock distributedSchedulingLock = getDistributedScheduleByType(em, id);
+			if(distributedSchedulingLock!=null) {
+				_logger.info("read the distributed lock with params {}, {} and {} ",distributedSchedulingLock.getCurrentIndex(), distributedSchedulingLock.getJobCount(), distributedSchedulingLock.getNextScheduleStartTime());
+			}
+
 			if(distributedSchedulingLock == null){
 				distributedSchedulingLock = new DistributedSchedulingLock(id);
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval)); 
+				_logger.info("Setting the first schedule start time to {} , refresh interval - {}", distributedSchedulingLock.getNextScheduleStartTime(), schedulingRefreshInterval);
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime() - schedulingRefreshInterval, type)); 
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
@@ -148,11 +170,13 @@ public class DistributedSchedulingLock {
 				distributedSchedulingLock.setCurrentIndex(jobsBlockSize);
 				distributedSchedulingLock.setJobCount(getTotalEnabledJobCount(em, distributedSchedulingLock.getNextScheduleStartTime(), type)); 
 				distributedSchedulingLock.setNextScheduleStartTime(_toBeginOfMinute(System.currentTimeMillis()+schedulingRefreshInterval));
+				_logger.info("Setting the next schedule start time to {} , refresh interval - {}", distributedSchedulingLock.getNextScheduleStartTime(), schedulingRefreshInterval);
 				distributedSchedulingLock = em.merge(distributedSchedulingLock);
 				em.flush();
 			}else{
 				if((distributedSchedulingLock.getCurrentIndex()-jobsBlockSize) < distributedSchedulingLock.getJobCount()){
 					distributedSchedulingLock.setCurrentIndex(distributedSchedulingLock.getCurrentIndex() + jobsBlockSize); 
+					_logger.info("Setting current index to {} , refresh interval - {}", distributedSchedulingLock.getCurrentIndex(), schedulingRefreshInterval);
 					distributedSchedulingLock = em.merge(distributedSchedulingLock);	
 					em.flush();
 				}
