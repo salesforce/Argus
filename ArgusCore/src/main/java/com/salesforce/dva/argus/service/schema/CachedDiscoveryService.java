@@ -111,6 +111,13 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 			if(value == null) { // Cache Miss
 				_logger.info(MessageFormat.format("CACHE MISS for Wildcard Query: '{'{0}'}'. Will read from persistent storage.", query));
 				queries = _discoveryService.getMatchingQueries(query);
+				
+				long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
+				_logger.info("Time to get matching queries in ms: " + timeToGetQueriesMillis);
+				if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS){
+					_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
+				}
+				
 				_executorService.submit(new CacheInsertWorker(query, queries));
 			} else { // Cache Hit
 				_logger.info(MessageFormat.format("CACHE HIT for Wildcard Query: '{'{0}'}'", query));
@@ -133,12 +140,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 			_logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
 			queries.add(query);
 		}
-		
-		long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
-		_logger.info("Time to get matching queries in ms: " + timeToGetQueriesMillis);
-		if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS){
-			_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
-		}
+
 		return queries;
 	}
 	
