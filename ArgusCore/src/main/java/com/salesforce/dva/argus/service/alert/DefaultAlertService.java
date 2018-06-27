@@ -59,6 +59,7 @@ import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.Cron;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -458,39 +459,32 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 
-				// publishing evaluation latency as a metric
-				Map<Long, Double> datapoints = new HashMap<>();
-				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
-				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
-				metric.addDatapoints(datapoints);
-				try {
-					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
-				} catch (Exception ex) {
-					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
-				}
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId().intValue(), mde.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId().intValue(), ex.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
@@ -602,6 +596,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+        publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
@@ -619,10 +614,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "clear");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
+	}
+	
+	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value) {
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
+		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		trackingMetric.addDatapoints(datapoints);
+		try {
+			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
+		} catch (Exception ex) {
+			_logger.error("Exception occurred while adding alerts evaluated metric to tsdb - {}", ex.getMessage());
+		}
 	}
 
 	private void _updateNotificationSetActiveStatus(Trigger trigger, Metric metric, History history, Notification notification) {
