@@ -365,6 +365,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					if((alert==null && alertsBatch.size()>0) || alertsBatch.size()==ALERT_SCHEDULING_BATCH_SIZE) {
 						_alertService.enqueueAlerts(alertsBatch);
 						alertsBatch = new ArrayList<Alert>();
+						if(alert==null) {
+							_logger.info("Alerts queue is empty");
+						}
 					}
 				}catch(Exception e) {
 					_logger.error("Exception occured when scheduling alerts - "+ ExceptionUtils.getFullStackTrace(e));
