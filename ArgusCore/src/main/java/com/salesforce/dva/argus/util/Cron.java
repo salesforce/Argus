@@ -154,7 +154,15 @@ public class Cron {
 	}
 	
     public static String convertToQuartzCronEntry(String cronEntry) {
-       	return "0 " + cronEntry.substring(0, cronEntry.length() - 1) + "?";
+    	    // adding seconds field
+    	    cronEntry = "0 " + cronEntry.trim();
+    	    
+    	    // if day of the week is not specified, substitute it with ?, so as to prevent conflict with month field
+    	    if(cronEntry.charAt(cronEntry.length() - 1) == '*') {
+    	      	return cronEntry.substring(0, cronEntry.length() - 1) + "?";
+    	    }else {
+    	    	    return cronEntry;
+    	    }
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
