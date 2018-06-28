@@ -161,5 +161,11 @@ public class CronTest {
             }
         }
     }
+    
+    @Test
+    public void testConvertToCronEntry() {
+	    assertEquals(Cron.convertToQuartzCronEntry(" * 5-17 * * * "), "0 * 5-17 * * ?");
+    	    assertEquals(Cron.convertToQuartzCronEntry("* 5-17 * * 1-5"), "0 * 5-17 * * 1-5");
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
