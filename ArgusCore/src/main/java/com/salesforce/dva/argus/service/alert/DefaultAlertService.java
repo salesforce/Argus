@@ -57,7 +57,10 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.Cron;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +82,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
@@ -108,7 +112,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	};
 
 	//~ Instance fields ******************************************************************************************************************************
-	
+
 	private final Logger _logger = LoggerFactory.getLogger(DefaultAlertService.class);
 	private final Provider<EntityManager> _emProvider;
 	private final MQService _mqService;
@@ -120,6 +124,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final MonitorService _monitorService;
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
+	private static NotificationsCache _notificationsCache = null;
+	private static Set<String> _whiteListedScopes = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -151,29 +157,34 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService = monitorService;
 		_notifierFactory = notifierFactory;
 		_emProvider = emProvider;
-		
+
 		_initializeObjectMapper();
 	}
 
 	//~ Methods **************************************************************************************************************************************
 
 	private void _initializeObjectMapper() {
-		
+
 		SimpleModule module = new SimpleModule();
 		module.addSerializer(Alert.class, new Alert.Serializer());
 		module.addSerializer(Trigger.class, new Trigger.Serializer());
 		module.addSerializer(Notification.class, new Notification.Serializer());
 		module.addSerializer(PrincipalUser.class, new Alert.PrincipalUserSerializer());
 		module.addDeserializer(Alert.class, new Alert.Deserializer());
-		
+
 		_mapper.registerModule(module);
 	}
-	
+
 	@Override
 	@Transactional
 	public Alert updateAlert(Alert alert) {
 		requireNotDisposed();
 		requireArgument(alert != null, "Cannot update a null alert");
+		boolean isCronValid = Cron.isCronEntryValid(alert.getCronEntry());
+		if(!isCronValid) {
+			throw new RuntimeException("Input cron entry - " + alert.getCronEntry() + " is invalid");
+		}
+		alert.setModifiedDate(new Date());
 
 		EntityManager em = _emProvider.get();
 		Alert result = mergeEntity(em, alert);
@@ -258,7 +269,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
-		
+
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
 
@@ -291,14 +302,38 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.debug("Query for alerts having ids {} resulted in : {}", ids, result);
 		return result;
 	}
-	
+
 	@Override
 	public void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications) {
 		List<BigInteger> ids = notifications.stream().map(x -> x.getId()).collect(Collectors.toList());
 		_logger.debug("Updating notifications: {}", ids);
-		Notification.updateActiveStatusAndCooldown(_emProvider.get(), notifications);
+		if(_notificationsCache == null) {
+			synchronized(DefaultAlertService.class) {
+				if(_notificationsCache == null) {
+					_notificationsCache = new NotificationsCache(_emProvider);
+				}
+			}
+		}
+
+		// if cache is refreshed, we read the cooldown and trigger info from cache, else we query the db directly
+		if(_notificationsCache.isNotificationsCacheRefreshed()) {
+			for(Notification notification : notifications) {
+				if(_notificationsCache.getNotificationActiveStatusMap().get(notification.getId())!=null) {
+					notification.setActiveStatusMap(_notificationsCache.getNotificationActiveStatusMap().get(notification.getId()));
+				}else {
+					notification.getActiveStatusMap().clear();
+				}
+				if(_notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId())!=null) {
+					notification.setCooldownExpirationMap(_notificationsCache.getNotificationCooldownExpirationMap().get(notification.getId()));
+				}else {
+					notification.getCooldownExpirationMap().clear();
+				}
+			}
+		}else {
+			Notification.updateActiveStatusAndCooldown(_emProvider.get(), notifications);
+		}
 	}
-	
+
 	@Override
 	@Transactional
 	public List<History> executeScheduledAlerts(int alertCount, int timeout) {
@@ -309,11 +344,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		List<History> historyList = new ArrayList<>();
 		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
-		
+
 		List<Notification> allNotifications = new ArrayList<>();
 		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
 		Map<BigInteger, Long> alertEnqueueTimestampsByAlertId = new HashMap<>();
-		
+
 		for(AlertWithTimestamp alertWithTimestamp : alertsWithTimestamp) {
 			String serializedAlert = alertWithTimestamp.getSerializedAlert();
 			Alert alert;
@@ -323,13 +358,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn("Failed to deserialize alert.", e);
 				continue;
 			} 
-			
+
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 				continue;
 			}
-			
+
 			alertEnqueueTimestampsByAlertId.put(alert.getId(), alertWithTimestamp.getAlertEnqueueTime());
-			
+
 			List<Notification> notifications = new ArrayList<>(alert.getNotifications());
 			alert.setNotifications(null);
 			for(Notification n : notifications) {
@@ -337,7 +372,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 			allNotifications.addAll(notifications);
 		}
-		
+
 		// Update the state of notification objects from the database since the notification contained 	
 		// in the serialized alert might be stale. This is because the scheduler only refreshes the alerts	
 		// after a specified REFRESH_INTERVAL. And within this interval, the notification state may have changed.	
@@ -347,34 +382,45 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for(Notification n : allNotifications) {
 			alertsByNotificationId.get(n.getId()).addNotification(n);
 		}
-		
+
 		Set<Alert> alerts = new HashSet<>(alertsByNotificationId.values());
 		for (Alert alert : alerts) {
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
-			
+
 			String logMessage = null;
 			History history = null;
-			
-			if(Boolean.valueOf(_configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
+
+			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
-					history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
-					logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
-					_logger.info(logMessage);
-					_appendMessageNUpdateHistory(history, logMessage, null, 0);
-					history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
-					historyList.add(history);
-					Map<String, String> tags = new HashMap<>();
-					tags.put(USERTAG, alert.getOwner().getUserName());
-					_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
-					continue;
+					if(_whiteListedScopes==null) {
+						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
+						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
+							_whiteListedScopes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
+						}else {
+							_whiteListedScopes = new HashSet<String>();
+						}
+					}
+					
+					if(_whiteListedScopes.isEmpty() || !isScopePresentInWhiteList(alert.getExpression())) {
+						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
+						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+						_logger.info(logMessage);
+						_appendMessageNUpdateHistory(history, logMessage, null, 0);
+						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
+						historyList.add(history);
+						Map<String, String> tags = new HashMap<>();
+						tags.put(USERTAG, alert.getOwner().getUserName());
+						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+						continue;
+					}
 				}
 			}
-			
+
 			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
-				
+
 				if(metrics.isEmpty()) {
 					if (alert.isMissingDataNotificationEnabled()) {
 						_sendNotificationForMissingData(alert);
@@ -394,10 +440,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					for(Notification notification : alert.getNotifications()) {
 						triggersToEvaluate.addAll(notification.getTriggers());
 					}
-					
+
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
 							metrics, history);
-					
+
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
 							logMessage = MessageFormat.format("The notification {0} has no triggers.", notification.getName());
@@ -408,41 +454,37 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						}
 					}
 				}
-				
+
 				jobEndTime = System.currentTimeMillis();
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
-				
-				// publishing evaluation latency as a metric
-				Map<Long, Double> datapoints = new HashMap<>();
-				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
-				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
-				metric.addDatapoints(datapoints);
-				try {
-					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
-				} catch (Exception ex) {
-					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
-				}		
+
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/);
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), mde.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0}. Reason: {1}", alert.getId(), ex.getMessage());
+				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				
+
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
@@ -456,13 +498,22 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		} // end for
 		return historyList;
 	}
-	
+
+	private boolean isScopePresentInWhiteList(String expression) {
+		for(String scope : _whiteListedScopes) {
+			if(expression.toLowerCase().contains(":"+scope+":")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
 	 */
 	private void _processNotification(Alert alert, History history, List<Metric> metrics, 
 			Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger, Notification notification) {
-		
+
 		for(Trigger trigger : notification.getTriggers()) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
 			for(Metric m : metrics) {
@@ -484,17 +535,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
 						sendClearNotification(trigger, m, history, notification, alert);
-					} else {
-						// This is case when the notification is not active for the given trigger, metric combination
-						// and the metric did not violate triggering condition on current evaluation.
-						;
 					}
 				}
 			}
 		}
 	}
-	
-	
+
+
 	/**
 	 * Determines if the alert should be evaluated or not.
 	 */
@@ -504,26 +551,26 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return false;
 		}
 		if(!alert.isEnabled()) {
-			_logger.warn(MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alert.getId()));
+			_logger.warn(MessageFormat.format("Alert {0} has been disabled. Will not evaluate.", alert.getId().intValue()));
 			return false;
 		}
-		
+
 		return true;
 	}
-	
-	
+
+
 	/**
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
 	 * and the trigger fired time. 
 	 */
 	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(List<Trigger> triggers, List<Metric> metrics, History history) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
-		
+
 		for(Trigger trigger : triggers) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = new HashMap<>(metrics.size());
 			for(Metric metric : metrics) {
 				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric);
-				
+
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
 					Map<String, String> tags = new HashMap<>();
@@ -535,41 +582,55 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		return triggerFiredTimesAndMetricsByTrigger;
 	}
-	
-		
+
+
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime) {
-		
+
 		double value = metric.getDatapoints().get(triggerFiredTime);
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 		notifier.sendNotification(context);
-		
+
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		
+        publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/);
+
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
-	
+
 	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
 		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		notifier.clearNotification(context);
-		
+
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "clear");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/);
+
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
+	}
+	
+	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value) {
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
+		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		trackingMetric.addDatapoints(datapoints);
+		try {
+			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
+		} catch (Exception ex) {
+			_logger.error("Exception occurred while adding alerts evaluated metric to tsdb - {}", ex.getMessage());
+		}
 	}
 
 	private void _updateNotificationSetActiveStatus(Trigger trigger, Metric metric, History history, Notification notification) {
@@ -583,7 +644,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		notification.setActiveForTriggerAndMetric(trigger, metric, false);
 		notification = mergeEntity(_emProvider.get(), notification);
 	}
-	
+
 	private void _appendMessageNUpdateHistory(History history, String message, JobStatus jobStatus, long executionTime) {
 		String oldMessage = history.getMessage();
 		history.setMessage(oldMessage + addDateToMessage(message));
@@ -592,7 +653,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		history.setExecutionTime(executionTime);
 	}
-	
+
 	private void _sendEmailToAdmin(Alert alert, BigInteger alertId, Throwable ex) {
 		Set<String> to = new HashSet<>();
 
@@ -616,7 +677,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 		}
 	}
-	
+
 	private void _sendNotificationForMissingData(Alert alert) {
 		Set<String> to = new HashSet<>();
 		to.add(alert.getOwner().getEmail());
@@ -625,18 +686,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		StringBuilder message = new StringBuilder();
 
 		message.append("<p>This is a missing data notification. </p>");
-		message.append(MessageFormat.format("Alert Id: {0}", alert.getId()));
+		message.append(MessageFormat.format("Alert Id: {0}", alert.getId().intValue()));
 		message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
 		message.append(MessageFormat.format("<br> No data found for the following metric expression: ", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
-		
+
 		Map<String, String> tags = new HashMap<>();
 		tags.put("status", "missingdata");
 		tags.put("type", SupportedNotifier.EMAIL.name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 	}
-	
+
 
 	@Override
 	@Transactional
@@ -651,7 +712,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void enqueueAlerts(List<Alert> alerts) {
 		requireNotDisposed();
 		requireArgument(alerts != null, "The list of alerts cannot be null.");
- 		
+
 		List<AlertWithTimestamp> alertsWithTimestamp = new ArrayList<>(alerts.size());
 		for (Alert alert : alerts) {
 			AlertWithTimestamp obj;
@@ -659,20 +720,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				String serializedAlert = _mapper.writeValueAsString(alert);
 				obj = new AlertWithTimestamp(serializedAlert, System.currentTimeMillis());
 			} catch (JsonProcessingException e) {
-				_logger.warn("Failed to serialize alert: {}.", alert.getId());
+				_logger.warn("Failed to serialize alert: {}.", alert.getId().intValue());
 				_logger.warn("", e);
 				continue;
 			}
-			
+
 			alertsWithTimestamp.add(obj);
-			
-			Map<String, String> tags = new HashMap<>();
-			tags.put(USERTAG, alert.getOwner().getUserName());
-			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
-		
- 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
-		
+
+		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
@@ -685,6 +742,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.setTag("host",SystemConfiguration.getHostname());
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
+
+			Map<String, String> tags = new HashMap<>();
+			tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 
 		try {
@@ -698,7 +759,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	@Override
 	public List<Alert> findAllAlerts(boolean metadataOnly) {
 		requireNotDisposed();
-		
+
 		return metadataOnly ? Alert.findAllMeta(_emProvider.get()) : Alert.findAll(_emProvider.get());
 	}
 
@@ -713,11 +774,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return Alert.findIDsByStatus(_emProvider.get(), enabled);
 	}
-	
+
 	@Override
 	public List<Alert> findAlertsByRangeAndStatus(BigInteger fromId, BigInteger toId, boolean enabled) {
 		requireNotDisposed();
 		return Alert.findByRangeAndStatus(_emProvider.get(), fromId, toId, enabled);
+	}
+
+	@Override
+	public List<Alert> findAlertsModifiedAfterDate(Date modifiedDate) {
+		requireNotDisposed();
+		return Alert.findAlertsModifiedAfterDate(_emProvider.get(), modifiedDate);
 	}
 
 	@Override
@@ -751,7 +818,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 		return result;
 	}
-	
+
 	@Override
 	public List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit) {
 		requireNotDisposed();
@@ -891,12 +958,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * @author  Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
 	public static class AlertWithTimestamp implements Serializable {
-		
+
 		/** The serial version UID. */
 		private static final long serialVersionUID = 1L;
 		protected String serializedAlert;
 		protected long alertEnqueueTime;
-		
+
 		/** Creates a new AlertIdWithTimestamp object. */
 		public AlertWithTimestamp() { }
 
@@ -926,9 +993,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setAlertEnqueueTime(long alertEnqueueTime) {
 			this.alertEnqueueTime = alertEnqueueTime;
 		}
-		
+
 	}
-	
+
 
 	/**
 	 * The context for the notification which contains relevant information for the notification occurrence.
