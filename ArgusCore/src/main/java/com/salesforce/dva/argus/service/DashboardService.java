@@ -106,13 +106,6 @@ public interface DashboardService extends Service {
 	Dashboard updateDashboard(Dashboard dashboard);
 
 	/**
-	 * Marks a dashboard for deletion.
-	 *
-	 * @param  dashboard  The dashboard to delete. Cannot be null.
-	 */
-	void markDashboardForDeletion(Dashboard dashboard);
-
-	/**
 	 * Deletes a dashboard.
 	 *
 	 * @param  dashboard  The dashboard to delete. Cannot be null.

@@ -357,11 +357,11 @@ public class DashboardResources extends AbstractResource {
 
 		if (dashboard != null) {
 			validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
-			dService.markDashboardForDeletion(dashboard);
 			for(Chart c:_chartService.getChartsByOwnerForEntity(getRemoteUser(req),dashboard.getId()))
 			{
-				_chartService.markChartForDeletion(c);
+				_chartService.deleteChart(c);
 			}
+			dService.deleteDashboard(dashboard);
 			return Response.status(Status.OK).build();
 		}
 		throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);

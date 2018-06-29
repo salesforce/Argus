@@ -94,15 +94,15 @@ import org.eclipse.persistence.internal.jpa.querydef.PredicateImpl;
 @Table(name = "DASHBOARD", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "owner_id" }))
 @NamedQueries(
     {
-           @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.name = :name AND d.owner = :owner AND d.id=j.id AND j.deleted= :deleted"
-        ), @NamedQuery(name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.shared = true AND d.version IS NULL AND d.id=j.id AND j.deleted= :deleted"
-        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByVersion", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.shared = true AND d.version = :version AND d.id=j.id AND j.deleted= :deleted"
-        ), @NamedQuery(name = "Dashboard.getDashboardsByOwner", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.owner = :owner AND d.version IS NULL AND d.id=j.id AND j.deleted= :deleted"
-        ), @NamedQuery(name = "Dashboard.getDashboardsByOwnerAndByVersion", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.owner = :owner AND d.version = :version AND d.id=j.id AND j.deleted= :deleted"
-        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.version IS NULL AND d.id=j.id AND j.deleted= :deleted ORDER BY d.owner.userName,d.name ASC"
-        ), @NamedQuery(name = "Dashboard.getDashboardsByVersion", query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.version = :version AND d.id=j.id AND j.deleted= :deleted ORDER BY d.owner.userName,d.name ASC"
-        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.owner = :owner AND d.shared = true AND d.version IS NULL AND d.id=j.id AND j.deleted= :deleted"
-		), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwnerAndByVersion",query = "SELECT d FROM Dashboard d,JPAEntity j WHERE d.owner = :owner AND d.shared = true AND d.version = :version AND d.id=j.id AND j.deleted= :deleted"
+           @NamedQuery(name = "Dashboard.findByNameAndOwner", query = "SELECT d FROM Dashboard d WHERE d.name = :name AND d.owner = :owner"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboards", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.shared = true AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwner", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version IS NULL"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByOwnerAndByVersion", query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.version = :version"
+        ), @NamedQuery(name = "Dashboard.getDashboards", query = "SELECT d FROM Dashboard d WHERE d.version IS NULL ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getDashboardsByVersion", query = "SELECT d FROM Dashboard d WHERE d.version = :version ORDER BY d.owner.userName,d.name ASC"
+        ), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwner",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version IS NULL"
+		), @NamedQuery(name = "Dashboard.getSharedDashboardsByOwnerAndByVersion",query = "SELECT d FROM Dashboard d WHERE d.owner = :owner AND d.shared = true AND d.version = :version"
         )
     }
 )
@@ -179,7 +179,6 @@ public class Dashboard extends JPAEntity implements Serializable {
         try {
             query.setParameter("name", dashboardName);
             query.setParameter("owner", owner);
-            query.setParameter("deleted", false);
             return query.getSingleResult();
         } catch (NoResultException ex) {
             return null;
@@ -222,7 +221,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 		}
 		
 		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-        query.setParameter("deleted", false);
+
 		if(limit!= null){
 			query.setMaxResults(limit);
 		}
@@ -293,7 +292,6 @@ public class Dashboard extends JPAEntity implements Serializable {
 
         try {
             query.setParameter("owner", user);
-            query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -346,7 +344,6 @@ public class Dashboard extends JPAEntity implements Serializable {
             if (limit != null) {
                 query.setMaxResults(limit);
             }
-            query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -392,24 +389,21 @@ public class Dashboard extends JPAEntity implements Serializable {
 
 		List<Tuple> result = query.getResultList();
 		for(Tuple tuple : result) {
+			Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")),
+										String.class.cast(tuple.get("name")),
+										PrincipalUser.class.cast(tuple.get("owner")));
 
-		    if(Boolean.class.cast(tuple.get("deleted")).equals(false)) {
-                Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")),
-                        String.class.cast(tuple.get("name")),
-                        PrincipalUser.class.cast(tuple.get("owner")));
+			d.id = BigInteger.class.cast(tuple.get("id"));
+			if(tuple.get("description") != null) {
+				d.description = String.class.cast(tuple.get("description"));
+			}
+			d.createdDate = Date.class.cast(tuple.get("createdDate"));
+			d.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
+			d.shared = Boolean.class.cast(tuple.get("shared"));
+			d.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
+			d.version = String.class.cast(tuple.get("version"));
 
-                d.id = BigInteger.class.cast(tuple.get("id"));
-                if (tuple.get("description") != null) {
-                    d.description = String.class.cast(tuple.get("description"));
-                }
-                d.createdDate = Date.class.cast(tuple.get("createdDate"));
-                d.modifiedDate = Date.class.cast(tuple.get("modifiedDate"));
-                d.shared = Boolean.class.cast(tuple.get("shared"));
-                d.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
-                d.version = String.class.cast(tuple.get("version"));
-
-                dashboards.add(d);
-            }
+			dashboards.add(d);
 		}
 		
 		return dashboards;

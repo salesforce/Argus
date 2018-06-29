@@ -252,7 +252,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(CachedDiscoveryService.class, DiscoveryService.class);
         bindConcreteClass(DefaultDistributedSchedulingLockService.class, DistributedSchedulingLockService.class);
         bindConcreteClass(DefaultChartService.class, ChartService.class);
-        bindConcreteClass(DefaultPreferencesService.class, PreferencesService.class);
     }
 
     private <T> void bindConcreteClass(Property property, Class<T> type) {

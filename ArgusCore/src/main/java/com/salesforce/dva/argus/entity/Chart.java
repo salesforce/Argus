@@ -4,28 +4,9 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embeddable;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.NoResultException;
-import javax.persistence.Table;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -48,9 +29,9 @@ import com.salesforce.dva.argus.system.SystemAssert;
 @Table(name = "CHART")
 @NamedQueries(
 	    {
-	        @NamedQuery(name = "Chart.getChartsByOwner", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.owner = :owner AND c.id=j.id AND j.deleted= :deleted"),
-	        @NamedQuery(name = "Chart.getChartsForEntity", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.entity.id = :entityId AND c.id=j.id AND j.deleted= :deleted"),
-	        @NamedQuery(name = "Chart.getChartsByOwnerForEntity", query = "SELECT c FROM Chart c,JPAEntity j WHERE c.entity.id = :entityId AND c.owner = :owner AND c.id=j.id AND j.deleted= :deleted")
+	        @NamedQuery(name = "Chart.getChartsByOwner", query = "SELECT c FROM Chart c WHERE c.owner = :owner"),
+	        @NamedQuery(name = "Chart.getChartsForEntity", query = "SELECT c FROM Chart c WHERE c.entity.id = :entityId"),
+	        @NamedQuery(name = "Chart.getChartsByOwnerForEntity", query = "SELECT c FROM Chart c WHERE c.entity.id = :entityId AND c.owner = :owner")
 	    }
 	)
 public class Chart extends JPAEntity implements Serializable {
@@ -70,6 +51,11 @@ public class Chart extends JPAEntity implements Serializable {
 	@ElementCollection(fetch = FetchType.LAZY)
 	@Embedded
 	private List<ChartQuery> queries = new ArrayList<>(0);
+
+    @ElementCollection(fetch = FetchType.LAZY)
+	@MapKeyColumn(name="key")
+	@Column(name="value")
+	Map<String, String> preferences = new HashMap<>(); // maps from attribute name to value
 	
 	@ManyToOne(optional = true, fetch = FetchType.LAZY)
 	@JoinColumn(name="entity_id", nullable = true)
@@ -106,7 +92,6 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		try {
             query.setParameter("owner", user);
-			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -120,7 +105,6 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		try {
             query.setParameter("entityId", entityId);
-			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -136,7 +120,6 @@ public class Chart extends JPAEntity implements Serializable {
 		try {
 			query.setParameter("owner", user);
             query.setParameter("entityId", entityId);
-			query.setParameter("deleted", false);
             return query.getResultList();
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
@@ -214,8 +197,17 @@ public class Chart extends JPAEntity implements Serializable {
 		SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 		this.owner = owner;
 	}
-	
-	@Override
+
+    public Map<String, String> getPreferences() {
+        return preferences;
+    }
+
+    public void setPreferences(Map<String, String> preferences) {
+        this.preferences = preferences;
+    }
+
+
+    @Override
     public String toString() {
         return "Chart{" + "title=" + title + ", description=" + description + ", owner=" + owner + ", type=" + type + ", queries=" + queries +
         		", entity=" + entity + "}";
