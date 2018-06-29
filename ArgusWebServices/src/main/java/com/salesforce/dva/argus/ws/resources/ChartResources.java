@@ -130,7 +130,7 @@ public class ChartResources extends AbstractResource {
 		
 		PrincipalUser remoteUser = getRemoteUser(req);
 		PrincipalUser owner;
-		
+
 		String ownerName = chartDto.getOwnerName();
         if (ownerName == null || ownerName.isEmpty() || ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
         	//If ownerName is not present or if it is present and equal to remote username, then return remoteUser.
@@ -144,7 +144,7 @@ public class ChartResources extends AbstractResource {
         	//Remote user is not privileged and ownerName is not equal to remoteUser.username
         	throw new WebApplicationException("You are not authorized to access charts owned by user: " + ownerName, Status.FORBIDDEN);
         }
-		
+
 		Chart existingChart = _chartService.getChartByPrimaryKey(chartId);
 		if (existingChart == null) {
 			throw new WebApplicationException("Chart with ID: " + chartId + " does not exist. Please use a valid chartId.", 
@@ -271,20 +271,7 @@ public class ChartResources extends AbstractResource {
 		
 		PrincipalUser remoteUser = getRemoteUser(req);
 		PrincipalUser owner;
-		
-		if (ownerName == null || ownerName.isEmpty() || ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
-        	//If ownerName is not present or if it is present and equal to remote username, then return remoteUser.
-            owner = remoteUser;
-        } else if (remoteUser.isPrivileged()) {
-            owner = userService.findUserByUsername(ownerName);
-            if (owner == null) {
-                throw new WebApplicationException(ownerName + ": User does not exist.", Status.NOT_FOUND);
-            }
-        } else {
-        	//Remote user is not privileged and ownerName is not equal to remoteUser.username
-        	throw new WebApplicationException("You are not authorized to access charts owned by user: " + ownerName, Status.FORBIDDEN);
-        }
-		
+		owner = validateAndGetOwner(req,ownerName);
 		List<Chart> result = new ArrayList<>();
 		if(entityId == null) {
 			result.addAll(_chartService.getChartsByOwner(owner));
@@ -309,9 +296,9 @@ public class ChartResources extends AbstractResource {
     /**
      * Updates an existing chart preferences.
      *
-     * @param   req       The HttpServlet request object. Cannot be null.
-     * @param   chartId   The id of a chart. Cannot be null.
-     * @param   prefs     Preferences for chart object. Cannot be null.
+     * @param   req             The HttpServlet request object. Cannot be null.
+     * @param   chartId         The id of a chart. Cannot be null.
+     * @param   preferences     Preferences for chart object. Cannot be null.
      *
      * @return  Updated chart object with preferences.
      *
@@ -322,14 +309,14 @@ public class ChartResources extends AbstractResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{chartId}/preferences")
     @Description("Updates a chart preferences given the ID.")
-    public ChartDto updateChartPreferences(@Context HttpServletRequest req, @PathParam("chartId") BigInteger chartId, final Map<String, String> prefs) {
+    public ChartDto updateChartPreferences(@Context HttpServletRequest req, @PathParam("chartId") BigInteger chartId, final Map<String, String> preferences) {
 
         if (chartId == null || chartId.compareTo(BigInteger.ZERO) < 1) {
             throw new WebApplicationException("chartId cannot be null and must be a positive non-zero number.", Status.BAD_REQUEST);
         }
 
-        if (prefs == null) {
-            throw new WebApplicationException("Cannot update with null prefs.", Status.BAD_REQUEST);
+        if (preferences == null) {
+            throw new WebApplicationException("Cannot update with null preferences.", Status.BAD_REQUEST);
         }
 
         PrincipalUser remoteUser = getRemoteUser(req);
@@ -338,30 +325,13 @@ public class ChartResources extends AbstractResource {
             throw new WebApplicationException("Chart with ID: " + chartId + " does not exist. Please use a valid chartId.",
                     Response.Status.NOT_FOUND);
         }
-        _validateResourceAuthorization(remoteUser, existingChart.getOwner());
-
-        /*String ownerName = chartDto.getOwnerName();
-        if (ownerName == null || ownerName.isEmpty() || ownerName.equalsIgnoreCase(remoteUser.getUserName())) {
-            //If ownerName is not present or if it is present and equal to remote username, then return remoteUser.
-            owner = remoteUser;
-        } else if (remoteUser.isPrivileged()) {
-            owner = userService.findUserByUsername(ownerName);
-            if (owner == null) {
-                throw new WebApplicationException(ownerName + ": User does not exist.", Status.NOT_FOUND);
-            }
-        } else {
-            //Remote user is not privileged and ownerName is not equal to remoteUser.username
-            throw new WebApplicationException("You are not authorized to access charts owned by user: " + ownerName, Status.FORBIDDEN);
+        Dashboard sharedDashboard= _dService.findDashboardByPrimaryKey(existingChart.getEntity().getId());
+        if (!sharedDashboard.isShared()) {
+            _validateResourceAuthorization(remoteUser, existingChart.getOwner());
         }
 
-        Chart existingChart = _chartService.getChartByPrimaryKey(chartId);
-        if (existingChart == null) {
-            throw new WebApplicationException("Chart with ID: " + chartId + " does not exist. Please use a valid chartId.",
-                    Response.Status.NOT_FOUND);
-        }
-        _validateResourceAuthorization(remoteUser, existingChart.getOwner());*/
-
-        existingChart.getPreferences().putAll(prefs);
+        existingChart.getPreferences().putAll(preferences);
+        existingChart.setModifiedBy(remoteUser);
         existingChart=_chartService.updateChart(existingChart);
         return ChartDto.transformToDto(existingChart);
     }
