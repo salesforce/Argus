@@ -28,7 +28,7 @@ public class ChartDto extends EntityDTO {
 	private String description;
 	private ChartType type;
 	private List<ChartQuery> queries;
-    private Map<String, String> preferences = new HashMap<>();
+    private Map<String, String> preferences;
 	private BigInteger entityId;
 	private String ownerName;
 	private PrincipalUser owner;

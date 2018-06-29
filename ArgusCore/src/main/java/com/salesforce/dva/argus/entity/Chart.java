@@ -53,9 +53,9 @@ public class Chart extends JPAEntity implements Serializable {
 	private List<ChartQuery> queries = new ArrayList<>(0);
 
     @ElementCollection(fetch = FetchType.LAZY)
-	@MapKeyColumn(name="key")
+	@MapKeyColumn(name="name")
 	@Column(name="value")
-	Map<String, String> preferences = new HashMap<>(); // maps from attribute name to value
+	Map<String, String> preferences = new HashMap<>();
 	
 	@ManyToOne(optional = true, fetch = FetchType.LAZY)
 	@JoinColumn(name="entity_id", nullable = true)
