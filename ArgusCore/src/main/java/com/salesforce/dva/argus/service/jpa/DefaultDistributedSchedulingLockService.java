@@ -82,7 +82,7 @@ public class DefaultDistributedSchedulingLockService extends DefaultJPAService i
 				DistributedSchedulingLock distributedSchedulingLock = DistributedSchedulingLock.updateNGetDistributedScheduleByType(em, type, jobsBlockSize,  schedulingRefreshInterval);
 				return distributedSchedulingLock;
 			}catch(OptimisticLockException ex){
-				_logger.debug("Optimistic lock exception " + ex.toString());  
+				_logger.info("Optimistic lock exception " + ex.toString());  
 			}catch(Throwable th){
 				_logger.error("Optimistic lock exception " + th.toString());   
 			}

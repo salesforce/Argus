@@ -48,6 +48,8 @@ public class MetricReader<T> {
   	private TransformFactory factory;
   	private String expandedTimeSeriesRange;
   	private String queryTimeWindow;
+  	private Integer numDiscoveryResults;
+  	private Integer numDiscoveryQueries;
 
 	@Inject
     MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
@@ -84,6 +86,14 @@ public class MetricReader<T> {
   	 	return expandedTimeSeriesRange; 
   	}
 
+	public Integer getNumDiscoveryResults() {
+  	 	return numDiscoveryResults; 
+  	}
+	
+	public Integer getNumDiscoveryQueries() {
+  	 	return numDiscoveryQueries; 
+  	}
+  	
 	public String getQueryTimeWindow() {
   	 	return queryTimeWindow; 
   	}
@@ -585,6 +595,15 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz) 
 		        query.setDownsamplingPeriod(downsamplingPeriod);
 		        setQueryTimeWindow(query);
 		        List<MetricQuery> queries = discoveryService.getMatchingQueries(query);
+		        
+		        if(queries.size() !=1 || queries.get(0) != query) {
+		        	numDiscoveryResults = queries.size();
+		        	numDiscoveryQueries = 1;
+		        }else{
+		        	// if there is no query made to discovery service
+		        	numDiscoveryResults = 0;
+		        	numDiscoveryQueries = 0;
+		        }
 		        
 				List<Metric> metrics = new ArrayList<Metric>();
 	            Map<MetricQuery, List<Metric>> metricsMap = tsdbService.getMetrics(queries);
