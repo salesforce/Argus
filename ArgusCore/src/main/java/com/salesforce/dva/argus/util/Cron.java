@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.util;
 
 import java.util.Date;
@@ -44,103 +44,103 @@ import org.quartz.TriggerBuilder;
  */
 public class Cron {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+	//~ Static fields/initializers *******************************************************************************************************************
 
-    private static final String ANNUALLY = "@ANNUALLY";
-    private static final String YEARLY = "@YEARLY";
-    private static final String MONTHLY = "@MONTHLY";
-    private static final String WEEKLY = "@WEEKLY";
-    private static final String DAILY = "@DAILY";
-    private static final String MIDNIGHT = "@MIDNIGHT";
-    private static final String HOURLY = "@HOURLY";
+	private static final String ANNUALLY = "@ANNUALLY";
+	private static final String YEARLY = "@YEARLY";
+	private static final String MONTHLY = "@MONTHLY";
+	private static final String WEEKLY = "@WEEKLY";
+	private static final String DAILY = "@DAILY";
+	private static final String MIDNIGHT = "@MIDNIGHT";
+	private static final String HOURLY = "@HOURLY";
 
-    //~ Constructors *********************************************************************************************************************************
+	//~ Constructors *********************************************************************************************************************************
 
-    private Cron() { }
+	private Cron() { }
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    /**
-     * Determines if the given CRON entry is runnable at this current moment in time. This mimics the original implementation of the CRON table.
-     *
-     * <p>This implementation supports only the following types of entries:</p>
-     *
-     * <ol>
-     *   <li>Standard Entries having form: &lt;minutes&gt; &lt;hours&gt; &lt;days&gt; &lt;months&gt; &lt;days of week&gt;
-     *
-     *     <ul>
-     *       <li>* : All</li>
-     *       <li>*\/n : Only mod n</li>
-     *       <li>n : Numeric</li>
-     *       <li>n-n : Range</li>
-     *       <li>n,n,...,n : List</li>
-     *       <li>n,n-n,...,n : List having ranges</li>
-     *     </ul>
-     *   </li>
-     *   <li>Special Entries
-     *
-     *     <ul>
-     *       <li>@annually : equivalent to "0 0 1 1 *"</li>
-     *       <li>@yearly : equivalent to "0 0 1 1 *"</li>
-     *       <li>@monthly : equivalent to "0 0 1 * *"</li>
-     *       <li>@weekly : equivalent to "0 0 * * 0"</li>
-     *       <li>@daily : equivalent to "0 0 * * *"</li>
-     *       <li>@midnight : equivalent to "0 0 * * *"</li>
-     *       <li>@hourly : equivalent to "0 * * * *"</li>
-     *     </ul>
-     *   </li>
-     * </ol>
-     *
-     * @param   entry   The CRON entry to evaluate.
-     * @param   atTime  The time at which to evaluate the entry.
-     *
-     * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
-     */
-    public static boolean shouldRun(String entry, Date atTime) {
-        entry = entry.trim().toUpperCase();
-        if (ANNUALLY.equals(entry) || (YEARLY.equals(entry))) {
-            entry = "0 0 1 1 *";
-        } else if (MONTHLY.equals(entry)) {
-            entry = "0 0 1 * *";
-        } else if (WEEKLY.equals(entry)) {
-            entry = "0 0 * * 0";
-        } else if (DAILY.equals(entry) || (MIDNIGHT.equals(entry))) {
-            entry = "0 0 * * *";
-        } else if (HOURLY.equals(entry)) {
-            entry = "0 * * * *";
-        }
-        return new CronTabEntry(entry).isRunnable(atTime);
-    }
+	/**
+	 * Determines if the given CRON entry is runnable at this current moment in time. This mimics the original implementation of the CRON table.
+	 *
+	 * <p>This implementation supports only the following types of entries:</p>
+	 *
+	 * <ol>
+	 *   <li>Standard Entries having form: &lt;minutes&gt; &lt;hours&gt; &lt;days&gt; &lt;months&gt; &lt;days of week&gt;
+	 *
+	 *     <ul>
+	 *       <li>* : All</li>
+	 *       <li>*\/n : Only mod n</li>
+	 *       <li>n : Numeric</li>
+	 *       <li>n-n : Range</li>
+	 *       <li>n,n,...,n : List</li>
+	 *       <li>n,n-n,...,n : List having ranges</li>
+	 *     </ul>
+	 *   </li>
+	 *   <li>Special Entries
+	 *
+	 *     <ul>
+	 *       <li>@annually : equivalent to "0 0 1 1 *"</li>
+	 *       <li>@yearly : equivalent to "0 0 1 1 *"</li>
+	 *       <li>@monthly : equivalent to "0 0 1 * *"</li>
+	 *       <li>@weekly : equivalent to "0 0 * * 0"</li>
+	 *       <li>@daily : equivalent to "0 0 * * *"</li>
+	 *       <li>@midnight : equivalent to "0 0 * * *"</li>
+	 *       <li>@hourly : equivalent to "0 * * * *"</li>
+	 *     </ul>
+	 *   </li>
+	 * </ol>
+	 *
+	 * @param   entry   The CRON entry to evaluate.
+	 * @param   atTime  The time at which to evaluate the entry.
+	 *
+	 * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
+	 */
+	public static boolean shouldRun(String entry, Date atTime) {
+		entry = entry.trim().toUpperCase();
+		if (ANNUALLY.equals(entry) || (YEARLY.equals(entry))) {
+			entry = "0 0 1 1 *";
+		} else if (MONTHLY.equals(entry)) {
+			entry = "0 0 1 * *";
+		} else if (WEEKLY.equals(entry)) {
+			entry = "0 0 * * 0";
+		} else if (DAILY.equals(entry) || (MIDNIGHT.equals(entry))) {
+			entry = "0 0 * * *";
+		} else if (HOURLY.equals(entry)) {
+			entry = "0 * * * *";
+		}
+		return new CronTabEntry(entry).isRunnable(atTime);
+	}
 
-    /**
-     * Indicates if a CRON entry should run at the current moment in time.
-     *
-     * @param   entry  The CRON entry to evaluate.
-     *
-     * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
-     */
-    public static boolean shouldRun(String entry) {
-        return Cron.shouldRun(entry, new Date());
-    }
+	/**
+	 * Indicates if a CRON entry should run at the current moment in time.
+	 *
+	 * @param   entry  The CRON entry to evaluate.
+	 *
+	 * @return  true if the the current time is a valid runnable time with respect to the supplied entry.
+	 */
+	public static boolean shouldRun(String entry) {
+		return Cron.shouldRun(entry, new Date());
+	}
 
-    /**
-     * Determines if an entry is valid CRON syntax.
-     *
-     * @param   entry  The CRON entry.
-     *
-     * @return  True if the entry is valid CRON syntax.
-     */
-    public static boolean isValid(String entry) {
-        boolean result = true;
+	/**
+	 * Determines if an entry is valid CRON syntax.
+	 *
+	 * @param   entry  The CRON entry.
+	 *
+	 * @return  True if the entry is valid CRON syntax.
+	 */
+	public static boolean isValid(String entry) {
+		boolean result = true;
 
-        try {
-            shouldRun(entry);
-        } catch (Exception ex) {
-            result = false;
-        }
-        return result;
-    }
-    
+		try {
+			shouldRun(entry);
+		} catch (Exception ex) {
+			result = false;
+		}
+		return result;
+	}
+
 	public static boolean isCronEntryValid(String cronEntry) {
 		String quartzCronEntry = convertToQuartzCronEntry(cronEntry);
 
@@ -152,17 +152,17 @@ public class Cron {
 		}
 		return true;
 	}
-	
-    public static String convertToQuartzCronEntry(String cronEntry) {
-    	    // adding seconds field
-    	    cronEntry = "0 " + cronEntry.trim();
-    	    
-    	    // if day of the week is not specified, substitute it with ?, so as to prevent conflict with month field
-    	    if(cronEntry.charAt(cronEntry.length() - 1) == '*') {
-    	      	return cronEntry.substring(0, cronEntry.length() - 1) + "?";
-    	    }else {
-    	    	    return cronEntry;
-    	    }
-    }
+
+	public static String convertToQuartzCronEntry(String cronEntry) {
+		// adding seconds field
+		cronEntry = "0 " + cronEntry.trim();
+
+		// if day of the week is not specified, substitute it with ?, so as to prevent conflict with month field
+		if(cronEntry.charAt(cronEntry.length() - 1) == '*') {
+			return cronEntry.substring(0, cronEntry.length() - 1) + "?";
+		}else {
+			return cronEntry;
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

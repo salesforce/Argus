@@ -163,7 +163,7 @@ public class CronTest {
     }
     
     @Test
-    public void testConvertToCronEntry() {
+    public void testConvertCronEntryToQuartzCronEntry() {
 	    assertEquals(Cron.convertToQuartzCronEntry(" * 5-17 * * * "), "0 * 5-17 * * ?");
     	    assertEquals(Cron.convertToQuartzCronEntry("* 5-17 * * 1-5"), "0 * 5-17 * * 1-5");
     }
