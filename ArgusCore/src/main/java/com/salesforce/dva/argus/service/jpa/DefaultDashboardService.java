@@ -99,8 +99,6 @@ public class DefaultDashboardService extends DefaultJPAService implements Dashbo
         requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be a positive non-zero value.");
 
         Dashboard result = findEntity(emf.get(), id, Dashboard.class);
-        if(result!=null && result.isDeleted()==true)
-            result=null;
 
         _logger.debug("Query for dashboard having id {} resulted in : {}", id, result);
         return result;
@@ -119,20 +117,6 @@ public class DefaultDashboardService extends DefaultJPAService implements Dashbo
         _logger.debug("Updated dashboard to : {}", result);
         _auditService.createAudit("Updated dashboard : {0}", result, result);
         return result;
-    }
-
-    @Override
-    @Transactional
-    public void markDashboardForDeletion(Dashboard dashboard) {
-        requireNotDisposed();
-        requireArgument(dashboard != null, "Cannot delete a null dashboard. No such dashboard exists.");
-        _logger.debug("Marking dashboard for deletion {}.", dashboard);
-        EntityManager em = emf.get();
-        dashboard.setDeleted(true);
-        Dashboard result = mergeEntity(em, dashboard);
-        em.flush();
-        _logger.debug("Set delete marker for dashboard : {}", result);
-        _auditService.createAudit("Set delete marker for dashboard : {0}", result);
     }
 
     @Override

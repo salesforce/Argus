@@ -1,10 +1,7 @@
 package com.salesforce.dva.argus.ws.dto;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
@@ -31,6 +28,7 @@ public class ChartDto extends EntityDTO {
 	private String description;
 	private ChartType type;
 	private List<ChartQuery> queries;
+    private Map<String, String> preferences = new HashMap<>();
 	private BigInteger entityId;
 	private String ownerName;
 	private PrincipalUser owner;
@@ -125,6 +123,14 @@ public class ChartDto extends EntityDTO {
 	public void setOwner(PrincipalUser owner) {
 		this.owner = owner;
 	}
+
+    public Map<String, String> getPreferences() {
+        return preferences;
+    }
+
+    public void setPreferences(Map<String, String> preferences) {
+        this.preferences = preferences;
+    }
 
 	@Override
 	public Object createExample() {
