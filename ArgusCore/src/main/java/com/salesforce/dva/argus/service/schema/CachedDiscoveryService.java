@@ -40,6 +40,7 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final int EXPIRY_TIME_SECS = 3600;
+	private final long UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS;
 	
 	//~ Instance fields ******************************************************************************************************************************
 
@@ -55,6 +56,10 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
     	super(config);
     	SystemAssert.requireArgument(cacheService != null, "Cache Service cannot be null.");
         SystemAssert.requireArgument(discoveryService != null, "Discovery Service cannot be null.");
+		
+        UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS = Long.parseLong(config.getValue(Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getName(), 
+				Property.UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS.getDefaultValue()));
+        
         _cacheService = cacheService;
         _discoveryService = discoveryService;
         _executorService = Executors.newCachedThreadPool();
@@ -106,9 +111,17 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 			if(value == null) { // Cache Miss
 				_logger.info(MessageFormat.format("CACHE MISS for Wildcard Query: '{'{0}'}'. Will read from persistent storage.", query));
 				queries = _discoveryService.getMatchingQueries(query);
+				
+				long timeToGetQueriesMillis = (System.nanoTime() - start) / 1000000;
+				_logger.info("Time to get matching queries from store in ms: " + timeToGetQueriesMillis);
+				if(timeToGetQueriesMillis > UPPER_LIMIT_TIME_GET_QUERIES_IN_MILLIS){
+					_logger.warn("Long time to get matching queries in ms: {} for query {}", timeToGetQueriesMillis, query);
+				}
+				
 				_executorService.submit(new CacheInsertWorker(query, queries));
 			} else { // Cache Hit
 				_logger.info(MessageFormat.format("CACHE HIT for Wildcard Query: '{'{0}'}'", query));
+				_logger.info("Time to get matching queries from cache in ms: " + (System.nanoTime() - start) / 1000000);
 				try {
 					JavaType type = MAPPER.getTypeFactory().constructCollectionType(List.class, MetricQuery.class);
 					List<MetricQuery> matchedQueries = MAPPER.readValue(value, type);
@@ -128,9 +141,44 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 			_logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
 			queries.add(query);
 		}
-		
-		_logger.debug("Time to get matching queries in ms: " + (System.nanoTime() - start) / 1000000);
+
 		return queries;
+	}
+	
+	//~ Enums ****************************************************************************************************************************************
+	/**
+	 * The set of implementation specific configuration properties.
+	 *
+	 * @author Dilip Devaraj (ddevaraj@salesforce.com)
+	 */
+	public enum Property {
+		UPPER_LIMIT_TIME_GET_QUERIES_IN_MIILIS("service.property.schema.upper.limit.time.get.queries.in.millis", "3000");
+
+		private final String _name;
+		private final String _defaultValue;
+
+		private Property(String name, String defaultValue) {
+			_name = name;
+			_defaultValue = defaultValue;
+		}
+
+		/**
+		 * Returns the property name.
+		 *
+		 * @return  The property name.
+		 */
+		public String getName() {
+			return _name;
+		}
+
+		/**
+		 * Returns the default value for the property.
+		 *
+		 * @return  The default value.
+		 */
+		public String getDefaultValue() {
+			return _defaultValue;
+		}
 	}
 	
 	private void _checkIfExceedsLimits(MetricQuery query, List<MetricQuery> matchedQueries) {
