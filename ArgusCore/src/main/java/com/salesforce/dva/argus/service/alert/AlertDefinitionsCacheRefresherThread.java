@@ -79,21 +79,19 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					alertDefinitionsCache.setAlertsCacheInitialized(true);
 				}else {
 					List<Alert> modifiedAlerts = alertService.findAlertsModifiedAfterDate(new Date(startTime - Math.max(executionTime + REFRESH_INTERVAL_MILLIS, LOOKBACK_PERIOD_FOR_REFRESH_MILLIS)));
-
 					// updating only the modified/deleted alerts in the cache
 					if(modifiedAlerts!=null && modifiedAlerts.size()>0) {
 						for(Alert a : modifiedAlerts) {
+							_logger.info("Processing modified alert - {},{},{},{} "+ a.getId(),a.getName(),a.getCronEntry(),a.getExpression());
 							if(alertDefinitionsCache.getAlertsMapById().containsKey(a.getId())) {
-								Alert prevAlert = alertDefinitionsCache.getAlertsMapById().get(a.getId());
 								if(a.isDeleted() || !a.isEnabled()) {
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
-									alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
+									removeEntryFromCronMap(a.getId());
 								}else {
-									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);     
-									if(!a.getCronEntry().equals(prevAlert.getCronEntry())) {
-										alertDefinitionsCache.getAlertsMapByCronEntry().get(prevAlert.getCronEntry()).remove(a.getId());
-										addEntrytoCronMap(a);
-									}   
+									alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);    
+									// removing the previous cron mapping and adding fresh just in case the mapping changed
+									removeEntryFromCronMap(a.getId());
+									addEntrytoCronMap(a);
 								}
 							}else if(a.isEnabled() && !a.isDeleted()) {
 								alertDefinitionsCache.getAlertsMapById().put(a.getId(), a);
@@ -119,5 +117,13 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 			alertDefinitionsCache.getAlertsMapByCronEntry().put(a.getCronEntry(), new ArrayList<BigInteger>());
 		}
 		alertDefinitionsCache.getAlertsMapByCronEntry().get(a.getCronEntry()).add(a.getId());
+	}
+	
+	private void removeEntryFromCronMap(BigInteger alertId) {
+		for(String cronEntry : alertDefinitionsCache.getAlertsMapByCronEntry().keySet()) {
+			if(alertDefinitionsCache.getAlertsMapByCronEntry().get(cronEntry).contains(alertId)) {
+				alertDefinitionsCache.getAlertsMapByCronEntry().get(cronEntry).remove(alertId);
+			}
+		}
 	}
 }
