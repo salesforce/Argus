@@ -5,8 +5,24 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.*;
-
-import javax.persistence.*;
+import javax.persistence.Basic;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
+import javax.persistence.Entity;
+import javax.persistence.EntityManager;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.NoResultException;
+import javax.persistence.Table;
+import javax.persistence.TypedQuery;
+import javax.persistence.MapKeyColumn;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;

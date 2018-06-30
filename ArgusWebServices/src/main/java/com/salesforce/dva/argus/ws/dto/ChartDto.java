@@ -1,7 +1,11 @@
 package com.salesforce.dva.argus.ws.dto;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
