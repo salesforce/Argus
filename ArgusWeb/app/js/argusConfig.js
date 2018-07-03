@@ -102,6 +102,11 @@ angular.module('argus.config', [])
 				activeTab: 'browsing',
 				reloadOnSearch: false
 			}).
+			when('/grafanaAuth', {
+				templateUrl: 'js/templates/grafanaAuth.html',
+				controller: 'GrafanaAuth',
+				label: 'Grafana Auth',
+			}).
 			otherwise({
 				redirectTo: '/dashboards'
 			});

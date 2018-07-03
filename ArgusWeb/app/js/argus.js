@@ -127,7 +127,8 @@ angular.module('argus.controllers', [
 	'argus.controllers.namespace',
 	'argus.controllers.viewelements',
 	'argus.controllers.viewMetrics',
-	'argus.controllers.metricsBrowsing'
+	'argus.controllers.metricsBrowsing',
+	'argus.controllers.grafanaAuth'
 ]);
 
 // Directives
@@ -162,6 +163,7 @@ require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
 require('./controllers/metricsBrowsing');
+require('./controllers/grafanaAuth');
 
 // services
 require('./services/auth');
