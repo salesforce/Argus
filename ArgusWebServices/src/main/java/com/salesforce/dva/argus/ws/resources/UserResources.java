@@ -33,13 +33,21 @@ package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
+import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
+import com.salesforce.dva.argus.ws.dto.AcceptDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
+import com.salesforce.dva.argus.ws.exception.OAuthException;
+import org.apache.commons.lang.StringUtils;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.util.Enumeration;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -68,6 +76,8 @@ public class UserResources extends AbstractResource {
     //~ Instance fields ******************************************************************************************************************************
 
     private UserService _uService = system.getServiceFactory().getUserService();
+    private OAuthAuthorizationCodeService authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+
 
     //~ Methods **************************************************************************************************************************************
 
@@ -118,6 +128,14 @@ public class UserResources extends AbstractResource {
     @Description("Returns the user having the given username.")
     public PrincipalUserDto getUserByUsername(@Context HttpServletRequest req,
         @PathParam("username") final String userName) {
+
+        Enumeration<String> headerNames = req.getHeaderNames();
+        while(headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = req.getHeader(headerName);
+            System.out.println(headerName + ": " + headerValue);
+        }
+
         if (userName == null || userName.isEmpty()) {
             throw new WebApplicationException("Username cannot be null or empty.", Status.BAD_REQUEST);
         }
@@ -279,6 +297,55 @@ public class UserResources extends AbstractResource {
         }
         user.getPreferences().putAll(prefs);
         user = _uService.updateUser(user);
+        return PrincipalUserDto.transformToDto(user);
+    }
+
+    @POST
+    @Path("/authorize")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Description("Approves user for oauth based access.")
+    public AcceptDto accept(AcceptDto acceptDto, @Context HttpServletRequest request) {
+        if(StringUtils.isBlank(acceptDto.getCode())) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+        }
+        if(StringUtils.isBlank(acceptDto.getState())) {
+            throw new OAuthException(ResponseCodes.INVALID_STATE, HttpResponseStatus.BAD_REQUEST);
+        }
+        if(StringUtils.isBlank(acceptDto.getAccess_token())) {
+            throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
+        }
+        if(StringUtils.isBlank(acceptDto.getState())) {
+            throw new OAuthException(ResponseCodes.INVALID_REFRESH_TOKEN, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        // check if there is valid unexpired auth code
+
+        // updates userid in oauth_authorization_codes table
+        PrincipalUser owner = validateAndGetOwner(request, acceptDto.getOwner());
+        int result = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), owner.getUserName());
+        if(result == 0) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        acceptDto.setMessage("Success");
+        AcceptDto resultDto = acceptDto;
+        return resultDto;
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/userinfo")
+    @Description("Returns the user info of the user who is logged in.")
+    public PrincipalUserDto getUserByUsername(@Context HttpServletRequest req) {
+        Enumeration<String> headerNames = req.getHeaderNames();
+        String token = req.getHeader("Authorization");
+        if(StringUtils.isBlank(token)) {
+            throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
+        }
+        String userName = JWTUtils.getUsername(token);
+
+        PrincipalUser user = _uService.findUserByUsername(userName);
         return PrincipalUserDto.transformToDto(user);
     }
 }
