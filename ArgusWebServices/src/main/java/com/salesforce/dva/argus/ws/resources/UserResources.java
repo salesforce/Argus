@@ -38,7 +38,7 @@ import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
-import com.salesforce.dva.argus.ws.dto.AcceptDto;
+import com.salesforce.dva.argus.ws.dto.OAuthAcceptDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.apache.commons.lang.StringUtils;
@@ -47,6 +47,7 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.util.Enumeration;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -67,7 +68,7 @@ import javax.ws.rs.core.Response.Status;
 /**
  * Provides methods to manipulate users.
  *
- * @author  Bhinav Sura (bsura@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com)
  */
 @Path("/users")
 @Description("Provides methods to manipulate users.")
@@ -77,6 +78,8 @@ public class UserResources extends AbstractResource {
 
     private UserService _uService = system.getServiceFactory().getUserService();
     private OAuthAuthorizationCodeService authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+    private String invalidateAuthCodeAfterUse = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getName(),
+            Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getDefaultValue());
 
 
     //~ Methods **************************************************************************************************************************************
@@ -300,12 +303,18 @@ public class UserResources extends AbstractResource {
         return PrincipalUserDto.transformToDto(user);
     }
 
+    /**
+     * Method to accept oauth access by third party applications. This method associates authorization_code with the logged in username.
+     * @param acceptDto
+     * @param request
+     * @return OAuthAcceptDto
+     */
     @POST
-    @Path("/authorize")
+    @Path("/accept_oauth")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @Description("Approves user for oauth based access.")
-    public AcceptDto accept(AcceptDto acceptDto, @Context HttpServletRequest request) {
+    public OAuthAcceptDto accept(OAuthAcceptDto acceptDto, @Context HttpServletRequest request) {
         if(StringUtils.isBlank(acceptDto.getCode())) {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
@@ -320,6 +329,9 @@ public class UserResources extends AbstractResource {
         }
 
         // check if there is valid unexpired auth code
+        if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
+            authService.updateExpiry(acceptDto.getCode(), new Timestamp(0));
+        }
 
         // updates userid in oauth_authorization_codes table
         PrincipalUser owner = validateAndGetOwner(request, acceptDto.getOwner());
@@ -329,16 +341,20 @@ public class UserResources extends AbstractResource {
         }
 
         acceptDto.setMessage("Success");
-        AcceptDto resultDto = acceptDto;
+        OAuthAcceptDto resultDto = acceptDto;
         return resultDto;
     }
 
+    /**
+     * OAuth2.0 UserInfo reference implementation to get logged in user information using the access token
+     * @param req
+     * @return
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/userinfo")
     @Description("Returns the user info of the user who is logged in.")
-    public PrincipalUserDto getUserByUsername(@Context HttpServletRequest req) {
-        Enumeration<String> headerNames = req.getHeaderNames();
+    public PrincipalUserDto userInfo(@Context HttpServletRequest req) {
         String token = req.getHeader("Authorization");
         if(StringUtils.isBlank(token)) {
             throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);

@@ -10,13 +10,9 @@ import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
-
 import javax.persistence.EntityManager;
-
 import java.sql.Timestamp;
-
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-
 public class DefaultOAuthAuthorizationCodeService extends DefaultService implements OAuthAuthorizationCodeService {
 
     @SLF4JTypeListener.InjectLogger
@@ -83,3 +79,5 @@ public class DefaultOAuthAuthorizationCodeService extends DefaultService impleme
     }
 
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

@@ -1,9 +1,12 @@
 package com.salesforce.dva.argus.ws.resources;
 
-import com.salesforce.dva.argus.ws.business.oauth.AuthRequestHelper;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.junit.Assert;
 import org.junit.Test;
+
+/**
+ * @author Gaurav Kumar (gaurav.kumar@salesforce.com)
+ */
 
 public class JWTUtilsTest {
     @Test
@@ -18,3 +21,4 @@ public class JWTUtilsTest {
         Assert.assertEquals("gaurav.kumar", JWTUtils.getUsername(accessToken));
     }
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

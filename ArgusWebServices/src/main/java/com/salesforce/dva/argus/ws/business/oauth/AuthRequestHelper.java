@@ -30,15 +30,15 @@ public class AuthRequestHelper {
                     return true;
                 } else {
                     _logger.info("Request Redirect URI '" + authRequestDto.getRedirect_uri() + "' mismatch");
-                    throw new OAuthException(ResponseCodes.INVALID_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
+                    throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
                 }
             } catch (UnsupportedEncodingException e) {
                 _logger.info("Request Redirect URI '" + authRequestDto.getRedirect_uri() + "' mismatch");
-                throw new OAuthException(ResponseCodes.INVALID_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
+                throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
             }
         } else {
             _logger.info("Request Client ID '" + authRequestDto.getClient_id() + "' mismatch");
-            throw new OAuthException(ResponseCodes.INVALID_CLIENT_ID, HttpResponseStatus.BAD_REQUEST);
+            throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_CLIENT_ID, HttpResponseStatus.BAD_REQUEST);
         }
     }
 
@@ -65,17 +65,20 @@ public class AuthRequestHelper {
                     }
                 } else {
                     _logger.info("Grant Type '" + tokenRequestDto.getGrant_type() + "' mismatch");
-                    throw new OAuthException(ResponseCodes.INVALID_GRANT_TYPE, HttpResponseStatus.BAD_REQUEST);
+                    throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_GRANT_TYPE, HttpResponseStatus.BAD_REQUEST);
                 }
             } else {
                 _logger.info("Request Redirect URI '" + tokenRequestDto.getRedirect_uri() + "' mismatch");
-                throw new OAuthException(ResponseCodes.INVALID_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
+                throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
             }
         } catch (UnsupportedEncodingException e) {
             _logger.info("Request Redirect URI '" + tokenRequestDto.getRedirect_uri() + "' mismatch");
-            throw new OAuthException(ResponseCodes.INVALID_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
+            throw new OAuthException(ResponseCodes.INVALID_OR_MISSING_REDIRECT_URI, HttpResponseStatus.BAD_REQUEST);
         }
 
     }
 
 }
+
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

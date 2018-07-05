@@ -9,5 +9,6 @@ public interface OAuthAccessTokenService extends Service {
     OAuthAccessToken findByAccessToken(String accessToken);
     OAuthAccessToken findLatestAccessTokensByClientIdUserId(String clientId, String userId);
     int updateAccessToken(String oldToken, String newToken, Timestamp expires);
-
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

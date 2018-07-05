@@ -10,3 +10,5 @@ public interface OAuthAuthorizationCodeService extends Service {
     int updateExpiry(String code, Timestamp expires);
     int updateUserId(String code, String state, String userId);
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

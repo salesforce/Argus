@@ -9,11 +9,15 @@ import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.OAuthAccessTokenService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
-
 import javax.persistence.EntityManager;
 import java.sql.Timestamp;
-
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+
+/**
+ * Default implementation of the <tt>DashboardService</tt> interface.
+ *
+ * @author	Gaurav Kumar (gaurav.kumar@salesforce.com)
+ */
 
 public class DefaultOAuthAccessTokenService extends DefaultService implements OAuthAccessTokenService {
 
@@ -76,6 +80,6 @@ public class DefaultOAuthAccessTokenService extends DefaultService implements OA
         return result;
     }
 
-
-
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

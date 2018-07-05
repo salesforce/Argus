@@ -2,6 +2,9 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
 
+/**
+ * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ */
 public final class AuthRequestDto implements Serializable {
     String client_id;
     String response_type;
@@ -46,3 +49,4 @@ public final class AuthRequestDto implements Serializable {
     }
 
 }
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

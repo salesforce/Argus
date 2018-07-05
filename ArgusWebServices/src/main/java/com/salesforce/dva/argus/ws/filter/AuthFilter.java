@@ -140,7 +140,6 @@ public class AuthFilter implements Filter {
                 && !path.startsWith(contextPath + "/auth")
                 && !path.endsWith("/help")
                 && !path.startsWith(contextPath + "/v1.0/oauth")
-                && !path.startsWith(contextPath + "/v1.0/oauth")
                 ;
     }
 }

@@ -3,6 +3,24 @@ package com.salesforce.dva.argus.entity;
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Objects;
+/**
+ * The entity which encapsulates Access Token related information.
+ *
+ * <p>Fields that determine uniqueness are:</p>
+ *
+ * <ul>
+ *   <li>ACCESS_TOKEN</li>
+ * </ul>
+ *
+ * <p>Fields that cannot be null are:</p>
+ *
+ * <ul>
+ *   <li>USER_ID</li>
+ *   <li>SCOPE</li>
+ * </ul>
+ *
+ * @author	Gaurav Kumar (gaurav.kumar@salesforce.com)
+ */
 
 @Entity
 @Table(name = "oauth_access_tokens")
@@ -163,3 +181,5 @@ public class OAuthAccessToken {
     }
 
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

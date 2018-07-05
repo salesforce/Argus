@@ -185,3 +185,5 @@ public class OAuthAuthorizationCode implements Serializable {
         return query.executeUpdate();
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */
