@@ -5,7 +5,6 @@ import com.salesforce.dva.argus.entity.OAuthAuthorizationCode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.sql.Timestamp;
 
 public class OAuthAuthorizationCodeServiceTest extends AbstractTest {
@@ -38,6 +37,7 @@ public class OAuthAuthorizationCodeServiceTest extends AbstractTest {
         );
         oauthAuthorizationCode = authService.create(oauthAuthorizationCode);
         Assert.assertNotNull(oauthAuthorizationCode);
-
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

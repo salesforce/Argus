@@ -2,6 +2,9 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
 
+/**
+ * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ */
 public class TokenResponseDto implements Serializable {
     private String access_token;
     private String  token_type;
@@ -40,3 +43,4 @@ public class TokenResponseDto implements Serializable {
         this.refresh_token = refresh_token;
     }
 }
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

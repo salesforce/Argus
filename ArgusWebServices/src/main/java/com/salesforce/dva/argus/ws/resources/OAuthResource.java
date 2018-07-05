@@ -23,7 +23,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.Enumeration;
 
 /**
  * Provides oauth authorize and token methods
@@ -44,8 +43,21 @@ public class OAuthResource extends AbstractResource {
     private String oauthAuthCodeExpiry = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_EXPIRY_MILLIS.getName(), Property.OAUTH_AUTHORIZATION_CODE_EXPIRY_MILLIS.getDefaultValue());
     private String invalidateAuthCodeAfterUse = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getName(), Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getDefaultValue());
 
+    /**
+     * OAuth2.0 authorize method implementation to generate an authorization_code and redirect after validating the required fields
+     * Reference: https://tools.ietf.org/html/rfc6749
+     *
+     * @param client_id     Required
+     * @param redirect_uri  Required
+     * @param response_type Required
+     * @param scope         Required
+     * @param state
+     * @param req
+     * @param res
+     * @throws OAuthException
+     */
     @GET
-    @Description("Authorizes the user using client_id and client_secret and then redirects it to an authorization page")
+    @Description("OAuth2.0 authorize method implementation to generate an authorization_code and redirect after validating the required fields")
     @Path("/authorize")
     public void authorize(
             @QueryParam("client_id") String client_id,
@@ -76,7 +88,7 @@ public class OAuthResource extends AbstractResource {
                     authCodeEntity = authService.create(authCodeEntity);
                 } catch (Exception e) {
                     _logger.info("Error while saving Authorization code to database: " + authorizationCode);
-                    throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             }
 
@@ -97,20 +109,34 @@ public class OAuthResource extends AbstractResource {
                     res.sendRedirect(enc.toString());
                 } catch (IOException e) {
                     _logger.info("Error while redirecting to " + authCodeEntity.getRedirectUri());
-                    throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             } else {
                 _logger.info("Error while redirecting to " + authCodeEntity.getRedirectUri());
-                throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
             }
     }
 
+    /**
+     * OAuth2.0 token method implementation to generate an access_token and refresh_token after verifying the Required fields
+     * Reference: https://tools.ietf.org/html/rfc6749
+     *
+     * @param clientId
+     * @param clientSecret
+     * @param grantType     Required
+     * @param code          Required
+     * @param redirectUri   Required
+     * @param request
+     * @param res
+     * @return TokenResponseDto
+     */
     @POST
     @Path("/token")
     @Produces(MediaType.APPLICATION_JSON)
+    @Description("OAuth2.0 token method implementation to generate an access_token and refresh_token after verifying the Required fields")
     public TokenResponseDto token(
-            @FormParam("client_id") String clientId ,
-            @FormParam("client_secret") String clientSecret ,
+            @FormParam("client_id") String clientId , // Grafana is not sending this
+            @FormParam("client_secret") String clientSecret , // Grafana is not sending this
             @FormParam("grant_type") String grantType ,
             @FormParam("code") String code ,
             @FormParam("redirect_uri") String redirectUri ,
@@ -134,7 +160,7 @@ public class OAuthResource extends AbstractResource {
         tokenRequest.setRedirect_uri(redirectUri);
 
         if(!AuthRequestHelper.validateTokenRequest(tokenRequest, oAuthApplicationDto)) {
-            throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+            throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
         OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndRedirectURI(tokenRequest.getCode(), tokenRequest.getRedirect_uri());
         if (oauthAuthorizationCode != null) {
@@ -152,9 +178,6 @@ public class OAuthResource extends AbstractResource {
                 if(StringUtils.isNotBlank(oauthAuthorizationCode.getUserId())) {
                     // generate access token and refresh token
                     JWTUtils.Tokens tokens = JWTUtils.generateTokens(oauthAuthorizationCode.getUserId());
-                    String accessToken = tokens.accessToken;
-
-
                     OAuthAccessToken oauthAccessToken = new OAuthAccessToken(
                             tokens.accessToken,
                             oauthAuthorizationCode.getClientId(),
@@ -172,10 +195,10 @@ public class OAuthResource extends AbstractResource {
                         response.setExpires_in(JWTUtils.getTokenExpiry(tokens.accessToken));
                         response.setToken_type(OAuthFields.TOKEN_TYPE_BEARER);
                     } else {
-                        throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        throw new OAuthException(ResponseCodes.ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     }
                 } else {
-                    throw new OAuthException(ResponseCodes.NOT_ABLE_TO_ISSUE_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ResponseCodes.ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             }
         } else {
@@ -185,25 +208,5 @@ public class OAuthResource extends AbstractResource {
         return response;
     }
 
-    @POST
-    @Path("/tokentest")
-    @Produces(MediaType.APPLICATION_JSON)
-    public TokenResponseDto getToken(
-            @FormParam("client_id") String clientId ,
-            @FormParam("client_secret") String clientSecret ,
-            @FormParam("grant_type") String grantType ,
-            @FormParam("code") String code ,
-            @FormParam("redirect_uri") String redirectUri ,
-            @Context HttpServletRequest request,
-            @Context HttpServletResponse res) {
-        TokenResponseDto response = new TokenResponseDto();
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while(headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            System.out.println(headerName + ": " + headerValue);
-        }
-        return response;
-    }
-
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -2,6 +2,9 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
 
+/**
+ * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ */
 public class TokenRequestDto implements Serializable  {
     private String client_id;
     private String client_secret;
@@ -49,3 +52,5 @@ public class TokenRequestDto implements Serializable  {
         this.redirect_uri = redirect_uri;
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

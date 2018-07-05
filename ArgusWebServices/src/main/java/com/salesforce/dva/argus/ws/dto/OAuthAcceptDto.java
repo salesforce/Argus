@@ -2,7 +2,10 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
 
-public class AcceptDto implements Serializable {
+/**
+ * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ */
+public class OAuthAcceptDto implements Serializable {
     private String code;
     private String state;
     private String message;
@@ -58,3 +61,5 @@ public class AcceptDto implements Serializable {
         this.owner = owner;
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

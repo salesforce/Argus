@@ -22,6 +22,11 @@ import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import scala.Int;
 
+/**
+ * JWT Utility methods.
+ *
+ * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com)
+ */
 public class JWTUtils {
 	
 	//~ Static fields/initializers *******************************************************************************************************************
@@ -149,3 +154,4 @@ public class JWTUtils {
 	}
 
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

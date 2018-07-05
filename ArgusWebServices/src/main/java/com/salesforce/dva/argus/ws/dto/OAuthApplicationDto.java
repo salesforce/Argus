@@ -2,6 +2,9 @@ package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
 
+/**
+ * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ */
 public final class OAuthApplicationDto implements Serializable {
     String name;
     String clientId;
@@ -31,3 +34,5 @@ public final class OAuthApplicationDto implements Serializable {
         return redirectUri;
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" version="2.0">
+
+    <persistence-unit name="NewPersistenceUnit">
+        <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+        <class>com.salesforce.dva.argus.entity.OAuthAuthorizationCode</class>
+        <class>com.salesforce.dva.argus.entity.OAuthAuthorizationCode</class>
+        <class>com.salesforce.dva.argus.entity.OAuthAccessToken</class>
+        <properties>
+            <property name="eclipselink.jdbc.url" value="jdbc:postgresql://localhost:5432/argus"/>
+            <property name="eclipselink.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="eclipselink.jdbc.user" value="argus"/>
+            <property name="eclipselink.jdbc.password" value=""/>
+        </properties>
+    </persistence-unit>
+</persistence>

@@ -10,7 +10,7 @@ import org.junit.Test;
 
 
 /**
- * @author gauarvk48
+ * @author Gaurav Kumar (gaurav.kumar@salesforce.com)
  */
 public class AuthRequestHelperTest {
     AuthRequestDto authRequestDto;
@@ -31,3 +31,5 @@ public class AuthRequestHelperTest {
     }
 
 }
+
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
