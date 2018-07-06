@@ -17,24 +17,38 @@
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
-
-import { ADDRCONFIG } from "dns";
-
 'use strict';
 /*global angular:false */
 
 angular.module('argus.controllers.grafanaAuth', [])
-.controller('GrafanaAuth', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', function ($scope, $window, Auth, $routeParams, CONFIG) {
-  $scope.user = Auth.getUsername() + '@salesforce.com';
-	$scope.authorize = function(){
-    console.log('authorizing grafana!');
-    //TODO get the oauth token and store in localstorage, do this in Auth.login
-    var code = $routeParams['code']
-    var state = $routeParams['state']
-    $window.location = CONFIG.grafanaUrl+'login/generic_oauth?code='+code+'&state='+state;
+	.controller('GrafanaAuth', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
+		function ($scope, $window, Auth, $routeParams, CONFIG, $resource, growl) {
+			$scope.user = Auth.getUsername() + '@salesforce.com';
+			var code = $routeParams['code'];
+			var state = $routeParams['state'];
+			var redirectUrl = '';
+			var noError = false;
+			//make a call to get grafana OAuth uri
+			$resource(CONFIG.grafanaUrl + 'login/accept_auth?', {}, {}).save({
+				code: code,
+				state: state,
+			}, function (resp) {
+				redirectUrl = resp.redirect_uri;
+				//redirectUrl = CONFIG.grafanaUrl + 'login/generic_oauth?code=' + code + '&state=' + state;
+				noError = true;
+			}, function (err) {
+				growl.error('Error accessing argus OAuth service: ' + err);
+			});
 
-  }
-  $scope.cancel = function(){
-    $window.history.back();
-  }
-}]);
+			$scope.authorize = function () {
+				console.log('authorizing grafana!');
+				if (noError) {
+					$window.location = redirectUrl;
+				}else{
+					growl.error('Error accessing argus OAuth service!');
+				}
+			}
+			$scope.cancel = function () {
+				$window.history.back();
+			}
+		}]);
