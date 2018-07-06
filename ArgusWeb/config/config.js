@@ -21,12 +21,13 @@
 
 angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-    version: '2.11.0',
+    version: '2.15',
     wsUrl: '@@wsUrl',
     wsBetaUrl: '@@wsBetaUrl',
     emailUrl: '@@emailUrl',
     feedUrl: '@@feedUrl',
     wikiUrl: '@@wikiUrl',
+    docUrl: '@@docUrl',
     issueUrl: '@@issueUrl',
     templatePath: '@@templatePath'
 });
