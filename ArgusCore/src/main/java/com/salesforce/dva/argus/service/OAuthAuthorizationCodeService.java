@@ -7,6 +7,7 @@ import java.sql.Timestamp;
 public interface OAuthAuthorizationCodeService extends Service {
     OAuthAuthorizationCode create(OAuthAuthorizationCode authCodeEntity);
     OAuthAuthorizationCode findByCodeAndRedirectURI(String code, String uri);
+    OAuthAuthorizationCode findByCodeAndState(String code, String state);
     int updateExpiry(String code, Timestamp expires);
     int updateUserId(String code, String state, String userId);
 }

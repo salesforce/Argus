@@ -31,14 +31,17 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.salesforce.dva.argus.entity.OAuthAuthorizationCode;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
 import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.business.oauth.OAuthFields;
 import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
 import com.salesforce.dva.argus.ws.dto.OAuthAcceptDto;
+import com.salesforce.dva.argus.ws.dto.OAuthAcceptResponseDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.apache.commons.lang.StringUtils;
@@ -47,7 +50,6 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.sql.Timestamp;
 import java.util.Enumeration;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -314,35 +316,35 @@ public class UserResources extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @Description("Approves user for oauth based access.")
-    public OAuthAcceptDto accept(OAuthAcceptDto acceptDto, @Context HttpServletRequest request) {
+    public OAuthAcceptResponseDto accept(OAuthAcceptDto acceptDto, @Context HttpServletRequest request) {
         if(StringUtils.isBlank(acceptDto.getCode())) {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
         if(StringUtils.isBlank(acceptDto.getState())) {
             throw new OAuthException(ResponseCodes.INVALID_STATE, HttpResponseStatus.BAD_REQUEST);
         }
-        if(StringUtils.isBlank(acceptDto.getAccess_token())) {
+
+        // Check if authorization code and state is valid, no need to check expiry as it might have been invalidated by token query
+        OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndState(acceptDto.getCode(), acceptDto.getState());
+        if (oauthAuthorizationCode == null) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE_OR_STATE, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        String token = request.getHeader(OAuthFields.AUTHORIZATION);
+        if(StringUtils.isBlank(token)) {
             throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
         }
-        if(StringUtils.isBlank(acceptDto.getState())) {
-            throw new OAuthException(ResponseCodes.INVALID_REFRESH_TOKEN, HttpResponseStatus.BAD_REQUEST);
-        }
-
-        // check if there is valid unexpired auth code
-        if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
-            authService.updateExpiry(acceptDto.getCode(), new Timestamp(0));
-        }
-
+        String userName = JWTUtils.getUsername(token);
         // updates userid in oauth_authorization_codes table
-        PrincipalUser owner = validateAndGetOwner(request, acceptDto.getOwner());
-        int result = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), owner.getUserName());
+        int result = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), userName);
         if(result == 0) {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
 
-        acceptDto.setMessage("Success");
-        OAuthAcceptDto resultDto = acceptDto;
-        return resultDto;
+        OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
+        responseDto.setRedirect_uri(oauthAuthorizationCode.getRedirectUri());
+
+        return responseDto ;
     }
 
     /**
@@ -355,7 +357,7 @@ public class UserResources extends AbstractResource {
     @Path("/userinfo")
     @Description("Returns the user info of the user who is logged in.")
     public PrincipalUserDto userInfo(@Context HttpServletRequest req) {
-        String token = req.getHeader("Authorization");
+        String token = req.getHeader(OAuthFields.AUTHORIZATION);
         if(StringUtils.isBlank(token)) {
             throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
         }

@@ -33,6 +33,8 @@ import java.util.Objects;
         {
                 @NamedQuery(name = "OAuthAuthorizationCode.findByCodeAndRedirectURI",
                         query = "SELECT a FROM OAuthAuthorizationCode a WHERE a.authorizationCode = :code AND a.redirectUri = :uri"),
+                @NamedQuery(name = "OAuthAuthorizationCode.findByCodeAndState",
+                        query = "SELECT a FROM OAuthAuthorizationCode a WHERE a.authorizationCode = :code AND a.state = :state"),
                 @NamedQuery(
                         name = "OAuthAuthorizationCode.updateExpires",
                         query = "UPDATE OAuthAuthorizationCode a SET a.expires = :expires WHERE a.authorizationCode = :code"
@@ -158,6 +160,17 @@ public class OAuthAuthorizationCode implements Serializable {
     }
 
     //~ Static Methods **************************************************************************************************************************************
+
+    public static OAuthAuthorizationCode findByCodeAndState(EntityManager em, String code, String state) {
+        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.findByCodeAndState", OAuthAuthorizationCode.class);
+        try {
+            query.setParameter("code", code);
+            query.setParameter("state", state);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
 
     public static OAuthAuthorizationCode findByCodeAndRedirectURI(EntityManager em, String code, String uri) {
         TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.findByCodeAndRedirectURI", OAuthAuthorizationCode.class);
