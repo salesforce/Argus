@@ -47,7 +47,19 @@ public class DefaultOAuthAuthorizationCodeService extends DefaultService impleme
 
         OAuthAuthorizationCode result = OAuthAuthorizationCode.findByCodeAndRedirectURI(emf.get(), code, uri);
         _logger.debug("Query for Authorization Code row having authorization_code {} resulted in : {}", code, result);
+        return result;
+    }
 
+    @Override
+    @Transactional
+    public OAuthAuthorizationCode findByCodeAndState(String code, String state) {
+        requireNotDisposed();
+        requireArgument(StringUtils.isNotBlank(code), "authorization_code name cannot be null or empty");
+        requireArgument(StringUtils.isNotBlank(state), "state name cannot be null or empty");
+        _logger.debug("Querying Authorization Code by authorization_code: {} and state: {}", code, state);
+
+        OAuthAuthorizationCode result = OAuthAuthorizationCode.findByCodeAndState(emf.get(), code, state);
+        _logger.debug("Query for Authorization Code row having authorization_code {} and state {} resulted in : {}", code, state, result);
         return result;
     }
 

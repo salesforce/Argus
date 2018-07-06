@@ -23,6 +23,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.sql.Timestamp;
+import static com.salesforce.dva.argus.ws.business.oauth.OAuthFields.*;
+import static com.salesforce.dva.argus.ws.business.oauth.ResponseCodes.*;
 
 /**
  * Provides oauth authorize and token methods
@@ -60,11 +62,11 @@ public class OAuthResource extends AbstractResource {
     @Description("OAuth2.0 authorize method implementation to generate an authorization_code and redirect after validating the required fields")
     @Path("/authorize")
     public void authorize(
-            @QueryParam("client_id") String client_id,
-            @QueryParam("redirect_uri") String redirect_uri,
-            @QueryParam("response_type") String response_type,
-            @QueryParam("scope") String scope,
-            @QueryParam("state") String state,
+            @QueryParam(CLIENT_ID) String client_id,
+            @QueryParam(REDIRECT_URI) String redirect_uri,
+            @QueryParam(RESPONSE_TYPE) String response_type,
+            @QueryParam(SCOPE) String scope,
+            @QueryParam(STATE) String state,
             @Context HttpServletRequest req,
             @Context HttpServletResponse res) throws OAuthException {
 
@@ -88,7 +90,7 @@ public class OAuthResource extends AbstractResource {
                     authCodeEntity = authService.create(authCodeEntity);
                 } catch (Exception e) {
                     _logger.info("Error while saving Authorization code to database: " + authorizationCode);
-                    throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             }
 
@@ -101,19 +103,19 @@ public class OAuthResource extends AbstractResource {
 
             QueryStringEncoder enc = new QueryStringEncoder(oauthAuthorizeUrl);
             if (authCodeEntity != null && StringUtils.isNotBlank(authCodeEntity.getAuthorizationCode())) {
-                enc.addParam("code", authCodeEntity.getAuthorizationCode());
+                enc.addParam(CODE, authCodeEntity.getAuthorizationCode());
                 if (StringUtils.isNotBlank(authCodeEntity.getState())) {
-                    enc.addParam("state", authCodeEntity.getState());
+                    enc.addParam(STATE, authCodeEntity.getState());
                 }
                 try {
                     res.sendRedirect(enc.toString());
                 } catch (IOException e) {
                     _logger.info("Error while redirecting to " + authCodeEntity.getRedirectUri());
-                    throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             } else {
                 _logger.info("Error while redirecting to " + authCodeEntity.getRedirectUri());
-                throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                throw new OAuthException(ERR_ISSUING_AUTH_CODE, HttpResponseStatus.INTERNAL_SERVER_ERROR);
             }
     }
 
@@ -135,11 +137,11 @@ public class OAuthResource extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Description("OAuth2.0 token method implementation to generate an access_token and refresh_token after verifying the Required fields")
     public TokenResponseDto token(
-            @FormParam("client_id") String clientId , // Grafana is not sending this
-            @FormParam("client_secret") String clientSecret , // Grafana is not sending this
-            @FormParam("grant_type") String grantType ,
-            @FormParam("code") String code ,
-            @FormParam("redirect_uri") String redirectUri ,
+            @FormParam(CLIENT_ID) String clientId , // Grafana is not sending this
+            @FormParam(CLIENT_SECRET) String clientSecret , // Grafana is not sending this
+            @FormParam(GRANT_TYPE) String grantType ,
+            @FormParam(CODE) String code ,
+            @FormParam(REDIRECT_URI) String redirectUri ,
             @Context HttpServletRequest request,
             @Context HttpServletResponse res) {
 
@@ -160,7 +162,7 @@ public class OAuthResource extends AbstractResource {
         tokenRequest.setRedirect_uri(redirectUri);
 
         if(!AuthRequestHelper.validateTokenRequest(tokenRequest, oAuthApplicationDto)) {
-            throw new OAuthException(ResponseCodes.ERR_ISSUING_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+            throw new OAuthException(ERR_ISSUING_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
         OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndRedirectURI(tokenRequest.getCode(), tokenRequest.getRedirect_uri());
         if (oauthAuthorizationCode != null) {
@@ -168,7 +170,7 @@ public class OAuthResource extends AbstractResource {
                     + " , rediect_uri: " + oauthAuthorizationCode.getRedirectUri()
                     + " , expiry: " + oauthAuthorizationCode.getExpires());
             if (oauthAuthorizationCode.getExpires().before(new Timestamp(System.currentTimeMillis()))) {
-                throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+                throw new OAuthException(INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
             } {
                 _logger.debug("All validations successful for " + tokenRequest);
                 if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
@@ -195,14 +197,14 @@ public class OAuthResource extends AbstractResource {
                         response.setExpires_in(JWTUtils.getTokenExpiry(tokens.accessToken));
                         response.setToken_type(OAuthFields.TOKEN_TYPE_BEARER);
                     } else {
-                        throw new OAuthException(ResponseCodes.ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                        throw new OAuthException(ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     }
                 } else {
-                    throw new OAuthException(ResponseCodes.ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+                    throw new OAuthException(ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                 }
             }
         } else {
-            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+            throw new OAuthException(INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
 
         return response;
