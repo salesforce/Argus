@@ -110,6 +110,7 @@ public class AuthResourcesV2 extends AbstractResource {
     	try {
     		username = JWTUtils.validateTokenAndGetSubj(refreshToken, JWTUtils.TokenType.REFRESH);
     		JWTUtils.Tokens tokens = new JWTUtils.Tokens(JWTUtils.generateAccessToken(username), refreshToken);
+		req.setAttribute(AuthFilter.USER_ATTRIBUTE_NAME, username);
         	return Response.ok(tokens).build();
     	} catch(ExpiredJwtException ex) {
     		throw new WebApplicationException("Your Refresh token has expired. You can no longer use it to obtain a new Access token. "
