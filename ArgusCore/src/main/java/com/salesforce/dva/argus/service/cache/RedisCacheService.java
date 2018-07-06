@@ -126,6 +126,18 @@ public class RedisCacheService extends DefaultService implements CacheService {
 	}
 
 	@Override
+	public <V> Long incrby(String key, Long value) {
+		Long returnValue = new Long(-1);
+		try {
+			returnValue = _jedisClusterClient.incrBy(key, value);
+		} catch (Exception ex) {
+			_logger.error("Exception in cache service: {} ", ex.getMessage());
+		}
+		return returnValue;
+	}
+
+
+	@Override
 	public <V> void put(String key, V value, int ttl) {
 
 		try {
