@@ -37,7 +37,7 @@ import com.google.inject.Provider;
 /**
  * The system service factory module. All services should be obtained from this class via injection.
  *
- * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com)
  */
 public final class ServiceFactory {
 
@@ -53,6 +53,10 @@ public final class ServiceFactory {
     Provider<UserService> _userServiceProvider;
     @Inject
     Provider<DashboardService> _dashboardServiceProvider;
+    @Inject
+    Provider<OAuthAuthorizationCodeService> _oauthAuthorizationCodeServiceProvider;
+    @Inject
+    Provider<OAuthAccessTokenService> _oauthAccessTokenServiceProvider;
     @Inject
     Provider<AlertService> _alertServiceProvider;
     @Inject
@@ -137,6 +141,25 @@ public final class ServiceFactory {
     public synchronized DashboardService getDashboardService() {
         return _dashboardServiceProvider.get();
     }
+
+    /**
+     * Returns an instance of OAuth Authorization Code service.
+     *
+     * @return  An instance of the OAuthAuthorizationCode service.
+     */
+    public synchronized OAuthAuthorizationCodeService getOAuthAuthorizationCodeService() {
+        return _oauthAuthorizationCodeServiceProvider.get();
+    }
+
+    /**
+     * Returns an instance of OAuth Access Token service.
+     *
+     * @return  An instance of the OAuthAuthorizationCode service.
+     */
+    public synchronized OAuthAccessTokenService getOAuthAccessTokenService() {
+        return _oauthAccessTokenServiceProvider.get();
+    }
+
 
     /**
      * Returns an instance of the alert service.
