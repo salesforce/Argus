@@ -29,5 +29,6 @@ angular.module("argus.urlConfig", [])
     wikiUrl: '@@wikiUrl',
     docUrl: '@@docUrl',
     issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath'
+    templatePath: '@@templatePath',
+    acceptAuthPath: '@@acceptAuthPath',
 });
