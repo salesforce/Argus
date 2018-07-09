@@ -6,5 +6,5 @@
     "wikiUrl" : "https://github.com/salesforce/Argus/wiki",
     "issueUrl" : "https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev",
     "templatePath" : "/app/js/templates/",
-    "acceptAuthPath" : "/accept_auth"
+    "acceptOAuthPath" : "/accept_oauth"
 }
