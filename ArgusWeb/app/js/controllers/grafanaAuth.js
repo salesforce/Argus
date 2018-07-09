@@ -27,28 +27,23 @@ angular.module('argus.controllers.grafanaAuth', [])
 			var code = $routeParams['code'];
 			var state = $routeParams['state'];
 			var redirectUrl = '';
-			var noError = false;
-			//make a call to get grafana OAuth uri
-			$resource(CONFIG.grafanaUrl + 'login/accept_auth?', {}, {}).save({
-				code: code,
-				state: state,
-			}, function (resp) {
-				redirectUrl = resp.redirect_uri;
-				//redirectUrl = CONFIG.grafanaUrl + 'login/generic_oauth?code=' + code + '&state=' + state;
-				noError = true;
-			}, function (err) {
-				growl.error('Error accessing argus OAuth service: ' + err);
-			});
-
+			// TODO: on page load, make an api call to see if grafana is already authorized
+			// if yes, redirect directly
+			
 			$scope.authorize = function () {
 				console.log('authorizing grafana!');
-				if (noError) {
+				$resource(CONFIG.wsUrl + CONFIG.acceptAuthPath, {}, {}).save({
+					code: code,
+					state: state,
+				}, function (resp) {
+					//make a call to get grafana OAuth uri
+					redirectUrl = encodeURI(resp.redirect_uri + '?code=' + code + '&state=' + state);
 					$window.location = redirectUrl;
-				}else{
-					growl.error('Error accessing argus OAuth service!');
-				}
-			}
+				}, function (err) {
+					growl.error('Error accessing argus OAuth service: ' + err);
+				});
+			};
 			$scope.cancel = function () {
 				$window.history.back();
-			}
+			};
 		}]);
