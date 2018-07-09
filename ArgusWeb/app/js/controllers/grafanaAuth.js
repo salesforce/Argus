@@ -18,17 +18,32 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
+/*global angular:false */
 
-angular.module("argus.urlConfig", [])
-.constant('CONFIG', {
-    version: '2.15',
-    wsUrl: '@@wsUrl',
-    wsBetaUrl: '@@wsBetaUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    docUrl: '@@docUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    acceptOAuthPath: '@@acceptOAuthPath',
-});
+angular.module('argus.controllers.grafanaAuth', [])
+	.controller('GrafanaAuth', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
+		function ($scope, $window, Auth, $routeParams, CONFIG, $resource, growl) {
+			$scope.user = Auth.getUsername() + '@salesforce.com';
+			var code = $routeParams['code'];
+			var state = $routeParams['state'];
+			var redirectUrl = '';
+			// TODO: on page load, make an api call to see if grafana is already authorized
+			// if yes, redirect directly
+			
+			$scope.authorize = function () {
+				console.log('authorizing grafana!');
+				$resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
+					code: code,
+					state: state,
+				}, function (resp) {
+					//make a call to get grafana OAuth uri
+					redirectUrl = encodeURI(resp.redirect_uri + '?code=' + code + '&state=' + state);
+					$window.location = redirectUrl;
+				}, function (err) {
+					growl.error('Error accessing argus OAuth service: ' + err);
+				});
+			};
+			$scope.cancel = function () {
+				$window.history.back();
+			};
+		}]);
