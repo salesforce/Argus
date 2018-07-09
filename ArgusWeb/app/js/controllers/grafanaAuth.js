@@ -32,7 +32,7 @@ angular.module('argus.controllers.grafanaAuth', [])
 			
 			$scope.authorize = function () {
 				console.log('authorizing grafana!');
-				$resource(CONFIG.wsUrl + CONFIG.acceptAuthPath, {}, {}).save({
+				$resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
 					code: code,
 					state: state,
 				}, function (resp) {
