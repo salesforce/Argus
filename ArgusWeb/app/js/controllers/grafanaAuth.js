@@ -27,9 +27,18 @@ angular.module('argus.controllers.grafanaAuth', [])
 			var code = $routeParams['code'];
 			var state = $routeParams['state'];
 			var redirectUrl = '';
-			// TODO: on page load, make an api call to see if grafana is already authorized
+			// on page load, make an api call to see if grafana is already authorized
 			// if yes, redirect directly
-			
+			$resource(CONFIG.wsUrl + CONFIG.checkOAuthAccessPath, {}, {}).get({
+				code: code,
+				state: state,
+			}, function (resp) {
+				redirectUrl = encodeURI(resp.redirect_uri + '?code=' + code + '&state=' + state);
+				$window.location = redirectUrl;
+			}, function (err) {
+				console.log(err + 'not authorized before!');
+			});
+
 			$scope.authorize = function () {
 				console.log('authorizing grafana!');
 				$resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
