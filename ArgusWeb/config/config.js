@@ -31,4 +31,5 @@ angular.module("argus.urlConfig", [])
     issueUrl: '@@issueUrl',
     templatePath: '@@templatePath',
     acceptOAuthPath: '@@acceptOAuthPath',
+    checkOAuthAccessPath : '@@checkOAuthAccessPath'
 });
