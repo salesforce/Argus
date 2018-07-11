@@ -107,6 +107,11 @@ angular.module('argus.config', [])
 				controller: 'GrafanaAuth',
 				label: 'Grafana Auth',
 			}).
+			when('/oauthManagement', {
+				templateUrl: 'js/templates/oauthManagement.html',
+				controller: 'OauthManagement',
+				label: 'Oauth Management',
+			}).
 			otherwise({
 				redirectTo: '/dashboards'
 			});
