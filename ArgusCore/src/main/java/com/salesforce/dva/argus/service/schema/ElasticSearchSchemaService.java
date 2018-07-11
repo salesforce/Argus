@@ -69,6 +69,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	private static String SCOPE_INDEX_NAME;
 	private static String SCOPE_TYPE_NAME;
+
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
@@ -396,16 +397,27 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		Map<String, String> tags = new HashMap<>();
 		tags.put("type", "REGEXP_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
+
+		String index_name = INDEX_NAME;
+		String type_name = TYPE_NAME;
+
+		if (query.QueryOnlyOnScope() && RecordType.SCOPE.equals(type))
+		{
+			index_name = SCOPE_INDEX_NAME;
+			type_name = SCOPE_TYPE_NAME;
+		}
+
 		String requestUrl = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(index_name)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(type_name)
 				.append("/")
 				.append("_search")
 				.toString();
 
 		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
+
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
