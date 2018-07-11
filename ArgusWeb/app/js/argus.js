@@ -128,7 +128,8 @@ angular.module('argus.controllers', [
 	'argus.controllers.viewelements',
 	'argus.controllers.viewMetrics',
 	'argus.controllers.metricsBrowsing',
-	'argus.controllers.grafanaAuth'
+	'argus.controllers.grafanaAuth',
+	'argus.controllers.oauthManagement'
 ]);
 
 // Directives
@@ -164,6 +165,7 @@ require('./controllers/viewElements');
 require('./controllers/viewMetrics');
 require('./controllers/metricsBrowsing');
 require('./controllers/grafanaAuth');
+require('./controllers/oauthManagement');
 
 // services
 require('./services/auth');

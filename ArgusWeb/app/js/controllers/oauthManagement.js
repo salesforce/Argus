@@ -18,20 +18,36 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
+/*global angular:false */
 
-angular.module("argus.urlConfig", [])
-.constant('CONFIG', {
-    version: '2.15',
-    wsUrl: '@@wsUrl',
-    wsBetaUrl: '@@wsBetaUrl',
-    emailUrl: '@@emailUrl',
-    feedUrl: '@@feedUrl',
-    wikiUrl: '@@wikiUrl',
-    docUrl: '@@docUrl',
-    issueUrl: '@@issueUrl',
-    templatePath: '@@templatePath',
-    acceptOAuthPath: '@@acceptOAuthPath',
-    checkOAuthAccessPath : '@@checkOAuthAccessPath',
-    oauthListPath: '@@oauthListPath',
-    oauthDeletePath: '@@oauthDeletePath'
-});
+angular.module('argus.controllers.oauthManagement', [])
+	.controller('OauthManagement', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
+		function ($scope, $window, Auth, $routeParams, CONFIG, $resource, growl) {
+			$scope.user = Auth.getUsername() + '@salesforce.com';
+
+			// on page load, make an api call to see if grafana is already authorized
+			// if yes, redirect directly
+			$scope.apps = [{
+				name: 'grafana'
+			}, {
+				name: 'prometheus'
+			},];
+
+			$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, {}).get({},
+				function (apps) {
+					$scope.apps = apps;
+				}, function (err) {
+					console.log(err + 'not authorized before!');
+				});
+
+			$scope.deleteApp = function (app) {
+				$resource(CONFIG.wsUrl + CONFIG.oauthDeletePath + '/' + app.name, {}, {}).delete({
+				}, function () {
+					$scope.apps = $scope.apps.filter( function(app_){
+						return app_.name !== app.name;
+					});
+				}, function (err) {
+					growl.error('fail to delete the app!' + err);
+				});
+			};
+		}]);

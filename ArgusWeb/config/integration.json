@@ -6,6 +6,8 @@
     "wikiUrl" : "https://github.com/salesforce/Argus/wiki",
     "issueUrl" : "https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev",
     "templatePath" : "/app/js/templates/",
-    "acceptOAuthPath" : "/accept_oauth",
-    "checkOAuthAccessPath" : "/checkoauthaccess"
+    "acceptOAuthPath" : "accept_oauth",
+    "checkOAuthAccessPath" : "checkoauthaccess",
+    "oauthListPath": "oauthlist",
+    "oauthDeletePath": "oauthdelete"
 }
