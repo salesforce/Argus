@@ -27,11 +27,6 @@ angular.module('argus.controllers.oauthManagement', [])
 
 			// on page load, make an api call to see if grafana is already authorized
 			// if yes, redirect directly
-			$scope.apps = [{
-				name: 'grafana'
-			}, {
-				name: 'prometheus'
-			},];
 
 			$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, {}).get({},
 				function (apps) {
@@ -41,10 +36,10 @@ angular.module('argus.controllers.oauthManagement', [])
 				});
 
 			$scope.deleteApp = function (app) {
-				$resource(CONFIG.wsUrl + CONFIG.oauthDeletePath + '/' + app.name, {}, {}).delete({
+				$resource(CONFIG.wsUrl + CONFIG.oauthDeletePath + '/' + app.applicationName, {}, {}).delete({
 				}, function () {
 					$scope.apps = $scope.apps.filter( function(app_){
-						return app_.name !== app.name;
+						return app_.applicationName !== app.applicationName;
 					});
 				}, function (err) {
 					growl.error('fail to delete the app!' + err);
