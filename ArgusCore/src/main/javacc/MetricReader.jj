@@ -48,8 +48,8 @@ public class MetricReader<T> {
   	private TransformFactory factory;
   	private String expandedTimeSeriesRange;
   	private String queryTimeWindow;
-  	private Integer numDiscoveryResults;
-  	private Integer numDiscoveryQueries;
+  	private Integer numDiscoveryResults = 0;
+  	private Integer numDiscoveryQueries = 0;
 
 	@Inject
     MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
