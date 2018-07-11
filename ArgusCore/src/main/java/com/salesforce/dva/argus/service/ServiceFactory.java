@@ -56,8 +56,6 @@ public final class ServiceFactory {
     @Inject
     Provider<OAuthAuthorizationCodeService> _oauthAuthorizationCodeServiceProvider;
     @Inject
-    Provider<OAuthAccessTokenService> _oauthAccessTokenServiceProvider;
-    @Inject
     Provider<AlertService> _alertServiceProvider;
     @Inject
     Provider<MetricService> _metricServiceProvider;
@@ -150,16 +148,6 @@ public final class ServiceFactory {
     public synchronized OAuthAuthorizationCodeService getOAuthAuthorizationCodeService() {
         return _oauthAuthorizationCodeServiceProvider.get();
     }
-
-    /**
-     * Returns an instance of OAuth Access Token service.
-     *
-     * @return  An instance of the OAuthAuthorizationCode service.
-     */
-    public synchronized OAuthAccessTokenService getOAuthAccessTokenService() {
-        return _oauthAccessTokenServiceProvider.get();
-    }
-
 
     /**
      * Returns an instance of the alert service.

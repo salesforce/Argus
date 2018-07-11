@@ -1,8 +1,40 @@
+/*
+ * Copyright (c) 2016, Salesforce.com, Inc.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ * this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of Salesforce.com nor the names of its contributors may
+ * be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.salesforce.dva.argus.entity;
 
 import javax.persistence.*;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -42,6 +74,18 @@ import java.util.Objects;
                 @NamedQuery(
                         name = "OAuthAuthorizationCode.updateUserId",
                         query = "UPDATE OAuthAuthorizationCode a SET a.userId = :userId WHERE a.authorizationCode = :code and a.state = :state"
+                ),
+                @NamedQuery(
+                        name = "OAuthAuthorizationCode.findByUserId",
+                        query = "SELECT a FROM OAuthAuthorizationCode a WHERE a.userId = :username "
+                ),
+                @NamedQuery(
+                        name = "OAuthAuthorizationCode.deleteByExpires",
+                        query = "DELETE FROM OAuthAuthorizationCode a WHERE a.expires < :currenttime"
+                ),
+                @NamedQuery(
+                        name = "OAuthAuthorizationCode.deleteByUserId",
+                        query = "DELETE FROM OAuthAuthorizationCode a WHERE a.userId=:username"
                 )
         }
 )
@@ -197,6 +241,30 @@ public class OAuthAuthorizationCode implements Serializable {
         query.setParameter("userId", userId);
         return query.executeUpdate();
     }
+
+    public static List<OAuthAuthorizationCode> findByUserId(EntityManager em, String userName) {
+        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.findByUserId", OAuthAuthorizationCode.class);
+        try {
+            query.setParameter("username", userName);
+            return query.getResultList();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+
+    public static int deleteByTimeStamp(EntityManager em, Timestamp currentTime) {
+        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.deleteByExpires", OAuthAuthorizationCode.class);
+            query.setParameter("currenttime", currentTime);
+            return query.executeUpdate();
+    }
+
+    public static int deleteByUserId(EntityManager em, String userName) {
+        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.deleteByUserId", OAuthAuthorizationCode.class);
+        query.setParameter("username", userName);
+        return query.executeUpdate();
+    }
+
+
 }
 
 /* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

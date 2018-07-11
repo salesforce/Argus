@@ -28,7 +28,7 @@ angular.module('argus.controllers.oauthManagement', [])
 			// on page load, make an api call to see if grafana is already authorized
 			// if yes, redirect directly
 
-			$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, {}).get({},
+			$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, {'get': {method: 'GET', isArray: true}}).get({},
 				function (apps) {
 					$scope.apps = apps;
 				}, function (err) {

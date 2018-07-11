@@ -12,6 +12,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import javax.persistence.EntityManager;
 import java.sql.Timestamp;
+import java.util.List;
+
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 public class DefaultOAuthAuthorizationCodeService extends DefaultService implements OAuthAuthorizationCodeService {
 
@@ -60,6 +62,40 @@ public class DefaultOAuthAuthorizationCodeService extends DefaultService impleme
 
         OAuthAuthorizationCode result = OAuthAuthorizationCode.findByCodeAndState(emf.get(), code, state);
         _logger.debug("Query for Authorization Code row having authorization_code {} and state {} resulted in : {}", code, state, result);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public List<OAuthAuthorizationCode> findByUserId(String userName) {
+        requireNotDisposed();
+        requireArgument(StringUtils.isNotBlank(userName), "userName cannot be null or empty");
+        _logger.debug("Querying records by userName: {}", userName);
+
+        List<OAuthAuthorizationCode> result = OAuthAuthorizationCode.findByUserId(emf.get(), userName);
+        _logger.debug("Querying records by userName:{} resulted in : {}",userName, result);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public int deleteExpiredAuthCodes(Timestamp currentTime) {
+        requireNotDisposed();
+        _logger.debug("Deleting expired records by currentTime: {}", currentTime);
+
+        int result = OAuthAuthorizationCode.deleteByTimeStamp(emf.get(), currentTime);
+        _logger.debug("Query for deleting records by currentTime:{} resulted in : {} rows deleted",currentTime, result);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public int deleteByUserId(String userName) {
+        requireNotDisposed();
+        _logger.debug("Deleting expired records by userName: {}", userName);
+
+        int result = OAuthAuthorizationCode.deleteByUserId(emf.get(), userName);
+        _logger.debug("Query for deleting records by userName:{} resulted in : {} rows deleted",userName, result);
         return result;
     }
 

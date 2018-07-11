@@ -33,8 +33,16 @@ angular.module('argus.controllers.grafanaAuth', [])
 				code: code,
 				state: state,
 			}, function (resp) {
-				redirectUrl = encodeURI(resp.redirect_uri + '?code=' + code + '&state=' + state);
-				$window.location = redirectUrl;
+                $resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
+                    code: code,
+                    state: state,
+                }, function (resp) {
+                    //make a call to get grafana OAuth uri
+                    redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
+                    $window.location = redirectUrl;
+                }, function (err) {
+                    growl.error('Error accessing argus OAuth service: ' + err);
+                });
 			}, function (err) {
 				console.log(err + 'not authorized before!');
 			});
@@ -46,7 +54,7 @@ angular.module('argus.controllers.grafanaAuth', [])
 					state: state,
 				}, function (resp) {
 					//make a call to get grafana OAuth uri
-					redirectUrl = encodeURI(resp.redirect_uri + '?code=' + code + '&state=' + state);
+					redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
 					$window.location = redirectUrl;
 				}, function (err) {
 					growl.error('Error accessing argus OAuth service: ' + err);
