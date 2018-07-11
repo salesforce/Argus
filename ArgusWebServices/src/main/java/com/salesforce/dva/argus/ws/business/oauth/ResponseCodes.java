@@ -10,6 +10,8 @@ public final class ResponseCodes {
     public static final String INVALID_OR_MISSING_GRANT_TYPE = "{\"error\": \"invalid or missing grant_type\"}";
     public static final String ERR_ISSUING_AUTH_CODE = "{\"error\": \"error issuing authorization code, internal error\"}";
     public static final String ERR_ISSUING_ACCESS_TOKEN = "{\"error\": \"error issuing access token, internal error\"}";
+    public static final String ERR_FINDING_USERNAME = "{\"error\": \"error finding username\"}";
+    public static final String ERR_DELETING_APP = "{\"error\": \"error deleting app\"}";
     public static final String INVALID_AUTH_CODE = "{\"error\": \"invalid authorization code\"}";
     public static final String INVALID_STATE = "{\"error\": \"invalid state code\"}";
     public static final String INVALID_AUTH_CODE_OR_STATE = "{\"error\": \"invalid authorization code or state\"}";

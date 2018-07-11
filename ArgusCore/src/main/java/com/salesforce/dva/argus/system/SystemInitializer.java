@@ -54,7 +54,6 @@ import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
-import com.salesforce.dva.argus.service.oauth.DefaultOAuthAccessTokenService;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
@@ -247,7 +246,6 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(CachedUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
         bindConcreteClass(DefaultOAuthAuthorizationCodeService.class, OAuthAuthorizationCodeService.class);
-        bindConcreteClass(DefaultOAuthAccessTokenService.class, OAuthAccessTokenService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);
         bindConcreteClass(AsyncMetricService.class, MetricService.class);
         bindConcreteClass(DefaultBatchService.class, BatchService.class);

@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.ws.business.oauth.OAuthFields;
 import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
 import com.salesforce.dva.argus.ws.dto.OAuthAcceptDto;
 import com.salesforce.dva.argus.ws.dto.OAuthAcceptResponseDto;
+import com.salesforce.dva.argus.ws.dto.OAuthAppDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.apache.commons.lang.StringUtils;
@@ -50,18 +51,13 @@ import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -79,7 +75,9 @@ public class UserResources extends AbstractResource {
     //~ Instance fields ******************************************************************************************************************************
 
     private UserService _uService = system.getServiceFactory().getUserService();
+    private String applicationName = system.getConfiguration().getValue(Property.OAUTH_APP_NAME.getName(), Property.OAUTH_APP_NAME.getDefaultValue());
     private OAuthAuthorizationCodeService authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+    private String applicationRedirectURI = system.getConfiguration().getValue(Property.OAUTH_APP_REDIRECT_URI.getName(), Property.OAUTH_APP_REDIRECT_URI.getDefaultValue());
     private String invalidateAuthCodeAfterUse = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getName(),
             Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getDefaultValue());
 
@@ -330,14 +328,14 @@ public class UserResources extends AbstractResource {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE_OR_STATE, HttpResponseStatus.BAD_REQUEST);
         }
 
-        String token = request.getHeader(OAuthFields.AUTHORIZATION);
-        if(StringUtils.isBlank(token)) {
-            throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
+        if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
+            authService.deleteExpiredAuthCodes(new Timestamp(System.currentTimeMillis()));
         }
-        String userName = JWTUtils.getUsername(token);
+
+        String userName=findUserByToken(request);
         // updates userid in oauth_authorization_codes table
-        int result = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), userName);
-        if(result == 0) {
+        int updateResult = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), userName);
+        if(updateResult == 0) {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
 
@@ -357,14 +355,75 @@ public class UserResources extends AbstractResource {
     @Path("/userinfo")
     @Description("Returns the user info of the user who is logged in.")
     public PrincipalUserDto userInfo(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        PrincipalUser user = _uService.findUserByUsername(userName);
+        return PrincipalUserDto.transformToDto(user);
+    }
+
+    private String findUserByToken(HttpServletRequest req)
+    {
         String token = req.getHeader(OAuthFields.AUTHORIZATION);
         if(StringUtils.isBlank(token)) {
             throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
         }
-        String userName = JWTUtils.getUsername(token);
+        return  JWTUtils.getUsername(token);
 
-        PrincipalUser user = _uService.findUserByUsername(userName);
-        return PrincipalUserDto.transformToDto(user);
     }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/checkoauthaccess")
+    @Description("Returns the user info of the user who is logged in.")
+    public OAuthAcceptResponseDto checkOauthAccess(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        List<OAuthAuthorizationCode> result = authService.findByUserId(userName);
+        OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
+        if (result==null || result.size()==0) {
+            throw new OAuthException(ResponseCodes.ERR_FINDING_USERNAME, HttpResponseStatus.BAD_REQUEST);
+        }
+        else {
+            responseDto.setRedirect_uri(applicationRedirectURI);
+            return responseDto;
+        }
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/authenticatedapps")
+    @Description("Returns the user info of the user who is logged in.")
+    public List<OAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        List<OAuthAuthorizationCode> result = authService.findByUserId(userName);
+        OAuthAppDto app = new OAuthAppDto();
+        List<OAuthAppDto> listApps = new ArrayList<>();
+        if (result==null || result.size()==0) {
+            return listApps;
+        }
+        else {
+            app.setApplicationName(applicationName);
+            listApps.add(app);
+            return listApps;
+        }
+    }
+
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/removeaccess/{appName}")
+    @Description("Returns the user info of the user who is logged in.")
+    public Response removeAccess(@Context HttpServletRequest req,@PathParam("appName") String appName) {
+        String userName=findUserByToken(req);
+
+        if(appName.equalsIgnoreCase(applicationName))
+        {
+            authService.deleteByUserId(userName);
+            return Response.status(Status.OK).build();
+        }
+        else
+        {
+            throw new OAuthException(ResponseCodes.ERR_DELETING_APP, HttpResponseStatus.BAD_REQUEST);
+        }
+
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
