@@ -328,11 +328,11 @@ public class UserResources extends AbstractResource {
             throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE_OR_STATE, HttpResponseStatus.BAD_REQUEST);
         }
 
+        String userName=findUserByToken(request);
         if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
-            authService.deleteExpiredAuthCodes(new Timestamp(System.currentTimeMillis()));
+            authService.deleteExpiredAuthCodesByUserName(new Timestamp(System.currentTimeMillis()),userName);
         }
 
-        String userName=findUserByToken(request);
         // updates userid in oauth_authorization_codes table
         int updateResult = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), userName);
         if(updateResult == 0) {
@@ -372,13 +372,13 @@ public class UserResources extends AbstractResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/checkoauthaccess")
-    @Description("Returns the user info of the user who is logged in.")
+    @Path("/check_oauth_access")
+    @Description("Returns redirectURI based on whether this user has previously accepted the authorization page")
     public OAuthAcceptResponseDto checkOauthAccess(@Context HttpServletRequest req) {
         String userName=findUserByToken(req);
-        List<OAuthAuthorizationCode> result = authService.findByUserId(userName);
+        int result = authService.countByUserId(userName);
         OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
-        if (result==null || result.size()==0) {
+        if (result==0) {
             throw new OAuthException(ResponseCodes.ERR_FINDING_USERNAME, HttpResponseStatus.BAD_REQUEST);
         }
         else {
@@ -389,14 +389,14 @@ public class UserResources extends AbstractResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/authenticatedapps")
-    @Description("Returns the user info of the user who is logged in.")
+    @Path("/oauth_approved_apps")
+    @Description("Returns list of Oauth approved apps of argus by this user")
     public List<OAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
         String userName=findUserByToken(req);
-        List<OAuthAuthorizationCode> result = authService.findByUserId(userName);
+        int result = authService.countByUserId(userName);
         OAuthAppDto app = new OAuthAppDto();
         List<OAuthAppDto> listApps = new ArrayList<>();
-        if (result==null || result.size()==0) {
+        if (result==0) {
             return listApps;
         }
         else {
@@ -408,8 +408,8 @@ public class UserResources extends AbstractResource {
 
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/removeaccess/{appName}")
-    @Description("Returns the user info of the user who is logged in.")
+    @Path("/revoke_oauth_access/{appName}")
+    @Description("Revokes Oauth access of app from argus for a particular user")
     public Response removeAccess(@Context HttpServletRequest req,@PathParam("appName") String appName) {
         String userName=findUserByToken(req);
 

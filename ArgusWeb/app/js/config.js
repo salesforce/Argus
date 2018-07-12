@@ -32,7 +32,7 @@ angular.module('argus.urlConfig', [])
 	issueUrl: 'https://groups.google.com/a/salesforce.com/forum/?hl=en#!forum/argus-dev',
 	templatePath: 'app/js/templates',
     acceptOAuthPath:'users/accept_oauth',
-    checkOAuthAccessPath : 'users/checkoauthaccess',
-    oauthListPath: 'users/authenticatedapps',
-    oauthDeletePath: 'users/removeaccess'
+    checkOAuthAccessPath : 'users/check_oauth_access',
+    oauthListPath: 'users/oauth_approved_apps',
+    oauthDeletePath: 'users/revoke_oauth_access'
 });
