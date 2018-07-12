@@ -683,7 +683,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				List<ScopeOnlySchemaRecord> recordsToRemove = new ArrayList<>();
 				for(Item item : putResponse.items) {
 					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						_logger.warn("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
+						_logger.warn("Failed to index scope. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
 						recordsToRemove.add(scopeOnlySchemaRecordList.getRecord(item.create._id));
 					}
 
@@ -733,10 +733,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	protected void _addToBloomFilterScopeOnly(List<ScopeOnlySchemaRecord> records){
 		_logger.info("Adding {} records into scope only bloom filter.", records.size());
-		for(ScopeOnlySchemaRecord record : records) {		
-			String key = constructScopeOnlyKey(record.getScope());		
-			bloomFilter.put(key);		
-		}		
+		for(ScopeOnlySchemaRecord record : records) {
+			String key = constructScopeOnlyKey(record.getScope());
+			bloomFilterScopeOnly.put(key);
+		}
 	}
 
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
@@ -1044,6 +1044,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 
 		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.put("cts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		ObjectNode typeNode = mapper.createObjectNode();
 		typeNode.put("properties", propertiesNode);
