@@ -65,8 +65,8 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
 	private String expandedTimeSeriesRange;
 	private String queryTimeWindow;
-	private Integer numDiscoveryResults;
-	private Integer numDiscoveryQueries;
+	private Integer numDiscoveryResults = 0;
+	private Integer numDiscoveryQueries = 0;
 
 	//~ Constructors *********************************************************************************************************************************
 
