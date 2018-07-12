@@ -123,7 +123,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			}
 
 			// Check scope only bloom filter
-			String key = constructScopeOnlyKey(metric);
+			String key = constructScopeOnlyKey(metric.getScope());
 			boolean found = bloomFilterScopeOnly.mightContain(key);
 			if(!found) {
 				scopesToPut.add(metric.getScope());
@@ -207,16 +207,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		if(tagv != null) {
 			sb.append('\0').append(tagv);
 		}
-
-		// Add randomness for each instance of bloom filter running on different 
-		// schema clients to reduce probability of false positives that metric schemas are not written to ES
-		sb.append('\0').append(randomNumber);
-
-		return sb.toString();
-	}
-
-	protected String constructScopeOnlyKey(Metric metric) {
-		StringBuilder sb = new StringBuilder(metric.getScope());
 
 		// Add randomness for each instance of bloom filter running on different 
 		// schema clients to reduce probability of false positives that metric schemas are not written to ES
