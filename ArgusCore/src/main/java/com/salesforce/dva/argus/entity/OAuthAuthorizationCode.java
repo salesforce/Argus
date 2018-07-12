@@ -76,12 +76,12 @@ import java.util.Objects;
                         query = "UPDATE OAuthAuthorizationCode a SET a.userId = :userId WHERE a.authorizationCode = :code and a.state = :state"
                 ),
                 @NamedQuery(
-                        name = "OAuthAuthorizationCode.findByUserId",
-                        query = "SELECT a FROM OAuthAuthorizationCode a WHERE a.userId = :username "
+                        name = "OAuthAuthorizationCode.countByUserId",
+                        query = "SELECT count(a) FROM OAuthAuthorizationCode a WHERE a.userId = :username "
                 ),
                 @NamedQuery(
-                        name = "OAuthAuthorizationCode.deleteByExpires",
-                        query = "DELETE FROM OAuthAuthorizationCode a WHERE a.expires < :currenttime"
+                        name = "OAuthAuthorizationCode.deleteByExpiresAndUserId",
+                        query = "DELETE FROM OAuthAuthorizationCode a WHERE a.expires < :currenttime and a.userId=:username"
                 ),
                 @NamedQuery(
                         name = "OAuthAuthorizationCode.deleteByUserId",
@@ -242,19 +242,20 @@ public class OAuthAuthorizationCode implements Serializable {
         return query.executeUpdate();
     }
 
-    public static List<OAuthAuthorizationCode> findByUserId(EntityManager em, String userName) {
-        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.findByUserId", OAuthAuthorizationCode.class);
+    public static int findByUserId(EntityManager em, String userName) {
+        TypedQuery<Long> query = em.createNamedQuery("OAuthAuthorizationCode.countByUserId", Long.class);
         try {
             query.setParameter("username", userName);
-            return query.getResultList();
+            return query.getSingleResult().intValue();
         } catch (NoResultException ex) {
-            return null;
+            return 0;
         }
     }
 
-    public static int deleteByTimeStamp(EntityManager em, Timestamp currentTime) {
-        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.deleteByExpires", OAuthAuthorizationCode.class);
+    public static int deleteByTimeStamp(EntityManager em, Timestamp currentTime,String userName) {
+        TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.deleteByExpiresAndUserId", OAuthAuthorizationCode.class);
             query.setParameter("currenttime", currentTime);
+        query.setParameter("username", currentTime);
             return query.executeUpdate();
     }
 

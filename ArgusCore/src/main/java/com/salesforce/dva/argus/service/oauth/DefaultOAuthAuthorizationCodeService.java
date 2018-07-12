@@ -67,24 +67,24 @@ public class DefaultOAuthAuthorizationCodeService extends DefaultService impleme
 
     @Override
     @Transactional
-    public List<OAuthAuthorizationCode> findByUserId(String userName) {
+    public int countByUserId(String userName) {
         requireNotDisposed();
         requireArgument(StringUtils.isNotBlank(userName), "userName cannot be null or empty");
         _logger.debug("Querying records by userName: {}", userName);
 
-        List<OAuthAuthorizationCode> result = OAuthAuthorizationCode.findByUserId(emf.get(), userName);
-        _logger.debug("Querying records by userName:{} resulted in : {}",userName, result);
+        int result = OAuthAuthorizationCode.findByUserId(emf.get(), userName);
+        _logger.debug("Querying for count of records by userName:{} resulted in : {}",userName, result);
         return result;
     }
 
     @Override
     @Transactional
-    public int deleteExpiredAuthCodes(Timestamp currentTime) {
+    public int deleteExpiredAuthCodesByUserName(Timestamp currentTime,String userName) {
         requireNotDisposed();
-        _logger.debug("Deleting expired records by currentTime: {}", currentTime);
+        _logger.debug("Deleting expired records by currentTime: {} and userName: {}", currentTime,userName);
 
-        int result = OAuthAuthorizationCode.deleteByTimeStamp(emf.get(), currentTime);
-        _logger.debug("Query for deleting records by currentTime:{} resulted in : {} rows deleted",currentTime, result);
+        int result = OAuthAuthorizationCode.deleteByTimeStamp(emf.get(), currentTime,userName);
+        _logger.debug("Query for deleting records by currentTime:{} and userName: {} resulted in : {} rows deleted",currentTime, userName,result);
         return result;
     }
 
