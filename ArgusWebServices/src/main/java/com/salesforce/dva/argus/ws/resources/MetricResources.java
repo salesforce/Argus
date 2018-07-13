@@ -170,7 +170,7 @@ public class MetricResources extends AbstractResource {
         		req.setAttribute("expandedTimeSeriesRange", metricService.getExpandedTimeSeriesRange());
         		req.setAttribute("timeWindow", metricService.getQueryTimeWindow());
         		metrics.addAll(metricsForThisExpression);
-        	} catch(WildcardExpansionLimitExceededException e) {
+        	} catch(IllegalArgumentException | WildcardExpansionLimitExceededException e) {
         		metricService.dispose();
         		throw new WebApplicationException(e.getMessage(), Status.BAD_REQUEST);
         	}
