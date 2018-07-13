@@ -132,7 +132,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
 		} catch(Exception ex) {
-			_logger.error("Exception occured when evaluating metric expressions - {}" , ExceptionUtils.getFullStackTrace(ex));
+			_logger.error("Exception occured when evaluating metric expressions {} - {}" , Arrays.toString(expressions.toArray()), ExceptionUtils.getFullStackTrace(ex));
 			throw ex;
 		}
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
