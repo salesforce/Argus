@@ -398,19 +398,19 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		tags.put("type", "REGEXP_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
 
-		String index_name = INDEX_NAME;
-		String type_name = TYPE_NAME;
+		String indexName = INDEX_NAME;
+		String typeName = TYPE_NAME;
 
 		if (query.queryOnlyOnScope() && RecordType.SCOPE.equals(type))
 		{
-			index_name = SCOPE_INDEX_NAME;
-			type_name = SCOPE_TYPE_NAME;
+            indexName = SCOPE_INDEX_NAME;
+            typeName = SCOPE_TYPE_NAME;
 		}
 
 		String requestUrl = new StringBuilder().append("/")
-				.append(index_name)
+				.append(indexName)
 				.append("/")
-				.append(type_name)
+				.append(typeName)
 				.append("/")
 				.append("_search")
 				.toString();
