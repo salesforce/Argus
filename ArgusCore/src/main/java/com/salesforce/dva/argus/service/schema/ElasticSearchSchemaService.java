@@ -83,7 +83,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	private Logger _logger = LoggerFactory.getLogger(getClass());
 	private final MonitorService _monitorService;
-	private final RestClient _esRestClient;
+	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
 	private final int _replicationFactorForScopeIndex;
@@ -909,11 +909,16 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
+	/* Method to change the rest client. Used for testing. */
+	protected void setRestClient(RestClient restClient)
+	{
+		this._esRestClient = restClient;
+	}
 
 	/** Helper to process the response. 
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
 	 */
-	private String extractResponse(Response response) {
+	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
 
 		int status = response.getStatusLine().getStatusCode();
