@@ -403,8 +403,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		if (query.queryOnlyOnScope() && RecordType.SCOPE.equals(type))
 		{
-            indexName = SCOPE_INDEX_NAME;
-            typeName = SCOPE_TYPE_NAME;
+			indexName = SCOPE_INDEX_NAME;
+			typeName = SCOPE_TYPE_NAME;
 		}
 
 		String requestUrl = new StringBuilder().append("/")
