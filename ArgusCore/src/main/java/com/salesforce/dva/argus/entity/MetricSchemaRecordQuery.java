@@ -42,7 +42,7 @@ import java.util.Objects;
  */
 public class MetricSchemaRecordQuery extends SchemaQuery {
 
-	public static final String REGEX_MATCH_ANY = "*";
+    public static final String REGEX_MATCH_ANY = "*";
 
     //~ Instance fields ******************************************************************************************************************************
 
