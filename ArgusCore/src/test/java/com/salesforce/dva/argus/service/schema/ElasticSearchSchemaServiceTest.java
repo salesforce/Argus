@@ -39,11 +39,11 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             "\t\t\t\"sum_other_doc_count\": 424,\n" +
             "\t\t\t\"buckets\": [\n" +
             "\t\t\t\t{\n" +
-            "\t\t\t\t\t\"key\": \"system.PHX.AGG.insights-phx-sp1\\n\",\n" +
+            "\t\t\t\t\t\"key\": \"system.name1\\n\",\n" +
             "\t\t\t\t\t\"doc_count\": 1\n" +
             "\t\t\t\t},\n" +
             "\t\t\t\t{\n" +
-            "\t\t\t\t\t\"key\": \"system.PHX.AGG.insights-phx-sp2\\n\",\n" +
+            "\t\t\t\t\t\"key\": \"system.name2\\n\",\n" +
             "\t\t\t\t\t\"doc_count\": 1\n" +
             "\t\t\t\t}\n" +
             "\t\t\t]\n" +
@@ -52,7 +52,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             "}";
 
     @Test
-    public void testGetUniqueUsingScopeIndex() throws IOException {
+    public void testGetUniqueUsingScopeSchemaIndex() throws IOException {
 
         MetricSchemaRecordQuery queryForScope = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
                 .metric("*")
@@ -79,13 +79,13 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         assertEquals("/scopenames/scope_type/_search", requestUrl);
 
-        assertTrue(queryForScope.queryOnlyOnScope());
+        assertTrue(queryForScope.isQueryOnlyOnScope());
     }
 
     @Test
-    public void testGetUniqueUsingMetricIndex() throws IOException {
+    public void testGetUniqueUsingMetricSchemaIndex() throws IOException {
 
-        MetricSchemaRecordQuery queryForScope = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system")
+        MetricSchemaRecordQuery queryForMetric = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system")
                 .metric("argus*")
                 .tagKey("*")
                 .tagValue("*")
@@ -99,7 +99,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         ElasticSearchSchemaService spyService = _initializeSpyService(service, reply);
 
-        spyService.getUnique(queryForScope, scopeType);
+        spyService.getUnique(queryForMetric, scopeType);
 
         ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<StringEntity> queryJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
@@ -110,7 +110,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         assertEquals("/metadata_index/metadata_type/_search", requestUrl);
 
-        assertFalse(queryForScope.queryOnlyOnScope());
+        assertFalse(queryForMetric.isQueryOnlyOnScope());
     }
 
     private ElasticSearchSchemaService _initializeSpyService(ElasticSearchSchemaService service, String reply) {
