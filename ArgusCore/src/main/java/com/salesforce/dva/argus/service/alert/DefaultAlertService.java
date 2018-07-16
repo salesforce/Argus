@@ -57,6 +57,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.Cron;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -125,7 +126,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
-	private static Set<String> _whiteListedScopes = null;
+	private static Set<String> _whiteListedScopeRegexes = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -393,16 +394,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
-					if(_whiteListedScopes==null) {
+					if(_whiteListedScopeRegexes==null) {
 						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
 						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
-							_whiteListedScopes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
+							_whiteListedScopeRegexes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
 						}else {
-							_whiteListedScopes = new HashSet<String>();
+							_whiteListedScopeRegexes = new HashSet<String>();
 						}
 					}
 					
-					if(_whiteListedScopes.isEmpty() || !isScopePresentInWhiteList(alert.getExpression())) {
+					if(_whiteListedScopeRegexes.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexes)) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
 						_logger.info(logMessage);
@@ -499,14 +500,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-	private boolean isScopePresentInWhiteList(String expression) {
-		for(String scope : _whiteListedScopes) {
-			if(expression.toLowerCase().contains(":"+scope+":")) {
-				return true;
-			}
-		}
-		return false;
-	}
+
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
