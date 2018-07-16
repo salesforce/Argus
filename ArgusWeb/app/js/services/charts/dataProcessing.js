@@ -227,6 +227,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 						processedMetric['name'] = metrics.name;
 						processedMetric['color'] = metrics.color;
 						processedMetric['extraYAxis'] = metrics.extraYAxis;
+						processedMetric['hideTags'] = metrics.hideTags;
 						processedMetric['metricSpecificOptions'] = this.getMetricSpecificOptionsInArray(metricSpecificOptions);
 
 						// update metric list with new processed metric object
@@ -269,13 +270,35 @@ angular.module('argus.services.charts.dataProcessing', [])
 							series.push([timestamp, value]);
 						}
 					}
+					if (metricItem.hideTags !== undefined) {
+						if (metricItem.hideTags === 'true') {
+							// delete all tags
+							data = data.map(function(item) {
+								delete item.tags;
+								return item;
+							});
+						} else {
+							// delete provided tags
+							var droppedTags = metricItem.hideTags.split(',').map(function(tag) {
+								return tag.trim();
+							});
+							data = data.map(function(item) {
+								droppedTags.forEach(function(tag){
+									delete item.tags[tag];
+								});
+								return item;
+							});
+						}
+					}
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
 					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.extraYAxis : null;
+					var metricshideTags = true;
 					var objSeries = {
 						name: metricName,
 						color: metricColor,
 						extraYAxis: metricExtraYAxis,
+						hideTags: metricshideTags,
 						data: series
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
