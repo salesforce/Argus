@@ -55,6 +55,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
@@ -193,7 +194,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
 
-			_roundRobinIterator = Iterables.cycle(_writeEndpoints).iterator();
+			_roundRobinIterator = constructCyclingIterator(_writeEndpoints);
 			_executorService = Executors.newFixedThreadPool(connCount);
 		} catch (MalformedURLException ex) {
 			throw new SystemException("Error initializing the TSDB HTTP Client.", ex);
@@ -202,6 +203,38 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	//~ Methods **************************************************************************************************************************************
+
+	private Iterator<String> constructCyclingIterator(String[] endpoints) {
+		return new Iterator<String>() {
+			AtomicInteger index = new AtomicInteger(0);
+			List<String> items = Arrays.asList(endpoints);
+			IntUnaryOperator updater = new IntUnaryOperator() {
+				@Override
+				public int applyAsInt(int operand) {
+					if (operand == items.size() - 1) {
+						return 0;
+					} else {
+						return operand + 1;
+					}
+				}
+			};
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public String next() {
+				return items.get(index.getAndUpdate(updater));
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
 
 	/* Generates the metric names for metrics used for annotations. */
 	static String toAnnotationKey(String scope, String metric, String type, Map<String, String> tags) {
@@ -303,10 +336,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireArgument(TSDB_DATAPOINTS_WRITE_MAX_SIZE > 0, "Max Chunk size can not be less than 1");
 		requireArgument(metrics != null, "Metrics can not be null");
 
-		String endpoint;
-		synchronized (_roundRobinIterator) {
-			endpoint = _roundRobinIterator.next();
-		}
+		String endpoint = _roundRobinIterator.next();
 		_logger.debug("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
 
 		List<Metric> fracturedList = new ArrayList<>();
@@ -330,10 +360,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	public <T> void _retry(List<T> objects, Iterator<String> endPointIterator) {
 		for(int i=0;i<RETRY_COUNT;i++) {
 			try {
-				String endpoint;
-				synchronized (endPointIterator) {
-					endpoint = endPointIterator.next();
-				}
+				String endpoint = endPointIterator.next();
 				_logger.info("Retrying using endpoint {}.", endpoint);
 				put(objects, endpoint + "/api/put", HttpMethod.POST);
 				return;
@@ -352,10 +379,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireNotDisposed();
 		if (annotations != null) {
 			List<AnnotationWrapper> wrappers = reconcileWrappers(toAnnotationWrappers(annotations));
-			String endpoint;
-			synchronized (_roundRobinIterator) {
-				endpoint = _roundRobinIterator.next();
-			}
+			String endpoint = _roundRobinIterator.next();
 
 			try {
 				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
