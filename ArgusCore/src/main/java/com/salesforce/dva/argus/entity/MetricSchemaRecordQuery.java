@@ -173,7 +173,7 @@ public class MetricSchemaRecordQuery extends SchemaQuery {
 		return scanFrom;
 	}
 
-	public boolean queryOnlyOnScope() {
+	public boolean isQueryOnlyOnScope() {
 
 		if (Objects.equals(this.namespace, REGEX_MATCH_ANY) &&
 			Objects.equals(this.metric, REGEX_MATCH_ANY) &&
