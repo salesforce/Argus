@@ -157,6 +157,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				Property.TSDB_READ_CONNECTION_REUSE_COUNT.getDefaultValue()));
 
 		_readEndPoints = Arrays.asList(config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue()).split(","));
+		requireArgument(_readEndPoints.size() > 0, "At least one TSD read endpoint required");
 
 		for(String readEndPoint : _readEndPoints) {
 			requireArgument((readEndPoint != null) && (!readEndPoint.isEmpty()), "Illegal read endpoint URL.");
@@ -170,6 +171,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		_writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
+		requireArgument(_writeEndpoints.length > 0, "At least one TSD write endpoint required");
 		RETRY_COUNT = Integer.parseInt(config.getValue(Property.TSD_RETRY_COUNT.getName(),
 				Property.TSD_RETRY_COUNT.getDefaultValue()));
 
