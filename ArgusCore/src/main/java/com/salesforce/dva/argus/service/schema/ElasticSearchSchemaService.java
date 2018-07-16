@@ -701,25 +701,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			_addToBloomFilterScopeOnly(records);
 
 		} catch(IOException e) {
-			throw new SystemException("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
-		}
-
-		try {
-			PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-			//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
-			if(putResponse.errors) {
-				for(Item item : putResponse.items) {
-					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						_logger.warn("Failed to index scope. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-					}
-
-					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-						_logger.warn("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-					}
-				}
-			}
-		} catch(IOException e) {
-			throw new SystemException("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
+			throw new SystemException("Failed to parse reponse of put scope names. The response was: " + strResponse, e);
 		}
 	}
 
