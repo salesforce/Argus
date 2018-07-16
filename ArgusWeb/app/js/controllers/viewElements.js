@@ -12,6 +12,7 @@ angular.module('argus.controllers.viewelements', [])
 			'name': seriesData.name,
 			'color': seriesData.color,
 			'extraYAxis': seriesData.extraYAxis,
+			'hideTags': seriesData.hideTags,
 			'expression': expression,
 			'metricSpecificOptions': metricSpecificOptions
 		};
