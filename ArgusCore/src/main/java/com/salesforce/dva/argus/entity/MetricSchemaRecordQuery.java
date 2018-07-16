@@ -176,9 +176,9 @@ public class MetricSchemaRecordQuery extends SchemaQuery {
 	public boolean queryOnlyOnScope() {
 
 		if (Objects.equals(this.namespace, REGEX_MATCH_ANY) &&
-				Objects.equals(this.metric, REGEX_MATCH_ANY) &&
-				Objects.equals(this.tagKey, REGEX_MATCH_ANY) &&
-				Objects.equals(this.tagValue, REGEX_MATCH_ANY))
+			Objects.equals(this.metric, REGEX_MATCH_ANY) &&
+			Objects.equals(this.tagKey, REGEX_MATCH_ANY) &&
+			Objects.equals(this.tagValue, REGEX_MATCH_ANY))
 		{
 			return true;
 		}
