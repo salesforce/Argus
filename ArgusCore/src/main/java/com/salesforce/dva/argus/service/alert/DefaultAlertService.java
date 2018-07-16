@@ -82,6 +82,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,7 +127,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
-	private static Set<String> _whiteListedScopeRegexes = null;
+	private static List<Pattern> _whiteListedScopeRegexPatterns = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -394,16 +395,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
-					if(_whiteListedScopeRegexes==null) {
+					if(_whiteListedScopeRegexPatterns==null) {
 						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
 						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
-							_whiteListedScopeRegexes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
+							_whiteListedScopeRegexPatterns = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
 						}else {
-							_whiteListedScopeRegexes = new HashSet<String>();
+							_whiteListedScopeRegexPatterns = new ArrayList<Pattern>();
 						}
 					}
 					
-					if(_whiteListedScopeRegexes.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexes)) {
+					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
 						_logger.info(logMessage);
