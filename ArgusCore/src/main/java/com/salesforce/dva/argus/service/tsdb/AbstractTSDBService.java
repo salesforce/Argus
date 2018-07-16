@@ -204,7 +204,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 	//~ Methods **************************************************************************************************************************************
 
-	private Iterator<String> constructCyclingIterator(String[] endpoints) {
+	Iterator<String> constructCyclingIterator(String[] endpoints) {
 		return new Iterator<String>() {
 			AtomicInteger index = new AtomicInteger(0);
 			List<String> items = Arrays.asList(endpoints);
