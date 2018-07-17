@@ -60,13 +60,13 @@ public class FillTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, Double> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, double value) {
+    private static Map<Long, Number> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, Number value) {
     	if(metric == null || metric.getDatapoints() == null || metric.getDatapoints().isEmpty()) {
     		return Collections.emptyMap();
     	}
     	
-        Map<Long, Double> filledDatapoints = new TreeMap<>();
-        Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
+        Map<Long, Number> filledDatapoints = new TreeMap<>();
+        Map<Long, Number> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
 
         sortedDatapoints.keySet().toArray(sortedTimestamps);
@@ -93,9 +93,9 @@ public class FillTransform implements Transform {
 
         int newLength = filledDatapoints.size();
         List<Long> newTimestamps = new ArrayList<Long>();
-        List<Double> newValues = new ArrayList<>();
+        List<Number> newValues = new ArrayList<>();
 
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
             newTimestamps.add(entry.getKey());
             newValues.add(entry.getValue());
         }
@@ -107,9 +107,9 @@ public class FillTransform implements Transform {
             }
         }
 
-        Map<Long, Double> cleanFilledDatapoints = new TreeMap<>();
+        Map<Long, Number> cleanFilledDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
             if (entry.getValue() != null) {
                 cleanFilledDatapoints.put(entry.getKey(), entry.getValue());
             }
@@ -135,46 +135,55 @@ public class FillTransform implements Transform {
     }
 
     //~ Methods **************************************************************************************************************************************
-
+    
     private List<Metric> _fillLine(List<String> constants, long relativeTo) {
-        SystemAssert.requireArgument(constants != null && constants.size() == 5,
-            "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
+    	SystemAssert.requireArgument(constants != null && constants.size() == 5,
+                "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
 
-        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
-        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
-        long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
-        long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
-        double value = Double.parseDouble(constants.get(4));
+            long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
+            long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
+            long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
+            long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
+            Number value;
+            try {
+            	value = Long.parseLong(constants.get(4));
+            } catch (NumberFormatException nfe) {
+            	try {
+            		value = Double.parseDouble(constants.get(4));
+            	} catch (NumberFormatException nfe2) {
+            		throw new IllegalArgumentException("Value " + constants.get(4) + " is not a valid number.");
+            	}
+            }
+            
+            SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
+            SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
 
-        SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
-        SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
+            // snapping start and end time
+            long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
+            startTimestamp = startTimestamp - startSnapping;
+            long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
+            endTimestamp = endTimestamp - endSnapping;
 
-        // snapping start and end time
-        long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
-        startTimestamp = startTimestamp - startSnapping;
-        long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
-        endTimestamp = endTimestamp - endSnapping;
+            Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
+            Map<Long, Number> filledDatapoints = new TreeMap<>();
+            
+            while (startTimestamp < endTimestamp) {
+            	filledDatapoints.put(startTimestamp, value);
+            	startTimestamp += windowSizeInSeconds * 1000;
+            }
+            filledDatapoints.put(endTimestamp, value);
+            
+            Map<Long, Number> newFilledDatapoints = new TreeMap<>();
+            
+            for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
+            	newFilledDatapoints.put(entry.getKey() + offsetInSeconds * 1000, entry.getValue());
+            }
+            metric.setDatapoints(newFilledDatapoints);
+            
+            List<Metric> lineMetrics = new ArrayList<Metric>();
 
-        Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
-        Map<Long, Double> filledDatapoints = new TreeMap<>();
-
-        while (startTimestamp < endTimestamp) {
-            filledDatapoints.put(startTimestamp, value);
-            startTimestamp += windowSizeInSeconds * 1000;
-        }
-        filledDatapoints.put(endTimestamp, value);
-
-        Map<Long, Double> newFilledDatapoints = new TreeMap<>();
-
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
-            newFilledDatapoints.put(entry.getKey() + offsetInSeconds * 1000, entry.getValue());
-        }
-        metric.setDatapoints(newFilledDatapoints);
-
-        List<Metric> lineMetrics = new ArrayList<Metric>();
-
-        lineMetrics.add(metric);
-        return lineMetrics;
+            lineMetrics.add(metric);
+            return lineMetrics;
     }
 
     private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
@@ -233,7 +242,16 @@ public class FillTransform implements Transform {
 
         String offset = constants.get(1);
         long offsetInSeconds = _parseTimeIntervalInSeconds(offset);
-        double value = Double.parseDouble(constants.get(2));
+        Number value;
+        try {
+        	value = Long.parseLong(constants.get(2));
+        } catch (NumberFormatException nfe) {
+        	try {
+        		value = Double.parseDouble(constants.get(2));
+        	} catch (NumberFormatException nfe2) {
+        		throw new IllegalArgumentException("The value " + constants.get(2) + " is not a valid number.");
+        	}
+        }
 
         List<Metric> fillMetricList = new ArrayList<Metric>();
         for (Metric metric : metrics) {
@@ -244,7 +262,7 @@ public class FillTransform implements Transform {
         }
         return fillMetricList;
     }
-
+    
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.FILL.name();

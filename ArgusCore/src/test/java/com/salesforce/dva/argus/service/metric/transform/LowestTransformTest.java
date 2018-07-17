@@ -48,7 +48,7 @@ public class LowestTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testLowestTransformWithIllegalLimit() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -70,7 +70,7 @@ public class LowestTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testLowestTransformWithIllegalType() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -92,7 +92,7 @@ public class LowestTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testLowestTransformWithoutLimit() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -124,7 +124,7 @@ public class LowestTransformTest {
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenDefault() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 1.0);
@@ -134,21 +134,21 @@ public class LowestTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 2.0);
-        datapoints_2.put(2000L, 2.0);
-        datapoints_2.put(3000L, 2.0);
+        datapoints_2.put(1000L, 2L);
+        datapoints_2.put(2000L, 2L);
+        datapoints_2.put(3000L, 2L);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(1000L, 3L);
         datapoints_3.put(2000L, 3.0);
-        datapoints_3.put(3000L, 3.0);
+        datapoints_3.put(3000L, 3L);
 
         Metric metric_3 = new Metric(TEST_SCOPE + "3", TEST_METRIC);
 
@@ -164,17 +164,17 @@ public class LowestTransformTest {
 
         constants.add("2");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 1.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 2.0);
-        expected_2.put(2000L, 2.0);
-        expected_2.put(3000L, 2.0);
+        expected_2.put(1000L, 2L);
+        expected_2.put(2000L, 2L);
+        expected_2.put(3000L, 2L);
 
         List<Metric> result = lowestTransform.transform(metrics, constants);
 
@@ -182,11 +182,11 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenAvg() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 1.0);
@@ -196,7 +196,7 @@ public class LowestTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 2.0);
         datapoints_2.put(2000L, 2.0);
@@ -206,9 +206,9 @@ public class LowestTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(1000L, 3L);
         datapoints_3.put(2000L, 3.0);
         datapoints_3.put(3000L, 3.0);
 
@@ -227,7 +227,7 @@ public class LowestTransformTest {
         constants.add("2");
         constants.add("avg");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 1.0);
@@ -245,21 +245,21 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testLowestTransformWithLimitEqualToDPsLenMin() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 100.0);
-        datapoints_1.put(3000L, 100.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 100L);
+        datapoints_1.put(3000L, 100L);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 2.0);
         datapoints_2.put(2000L, 200.0);
@@ -269,9 +269,9 @@ public class LowestTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(1000L, 3L);
         datapoints_3.put(2000L, 300.0);
         datapoints_3.put(3000L, 300.0);
 
@@ -290,21 +290,21 @@ public class LowestTransformTest {
         constants.add("3");
         constants.add("min");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
-        expected_1.put(1000L, 1.0);
-        expected_1.put(2000L, 100.0);
-        expected_1.put(3000L, 100.0);
+        expected_1.put(1000L, 1L);
+        expected_1.put(2000L, 100L);
+        expected_1.put(3000L, 100L);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 2.0);
         expected_2.put(2000L, 200.0);
         expected_2.put(3000L, 200.0);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
-        expected_3.put(1000L, 3.0);
+        expected_3.put(1000L, 3L);
         expected_3.put(2000L, 300.0);
         expected_3.put(3000L, 300.0);
 
@@ -315,11 +315,11 @@ public class LowestTransformTest {
         assertEquals(expected_2, result.get(1).getDatapoints());
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-
+    
     @Test
     public void testLowestTransformWithLimitGreatToDPsLenMax() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 1.0);
@@ -329,7 +329,7 @@ public class LowestTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 2.0);
         datapoints_2.put(2000L, 2.0);
@@ -339,7 +339,7 @@ public class LowestTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 3.0);
         datapoints_3.put(2000L, 3.0);
@@ -360,19 +360,19 @@ public class LowestTransformTest {
         constants.add("100");
         constants.add("max");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 100.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 2.0);
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 200.0);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 3.0);
         expected_3.put(2000L, 3.0);
@@ -389,17 +389,17 @@ public class LowestTransformTest {
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenRecent() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 300.0);
-        datapoints_1.put(2000L, 300.0);
-        datapoints_1.put(3000L, 1.0);
+        datapoints_1.put(1000L, 300L);
+        datapoints_1.put(2000L, 300L);
+        datapoints_1.put(3000L, 1L);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 200.0);
         datapoints_2.put(2000L, 200.0);
@@ -409,7 +409,7 @@ public class LowestTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 100.0);
         datapoints_3.put(2000L, 100.0);
@@ -430,13 +430,13 @@ public class LowestTransformTest {
         constants.add("2");
         constants.add("recent");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
-        expected_1.put(1000L, 300.0);
-        expected_1.put(2000L, 300.0);
-        expected_1.put(3000L, 1.0);
+        expected_1.put(1000L, 300L);
+        expected_1.put(2000L, 300L);
+        expected_1.put(3000L, 1L);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 200.0);
         expected_2.put(2000L, 200.0);
@@ -448,11 +448,11 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenDefaultHavingNull() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, null);
@@ -462,9 +462,9 @@ public class LowestTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 2.0);
+        datapoints_2.put(1000L, 2L);
         datapoints_2.put(2000L, null);
         datapoints_2.put(3000L, null);
 
@@ -472,9 +472,9 @@ public class LowestTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 3.0);
+        datapoints_3.put(1000L, 3L);
         datapoints_3.put(2000L, null);
         datapoints_3.put(3000L, null);
 
@@ -492,15 +492,15 @@ public class LowestTransformTest {
 
         constants.add("2");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, null);
         expected_1.put(3000L, null);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 2.0);
+        expected_2.put(1000L, 2L);
         expected_2.put(2000L, null);
         expected_2.put(3000L, null);
 

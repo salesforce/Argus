@@ -5,7 +5,7 @@ angular.module('argus.directives.breadcrumbs', [])
 .directive('breadcrumbsHtml', function() {
 	return {
 		restrict: 'E',
-		templateUrl: 'js/templates/breadcrumbs.html',
+		template: require('../templates/breadcrumbs.html'),
 		scope: {},
 		controller: ['$scope', 'breadcrumbs', function ($scope, breadcrumbs) {
 			$scope.breadcrumbs = breadcrumbs;

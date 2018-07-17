@@ -93,7 +93,7 @@ public class MetricZipperTransform implements Transform {
         
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
-
+    
     /**
      * Merges a list of metrics.
      *
@@ -106,11 +106,11 @@ public class MetricZipperTransform implements Transform {
         SystemAssert.requireArgument(baseMetric != null, "Zipper transform requires base metric as second param!");
 
         List<Metric> zippedMetrics = new ArrayList<Metric>();
-        Map<Long, Double> baseDatapoints = baseMetric.getDatapoints();
+        Map<Long, Number> baseDatapoints = baseMetric.getDatapoints();
 
         for (Metric metric : metrics) {
-            Map<Long, Double> originalDatapoints = metric.getDatapoints();
-            Map<Long, Double> zippedDatadpoints = this.zip(originalDatapoints, baseDatapoints);
+            Map<Long, Number> originalDatapoints = metric.getDatapoints();
+            Map<Long, Number> zippedDatadpoints = this.zip(originalDatapoints, baseDatapoints);
 
             metric.setDatapoints(zippedDatadpoints);
             zippedMetrics.add(metric);
@@ -126,18 +126,18 @@ public class MetricZipperTransform implements Transform {
      *
      * @return  The merged data points.
      */
-    public Map<Long, Double> zip(Map<Long, Double> originalDatapoints, Map<Long, Double> baseDatapoints) {
+    public Map<Long, Number> zip(Map<Long, Number> originalDatapoints, Map<Long, Number> baseDatapoints) {
         SystemAssert.requireArgument(baseDatapoints != null && !baseDatapoints.isEmpty(),
             "Zipper transform requires valid baseDatapoints from base metric!");
 
-        Map<Long, Double> zippedDP = new HashMap<>();
+        Map<Long, Number> zippedDP = new HashMap<>();
 
-        for (Map.Entry<Long, Double> originalDP : originalDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> originalDP : originalDatapoints.entrySet()) {
             Long originalKey = originalDP.getKey();
-            Double originalVal = originalDP.getValue();
+            Number originalVal = originalDP.getValue();
 
             // if base datapoints doesn't have the key, give it null
-            Double baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
+            Number baseVal = baseDatapoints.containsKey(originalKey) ? baseDatapoints.get(originalKey) : null;
 
             zippedDP.put(originalKey, this.valueZipper.zip(originalVal, baseVal));
         }
@@ -145,7 +145,7 @@ public class MetricZipperTransform implements Transform {
         // if a point exists in the baseDP but does not exist in the original set, 
         // then only add it to the result when fullJoinIndicator is true.
         if(fulljoinIndicator) {
-        	for (Map.Entry<Long, Double> baseDP : baseDatapoints.entrySet()) {
+        	for (Map.Entry<Long, Number> baseDP : baseDatapoints.entrySet()) {
                 Long baseDPKey = baseDP.getKey();
 
                 if(!zippedDP.containsKey(baseDPKey)) {

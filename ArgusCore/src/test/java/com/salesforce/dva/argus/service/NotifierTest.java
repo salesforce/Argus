@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
@@ -59,7 +60,7 @@ public class NotifierTest extends AbstractTest {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_ame", new ArrayList<String>(), 23);
-        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));

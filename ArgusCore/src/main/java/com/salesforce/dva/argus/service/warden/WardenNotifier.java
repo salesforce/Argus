@@ -148,7 +148,7 @@ public abstract class WardenNotifier extends DefaultNotifier {
         PrincipalUser wardenUser = getWardenUser(alert.getName());
         Metric metric = null;
 
-        Map<Long, Double> datapoints = new HashMap<>();
+        Map<Long, Number> datapoints = new HashMap<>();
 
         metric = new Metric(Counter.WARDEN_TRIGGERS.getScope(), Counter.WARDEN_TRIGGERS.getMetric());
         metric.setTag("user", wardenUser.getUserName());

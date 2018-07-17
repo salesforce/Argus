@@ -176,10 +176,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
 
                 for (Metric metric : entry.getValue()) {
                     Metric tempMetric = new Metric(metric);
-                    Map<Long, Double> filteredDatapoints = new LinkedHashMap<>();
+                    Map<Long, Number> filteredDatapoints = new LinkedHashMap<>();
 
                     // Trim values based on user time
-                    for (Map.Entry<Long, Double> datapoint : metric.getDatapoints().entrySet()) {
+                    for (Map.Entry<Long, Number> datapoint : metric.getDatapoints().entrySet()) {
                         if (datapoint.getKey() >= queryWithTimestamp.getOriginalStartTimestamp()) {
                             filteredDatapoints.put(datapoint.getKey(), datapoint.getValue());
                         }
@@ -224,9 +224,9 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
             nextTimeStampDay = getNextDayBoundaryTimeStamp(startTimeStampDay);
 
             Metric tempMetric = new Metric(metric);
-            Map<Long, Double> dataPoints = new LinkedHashMap<>();
+            Map<Long, Number> dataPoints = new LinkedHashMap<>();
 
-            for (Map.Entry<Long, Double> dataPoint : metric.getDatapoints().entrySet()) {
+            for (Map.Entry<Long, Number> dataPoint : metric.getDatapoints().entrySet()) {
                 if (dataPoint.getKey() < nextTimeStampDay) {
                     dataPoints.put(dataPoint.getKey(), dataPoint.getValue());
                 } else {
@@ -453,10 +453,10 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
                                 combinedMetric = tagNameAndMetricMap.get(metric.getTags().toString());
                             }
 
-                            Map<Long, Double> filteredDatapoints = new LinkedHashMap<>();
+                            Map<Long, Number> filteredDatapoints = new LinkedHashMap<>();
 
                             // Trim values based on user time
-                            for (Map.Entry<Long, Double> datapoint : metric.getDatapoints().entrySet()) {
+                            for (Map.Entry<Long, Number> datapoint : metric.getDatapoints().entrySet()) {
                                 if (datapoint.getKey() >= originalStartTimestamp) {
                                     filteredDatapoints.put(datapoint.getKey(), datapoint.getValue());
                                 }

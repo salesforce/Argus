@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 
@@ -63,22 +64,29 @@ public abstract class AnomalyDetectionTransform implements Transform {
         long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
 
         //Create a sorted array of the metric's timestamps
-        Map<Long, Double> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Number> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Double> completeDatapointsDouble;
+        try {
+        	completeDatapointsDouble = NumberOperations.getMapAsDoubles(completeDatapoints);
+        } catch (IllegalArgumentException iae) {
+        	throw new UnsupportedOperationException("Anomaly Detection Transform is only supported for double data values.");
+        }
+        
         Long[] timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
 
         int currentIndex = 0;
         currentIndex = advanceCurrentIndexByInterval(currentIndex, predictionDatapoints,
                         timestamps, detectionIntervalInSeconds);
-        calculateContextualAnomalyScores(predictionDatapoints, completeDatapoints, timestamps,
+        calculateContextualAnomalyScores(predictionDatapoints, completeDatapointsDouble, timestamps,
                 currentIndex, detectionIntervalInSeconds);
 
-        predictions.setDatapoints(predictionDatapoints);
+        predictions.setDatapoints(new HashMap<Long, Number>(predictionDatapoints));
         List<Metric> resultMetrics = new ArrayList<>();
         resultMetrics.add(predictions);
         return resultMetrics;
     }
-
+    
     @Override
     public List<Metric> transform(List<Metric>... metrics) {
         throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
@@ -109,7 +117,12 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @return Normalized metric
      */
     public Metric normalizePredictions(Metric predictions) {
-        Map<Long, Double> metricData = predictions.getDatapoints();
+    	Map<Long, Double> metricData;
+    	try {
+    		metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
+    	} catch (IllegalArgumentException iae) {
+    		throw new UnsupportedOperationException("Normalize Predictions in Anomaly Detection Transform can only be used with double data values.");
+    	}
         Map<String, Double> minMax = getMinMax(metricData);
         double min = minMax.get("min");
         double max = minMax.get("max");
@@ -139,7 +152,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
             }
         }
 
-        predictionsNormalized.setDatapoints(metricDataNormalized);
+        predictionsNormalized.setDatapoints(new HashMap<Long, Number>(metricDataNormalized));
         return predictionsNormalized;
     }
 
@@ -173,7 +186,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         minMax.put("max", max);
         return minMax;
     }
-
+    
     /**
      * Advances currentIndex to a point where it is one anomaly detection
      * interval beyond the first timestamp. Sets the anomaly scores for
@@ -202,7 +215,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         }
         return currentIndex;
     }
-
+    
     /**
      * Creates an interval for each data point (after currentIndex) in the metric
      * and calculates the anomaly score for that data point using only other data
@@ -229,7 +242,12 @@ public abstract class AnomalyDetectionTransform implements Transform {
 
             //Apply the anomaly detection transform to each interval separately
             Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0);
-            Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+            Map<Long, Double> intervalAnomaliesMetricData;
+            try {
+            	intervalAnomaliesMetricData = NumberOperations.getMapAsDoubles(intervalAnomaliesMetric.getDatapoints());
+            } catch (IllegalArgumentException iae) {
+            	throw new UnsupportedOperationException("Anomaly Detection Transform is only supported for double data values.");
+            }
             predictionDatapoints.put(timestamps[i],
                     intervalAnomaliesMetricData.get(timestamps[i]));
         }
@@ -260,10 +278,10 @@ public abstract class AnomalyDetectionTransform implements Transform {
             intervalStartIndex--;
         }
 
-        intervalMetric.setDatapoints(intervalMetricData);
+        intervalMetric.setDatapoints(new HashMap<Long, Number>(intervalMetricData));
         return intervalMetric;
     }
-
+    
     @Override
     abstract public List<Metric> transform(List<Metric> metrics);
 

@@ -18,7 +18,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.icu.impl.locale.KeyTypeData.ValueType;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -82,13 +84,21 @@ public class PhoenixTSDBEngine {
 		PreparedStatement preparedStmt = null;
 		try {
 			preparedStmt = connection.prepareStatement(upsertMetricSql);
-			for(Map.Entry<Long, Double> datapointEntry : metric.getDatapoints().entrySet()) {
+			for(Map.Entry<Long, Number> datapointEntry : metric.getDatapoints().entrySet()) {
 				
 				Long timestamp = datapointEntry.getKey();
-				Double value = datapointEntry.getValue();
+				Number value = datapointEntry.getValue();
 				
 				preparedStmt.setDate(1, new Date(timestamp));
-				preparedStmt.setDouble(2, value);
+				NumberOperations.ValueType type = NumberOperations.ValueType.value(value);
+				switch(type) {
+					case INT:
+					case LONG:
+						preparedStmt.setLong(2, value.longValue());
+						break;
+					case DOUBLE:
+						preparedStmt.setDouble(2, value.doubleValue());
+				}
 				preparedStmt.execute();
 			}
 			
@@ -129,7 +139,13 @@ public class PhoenixTSDBEngine {
 				
 				Map<String, String> tags = new HashMap<>();
 				
-				Double value = rs.getDouble(1);
+				Number value;
+				String str = rs.getString(1);
+				try {
+					value = Long.parseLong(str);
+				} catch (NumberFormatException nfe) {
+					value = Double.parseDouble(str);
+				}
 				long timestamp = rs.getDate(2).getTime();
 				String displayName = rs.getString(3);
 				String units = rs.getString(4);
@@ -138,7 +154,7 @@ public class PhoenixTSDBEngine {
 					tags.put(metaData.getColumnName(i), rs.getString(i));
 				}
 				
-				Map<Long, Double> datapoints = new HashMap<>();
+				Map<Long, Number> datapoints = new HashMap<>();
 				datapoints.put(timestamp, value);
 				String identifier = tags.toString();
 				if(metrics.containsKey(identifier)) {

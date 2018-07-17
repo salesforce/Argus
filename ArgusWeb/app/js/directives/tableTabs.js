@@ -8,7 +8,7 @@ angular.module('argus.directives')
 	.directive('tableTabs', function () {
 		return {
 			restrict: 'E',
-			templateUrl: 'js/templates/tableTabs.html',
+			template: require('../templates/tableTabs.html'),
 			scope: {
 				tabNames: '=',
 				properties: '=',

@@ -188,7 +188,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 	@Metadata
 	private boolean shared;
-
+	
 	//~ Constructors *********************************************************************************************************************************
 
 	/**

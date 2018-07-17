@@ -54,7 +54,7 @@ angular.module('argus.directives.charts.lineChart', [])
 			series: '=series',
 			dateConfig: '=dateconfig'
 		},
-		templateUrl: 'js/templates/charts/topToolbar.html',
+		template: require('../../templates/charts/topToolbar.html'),
 		controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
 			$scope.showToggleSources = true;
 			$scope.hideMenu = true;
@@ -119,7 +119,7 @@ angular.module('argus.directives.charts.lineChart', [])
 							return $scope.menuOption;
 						}
 					},
-					templateUrl: 'js/templates/modals/chartOptions.html',
+					template: require('../../templates/modals/chartOptions.html'),
 					windowClass: 'chartOptions',
 					size: 'lg',
 					// controller: chartOptions,     // ['optionsModal', 'menuOption', ChartOptions],

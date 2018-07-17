@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,17 +67,23 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
                                             "k constant.");
 
-        Map<Long, Double> metricData = metrics.get(0).getDatapoints();
-        metricDataValues = metricData.values().stream().collect(Collectors.toList());
-        if (metricData.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
+        Map<Long, Number> metricData = metrics.get(0).getDatapoints();
+        Map<Long, Double> metricDataDouble;
+        try {
+        	metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
+        } catch (IllegalArgumentException iae) {
+        	throw new UnsupportedOperationException("Anomaly Detection K Means Transform is only supported for double data values.");
+        }
+        metricDataValues = metricDataDouble.values().stream().collect(Collectors.toList());
+        if (metricDataDouble.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
 
         try {
-            trainModel(metricData);
+            trainModel(metricDataDouble);
         } catch (Exception e) {
             throw new UnsupportedOperationException("Cluster creation unsuccessful");
         }
 
-        Metric predictions = predictAnomalies(metricData);
+        Metric predictions = predictAnomalies(metricDataDouble);
         Metric predictionsNormalized = normalizePredictions(predictions);
 
         List<Metric> resultMetrics = new ArrayList<>();
@@ -101,7 +108,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
 
         return transform(metrics);
     }
-
+   
     private void trainModel(Map<Long, Double> metricData) throws Exception {
         //Model has a single metric_value attribute
         Attribute value = new Attribute("metric_value");
@@ -171,7 +178,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
             }
         }
 
-        predictions.setDatapoints(predictionDatapoints);
+        predictions.setDatapoints(new HashMap<>(predictionDatapoints));
         return predictions;
     }
 

@@ -49,8 +49,8 @@ public class Trigger extends Entity {
 
     private String type;
     private String name;
-    private Double threshold;
-    private Double secondaryThreshold;
+    private Number threshold;
+    private Number secondaryThreshold;
     private Long inertia;
     private BigInteger alertId;
     private List<BigInteger> notificationIds = new ArrayList<BigInteger>();
@@ -98,7 +98,7 @@ public class Trigger extends Entity {
      *
      * @return  The trigger threshold value.
      */
-    public Double getThreshold() {
+    public Number getThreshold() {
         return threshold;
     }
 
@@ -107,7 +107,7 @@ public class Trigger extends Entity {
      *
      * @param  threshold  The trigger threshold value.
      */
-    public void setThreshold(Double threshold) {
+    public void setThreshold(Number threshold) {
         this.threshold = threshold;
     }
 
@@ -116,7 +116,7 @@ public class Trigger extends Entity {
      *
      * @return  The trigger second threshold value.
      */
-    public Double getSecondaryThreshold() {
+    public Number getSecondaryThreshold() {
         return secondaryThreshold;
     }
 
@@ -125,7 +125,7 @@ public class Trigger extends Entity {
      *
      * @param  secondaryThreshold  The trigger second threshold value.
      */
-    public void setSecondaryThreshold(Double secondaryThreshold) {
+    public void setSecondaryThreshold(Number secondaryThreshold) {
         this.secondaryThreshold = secondaryThreshold;
     }
 

@@ -49,7 +49,7 @@ public interface DiscoveryService extends Service {
 	
 	/** This should be a configuration. For now, this is how we reached on a value of 2M. 
 	 *  A datapoint in Argus is a tuple containing a Long timestamp (8 bytes with some additional Java Wrapper Class bytes) 
-	 *  and a Double value (8 bytes with some additional Java Wrapper Class bytes). We would then consider a datapoint to 
+	 *  and a Number value (8 bytes with some additional Java Wrapper Class bytes). We would then consider a datapoint to 
 	 *  take up around 40 bytes of memory.
 	 *  
 	 *  Fixing the max QPM (Queries Per Minute) for Argus to around 500, and avg. query latency to around 3 secs 

@@ -156,7 +156,7 @@ public class GusNotifier extends AuditNotifier {
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = context.getAlert().getExpression();
 		String triggerDetails = getTriggerDetails(trigger);
-		double triggerEventValue = context.getTriggerEventValue();
+		Number triggerEventValue = context.getTriggerEventValue();
 		Object[] arguments = new Object[] {
 				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
 				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
@@ -184,7 +184,7 @@ public class GusNotifier extends AuditNotifier {
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
-
+	
 	private void postToGus(Set<String> to, String feed) {
 		
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {

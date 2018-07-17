@@ -8,7 +8,7 @@ angular.module('argus.services.confirmClick', [])
 	.service('ConfirmClick', ['$uibModal', function($uibModal){
 		this.openConfirmModal = function (confirmTitle, confirmMessage, confirmCall, cancelCall) {
 			var confirmModal = $uibModal.open({
-				templateUrl: 'js/templates/modals/confirmClick.html',
+				template: require('../templates/modals/confirmClick.html'),
 				windowClass: 'confirmClick',
 				controller: ['$scope', '$sce', function ($scope, $sce) {
 					$scope.toTrustedHTML = function( html ){

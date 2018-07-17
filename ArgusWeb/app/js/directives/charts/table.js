@@ -156,7 +156,7 @@ angular.module('argus.directives.charts.table', [])
 		scope: {},
 		require: '^agDashboard',
 		controller: 'ViewElements',
-		templateUrl: 'js/templates/ag-table.html',
+		template: require('../../templates/ag-table.html'),
 		link: function(scope, element, attributes, dashboardCtrl) {
 			//DashboardService.buildViewElement(scope, element, attributes, dashboardCtrl, VIEWELEMENT.table, tableNameIndex++, DashboardService, growl);
 

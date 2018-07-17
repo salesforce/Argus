@@ -115,7 +115,7 @@ public class DefaultManagementService extends DefaultService implements Manageme
 
     @Override
     @Transactional
-    public void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, double value) {
+    public void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, Number value) {
         requireNotDisposed();
         requireArgument(user != null, "User cannot be null.");
         requireArgument(counter != null, "Policy counter cannot be null.");

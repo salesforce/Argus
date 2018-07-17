@@ -67,27 +67,27 @@ public class JoinTransformTest {
     @Test
     public void testJoinTransformWithMultipleMetrics() {
         Transform joinTransform = new JoinTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(4000L, 10.0);
-        datapoints_2.put(5000L, 100.0);
-        datapoints_2.put(6000L, 1000.0);
+        datapoints_2.put(4000L, 10L);
+        datapoints_2.put(5000L, 100L);
+        datapoints_2.put(6000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(7000L, 0.1);
         datapoints_3.put(8000L, 0.01);
@@ -105,16 +105,16 @@ public class JoinTransformTest {
         metrics_2.add(metric_2);
         metrics_3.add(metric_3);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
-        expected_1.put(1000L, 1.0);
-        expected_1.put(2000L, 2.0);
-        expected_1.put(3000L, 3.0);
-        expected_2.put(4000L, 10.0);
-        expected_2.put(5000L, 100.0);
-        expected_2.put(6000L, 1000.0);
+        expected_1.put(1000L, 1L);
+        expected_1.put(2000L, 2L);
+        expected_1.put(3000L, 3L);
+        expected_2.put(4000L, 10L);
+        expected_2.put(5000L, 100L);
+        expected_2.put(6000L, 1000L);
         expected_3.put(7000L, 0.1);
         expected_3.put(8000L, 0.01);
         expected_3.put(9000L, 0.0001);
@@ -126,11 +126,11 @@ public class JoinTransformTest {
         assertEquals(expected_2, result.get(1).getDatapoints());
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-
+    
     @Test
     public void testJoinTransformWithOneMetric() {
         Transform joinTransform = new JoinTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -144,7 +144,7 @@ public class JoinTransformTest {
 
         metrics.add(metric_1);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);

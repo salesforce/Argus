@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
@@ -111,7 +112,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private final DashboardService _dashboardService;
 	private final MetricService _metricService;
 	private final MailService _mailService;
-	private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
+	private final Map<Metric, Number> _metrics = new ConcurrentHashMap<>();
 	private final PrincipalUser _adminUser;
 	private final SystemConfiguration _sysConfig;
 	private Thread _monitorThread;
@@ -259,7 +260,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public void updateCustomCounter(String name, double value, Map<String, String> tags) {
+	public void updateCustomCounter(String name, Number value, Map<String, String> tags) {
 		requireNotDisposed();
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
@@ -270,7 +271,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public void updateCounter(Counter counter, double value, Map<String, String> tags) {
+	public void updateCounter(Counter counter, Number value, Map<String, String> tags) {
 		requireNotDisposed();
 		requireArgument(counter != null, "Cannot update a null counter.");
 		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot update JVM counters");
@@ -278,15 +279,15 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public double modifyCustomCounter(String name, double delta, Map<String, String> tags) {
+	public Number modifyCustomCounter(String name, Number delta, Map<String, String> tags) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(name != null && !name.isEmpty(), "Cannot modify a counter with null or empty name.");
 
 		Metric key = _constructCounterKey(name, tags);
 
 		synchronized (_metrics) {
-			Double value = _metrics.get(key);
-			double newValue = value == null ? delta : value + delta;
+			Number value = _metrics.get(key);
+			Number newValue = value == null ? delta : NumberOperations.add(value, delta);
 
 			_logger.debug("Modifying {} counter for {} to {}.", name, tags, newValue);
 			_metrics.put(key, newValue);
@@ -295,7 +296,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public double modifyCounter(Counter counter, double delta, Map<String, String> tags) {
+	public Number modifyCounter(Counter counter, Number delta, Map<String, String> tags) {
 		requireNotDisposed();
 		requireArgument(counter != null, "Cannot modify a null counter.");
 		requireArgument(!"argus.jvm".equalsIgnoreCase(counter.getScope()), "Cannot modify JVM counters");
@@ -303,18 +304,18 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public double getCounter(Counter counter, Map<String, String> tags) {
+	public Number getCounter(Counter counter, Map<String, String> tags) {
 		requireArgument(counter != null, "Cannot get value for a null counter.");
 		return getCustomCounter(counter.getMetric(), tags);
 	}
 
 	@Override
-	public double getCustomCounter(String name, Map<String, String> tags) {
+	public Number getCustomCounter(String name, Map<String, String> tags) {
 		requireNotDisposed();
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
 		Metric metric = _constructCounterKey(name, tags);
-		Double value;
+		Number value;
 
 		synchronized (_metrics) {
 			value = _metrics.get(metric);
@@ -629,7 +630,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 				Alert alert = new Alert(_adminUser, _adminUser, _constructAlertName(alertName), metricExpression, "0 * * * *");
 				Notification notification = new Notification(NOTIFICATION_NAME, alert, AuditNotifier.class.getName(), new ArrayList<String>(),
 						60000L);
-				Trigger trigger = new Trigger(alert, triggerType, triggerName, triggerThreshold, 0);
+				Trigger trigger = new Trigger(alert, triggerType, triggerName, NumberOperations.bd(triggerThreshold), 0);
 				List<Trigger> triggers = Arrays.asList(new Trigger[] { trigger });
 
 				notification.setTriggers(triggers);
@@ -683,7 +684,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			int sizeJVMMetrics = 0;
 			_logger.debug("Pushing monitor service counters for {}.", HOSTNAME);
 
-			Map<Metric, Double> counters = new HashMap<>();
+			Map<Metric, Number> counters = new HashMap<>();
 
 			_updateJVMStatsCounters();
 
@@ -702,8 +703,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			long timestamp = (System.currentTimeMillis() / 60000) * 60000L;
 
-			for (Entry<Metric, Double> entry : counters.entrySet()) {
-				Map<Long, Double> dataPoints = new HashMap<>(1);
+			for (Entry<Metric, Number> entry : counters.entrySet()) {
+				Map<Long, Number> dataPoints = new HashMap<>(1);
 
 				dataPoints.put(timestamp, entry.getValue());
 				entry.getKey().setDatapoints(dataPoints);
