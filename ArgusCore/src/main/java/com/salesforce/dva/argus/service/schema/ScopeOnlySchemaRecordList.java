@@ -49,7 +49,7 @@ public class ScopeOnlySchemaRecordList {
 	public ScopeOnlySchemaRecordList(List<ScopeOnlySchemaRecord> records, HashAlgorithm algorithm) {
 		for(ScopeOnlySchemaRecord record : records) {
 			String id = null;
-			String scopeOnly = ScopeOnlySchemaRecord.print(record);
+			String scopeOnly = record.getScope();
 			if(HashAlgorithm.MD5.equals(algorithm)) {
 				id = DigestUtils.md5Hex(scopeOnly);
 			} else {

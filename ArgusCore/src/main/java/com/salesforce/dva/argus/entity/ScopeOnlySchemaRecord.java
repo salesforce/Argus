@@ -115,10 +115,5 @@ public class ScopeOnlySchemaRecord {
 	public String toString() {
 		return MessageFormat.format("ScopeOnlySchemaRecord = (Scope = {0}", scope);
 	}
-
-	public static String print(ScopeOnlySchemaRecord msr) {
-		StringBuilder sb = new StringBuilder(msr.getScope());
-		return sb.toString();
-	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
