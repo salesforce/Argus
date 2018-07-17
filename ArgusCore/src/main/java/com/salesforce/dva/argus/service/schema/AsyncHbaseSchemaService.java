@@ -192,7 +192,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void implementationSpecificPut(List<Metric> metrics) {
+    protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames) {
         requireNotDisposed();
         SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
         
