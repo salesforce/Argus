@@ -68,7 +68,6 @@ angular.module('argus.directives.controls.dashboard', [])
 			};
 
 			this.broadcastEvent = function(eventName, data){
-				console.log(eventName + ' was broadcast');
 				$scope.$broadcast(eventName, data);
 			};
 		},
