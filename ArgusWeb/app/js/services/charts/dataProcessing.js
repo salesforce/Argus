@@ -26,9 +26,9 @@ angular.module('argus.services.charts.dataProcessing', [])
 
 	function createMetricWithScopeMetricAndTags(metric){
 		return {
-			scopeMetric: metric.scope + ":" + metric.metric,
+			scopeMetric: metric.scope + ':' + metric.metric,
 			tags: createTagString(metric.tags)
-		}
+		};
 	}
 
 	function createSeriesName(metric) {
@@ -36,10 +36,11 @@ angular.module('argus.services.charts.dataProcessing', [])
 			return metric.displayName;
 		}
 
-		var scope = metric.scope;
-		var name = metric.metric;
+		var scope = metric.scope ? metric.scope: '';
+		var name = metric.metric ? metric.metric : '';
 		var tags = createTagString(metric.tags);
-		return scope + ':' + name + tags;
+		if (scope !== '' && name !== '') scope = scope + ':';
+		return scope + name + tags;
 	}
 
 	function createTagString(tags) {
@@ -228,6 +229,8 @@ angular.module('argus.services.charts.dataProcessing', [])
 						processedMetric['color'] = metrics.color;
 						processedMetric['extraYAxis'] = metrics.extraYAxis;
 						processedMetric['hideTags'] = metrics.hideTags;
+						processedMetric['hideScope'] = metrics.hideScope;
+						processedMetric['hideMetric'] = metrics.hideMetric;
 						processedMetric['metricSpecificOptions'] = this.getMetricSpecificOptionsInArray(metricSpecificOptions);
 
 						// update metric list with new processed metric object
@@ -273,32 +276,28 @@ angular.module('argus.services.charts.dataProcessing', [])
 					if (metricItem.hideTags !== undefined) {
 						if (metricItem.hideTags === 'true') {
 							// delete all tags
-							data = data.map(function(item) {
-								delete item.tags;
-								return item;
-							});
+							delete data[i].tags;
 						} else {
 							// delete provided tags
 							var droppedTags = metricItem.hideTags.split(',').map(function(tag) {
 								return tag.trim();
 							});
-							data = data.map(function(item) {
-								droppedTags.forEach(function(tag){
-									delete item.tags[tag];
-								});
-								return item;
+							droppedTags.forEach(function(tag) {
+								delete data[i].tags[tag];
 							});
 						}
 					}
+
+					if (metricItem.hideScope) delete data[i].scope;
+					if (metricItem.hideMetric) delete data[i].metric;
+
 					var metricName = (metricItem.name) ? metricItem.name : createSeriesName(data[i]);
 					var metricColor = (metricItem.color) ? metricItem.color : null;
 					var metricExtraYAxis = (metricItem.extraYAxis) ? metricItem.extraYAxis : null;
-					var metricshideTags = true;
 					var objSeries = {
 						name: metricName,
 						color: metricColor,
 						extraYAxis: metricExtraYAxis,
-						hideTags: metricshideTags,
 						data: series
 					};
 					var objSeriesWithOptions = ChartOptionService.setCustomOptions(objSeries, metricItem.metricSpecificOptions);
