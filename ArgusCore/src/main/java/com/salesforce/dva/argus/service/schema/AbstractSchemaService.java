@@ -4,10 +4,12 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +97,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		// Create a list of metricsToPut that do not exist on the BLOOMFILTER and then call implementation 
 		// specific put with only those subset of metricsToPut. 
 		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
-		List<String> scopesToPut = new ArrayList<>(metrics.size());
+		Set<String> scopesToPut = new HashSet<>(metrics.size());
 
 		for(Metric metric : metrics) {
 			// check metric schema bloom filter
@@ -139,7 +141,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * @param  metrics    The metrics metadata that will be written to a separate index.
 	 * @param  scopeNames The scope names that that will be written to a separate index.
 	 */
-	protected abstract void implementationSpecificPut(List<Metric> metrics, List<String> scopeNames);
+	protected abstract void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames);
 
 	@Override
 	public void dispose() {
