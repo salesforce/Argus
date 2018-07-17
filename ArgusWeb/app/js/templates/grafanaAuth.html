@@ -1,5 +1,5 @@
 <section>
-    <div class='container'>
+    <div class='container' ng-if="!checkingAccess && showAuthorizeButton">
         <div class='row'>
             <div class='col-md-6'>
                 <p><span class='h3'>Authorize "Grafana" Application to access Argus using your account {{user}}</span></p>
@@ -11,6 +11,9 @@
                 <button class="btn btn-default" ng-click="cancel()">Cancel</button>
             </div>
         </div>
+    </div>
+    <div ng-if="checkingAccess">
+        <p><span class='h3'>Checking access...</span></p>
     </div>
   <br/>
 </section>
