@@ -27,6 +27,8 @@ angular.module('argus.directives.charts.metric', [])
 			seriesData.name = attributes.seriesname;
 			seriesData.extraYAxis = attributes.extraYaxis;
 			seriesData.hideTags = attributes.hidetags;
+			seriesData.hideScope = attributes.hidescope;
+			seriesData.hideMetric = attributes.hidemetric;
 
 			if (attributes.value && attributes.value.length > 0) {
 				value = attributes.value;
