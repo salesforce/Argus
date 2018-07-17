@@ -40,6 +40,7 @@ import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PolicyLimit;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
@@ -62,6 +63,8 @@ import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.slf4j.Logger;
+
+import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -191,7 +194,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
 
     @Override
     @Transactional
-    public void updatePolicyCounter(PrincipalUser user, PolicyCounter counter, double value) {
+    public void updatePolicyCounter(PrincipalUser user, PolicyCounter counter, Number value) {
         requireNotDisposed();
         requireArgument(user != null, "Cannot update a policy counter with null user.");
         requireArgument(counter != null, "Cannot update a null policy counter.");
@@ -206,7 +209,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
 
     @Override
     @Transactional
-    public double modifyPolicyCounter(PrincipalUser user, PolicyCounter counter, double delta) {
+    public Number modifyPolicyCounter(PrincipalUser user, PolicyCounter counter, Number delta) {
         requireNotDisposed();
         requireArgument(user != null, "Cannot modify a policy counter with null user.");
         requireArgument(counter != null, "Cannot modify a null policy counter.");
@@ -216,7 +219,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
 
         tags.put(USERNAME_KEY, user.getUserName());
 
-        double value = _monitorService.modifyCustomCounter(counter.getMetricName(), delta, tags);
+        Number value = _monitorService.modifyCustomCounter(counter.getMetricName(), delta, tags);
 
         _updateWardenAlertsForUser(user, counter);
         return value;
@@ -318,7 +321,7 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
 
     @Override
     @Transactional
-    public void updatePolicyLimitForUser(PrincipalUser user, PolicyCounter counter, double value) {
+    public void updatePolicyLimitForUser(PrincipalUser user, PolicyCounter counter, Number value) {
         requireNotDisposed();
         requireArgument(user != null, "Cannot update policy limit for a null user.");
         requireArgument(counter != null, "Cannot update policy limit for a null counter.");
@@ -443,9 +446,9 @@ public class DefaultWardenService extends DefaultJPAService implements WardenSer
         Alert alert = new Alert(_adminUser, _adminUser, _constructWardenAlertName(user, counter), metricExp, "*/5 * * * *");
         List<Trigger> triggers = new ArrayList<>();
         EntityManager em = emf.get();
-        double limit = PolicyLimit.getLimitByUserAndCounter(em, user, counter);
+        Number limit = PolicyLimit.getLimitByUserAndCounter(em, user, counter);
         Trigger trigger = new Trigger(alert, counter.getTriggerType(), "counter-value-" + counter.getTriggerType().toString() + "-policy-limit",
-            limit, 0.0, 0L);
+        		NumberOperations.bd(limit), new BigDecimal(0), 0L);
 
         triggers.add(trigger);
 

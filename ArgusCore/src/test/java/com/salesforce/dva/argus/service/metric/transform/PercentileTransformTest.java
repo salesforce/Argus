@@ -49,7 +49,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentileTransformWithOneConstantShareCommonDPs() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 20.0);
 
@@ -57,7 +57,7 @@ public class PercentileTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 15.0);
 
@@ -65,7 +65,7 @@ public class PercentileTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 50.0);
 
@@ -73,7 +73,7 @@ public class PercentileTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> datapoints_4 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_4 = new HashMap<Long, Number>();
 
         datapoints_4.put(1000L, 35.0);
 
@@ -81,7 +81,7 @@ public class PercentileTransformTest {
 
         metric_4.setDatapoints(datapoints_4);
 
-        Map<Long, Double> datapoints_5 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_5 = new HashMap<Long, Number>();
 
         datapoints_5.put(1000L, 40.0);
 
@@ -101,7 +101,7 @@ public class PercentileTransformTest {
 
         constants.add("30");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 19.0);
 
@@ -110,11 +110,26 @@ public class PercentileTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
+    
+    @Test (expected = UnsupportedOperationException.class)
+    public void testPercentileTransformLongDataValues() {
+    	Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
+    	Map<Long, Number> datapoints = new HashMap<Long, Number>();
+    	datapoints.put(1000L, 14L);
+    	datapoints.put(2000L, 39);
+    	
+    	Metric m = new Metric(TEST_SCOPE, TEST_METRIC);
+    	m.setDatapoints(datapoints);
+    	
+    	List<Metric> metrics = Arrays.asList(m);
+    	List<String> constants = Arrays.asList("14");
+    	percentileTransform.transform(metrics, constants);
+    }
 
     @Test
     public void testPercentileTransformWithOneConstantShareSomeCommonDPs() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 20.0);
         datapoints_1.put(2000L, 20.0);
@@ -123,7 +138,7 @@ public class PercentileTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 15.0);
         datapoints_2.put(3000L, 15.0);
@@ -132,7 +147,7 @@ public class PercentileTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 50.0);
         datapoints_3.put(4000L, 50.0);
@@ -141,7 +156,7 @@ public class PercentileTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> datapoints_4 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_4 = new HashMap<Long, Number>();
 
         datapoints_4.put(1000L, 35.0);
         datapoints_4.put(5000L, 35.0);
@@ -150,7 +165,7 @@ public class PercentileTransformTest {
 
         metric_4.setDatapoints(datapoints_4);
 
-        Map<Long, Double> datapoints_5 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_5 = new HashMap<Long, Number>();
 
         datapoints_5.put(1000L, 40.0);
         datapoints_5.put(6000L, 40.0);
@@ -171,7 +186,7 @@ public class PercentileTransformTest {
 
         constants.add("30");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 19.0);
 
@@ -184,7 +199,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentileTransformWithOneConstantShareNoCommonDPs() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 20.0);
 
@@ -192,7 +207,7 @@ public class PercentileTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(2000L, 15.0);
 
@@ -200,7 +215,7 @@ public class PercentileTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(3000L, 50.0);
 
@@ -208,7 +223,7 @@ public class PercentileTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> datapoints_4 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_4 = new HashMap<Long, Number>();
 
         datapoints_4.put(4000L, 35.0);
 
@@ -216,7 +231,7 @@ public class PercentileTransformTest {
 
         metric_4.setDatapoints(datapoints_4);
 
-        Map<Long, Double> datapoints_5 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_5 = new HashMap<Long, Number>();
 
         datapoints_5.put(5000L, 40.0);
 
@@ -236,7 +251,7 @@ public class PercentileTransformTest {
 
         constants.add("30");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         List<Metric> result = percentileTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -247,8 +262,8 @@ public class PercentileTransformTest {
     @Test
     public void testPercentileTransformWithOneConstantShareNoCommonDPs_fullJoinIndicator() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 20.0);
         expected.put(1000L, 20.0);
@@ -257,7 +272,7 @@ public class PercentileTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(2000L, 15.0);
         expected.put(2000L, 15.0);
@@ -266,7 +281,7 @@ public class PercentileTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(3000L, 50.0);
         expected.put(3000L, 50.0);
@@ -275,7 +290,7 @@ public class PercentileTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> datapoints_4 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_4 = new HashMap<Long, Number>();
 
         datapoints_4.put(4000L, 35.0);
         expected.put(4000L, 35.0);
@@ -284,7 +299,7 @@ public class PercentileTransformTest {
 
         metric_4.setDatapoints(datapoints_4);
 
-        Map<Long, Double> datapoints_5 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_5 = new HashMap<Long, Number>();
 
         datapoints_5.put(5000L, 40.0);
         expected.put(5000L, 40.0);
@@ -370,7 +385,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentile95TransformSingleMetric_LegacySupport() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -397,7 +412,7 @@ public class PercentileTransformTest {
         constants.add("3s");
 
         List<Metric> result = percentileTransform.transform(metrics, constants);
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 9.9);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -406,7 +421,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentile95TransformMultipleMetrics_LegacySupport() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -423,7 +438,7 @@ public class PercentileTransformTest {
 
         metric1.setDatapoints(datapoints);
         
-        datapoints = new HashMap<Long, Double>();
+        datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -445,7 +460,7 @@ public class PercentileTransformTest {
         
         List<Metric> result = percentileTransform.transform(metrics, constants);
         
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         expected.put(1000L, 9.9);
         
         assertEquals(2, result.size());
@@ -456,7 +471,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentile95TransformSingleMetric_individualEvaluation() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -483,7 +498,7 @@ public class PercentileTransformTest {
         constants.add("individual");
 
         List<Metric> result = percentileTransform.transform(metrics, constants);
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 9.9);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -492,7 +507,7 @@ public class PercentileTransformTest {
     @Test
     public void testPercentile95TransformMultipleMetrics_individualEvaluation() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -509,7 +524,7 @@ public class PercentileTransformTest {
 
         metric1.setDatapoints(datapoints);
         
-        datapoints = new HashMap<Long, Double>();
+        datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -531,7 +546,7 @@ public class PercentileTransformTest {
         
         List<Metric> result = percentileTransform.transform(metrics, constants);
         
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         expected.put(1000L, 9.9);
         
         assertEquals(2, result.size());

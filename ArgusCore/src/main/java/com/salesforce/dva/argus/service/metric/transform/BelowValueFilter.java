@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,13 +55,34 @@ public class BelowValueFilter implements ValueFilter {
         List<Metric> result = new ArrayList<Metric>();
 
         for (Map.Entry<Metric, String> entry : extendedSortedMap.entrySet()) {
-            if (Double.parseDouble(limit) > Double.parseDouble(entry.getValue())) {
+        	Number lim;
+        	try {
+        		lim = Long.parseLong(limit);
+        	} catch (NumberFormatException nfe) {
+        		try {
+        			lim = Double.parseDouble(limit);
+        		} catch (NumberFormatException nfe2) {
+        			throw new IllegalArgumentException("The limit " + limit + " is not a valid number.");
+        		}
+        	}
+        	Number val;
+        	try {
+        		val = Long.parseLong(entry.getValue());
+        	} catch (NumberFormatException nfe) {
+        		try {
+        			val = Double.parseDouble(entry.getValue());
+        		} catch (NumberFormatException nfe2) {
+        			throw new IllegalArgumentException("The limit " + limit + " is not a valid number.");
+        		}
+        	}
+        	
+            if (NumberOperations.isGreaterThan(lim, val)) {
                 result.add(entry.getKey());
             }
         }
         return result;
     }
-
+  
     @Override
     public String name() {
         return TransformFactory.Function.BELOW.name();

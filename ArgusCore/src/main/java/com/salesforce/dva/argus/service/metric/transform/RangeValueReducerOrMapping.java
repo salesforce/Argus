@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Map;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Reducer or mapping for range transform.
  *
@@ -44,39 +46,33 @@ public class RangeValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
-        double min = Double.MAX_VALUE;
-        double max = Double.MIN_VALUE;
+    public Number reduce(List<Number> values) {
+        Number min = null;
+        Number max = null;
 
-        for (Double value : values) {
+        for (Number value : values) {
             if (value == null) {
-                value = 0.0;
+                value = 0;
             }
 
-            double candidate = (value);
-
-            if (candidate < min) {
-                min = candidate;
-            }
-            if (candidate > max) {
-                max = candidate;
-            }
+            min = min == null ? value : NumberOperations.getMin(value, min);
+            max = max == null ? value : NumberOperations.getMax(value, max);
         }
-        return max - min;
+        return max == null ? Double.MAX_VALUE - Double.MIN_VALUE : NumberOperations.subtract(max, min);
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport mapping");
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         throw new UnsupportedOperationException("Range transform doesn't suppport reduce with constant");
     }
 

@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.github.brandtg.stl.StlDecomposition;
 import com.github.brandtg.stl.StlResult;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
@@ -88,15 +89,21 @@ public class AnomalySTLTransform implements Transform {
         int season = Integer.parseInt(constants.get(0));
 
         Metric metric = metrics.get(0);
-        Map<Long, Double> datapoints = metric.getDatapoints();
+        Map<Long, Number> datapoints = metric.getDatapoints();
+        Map<Long, Double> datapointsDouble;
+        try {
+        	datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
+        } catch (IllegalArgumentException iae) {
+        	throw new UnsupportedOperationException("Anomaly STL Transform is only supported for double data values.");
+        }
 
-        double[] values = new double[datapoints.size()];
-        List<Long> time_list = new ArrayList<>(datapoints.keySet());
+        double[] values = new double[datapointsDouble.size()];
+        List<Long> time_list = new ArrayList<>(datapointsDouble.keySet());
         Collections.sort(time_list);
-        double[] times = new double[datapoints.size()];
+        double[] times = new double[datapointsDouble.size()];
 
         for (int i = 0; time_list.size() > i; i++) {
-            values[i] = datapoints.get(time_list.get(i));
+            values[i] = datapointsDouble.get(time_list.get(i));
             times[i] = (double) time_list.get(i);
         }
 
@@ -127,13 +134,13 @@ public class AnomalySTLTransform implements Transform {
         }
 
         Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
-        remainder_metric.setDatapoints(remainder_map);
+        remainder_metric.setDatapoints(new HashMap<Long, Number>(remainder_map));
         List<Metric> result = new ArrayList<>(metrics.size());
         result.add(0, remainder_metric);
 
         return result;
     }
-
+    
     // Computes anomaly score based on time series statistics (mean and standard deviation)
     // Input: value of datapoint, mean of time series, standard deviation of time series
     // Output: anomaly score between 0 and 100
@@ -185,5 +192,4 @@ public class AnomalySTLTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
-
 }

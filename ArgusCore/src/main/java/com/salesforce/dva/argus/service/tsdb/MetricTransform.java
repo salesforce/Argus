@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.TSDBEntity;
+import com.salesforce.dva.argus.entity.NumberOperations.ValueType;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 
 import java.io.IOException;
@@ -55,13 +56,16 @@ import java.util.TreeMap;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Transforms metrics from Java to JSON and vice versa.
  *
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 class MetricTransform {
-
+	
     //~ Constructors *********************************************************************************************************************************
 
     private MetricTransform() { }
@@ -77,7 +81,6 @@ class MetricTransform {
 
 		@Override
 		public ResultSet deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-			
 			List<Metric> metrics = new ArrayList<Metric>();
 			
 			JsonNode arraynode = jp.getCodec().readTree(jp);
@@ -98,13 +101,13 @@ class MetricTransform {
     
     private static Metric _deserializeMetric(JsonNode node) throws IOException {
     	ObjectMapper mapper = new ObjectMapper();
-    	Map<Long, Double> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, Double>>() { });
+    	Map<Long, Number> datapoints = mapper.readValue(node.get("dps").traverse(), new TypeReference<TreeMap<Long, Number>>() { });
     	if(datapoints.isEmpty()) {
     		return null;
     	}
-
+    	
     	Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
-
+    	
     	Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
     	String tsdbMetricName = node.get("metric").asText();
 
@@ -194,14 +197,25 @@ class MetricTransform {
 
         @Override
         public void serialize(Metric metric, JsonGenerator jgen, SerializerProvider sp) throws IOException {
-            Map<Long, Double> datapoints = metric.getDatapoints();
+            Map<Long, Number> datapoints = metric.getDatapoints();
 
-            for (Map.Entry<Long, Double> entry : datapoints.entrySet()) {
+            for (Map.Entry<Long, Number> entry : datapoints.entrySet()) {
             	if(entry.getValue() != null) {
             		jgen.writeStartObject();
                     jgen.writeStringField("metric", DefaultTSDBService.constructTSDBMetricName(metric));
                     jgen.writeNumberField("timestamp", entry.getKey());
-                    jgen.writeNumberField("value", entry.getValue());
+                    ValueType type = ValueType.value(entry.getValue());
+                    switch (type) {
+                    	case INT:
+                    	case LONG:
+                    		jgen.writeNumberField("value", entry.getValue().longValue());
+                    		break;
+                    	case DOUBLE:
+                    		jgen.writeNumberField("value", entry.getValue().doubleValue());
+                    		break;
+                    	default:
+                    		throw new IllegalStateException();
+                    }
                     serializeTags(metric, jgen);
                     jgen.writeEndObject();
             	}

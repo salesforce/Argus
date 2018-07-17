@@ -591,10 +591,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		Metric tempMetric = new Metric(metric);
-		Map<Long, Double> dataPoints = new LinkedHashMap<>();
+		Map<Long, Number> dataPoints = new LinkedHashMap<>();
 		int tempChunkSize = TSDB_DATAPOINTS_WRITE_MAX_SIZE;
 
-		for (Map.Entry<Long, Double> dataPoint : metric.getDatapoints().entrySet()) {
+		for (Map.Entry<Long, Number> dataPoint : metric.getDatapoints().entrySet()) {
 			dataPoints.put(dataPoint.getKey(), dataPoint.getValue());
 			if (--tempChunkSize == 0) {
 				tempMetric.setDatapoints(dataPoints);
@@ -738,7 +738,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 					return _service.getMetrics(Arrays.asList(query)).get(query).get(0).getUid();
 				} catch (Exception e) {
 					Metric metric = new Metric(scope, type);
-					Map<Long, Double> datapoints = new HashMap<>();
+					Map<Long, Number> datapoints = new HashMap<>();
 
 					datapoints.put(1L, 0.0);
 					metric.setDatapoints(datapoints);
@@ -846,7 +846,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	/**
 	 * Used to close http connections after reusing the same connection for certain number of times 
 	 * @author rsarkapally
-	 *
 	 */
 	class TSDBReadConnectionReuseStrategy implements ConnectionReuseStrategy{
 		int connectionReuseCount;

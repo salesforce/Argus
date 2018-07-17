@@ -29,74 +29,74 @@ angular.module('argus.config', [])
 		paginationTemplateProvider.setPath('node_modules/angular-utils-pagination/dirPagination.tpl.html');
 		$routeProvider.
 			when('/beta', {
-				templateUrl: 'js/templates/beta.html',
+				template: require('./templates/beta.html'),
 				controller: 'BetaFeatures',
 				label: 'Beta',
 				activeTab: 'beta',
 				reloadOnSearch: false
 			}).
 			when('/viewmetrics', {
-				templateUrl: 'js/templates/viewmetrics.html',
+				template: require('./templates/viewmetrics.html'),
 				controller: 'ViewMetrics',
 				label: 'Metrics',
 				activeTab: 'metrics',
 				reloadOnSearch: false
 			}).
 			when('/batches', {
-				templateUrl: 'js/templates/batches.html',
+				template: require('./templates/batches.html'),
 				controller: 'BatchExpressions',
 				activeTab: 'batches'
 			}).
 			when('/dashboards', {
-				templateUrl: 'js/templates/dashboard-list.html',
+				template: require('./templates/dashboard-list.html'),
 				controller: 'Dashboards',
 				label: 'Dashboard List',
 				activeTab: 'dashboards'
 			}).
 			when('/dashboards/:dashboardId', {
-				templateUrl: 'js/templates/dashboard-detail.html',
+				template: require('./templates/dashboard-detail.html'),
 				controller: 'DashboardsDetail',
 				label: '{{dashboards.dashboardId}}',
 				activeTab: 'dashboards',
 				reloadOnSearch: false
 			}).
 			when('/alerts', {
-				templateUrl: 'js/templates/alert-list.html',
+				template: require('./templates/alert-list.html'),
 				controller: 'Alerts',
 				label: 'Alerts List',
 				activeTab: 'alerts'
 			}).
 			when('/alerts/:alertId', {
-				templateUrl: 'js/templates/alert-detail.html',
+				template: require('./templates/alert-detail.html'),
 				controller: 'AlertsDetail',
 				label: '{{alerts.alertId}}',
 				activeTab: 'alerts'
 			}).
 			when('/about', {
-				templateUrl: 'js/templates/about.html',
+				template: require('./templates/about.html'),
 				controller: 'About',
 				label: 'About Argus',
 				activeTab: 'about'
 			}).
 			when('/admin', {
-				templateUrl: 'js/templates/admin.html',
+				template: require('./templates/admin.html'),
 				controller: 'Admin',
 				activeTab: 'admin'
 			}).
 			when('/login', {
-				templateUrl: 'js/templates/login.html',
+				template: require('./templates/login.html'),
 				controller: 'Login',
 				label: 'User Login',
 				activeTab: ''
 			}).
 			when('/namespace', {
-				templateUrl: 'js/templates/namespace.html',
+				template: require('./templates/namespace.html'),
 				controller: 'Namespace',
 				label: 'Namespace',
 				activeTab: 'namespace'
 			}).
 			when('/metricsBrowsing', {
-				templateUrl: 'js/templates/metricsBrowsing.html',
+				template: require('./templates/metricsBrowsing.html'),
 				controller: 'MetricsBrowsing',
 				label: 'Browsing',
 				activeTab: 'browsing',

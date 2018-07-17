@@ -97,7 +97,7 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
                 }
             }
 
-            Map<Long, Double> bootstrappedDps = new TreeMap<>(metric.getDatapoints());
+            Map<Long, Number> bootstrappedDps = new TreeMap<>(metric.getDatapoints());
 
             if (oneWeekBeforeMetric != null) {
                 bootstrappedDps.putAll(oneWeekBeforeMetric.getDatapoints());
@@ -111,7 +111,7 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
         }
         return result;
     }
-
+    
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {

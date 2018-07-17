@@ -71,7 +71,7 @@ public class GroupByTransform implements Transform {
 		
 		return result;
 	}
-
+	
 	@Override
 	public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... metrics) {
 		throw new UnsupportedOperationException("Group By Transform doesn't need list of list!");

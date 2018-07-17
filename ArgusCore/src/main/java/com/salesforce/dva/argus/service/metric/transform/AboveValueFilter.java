@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,14 +49,34 @@ public class AboveValueFilter implements ValueFilter {
 
     @Override
     public List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit) {
-        SystemAssert.requireArgument(extendedSortedMap != null && !extendedSortedMap.isEmpty(), "New map is not constructed successfully!");
+    	SystemAssert.requireArgument(extendedSortedMap != null && !extendedSortedMap.isEmpty(), "New map is not constructed successfully!");
         SystemAssert.requireArgument(limit != null && !limit.equals(""), "Limit must be provided!");
 
         List<Metric> result = new ArrayList<Metric>();
 
         for (Map.Entry<Metric, String> entry : extendedSortedMap.entrySet()) {
-            if (Double.parseDouble(limit) < Double.parseDouble(entry.getValue())) {
-                result.add(entry.getKey());
+        	Number bound;
+        	try {
+        		bound = Long.parseLong(limit);
+        	} catch (NumberFormatException nfe) {
+        		try {
+        			bound = Double.parseDouble(limit);
+        		} catch (NumberFormatException nfe2) {
+        			throw new IllegalArgumentException("The limit " + limit + " is not a valid number.");
+        		}
+        	}
+        	Number val;
+        	try {
+        		val = Long.parseLong(entry.getValue());
+        	} catch (NumberFormatException nfe) {
+        		try {
+        			val = Double.parseDouble(entry.getValue());
+        		} catch (NumberFormatException nfe2) {
+        			throw new IllegalArgumentException("The data value " + entry.getValue() + " is not a valid number.");
+        		}
+        	}
+            if (NumberOperations.isGreaterThan(val, bound)) {
+            	result.add(entry.getKey());
             }
         }
         return result;

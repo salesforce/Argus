@@ -20,7 +20,7 @@ public class GroupByTagTransformTest {
 		
 		GroupByTagTransform transform = new GroupByTagTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<>();
+		Map<Long, Number> datapoints = new HashMap<>();
         datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
@@ -81,8 +81,8 @@ public class GroupByTagTransformTest {
 
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 
@@ -150,8 +150,8 @@ public class GroupByTagTransformTest {
 		
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 
@@ -222,7 +222,7 @@ public class GroupByTagTransformTest {
 
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 		datapoints.put(1000L, 1.0);
 
 		List<Metric> metrics = new ArrayList<>();
@@ -292,8 +292,8 @@ public class GroupByTagTransformTest {
 		
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 
@@ -326,7 +326,7 @@ public class GroupByTagTransformTest {
 
 		Metric metric4 = new Metric("system.DCB.xy2", "metric1");
 		metric4.setDatapoints(datapoints);
-		metric4.addDatapoints(new HashMap<Long, Double>() {{
+		metric4.addDatapoints(new HashMap<Long, Number>() {{
 			put(2000L, 1.0);
 		}});
 		metric4.setTags(new HashMap<String, String>(){{
@@ -359,10 +359,10 @@ public class GroupByTagTransformTest {
 			assertNotNull(r.getTag("sp"));
 
 			if (r.getTag("dc").equals("DCA")) {
-				assertEquals(new Double(1.0), r.getDatapoints().get(1000L));
+				assertEquals(new Long(1), r.getDatapoints().get(1000L));
 			}
 			else {
-				assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
+				assertEquals(new Long(2), r.getDatapoints().get(1000L));
 				assertEquals(new Double(1.0), r.getDatapoints().get(2000L));
 			}
 		}
@@ -373,7 +373,7 @@ public class GroupByTagTransformTest {
 		
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
         datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
@@ -408,7 +408,7 @@ public class GroupByTagTransformTest {
 
 		Transform transform = new GroupByTagTransform(new TransformFactory(null));
 
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 		datapoints.put(1000L, 1.0);
 
 		List<Metric> metrics = new ArrayList<>();

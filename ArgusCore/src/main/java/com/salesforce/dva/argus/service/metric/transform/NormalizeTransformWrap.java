@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,13 +100,13 @@ public class NormalizeTransformWrap implements Transform {
 
         // Padding Zeros for every datapoints map in every metric
         for (Metric metric : metrics) {
-            Map<Long, Double> paddingDatapoints = new TreeMap<>();
+            Map<Long, Number> paddingDatapoints = new TreeMap<>();
             Set<Long> metricDPKeyset = metric.getDatapoints().keySet();
 
             // Calculate those timestamps this datapoint map doesn't have
             for (Long unionKey : unionKeyset) {
                 if (!metricDPKeyset.contains(unionKey)) {
-                    paddingDatapoints.put(unionKey, 0.0);
+                    paddingDatapoints.put(unionKey, 0);
                 }
             }
 
@@ -163,16 +164,27 @@ public class NormalizeTransformWrap implements Transform {
     private static class DivideByConstantValueMapping implements ValueMapping {
 
         @Override
-        public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
-            Map<Long, Double> divideByConstantDatapoints = new HashMap<>();
+        public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
+            Map<Long, Number> divideByConstantDatapoints = new HashMap<>();
+            
+            Number divisor;
+            try {
+            	divisor = Long.parseLong(constants.get(0));
+            } catch (NumberFormatException nfe) {
+            	try {
+            		divisor = Double.parseDouble(constants.get(0));
+            	} catch (NumberFormatException nfe2) {
+            		throw new IllegalArgumentException("The divisor " + constants.get(0) + " is not a valid number.");
+            	}
+            }
 
-            for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-                Double adivideByConstantValue = null;
+            for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+                Number adivideByConstantValue = null;
 
                 if (entry.getValue() == null) {
-                    adivideByConstantValue = 0.0;
+                    adivideByConstantValue = 0;
                 } else {
-                    adivideByConstantValue = entry.getValue() / Double.parseDouble(constants.get(0));
+                    adivideByConstantValue = NumberOperations.divide(entry.getValue(), divisor);
                 }
                 
                 divideByConstantDatapoints.put(entry.getKey(), adivideByConstantValue);
@@ -181,10 +193,10 @@ public class NormalizeTransformWrap implements Transform {
         }
 
         @Override
-        public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+        public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
             throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
         }
-
+        
         @Override
         public String name() {
             return TransformFactory.Function.DIVIDE.name();

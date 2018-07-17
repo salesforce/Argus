@@ -18,7 +18,7 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
         	datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
@@ -56,8 +56,8 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -85,7 +85,7 @@ public class GroupByTransformTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 2);
 		for(Metric r : result) {
-			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
+			assertEquals(new Long(2), r.getDatapoints().get(1000L));
 		}
 	}
 	
@@ -94,7 +94,7 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
         	datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();
@@ -148,8 +148,8 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -200,8 +200,8 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -260,8 +260,8 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        	datapoints.put(1000L, 1.0);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
+        	datapoints.put(1000L, 1L);
 		
 		List<Metric> metrics = new ArrayList<>();
 		
@@ -305,7 +305,7 @@ public class GroupByTransformTest {
 		List<Metric> result = transform.transform(metrics, constants);
 		assertTrue(result.size() == 3);
 		for(Metric r : result) {
-			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
+			assertEquals(new Long(2), r.getDatapoints().get(1000L));
 		}
 	}
 	
@@ -314,7 +314,7 @@ public class GroupByTransformTest {
 		
 		GroupByTransform transform = new GroupByTransform(new TransformFactory(null));
 		
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
         	datapoints.put(1000L, 1.0);
 		
 		List<Metric> metrics = new ArrayList<>();

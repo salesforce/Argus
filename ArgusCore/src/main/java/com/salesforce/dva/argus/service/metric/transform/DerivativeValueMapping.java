@@ -35,6 +35,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import java.util.TreeMap;
 
 /**
@@ -53,30 +56,30 @@ public class DerivativeValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
-        Map<Long, Double> sortedDatapoints = new TreeMap<>();
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
+        Map<Long, Number> sortedDatapoints = new TreeMap<>();
 
         sortedDatapoints.putAll(originalDatapoints);
 
-        Map<Long, Double> derivativeDatapoints = new HashMap<>();
-        Double prev = null;
+        Map<Long, Number> derivativeDatapoints = new HashMap<>();
+        Number prev = null;
 
-        for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
-            Double curr = entry.getValue();
+        for (Entry<Long, Number> entry : sortedDatapoints.entrySet()) {
+            Number curr = entry.getValue();
 
             if (prev != null) {
-                derivativeDatapoints.put(entry.getKey(), curr - prev);
+                derivativeDatapoints.put(entry.getKey(), NumberOperations.subtract(curr, prev));
             }
             prev = curr;
         }
         return derivativeDatapoints;
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.DERIVATIVE.name();

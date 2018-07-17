@@ -48,8 +48,8 @@ public interface ValueZipper {
      *
      * @return  The merged data point.
      */
-	Double zip(Double originalDatapoint, Double baseDatapoint);
-
+	Number zip(Number originalDatapoint, Number baseDatapoint);
+	
     /**
      * Returns the name of the value zipper.
      *

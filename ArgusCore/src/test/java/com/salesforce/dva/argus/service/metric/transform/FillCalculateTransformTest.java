@@ -44,19 +44,34 @@ public class FillCalculateTransformTest {
 
     private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
-    private static final Map<Long, Double> input = new HashMap<>();
-
+    private static final Map<Long, Number> input = new HashMap<>();
+  
     static {
         input.put(1000L, 1.0);
         input.put(2000L, 2.0);
-        input.put(3000L, 3.0);
+        input.put(3000L, 3L);
         input.put(4000L, 4.0);
         input.put(5000L, 5.0);
         input.put(6000L, 6.0);
-        input.put(7000L, 7.0);
+        input.put(7000L, 7L);
         input.put(8000L, 8.0);
         input.put(9000L, 9.0);
-        input.put(10000L, 10.0);
+        input.put(10000L, 10L);
+    }
+    
+    private static final Map<Long, Number> inputPercentile = new HashMap<>();
+    
+    static {
+    	inputPercentile.put(1000L, 1.0);
+    	inputPercentile.put(2000L, 2.0);
+    	inputPercentile.put(3000L, 3.0);
+    	inputPercentile.put(4000L, 4.0);
+    	inputPercentile.put(5000L, 5.0);
+    	inputPercentile.put(6000L, 6.0);
+    	inputPercentile.put(7000L, 7.0);
+    	inputPercentile.put(8000L, 8.0);
+    	inputPercentile.put(9000L, 9.0);
+    	inputPercentile.put(10000L, 10.0);
     }
 
     @Test
@@ -64,7 +79,7 @@ public class FillCalculateTransformTest {
         Transform fillCalculateTransform = new FillCalculateTransform();
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric_1.setDatapoints(input);
+        metric_1.setDatapoints(inputPercentile);
 
         List<Metric> metrics = new ArrayList<Metric>();
 
@@ -74,7 +89,7 @@ public class FillCalculateTransformTest {
 
         constants.add("p95");
 
-        Map<Long, Double> expected_1 = new HashMap<>();
+        Map<Long, Number> expected_1 = new HashMap<>();
 
         expected_1.put(1000L, 10.0);
         expected_1.put(2000L, 10.0);
@@ -93,11 +108,29 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
+    
+    @Test (expected = UnsupportedOperationException.class)
+    public void testMetricListNewWithPercentile() {
+        Transform fillCalculateTransform = new FillCalculateTransform();
+        Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
+
+        metric_1.setDatapoints(input);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<>();
+
+        constants.add("p95");
+
+        fillCalculateTransform.transform(metrics, constants);
+    }
 
     @Test
     public void testMetricListIntervalOffsetWithPercentile() {
         Transform fillCalculateTransform = new FillCalculateTransform();
-        Map<Long, Double> input1 = new HashMap<>();
+        Map<Long, Number> input1 = new HashMap<>();
 
         input1.put(1000L, 1.0);
         input1.put(4000L, 4.0);
@@ -122,7 +155,7 @@ public class FillCalculateTransformTest {
         constants.add("1s");
         constants.add("1s");
 
-        Map<Long, Double> expected_1 = new HashMap<>();
+        Map<Long, Number> expected_1 = new HashMap<>();
 
         expected_1.put(1000L, 9.2);
         expected_1.put(3000L, 9.2);
@@ -155,7 +188,7 @@ public class FillCalculateTransformTest {
 
         constants.add("min");
 
-        Map<Long, Double> expected_1 = new HashMap<>();
+        Map<Long, Number> expected_1 = new HashMap<>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 1.0);
@@ -174,7 +207,7 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testMetricListWithMax() {
         Transform fillCalculateTransform = new FillCalculateTransform();
@@ -190,18 +223,18 @@ public class FillCalculateTransformTest {
 
         constants.add("max");
 
-        Map<Long, Double> expected_1 = new HashMap<>();
+        Map<Long, Number> expected_1 = new HashMap<>();
 
-        expected_1.put(1000L, 10.0);
-        expected_1.put(2000L, 10.0);
-        expected_1.put(3000L, 10.0);
-        expected_1.put(4000L, 10.0);
-        expected_1.put(5000L, 10.0);
-        expected_1.put(6000L, 10.0);
-        expected_1.put(7000L, 10.0);
-        expected_1.put(8000L, 10.0);
-        expected_1.put(9000L, 10.0);
-        expected_1.put(10000L, 10.0);
+        expected_1.put(1000L, 10L);
+        expected_1.put(2000L, 10L);
+        expected_1.put(3000L, 10L);
+        expected_1.put(4000L, 10L);
+        expected_1.put(5000L, 10L);
+        expected_1.put(6000L, 10L);
+        expected_1.put(7000L, 10L);
+        expected_1.put(8000L, 10L);
+        expected_1.put(9000L, 10L);
+        expected_1.put(10000L, 10L);
 
         List<Metric> result = fillCalculateTransform.transform(metrics, constants);
 
@@ -209,7 +242,7 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testMetricListWithAvg() {
         Transform fillCalculateTransform = new FillCalculateTransform();
@@ -225,7 +258,7 @@ public class FillCalculateTransformTest {
 
         constants.add("avg");
 
-        Map<Long, Double> expected_1 = new HashMap<>();
+        Map<Long, Number> expected_1 = new HashMap<>();
 
         expected_1.put(1000L, 5.5);
         expected_1.put(2000L, 5.5);
@@ -244,7 +277,7 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-
+    
     @Test(expected = UnsupportedOperationException.class)
     public void testMetricListWithDev() {
         Transform fillCalculateTransform = new FillCalculateTransform();

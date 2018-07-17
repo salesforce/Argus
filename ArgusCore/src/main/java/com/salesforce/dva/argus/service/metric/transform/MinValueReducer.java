@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Takes a list of doubles represents as Strings and returns the minimum value as a String. Values that do not convert to doubles are ignored.
  *
@@ -45,32 +47,31 @@ public class MinValueReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Number reduce(List<Number> values) {
     	if(values == null || values.isEmpty()) {
     		return null;
     	}
     	
-    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+    	Stream<Number> stream = StreamSupport.stream(values.spliterator(), true);
     	if(stream.allMatch(o -> o == null)) {
     		stream.close();
     		return null;
     	}
     	stream.close();
     	
-        double min = Double.MAX_VALUE;
-        for (Double value : values) {
+        Number min = null;
+        for (Number value : values) {
         	if(value == null) {
         		continue;
         	}
         	
-            double candidate = value;
-            if (candidate < min) {
-                min = candidate;
+            if (min == null || NumberOperations.isLessThan(value, min)) {
+                min = value;
             }
         }
-        return min;
+        return min == null ? Double.POSITIVE_INFINITY : min;
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.MIN.name();

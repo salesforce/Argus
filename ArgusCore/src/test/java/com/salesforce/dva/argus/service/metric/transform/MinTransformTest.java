@@ -69,7 +69,7 @@ public class MinTransformTest {
     @Test
     public void testMinTransformWithCommonDPs() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -79,11 +79,11 @@ public class MinTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -94,7 +94,7 @@ public class MinTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
@@ -105,25 +105,25 @@ public class MinTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testMinTransformWithNoCommonDPs() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
-        datapoints_2.put(300L, 1000.0);
+        datapoints_2.put(200L, 100L);
+        datapoints_2.put(300L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -134,7 +134,7 @@ public class MinTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
@@ -148,20 +148,20 @@ public class MinTransformTest {
     @Test
     public void testMinTransformWithSomeCommonDPs() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(100L, 10L);
+        datapoints_2.put(200L, 100L);
         datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -173,11 +173,11 @@ public class MinTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
-        expected.put(3000L, 3.0);
+        expected.put(3000L, 3L);
 
         List<Metric> result = minTransform.transform(metrics);
 
@@ -188,7 +188,7 @@ public class MinTransformTest {
     @Test
     public void testMinTransformWithMissingDPs() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -198,7 +198,7 @@ public class MinTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -213,7 +213,7 @@ public class MinTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
@@ -224,21 +224,21 @@ public class MinTransformTest {
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testMinTransformWithAllMissingDPsAtTimestamp() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
         datapoints_1.put(3000L, null);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
@@ -253,10 +253,10 @@ public class MinTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
+        expected.put(1000L, 1L);
+        expected.put(2000L, 2L);
         expected.put(3000L, null);
 
         List<Metric> result = minTransform.transform(metrics);
@@ -268,7 +268,7 @@ public class MinTransformTest {
     @Test
     public void testMinTransformScopeNameWhenScopeIsSameAcrossMetrics() {
     	Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+    	Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -278,7 +278,7 @@ public class MinTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -297,21 +297,21 @@ public class MinTransformTest {
     @Test
     public void testMinTransformScopeNameWhenScopeIsDifferentAcrossMetrics() {
     	Transform minTransform = new MetricReducerTransform(new MinValueReducer());
-    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+    	Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric("scope", "metric");
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric("scope1", "metric");
 

@@ -55,7 +55,7 @@ public interface ManagementService extends Service {
     void setAdministratorPrivilege(PrincipalUser user, boolean isPrivileged);
 
     /** @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, double) */
-    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, double value);
+    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, Number value);
 
     /** @see  WardenService#reinstateUser(PrincipalUser, SubSystem) */
     void reinstateUser(PrincipalUser user, SubSystem subSystem);

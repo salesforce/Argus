@@ -109,7 +109,7 @@ public abstract class AbstractTest {
         String scope = MessageFormat.format(scopeNameTemplate, scopeIndex);
         String metric = MessageFormat.format(metricNameTemplate, metricIndex);
         Metric result = new Metric(scope, metric);
-        Map<Long, Double> datapoints = new TreeMap<>();
+        Map<Long, Number> datapoints = new TreeMap<>();
 
         for (int i = 0; i < datapointCount; i++) {
             datapoints.put(System.currentTimeMillis(), random.nextDouble() * 500);
@@ -130,7 +130,7 @@ public abstract class AbstractTest {
             String metricName = metric == null ? createRandomName() : metric;
             Metric met = new Metric(scope, metricName);
             int datapointCount = random.nextInt(25) + 1;
-            Map<Long, Double> datapoints = new HashMap<>();
+            Map<Long, Number> datapoints = new HashMap<>();
             long start = System.currentTimeMillis() - 60000L;
 
             for (int j = 0; j < datapointCount; j++) {

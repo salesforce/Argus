@@ -94,11 +94,11 @@ public class MonitorServiceTest extends AbstractTest {
             worker.join(5000);
         }
 
-        int customCounter = (int) _monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap());
+        int customCounter = (_monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap())).intValue();
 
         assertEquals(iterations * workerCount, customCounter);
         _monitorService.resetCustomCounters();
-        customCounter = (int) _monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap());
+        customCounter = (_monitorService.getCustomCounter("test.custom.metric", Collections.<String, String>emptyMap())).intValue();
         assertEquals(0, customCounter);
     }
 

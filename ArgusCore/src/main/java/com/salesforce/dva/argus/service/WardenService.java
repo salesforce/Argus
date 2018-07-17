@@ -83,7 +83,7 @@ public interface WardenService extends Service {
      * @param  counter  The policy counter for which the limit will be set. Cannot be null.
      * @param  value    The new value for the policy limit for the user.
      */
-    void updatePolicyLimitForUser(PrincipalUser user, PolicyCounter counter, double value);
+    void updatePolicyLimitForUser(PrincipalUser user, PolicyCounter counter, Number value);
 
     /**
      * Sets the suspension level for a given subsystem.
@@ -109,7 +109,7 @@ public interface WardenService extends Service {
      * @param  counter  The counter to update. Cannot be null.
      * @param  value    The new value.
      */
-    void updatePolicyCounter(PrincipalUser user, PolicyCounter counter, double value);
+    void updatePolicyCounter(PrincipalUser user, PolicyCounter counter, Number value);
 
     /**
      * Modifies the value of a counter.
@@ -120,7 +120,7 @@ public interface WardenService extends Service {
      *
      * @return  The updated counter value.
      */
-    double modifyPolicyCounter(PrincipalUser user, PolicyCounter counter, double delta);
+    Number modifyPolicyCounter(PrincipalUser user, PolicyCounter counter, Number delta);
 
     /**
      * Determines if a user is permitted to use a sub-system based on prior policy violations. This method shall throw a runtime exception if the user
@@ -172,7 +172,7 @@ public interface WardenService extends Service {
         MINIMUM_RESOLUTION_MS("warden.min_resolution_in_millis", 60000, POSTING, "min", TriggerType.LESS_THAN);
 
         private final String _metricName;
-        private final double _defaultValue;
+        private final Number _defaultValue;
         private final SubSystem _subSystem;
         private final String _aggregator;
         private final TriggerType _triggerType;
@@ -186,7 +186,7 @@ public interface WardenService extends Service {
          * @param  aggregator    The aggregator used to aggregate data points across different time series for this metric.
          * @param  triggerType   The trigger type that is associated for this policy counter
          */
-        PolicyCounter(String metricName, double defaultValue, SubSystem subSystem, String aggregator, TriggerType triggerType) {
+        PolicyCounter(String metricName, Number defaultValue, SubSystem subSystem, String aggregator, TriggerType triggerType) {
             _metricName = metricName;
             _defaultValue = defaultValue;
             _subSystem = subSystem;
@@ -233,7 +233,7 @@ public interface WardenService extends Service {
          *
          * @return  The default value for the policy.
          */
-        public double getDefaultValue() {
+        public Number getDefaultValue() {
             return _defaultValue;
         }
 

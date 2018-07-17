@@ -141,6 +141,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
                 metricsMap.put(entry.getKey(), metrics);
             } catch (InterruptedException | ExecutionException e) {
+            	_logger.info("Error at: " + e.getCause());
                 throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
@@ -156,7 +157,6 @@ public class DefaultTSDBService extends AbstractTSDBService{
 
         List<Annotation> annotations = new ArrayList<>();
         String pattern = _readEndPoints.get(0) + "/api/query?{0}";
-
         try {
         	for (AnnotationQuery query : queries) {
             	long start = System.currentTimeMillis();

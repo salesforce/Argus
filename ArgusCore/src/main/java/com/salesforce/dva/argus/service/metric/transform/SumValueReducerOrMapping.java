@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -49,35 +50,40 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Number reduce(List<Number> values) {
         return Reducers.sumReducer(values);
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for sum transform, only exactly one constant allowed.");
-
+        
+        Number addend;
         try {
-            double addend = Double.parseDouble(constants.get(0));
-
-            return originalDatapoints.entrySet().stream()
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.getValue() + addend
-                    ));
-        } catch (NullPointerException|NumberFormatException nfe) {
-            throw new SystemException("Illegal constant value supplied to sum transform", nfe);
+        	addend = Long.parseLong(constants.get(0));
+        } catch (NumberFormatException nfe) {
+        	try {
+        		addend = Double.parseDouble(constants.get(0));
+        	} catch (NumberFormatException nfe2) {
+        		throw new SystemException("Addend " + constants.get(0) + " is not a valid number.");
+        	}
         }
+        final Number finalAddend = addend;
+        
+        return originalDatapoints.entrySet().stream()
+        		.collect(Collectors.toMap(
+        				Map.Entry::getKey,
+        				e -> NumberOperations.add(e.getValue(), finalAddend)));
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         throw new UnsupportedOperationException("Sum Transform with reducer is not supposed to be used without a constant");
     }
 

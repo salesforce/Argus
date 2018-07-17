@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
@@ -57,12 +58,12 @@ public class MovingValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && !constants.isEmpty(), 
         		"MOVING Transform must provide at least 1 constant which is windowSize of time interval.");
         
@@ -79,12 +80,12 @@ public class MovingValueMapping implements ValueMapping {
         long windowSizeInSeconds = getWindowInSeconds(constants.get(0));
         SystemAssert.requireArgument(windowSizeInSeconds != 0, "Time Interval cannot be 0 for Moving Average Transform");
         
-        Map<Long, Double> movingDatapoints = new TreeMap<>();
-        Map<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
+        Map<Long, Number> movingDatapoints = new TreeMap<>();
+        Map<Long, Number> sortedDatapoints = new TreeMap<>(originalDatapoints);
 
-        for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : originalDatapoints.entrySet()) {
             if (entry.getValue() == null) {
-                sortedDatapoints.put(entry.getKey(), 0.0);
+                sortedDatapoints.put(entry.getKey(), 0);
             } else {
                 sortedDatapoints.put(entry.getKey(), entry.getValue());
             }
@@ -94,9 +95,9 @@ public class MovingValueMapping implements ValueMapping {
 
         sortedDatapoints.keySet().toArray(timestamps);
 
-        double sum = 0.0;
-        double value = 0.0;
-        List<Double> numberArr = new ArrayList<Double>();
+        Number sum = 0;
+        Number value = 0;
+        List<Number> numberArr = new ArrayList<Number>();
 
         try {
             sum = sortedDatapoints.get(timestamps[0]);
@@ -126,7 +127,7 @@ public class MovingValueMapping implements ValueMapping {
                         }
                         value = _calculateValue(sum, numberArr, count, type);
                         movingDatapoints.put(timestamps[head - 1], value);
-                        sum += sortedDatapoints.get(timestamps[head]);
+                        sum = NumberOperations.add(sum, sortedDatapoints.get(timestamps[head]));
                         numberArr.add(sortedDatapoints.get(timestamps[head]));
                     } catch (NumberFormatException | NullPointerException e) {
                         _logger.warn("Failed to parse datapoint: " + sortedDatapoints.get(timestamps[head]));
@@ -141,7 +142,7 @@ public class MovingValueMapping implements ValueMapping {
             }
             
             try {
-                sum += sortedDatapoints.get(timestamps[head]);
+            	sum = NumberOperations.add(sum, sortedDatapoints.get(timestamps[head]));
                 numberArr.add(sortedDatapoints.get(timestamps[head]));
                 while (timestamps[head] - timestamps[tail] >= windowSizeInSeconds * 1000) {
                     sum = _subtractWithinWindow(sum, sortedDatapoints, timestamps[tail], timestamps[head]);
@@ -159,16 +160,15 @@ public class MovingValueMapping implements ValueMapping {
         } // end for
         return movingDatapoints;
     }
-
-	private double _calculateValue(double sum, List<Double> numberArr, int count, InternalReducerType type) {
-			
+	
+	private Number _calculateValue(Number sum, List<Number> numberArr, int count, InternalReducerType type) {
 		if (InternalReducerType.MEDIAN.equals(type)) {
-		    double[] numbers = ArrayUtils.toPrimitive(numberArr.toArray(new Double[numberArr.size()]));
-		    return new Percentile().evaluate(numbers, 50.0);
-		} 
+			Number[] numbers = numberArr.toArray(new Number[numberArr.size()]);
+			return NumberOperations.findMedian(numbers);
+		}
 		
-		if(InternalReducerType.AVG.equals(type)) {
-			return (sum / count);
+		if (InternalReducerType.AVG.equals(type)) {
+			return NumberOperations.divide(sum, count);
 		}
 		
 		return sum;
@@ -178,10 +178,10 @@ public class MovingValueMapping implements ValueMapping {
     public String name() {
         return TransformFactory.Function.MOVING.name();
     }
-
-    private double _subtractWithinWindow(double sum, Map<Long, Double> sortedDatapoints, long end, long start) {
-        sum -= sortedDatapoints.get(end);
-        return sum;
+    
+    private Number _subtractWithinWindow(Number sum, Map<Long, Number> sortedDatapoints, long end, long start) {
+    	sum = NumberOperations.subtract(sum, sortedDatapoints.get(end));
+    	return sum;
     }
 
     private long getWindowInSeconds(String window) {

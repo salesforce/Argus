@@ -85,11 +85,11 @@ public class ShiftTransformTest {
     @Test
     public void testShiftTransformWithOneMetricForwardsMin() {
         Transform shiftTransform = new MetricMappingTransform(new ShiftValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(10000L, 1.0);
-        datapoints_1.put(20000L, 2.0);
-        datapoints_1.put(30000L, 3.0);
+        datapoints_1.put(10000L, 1L);
+        datapoints_1.put(20000L, 2L);
+        datapoints_1.put(30000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -103,22 +103,22 @@ public class ShiftTransformTest {
 
         constants.add("2s");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
-        expected_1.put(12000L, 1.0);
-        expected_1.put(22000L, 2.0);
-        expected_1.put(32000L, 3.0);
+        expected_1.put(12000L, 1L);
+        expected_1.put(22000L, 2L);
+        expected_1.put(32000L, 3L);
 
         List<Metric> result = shiftTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testShiftTransformWithMultipleMetricsBackwardsSec() {
         Transform shiftTransform = new MetricMappingTransform(new ShiftValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -128,17 +128,17 @@ public class ShiftTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(4000L, 10.0);
         datapoints_2.put(5000L, 100.0);
-        datapoints_2.put(6000L, 1000.0);
+        datapoints_2.put(6000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(7000L, 0.1);
         datapoints_3.put(8000L, 0.01);
@@ -158,19 +158,19 @@ public class ShiftTransformTest {
 
         constants.add("-2s");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(-1000L, 1.0);
         expected_1.put(0L, 2.0);
         expected_1.put(1000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(2000L, 10.0);
         expected_2.put(3000L, 100.0);
-        expected_2.put(4000L, 1000.0);
+        expected_2.put(4000L, 1000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(5000L, 0.1);
         expected_3.put(6000L, 0.01);
@@ -187,7 +187,7 @@ public class ShiftTransformTest {
     @Test
     public void testShiftTransformWithOneMetricForwardsMinWithPlusSign() {
         Transform shiftTransform = new MetricMappingTransform(new ShiftValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(10000L, 1.0);
         datapoints_1.put(20000L, 2.0);
@@ -205,7 +205,7 @@ public class ShiftTransformTest {
 
         constants.add("+2s");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(12000L, 1.0);
         expected_1.put(22000L, 2.0);
