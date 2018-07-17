@@ -27,24 +27,32 @@ angular.module('argus.controllers.grafanaAuth', [])
 			var code = $routeParams['code'];
 			var state = $routeParams['state'];
 			var redirectUrl = '';
+			$scope.checkingAccess = true;
+			$scope.showAuthorizeButton = false;
 			// on page load, make an api call to see if grafana is already authorized
 			// if yes, redirect directly
 			$resource(CONFIG.wsUrl + CONFIG.checkOAuthAccessPath, {}, {}).get({
 				code: code,
 				state: state,
 			}, function (resp) {
-                $resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
-                    code: code,
-                    state: state,
-                }, function (resp) {
-                    //make a call to get grafana OAuth uri
-                    redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
-                    $window.location = redirectUrl;
-                }, function (err) {
-                    growl.error('Error accessing argus OAuth service: ' + err);
-                });
+				$resource(CONFIG.wsUrl + CONFIG.acceptOAuthPath, {}, {}).save({
+					code: code,
+					state: state,
+				}, function (resp) {
+					//make a call to get grafana OAuth uri
+					redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
+					$window.location = redirectUrl;
+					$scope.checkingAccess = false;
+					$scope.showAuthorizeButton = false;
+				}, function (err) {
+					growl.error('Error accessing argus OAuth service: ' + err);
+					$scope.checkingAccess = false;
+					$scope.showAuthorizeButton = true;
+				});
 			}, function (err) {
 				console.log(err + 'not authorized before!');
+				$scope.checkingAccess = false;
+				$scope.showAuthorizeButton = true;
 			});
 
 			$scope.authorize = function () {
