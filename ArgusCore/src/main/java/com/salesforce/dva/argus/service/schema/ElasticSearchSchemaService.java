@@ -423,20 +423,24 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
 					toEntity(str, new TypeReference<List<String>>() {}), type);
 
-			int fromIndex = query.getLimit() * (query.getPage() - 1);
-			if(records.size() <= fromIndex) {
+			if (query.isQueryOnlyOnScope()) {
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+
+			} else {
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+			}
+
+
+			int fromIndex = query.getLimit() * (query.getPage() - 1);
+			if(records.size() <= fromIndex) {
 				return Collections.emptyList();
 			}
 
 			if(records.size() < query.getLimit() * query.getPage()) {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, records.size());
 			} else {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
 		} catch (IOException e) {
