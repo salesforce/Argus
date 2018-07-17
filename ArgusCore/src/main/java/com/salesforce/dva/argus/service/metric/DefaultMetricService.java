@@ -126,8 +126,8 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				metrics.addAll(reader.parse(expression, relativeTo, Metric.class));
 				expandedTimeSeriesRange = reader.getExpandedTimeSeriesRange();
 				queryTimeWindow = reader.getQueryTimeWindow();
-				numDiscoveryResults += reader.getNumDiscoveryResults();
-				numDiscoveryQueries += reader.getNumDiscoveryQueries();
+				numDiscoveryResults += getNumDiscoveryResults(); // reader.getNumDiscoveryResults();
+				numDiscoveryQueries += getNumDiscoveryQueries(); // reader.getNumDiscoveryQueries();
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);

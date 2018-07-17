@@ -32,10 +32,12 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -58,14 +60,20 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Number reduce(List<Number> values) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         parseConstants(constants);
-        return _calculateNthPercentile(values, percentile);
+        List<Double> valuesDouble;
+        try {
+        	valuesDouble = NumberOperations.getListAsDoubles(values);
+        } catch (IllegalArgumentException iae) {
+        	throw new UnsupportedOperationException("Percentile Value Reducer Or Mapping is only supported for double data values.");
+        }
+        return _calculateNthPercentile(valuesDouble, percentile);
     }
 
     private void parseConstants(List<String> constants) {
@@ -91,16 +99,22 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         parseConstants(constants);
-        return _calculateNthPercentileForOneMetric(originalDatapoints, percentile);
+        Map<Long, Double> originalDatapointsDouble;
+        try {
+        	originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
+        } catch (IllegalArgumentException iae) {
+        	throw new UnsupportedOperationException("Percentile Value Reducer or Mapping is only supported for double data values.");
+        }
+        return new HashMap<Long, Number>(_calculateNthPercentileForOneMetric(originalDatapointsDouble, percentile));
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.PERCENTILE.name();
@@ -109,7 +123,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue) {
     	
 	    Map<Long, Double> result = new TreeMap<>();
-	    for(Long timestamp : originalDatapoints.keySet()) {
+	    for(Long timestamp : new TreeMap<>(originalDatapoints).keySet()) { // want to get the earliest timestamp
 	    	result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
 	    	break;
 	    }
@@ -117,7 +131,7 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
 	    return result;
     	
     }
-
+    
     private Double _calculateNthPercentile(Collection<Double> values, Double percentileValue) {
         return new Percentile().evaluate(Doubles.toArray(values), percentileValue);
     }

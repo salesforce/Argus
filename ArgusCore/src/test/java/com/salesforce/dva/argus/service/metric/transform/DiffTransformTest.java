@@ -49,7 +49,7 @@ public class DiffTransformTest {
     @Test(expected = SystemException.class)
     public void testDiffTransformWithIllegalConstant() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -80,7 +80,7 @@ public class DiffTransformTest {
     @Test
     public void testDiffTransformWithOneConstantAgainstOneMetric() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -98,7 +98,7 @@ public class DiffTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, -4.0);
         expected.put(2000L, -3.0);
@@ -109,11 +109,11 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+   
     @Test
     public void testDiffTransformWithOneConstantAgainstMetricList() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -123,11 +123,11 @@ public class DiffTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -142,17 +142,17 @@ public class DiffTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, -4.0);
         expected_1.put(2000L, -3.0);
         expected_1.put(3000L, -2.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 5.0);
-        expected_2.put(2000L, 95.0);
-        expected_2.put(3000L, 995.0);
+        expected_2.put(1000L, 5L);
+        expected_2.put(2000L, 95L);
+        expected_2.put(3000L, 995L);
 
         List<Metric> result = diffTransform.transform(metrics, constants);
 
@@ -180,7 +180,7 @@ public class DiffTransformTest {
     @Test
     public void testDiffTransformWithNoConstantShareCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -190,9 +190,9 @@ public class DiffTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(1000L, 10L);
         datapoints_2.put(2000L, 100.0);
         datapoints_2.put(3000L, 1000.0);
 
@@ -206,7 +206,7 @@ public class DiffTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, -9.0);
         expected.put(2000L, -98.0);
@@ -217,11 +217,11 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testDiffTransformWithNoConstantShareNoCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -231,11 +231,11 @@ public class DiffTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
-        datapoints_2.put(300L, 1000.0);
+        datapoints_2.put(100L, 10L);
+        datapoints_2.put(200L, 100L);
+        datapoints_2.put(300L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -247,31 +247,31 @@ public class DiffTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         List<Metric> result = diffTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testDiffTransformWithNoConstantShareSomeCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(100L, 10L);
+        datapoints_2.put(200L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -283,9 +283,9 @@ public class DiffTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>(1);
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(3000L, -997.0);
+        expected.put(3000L, -997L);
 
         List<Metric> result = diffTransform.transform(metrics, constants);
 
@@ -296,7 +296,7 @@ public class DiffTransformTest {
     @Test
     public void testDiffTransformWithFullConstantShareSomeCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -306,11 +306,11 @@ public class DiffTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -324,7 +324,7 @@ public class DiffTransformTest {
         List<String> constants = new ArrayList<String>();
         constants.add("union");
         
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         expected.put(100L, 10.0);
         expected.put(200L, 100.0);
         expected.put(1000L, 1.0);

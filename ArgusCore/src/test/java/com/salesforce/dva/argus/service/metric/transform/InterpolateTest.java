@@ -50,12 +50,12 @@ public class InterpolateTest {
 
 	@Test
 	public void sumWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-		datapoints.put(1000L, 1.0);
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(5000L, 10.0);
+		datapoints.put(1000L, 1L);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(5000L, 10L);
 		datapoints.put(6000L, 2.0);
 		datapoints.put(7000L, 3.0);
 		datapoints.put(10000L, 15.0);
@@ -85,7 +85,7 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
 		expectedDatapoints.put(1000L, 3.0);
 		expectedDatapoints.put(2000L, 4.0);
 		expectedDatapoints.put(3000L, 6.0);
@@ -102,15 +102,15 @@ public class InterpolateTest {
 	
 	@Test
 	public void averageWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-		datapoints.put(1000L, 1.0);
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(5000L, 10.0);
-		datapoints.put(6000L, 2.0);
-		datapoints.put(7000L, 3.0);
-		datapoints.put(10000L, 15.0);
+		datapoints.put(1000L, 1L);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(5000L, 10L);
+		datapoints.put(6000L, 2L);
+		datapoints.put(7000L, 3L);
+		datapoints.put(10000L, 15L);
 
 		Metric metric = new Metric("test-scope", "test-metric");
 
@@ -122,12 +122,12 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		datapoints = new HashMap<>();
-		datapoints.put(1000L, 2.0);
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(4000L, 10.0);
-		datapoints.put(8000L, 2.0);
-		datapoints.put(10000L, 14.0);
+		datapoints.put(1000L, 2L);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(4000L, 10L);
+		datapoints.put(8000L, 2L);
+		datapoints.put(10000L, 14L);
 		metric = new Metric("test-scope", "test-metric");
 		metric.setDatapoints(datapoints);
 		metric.setTag("user", "user1");
@@ -137,7 +137,7 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.AVG.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
 		expectedDatapoints.put(1000L, 1.5);
 		expectedDatapoints.put(2000L, 2.0);
 		expectedDatapoints.put(3000L, 3.0);
@@ -151,11 +151,10 @@ public class InterpolateTest {
 		assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
 		assertEquals(expectedDatapoints, result.get(0).getDatapoints());
 	}
-
 	
 	@Test
 	public void minimumWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
@@ -190,7 +189,7 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.MIN.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
 		expectedDatapoints.put(1000L, 1.0);
 		expectedDatapoints.put(2000L, 2.0);
 		expectedDatapoints.put(3000L, 3.0);
@@ -207,15 +206,15 @@ public class InterpolateTest {
 	
 	@Test
 	public void countWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
 		datapoints.put(3000L, 3.0);
-		datapoints.put(5000L, 10.0);
+		datapoints.put(5000L, 10L);
 		datapoints.put(6000L, 2.0);
 		datapoints.put(7000L, 3.0);
-		datapoints.put(10000L, 15.0);
+		datapoints.put(10000L, 15L);
 
 		Metric metric = new Metric("test-scope", "test-metric");
 
@@ -227,7 +226,7 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		datapoints = new HashMap<>();
-		datapoints.put(1000L, 2.0);
+		datapoints.put(1000L, 2L);
 		datapoints.put(2000L, 2.0);
 		datapoints.put(3000L, 3.0);
 		datapoints.put(4000L, 10.0);
@@ -242,31 +241,32 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.COUNT.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
-		expectedDatapoints.put(1000L, 2.0);
-		expectedDatapoints.put(2000L, 2.0);
-		expectedDatapoints.put(3000L, 2.0);
-		expectedDatapoints.put(4000L, 2.0);
-		expectedDatapoints.put(5000L, 2.0);
-		expectedDatapoints.put(6000L, 2.0);
-		expectedDatapoints.put(7000L, 2.0);
-		expectedDatapoints.put(8000L, 2.0);
-		expectedDatapoints.put(10000L, 2.0);
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
+		expectedDatapoints.put(1000L, 2);
+		expectedDatapoints.put(2000L, 2);
+		expectedDatapoints.put(3000L, 2);
+		expectedDatapoints.put(4000L, 2);
+		expectedDatapoints.put(5000L, 2);
+		expectedDatapoints.put(6000L, 2);
+		expectedDatapoints.put(7000L, 2);
+		expectedDatapoints.put(8000L, 2);
+		expectedDatapoints.put(10000L, 2);
 
 		assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
 		assertEquals(expectedDatapoints, result.get(0).getDatapoints());
 	}
+	
 	@Test
 	public void maximumWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
 		datapoints.put(3000L, 3.0);
-		datapoints.put(5000L, 10.0);
+		datapoints.put(5000L, 10L);
 		datapoints.put(6000L, 2.0);
 		datapoints.put(7000L, 3.0);
-		datapoints.put(10000L, 15.0);
+		datapoints.put(10000L, 15L);
 
 		Metric metric = new Metric("test-scope", "test-metric");
 
@@ -293,16 +293,16 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(Aggregator.MAX.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
 		expectedDatapoints.put(1000L, 2.0);
 		expectedDatapoints.put(2000L, 2.0);
 		expectedDatapoints.put(3000L, 3.0);
 		expectedDatapoints.put(4000L, 10.0);
-		expectedDatapoints.put(5000L, 10.0);
+		expectedDatapoints.put(5000L, 10L);
 		expectedDatapoints.put(6000L, 6.0);
 		expectedDatapoints.put(7000L, 4.0);
 		expectedDatapoints.put(8000L, 7.0);
-		expectedDatapoints.put(10000L, 15.0);
+		expectedDatapoints.put(10000L, 15L);
 
 		assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
 		assertEquals(expectedDatapoints, result.get(0).getDatapoints());
@@ -310,15 +310,15 @@ public class InterpolateTest {
 	
 	@Test
 	public void zimSumWithTwoTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-		datapoints.put(1000L, 1.0);
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(5000L, 10.0);
-		datapoints.put(6000L, 2.0);
-		datapoints.put(7000L, 3.0);
-		datapoints.put(10000L, 15.0);
+		datapoints.put(1000L, 1L);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(5000L, 10L);
+		datapoints.put(6000L, 2L);
+		datapoints.put(7000L, 3L);
+		datapoints.put(10000L, 15L);
 
 		Metric metric = new Metric("test-scope", "test-metric");
 
@@ -330,12 +330,12 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		datapoints = new HashMap<>();
-		datapoints.put(1000L, 2.0);
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(4000L, 10.0);
-		datapoints.put(8000L, 2.0);
-		datapoints.put(10000L, 14.0);
+		datapoints.put(1000L, 2L);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(4000L, 10L);
+		datapoints.put(8000L, 2L);
+		datapoints.put(10000L, 14L);
 		metric = new Metric("test-scope", "test-metric");
 		metric.setDatapoints(datapoints);
 		metric.setTag("user", "user1");
@@ -347,25 +347,24 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics,new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>(); 
-		expectedDatapoints.put(1000L, 3.0);
-		expectedDatapoints.put(2000L, 4.0);
-		expectedDatapoints.put(3000L, 6.0);
-		expectedDatapoints.put(4000L, 10.0);
-		expectedDatapoints.put(5000L, 10.0);
-		expectedDatapoints.put(6000L, 2.0);
-		expectedDatapoints.put(7000L, 3.0);
-		expectedDatapoints.put(8000L, 2.0);
-		expectedDatapoints.put(10000L, 29.0);
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>(); 
+		expectedDatapoints.put(1000L, 3L);
+		expectedDatapoints.put(2000L, 4L);
+		expectedDatapoints.put(3000L, 6L);
+		expectedDatapoints.put(4000L, 10L);
+		expectedDatapoints.put(5000L, 10L);
+		expectedDatapoints.put(6000L, 2L);
+		expectedDatapoints.put(7000L, 3L);
+		expectedDatapoints.put(8000L, 2L);
+		expectedDatapoints.put(10000L, 29L);
 
 		assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
 		assertEquals(expectedDatapoints, result.get(0).getDatapoints());
 	}	
 	
-
 	@Test
 	public void linearInterpolateWithOneTimeSeries() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
@@ -388,7 +387,7 @@ public class InterpolateTest {
 
 	@Test
 	public void linearInterpolateWithTwoTimeSeriesStartEndDontAlign() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
@@ -408,10 +407,10 @@ public class InterpolateTest {
 		metrics.add(metric);
 
 		datapoints = new HashMap<>();
-		datapoints.put(2000L, 2.0);
-		datapoints.put(3000L, 3.0);
-		datapoints.put(4000L, 10.0);
-		datapoints.put(8000L, 2.0);
+		datapoints.put(2000L, 2L);
+		datapoints.put(3000L, 3L);
+		datapoints.put(4000L, 10L);
+		datapoints.put(8000L, 2L);
 		metric = new Metric("test-scope", "test-metric");
 		metric.setDatapoints(datapoints);
 		metric.setTag("user", "user1");
@@ -421,7 +420,7 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(Aggregator.SUM.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>();
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>();
 		expectedDatapoints.put(1000L, 1.0);
 		expectedDatapoints.put(2000L, 4.0);
 		expectedDatapoints.put(3000L, 6.0);
@@ -437,7 +436,7 @@ public class InterpolateTest {
 	
 	@Test
 	public void zimsumWithTwoTimeSeriesStartEndDontAlign() {
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
 		datapoints.put(1000L, 1.0);
 		datapoints.put(2000L, 2.0);
@@ -470,7 +469,7 @@ public class InterpolateTest {
 		InterpolateTransform interpolate = new InterpolateTransform();
 		List<Metric> result = interpolate.transform(metrics, new ArrayList<String>(Arrays.asList(InterpolationType.ZIMSUM.toString())));
 
-		Map<Long, Double> expectedDatapoints = new TreeMap<Long, Double>();
+		Map<Long, Number> expectedDatapoints = new TreeMap<Long, Number>();
 		expectedDatapoints.put(1000L, 1.0);
 		expectedDatapoints.put(2000L, 4.0);
 		expectedDatapoints.put(3000L, 6.0);

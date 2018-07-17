@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,14 +54,14 @@ public class FillCalculateTransform implements Transform {
 
     //~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, Double> fillCalculateMetricTransform(Metric metric, String calculationType) {
+    private static Map<Long, Number> fillCalculateMetricTransform(Metric metric, String calculationType) {
         // Calculate min, max, avg, dev, or a percentile value
-        Double result = calculateResult(metric, calculationType);
+        Number result = calculateResult(metric, calculationType);
 
         // return a new time series with the constant values for each time stamp
-        Map<Long, Double> resultMap = new TreeMap<>();
+        Map<Long, Number> resultMap = new TreeMap<>();
 
-        for (Map.Entry<Long, Double> entry : metric.getDatapoints().entrySet()) {
+        for (Map.Entry<Long, Number> entry : metric.getDatapoints().entrySet()) {
             Long timestamp = entry.getKey();
 
             resultMap.put(timestamp, result);
@@ -68,10 +69,10 @@ public class FillCalculateTransform implements Transform {
         return resultMap;
     }
 
-    private static Double calculateResult(Metric metric, String calculationType) {
+    private static Number calculateResult(Metric metric, String calculationType) {
         // Find the values from metric
-        List<Double> valueList = new ArrayList<>(metric.getDatapoints().values());
-        Double result = null;
+        List<Number> valueList = new ArrayList<>(metric.getDatapoints().values());
+        Number result = null;
 
         // if percentile transform requested, parse the string p0...p100.
         String rex = "^[pP](100|[0-9]{1,2})$";
@@ -80,8 +81,13 @@ public class FillCalculateTransform implements Transform {
 
         if (matcher.matches()) {
             Integer target = Integer.valueOf(matcher.group(1));
-
-            result = new Percentile().evaluate(Doubles.toArray(valueList), target);
+            List<Double> valueListDouble;
+            try {
+            	valueListDouble = NumberOperations.getListAsDoubles(valueList);
+            } catch (IllegalArgumentException iae) {
+            	throw new UnsupportedOperationException("Fill Calculate Transform with percentile is only supported for double data values.");
+            }
+            result = new Percentile().evaluate(Doubles.toArray(valueListDouble), target);
         } else {
             switch (calculationType) {
                 case "min":
@@ -141,7 +147,7 @@ public class FillCalculateTransform implements Transform {
 
             for (Metric metric : fillCalculateMetricList) {
                 Transform fillTransform = new FillTransform();
-                Double calculateResult = calculateResult(metric, calculationType);
+                Number calculateResult = calculateResult(metric, calculationType);
 
                 // replace the 3rd value of constants with results.
                 List<String> newConstants = new ArrayList<String>();
@@ -161,7 +167,7 @@ public class FillCalculateTransform implements Transform {
         }
         return fillCalculateMetricList;
     }
-
+    
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.FILL_CALCULATE.name();

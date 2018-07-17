@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Calculate all the absolute value for all datapoints in every metric.
  *
@@ -44,24 +46,22 @@ import java.util.Map.Entry;
 public class AbsoluteValueMapping implements ValueMapping {
 
     //~ Methods **************************************************************************************************************************************
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
-        Map<Long, Double> absDatapoints = new HashMap<>();
-
-        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-            Double absValue = Math.abs(entry.getValue());
-
-            absDatapoints.put(entry.getKey(), absValue);
-        }
-        return absDatapoints;
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
+    	Map<Long, Number> absDatapoints = new HashMap<>();
+    	
+    	for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+    		absDatapoints.put(entry.getKey(), NumberOperations.getAbsValue(entry.getValue()));
+    	}
+    	return absDatapoints;
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.ABSOLUTE.name();

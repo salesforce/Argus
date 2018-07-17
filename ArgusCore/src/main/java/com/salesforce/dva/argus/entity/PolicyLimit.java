@@ -91,7 +91,7 @@ public class PolicyLimit extends JPAEntity {
     PolicyCounter counter;
     @Basic(optional = false)
     @Column(name = "user_limit", nullable = false)
-    double limit;
+    Number limit;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -103,7 +103,7 @@ public class PolicyLimit extends JPAEntity {
      * @param  counter  The policy limit counter for which to set the limit. Cannot be null.
      * @param  limit    The limit to set.
      */
-    public PolicyLimit(PrincipalUser creator, PrincipalUser user, PolicyCounter counter, double limit) {
+    public PolicyLimit(PrincipalUser creator, PrincipalUser user, PolicyCounter counter, Number limit) {
         super(creator);
         setUser(user);
         setCounter(counter);
@@ -147,7 +147,7 @@ public class PolicyLimit extends JPAEntity {
      *
      * @return  The limit for the given user-counter combination. Default value of the counter is no such record exists.
      */
-    public static double getLimitByUserAndCounter(EntityManager em, PrincipalUser user, PolicyCounter counter) {
+    public static Number getLimitByUserAndCounter(EntityManager em, PrincipalUser user, PolicyCounter counter) {
         PolicyLimit pLimit = findPolicyLimitByUserAndCounter(em, user, counter);
 
         if (pLimit != null) {
@@ -201,7 +201,7 @@ public class PolicyLimit extends JPAEntity {
      *
      * @return  The limit value.
      */
-    public double getLimit() {
+    public Number getLimit() {
         return limit;
     }
 
@@ -210,8 +210,8 @@ public class PolicyLimit extends JPAEntity {
      *
      * @param  limit  The limit value.
      */
-    public void setLimit(double limit) {
-        SystemAssert.requireArgument(limit > 0, "Limit must be greater than 0");
+    public void setLimit(Number limit) {
+        SystemAssert.requireArgument(NumberOperations.isGreaterThan(limit, 0), "Limit must be greater than 0");
         this.limit = limit;
     }
 

@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Calculates the average of all values at each timestamp across all the metrics.
  *
@@ -41,18 +43,19 @@ import java.util.List;
 public class AverageValueReducer implements ValueReducer {
 
     //~ Methods **************************************************************************************************************************************
-
+    
     @Override
-    public Double reduce(List<Double> values) {
-        Double sum = 0.0;
-
-        for (Double value : values) {
-            if (value == null) {
-                continue;
-            }
-            sum += value;
-        }
-        return (sum / values.size());
+    public Number reduce(List<Number> values) {
+    	Number sum = 0;
+    	
+    	for (Number value : values) {
+    		if (value == null) {
+    			continue;
+    		}
+    		sum = NumberOperations.add(sum, value);
+    	}
+    	
+    	return NumberOperations.divide(sum, values.size());
     }
 
     @Override

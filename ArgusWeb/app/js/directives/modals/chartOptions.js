@@ -13,7 +13,7 @@ angular.module('argus.directives.controls.dashboard', [])
 					$scope.openChartOptionsModal = function () {
 
 						var chartOptions = $modal.open({
-							templateUrl: 'js/templates/modals/chartOptions.html',
+							template: require('../../templates/modals/chartOptions.html'),
 							windowClass: 'argusModal chartOptions',
 							controller: ['$scope', function ($scope) {
 								// Attach details to scope so they can be rendered in the modal

@@ -85,7 +85,7 @@ public class LimitTransformTest {
     @Test
     public void testLimitTransformWithLimitLessThanMetricsLen() {
         Transform limitTransform = new LimitTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -95,17 +95,17 @@ public class LimitTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(4000L, 10.0);
-        datapoints_2.put(5000L, 100.0);
-        datapoints_2.put(6000L, 1000.0);
+        datapoints_2.put(4000L, 10L);
+        datapoints_2.put(5000L, 100L);
+        datapoints_2.put(6000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(7000L, 0.1);
         datapoints_3.put(8000L, 0.01);
@@ -125,17 +125,17 @@ public class LimitTransformTest {
 
         constants.add("2");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(4000L, 10.0);
-        expected_2.put(5000L, 100.0);
-        expected_2.put(6000L, 1000.0);
+        expected_2.put(4000L, 10L);
+        expected_2.put(5000L, 100L);
+        expected_2.put(6000L, 1000L);
 
         List<Metric> result = limitTransform.transform(metrics, constants);
 
@@ -143,11 +143,11 @@ public class LimitTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testLimitTransformWithLimitEqualToMetricsLen() {
         Transform limitTransform = new LimitTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -157,17 +157,17 @@ public class LimitTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(4000L, 10.0);
-        datapoints_2.put(5000L, 100.0);
-        datapoints_2.put(6000L, 1000.0);
+        datapoints_2.put(4000L, 10L);
+        datapoints_2.put(5000L, 100L);
+        datapoints_2.put(6000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(7000L, 0.1);
         datapoints_3.put(8000L, 0.01);
@@ -187,19 +187,19 @@ public class LimitTransformTest {
 
         constants.add("3");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(4000L, 10.0);
-        expected_2.put(5000L, 100.0);
-        expected_2.put(6000L, 1000.0);
+        expected_2.put(4000L, 10L);
+        expected_2.put(5000L, 100L);
+        expected_2.put(6000L, 1000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(7000L, 0.1);
         expected_3.put(8000L, 0.01);
@@ -216,17 +216,17 @@ public class LimitTransformTest {
     @Test
     public void testLimitTransformWithGreaterThanThanMetricsLen() {
         Transform limitTransform = new LimitTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(4000L, 10.0);
         datapoints_2.put(5000L, 100.0);
@@ -236,7 +236,7 @@ public class LimitTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(7000L, 0.1);
         datapoints_3.put(8000L, 0.01);
@@ -256,19 +256,19 @@ public class LimitTransformTest {
 
         constants.add("100");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
-        expected_1.put(1000L, 1.0);
-        expected_1.put(2000L, 2.0);
-        expected_1.put(3000L, 3.0);
+        expected_1.put(1000L, 1L);
+        expected_1.put(2000L, 2L);
+        expected_1.put(3000L, 3L);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(4000L, 10.0);
         expected_2.put(5000L, 100.0);
         expected_2.put(6000L, 1000.0);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(7000L, 0.1);
         expected_3.put(8000L, 0.01);

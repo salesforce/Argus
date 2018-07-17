@@ -65,7 +65,7 @@ public interface MonitorService extends Service {
      * @param  value    The new value.
      * @param  tags     The tags representing the TSDB metric for this counter.
      */
-    void updateCounter(Counter counter, double value, Map<String, String> tags);
+    void updateCounter(Counter counter, Number value, Map<String, String> tags);
 
     /**
      * Replaces the value of a custom counter.
@@ -74,7 +74,7 @@ public interface MonitorService extends Service {
      * @param  value  The new value.
      * @param  tags   The tags representing the TSDB metric for this counter.
      */
-    void updateCustomCounter(String name, double value, Map<String, String> tags);
+    void updateCustomCounter(String name, Number value, Map<String, String> tags);
 
     /**
      * Modifies the value of a counter.
@@ -85,7 +85,7 @@ public interface MonitorService extends Service {
      *
      * @return  The updated counter value.
      */
-    double modifyCounter(Counter counter, double delta, Map<String, String> tags);
+    Number modifyCounter(Counter counter, Number delta, Map<String, String> tags);
 
     /**
      * Modifies the value of a custom counter.
@@ -96,7 +96,7 @@ public interface MonitorService extends Service {
      *
      * @return  The updated counter value.
      */
-    double modifyCustomCounter(String name, double delta, Map<String, String> tags);
+    Number modifyCustomCounter(String name, Number delta, Map<String, String> tags);
 
     /**
      * Returns the current value of a counter.
@@ -106,7 +106,7 @@ public interface MonitorService extends Service {
      *
      * @return  The current value of the counter. Will not be null.
      */
-    double getCounter(Counter counter, Map<String, String> tags);
+    Number getCounter(Counter counter, Map<String, String> tags);
 
     /**
      * Returns the current value of a custom counter.
@@ -116,7 +116,7 @@ public interface MonitorService extends Service {
      *
      * @return  The current value of the counter. Will not be null.
      */
-    double getCustomCounter(String name, Map<String, String> tags);
+    Number getCustomCounter(String name, Map<String, String> tags);
 
     /** Resets all custom counter values. */
     void resetCustomCounters();

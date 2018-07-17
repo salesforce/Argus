@@ -51,6 +51,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Provides methods to collect annotation events and metric data.
  *
@@ -83,7 +86,7 @@ public class CollectionResources extends AbstractResource {
         PrincipalUser remoteUser = getRemoteUser(req);
 
         SystemAssert.requireArgument(metricDtos != null, "Cannot submit null timeseries metrics list.");
-
+        
         List<Metric> legalMetrics = new ArrayList<>();
         List<MetricDto> illegalMetrics = new ArrayList<>();
         List<String> errorMessages = new ArrayList<>();

@@ -35,6 +35,7 @@ import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -89,7 +90,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", triggerMinValue, inertiaPeriod);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(triggerMinValue), inertiaPeriod);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
 				cooldownPeriod);
@@ -125,9 +126,9 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger1", 10, 0);
+		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger1", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger1, "100002");
-		Trigger trigger2 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger2", 5, 0);
+		Trigger trigger2 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger2", NumberOperations.bd(5), 0);
 		_setTriggerId(trigger2, "100003");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
 		_setNotificationId(notification, "100004");
@@ -162,7 +163,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
 				600000);
@@ -207,7 +208,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
 		_setNotificationId(notification, "100003");
@@ -240,7 +241,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 0);
 		_setNotificationId(notification, "100003");
@@ -298,7 +299,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 300000);
 		_setNotificationId(notification, "100003");
@@ -350,7 +351,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
 		_setAlertId(alert, "100001");
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(10), 0);
 		_setTriggerId(trigger, "100002");
 		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(), 300000);
 		_setNotificationId(notification, "100003");
@@ -414,7 +415,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		long inertia = 10;
 		long startTime = 1;
 		long expectedTriggerTime;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(inertia + 1, thresholdValue, startTime, true));
@@ -456,7 +457,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		long inertia = 0;
 		long startTime = 1000;
 		long expectedTriggerTime;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
@@ -476,7 +477,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		double thresholdValue = 90;
 		long inertia = 1;
 		long startTime = 1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
@@ -495,7 +496,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		double thresholdValue = 90;
 		long inertia = 0;
 		long startTime = 1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 
 		datapoints.putAll(_createDatapoints(0, thresholdValue, startTime, true));
@@ -513,7 +514,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 		datapoints.put(0L, "1");
 		datapoints.put(inertia, "1");
@@ -530,7 +531,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 		datapoints.put(0L, "1");
 		datapoints.put(3*60*1000L, "1");
@@ -548,7 +549,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
 		Map<Long, String> datapoints = new HashMap<Long, String>();
 		datapoints.put(0L, "1");
 		datapoints.put(9*60*1000L, "1");
@@ -558,10 +559,14 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		assertEquals(expectedTriggerTime, actualValue);
 	}
 
-	private Map<Long, Double> _convertDatapoints(Map<Long, String> datapoints) {
-		Map<Long, Double> newDps = new HashMap<>();
+	private Map<Long, Number> _convertDatapoints(Map<Long, String> datapoints) {
+		Map<Long, Number> newDps = new HashMap<>();
 		for(Map.Entry<Long, String> dp : datapoints.entrySet()) {
-			newDps.put(dp.getKey(), Double.parseDouble(dp.getValue()));
+			try {
+				newDps.put(dp.getKey(), Long.parseLong(dp.getValue()));
+			} catch (NumberFormatException nfe) {
+				newDps.put(dp.getKey(), Double.parseDouble(dp.getValue()));
+			}
 		}
 		return newDps;
 	}
@@ -573,8 +578,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
+		Map<Long, Number> datapoints = new HashMap<Long, Number>();
 		datapoints.put(0L, 2.0);
 		datapoints.put(3*60*1000L, 2.0);
 		datapoints.put(6*60*1000L, 2.0);
@@ -593,8 +598,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, Double> datapoints = new HashMap<>();
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
+		Map<Long, Number> datapoints = new HashMap<>();
 		datapoints.put(0L, 2.0);
 		datapoints.put(3*60*1000L, 0.0);
 		datapoints.put(6*60*1000L, 2.0);
@@ -612,8 +617,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		Metric metric = new Metric("scope", "metric");
 		double thresholdValue = 1;
 		long inertia = 5*60*1000;
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", thresholdValue, inertia);
-		Map<Long, Double> datapoints = new HashMap<>();
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "name_test", NumberOperations.bd(thresholdValue), inertia);
+		Map<Long, Number> datapoints = new HashMap<>();
 		datapoints.put(0L, 1.0);
 		datapoints.put(2*60*1000L, 0.0);
 		datapoints.put(inertia, 1.0);
@@ -711,7 +716,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		inertiaPeriod = inertiaPeriod / (1000 * 60);
 
 		Metric result = new Metric(scope, metricName);
-		Map<Long, Double> datapoints = new HashMap<>();
+		Map<Long, Number> datapoints = new HashMap<>();
 		int index = 0;
 
 		for (int j = 0; j <= random.nextInt(10); j++) {

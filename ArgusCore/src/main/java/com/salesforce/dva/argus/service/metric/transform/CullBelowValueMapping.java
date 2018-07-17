@@ -33,9 +33,11 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,44 +57,61 @@ public class CullBelowValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Cull Below Transform needs a limit and a type.");
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
         SystemAssert.requireArgument(constants.size() == 2, "Cull Below Transform must provide exactly 2 constants which are limit and type.");
 
-        final Double limit = Double.parseDouble(constants.get(0));
+        Number limit;
+        try {
+        	limit = Long.parseLong(constants.get(0));
+        } catch (NumberFormatException nfe) {
+        	try {
+        		limit = Double.parseDouble(constants.get(0));
+        	} catch (NumberFormatException nfe2) {
+        		throw new IllegalArgumentException("Limit " + constants.get(0) + " is not a valid number.");
+        	}
+        }
+        
         String type = constants.get(1);
 
         SystemAssert.requireArgument(type.equals(PERCENTILE) || type.equals(VALUE), "Only percentil and value is allowed for type input.");
 
-        final Double pivot = type.equals(PERCENTILE) ? findPivot(originalDatapoints, limit) : limit;
-        Predicate<Map.Entry<Long, Double>> isBelow = new Predicate<Map.Entry<Long, Double>>() {
+        final Number pivot = type.equals(PERCENTILE) ? findPivot(originalDatapoints, limit) : limit;
+        Predicate<Map.Entry<Long, Number>> isBelow = new Predicate<Map.Entry<Long, Number>>() {
 
                 @Override
-                public boolean apply(Map.Entry<Long, Double> datapoint) {
-                    return datapoint.getValue() >= pivot;
+                public boolean apply(Map.Entry<Long, Number> datapoint) {
+                    return NumberOperations.isGreaterThanOrEqualTo(datapoint.getValue(), pivot);
                 }
             };
 
-        Map<Long, Double> result = new HashMap<>();
+        Map<Long, Number> result = new HashMap<>();
 
         result.putAll(Maps.filterEntries(originalDatapoints, isBelow));
         return result;
     }
-
+    
     /*
      * If type is percentile, find out the  estimate of the limit(th) percentile in the datapoint sorted values. Then execute the same as type is
      * value. That means to cull the elements greater than value or pivotValue prerequisite: array must be sorted
      */
-    private Double findPivot(Map<Long, Double> datapoints, Double limit) {
-        double[] doubleValues = new double[datapoints.size()];
+    private Double findPivot(Map<Long, Number> datapoints, Number limit) {
+    	Map<Long, Double> datapointsDouble;
+    	try {
+    		datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
+    	} catch (IllegalArgumentException iae) {
+    		throw new UnsupportedOperationException("Cull Below Value Mapping with percentile is only supported for double data values.");
+    	}
+    	
+        double[] doubleValues = new double[datapointsDouble.size()];
         int k = 0;
 
-        for (Map.Entry<Long, Double> entry : datapoints.entrySet()) {
+        for (Map.Entry<Long, Double> entry : datapointsDouble.entrySet()) {
             doubleValues[k] = entry.getValue();
             k++;
         }
@@ -101,13 +120,13 @@ public class CullBelowValueMapping implements ValueMapping {
         double pivotValue = Double.MAX_VALUE;
 
         try {
-            pivotValue = new Percentile().evaluate(doubleValues, (double) limit);
+            pivotValue = new Percentile().evaluate(doubleValues, limit.doubleValue());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Please provide a valid percentile number!");
         }
         return pivotValue;
     }
-
+  
     @Override
     public String name() {
         return TransformFactory.Function.CULL_BELOW.name();

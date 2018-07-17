@@ -48,7 +48,7 @@ public class UnionTransformTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testUnionTransformWithConstant() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -76,21 +76,21 @@ public class UnionTransformTest {
     @Test
     public void testUnionTransformWithAllSharedTimestamps() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -101,22 +101,22 @@ public class UnionTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
-        expected.put(3000L, 3.0);
+        expected.put(3000L, 3L);
 
         List<Metric> result = unionTransform.transform(metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testUnionTransformWithoutSharedTimestamps() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -126,11 +126,11 @@ public class UnionTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
-        datapoints_2.put(300L, 1000.0);
+        datapoints_2.put(100L, 10L);
+        datapoints_2.put(200L, 100L);
+        datapoints_2.put(300L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -141,14 +141,14 @@ public class UnionTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
-        expected.put(100L, 10.0);
-        expected.put(200L, 100.0);
-        expected.put(300L, 1000.0);
+        expected.put(100L, 10L);
+        expected.put(200L, 100L);
+        expected.put(300L, 1000L);
 
         List<Metric> result = unionTransform.transform(metrics);
 
@@ -159,9 +159,9 @@ public class UnionTransformTest {
     @Test
     public void testUnionTransformWithSomeSharedTimestamps() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
+        datapoints_1.put(1000L, 1L);
         datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, 3.0);
 
@@ -169,7 +169,7 @@ public class UnionTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -184,9 +184,9 @@ public class UnionTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 1.0);
+        expected.put(1000L, 1L);
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
         expected.put(200L, 100.0);
@@ -197,11 +197,11 @@ public class UnionTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testUnionTransformWithOnlyOneMetric() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -215,7 +215,7 @@ public class UnionTransformTest {
 
         metrics.add(metric_1);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
@@ -230,7 +230,7 @@ public class UnionTransformTest {
     @Test
     public void testUnionTransformWithMissingPoints() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, 2.0);
@@ -240,9 +240,9 @@ public class UnionTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(1000L, 10L);
         datapoints_2.put(2000L, null);
         datapoints_2.put(300L, null);
 
@@ -255,7 +255,7 @@ public class UnionTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, null);
         expected.put(2000L, 2.0);

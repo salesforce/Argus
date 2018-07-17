@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -72,7 +73,7 @@ public class SchedulingServiceTest extends AbstractTest {
             alert = new Alert(user, user, createRandomName(), expression, "* * * * *");
             alert.setEnabled(true);
             
-            Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 0, 0);
+            Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", NumberOperations.bd(0), 0);
             alert.setTriggers(Arrays.asList(trigger));
     		Notification notification = new Notification("testNotification", alert, AuditNotifier.class.getName(), new ArrayList<String>(),
     				0);

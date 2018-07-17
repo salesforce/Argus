@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
@@ -67,12 +68,12 @@ public class DownsampleTransform implements Transform {
      *
      * @throws  UnsupportedOperationException  If an unknown down sampling type is specified.
      */
-    public static Double downsamplerReducer(List<Double> values, String reducerType) {
-        List<Double> operands = new ArrayList<Double>();
+    public static Number downsamplerReducer(List<Number> values, String reducerType) {
+        List<Number> operands = new ArrayList<Number>();
         
-        for (Double value : values) {
+        for (Number value : values) {
             if (value == null) {
-                operands.add(0.0);
+                operands.add(0);
             } else {
                 operands.add(value);
             }
@@ -81,20 +82,28 @@ public class DownsampleTransform implements Transform {
         InternalReducerType type = InternalReducerType.fromString(reducerType);
         switch (type) {
             case AVG:
-                return new Mean().evaluate(Doubles.toArray(operands));
+                return NumberOperations.mean(operands.toArray(new Number[operands.size()]));
             case MIN:
-                return Collections.min(operands);
+                return NumberOperations.min(operands);
             case MAX:
-                return Collections.max(operands);
+                return NumberOperations.max(operands);
             case SUM:
-                return new Sum().evaluate(Doubles.toArray(operands), 0, operands.size());
+                return NumberOperations.sum(operands);
             case DEVIATION:
-                return new StandardDeviation().evaluate(Doubles.toArray(operands));
+            	try {
+            		return new StandardDeviation().evaluate(Doubles.toArray(NumberOperations.getListAsDoubles(operands)));
+            	} catch (IllegalArgumentException iae) {
+            		throw new UnsupportedOperationException("Downsample Transform with deviation is only supported for double data values.");
+            	}
             case COUNT:
             	values.removeAll(Collections.singleton(null));
-            	return (double) values.size();
+            	return values.size();
             case PERCENTILE:
-            	return new Percentile().evaluate(Doubles.toArray(operands), Double.parseDouble(reducerType.substring(1)));
+            	try {
+            		return new Percentile().evaluate(Doubles.toArray(NumberOperations.getListAsDoubles(operands)), Double.parseDouble(reducerType.substring(1)));
+            	} catch (IllegalArgumentException iae) {
+            		throw new UnsupportedOperationException("Downsample Transform with deviation is only supported for double data values.");
+            	}
             default:
                 throw new UnsupportedOperationException("Illegal type: " + reducerType + ". Please provide a valid type.");
         }
@@ -122,11 +131,6 @@ public class DownsampleTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-        throw new UnsupportedOperationException("Downsample transform need constant input!");
-    }
-    
-    @Override
-    public List<Metric> transformNew(List<Metric> metrics) {
         throw new UnsupportedOperationException("Downsample transform need constant input!");
     }
 
@@ -157,10 +161,10 @@ public class DownsampleTransform implements Transform {
         }
         return metrics;
     }
-
-    private Map<Long, Double> createDownsampleDatapoints(Map<Long, Double> originalDatapoints, long windowSize, String type, String windowUnit) {
-        Map<Long, Double> downsampleDatapoints = new HashMap<>();
-        TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
+    
+    private Map<Long, Number> createDownsampleDatapoints(Map<Long, Number> originalDatapoints, long windowSize, String type, String windowUnit) {
+        Map<Long, Number> downsampleDatapoints = new HashMap<>();
+        TreeMap<Long, Number> sortedDatapoints = new TreeMap<>(originalDatapoints);
         
         if (sortedDatapoints.isEmpty()){
         	return downsampleDatapoints;
@@ -168,16 +172,16 @@ public class DownsampleTransform implements Transform {
         
         Long windowStart = getWindowStartTime(sortedDatapoints.firstKey(),windowUnit,windowSize);
 
-        List<Double> values = new ArrayList<>();
-        for (Map.Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
+        List<Number> values = new ArrayList<>();
+        for (Map.Entry<Long, Number> entry : sortedDatapoints.entrySet()) {
             Long timestamp = entry.getKey();
-            Double value = entry.getValue();
+            Number value = entry.getValue();
 
             if (values.isEmpty()) {
                 values.add(value);
             } else {
                 if (timestamp >= windowStart + windowSize) {
-                    Double fillingValue = downsamplerReducer(values, type);
+                    Number fillingValue = downsamplerReducer(values, type);
                     downsampleDatapoints.put(windowStart, fillingValue);
                     values.clear();
                     windowStart = getWindowStartTime(windowStart, timestamp, windowSize); 
@@ -186,12 +190,12 @@ public class DownsampleTransform implements Transform {
             }
         }
         if (!values.isEmpty()) {
-            Double fillingValue = downsamplerReducer(values, type);
+            Number fillingValue = downsamplerReducer(values, type);
             downsampleDatapoints.put(windowStart, fillingValue);
         }
         return downsampleDatapoints;
     }
-
+    
     private long getWindowStartTime(long previousStartTime, long firstDatapoint, long windowSize){
     	long result=previousStartTime;
     	while(firstDatapoint>=(result+windowSize)){

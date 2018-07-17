@@ -77,7 +77,7 @@ public class AlertResources extends AbstractResource {
 	//~ Instance fields ******************************************************************************************************************************
 
 	private AlertService alertService = system.getServiceFactory().getAlertService();
-
+	
 	//~ Methods **************************************************************************************************************************************
 
 	/**
@@ -420,7 +420,6 @@ public class AlertResources extends AbstractResource {
 			if(!alert.isShared()) {
 				validateResourceAuthorization(req, alert.getOwner(), owner);
 			}
-			
 			return TriggerDto.transformToDto(alert.getTriggers());
 		}
 		
@@ -668,7 +667,7 @@ public class AlertResources extends AbstractResource {
 
 		PrincipalUser owner = validateAndGetOwner(req, alertDto.getOwnerName());
 		Alert oldAlert = alertService.findAlertByPrimaryKey(alertId);
-
+		
 		if (oldAlert == null) {
 			throw new WebApplicationException(Response.Status.NOT_FOUND.getReasonPhrase(), Response.Status.NOT_FOUND);
 		}

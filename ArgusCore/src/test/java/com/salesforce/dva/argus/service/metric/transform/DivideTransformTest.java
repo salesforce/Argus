@@ -49,7 +49,7 @@ public class DivideTransformTest {
     @Test(expected = SystemException.class)
     public void testDivideTransformWithIllegalConstant() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -70,7 +70,7 @@ public class DivideTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDivideTransformWithConstantZero() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 10.0);
 
@@ -101,11 +101,11 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithOneConstantAgainstOneMetric() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 10.0);
-        datapoints.put(2000L, 20.0);
-        datapoints.put(3000L, 30.0);
+        datapoints.put(1000L, 10L);
+        datapoints.put(2000L, 20L);
+        datapoints.put(3000L, 30L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -119,7 +119,7 @@ public class DivideTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
         expected.put(2000L, 4.0);
@@ -134,7 +134,7 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithOneConstantAgainstMetricList() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 10.0);
         datapoints_1.put(2000L, 20.0);
@@ -144,11 +144,11 @@ public class DivideTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -163,13 +163,13 @@ public class DivideTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 2.0);
         expected_1.put(2000L, 4.0);
         expected_1.put(3000L, 6.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 2.0);
         expected_2.put(2000L, 20.0);
@@ -201,7 +201,7 @@ public class DivideTransformTest {
     @Test(expected = ArithmeticException.class)
     public void testDivideTransformWithNoConstantShareCommonDPsDividedByZero() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -211,7 +211,7 @@ public class DivideTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 0.0);
         datapoints_2.put(2000L, 100.0);
@@ -234,21 +234,21 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithNoConstantShareCommonDPs() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
         datapoints_1.put(3000L, 3.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -260,7 +260,7 @@ public class DivideTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 0.1);
         expected.put(2000L, 0.02);
@@ -275,7 +275,7 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithNoConstantShareNoCommonDPs() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -285,7 +285,7 @@ public class DivideTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -301,7 +301,7 @@ public class DivideTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         List<Metric> result = divideTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -311,7 +311,7 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithNoConstantShareSomeCommonDPs() {
         Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -321,11 +321,11 @@ public class DivideTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(3000L, 1000);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -337,7 +337,7 @@ public class DivideTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>(1);
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(3000L, 0.003);
 
@@ -352,7 +352,7 @@ public class DivideTransformTest {
     @Test
     public void testDivideTransformWithFullJoinConstantShareSomeCommonDPs() {
     	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -362,11 +362,11 @@ public class DivideTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(300L, 1000.0);
+        datapoints_2.put(300L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -379,11 +379,11 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>();
         constants.add("union");
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         expected.put(100L, 10.0);
         expected.put(1000L, 1.0);
         expected.put(2000L, 0.02);
-        expected.put(300L, 1000.0);
+        expected.put(300L, 1000L);
         expected.put(3000L, 3.0);
         List<Metric> result = divideTransform.transform(metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
@@ -394,7 +394,7 @@ public class DivideTransformTest {
     public void testDivideTransformWithOneTimeseries() {
     	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
         
-    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+    	Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, 3.0);
@@ -412,10 +412,10 @@ public class DivideTransformTest {
     public void testDivideTransformWithOneTimeseriesWithConstant() {
     	Transform divideTransform = new MetricReducerOrMappingTransform(new DivideValueReducerOrMapping());
         
-    	Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+    	Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
         datapoints_1.put(1000L, 10.0);
-        datapoints_1.put(2000L, 20.0);
-        datapoints_1.put(3000L, 30.0);
+        datapoints_1.put(2000L, 20L);
+        datapoints_1.put(3000L, 30L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
         metric_1.setDatapoints(datapoints_1);

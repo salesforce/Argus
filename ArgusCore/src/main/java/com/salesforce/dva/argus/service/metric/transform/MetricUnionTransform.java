@@ -103,12 +103,12 @@ public class MetricUnionTransform implements Transform {
         }
 
         Metric newMetric = reduce(metrics);
-        Map<Long, Double> reducedDatapoints = newMetric.getDatapoints();
+        Map<Long, Number> reducedDatapoints = newMetric.getDatapoints();
         Set<Long> sharedTimestamps = reducedDatapoints.keySet();
-        Map<Long, Double> unionDatapoints = new TreeMap<>();
+        Map<Long, Number> unionDatapoints = new TreeMap<>();
 
         for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> entry : metric.getDatapoints().entrySet()) {
+            for (Map.Entry<Long, Number> entry : metric.getDatapoints().entrySet()) {
                 if (!sharedTimestamps.contains(entry.getKey())) {
                     unionDatapoints.put(entry.getKey(), entry.getValue());
                 }
@@ -118,7 +118,7 @@ public class MetricUnionTransform implements Transform {
         newMetric.addDatapoints(unionDatapoints);
         return Arrays.asList(newMetric);
     }
-
+   
     /**
      * Reduce transform for the list of metrics.
      *
@@ -136,8 +136,8 @@ public class MetricUnionTransform implements Transform {
 
         distiller.distill(metrics);
 
-        Map<Long, List<Double>> collated = collate(metrics);
-        Map<Long, Double> minDatapoints = reduce(collated, metrics);
+        Map<Long, List<Number>> collated = collate(metrics);
+        Map<Long, Number> minDatapoints = reduce(collated, metrics);
         String newMetricName = distiller.getMetric() == null ? defaultMetricName : distiller.getMetric();
         Metric newMetric = new Metric(defaultScope, newMetricName);
 
@@ -147,25 +147,25 @@ public class MetricUnionTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
-
-    private Map<Long, List<Double>> collate(List<Metric> metrics) {
-        Map<Long, List<Double>> collated = new HashMap<>();
+    
+    private Map<Long, List<Number>> collate(List<Metric> metrics) {
+        Map<Long, List<Number>> collated = new HashMap<>();
 
         for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
+            for (Map.Entry<Long, Number> point : metric.getDatapoints().entrySet()) {
                 if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), new ArrayList<Double>());
+                    collated.put(point.getKey(), new ArrayList<Number>());
                 }
                 collated.get(point.getKey()).add(point.getValue());
             }
         }
         return collated;
     }
+    
+    private Map<Long, Number> reduce(Map<Long, List<Number>> collated, List<Metric> metrics) {
+        Map<Long, Number> reducedDatapoints = new HashMap<>();
 
-    private Map<Long, Double> reduce(Map<Long, List<Double>> collated, List<Metric> metrics) {
-        Map<Long, Double> reducedDatapoints = new HashMap<>();
-
-        for (Map.Entry<Long, List<Double>> entry : collated.entrySet()) {
+        for (Map.Entry<Long, List<Number>> entry : collated.entrySet()) {
             if (entry.getValue().size() < metrics.size()) {
                 continue;
             }
@@ -173,7 +173,7 @@ public class MetricUnionTransform implements Transform {
         }
         return reducedDatapoints;
     }
-
+    
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Union transform can't be used with constants!");

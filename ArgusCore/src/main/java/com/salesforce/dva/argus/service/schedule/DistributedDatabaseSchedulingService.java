@@ -1,4 +1,5 @@
 /*
+
  * Copyright (c) 2016, Salesforce.com, Inc.
  * All rights reserved.
  *
@@ -400,14 +401,14 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 						Metric schedulingQueueSizeMetric = new Metric(MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getScope(), MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getMetric());
 						schedulingQueueSizeMetric.setTag("host",SystemConfiguration.getHostname());
-						Map<Long, Double> datapoints = new HashMap<>();
-						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertsQueue.size()));
+						Map<Long, Number> datapoints = new HashMap<>();
+						datapoints.put(nextMinuteStartTime, _alertsQueue.size());
 						schedulingQueueSizeMetric.addDatapoints(datapoints);
 
 						Metric enabledAlertsMetric = new Metric(MonitorService.Counter.ALERTS_ENABLED.getScope(), MonitorService.Counter.ALERTS_ENABLED.getMetric());
 						enabledAlertsMetric.setTag("host",SystemConfiguration.getHostname());
 						datapoints = new HashMap<>();
-						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertDefinitionsCache.getEnabledAlertsForMinute(nextMinuteStartTime).size()));
+						datapoints.put(nextMinuteStartTime, _alertDefinitionsCache.getEnabledAlertsForMinute(nextMinuteStartTime).size());
 						enabledAlertsMetric.addDatapoints(datapoints);
 
 						try {

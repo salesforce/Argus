@@ -80,5 +80,20 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
         return -1.0 * Math.log(probabilityDensity);
     }
 
+    /*
+    @Override
+    public Number calculateAnomalyScoreNew(Number value) {
+    	Number scale = NumberOperations.divide(1, NumberOperations.sqrt(NumberOperations.multiply(2 * Math.PI, varianceNew)));
+    	Number exponent = NumberOperations.exp(NumberOperations.divide(
+    			NumberOperations.multiply(-1, NumberOperations.sqrt(NumberOperations.subtract(value, meanNew))),
+    			NumberOperations.multiply(2, varianceNew)));
+    	Number probabilityDensity = NumberOperations.multiply(scale, exponent);
+    	
+    	if (NumberOperations.isEqualTo(probabilityDensity, 0)) {
+    		throw new ArithmeticException("Cannot take the log of 0.");
+    	}
+    	
+    	return NumberOperations.multiply(-1, NumberOperations.log(probabilityDensity));
+    }*/
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -29,7 +29,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
         try {
             // Setup
             Long currentTime = System.currentTimeMillis();
-            Map<Long, Double> datapoints = new TreeMap<>();
+            Map<Long, Number> datapoints = new TreeMap<>();
 
             datapoints.put(currentTime - 15000000, 1.0);
             datapoints.put(currentTime - 14000000, 2.0);
@@ -64,7 +64,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
             assertEquals(queries.size(), 1);
             AsyncBatchedMetricQuery actualQuery = queries.get(0);
 
-            Map<Long, Double> resultDatapoints = actualQuery.getResult().getDatapoints();
+            Map<Long, Number> resultDatapoints = actualQuery.getResult().getDatapoints();
 
             assertTrue(_datapointsBetween(resultDatapoints, currentTime - 20000000, System.currentTimeMillis() - 10000000));
         } finally {
@@ -74,7 +74,7 @@ public class AsyncMetricServiceIT extends AbstractTest {
         }
     }
 
-    private boolean _datapointsBetween(Map<Long, Double> datapoints, long low, long high) {
+    private boolean _datapointsBetween(Map<Long, Number> datapoints, long low, long high) {
         for (Long timestamp : datapoints.keySet()) {
             if (timestamp < low || timestamp > high) {
                 return false;
