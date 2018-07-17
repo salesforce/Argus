@@ -208,7 +208,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	@Override
 	protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
-		SystemAssert.requireArgument(scopeNames != null, "Scope names list cannot be null.");
+		SystemAssert.requireArgument(scopeNames != null, "Scope names set cannot be null.");
 
 		_logger.info("{} new metrics need to be indexed on ES.", metrics.size());
 
