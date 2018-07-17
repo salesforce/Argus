@@ -1333,7 +1333,7 @@ angular.module('argus.services.charts.elements', [])
 		var start = dateFormatter(x.domain()[0]);
 		var end = dateFormatter(x.domain()[1]);
 		var temp = (new Date()).toString();
-		var timeZoneInfo = isGMT? ' (GMT/UTC)': temp.substring(temp.length - 6, temp.length);
+		var timeZoneInfo = isGMT? ' (GMT/UTC)': ' Local Time';
 		var str = start + ' - ' + end + timeZoneInfo;
 		// TODO: this should be done in angular with 2 way data binding update view
 		$('#date-range-' + chartId).text(str);
