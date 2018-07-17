@@ -207,6 +207,8 @@ public interface MonitorService extends Service {
         SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes"),
     	SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written"),
     	SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
+    	SCOPENAMES_WRITTEN("argus.core", "scopenames.written"),
+    	SCOPENAMES_WRITE_LATENCY("argus.core", "scopenames.write.latency"),    	
     	SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
     	SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency");
 
