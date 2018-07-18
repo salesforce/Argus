@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.entity;
 
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.text.MessageFormat;
+import java.util.Objects;
 
 /**
  * Represents a query against the metric schema data.  This is used for the discovery service and to expand wildcards.
@@ -40,6 +41,8 @@ import java.text.MessageFormat;
  * @author  Bhinav Sura (bsura@salesforce.com)
  */
 public class MetricSchemaRecordQuery extends SchemaQuery {
+
+    public static final String REGEX_MATCH_ANY = "*";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -168,6 +171,19 @@ public class MetricSchemaRecordQuery extends SchemaQuery {
 
 	public MetricSchemaRecord getScanFrom() {
 		return scanFrom;
+	}
+
+	public boolean isQueryOnlyOnScope() {
+
+		if (Objects.equals(this.namespace, REGEX_MATCH_ANY) &&
+			Objects.equals(this.metric, REGEX_MATCH_ANY) &&
+			Objects.equals(this.tagKey, REGEX_MATCH_ANY) &&
+			Objects.equals(this.tagValue, REGEX_MATCH_ANY))
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	public void setScanFrom(MetricSchemaRecord scanFrom) {
