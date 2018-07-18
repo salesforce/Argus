@@ -207,17 +207,30 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	//~ Methods **************************************************************************************************************************************
 
 	Iterator<String> constructCyclingIterator(String[] endpoints) {
+		// Return repeating, non-blocking iterator if single element
+		if (endpoints.length == 1) {
+			return new Iterator<String>() {
+				String item = endpoints[0];
+
+				@Override
+				public boolean hasNext() {
+					return true;
+				}
+
+				@Override
+				public String next() {
+					return item;
+				}
+			};
+		}
 		return new Iterator<String>() {
 			AtomicInteger index = new AtomicInteger(0);
 			List<String> items = Arrays.asList(endpoints);
-			IntUnaryOperator updater = new IntUnaryOperator() {
-				@Override
-				public int applyAsInt(int operand) {
-					if (operand == items.size() - 1) {
-						return 0;
-					} else {
-						return operand + 1;
-					}
+			IntUnaryOperator updater = (operand) -> {
+				if (operand == items.size() - 1) {
+					return 0;
+				} else {
+					return operand + 1;
 				}
 			};
 
@@ -229,11 +242,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			@Override
 			public String next() {
 				return items.get(index.getAndUpdate(updater));
-			}
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
 			}
 		};
 	}
