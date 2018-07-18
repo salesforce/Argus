@@ -476,3 +476,11 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
 .tooltip > .tooltip-inner {background-color: steelblue; text-align: left}
 .tooltip.bottom > .tooltip-arrow {border-bottom-color: steelblue;}
 .tooltip.in {opacity: 1}
+
+/* dashboard markup editor fullscreen  */
+.CodeMirror-fullscreen {
+  position: fixed;
+  top: 55px; left: 0; right: 0; bottom: 0;
+  height: auto;
+  z-index: ;
+}

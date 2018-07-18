@@ -42,6 +42,8 @@ import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,6 +131,9 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);
+		} catch(Exception ex) {
+			_logger.error("Exception occured when evaluating metric expressions {} - {}" , Arrays.toString(expressions.toArray()), ExceptionUtils.getFullStackTrace(ex));
+			throw ex;
 		}
 		_monitorService.modifyCounter(Counter.DATAPOINT_READS, _getDatapointsAcrossMetrics(metrics), null);
 		return metrics;
