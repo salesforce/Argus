@@ -97,7 +97,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 				 count.addAndGet(metrics.size());
 				 return null;
 			}
-		}).when(spyService).implementationSpecificPut(Mockito.anyListOf(Metric.class),Mockito.anyListOf(String.class));
+		}).when(spyService).implementationSpecificPut(Mockito.anyListOf(Metric.class),Mockito.anySetOf(String.class));
 		return spyService;
 	}
 	

@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -206,8 +207,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	}
 
 	@Override
-	protected void implementationSpecificPut(List<Metric> metrics, List<String> scopeNames) {
+	protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
+		SystemAssert.requireArgument(scopeNames != null, "Scope names set cannot be null.");
 
 		_logger.info("{} new metrics need to be indexed on ES.", metrics.size());
 
@@ -284,7 +286,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	/* Convert the given list of scopes to a list of scope only schema records. At the same time, fracture the records list
 	 * if its size is greater than INDEXING_BATCH_SIZE.
 	 */
-	protected List<List<ScopeOnlySchemaRecord>> _fractureScopes(List<String> scopeNames) {
+	protected List<List<ScopeOnlySchemaRecord>> _fractureScopes(Set<String> scopeNames) {
 		List<List<ScopeOnlySchemaRecord>> fracturedList = new ArrayList<>();
 
 		List<ScopeOnlySchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
