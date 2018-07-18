@@ -64,6 +64,8 @@ public interface CacheService extends Service {
      */
     <V> Map<String, V> get(Set<String> keys);
 
+    <V> Long incrBy(String key, Long delta);
+
     /**
      * Puts a value into the key slot and set expiry of key in seconds.
      *
