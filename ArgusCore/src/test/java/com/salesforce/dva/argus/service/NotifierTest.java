@@ -35,6 +35,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -58,7 +60,7 @@ public class NotifierTest extends AbstractTest {
     public void testDBNotifier() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
-        Notification notification = new Notification("notification_name", alert, "notifier_ame", new ArrayList<String>(), 23);
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
@@ -77,6 +79,28 @@ public class NotifierTest extends AbstractTest {
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.DATABASE);
 
         assertEquals(count, AuditNotifier.class.cast(notifier).getAllNotifications(alert).size());
+    }
+
+    @Test
+    public void testUpdatingTriggerName() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "${scope}-trigger_name-${metric}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}", 2D, 5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+        Map<String, String> tags = new HashMap<>();
+        tags.put("tag1","val1");
+        tags.put("tag2", "val2");
+
+        Metric m = new Metric("scope", "metric");
+        m.setTags(tags);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GOC);
+        notifier.sendNotification(context);
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}", context.getTrigger().getName());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
