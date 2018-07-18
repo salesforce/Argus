@@ -66,6 +66,11 @@ public class NoOperationCacheService extends DefaultService implements CacheServ
     }
 
     @Override
+    public <V> Long incrBy(String key, Long delta) {
+        return null;
+    }
+
+    @Override
     public <V> void put(String key, V value, int ttl) {
         // This is a no operation service. This method should do nothing and result in a cache miss.
     }
