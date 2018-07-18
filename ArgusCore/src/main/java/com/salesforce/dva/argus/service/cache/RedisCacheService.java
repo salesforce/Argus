@@ -125,11 +125,18 @@ public class RedisCacheService extends DefaultService implements CacheService {
 		return map;
 	}
 
+	/***
+	 *  Increments and returns the incremented value, atomically
+	 * @param key -> key in redis to increment
+	 * @param delta -> diff by which the key's value should be incremented by
+	 * @param <V>
+	 * @return -> value of the key once its incremented by delta
+	 */
 	@Override
-	public <V> Long incrby(String key, Long value) {
+	public <V> Long incrBy(String key, Long delta) {
 		Long returnValue = new Long(-1);
 		try {
-			returnValue = _jedisClusterClient.incrBy(key, value);
+			returnValue = _jedisClusterClient.incrBy(key, delta);
 		} catch (Exception ex) {
 			_logger.error("Exception in cache service: {} ", ex.getMessage());
 		}
