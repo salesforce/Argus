@@ -14,6 +14,12 @@ import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.system.SystemAssert;
 
+/**
+ * Defines mathematical operations between two Number data objects.
+ * 
+ * @author a.chambers
+ *
+ */
 public class NumberOperations {
 	
 	protected final static Logger _logger = LoggerFactory.getLogger(NumberOperations.class);
@@ -661,45 +667,6 @@ public class NumberOperations {
 		return doubles;
 	}
 	
-	/*
-	/**
-	 * Computes the approximate data value at a given percentile. Uses linear
-	 * interpolation between data values to approximate the value. Same algorithm as used in
-	 * org.apache.commons.math3.stat.descriptive.rank.Percentile.
-	 * 
-	 * @param vals the data values to analyze. Must be nonempty, cannot contain any null values.
-	 * @param p the percentile to use. Must be in (0, 100].
-	 * @return the approximate value at the pth percentile of vals.
-	 
-	public static Number percentile(Number[] vals, Number p) {
-		SystemAssert.requireArgument((isLessThanOrEqualTo(p, 100) && isGreaterThan(p, 0)), "The percentile must be in (0, 100]");
-		
-		Arrays.sort(vals, new Comparator<Number>() {
-
-			@Override
-			public int compare(Number o1, Number o2) {
-				return NumberOperations.compare(o1, o2);
-			}
-			
-			
-		});
-		
-		if (vals.length == 1) {
-			return vals[0];
-		}
-		Number pos = divide(multiply(p, vals.length + 1), 100);
-		Number diff = subtract(pos, floor(pos));
-		if (isLessThan(pos, 1)) {
-			return vals[0];
-		} else if (isGreaterThanOrEqualTo(pos, vals.length)) {
-			return vals[vals.length-1];
-		}
-		Number low = vals[floor(pos) - 1]; // subtract 1 to account for 0-based indexing
-		Number high = vals[floor(pos)];
-		return add(low, multiply(diff, subtract(high, low)));
-	}*/
-	
-	
 	/**
 	 * Computes the mean of the data set.
 	 * 
@@ -767,39 +734,13 @@ public class NumberOperations {
 				throw new IllegalStateException();
 		}
 	}
-	/*
-	/**
-	 * Computes the sample variance from a set of data.
-	 * 
-	 * @param vals the data values
-	 * @return the sample variance of vals
-	 
-	public static Number variance(Number[] vals) {
-		if (vals.length == 1) {
-			return 0;
-		}
-		
-		Number mu = mean(vals);
-		
-		Number squaredSum = 0;
-		for (Number val : vals) {
-			squaredSum = add(squaredSum, square(subtract(val, mu)));
-		}
-		
-		return divide(squaredSum, vals.length-1);
-	}*/
 	
-	/*
 	/**
-	 * Computes the sample standard deviation from a set of data.
+	 * Defines the type of a Number object as either Long, Double, or Int.
 	 * 
-	 * @param vals the data values
-	 * @return the sample standard deviation of vals
-	 
-	public static Number stdDev(Number[] vals) {
-		return sqrt(variance(vals));
-	}*/
-	
+	 * @author a.chambers
+	 *
+	 */
 	public enum ValueType {
 		
 		LONG,
