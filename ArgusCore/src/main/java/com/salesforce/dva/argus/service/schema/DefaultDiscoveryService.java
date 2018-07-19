@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+     
 package com.salesforce.dva.argus.service.schema;
 
 import com.google.inject.Inject;
@@ -77,7 +77,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
      */
     @Inject
     public DefaultDiscoveryService(SchemaService schemaService, SystemConfiguration config) {
-    	super(config);
+        super(config);
         this._schemaService = schemaService;
     }
 
@@ -122,9 +122,9 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
 
         List<MetricQuery> expandedQueryList = null;
-        
-        long start = System.nanoTime();
 
+        long start = System.nanoTime();
+        
         if (DiscoveryService.isWildcardQuery(query)) {
             _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' contains wildcards. Will match against schema records.", query));
             
@@ -132,7 +132,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
             int noOfTimeseriesAllowed = DiscoveryService.maxTimeseriesAllowed(query);
             
             if(noOfTimeseriesAllowed == 0) {
-            	throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
+                throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
             }
             
             Map<String, MetricQuery> queries = new HashMap<>();
@@ -175,7 +175,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                 
                 expandedQueryList = new ArrayList<>(queries.values());
             } else {
-            	Map<String, Integer> timeseriesCount = new HashMap<>();
+                Map<String, Integer> timeseriesCount = new HashMap<>();
                 for (Entry<String, String> tag : query.getTags().entrySet()) {
                 	
                     MetricSchemaRecordQuery schemaQuery = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().namespace(query.getNamespace())
@@ -205,10 +205,10 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                     	}
 
                         for (MetricSchemaRecord record : records) {
-                        	if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
+                            if (_getTotalTimeseriesCount(timeseriesCount) == noOfTimeseriesAllowed) {
                                 throw new WildcardExpansionLimitExceededException(EXCEPTION_MESSAGE);
                             }
-                        	
+                            
                             String identifier = _getIdentifier(record);
 
                             if (queries.containsKey(identifier)) {
@@ -254,7 +254,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
                 		expandedQueryList.add(q);
                 	}
                 }
-                
+
             } // end if-else
         } else {
             _logger.info(MessageFormat.format("MetricQuery'{'{0}'}' does not have any wildcards", query));
@@ -266,13 +266,13 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
         return expandedQueryList;
     }
 
-	private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
-    	int sum = 0;
-    	for(Integer count : timeseriesCountMap.values()) {
-    		sum += count;
-    	}
-    	
-    	return sum;
+    private int _getTotalTimeseriesCount(Map<String, Integer> timeseriesCountMap) {
+        int sum = 0;
+        for(Integer count : timeseriesCountMap.values()) {
+            sum += count;
+        }
+        
+        return sum;
     }
 
 	private String _getIdentifier(MetricSchemaRecord record) {
