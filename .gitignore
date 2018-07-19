@@ -38,6 +38,8 @@ local.properties
 # Intellij
 .idea/
 *.iml
+*.ipr
+*.iws
 
 Makefile
 property
