@@ -118,12 +118,13 @@ public interface DiscoveryService extends Service {
      * @return  True if the query is a wildcard query.
      */
     static boolean isWildcardQuery(MetricQuery query) {
-    	if (SchemaService.containsWildcard(query.getScope()) || SchemaService.containsWildcard(query.getMetric())) {
+    	
+    	if (SchemaService.containsWildcard(query.getScope()) 
+    			|| SchemaService.containsWildcard(query.getMetric()) 
+    			|| SchemaService.containsWildcard(query.getNamespace())) {
             return true;
         }
-        if (SchemaService.containsWildcard(query.getNamespace())) {
-            return true;
-        }
+
         if (query.getTags() != null) {
             for (String tagKey : query.getTags().keySet()) {
                 if (SchemaService.containsWildcard(tagKey) || 
