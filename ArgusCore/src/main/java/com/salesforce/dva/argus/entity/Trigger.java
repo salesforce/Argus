@@ -237,6 +237,7 @@ public class Trigger extends JPAEntity implements Serializable {
         setAlert(alert);
         setType(type);
         setName(name);
+        // BigDecimal used here for thresholds since JPA rounds Number like double, but maintains precision for BigDecimal
         setThreshold(NumberOperations.bd(threshold));
         setSecondaryThreshold(NumberOperations.bd(secondaryThreshold));
         setInertia(inertiaMillis);
