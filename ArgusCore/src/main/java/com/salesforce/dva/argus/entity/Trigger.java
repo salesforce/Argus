@@ -103,7 +103,6 @@ public class Trigger extends JPAEntity implements Serializable {
 			
 			ValueType type = ValueType.value(trigger.getThreshold());
 			switch (type) {
-				case INT:
 				case LONG:
 					jgen.writeNumberField("thresholdLong", trigger.getThreshold().longValue());
 					jgen.writeNumberField("threshold", trigger.getThreshold().doubleValue());
@@ -118,7 +117,6 @@ public class Trigger extends JPAEntity implements Serializable {
 			if(trigger.getSecondaryThreshold() != null) {
 				ValueType type2 = ValueType.value(trigger.getSecondaryThreshold());
 				switch (type2) {
-					case INT:
 					case LONG:
 						jgen.writeNumberField("secondaryThresholdLong", trigger.getSecondaryThreshold().longValue());
 						jgen.writeNumberField("secondaryThreshold", trigger.getSecondaryThreshold().doubleValue());
