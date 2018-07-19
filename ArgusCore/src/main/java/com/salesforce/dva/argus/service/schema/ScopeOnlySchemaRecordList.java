@@ -126,29 +126,4 @@ public class ScopeOnlySchemaRecordList {
 			return new ScopeOnlySchemaRecordList(records, scrollID);
 		}
 	}
-	
-	static class AggDeserializer extends JsonDeserializer<List<String>> {
-
-		@Override
-		public List<String> deserialize(JsonParser jp, DeserializationContext context)
-				throws IOException, JsonProcessingException {
-			
-			List<String> values = Collections.emptyList();
-			
-			JsonNode rootNode = jp.getCodec().readTree(jp);
-			JsonNode buckets = rootNode.get("aggregations").get("distinct_values").get("buckets");
-			
-			if(JsonNodeType.ARRAY.equals(buckets.getNodeType())) {
-				values = new ArrayList<>(buckets.size());
-				Iterator<JsonNode> iter = buckets.elements();
-				while(iter.hasNext()) {
-					JsonNode bucket = iter.next();
-					String value  = bucket.get("key").asText();
-					values.add(value);
-				}
-			}
-			
-			return values;
-		}
-	}
 }
