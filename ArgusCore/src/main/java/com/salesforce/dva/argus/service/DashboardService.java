@@ -69,7 +69,8 @@ public interface DashboardService extends Service {
 	 * Retrieves a list of Dashboards owned by a user.
 	 *
 	 * @param   owner  The user for which to retrieve dashboards. Cannot be null.
-     * @param   version The version of the dashboard to retrieve. It is either null or not empty
+     * @param metadataOnly 	To return only the metadata or not
+	 * @param   version The version of the dashboard to retrieve. It is either null or not empty
 	 *
 	 * @return  A list of Dashboards owner by this user or an empty list if none are owned.
 	 */
@@ -82,7 +83,7 @@ public interface DashboardService extends Service {
 	 * @param   limit           The maximum number of rows to return. If null no filtering applied
      * @param   version         The version of the dashboard to retrieve. It is either null or not empty
 	 * 
-	 * The list of all shared dashboards. Will never be null, but may be empty.
+	 * @return 	The list of all shared dashboards. Will never be null, but may be empty.
 	 */
 	List<Dashboard> findSharedDashboards(boolean metadataOnly, PrincipalUser owner, Integer limit, String version);
 
@@ -90,7 +91,8 @@ public interface DashboardService extends Service {
 	 * Retrieves a list of all dashboards.
 	 *
 	 * @param   limit  The maximum number of records to return.
-     * @param   version The version of the dashboard to retrieve. It is either null or not empty
+     * @param metadataOnly 	Whether to return only metadata
+	 * @param   version The version of the dashboard to retrieve. It is either null or not empty
 	 *
 	 * @return  The list of dashboards.
 	 */

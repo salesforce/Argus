@@ -385,7 +385,7 @@ public class ArgusService implements AutoCloseable {
          * @param   requestUrl  The URL to which the request was dispatched.
          *
          * @throws  ArgusServiceException  If the request resulted in an error.
-         * @throws TokenExpiredException 
+         * @throws TokenExpiredException   If the auth token has expired
          */
         protected void assertValidResponse(ArgusHttpClient.ArgusResponse response, String requestUrl) throws TokenExpiredException, ArgusServiceException {
             if (response.getErrorMessage() != null) {

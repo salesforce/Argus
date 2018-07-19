@@ -300,7 +300,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     /**
      * Sets the date the entity was last modified.
      *
-     * @param  The date the entity was last modified.
+     * @param modifiedDate  The date
      */
     public void setModifiedDate(Date modifiedDate) {
         if(modifiedDate!=null) {

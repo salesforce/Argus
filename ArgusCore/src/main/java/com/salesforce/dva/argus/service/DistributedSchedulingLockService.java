@@ -45,8 +45,8 @@ public interface DistributedSchedulingLockService extends Service{
      * Updates and returns the distributed schedule lock object for a given schedule type.
      *
      * @param   type        The scheduling type represented as a long value.
-     * @param   jobsBlockSize   The no of jobs each scheduler schedules as a block.
-	 * @param   schedulingRefreshInterval The time in millis scheduler refresh jobs
+     * @param jobsDequeBlockSize  The block size
+	  * @param   schedulingRefreshInterval The time in millis scheduler refresh jobs
      
      * @return  Updated distributed schedule object
      */
