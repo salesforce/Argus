@@ -111,10 +111,10 @@ public abstract class DefaultNotifier implements Notifier {
     protected void updateTriggerName(NotificationContext context) {
         String newTriggerName = context.getTrigger().getName();
         Metric triggeredMetric = context.getTriggeredMetric();
-        newTriggerName = newTriggerName.replaceAll("\\$\\{scope\\}", triggeredMetric.getScope());
-        newTriggerName = newTriggerName.replaceAll("\\$\\{metric\\}", triggeredMetric.getMetric());
+        newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{scope\\}", triggeredMetric.getScope());
+        newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{metric\\}", triggeredMetric.getMetric());
         Map<String, String> tags = triggeredMetric.getTags();
-        Matcher m = Pattern.compile("\\$\\{.*?\\}").matcher(newTriggerName);
+        Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(newTriggerName);
         while (m.find()) {
             String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1);
             if (tags.containsKey(currentTagKey))
