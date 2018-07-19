@@ -525,6 +525,8 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * Finds alerts by status (enabled/disabled).
 	 *
 	 * @param   em       The entity manager to user. Cannot be null.
+	 * @param limit      The results limit
+	 * @param offset	 The results offset
 	 * @param   enabled  Alert status (true for enabled jobs and false for disabled jobs).
 	 *
 	 * @return  The list of alerts for the given status. Will never be null but may be empty.

@@ -51,7 +51,6 @@ public class TokenExpiredException extends Exception {
     /**
      * Creates a new ArgusServiceException object.
      *
-     * @param  status   The corresponding HTTP status code.
      * @param  message  The exception message.
      * @param  url      The request URL.
      * @param  json     The JSON request payload.

@@ -127,7 +127,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	 * @param  alertService              The alert service. Cannot be null.
 	 * @param  serviceManagementService  The service management service. Cannot be null.
 	 * @param  dashboardService          The dashboard service. Cannot be null.
-	 * @param _sysConfig Service properties.
+	 * @param metricService              The metric service
+	 * @param mailService				 The mail service
+	 * @param sysConfig					 The system config
 	 */
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,

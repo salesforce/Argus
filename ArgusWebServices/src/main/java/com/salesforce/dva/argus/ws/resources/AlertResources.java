@@ -138,7 +138,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
-	 *
+	 * @param shared       If the alert is shared
+	 * @param limit		   Limit of results
 	 * @return  The list of alerts' metadata created by the user.
 	 */
 	@GET
