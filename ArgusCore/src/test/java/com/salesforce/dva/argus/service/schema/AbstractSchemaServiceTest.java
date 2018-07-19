@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -42,7 +43,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		
 		spyService.put(metrics);
 		// add to bloom filter cache
-		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
+		spyService._addToBloomFilter(spyService._fracture(metrics).get(0), AbstractSchemaService.bloomFilter);
 		assertTrue(count.get() == metrics.size());
 		spyService.put(metrics);
 		// count should be same since we are re-reading cached value
@@ -62,12 +63,12 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 		
 		spyService.put(metrics);
 		// 1st metric cached
-		spyService._addToBloomFilter(spyService._fracture(metrics).get(0));
+		spyService._addToBloomFilter(spyService._fracture(metrics).get(0), AbstractSchemaService.bloomFilter);
 		assertTrue(count.get() == metrics.size());
 		// 1st metric already in cache (partial case scenario), and now 2nd metric will also be added to cache.
 		// Total number of metrics in cache = metric1.size() and metric2.size()
 		spyService.put(new ArrayList<>(total));
-		spyService._addToBloomFilter(spyService._fracture(new ArrayList<>(total)).get(0));
+		spyService._addToBloomFilter(spyService._fracture(new ArrayList<>(total)).get(0), AbstractSchemaService.bloomFilter);
 		assertTrue(count.get() == total.size());
 	}
 	
@@ -97,7 +98,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 				 count.addAndGet(metrics.size());
 				 return null;
 			}
-		}).when(spyService).implementationSpecificPut(Mockito.anyListOf(Metric.class),Mockito.anySetOf(String.class));
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any());
 		return spyService;
 	}
 	
