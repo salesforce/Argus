@@ -114,7 +114,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
 		Set<String> scopesToPut = new HashSet<>(metrics.size());
 
-		List<Metric> scopesAndMetricsNamesToPut = new ArrayList<>(metrics.size());
+		Set<Metric> scopesAndMetricsNamesToPut = new HashSet<>(metrics.size());
 
 		for(Metric metric : metrics) {
 			// check metric schema bloom filter
@@ -159,7 +159,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			}
 		}
 
-		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsNamesToPut);
+		List<Metric> scopesAndMetricsToPut = new ArrayList<>(scopesAndMetricsNamesToPut);
+		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsToPut);
 	}
 
 	/*
