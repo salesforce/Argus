@@ -297,16 +297,20 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
 
 		/*
-		* Estimated Filter Size using https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k=
-		* 2.86MiB
+		* Estimated Filter Size using bloomFilter 1 million entries
+		* https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k= 2.86MiB
+		* Storing in a Set 100K entries with avg length of 15 chars would be 100K * 15 * 2 B = 30B * 100K = 3 MB
+		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
 		*/
 
 		BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.only.expected.number.insertions", "1000000"),
 		BLOOMFILTER_SCOPE_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.only.error.rate", "0.00001"),
 
 		/*
-		 * Estimated Filter Size using https://hur.st/bloomfilter/?n=10000000&p=1.0E-5&m=&k=
-		 * 28.56MiB
+		 * Estimated Filter Size using bloomFilter 10 million entries
+		 * https://hur.st/bloomfilter/?n=10000000&p=1.0E-5&m=&k= 28.56MiB
+		 * Storing in a Set 1M entries with avg length of 30 chars would be 1M * 30 * 2 B = 60B * 1M = 60 MB
+		 * If # of entries is 10 million, then it would be 600 MB resulting in savings in space.
 		*/
 
 		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "10000000"),
