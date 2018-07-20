@@ -316,7 +316,7 @@ public class GlobalInterlock implements Serializable {
          *
          * @param  msg  A descriptive message.
          *
-         * @see     IllegalStateException
+         * @see    IllegalStateException
          */
         public GlobalInterlockException(String msg) {
             super(msg);

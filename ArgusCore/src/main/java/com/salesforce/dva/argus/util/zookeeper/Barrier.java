@@ -125,7 +125,7 @@ public class Barrier implements Watcher {
 	 * Wait until required number of nodes join barrier
 	 *
 	 * @return true when required number of nodes have entered barrier, else wait
-	 * @throws KeeperException		If a keeper exception occurred
+	 * @throws KeeperException      If a keeper exception occurred
 	 * @throws InterruptedException If interrupted
 	 */
 	public boolean enter() throws KeeperException, InterruptedException{
@@ -147,7 +147,7 @@ public class Barrier implements Watcher {
 	 * Wait until all nodes leave barrier
 	 *
 	 * @return true when required all nodes have left barrier, else wait.
-	 * @throws KeeperException		If a keeper exception occurred
+	 * @throws KeeperException      If a keeper exception occurred
 	 * @throws InterruptedException If interrupted
 	 */
 	public boolean leave() throws KeeperException, InterruptedException{

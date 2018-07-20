@@ -135,13 +135,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * @param  configuration      The system configuration instance to use. Cannot be null.
 	 * @param  mqService         The MQ service instance to use. Cannot be null.
 	 * @param  metricService      The Metric service instance to use. Cannot be null.
-	 * @param auditService       The audit service instance to use. Cannot be null.
+	 * @param  auditService       The audit service instance to use. Cannot be null.
 	 * @param  tsdbService        The TSDB service instance to use.
 	 * @param  mailService        The mail service instance to use. Cannot be null.
 	 * @param  historyService     The job history service instance to use. Cannot be null.
 	 * @param  monitorService     The monitor service instance to use. Cannot be null.
-	 * @param notifierFactory		The notifier factory to use
-	 * @param emProvider			The entity manager provider to use
+	 * @param  notifierFactory		The notifier factory to use
+	 * @param  emProvider			The entity manager provider to use
 	 */
 	@Inject
 	public DefaultAlertService(SystemConfiguration configuration, MQService mqService, MetricService metricService, 
