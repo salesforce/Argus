@@ -20,8 +20,8 @@
 'use strict';
 /*global angular:false */
 
-angular.module('argus.controllers.grafanaAuth', [])
-	.controller('GrafanaAuth', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
+angular.module('argus.controllers.oauthConfirmation', [])
+	.controller('OAuthConfirmation', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
 		function ($scope, $window, Auth, $routeParams, CONFIG, $resource, growl) {
 			$scope.user = Auth.getUsername() + '@salesforce.com';
 			var code = $routeParams['code'];
