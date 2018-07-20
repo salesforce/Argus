@@ -199,7 +199,7 @@ public class AuditDto extends BaseDto implements Serializable {
     /**
      * Specifies the entity ID.
      *
-     * @param  jpaEntity  The entity ID.
+     * @param entityId The entity ID
      */
     public void setEntityId(BigInteger entityId) {
         this.entityId = entityId;

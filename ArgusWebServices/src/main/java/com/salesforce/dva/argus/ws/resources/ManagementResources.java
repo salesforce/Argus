@@ -436,7 +436,7 @@ public class ManagementResources extends AbstractResource {
      * Cleans up alerts marked for deletion.
      *
      * @param   req  The HTTP request.
-     *
+     * @param limit  Limit number of alerts to cleanup
      * @return  Response object indicating whether the operation was successful or not.
      */
     @PUT
