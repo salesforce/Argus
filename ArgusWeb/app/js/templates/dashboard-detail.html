@@ -38,7 +38,8 @@
                         <a class="cloneTrooperIcon floatR" ng-click="cloneDashboard(dashboard)" title="Clone '{{dashboard.name}}'"></a>
                     </div>
                     <div class="col-md-8">
-                        <label>Markup</label>
+                        <h4>Markup (Fullscreen editor mode: Click on the editor and press Ctrl-Alt-F)</h4>
+						<h5><a href="https://github.com/salesforce/Argus/wiki/Dashboards">Need help for dashboard markup?</a></h5>
                         <div class="well well-sm">
                             <div ui-codemirror="{onLoad:editorLoaded}" ui-refresh="selectedTab"
                                  ui-codemirror-opts="editorOptions" ng-model="dashboard.content">
