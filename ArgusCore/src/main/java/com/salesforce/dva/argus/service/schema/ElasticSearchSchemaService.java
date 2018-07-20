@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -69,6 +70,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	private static String SCOPE_INDEX_NAME;
 	private static String SCOPE_TYPE_NAME;
+
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
@@ -82,7 +84,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	private Logger _logger = LoggerFactory.getLogger(getClass());
 	private final MonitorService _monitorService;
-	private final RestClient _esRestClient;
+	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
 	private final int _replicationFactorForScopeIndex;
@@ -205,8 +207,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	}
 
 	@Override
-	protected void implementationSpecificPut(List<Metric> metrics, List<String> scopeNames) {
+	protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
+		SystemAssert.requireArgument(scopeNames != null, "Scope names set cannot be null.");
 
 		_logger.info("{} new metrics need to be indexed on ES.", metrics.size());
 
@@ -283,7 +286,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	/* Convert the given list of scopes to a list of scope only schema records. At the same time, fracture the records list
 	 * if its size is greater than INDEXING_BATCH_SIZE.
 	 */
-	protected List<List<ScopeOnlySchemaRecord>> _fractureScopes(List<String> scopeNames) {
+	protected List<List<ScopeOnlySchemaRecord>> _fractureScopes(Set<String> scopeNames) {
 		List<List<ScopeOnlySchemaRecord>> fracturedList = new ArrayList<>();
 
 		List<ScopeOnlySchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
@@ -396,35 +399,50 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		Map<String, String> tags = new HashMap<>();
 		tags.put("type", "REGEXP_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
+
+		String indexName = INDEX_NAME;
+		String typeName = TYPE_NAME;
+
+		if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type))
+		{
+			indexName = SCOPE_INDEX_NAME;
+			typeName = SCOPE_TYPE_NAME;
+		}
+
 		String requestUrl = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(indexName)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(typeName)
 				.append("/")
 				.append("_search")
 				.toString();
 
 		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
+
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
 					toEntity(str, new TypeReference<List<String>>() {}), type);
 
-			int fromIndex = query.getLimit() * (query.getPage() - 1);
-			if(records.size() <= fromIndex) {
+			if (query.isQueryOnlyOnScope()) {
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+
+			} else {
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+			}
+
+
+			int fromIndex = query.getLimit() * (query.getPage() - 1);
+			if(records.size() <= fromIndex) {
 				return Collections.emptyList();
 			}
 
 			if(records.size() < query.getLimit() * query.getPage()) {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, records.size());
 			} else {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
 		} catch (IOException e) {
@@ -897,11 +915,18 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
+	/* Method to change the rest client. Used for testing. */
+	protected void setRestClient(RestClient restClient)
+	{
+		this._esRestClient = restClient;
+	}
 
 	/** Helper to process the response. 
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
+	 * @param response ES response
+	 * @return	Stringified response
 	 */
-	private String extractResponse(Response response) {
+	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
 
 		int status = response.getStatusLine().getStatusCode();

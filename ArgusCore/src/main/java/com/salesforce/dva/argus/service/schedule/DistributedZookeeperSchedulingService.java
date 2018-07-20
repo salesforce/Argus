@@ -383,7 +383,7 @@ public class DistributedZookeeperSchedulingService extends DefaultService implem
 		 * @param   scheduler  The scheduler to update.
 		 *
 		 * @return  The updated scheduler.
-		 * @throws IllegalStateException 
+		 * @throws IllegalStateException 	On illegal state
 		 */
 		protected Scheduler _refreshJobSchedule(Scheduler scheduler) throws IllegalStateException {
 			_disposeScheduler(scheduler);

@@ -136,9 +136,8 @@ public class DiscoveryResources extends AbstractResource {
      * Discover metric schema records. If type is specified, then records of that particular type are returned.
      *
      * @param   req             The HTTP request.
-     * @param   MetricDiscoveryQueryDto This contains metric query parameters along with scanner starting schema record
-     *
-     * @return  The filtered set of schema records or unique values if a specific field is requested.
+	 * @param   metricDiscoveryQueryDto This contains metric query parameters along with scanner starting schema record
+	 * @return  The filtered set of schema records or unique values if a specific field is requested.
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -185,7 +184,7 @@ public class DiscoveryResources extends AbstractResource {
      * Discover metric schema records. If type is specified, then records of that particular type are returned.
      *
      * @param   req             The HTTP request.
-     * @param   MetricDiscoveryQueryDto This contains metric query parameters along with scanner starting schema record
+     * @param   metricDiscoveryQueryDto This contains metric query parameters along with scanner starting schema record
      *
      * @return  The filtered set of schema records or unique values if a specific field is requested.
      */

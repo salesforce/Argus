@@ -43,8 +43,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Creates additional data points to fill gaps.<br/>
- * <tt>FILL(<expr>, <interval>, <interval>, <constant>)</tt>
+ * Creates additional data points to fill gaps.<br>
+ * <tt>FILL(&lt;expr&gt;, &lt;interval&gt;, &lt;interval&gt;, &lt;constant&gt;)</tt>
  *
  * @author  Ruofan Zhang(rzhang@salesforce.com)
  */

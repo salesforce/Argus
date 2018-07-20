@@ -38,13 +38,9 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 
 /**
- * Calculates the discrete time derivative.<br/>
- * <tt>DERIVATIVE(<expr>, <excludeType>)</tt><br/>
- * <tt>DERIVATIVE(<expr>)</tt>
- *
- * @param   metrics      The list of metrics to evaluate. Cannot be null or empty.
- * @param   excludeType  Indicates what type of value to cull from the results. Must be one of 'negative', 'positive', 'none'. If null the value
- *                       defaults to 'none'.
+ * Calculates the discrete time derivative.<br>
+ * <tt>DERIVATIVE(&lt;expr&gt;, &lt;excludeType&gt;)</tt><br>
+ * <tt>DERIVATIVE(&lt;expr&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
