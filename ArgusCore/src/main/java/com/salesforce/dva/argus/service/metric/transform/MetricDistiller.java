@@ -40,7 +40,7 @@ import java.util.Map;
 /**
  * Helper class to distill Metrics keeping only the meta data that is common across all metrics. DataPoints and UUID are not distilled.
  *
- * <p>e.g. for tags: [{a,1},{b,2}],[{a,1},{b,3}] => {a,1} because b has value 2 and 3.</p>
+ * <p>e.g. for tags: [{a,1},{b,2}],[{a,1},{b,3}] =&gt; {a,1} because b has value 2 and 3.</p>
  *
  * @author  seamus.carroll
  */

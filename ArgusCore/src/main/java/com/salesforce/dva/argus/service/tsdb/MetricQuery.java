@@ -186,7 +186,7 @@ public class MetricQuery extends AnnotationQuery {
 	/**
 	 * Sets any extra context for this query
 	 *
-	 * @param  readEndPoint  The context for query
+	 * @param metricQueryContext The metric query context
 	 */
 	public void setMetricQueryContext(MetricQueryContext metricQueryContext) {
 		_metricQueryContext = metricQueryContext;
@@ -263,7 +263,7 @@ public class MetricQuery extends AnnotationQuery {
 
 	/**
 	 * Returns the TSDB formatted representation of the query.
-	 * @todo This is implementation specific and needs to be moved to the service interface.
+	 * TODO: This is implementation specific and needs to be moved to the service interface.
 	 *
 	 * @return  The TSDB formatted representation of the query.
 	 *

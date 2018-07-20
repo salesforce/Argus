@@ -191,7 +191,7 @@ public class HistoryDTO extends BaseDto implements Serializable {
     /**
      * Specifies the entity ID.
      *
-     * @param  jpaEntity  The entity object.
+     * @param entityId The entity ID
      */
     public void setEntityId(BigInteger entityId) {
         this.entityId = entityId;
