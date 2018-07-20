@@ -39,11 +39,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Calculates the logarithm according to the specified base.<br/>
- * <tt>LOG(<expr>, <constant>)</tt>
- *
- * @param   metrics  The list of metrics to evaluate. Cannot be null or empty.
- * @param   base     The base used for the calculation. Base 10 is used if omitted.
+ * Calculates the logarithm according to the specified base.<br>
+ * <tt>LOG(&lt;expr&gt;, &lt;constant&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@saleforce.com)
  */
