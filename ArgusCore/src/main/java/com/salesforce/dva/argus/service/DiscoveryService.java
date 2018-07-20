@@ -76,14 +76,14 @@ public interface DiscoveryService extends Service {
      * Returns a list of metric schema records which match the filtering criteria.  At least one field must be filtered.
      *
      * @param query 	The query to filter by
-	 * @return  A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
+	 * @return A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> filterRecords(SchemaQuery query);
 
     /**
      * @param query             The query
-	 * @param   type            The field to return.  Cannot be null.
-     * @return  A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
+	 * @param type            The field to return.  Cannot be null.
+     * @return A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type);
 
