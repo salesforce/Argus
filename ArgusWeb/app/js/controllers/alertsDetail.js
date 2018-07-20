@@ -245,7 +245,7 @@ angular.module('argus.controllers.alerts.detail', ['ngResource'])
 			{label: '<=', value: 'LESS_THAN_OR_EQ'},
 			{label: '<>', value: 'BETWEEN'},
 			{label: '><', value: 'NOT_BETWEEN'},
-			{label: 'is null', value: 'IS_NULL'}
+			{label: 'no data', value: 'NO_DATA'}
 		];
 
 		$scope.notificationTypes = [
