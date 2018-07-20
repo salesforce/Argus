@@ -213,8 +213,8 @@ public class ChartResources extends AbstractResource {
 	 *
 	 * @param   req      The HttpServlet request object. Cannot be null.
 	 * @param   chartId  The chart Id. Cannot be null and must be a positive non-zero number.
-	 *
-	 * @return  The chart object. 
+	 * @param fields     The fields (unused parameter)
+	 * @return  The chart object.
 	 *
 	 * @throws  WebApplicationException  An exception with 404 NOT_FOUND will be thrown if the chart does not exist.
 	 */

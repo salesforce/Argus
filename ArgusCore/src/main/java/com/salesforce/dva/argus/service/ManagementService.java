@@ -39,7 +39,6 @@ import java.util.Map;
 
 /**
  * Provides methods used to manage the Argus system.
- *
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public interface ManagementService extends Service {
@@ -54,13 +53,23 @@ public interface ManagementService extends Service {
      */
     void setAdministratorPrivilege(PrincipalUser user, boolean isPrivileged);
 
-    /** @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, double) */
+    /**
+     * @param  user     The user for which the policy will be updated. Cannot be null.
+     * @param  counter  The policy counter for which the limit will be set. Cannot be null.
+     * @param  value    The new value for the policy limit for the user.
+     * @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, double)  */
     void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, double value);
 
-    /** @see  WardenService#reinstateUser(PrincipalUser, SubSystem) */
+    /**
+     * @param  user       The user to reinstate. Cannot be null.
+     * @param  subSystem  The sub-system for which the user permissions will be reinstated. Cannot be null.
+     * @see  WardenService#reinstateUser(PrincipalUser, SubSystem) */
     void reinstateUser(PrincipalUser user, SubSystem subSystem);
 
-    /** @see  WardenService#updateSuspensionLevels(com.salesforce.dva.argus.service.WardenService.SubSystem, java.util.Map) */
+    /**
+     * @param  subSystem         The subsystem. Cannot be null.
+     * @param  infractionCounts  The infraction count thresholds and durations.
+     * @see  WardenService#updateSuspensionLevels(SubSystem, Map) */
     void updateWardenSuspensionLevelsAndDurations(SubSystem subSystem, Map<Integer, Long> infractionCounts);
 
     /**
@@ -93,7 +102,11 @@ public interface ManagementService extends Service {
     /** Resets all custom counters defined in the monitor service. */
     void resetCustomCounters();
 
-    /** @see  WardenService#getWardenDashboard(PrincipalUser) */
+    /**
+     * @param   user  The user for which to retrieve the warden dashboard for.
+     *
+     * @return  The warden dashboard for the user. Will never be null.
+     * @see  WardenService#getWardenDashboard(PrincipalUser) */
     Dashboard getWardenDashboard(PrincipalUser user);
 
     /**

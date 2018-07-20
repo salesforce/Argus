@@ -134,6 +134,7 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param shared           Filter shared dashboard
 	 * @param   limit          The maximum number of rows to return.
      * @param   version        The version of the dashboard to return. It is either null or not empty
 	 *
@@ -161,6 +162,7 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param shared           Filter shared dashboards
 	 * @param   limit          The maximum number of rows to return.
      * @param   version        The version of the dashboard to return. It is either null or not empty
 	 * 
