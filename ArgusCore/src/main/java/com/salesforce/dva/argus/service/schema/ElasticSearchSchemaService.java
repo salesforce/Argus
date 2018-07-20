@@ -454,6 +454,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			indexName = SCOPE_INDEX_NAME;
 			typeName = SCOPE_TYPE_NAME;
 		}
+		else if (query.isQueryOnlyOnScopeAndMetric())
+		{
+			indexName = SCOPE_AND_METRIC_INDEX_NAME;
+			typeName = SCOPE_AND_METRIC_TYPE_NAME;
+		}
 
 		String requestUrl = new StringBuilder().append("/")
 				.append(indexName)
@@ -471,10 +476,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
 					toEntity(str, new TypeReference<List<String>>() {}), type);
 
-			if (query.isQueryOnlyOnScope()) {
+			if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type)) {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 
+			} else if (query.isQueryOnlyOnScopeAndMetric()) {
+				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 			} else {
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
@@ -1227,7 +1235,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		/** Replication factor for scopenames */
 		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.index", "1"),
 		/** Shard count for scopenames */
-		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "10"),
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "6"),
 		/** The no. of records to batch for bulk indexing requests.
 		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests 
 		 */
@@ -1243,7 +1251,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		/** Replication factor for scope and metric names */
 		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.metric.index", "1"),
 		/** Shard count for scope and metric names */
-		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.metric.index", "10"),
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.metric.index", "6"),
 
 		/** Name of scope and metric only index */
 		ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME("service.property.schema.elasticsearch.scope.metric.index.name", "scopemetricnames"),
