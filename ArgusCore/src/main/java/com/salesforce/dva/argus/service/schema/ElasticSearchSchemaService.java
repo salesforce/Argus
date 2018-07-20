@@ -923,6 +923,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	/** Helper to process the response. 
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
+	 * @param response ES response
+	 * @return	Stringified response
 	 */
 	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");

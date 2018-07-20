@@ -283,7 +283,7 @@ public class History implements Serializable, Identifiable {
     /**
      * Returns the job history record creation time.
      *
-     * @return  The timestamp when job history record was created
+     * @param creationTime  Record creation time
      */
     public void setCreationTime(Long creationTime) {
     	requireArgument(creationTime != null, "Creation Time cannot be null.");
@@ -340,7 +340,7 @@ public class History implements Serializable, Identifiable {
     /**
      * Sets the JPA entity.
      *
-     * @param  entity  The JPA entity. Cannot be null or empty.
+     * @param entityId  The entity ID
      */
     public void setEntityId(BigInteger entityId) {
         this.entityId = entityId;
