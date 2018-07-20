@@ -19,7 +19,11 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.hash.BloomFilter;
-import com.salesforce.dva.argus.entity.*;
+import com.salesforce.dva.argus.entity.KeywordQuery;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
