@@ -104,6 +104,14 @@ public abstract class DefaultNotifier implements Notifier {
         _dispose();
     }
 
+    private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
+        Map<String, String> lowerCaseTagMap = new HashMap<>();
+        for (String originalTags: tags.keySet()) {
+            lowerCaseTagMap.put(originalTags.toLowerCase(), originalTags);
+        }
+        return lowerCaseTagMap;
+    }
+
     /*
     * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
     * If no matches are found, nothing is done.
@@ -114,11 +122,12 @@ public abstract class DefaultNotifier implements Notifier {
         newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{scope\\}", triggeredMetric.getScope());
         newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{metric\\}", triggeredMetric.getMetric());
         Map<String, String> tags = triggeredMetric.getTags();
+        Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
         Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(newTriggerName);
         while (m.find()) {
-            String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1);
-            if (tags.containsKey(currentTagKey))
-                newTriggerName = newTriggerName.replace(currentRegex, tags.get(currentTagKey));
+            String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1).toLowerCase();
+            if (lowerCaseTagMap.containsKey(currentTagKey))
+                newTriggerName = newTriggerName.replace(currentRegex, tags.get(lowerCaseTagMap.get(currentTagKey)));
         }
         context.getTrigger().setName(newTriggerName);
     }
