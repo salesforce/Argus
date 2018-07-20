@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -97,6 +98,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	private AlertsKPIReporter _alertsKpiReporter;
 	private static final Integer ALERT_SCHEDULING_BATCH_SIZE = 100;
 	private static final Long SCHEDULING_REFRESH_INTERVAL_IN_MILLS = 60000L;
+	private static final Random _randomNumGenerator = new Random(System.nanoTime());
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -317,7 +319,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 
 					if(jobsFromIndex >= distributedSchedulingLock.getJobCount() && System.currentTimeMillis() < nextStartTime) {
 						_logger.info("All jobs for the current minute are scheduled already. Scheduler is sleeping for {} millis", (nextStartTime - System.currentTimeMillis()));
-						_sleep(nextStartTime-System.currentTimeMillis());
+						_sleep((nextStartTime-System.currentTimeMillis()) + _randomNumGenerator.nextInt(1000));
 					}else {
 						long startTimeForCurrMinute = nextStartTime;
 						if(startTimeForCurrMinute>System.currentTimeMillis()) {
@@ -363,6 +365,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					if((alert==null && alertsBatch.size()>0) || alertsBatch.size()==ALERT_SCHEDULING_BATCH_SIZE) {
 						_alertService.enqueueAlerts(alertsBatch);
 						alertsBatch = new ArrayList<Alert>();
+						if(alert==null) {
+							_logger.info("Alerts queue is empty");
+						}
 					}
 				}catch(Exception e) {
 					_logger.error("Exception occured when scheduling alerts - "+ ExceptionUtils.getFullStackTrace(e));
