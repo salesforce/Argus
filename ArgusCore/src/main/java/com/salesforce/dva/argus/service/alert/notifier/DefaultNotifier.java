@@ -107,7 +107,7 @@ public abstract class DefaultNotifier implements Notifier {
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
         Map<String, String> lowerCaseTagMap = new HashMap<>();
         for (String originalTags: tags.keySet()) {
-            lowerCaseTagMap.put(originalTags.toLowerCase(), originalTags);
+            lowerCaseTagMap.put(originalTags.toLowerCase(), tags.get(originalTags));
         }
         return lowerCaseTagMap;
     }
@@ -127,7 +127,7 @@ public abstract class DefaultNotifier implements Notifier {
         while (m.find()) {
             String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1).toLowerCase();
             if (lowerCaseTagMap.containsKey(currentTagKey))
-                newTriggerName = newTriggerName.replace(currentRegex, tags.get(lowerCaseTagMap.get(currentTagKey)));
+                newTriggerName = newTriggerName.replace(currentRegex, lowerCaseTagMap.get(currentTagKey));
         }
         context.getTrigger().setName(newTriggerName);
     }
