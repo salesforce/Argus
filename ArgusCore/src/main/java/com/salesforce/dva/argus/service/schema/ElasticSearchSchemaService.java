@@ -51,7 +51,6 @@ import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService;
-import com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService.Property;
 import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService.PutResponse.Item;
 import com.salesforce.dva.argus.service.schema.MetricSchemaRecordList.HashAlgorithm;
 import com.salesforce.dva.argus.system.SystemAssert;
@@ -675,11 +674,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private void _upsert(List<MetricSchemaRecord> records, String indexName, String indexType, BloomFilter<CharSequence> bloomFilter) {
+	private void _upsert(List<MetricSchemaRecord> records, String indexName, String docType, BloomFilter<CharSequence> bloomFilter) {
 		String requestUrl = new StringBuilder().append("/")
 				.append(indexName)
 				.append("/")
-				.append(indexType)
+				.append(docType)
 				.append("/")
 				.append("_bulk")
 				.toString();
@@ -1249,14 +1248,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ELASTICSEARCH_SCOPE_TYPE_NAME("service.property.schema.elasticsearch.scope.type.name", "scope_type"),
 
 		/** Replication factor for scope and metric names */
-		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.metric.index", "1"),
+		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.num.replicas.for.scopeandmetric.index", "1"),
 		/** Shard count for scope and metric names */
-		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.metric.index", "6"),
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.shards.count.for.scopeandmetric.index", "6"),
 
 		/** Name of scope and metric only index */
-		ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME("service.property.schema.elasticsearch.scope.metric.index.name", "scopemetricnames"),
+		ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME("service.property.schema.elasticsearch.scopeandmetric.index.name", "scopemetricnames"),
 		/** Type within scope and metric only index */
-		ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME("service.property.schema.elasticsearch.scope.metric.type.name", "scopemetric_type");
+		ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME("service.property.schema.elasticsearch.scopeandmetric.type.name", "scopemetric_type");
 
 		private final String _name;
 		private final String _defaultValue;
