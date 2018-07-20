@@ -86,7 +86,7 @@ public class NotifierTest extends AbstractTest {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
-        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tag2}", 2D, 5);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", 2D, 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
