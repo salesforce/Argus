@@ -102,10 +102,10 @@ angular.module('argus.config', [])
 				activeTab: 'browsing',
 				reloadOnSearch: false
 			}).
-			when('/grafanaAuth', {
-				templateUrl: 'js/templates/grafanaAuth.html',
-				controller: 'GrafanaAuth',
-				label: 'Grafana Auth',
+			when('/oauthConfirmation', {
+				templateUrl: 'js/templates/oauthConfirmation.html',
+				controller: 'OAuthConfirmation',
+				label: 'OAuth',
 			}).
 			when('/oauthManagement', {
 				templateUrl: 'js/templates/oauthManagement.html',
