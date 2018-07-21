@@ -43,9 +43,8 @@ public interface ValueZipper {
     /**
      * Performs a columnar merge of data points.
      *
-     * @param   originalDatapoints  A data point to merge.
-     * @param   baseDatapoints      A data point to merge.
-     *
+     * @param originalDatapoint The original datapoint
+     * @param baseDatapoint     The base datapoint
      * @return  The merged data point.
      */
 	Double zip(Double originalDatapoint, Double baseDatapoint);

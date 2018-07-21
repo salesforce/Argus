@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
@@ -49,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Default implementation of the Notifier interface. It creates an annotation on the specific time series specified in the alert expression which
@@ -78,6 +81,7 @@ public abstract class DefaultNotifier implements Notifier {
      *
      * @param  metricService      The metric service. Cannot be null.
      * @param  annotationService  The annotation service. Cannot be null.
+     * @param systemConfiguration The system configuration. Cannot be null.
      */
     @Inject
     protected DefaultNotifier(MetricService metricService, AnnotationService annotationService, SystemConfiguration systemConfiguration) {
@@ -95,9 +99,38 @@ public abstract class DefaultNotifier implements Notifier {
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification created.");
+        updateTriggerName(notificationContext);
         _createAnnotation(notificationContext, additionalFields);
         sendAdditionalNotification(notificationContext);
         _dispose();
+    }
+
+    private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
+        Map<String, String> lowerCaseTagMap = new HashMap<>();
+        for (String originalTags: tags.keySet()) {
+            lowerCaseTagMap.put(originalTags.toLowerCase(), tags.get(originalTags));
+        }
+        return lowerCaseTagMap;
+    }
+
+    /*
+    * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
+    * If no matches are found, nothing is done.
+    * */
+    protected void updateTriggerName(NotificationContext context) {
+        String newTriggerName = context.getTrigger().getName();
+        Metric triggeredMetric = context.getTriggeredMetric();
+        newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{scope\\}", triggeredMetric.getScope());
+        newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{metric\\}", triggeredMetric.getMetric());
+        Map<String, String> tags = triggeredMetric.getTags();
+        Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
+        Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(newTriggerName);
+        while (m.find()) {
+            String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1).toLowerCase();
+            if (lowerCaseTagMap.containsKey(currentTagKey))
+                newTriggerName = newTriggerName.replace(currentRegex, lowerCaseTagMap.get(currentTagKey));
+        }
+        context.getTrigger().setName(newTriggerName);
     }
 
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {

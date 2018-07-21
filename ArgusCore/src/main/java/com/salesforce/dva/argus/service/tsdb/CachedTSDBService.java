@@ -120,6 +120,7 @@ public class CachedTSDBService extends DefaultService implements TSDBService {
      * <li>Queries with start time greater than 60 days</li>
      * <li>Queries having a wildcard for tags</li>
      * <li>Queries with end time not equal to current time.</li>
+     * </ul>
      *
      * @param   queries  The queries to retrieve data for.
      *

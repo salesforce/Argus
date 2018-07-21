@@ -9,13 +9,14 @@
         </encoder>
     </appender>
 
+    <property name="LOGBACK_FILE_SUFFIX" value="" />
     <appender name="ARGUS-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     	<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">                                                                                                                                                                
 	      	<!-- Daily rollover -->                                                                                                                                                                                                                 
 	      	<fileNamePattern>${argus.logdir:-.}/logs/argus.%d{yyyy-MM-dd}.log</fileNamePattern>
 		<maxHistory>7</maxHistory>
 	    </rollingPolicy> 
-        <file>${argus.logdir:-.}/argus.log</file>
+        <file>${argus.logdir:-.}/argus${LOGBACK_FILE_SUFFIX}.log</file>
         <append>true</append>
         <encoder>
             <pattern>[ %boldMagenta(%cn) | %replace(%X{USER}){'^$','*NULLUSER*'} | %replace(%X{TXID}){'^$','*NULLTXID*'} | %d{yyyy-MM-dd HH:mm:ss.SSS} | %thread | %highlight(%level) ] %msg%n%ex</pattern>
