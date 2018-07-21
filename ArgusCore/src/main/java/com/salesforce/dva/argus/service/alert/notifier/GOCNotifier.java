@@ -89,7 +89,7 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	@Inject
 	public GOCNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-			SystemConfiguration config, Provider<EntityManager> emf) {
+					   SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
 	}
@@ -127,7 +127,7 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param triggeredOnMetric The corresponding metric
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-			int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
+							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -139,7 +139,7 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-				withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
+						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -278,7 +278,7 @@ public class GOCNotifier extends AuditNotifier {
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n"); 
+			sb.append(context.getNotification().getCustomText()).append("\n");
 		}
 		sb.append("\n");
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
@@ -412,8 +412,8 @@ public class GOCNotifier extends AuditNotifier {
 		//~ Constructors *********************************************************************************************************************************
 
 		private GOCData(final boolean smActivec, final String smAlertIdc, final String smClassNamec, final long smClearedAtc, final long smCreatedAtc,
-				final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
-				final String smSourceDomainc, final boolean srActionablec) {
+						final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
+						final String smSourceDomainc, final boolean srActionablec) {
 			this.smActivec = smActivec;
 			this.smAlertIdc = smAlertIdc;
 			this.smClassNamec = smClassNamec;
@@ -616,7 +616,7 @@ public class GOCNotifier extends AuditNotifier {
 			this.srActionablec = sRActionablec;
 			return this;
 		}
-		
+
 		/**
 		 * Create the GOCData object, use defaults where needed.
 		 *
@@ -734,7 +734,7 @@ public class GOCNotifier extends AuditNotifier {
 					}
 					else {
 						logger.error("Failure - getting oauth2 token, check username/password: '{}'", post.getResponseBodyAsString());
-					} 
+					}
 
 				} catch (Exception e) {
 					logger.error("Failure - exception getting access_token '{}'", e);
