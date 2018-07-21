@@ -48,8 +48,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Down samples the one or more metric.<br/>
- * <tt>DOWNSAMPLE(<expr>, <downsampler>)</tt>
+ * Down samples the one or more metric.<br>
+ * <tt>DOWNSAMPLE(&lt;expr&gt;, &lt;downsampler&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
@@ -104,16 +104,15 @@ public class DownsampleTransform implements Transform {
      * Creating timestamp for downsampling in order to be consistent with TSDB downsampling func on hour/minute level
      *
      * @param   millitimestamp       original transform timestamp in milliseconds.
-     * @param   timeunit  The time unit of down sampling to perform.
-     *
+     * @param windowSize             Downsample window size
      * @return  new timestamp.
      *
      * @throws  UnsupportedOperationException  If an unknown down sampling type is specified.
      *
      * i.e.
-     * on hour level, 01:01:30 => 01:00:00
-     * on minute level, 01:01:30 => 01:01:00
-     * on second level, 01:01:30 => 01:01:30
+     * on hour level, 01:01:30 =&gt; 01:00:00
+     * on minute level, 01:01:30 =&gt; 01:01:00
+     * on second level, 01:01:30 =&gt; 01:01:30
      */
     public static Long downsamplerTimestamp(Long millitimestamp, long windowSize) {
     	return millitimestamp-(millitimestamp%windowSize);

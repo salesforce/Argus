@@ -35,11 +35,8 @@ import com.salesforce.dva.argus.entity.Metric;
 import java.util.List;
 
 /**
- * Culls metrics based on the matching of a regular expression against the metric name.<br/>
- * <tt>EXCLUDE(<expr>, <regex>)</tt>
- *
- * @param   metrics  The list of metrics to evaluate. Cannot be null or empty.
- * @param   filter   The regular expression to match against. Cannot be null or empty.
+ * Culls metrics based on the matching of a regular expression against the metric name.<br>
+ * <tt>EXCLUDE(&lt;expr&gt;, &lt;regex&gt;)</tt>
  *
  * @author  Ruofan Zhang(rzhang@salesforce.com)
  */
