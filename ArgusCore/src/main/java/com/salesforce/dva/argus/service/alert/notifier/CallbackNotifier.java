@@ -45,6 +45,7 @@ public class CallbackNotifier extends AuditNotifier {
 	 * @param metricService The metric service. Cannot be null.
 	 * @param annotationService The annotation service. Cannot be null.
 	 * @param auditService The audit service. Cannot be null.
+	 * @param callbackService   The callback service. Cannot be null.
 	 * @param config The system configuration. Cannot be null.
 	 * @param emf The entity manager factory. Cannot be null.
 	 */

@@ -40,14 +40,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Calculates the standard deviation per timestamp for more than one metric, or the standard deviation for all data points for a single metric.<br/>
- * <tt>DEVIATION(<expr>, <tolerance>, <constant>)</tt><br/>
- * <tt>DEVIATION(<expr>, <tolerance>)</tt>
- *
- * @param   metrics    The list of metrics to evaluate. Cannot be null or empty.
- * @param   points     The number of points to evaluate starting with the most recent.
- * @param   tolerance  A decimal fraction between 0.0 and 1.0 that describes the allowed percentage of missing data to be considered before not
- *                     performing the operation.
+ * Calculates the standard deviation per timestamp for more than one metric, or the standard deviation for all data points for a single metric.<br>
+ * <tt>DEVIATION(&lt;expr&gt;, &lt;tolerance&gt;, &lt;constant&gt;)</tt><br>
+ * <tt>DEVIATION(&lt;expr&gt;, &lt;tolerance&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
