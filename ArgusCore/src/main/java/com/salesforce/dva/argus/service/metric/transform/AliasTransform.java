@@ -36,13 +36,8 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.List;
 
 /**
- * Transforms the name of one or more metrics.<br/>
- * <tt>ALIAS(<expr>, <regex>, <type>)</tt>
- *
- * @param   metrics  The list of metrics to evaluate. Cannot be null or empty.
- * @param   expr     The expression used to transform the names. This can be either a regular expression search and replace or a string literal.
- *                   Cannot be null.
- * @param   type     One of 'regex' or 'literal' Cannot be null.
+ * Transforms the name of one or more metrics.<br>
+ * <tt>ALIAS(&lt;expr&gt;, &lt;regex&gt;, &lt;type&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */

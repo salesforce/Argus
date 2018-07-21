@@ -85,7 +85,6 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  metricService      The metric service. Cannot be null.
 	 * @param  annotationService  The annotation service. Cannot be null.
 	 * @param  auditService       The audit service. Cannot be null.
-	 * @param  gocService         The GOC service. Cannot be null.
 	 * @param  config             The system configuration. Cannot be null.
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
@@ -126,6 +125,7 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  severityLevel The severity level
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
+	 * @param triggeredOnMetric The corresponding metric
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
 			int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
@@ -383,7 +383,7 @@ public class GOCNotifier extends AuditNotifier {
 
 		/** 
 		 * The name of the GOC alert ID field.  
-		 * @todo Move this to DefaultGOCService. 
+		 * TODO: Move this to DefaultGOCService.
 		 */
 		public static final String SM_ALERT_ID__C_FIELD = "SM_Alert_Id__c";
 		private static final String SM_CLASSNAME__C_FIELD = "SM_ClassName__c";

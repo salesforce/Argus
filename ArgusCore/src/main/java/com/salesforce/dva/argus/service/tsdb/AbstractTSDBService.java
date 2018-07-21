@@ -55,6 +55,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
@@ -134,8 +135,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @param   config               The system _configuration used to configure the service.
 	 * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
-	 * @param   transformFactory     Transform Factory
-	 *
 	 * @throws  SystemException  If an error occurs configuring the service.
 	 */
 	@Inject
@@ -156,6 +155,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				Property.TSDB_READ_CONNECTION_REUSE_COUNT.getDefaultValue()));
 
 		_readEndPoints = Arrays.asList(config.getValue(Property.TSD_ENDPOINT_READ.getName(), Property.TSD_ENDPOINT_READ.getDefaultValue()).split(","));
+		requireArgument(_readEndPoints.size() > 0, "At least one TSD read endpoint required");
 
 		for(String readEndPoint : _readEndPoints) {
 			requireArgument((readEndPoint != null) && (!readEndPoint.isEmpty()), "Illegal read endpoint URL.");
@@ -169,6 +169,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		_writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
+		requireArgument(_writeEndpoints.length > 0, "At least one TSD write endpoint required");
 		RETRY_COUNT = Integer.parseInt(config.getValue(Property.TSD_RETRY_COUNT.getName(),
 				Property.TSD_RETRY_COUNT.getDefaultValue()));
 
@@ -193,7 +194,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
 
-			_roundRobinIterator = Iterables.cycle(_writeEndpoints).iterator();
+			_roundRobinIterator = constructCyclingIterator(_writeEndpoints);
 			_executorService = Executors.newFixedThreadPool(connCount);
 		} catch (MalformedURLException ex) {
 			throw new SystemException("Error initializing the TSDB HTTP Client.", ex);
@@ -202,6 +203,46 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	//~ Methods **************************************************************************************************************************************
+
+	Iterator<String> constructCyclingIterator(String[] endpoints) {
+		// Return repeating, non-blocking iterator if single element
+		if (endpoints.length == 1) {
+			return new Iterator<String>() {
+				String item = endpoints[0];
+
+				@Override
+				public boolean hasNext() {
+					return true;
+				}
+
+				@Override
+				public String next() {
+					return item;
+				}
+			};
+		}
+		return new Iterator<String>() {
+			AtomicInteger index = new AtomicInteger(0);
+			List<String> items = Arrays.asList(endpoints);
+			IntUnaryOperator updater = (operand) -> {
+				if (operand == items.size() - 1) {
+					return 0;
+				} else {
+					return operand + 1;
+				}
+			};
+
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+
+			@Override
+			public String next() {
+				return items.get(index.getAndUpdate(updater));
+			}
+		};
+	}
 
 	/* Generates the metric names for metrics used for annotations. */
 	static String toAnnotationKey(String scope, String metric, String type, Map<String, String> tags) {
@@ -230,9 +271,9 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	/**
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
-	 * @param metric
+	 * @param metric 	The metric
 	 * @return OpenTSDB metric name constructed from scope, metric and namespace.
 	 */
 	public static String constructTSDBMetricName(Metric metric) {
@@ -250,10 +291,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus metric.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName 	The TSDB metric name
 	 * @return Argus metric name.
 	 */
 	public static String getMetricFromTSDBMetric(String tsdbMetricName) {
@@ -264,10 +305,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus scope.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName	The TSDB metric name
 	 * @return Argus scope.
 	 */
 	public static String getScopeFromTSDBMetric(String tsdbMetricName) {
@@ -278,10 +319,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus namespace.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName	The TSDB metric name
 	 * @return Argus namespace. 
 	 */
 	public static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
@@ -327,7 +368,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	public <T> void _retry(List<T> objects, Iterator<String> endPointIterator) {
 		for(int i=0;i<RETRY_COUNT;i++) {
 			try {
-				String endpoint=endPointIterator.next();
+				String endpoint = endPointIterator.next();
 				_logger.info("Retrying using endpoint {}.", endpoint);
 				put(objects, endpoint + "/api/put", HttpMethod.POST);
 				return;
