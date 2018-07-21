@@ -276,8 +276,8 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		/**
 		 * 
-		 * @param name
-		 * @return
+		 * @param name 	The chart type name
+		 * @return      The chart type
 		 */
 		@JsonCreator
 		public static ChartType fromName(String name) {
@@ -310,8 +310,8 @@ public class Chart extends JPAEntity implements Serializable {
 		
 		/**
 		 * 
-		 * @param name
-		 * @return
+		 * @param name 	The chart query type name
+		 * @return      The chart query type
 		 */
 		@JsonCreator
 		public static ChartQueryType fromName(String name) {

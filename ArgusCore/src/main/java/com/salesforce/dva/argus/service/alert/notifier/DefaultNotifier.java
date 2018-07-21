@@ -81,6 +81,7 @@ public abstract class DefaultNotifier implements Notifier {
      *
      * @param  metricService      The metric service. Cannot be null.
      * @param  annotationService  The annotation service. Cannot be null.
+     * @param systemConfiguration The system configuration. Cannot be null.
      */
     @Inject
     protected DefaultNotifier(MetricService metricService, AnnotationService annotationService, SystemConfiguration systemConfiguration) {

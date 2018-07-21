@@ -75,29 +75,15 @@ public interface DiscoveryService extends Service {
     /**
      * Returns a list of metric schema records which match the filtering criteria.  At least one field must be filtered.
      *
-     * @param   namespaceRegex  A regular expression to match against the namespace field. Can be null.
-     * @param   scopeRegex      A regular expression to match against the scope field.  Can be null.
-     * @param   metricRegex     A regular expression to match against the metric name field.  Can be null.
-     * @param   tagkRegex       A regular expression to match against the tag key field.  Can be null.
-     * @param   tagvRegex       A regular expression to match against the tag value field.  Can be null.
-     * @param   limit           The maximum set of results to return.  Must be a positive integer.
-     * @param scanFrom Starting row for scanner
-     *
-     * @return  A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
+     * @param query 	The query to filter by
+	 * @return A list of metric schema records matching the filtering criteria.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> filterRecords(SchemaQuery query);
 
     /**
-     * @param   namespaceRegex  A regular expression to match against the namespace field. Can be null.
-     * @param   scopeRegex      A regular expression to match against the scope field.  Can be null.
-     * @param   metricRegex     A regular expression to match against the metric name field.  Can be null.
-     * @param   tagkRegex       A regular expression to match against the tag key field.  Can be null.
-     * @param   tagvRegex       A regular expression to match against the tag value field.  Can be null.
-     * @param   type            The field to return.  Cannot be null.
-     * @param   limit           The maximum set of results to return.  Must be a positive integer.
-     * @param scanFrom Scanner start row
-     *
-     * @return  A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
+     * @param query             The query
+	 * @param type            The field to return.  Cannot be null.
+     * @return A unique list of MetricSchemaRecords.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type);
 

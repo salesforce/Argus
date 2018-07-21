@@ -135,8 +135,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @param   config               The system _configuration used to configure the service.
 	 * @param   monitorService       The monitor service used to collect query time window counters. Cannot be null.
-	 * @param   transformFactory     Transform Factory
-	 *
 	 * @throws  SystemException  If an error occurs configuring the service.
 	 */
 	@Inject
@@ -273,9 +271,9 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	/**
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
-	 * @param metric
+	 * @param metric 	The metric
 	 * @return OpenTSDB metric name constructed from scope, metric and namespace.
 	 */
 	public static String constructTSDBMetricName(Metric metric) {
@@ -293,10 +291,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus metric.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName 	The TSDB metric name
 	 * @return Argus metric name.
 	 */
 	public static String getMetricFromTSDBMetric(String tsdbMetricName) {
@@ -307,10 +305,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus scope.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName	The TSDB metric name
 	 * @return Argus scope.
 	 */
 	public static String getScopeFromTSDBMetric(String tsdbMetricName) {
@@ -321,10 +319,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 * Given otsdb metric name, return argus namespace.
 	 * We construct OpenTSDB metric name as a combination of Argus metric, scope and namespace as follows:
 	 * 			
-	 * 			metric(otsdb) = metric(argus)<DELIMITER>scope(argus)<DELIMITER>namespace(argus)
+	 * 			metric(otsdb) = metric(argus)&lt;DELIMITER&gt;scope(argus)&lt;DELIMITER&gt;namespace(argus)
 	 * 
 	 * 
-	 * @param tsdbMetricName
+	 * @param tsdbMetricName	The TSDB metric name
 	 * @return Argus namespace. 
 	 */
 	public static String getNamespaceFromTSDBMetric(String tsdbMetricName) {
