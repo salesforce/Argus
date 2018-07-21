@@ -67,7 +67,7 @@ public class History implements Serializable {
     /**
      * Specifies the created date.
      *
-     * @param  createdDate  The created date.
+     * @param  creationTime The created date.
      */
     public void setCreationTime(long creationTime) {
         this.creationTime = creationTime;

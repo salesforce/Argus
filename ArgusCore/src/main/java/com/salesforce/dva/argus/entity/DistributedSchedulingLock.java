@@ -108,7 +108,6 @@ public class DistributedSchedulingLock {
 	 * Constructor used to construct the specific lock types.
 	 *
 	 * @param  type  The type of the lock specified as a number. Must be greater than zero.
-	 * @param  note  The note to associate with the lock.
 	 */
 	public DistributedSchedulingLock(long type){
 		this.id=type;

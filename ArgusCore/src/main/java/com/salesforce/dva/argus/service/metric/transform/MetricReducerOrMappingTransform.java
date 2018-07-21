@@ -43,8 +43,8 @@ import java.util.Map;
  * For some function, it either does a mapping transform or reduce transform which depends on the constant input This class provides a general
  * transform for either mapping if no constant input, or reduing with a constant input.
  *
- * <p>So far, Such functions include: List<Metric> DIFF(List <Metric> metrics, Double constant); List<Metric> DIVIDE(List<Metric> metrics, Double
- * constant); List<Metric> SCALE(List<Metric> metrics, Double constant); List<Metric> SUM(List<Metric> metrics, Double constant);</p>
+ * <p>So far, Such functions include: List&lt;Metric&gt; DIFF(List &lt;Metric&gt; metrics, Double constant); List&lt;Metric&gt; DIVIDE(List&lt;Metric&gt; metrics, Double
+ * constant); List&lt;Metric&gt; SCALE(List&lt;Metric&gt; metrics, Double constant); List&lt;Metric&gt; SUM(List&lt;Metric&gt; metrics, Double constant);</p>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */

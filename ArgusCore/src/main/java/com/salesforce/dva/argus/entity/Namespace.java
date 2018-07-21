@@ -200,7 +200,7 @@ public class Namespace extends JPAEntity implements Serializable {
 
     /**
      * Sets the users associated with the namespace.
-     * @todo Review if users can be empty.  What if only the owner should have access?
+     * TODO : Review if users can be empty.  What if only the owner should have access?
      *
      * @param  users  The set of users associated with the namespace.  Cannot be null or empty.
      */
