@@ -336,7 +336,7 @@ public class Audit implements Serializable, Identifiable {
     /**
      * Sets the creation date
      *
-     * @param  createdDate
+     * @param createdDateMillis The created date
      */
     public void setCreatedDate(long createdDateMillis) {
 		this.createdDate = new Date(createdDateMillis);
@@ -392,7 +392,7 @@ public class Audit implements Serializable, Identifiable {
     /**
      * Sets the JPA entity id.
      *
-     * @param  entity  The JPA entity. Cannot be null or empty.
+     * @param entityId  The entity id
      */
     public void setEntityId(BigInteger entityId) {
         this.entityId = entityId;
