@@ -275,6 +275,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
+	
+	@Override
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, boolean metadataOnly, Integer limit, Integer offset) {
+		requireNotDisposed();
+		requireArgument(owner != null, "Owner cannot be null.");
+
+		return metadataOnly ? Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset) : Alert.findByOwnerPaged(_emProvider.get(), owner, limit, offset);
+	}
+
+	@Override
+	public int countAlertsByOwner(PrincipalUser owner) {
+		requireNotDisposed();
+		requireArgument(owner != null, "Owner cannot be null.");
+		return Alert.countByOwner(_emProvider.get(), owner);
+	}
 
 	@Override
 	public Alert findAlertByPrimaryKey(BigInteger id) {
@@ -827,6 +842,42 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
 	}
+	
+	@Override
+	public List<Alert> findSharedAlertsPaged(boolean metadataOnly, Integer limit, Integer offset) {
+		requireNotDisposed();
+		return metadataOnly ? Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset) : Alert.findSharedAlertsPaged(_emProvider.get(), limit, offset);
+	}
+
+	@Override
+	public int countSharedAlerts() {
+		requireNotDisposed();
+		return Alert.countSharedAlerts(_emProvider.get());
+	}
+	
+	@Override
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset) {
+		requireNotDisposed();
+		
+		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
+		if (owner == null || !owner.isPrivileged()) {
+			return new ArrayList<>(0);
+		}
+		
+		return metadataOnly ? Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset) : Alert.findPrivateAlertsForPrivilegedUserPaged(_emProvider.get(),  owner, limit, offset);
+	}
+
+	@Override
+	public int countPrivateAlertsForPrivilegedUser(PrincipalUser owner) {
+		requireNotDisposed();
+		
+		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return 0
+		if (owner == null || !owner.isPrivileged()) {
+			return 0;
+		}
+		
+		return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+	}
 
 	/**
 	 * Returns an instance of a supported notifier.
@@ -1154,6 +1205,5 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.triggeredMetric = triggeredMetric;
 		}
 	}
-
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
