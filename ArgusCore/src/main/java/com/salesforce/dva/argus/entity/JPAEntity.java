@@ -142,7 +142,8 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     @Temporal(TemporalType.TIMESTAMP)
     @Metadata
     protected Date modifiedDate;
-    
+
+    @Metadata
     protected boolean deleted = false;
 
     //~ Constructors *********************************************************************************************************************************
@@ -300,7 +301,7 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     /**
      * Sets the date the entity was last modified.
      *
-     * @param  The date the entity was last modified.
+     * @param modifiedDate  The date
      */
     public void setModifiedDate(Date modifiedDate) {
         if(modifiedDate!=null) {

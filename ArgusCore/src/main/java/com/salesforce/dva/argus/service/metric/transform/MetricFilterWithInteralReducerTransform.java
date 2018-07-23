@@ -136,7 +136,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 	 * Sorts a metric.
 	 *
 	 * @param   map  The metrics to sort.
-	 *
+	 * @param reducerType 	Sort key / reducer to use
 	 * @return  The sorted metrics.
 	 */
 	public static Map<Metric, String> sortByValue(Map<Metric, String> map, final String reducerType) {
