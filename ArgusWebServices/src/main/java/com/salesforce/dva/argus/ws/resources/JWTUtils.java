@@ -98,6 +98,11 @@ public class JWTUtils {
     	return claims.getBody().getSubject();
 	}
 
+	/**
+	 * Expiry time of a given token
+	 * @param token JWT Token
+	 * @return JWT Token Expiry Time
+	 */
 	public static int getTokenExpiry(String token) {
 		String accessTokenPayload = token.substring(token.indexOf(".") + 1, token.lastIndexOf(".") );
 		byte[] decoded = Base64.getMimeDecoder().decode(accessTokenPayload);
@@ -117,6 +122,11 @@ public class JWTUtils {
 		return result;
 	}
 
+    /**
+     * Username from a given JWT Token
+     * @param token JWT Token
+     * @return  Username from JWT Token.
+     */
 	public static String getUsername(String token) {
 		String accessTokenPayload = token.substring(token.indexOf(".") + 1, token.lastIndexOf(".") );
 		byte[] decoded = Base64.getMimeDecoder().decode(accessTokenPayload);

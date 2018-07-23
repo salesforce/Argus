@@ -3,6 +3,8 @@ package com.salesforce.dva.argus.ws.dto;
 import java.io.Serializable;
 
 /**
+ * This DTO is used to encapsulate the information sent by 3rd party application to argus oauth /authorize webservice
+ *
  * @author gaurav.kumar (gaurav.kumar@salesforce.com)
  */
 public final class AuthRequestDto implements Serializable {
@@ -24,26 +26,45 @@ public final class AuthRequestDto implements Serializable {
         this.state = state;
     }
 
+    /**
+     * Gets the client id
+     * @return client id
+     */
     public String getClient_id() {
         return client_id;
     }
 
 
+    /**
+     * Gets the response type
+     * @return  Response Type
+     */
     public String getResponse_type() {
         return response_type;
     }
 
-
+    /**
+     * Gets the scope
+     * @return  Scope is returned
+     */
     public String getScope() {
         return scope;
     }
 
 
+    /**
+     * Gets Redirect URI
+     * @return Redirect URI is returned
+     */
     public String getRedirect_uri() {
         return redirect_uri;
     }
 
 
+    /**
+     * Gets Application random code
+     * @return Application random code
+     */
     public String getState() {
         return state;
     }

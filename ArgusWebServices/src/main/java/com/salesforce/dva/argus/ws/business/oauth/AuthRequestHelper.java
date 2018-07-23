@@ -53,6 +53,13 @@ public class AuthRequestHelper {
     private static final char[] allowedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
 
 
+    /**
+     * Validates Authorization Request
+     * @param authRequestDto        Given Application DTO properties
+     * @param oAuthApplicationDto   Expected Application DTO properties
+     * @return Boolean or Exception based on Validation
+     * @throws OAuthException
+     */
     public static boolean validateAuthorizationRequest(AuthRequestDto authRequestDto, OAuthApplicationDto oAuthApplicationDto) throws OAuthException {
         if (StringUtils.isNotBlank(oAuthApplicationDto.getClientId()) && oAuthApplicationDto.getClientId().equals(authRequestDto.getClient_id())) {
             try {
@@ -73,6 +80,10 @@ public class AuthRequestHelper {
         }
     }
 
+    /**
+     * Generated Unique Authorization Code
+     * @return Generated Authorization Code
+     */
     public static String generateAuthorizationCode() {
         StringBuilder buf = new StringBuilder(AUTHORIZATION_CODE_LENGTH);
         SecureRandom rand = new SecureRandom();
@@ -82,6 +93,13 @@ public class AuthRequestHelper {
         return buf.toString();
     }
 
+
+    /**
+     * Validates Token Request
+     * @param tokenRequestDto       Given Application DTO properties
+     * @param oAuthApplicationDto   Expected Application DTO properties
+     * @return
+     */
     public static boolean validateTokenRequest(TokenRequestDto tokenRequestDto, OAuthApplicationDto oAuthApplicationDto) {
         // basic check
         try {
