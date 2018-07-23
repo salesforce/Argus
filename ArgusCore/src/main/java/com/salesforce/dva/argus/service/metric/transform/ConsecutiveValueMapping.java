@@ -42,9 +42,6 @@ import com.salesforce.dva.argus.system.SystemAssert;
 /**
  * Returns all datapoint's for which the interval between adjacent datapoints is less than or equal to the specified time interval, for consecutive specified time threshold.
  * 
- * @param	metric	Time series to be eveluate and transform. Cannot be null or empty
- * @param	constants	The constants requires two values: The first one is a time value. It is a desired goal that all adjacent datapoints lasts longer than should be returned; The second one is a time value. It is the default interval distance between any two data points in time series.
- *
  * @author  Ethan Wang (ethan.wang@salesforce.com)
  */
 public class ConsecutiveValueMapping implements ValueMapping {

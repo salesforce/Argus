@@ -5,7 +5,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -49,6 +51,10 @@ public class ChartServiceTest extends AbstractTest {
 		
 		List<ChartQuery> queries = Arrays.asList(new ChartQuery(ChartQueryType.METRIC, "-1h:argus.jvm:mem.heap.used:avg"));
 		Chart chart = new Chart(_adminUser, _adminUser, ChartType.LINE, queries);
+        Map<String,String> preferences = new HashMap<>();
+        preferences.put("brush","enabled");
+        preferences.put("downsampling","Method1");
+        chart.getPreferences().putAll(preferences);
 		chart.setTitle("This is an example chart");
 		
 		chart = _chartService.updateChart(chart);
@@ -64,6 +70,10 @@ public class ChartServiceTest extends AbstractTest {
 		List<ChartQuery> queries = Arrays.asList(new ChartQuery(ChartQueryType.METRIC, "-1h:argus.jvm:mem.heap.used:avg"));
 		Chart chart = new Chart(_adminUser, _adminUser, ChartType.LINE, queries);
 		chart.setTitle("This is an example chart");
+        Map<String,String> preferences = new HashMap<>();
+        preferences.put("brush","enabled");
+        preferences.put("downsampling","Method1");
+        chart.getPreferences().putAll(preferences);
 		
 		chart = _chartService.updateChart(chart);
 		
@@ -78,7 +88,11 @@ public class ChartServiceTest extends AbstractTest {
 		List<ChartQuery> queries = Arrays.asList(new ChartQuery(ChartQueryType.METRIC, "-1h:argus.jvm:mem.heap.used:avg"));
 		Chart chart = new Chart(_adminUser, _adminUser, ChartType.LINE, queries);
 		chart.setTitle("This is an example chart");
-		
+        Map<String,String> preferences = new HashMap<>();
+        preferences.put("brush","enabled");
+        preferences.put("downsampling","Method1");
+        chart.getPreferences().putAll(preferences);
+
 		chart = _chartService.updateChart(chart);
 		
 		Chart retrievedChart = _chartService.getChartByPrimaryKey(chart.getId());
