@@ -36,6 +36,8 @@ public class CachedUserService extends DefaultJPAService implements UserService 
      *
      * @param  auditService  The audit service. Cannot be null.
      * @param  config 	 Service properties
+	 * @param cacheService   The cache service
+	 * @param userService	 The user service
      */
     @Inject
     public CachedUserService(AuditService auditService, SystemConfiguration config, CacheService cacheService, 

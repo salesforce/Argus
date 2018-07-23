@@ -31,8 +31,10 @@
 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.salesforce.dva.argus.entity.Chart;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.PrincipalUser;
+import com.salesforce.dva.argus.service.ChartService;
 import com.salesforce.dva.argus.service.DashboardService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.DashboardDto;
@@ -71,6 +73,7 @@ public class DashboardResources extends AbstractResource {
 	//~ Instance fields ******************************************************************************************************************************
 
 	private DashboardService dService = ArgusWebServletListener.getSystem().getServiceFactory().getDashboardService();
+	private ChartService _chartService = system.getServiceFactory().getChartService();
 
 	//~ Methods **************************************************************************************************************************************
 
@@ -131,6 +134,7 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param shared           Filter shared dashboard
 	 * @param   limit          The maximum number of rows to return.
      * @param   version        The version of the dashboard to return. It is either null or not empty
 	 *
@@ -158,6 +162,7 @@ public class DashboardResources extends AbstractResource {
 	 * @param   req            The HTTP request.
 	 * @param   dashboardName  The dashboard name filter.
 	 * @param   ownerName      The owner name filter.
+	 * @param shared           Filter shared dashboards
 	 * @param   limit          The maximum number of rows to return.
      * @param   version        The version of the dashboard to return. It is either null or not empty
 	 * 
@@ -354,6 +359,10 @@ public class DashboardResources extends AbstractResource {
 
 		if (dashboard != null) {
 			validateResourceAuthorization(req, dashboard.getOwner(), getRemoteUser(req));
+			for(Chart c:_chartService.getChartsByOwnerForEntity(getRemoteUser(req),dashboard.getId()))
+			{
+				_chartService.deleteChart(c);
+			}
 			dService.deleteDashboard(dashboard);
 			return Response.status(Status.OK).build();
 		}

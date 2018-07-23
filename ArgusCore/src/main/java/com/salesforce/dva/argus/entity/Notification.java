@@ -458,6 +458,8 @@ public class Notification extends JPAEntity implements Serializable {
     /**
      * Returns the cool down expiration time of the notification given a metric,trigger combination.
      *
+     * @param trigger   The trigger
+     * @param metric    The metric
      * @return  cool down expiration time in milliseconds
      */
     public long getCooldownExpirationByTriggerAndMetric(Trigger trigger, Metric metric) {
@@ -468,6 +470,8 @@ public class Notification extends JPAEntity implements Serializable {
     /**
      * Sets the cool down expiration time of the notification given a metric,trigger combination.
      *
+     * @param trigger   The trigger
+     * @param metric    The metric
      * @param  cooldownExpiration  cool down expiration time in milliseconds
      */
     public void setCooldownExpirationByTriggerAndMetric(Trigger trigger, Metric metric, long cooldownExpiration) {
@@ -570,6 +574,7 @@ public class Notification extends JPAEntity implements Serializable {
      *
      * @param trigger	The Trigger that caused this notification
      * @param metric	The metric that caused this notification
+     * @param active    Whether to set the notification to active
      */
     public void setActiveForTriggerAndMetric(Trigger trigger, Metric metric, boolean active) {
     	String key = _hashTriggerAndMetric(trigger, metric);

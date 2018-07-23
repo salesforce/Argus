@@ -29,7 +29,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 		};
 
 		$scope.editorLoaded = function (editor) {
-			editor.setSize(null, '30em');
+			editor.setSize(null, 'auto');
 		};
 
 		$scope.isTabSelected = function (tab) {
@@ -88,7 +88,21 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 			lineWrapping: true,
 			lineNumbers: true,
 			mode: 'htmlmixed',
-			viewportMargin: 500
+			viewportMargin: Infinity,
+			tabSize: 2,
+			foldGutter: true,
+			gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+			autoCloseTags: true,
+			matchTags: {bothTags: true},
+			extraKeys: { /* key board short cuts in the the editor */
+				'Alt-Space': 'autocomplete',
+				'Ctrl-Alt-F': function(editor) {
+					editor.setOption('fullScreen', !editor.getOption('fullScreen'));
+				},
+				'Esc': function(editor) {
+					if (editor.getOption('fullScreen')) editor.setOption('fullScreen', false);
+				}
+			}
 		};
 
 		if ($scope.dashboardId > 0) {
