@@ -61,7 +61,7 @@ public class AuthResources extends AbstractResource {
     /**
      * Authenticates a user principal.
      *
-     * @param   req    The HTTP request.
+     * @param uriInfo  URI info
      * @param   creds  The credentials with which to authenticate.
      *
      * @return  Response containing the required information.
@@ -81,8 +81,7 @@ public class AuthResources extends AbstractResource {
     /**
      * Terminates a user session. Not needed for existing auth api. This is just a placeholder method. 
      *
-     * @param   req  The HTTP request.
-     *
+     * @param uriInfo URI info
      * @return  A message stating that the logout was successful.
      */
     @GET

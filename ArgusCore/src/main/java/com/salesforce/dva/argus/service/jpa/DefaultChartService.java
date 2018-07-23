@@ -87,7 +87,7 @@ public class DefaultChartService extends DefaultJPAService implements ChartServi
 
 		em.flush();
 		_logger.debug("Set delete marker for chart : {}", result);
-		_auditService.createAudit("Set delete marker for alert : {0}", result, result);
+		_auditService.createAudit("Set delete marker for chart : {0}", result, result);
 	}
 	
 	@Override

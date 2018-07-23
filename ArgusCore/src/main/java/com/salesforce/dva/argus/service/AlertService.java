@@ -132,7 +132,7 @@ public interface AlertService extends Service {
 	 * Returns a list of alerts for an owner.
 	 *
 	 * @param   owner  The owner to return alerts for. Cannot be null.
-	 *
+	 * @param metadataOnly 	Return only metadata
 	 * @return  The list of alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly);
@@ -184,6 +184,7 @@ public interface AlertService extends Service {
 	/**
 	 * Returns a list of all alerts.
 	 *
+	 * @param metadataOnly 	Whether to return only metadata
 	 * @return  The list of all alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findAllAlerts(boolean metadataOnly);

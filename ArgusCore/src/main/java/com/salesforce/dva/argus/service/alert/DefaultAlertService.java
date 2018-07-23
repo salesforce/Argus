@@ -135,13 +135,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	/**
 	 * Creates a new DefaultAlertService object.
 	 *
+	 * @param  configuration      The system configuration instance to use. Cannot be null.
 	 * @param  mqService         The MQ service instance to use. Cannot be null.
 	 * @param  metricService      The Metric service instance to use. Cannot be null.
 	 * @param  auditService       The audit service instance to use. Cannot be null.
+	 * @param  tsdbService        The TSDB service instance to use.
 	 * @param  mailService        The mail service instance to use. Cannot be null.
-	 * @param  configuration      The system configuration instance to use. Cannot be null.
 	 * @param  historyService     The job history service instance to use. Cannot be null.
 	 * @param  monitorService     The monitor service instance to use. Cannot be null.
+	 * @param  notifierFactory		The notifier factory to use
+	 * @param  emProvider			The entity manager provider to use
 	 */
 	@Inject
 	public DefaultAlertService(SystemConfiguration configuration, MQService mqService, MetricService metricService, 
@@ -1029,7 +1032,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		/**
 		 * Creates a new AlertIdWithTimestamp object.
 		 *
-		 * @param  id         The alert ID.  Cannot be null.
+		 * @param serializedAlert The serialized alert
 		 * @param  timestamp  The epoch timestamp the alert was enqueued for evaluation.
 		 */
 		public AlertWithTimestamp(String serializedAlert, long timestamp) {
@@ -1079,6 +1082,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 * @param  notification       coolDownExpiration The cool down period of the notification.
 		 * @param  triggerFiredTime   The time stamp of the last data point in metric at which the trigger was decided to be fired.
 		 * @param  triggerEventValue  The value of the metric at the event trigger time.
+		 * @param triggeredMetric     The corresponding metric
 		 */
 		public NotificationContext(Alert alert, Trigger trigger, Notification notification, long triggerFiredTime, double triggerEventValue, Metric triggeredMetric) {
 			this.alert = alert;
