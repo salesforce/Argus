@@ -263,7 +263,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 			}
 
         	return _readDashboards(em, cq, limit);
-        	
+
         } catch (NoResultException ex) {
             return new ArrayList<>(0);
         }
@@ -389,10 +389,10 @@ public class Dashboard extends JPAEntity implements Serializable {
 
 		List<Tuple> result = query.getResultList();
 		for(Tuple tuple : result) {
-			Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")), 
-										String.class.cast(tuple.get("name")), 
+			Dashboard d = new Dashboard(PrincipalUser.class.cast(tuple.get("createdBy")),
+										String.class.cast(tuple.get("name")),
 										PrincipalUser.class.cast(tuple.get("owner")));
-			
+
 			d.id = BigInteger.class.cast(tuple.get("id"));
 			if(tuple.get("description") != null) {
 				d.description = String.class.cast(tuple.get("description"));
@@ -402,7 +402,7 @@ public class Dashboard extends JPAEntity implements Serializable {
 			d.shared = Boolean.class.cast(tuple.get("shared"));
 			d.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
 			d.version = String.class.cast(tuple.get("version"));
-			
+
 			dashboards.add(d);
 		}
 		
