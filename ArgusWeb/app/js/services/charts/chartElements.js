@@ -1550,6 +1550,38 @@ angular.module('argus.services.charts.elements', [])
 		});
 	};
 
+	this.redrawBrushGraphsWithNewXDomain = function (series, sources, chartType, graph2, context) {
+		var chartElementService = this;
+		var cappedChartTypeStr = UtilService.capitalizeString(chartType);
+		series.forEach(function (metric) {
+			var source = ChartToolService.findMatchingMetricInSources(metric, sources);
+			switch (chartType) {
+				case 'scatter':
+					context.selectAll('circle.brushDot.' + metric.graphClassName + '_brushDot' +'.extraYAxis_' + (metric.extraYAxis || ''))
+						.attr('cx', function (d) { return UtilService.validNumberChecker(graph2.x(d[0])); });
+					break;
+				// TODO: bar chart ones are turn off @ line 1115 in lineChart.js
+				case 'bar':
+					context.selectAll('rect.bar.' + 'brushBar.' + metric.graphClassName + '_brushBar' +' extraYAxis_' + (metric.extraYAxis || ''))
+						.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d[0])); })
+						.attr('width', graph2.x1.bandwidth())
+						.attr('transform', function() { return 'translate(' + graph2.x1(metric.graphClassName) + ',0)'; });
+					break;
+				case 'stackbar':
+					context.selectAll('rect.stackbar.' + 'brushStackbar.' + metric.graphClassName + '_brushStackbar' + ' extraYAxis_' + (metric.extraYAxis || ''))
+						.data(metric.data)
+						.attr('x', function (d) { return UtilService.validNumberChecker(graph2.x0(d.data.timestamp)); })
+						.attr('width', graph2.x0.bandwidth());
+					break;
+				default:
+					context.select('path.' + 'brush' + cappedChartTypeStr + '.' + metric.graphClassName + '_brush' + cappedChartTypeStr + '.extraYAxis_' + (metric.extraYAxis || ''))
+						.datum(metric.data)
+						.attr('d', graph2);
+
+			}
+		})
+	}
+
 	//rescale YAxis based on XAxis Domain
 	this.reScaleYAxis = function (series, sources, y, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete, extraY, extraYScalePlain, extraYAxisSet) {
 		if (!series) return;
@@ -1813,5 +1845,11 @@ angular.module('argus.services.charts.elements', [])
 			chart.selectAll('circle.dot').attr('cx', function (d) { return UtilService.validNumberChecker(x(d[0])); });
 		}
 		// bar charts element do not need to update x attr since they use x0 which is a discrete domain of epoch values
+	};
+
+	this.toggleGraphDisplay = function (source, displayProperty) {
+		d3.selectAll('.' + source.graphClassName)
+			.style('display', displayProperty)
+			.attr('displayProperty', displayProperty); //this is for recording the display property when circle is outside range
 	};
 }]);

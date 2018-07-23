@@ -170,7 +170,8 @@ angular.module('argus.services.charts.tools', [])
 			numTicksYaxis: defaultTicksYaxis
 		},
 		isSnapCrosslineOn: true,
-		localTimezone: false
+		localTimezone: false,
+		showEmptyRange: false
 	};
 
 	// color
