@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response.Status;
@@ -31,6 +32,7 @@ public class ChartDto extends EntityDTO {
 	private String description;
 	private ChartType type;
 	private List<ChartQuery> queries;
+    private Map<String, String> preferences;
 	private BigInteger entityId;
 	private String ownerName;
 	private PrincipalUser owner;
@@ -125,6 +127,14 @@ public class ChartDto extends EntityDTO {
 	public void setOwner(PrincipalUser owner) {
 		this.owner = owner;
 	}
+
+    public Map<String, String> getPreferences() {
+        return preferences;
+    }
+
+    public void setPreferences(Map<String, String> preferences) {
+        this.preferences = preferences;
+    }
 
 	@Override
 	public Object createExample() {
