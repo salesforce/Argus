@@ -4,11 +4,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
+import java.util.*;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -26,6 +22,7 @@ import javax.persistence.NamedQuery;
 import javax.persistence.NoResultException;
 import javax.persistence.Table;
 import javax.persistence.TypedQuery;
+import javax.persistence.MapKeyColumn;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -70,6 +67,11 @@ public class Chart extends JPAEntity implements Serializable {
 	@ElementCollection(fetch = FetchType.LAZY)
 	@Embedded
 	private List<ChartQuery> queries = new ArrayList<>(0);
+
+    @ElementCollection(fetch = FetchType.LAZY)
+	@MapKeyColumn(name="name")
+	@Column(name="value")
+	Map<String, String> preferences = new HashMap<>();
 	
 	@ManyToOne(optional = true, fetch = FetchType.LAZY)
 	@JoinColumn(name="entity_id", nullable = true)
@@ -211,8 +213,17 @@ public class Chart extends JPAEntity implements Serializable {
 		SystemAssert.requireArgument(owner != null, "Owner cannot be null");
 		this.owner = owner;
 	}
-	
-	@Override
+
+    public Map<String, String> getPreferences() {
+        return preferences;
+    }
+
+    public void setPreferences(Map<String, String> preferences) {
+        this.preferences = preferences;
+    }
+
+
+    @Override
     public String toString() {
         return "Chart{" + "title=" + title + ", description=" + description + ", owner=" + owner + ", type=" + type + ", queries=" + queries +
         		", entity=" + entity + "}";
