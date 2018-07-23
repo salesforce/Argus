@@ -152,12 +152,12 @@ public class OAuthResource extends AbstractResource {
      *
      * @param clientId      The client id of the application sending this request
      * @param clientSecret  The client secret of the application sending this request
-     * @param grantType     Required
-     * @param code          Required
-     * @param redirectUri   Required
-     * @param request
-     * @param res
-     * @return TokenResponseDto
+     * @param grantType     Optional
+     * @param code          This is required to identify the user sending this request
+     * @param redirectUri   This is required to identify the user sending this request
+     * @param request       HTTP Request
+     * @param res           HTTP Response
+     * @return TokenResponseDto Contains information related to token
      */
     @POST
     @Path("/token")

@@ -370,6 +370,12 @@ public class UserResources extends AbstractResource {
 
     }
 
+    /**
+     * Returns redirectURI based on whether this user has previously accepted the authorization page
+     *
+     * @param req  The Http Request with authorization header
+     * @return     Returns either redirectURI or OauthException
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/check_oauth_access")
@@ -387,10 +393,16 @@ public class UserResources extends AbstractResource {
         }
     }
 
+    /**
+     * Returns list of Oauth approved apps of argus for this user
+     *
+     * @param req   The Http Request with authorization header
+     * @return      Returns list of Oauth approved apps
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/oauth_approved_apps")
-    @Description("Returns list of Oauth approved apps of argus by this user")
+    @Description("Returns list of Oauth approved apps of argus for this user")
     public List<OAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
         String userName=findUserByToken(req);
         int result = authService.countByUserId(userName);
@@ -406,6 +418,13 @@ public class UserResources extends AbstractResource {
         }
     }
 
+    /**
+     * Revokes Oauth access of app from argus for a particular user
+     *
+     * @param req       The Http Request with authorization header
+     * @param appName   Application Name which is recognized by Argus Oauth
+     * @return          Returns either Success or OAuthException
+     */
     @DELETE
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/revoke_oauth_access/{appName}")

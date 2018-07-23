@@ -31,6 +31,9 @@ public class DefaultOAuthAuthorizationCodeService extends DefaultService impleme
     @Override
     public OAuthAuthorizationCode create(OAuthAuthorizationCode authCodeEntity) {
         requireNotDisposed();
+        requireArgument(StringUtils.isNotBlank(authCodeEntity.getAuthorizationCode()), "authorization_code cannot be null or empty");
+        requireArgument(StringUtils.isNotBlank(authCodeEntity.getState()), "state cannot be null or empty");
+        requireArgument(StringUtils.isNotBlank(authCodeEntity.getRedirectUri()), "Redirect URI cannot be null or empty");
         requireArgument(authCodeEntity != null, "Cannot update a null authorization code entity");
         EntityManager em = emf.get();
         OAuthAuthorizationCode result = em.merge(authCodeEntity);
