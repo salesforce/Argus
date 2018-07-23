@@ -136,6 +136,24 @@ public interface AlertService extends Service {
 	 * @return  The list of alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly);
+	
+	/**
+	 * Returns a list of alerts for an owner with given limit and offset.
+	 *
+	 * @param owner The owner to return alerts for. Cannot be null.
+	 *
+	 * @return The list of alerts.
+	 */
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, boolean metadataOnly, Integer limit, Integer offset);
+	
+	/**
+	 * Count the total number of alerts for the owner.
+	 *
+	 * @param owner The owner of the alerts. Cannot be null.
+	 *
+	 * @return The total number of owner's alert.
+	 */
+	int countAlertsByOwner(PrincipalUser owner);
 
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -267,6 +285,20 @@ public interface AlertService extends Service {
 	 * @return  The list of all alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit);
+	
+	/**
+	 * Return a list of shared alerts.
+	 *
+	 * @return The list of shared alerts.
+	 */
+	List<Alert> findSharedAlertsPaged(boolean metadataOnly, Integer limit, Integer offset);
+	
+	/**
+	 * Count the total number of shared alerts.
+	 *
+	 * @return The total number of shared alerts.
+	 */
+	int countSharedAlerts();
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -290,6 +322,24 @@ public interface AlertService extends Service {
 	 * @param notifications  The notifications to update.	
 	 */
 	void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications);
+	
+	/**
+	 * Find a list of private alerts (non-shared alerts) for the given privileged user.
+	 *
+	 * @param owner The owner to filter on.
+	 *
+	 * @return The list of private alerts if privileged user.
+	 */
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset);
+	
+	/**
+	 * Count the total number of private alerts (non-shared alerts) for the privileged user.
+	 *
+	 * @param owner The owner to filter on.
+	 *
+	 * @return The total number of private alerts for privileged user.
+	 */
+	int countPrivateAlertsForPrivilegedUser(PrincipalUser owner);
 
 	
 	//~ Enums ****************************************************************************************************************************************

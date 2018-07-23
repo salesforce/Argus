@@ -38,6 +38,7 @@ import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.AlertDto;
+import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 import java.math.BigInteger;
@@ -154,6 +155,88 @@ public class AlertResources extends AbstractResource {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Alert> result = getAlertsObj(alertName, owner, shared, true, limit);
 		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/user")
+	@Description("Returns user's alerts' metadata. This endpoint is paginated.")
+	public List<AlertDto> getAlertsMetaByOwner(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findAlertsByOwnerPaged(owner, true, pagesize, (pagenumber - 1) * pagesize);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/user/count")
+	@Description("Returns user's alerts' metadata count.")
+	public ItemsCountDto countAlertsMetaByOwner(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName) {
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		int result = alertService.countAlertsByOwner(owner);
+		return ItemsCountDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/shared")
+	@Description("Returns all shared alerts' metadata. This endpoint is paginated.")
+	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findSharedAlertsPaged(true, pagesize, (pagenumber - 1) * pagesize);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/shared/count")
+	@Description("Returns all shared alerts' metadata count.")
+	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req) {
+		int result = alertService.countSharedAlerts();
+		return ItemsCountDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/privileged")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user. This endpoint is paginated.")
+	public List<AlertDto> getAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		if (owner == null || !owner.isPrivileged()) {
+			return new ArrayList<>(0);
+		}
+		
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findPrivateAlertsForPrivilegedUserPaged(true, owner, pagesize, pagenumber);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/privileged/count")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user.")
+	public ItemsCountDto countAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName) {
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		if (owner == null || !owner.isPrivileged()) {
+			return ItemsCountDto.transformToDto(0);
+		}
+		
+		int result = alertService.countPrivateAlertsForPrivilegedUser(owner);
+		return ItemsCountDto.transformToDto(result);
 	}
 
 	/**
