@@ -56,7 +56,7 @@ import static com.salesforce.dva.argus.ws.business.oauth.ResponseCodes.*;
 
 /**
  * Provides oauth authorize and token methods
- * @author Gaurav Kumar (gaurav.kumar@salesforce.com)
+ * @author Gaurav Kumar (gaurav.kumar@salesforce.com) , Chandravyas Annakula(cannakula@salesforce.com)
  */
 @Path("/v1.0/oauth")
 @Description("Provides methods to authenticate users.")

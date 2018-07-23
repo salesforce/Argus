@@ -34,15 +34,25 @@ package com.salesforce.dva.argus.ws.dto;
 import java.io.Serializable;
 
 /**
- * @author gaurav.kumar (gaurav.kumar@salesforce.com)
+ * Authenticated OAuth App DTO
+ *
+ * @author Chandravyas Annakula(cannakula@salesforce.com)
  */
-public class OAuthAppDto implements Serializable {
+public class AuthenticatedOAuthAppDto implements Serializable {
     private String applicationName;
 
+    /**
+     * Returns OAuth Application Name
+     * @return  OAuth Application Name
+     */
     public String getApplicationName() {
         return applicationName;
     }
 
+    /**
+     * Sets OAuth Application Name
+     * @param applicationName   OAuth Application Name
+     */
     public void setApplicationName(String applicationName) {
         this.applicationName = applicationName;
     }

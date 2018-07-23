@@ -42,7 +42,7 @@ import com.salesforce.dva.argus.ws.business.oauth.OAuthFields;
 import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
 import com.salesforce.dva.argus.ws.dto.OAuthAcceptDto;
 import com.salesforce.dva.argus.ws.dto.OAuthAcceptResponseDto;
-import com.salesforce.dva.argus.ws.dto.OAuthAppDto;
+import com.salesforce.dva.argus.ws.dto.AuthenticatedOAuthAppDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.apache.commons.lang.StringUtils;
@@ -66,7 +66,7 @@ import javax.ws.rs.core.Response.Status;
 /**
  * Provides methods to manipulate users.
  *
- * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com), Chandravyas Annakula(cannakula@salesforce.com)
  */
 @Path("/users")
 @Description("Provides methods to manipulate users.")
@@ -403,11 +403,11 @@ public class UserResources extends AbstractResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/oauth_approved_apps")
     @Description("Returns list of Oauth approved apps of argus for this user")
-    public List<OAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
+    public List<AuthenticatedOAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
         String userName=findUserByToken(req);
         int result = authService.countByUserId(userName);
-        OAuthAppDto app = new OAuthAppDto();
-        List<OAuthAppDto> listApps = new ArrayList<>();
+        AuthenticatedOAuthAppDto app = new AuthenticatedOAuthAppDto();
+        List<AuthenticatedOAuthAppDto> listApps = new ArrayList<>();
         if (result==0) {
             return listApps;
         }
