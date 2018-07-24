@@ -35,6 +35,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -261,11 +262,13 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
-
+		Alert currentAlert = notification.getAlert();
 		sb.append(MessageFormat.format("Alert {0}  was triggered at {1}\n", context.getAlert().getName(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-		sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
-		sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
+		if(currentAlert.getNotifications().size() > 1)
+			sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
+		if(currentAlert.getTriggers().size() > 1)
+			sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));

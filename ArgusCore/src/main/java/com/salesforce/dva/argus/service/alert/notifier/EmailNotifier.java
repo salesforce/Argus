@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.alert.notifier;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AnnotationService;
@@ -119,8 +120,13 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     private String getEmailSubject(NotificationContext context) {
-        return "[Argus] Notification for Alert: " + context.getAlert().getName() + 
-        		" Notification: "+ context.getNotification().getName() + " Trigger:" + context.getTrigger().getName();
+        String currentSubject = "[Argus] Notification for Alert: " + context.getAlert().getName();
+        Alert currentAlert = context.getAlert();
+        if (currentAlert.getNotifications().size() > 1)
+            currentSubject += " Notification: "+ context.getNotification().getName();
+        if (currentAlert.getTriggers().size() > 1)
+            currentSubject += " Trigger:" + context.getTrigger().getName();
+        return currentSubject;
     }
 
     /**
@@ -155,8 +161,11 @@ public class EmailNotifier extends AuditNotifier {
 
         sb.append(MessageFormat.format("<h3>Alert {0}  was {1} at {2}</h3>", context.getAlert().getName(), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-        sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
-        sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
+        Alert currentAlert = notification.getAlert();
+        if(currentAlert.getNotifications().size() > 1)
+            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
+        if(currentAlert.getTriggers().size() > 1)
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
