@@ -30,7 +30,7 @@ import com.salesforce.dva.argus.ws.dto.ChartDto;
 /**
  * Provides methods to perform CRUD on Chart objects.
  *
- * @author  Bhinav Sura (bsura@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com), Chandravyas Annakula(cannakula@salesforce.com)
  */
 @Path("v1/charts")
 @Description("Provides methods to perform CRUD on Chart objects.")
