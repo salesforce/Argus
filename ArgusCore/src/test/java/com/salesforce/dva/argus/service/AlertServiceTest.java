@@ -279,7 +279,7 @@ public class AlertServiceTest extends AbstractTest {
 			expectedAlerts.add(alertService.updateAlert(new Alert(user, user, "alert_" + i, EXPRESSION, "* * * * *")));
 		}
 
-		int cnt = alertService.countAlertsByOwner(user);
+		int cnt = alertService.countAlerts(false, false, user);
 
 		assertEquals(cnt, expectedAlerts.size());
 	}
@@ -680,7 +680,7 @@ public class AlertServiceTest extends AbstractTest {
 		alert3.setShared(false);
 		alertService.updateAlert(alert3);
 		
-		assertEquals(2, alertService.countSharedAlerts());
+		assertEquals(2, alertService.countAlerts(true, false, null));
 	}
 
 	@Test
@@ -813,7 +813,7 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert3);
 
 		// Assert non-privileged user see zero private alerts
-		assertEquals(0, alertService.countPrivateAlertsForPrivilegedUser(user1));
+		assertEquals(0, alertService.countAlerts(false, true, user1));
 	}
 	
 	@Test
@@ -883,7 +883,7 @@ public class AlertServiceTest extends AbstractTest {
 		alert3.setShared(true);
 		alertService.updateAlert(alert3);
 		
-		assertEquals(2, alertService.countPrivateAlertsForPrivilegedUser(user1));
+		assertEquals(2, alertService.countAlerts(false, true, user1));
 	}
 
 	@Test
