@@ -145,15 +145,6 @@ public interface AlertService extends Service {
 	 * @return The list of alerts.
 	 */
 	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, boolean metadataOnly, Integer limit, Integer offset);
-	
-	/**
-	 * Count the total number of alerts for the owner.
-	 *
-	 * @param owner The owner of the alerts. Cannot be null.
-	 *
-	 * @return The total number of owner's alert.
-	 */
-	int countAlertsByOwner(PrincipalUser owner);
 
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -292,13 +283,6 @@ public interface AlertService extends Service {
 	 * @return The list of shared alerts.
 	 */
 	List<Alert> findSharedAlertsPaged(boolean metadataOnly, Integer limit, Integer offset);
-	
-	/**
-	 * Count the total number of shared alerts.
-	 *
-	 * @return The total number of shared alerts.
-	 */
-	int countSharedAlerts();
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -333,14 +317,19 @@ public interface AlertService extends Service {
 	List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset);
 	
 	/**
-	 * Count the total number of private alerts (non-shared alerts) for the privileged user.
-	 *
-	 * @param owner The owner to filter on.
-	 *
-	 * @return The total number of private alerts for privileged user.
+	 * Count alerts. If both countSharedAlertsOnly and countPrivateAlertsOnly
+	 * are false, it counts owner's alerts.
+	 * 
+	 * @param countSharedAlertsOnly
+	 *            The flag of whether to only count all shared alerts.
+	 * @param countPrivateAlertsOnly
+	 *            The flag of whether only count all private (non-shared)
+	 *            alerts. countSharedAlertsOnly must be false.
+	 * @param owner
+	 *            The owner
+	 * @return Alerts count.
 	 */
-	int countPrivateAlertsForPrivilegedUser(PrincipalUser owner);
-
+	int countAlerts(boolean countSharedAlertsOnly, boolean countPrivateAlertsOnly, PrincipalUser owner);
 	
 	//~ Enums ****************************************************************************************************************************************
 

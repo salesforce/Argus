@@ -285,13 +285,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	public int countAlertsByOwner(PrincipalUser owner) {
-		requireNotDisposed();
-		requireArgument(owner != null, "Owner cannot be null.");
-		return Alert.countByOwner(_emProvider.get(), owner);
-	}
-
-	@Override
 	public Alert findAlertByPrimaryKey(BigInteger id) {
 		requireNotDisposed();
 		requireArgument(id != null && id.compareTo(ZERO) > 0, "ID must be a positive non-zero value.");
@@ -848,12 +841,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset) : Alert.findSharedAlertsPaged(_emProvider.get(), limit, offset);
 	}
-
-	@Override
-	public int countSharedAlerts() {
-		requireNotDisposed();
-		return Alert.countSharedAlerts(_emProvider.get());
-	}
 	
 	@Override
 	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset) {
@@ -868,15 +855,32 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	public int countPrivateAlertsForPrivilegedUser(PrincipalUser owner) {
+	public int countAlerts(boolean countSharedAlertsOnly, boolean countPrivateAlertsOnly, PrincipalUser owner) {
 		requireNotDisposed();
-		
-		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return 0
-		if (owner == null || !owner.isPrivileged()) {
-			return 0;
+
+		// Count total number of shared alerts for the shared alerts tab
+		if (countSharedAlertsOnly) {
+			return Alert.countSharedAlerts(_emProvider.get());
 		}
-		
-		return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+
+		// Count total number of private alerts (non-shared alerts) if user is
+		// privileged user, otherwise return 0
+		if (countPrivateAlertsOnly) {
+			// Invalid user nor non-privileged user shall not view other's
+			// non-shared alerts, thus immediately return 0
+			if (owner == null || !owner.isPrivileged()) {
+				return 0;
+			}
+
+			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+		}
+
+		// Count total number of user alerts
+		if (owner != null) {
+			return Alert.countByOwner(_emProvider.get(), owner);
+		}
+
+		return 0;
 	}
 
 	/**
@@ -1205,5 +1209,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.triggeredMetric = triggeredMetric;
 		}
 	}
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

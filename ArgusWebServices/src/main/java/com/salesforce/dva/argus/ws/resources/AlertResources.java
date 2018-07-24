@@ -179,7 +179,7 @@ public class AlertResources extends AbstractResource {
 	public ItemsCountDto countAlertsMetaByOwner(@Context HttpServletRequest req,
 										@QueryParam("ownername") String ownerName) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		int result = alertService.countAlertsByOwner(owner);
+		int result = alertService.countAlerts(false, false, owner);
 		return ItemsCountDto.transformToDto(result);
 	}
 	
@@ -201,7 +201,7 @@ public class AlertResources extends AbstractResource {
 	@Path("/meta/shared/count")
 	@Description("Returns all shared alerts' metadata count.")
 	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req) {
-		int result = alertService.countSharedAlerts();
+		int result = alertService.countAlerts(true, false, null);
 		return ItemsCountDto.transformToDto(result);
 	}
 	
@@ -235,7 +235,7 @@ public class AlertResources extends AbstractResource {
 			return ItemsCountDto.transformToDto(0);
 		}
 		
-		int result = alertService.countPrivateAlertsForPrivilegedUser(owner);
+		int result = alertService.countAlerts(false, true, owner);
 		return ItemsCountDto.transformToDto(result);
 	}
 
