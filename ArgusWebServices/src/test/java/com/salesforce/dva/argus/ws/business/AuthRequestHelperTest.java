@@ -1,3 +1,5 @@
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+
 package com.salesforce.dva.argus.ws.business;
 
 import com.salesforce.dva.argus.ws.business.oauth.AuthRequestHelper;
@@ -32,4 +34,4 @@ public class AuthRequestHelperTest {
 
 }
 
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */
