@@ -43,7 +43,6 @@ import com.google.inject.persist.jpa.JpaPersistModule;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.*;
 import com.salesforce.dva.argus.service.annotation.DefaultAnnotationService;
-import com.salesforce.dva.argus.service.audit.HBaseAuditService;
 import com.salesforce.dva.argus.service.batch.DefaultBatchService;
 import com.salesforce.dva.argus.service.collect.DefaultCollectionService;
 import com.salesforce.dva.argus.service.jpa.DefaultChartService;
@@ -55,6 +54,7 @@ import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
+import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
 import com.salesforce.dva.argus.service.tsdb.CachedTSDBService;
@@ -245,6 +245,7 @@ final class SystemInitializer extends AbstractModule {
         bindConcreteClass(CachedTSDBService.class, TSDBService.class);
         bindConcreteClass(CachedUserService.class, UserService.class);
         bindConcreteClass(DefaultDashboardService.class, DashboardService.class);
+        bindConcreteClass(DefaultOAuthAuthorizationCodeService.class, OAuthAuthorizationCodeService.class);
         bindConcreteClass(DefaultCollectionService.class, CollectionService.class);
         bindConcreteClass(AsyncMetricService.class, MetricService.class);
         bindConcreteClass(DefaultBatchService.class, BatchService.class);
@@ -296,6 +297,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
+        readFile(properties, _systemConfiguration.getValue(Property.OAUTH_SERVICE_PROPERTY_FILE));
         return properties;
     }
 }

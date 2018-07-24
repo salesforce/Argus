@@ -102,6 +102,16 @@ angular.module('argus.config', [])
 				activeTab: 'browsing',
 				reloadOnSearch: false
 			}).
+			when('/oauthConfirmation', {
+				templateUrl: 'js/templates/oauthConfirmation.html',
+				controller: 'OAuthConfirmation',
+				label: 'OAuth',
+			}).
+			when('/oauthManagement', {
+				templateUrl: 'js/templates/oauthManagement.html',
+				controller: 'OauthManagement',
+				label: 'Oauth Management',
+			}).
 			otherwise({
 				redirectTo: '/dashboards'
 			});
