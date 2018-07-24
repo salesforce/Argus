@@ -121,9 +121,9 @@ public class OAuthResource extends AbstractResource {
                 try {
                     authCodeEntity = new OAuthAuthorizationCode(
                             authorizationCode,
-                            authRequestDto.getClient_id(),
+                            authRequestDto.getClientId(),
                             "",
-                            authRequestDto.getRedirect_uri(),
+                            authRequestDto.getRedirectUri(),
                             expiryTimestamp,
                             authRequestDto.getScope(),
                             authRequestDto.getState());
@@ -195,16 +195,16 @@ public class OAuthResource extends AbstractResource {
 
         TokenResponseDto response = new TokenResponseDto();
         TokenRequestDto tokenRequest = new TokenRequestDto();
-        tokenRequest.setClient_id(clientId);
-        tokenRequest.setClient_secret(clientSecret);
+        tokenRequest.setClientId(clientId);
+        tokenRequest.setClientSecret(clientSecret);
         tokenRequest.setCode(code);
-        tokenRequest.setGrant_type(grantType);
-        tokenRequest.setRedirect_uri(redirectUri);
+        tokenRequest.setGrantType(grantType);
+        tokenRequest.setRedirectUri(redirectUri);
 
         if(!AuthRequestHelper.validateTokenRequest(tokenRequest, oAuthApplicationDto)) {
             throw new OAuthException(ERR_ISSUING_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
         }
-        OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndRedirectURI(tokenRequest.getCode(), tokenRequest.getRedirect_uri());
+        OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndRedirectURI(tokenRequest.getCode(), tokenRequest.getRedirectUri());
         if (oauthAuthorizationCode != null) {
             _logger.debug("Found row with authorization_code " + oauthAuthorizationCode.getAuthorizationCode()
                     + " , rediect_uri: " + oauthAuthorizationCode.getRedirectUri()

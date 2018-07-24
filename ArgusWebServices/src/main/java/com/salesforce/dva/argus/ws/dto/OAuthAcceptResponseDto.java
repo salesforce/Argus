@@ -39,7 +39,7 @@ public class OAuthAcceptResponseDto {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private String redirect_uri;
+    private String redirectUri;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -48,7 +48,7 @@ public class OAuthAcceptResponseDto {
      * @return URI to where the application has to be redirected
      */
     public String getRedirectURI() {
-        return redirect_uri;
+        return redirectUri;
     }
 
     /**
@@ -56,7 +56,7 @@ public class OAuthAcceptResponseDto {
      * @param redirect_uri  URI to where the application has to be redirected
      */
     public void setRedirectURI(String redirect_uri) {
-        this.redirect_uri = redirect_uri;
+        this.redirectUri = redirect_uri;
     }
 }
 

@@ -41,22 +41,22 @@ public final class AuthRequestDto implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    String client_id;
-    String response_type;
+    String clientId;
+    String responseType;
     String scope;
-    String redirect_uri;
+    String redirectUri;
     String state;
 
     //~ Methods **************************************************************************************************************************************
 
-    public AuthRequestDto(String client_id,
-                   String response_type,
-                   String redirect_uri,
+    public AuthRequestDto(String clientId,
+                   String responseType,
+                   String redirectUri,
                    String scope,
                    String state) {
-        this.client_id = client_id;
-        this.response_type = response_type;
-        this.redirect_uri = redirect_uri;
+        this.clientId = clientId;
+        this.responseType = responseType;
+        this.redirectUri = redirectUri;
         this.scope = scope;
         this.state = state;
     }
@@ -65,8 +65,8 @@ public final class AuthRequestDto implements Serializable {
      * Gets the client id
      * @return client id
      */
-    public String getClient_id() {
-        return client_id;
+    public String getClientId() {
+        return clientId;
     }
 
 
@@ -74,8 +74,8 @@ public final class AuthRequestDto implements Serializable {
      * Gets the response type
      * @return  Response Type
      */
-    public String getResponse_type() {
-        return response_type;
+    public String getResponseType() {
+        return responseType;
     }
 
     /**
@@ -91,8 +91,8 @@ public final class AuthRequestDto implements Serializable {
      * Gets Redirect URI
      * @return Redirect URI is returned
      */
-    public String getRedirect_uri() {
-        return redirect_uri;
+    public String getRedirectUri() {
+        return redirectUri;
     }
 
 
