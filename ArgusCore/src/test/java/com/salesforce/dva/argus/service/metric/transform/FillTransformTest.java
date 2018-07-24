@@ -478,8 +478,8 @@ public class FillTransformTest {
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        expected.put(-1000L, 100.0);
-        expected.put(1000L, 100.0);
+        expected.put(0L, 100.0);
+        expected.put(2000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
