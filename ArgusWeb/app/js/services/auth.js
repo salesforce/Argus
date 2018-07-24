@@ -35,12 +35,13 @@ angular.module('argus.services.auth', [])
 					$location.path(target === null || target === '/login' ? '/' : target);
 				});
 			}, function () {
-				Storage.reset(); //not sure if reset  is good, cause it deletes user option preference too.
+				// Storage.reset();
+				// remove this because if login fails, user should be able to login again and get redirected
 				growl.error('Login failed');
 			});
 		},
 		logout: function () {
-			Storage.reset(); //not sure if reset  is good, cause it deletes user option preference too.
+			Storage.reset();
 			$resource(CONFIG.wsUrl + 'v2/auth/logout', {}, {}).get({}, function () {
 				growl.info('You are now logged out');
 				//-------Token Based Authentication----------

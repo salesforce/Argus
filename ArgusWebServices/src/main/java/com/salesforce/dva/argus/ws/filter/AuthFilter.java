@@ -136,7 +136,11 @@ public class AuthFilter implements Filter {
         String path = req.getRequestURI();
         String contextPath = req.getContextPath();
         
-        return !path.startsWith(contextPath + "/v2/auth") && !path.startsWith(contextPath + "/auth") && !path.endsWith("/help");
+        return !path.startsWith(contextPath + "/v2/auth")
+                && !path.startsWith(contextPath + "/auth")
+                && !path.endsWith("/help")
+                && !path.startsWith(contextPath + "/v1.0/oauth")
+                ;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
