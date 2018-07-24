@@ -55,7 +55,7 @@ public class ScopeOnlySchemaRecordList {
 			} else {
 				id = String.valueOf(LongHashFunction.xx().hashChars(scopeOnly));
 			}
-			_idToSchemaRecordMap.put(id, new ScopeOnlySchemaRecord(scopeOnly));
+			_idToSchemaRecordMap.put(id, record);
 		}
 	}
 	
@@ -79,7 +79,7 @@ public class ScopeOnlySchemaRecordList {
 
 		@Override
 		public void serialize(ScopeOnlySchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
-				throws IOException, JsonProcessingException {
+				throws IOException {
 			
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
@@ -99,7 +99,7 @@ public class ScopeOnlySchemaRecordList {
 
 		@Override
 		public ScopeOnlySchemaRecordList deserialize(JsonParser jp, DeserializationContext context)
-				throws IOException, JsonProcessingException {
+				throws IOException {
 			
 			String scrollID = null;
 			List<ScopeOnlySchemaRecord> records = Collections.emptyList();
