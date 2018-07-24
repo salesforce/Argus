@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,10 @@ import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.business.oauth.AuthRequestHelper;
 import com.salesforce.dva.argus.ws.business.oauth.OAuthFields;
-import com.salesforce.dva.argus.ws.dto.*;
+import com.salesforce.dva.argus.ws.dto.AuthRequestDto;
+import com.salesforce.dva.argus.ws.dto.OAuthApplicationDto;
+import com.salesforce.dva.argus.ws.dto.TokenRequestDto;
+import com.salesforce.dva.argus.ws.dto.TokenResponseDto;
 import com.salesforce.dva.argus.ws.exception.OAuthException;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
@@ -46,7 +49,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
@@ -61,7 +69,10 @@ import static com.salesforce.dva.argus.ws.business.oauth.ResponseCodes.*;
 @Path("/v1.0/oauth")
 @Description("Provides methods to authenticate users.")
 public class OAuthResource extends AbstractResource {
+
     private static final Logger _logger = LoggerFactory.getLogger(OAuthResource.class);
+
+    //~ Instance fields ******************************************************************************************************************************
 
     private OAuthAuthorizationCodeService authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
     private String applicationName = system.getConfiguration().getValue(Property.OAUTH_APP_NAME.getName(), Property.OAUTH_APP_NAME.getDefaultValue());
@@ -71,6 +82,8 @@ public class OAuthResource extends AbstractResource {
     private String oauthAuthorizeUrl = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZE_URL.getName(), Property.OAUTH_AUTHORIZE_URL.getDefaultValue());
     private String oauthAuthCodeExpiry = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_EXPIRY_MILLIS.getName(), Property.OAUTH_AUTHORIZATION_CODE_EXPIRY_MILLIS.getDefaultValue());
     private String invalidateAuthCodeAfterUse = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getName(), Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getDefaultValue());
+
+    //~ Methods **************************************************************************************************************************************
 
     /**
      * OAuth2.0 authorize method implementation to generate an authorization_code and redirect after validating the required fields
@@ -209,10 +222,10 @@ public class OAuthResource extends AbstractResource {
                     JWTUtils.Tokens tokens = JWTUtils.generateTokens(oauthAuthorizationCode.getUserId());
                     if(StringUtils.isNotBlank(tokens.accessToken) && StringUtils.isNotBlank(tokens.refreshToken)) {
                         _logger.info("Generated access/refresh tokens for user: " + oauthAuthorizationCode.getUserId());
-                        response.setAccess_token(tokens.accessToken);
-                        response.setRefresh_token(tokens.refreshToken);
-                        response.setExpires_in(JWTUtils.getTokenExpiry(tokens.accessToken));
-                        response.setToken_type(OAuthFields.TOKEN_TYPE_BEARER);
+                        response.setAccessToken(tokens.accessToken);
+                        response.setRefreshToken(tokens.refreshToken);
+                        response.setExpiresIn(JWTUtils.getTokenExpiry(tokens.accessToken));
+                        response.setTokenType(OAuthFields.TOKEN_TYPE_BEARER);
                     } else {
                         throw new OAuthException(ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     }
@@ -230,4 +243,4 @@ public class OAuthResource extends AbstractResource {
 
 
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,16 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -305,9 +314,9 @@ public class UserResources extends AbstractResource {
 
     /**
      * Method to accept oauth access by third party applications. This method associates authorization_code with the logged in username.
-     * @param acceptDto
-     * @param request
-     * @return OAuthAcceptDto
+     * @param acceptDto Json Object which contains information for granting permission for an app to use argus OAuth resources
+     * @param request   The Http Request with authorization header
+     * @return OAuthAcceptResponseDto  Json Object which is returned after user grants an application to access argus oauth resources
      */
     @POST
     @Path("/accept_oauth")
@@ -340,15 +349,15 @@ public class UserResources extends AbstractResource {
         }
 
         OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
-        responseDto.setRedirect_uri(oauthAuthorizationCode.getRedirectUri());
+        responseDto.setRedirectURI(oauthAuthorizationCode.getRedirectUri());
 
         return responseDto ;
     }
 
     /**
      * OAuth2.0 UserInfo reference implementation to get logged in user information using the access token
-     * @param req
-     * @return
+     * @param req   The Http Request with authorization header
+     * @return      User Information Json Object
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -388,7 +397,7 @@ public class UserResources extends AbstractResource {
             throw new OAuthException(ResponseCodes.ERR_FINDING_USERNAME, HttpResponseStatus.BAD_REQUEST);
         }
         else {
-            responseDto.setRedirect_uri(applicationRedirectURI);
+            responseDto.setRedirectURI(applicationRedirectURI);
             return responseDto;
         }
     }
@@ -445,4 +454,4 @@ public class UserResources extends AbstractResource {
     }
 
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

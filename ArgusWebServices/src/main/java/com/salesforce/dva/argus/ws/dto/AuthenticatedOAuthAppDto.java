@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.dva.argus.ws.dto;
 
 import java.io.Serializable;
@@ -39,7 +38,12 @@ import java.io.Serializable;
  * @author Chandravyas Annakula(cannakula@salesforce.com)
  */
 public class AuthenticatedOAuthAppDto implements Serializable {
+
+    //~ Instance fields ******************************************************************************************************************************
+
     private String applicationName;
+
+    //~ Methods **************************************************************************************************************************************
 
     /**
      * Returns OAuth Application Name
@@ -57,3 +61,5 @@ public class AuthenticatedOAuthAppDto implements Serializable {
         this.applicationName = applicationName;
     }
 }
+
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */

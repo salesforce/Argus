@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,20 +45,26 @@ import java.security.SecureRandom;
 
 
 /**
+ * Helper class used for validation of objects related to OAuth
+ *
  * @author Gaurav Kumar (gaurav.kumar@salesforce.com)
  */
 public class AuthRequestHelper {
+
+    //~ Instance fields ******************************************************************************************************************************
+
     private static final Logger _logger = LoggerFactory.getLogger(AuthRequestHelper.class);
     private static final int AUTHORIZATION_CODE_LENGTH = 40;
     private static final char[] allowedCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
 
+    //~ Methods **************************************************************************************************************************************
 
     /**
      * Validates Authorization Request
      * @param authRequestDto        Given Application DTO properties
      * @param oAuthApplicationDto   Expected Application DTO properties
      * @return Boolean or Exception based on Validation
-     * @throws OAuthException
+     * @throws OAuthException   Exception related to OAuth
      */
     public static boolean validateAuthorizationRequest(AuthRequestDto authRequestDto, OAuthApplicationDto oAuthApplicationDto) throws OAuthException {
         if (StringUtils.isNotBlank(oAuthApplicationDto.getClientId()) && oAuthApplicationDto.getClientId().equals(authRequestDto.getClient_id())) {
@@ -98,7 +104,7 @@ public class AuthRequestHelper {
      * Validates Token Request
      * @param tokenRequestDto       Given Application DTO properties
      * @param oAuthApplicationDto   Expected Application DTO properties
-     * @return
+     * @return  Returns boolean or OAuth Exception
      */
     public static boolean validateTokenRequest(TokenRequestDto tokenRequestDto, OAuthApplicationDto oAuthApplicationDto) {
         // basic check
