@@ -1059,7 +1059,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		this._esRestClient = restClient;
 	}
 
-	/** Helper to process the response. 
+	/** Helper to process the response.
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
 	 * @param response ES response
 	 * @return	Stringified response
