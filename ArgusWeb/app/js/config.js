@@ -30,5 +30,9 @@ angular.module('argus.urlConfig', [])
 	wikiUrl: 'https://github.com/salesforce/Argus/wiki',
 	docUrl: 'https://github.com/salesforce/Argus/wiki',
 	issueUrl: 'https://groups.google.com/a/salesforce.com/forum/?hl=en#!forum/argus-dev',
-	templatePath: 'app/js/templates'
+	templatePath: 'app/js/templates',
+    acceptOAuthPath:'users/accept_oauth',
+    checkOAuthAccessPath : 'users/check_oauth_access',
+    oauthListPath: 'users/oauth_approved_apps',
+    oauthDeletePath: 'users/revoke_oauth_access'
 });
