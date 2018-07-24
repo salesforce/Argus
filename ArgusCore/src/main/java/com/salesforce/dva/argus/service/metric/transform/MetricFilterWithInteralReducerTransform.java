@@ -140,6 +140,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
      * Sorts a metric.
      *
      * @param   map  The metrics to sort.
+     * @param	reducerType Sort key / reducer to use
      *
      * @return  The sorted metrics.
      */
@@ -185,6 +186,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
         }
         return result;
     }
+
 
     //~ Methods **************************************************************************************************************************************
 
