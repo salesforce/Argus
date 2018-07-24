@@ -15,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		List<Metric> metricsToPut = new ArrayList<>(metrics.size());
 		Set<String> scopesToPut = new HashSet<>(metrics.size());
 
-		Set<Metric> scopesAndMetricsNamesToPut = new HashSet<>(metrics.size());
+		Set<Pair<String, String>> scopesAndMetricsNamesToPut = new HashSet<>(metrics.size());
 
 		for(Metric metric : metrics) {
 			// check metric schema bloom filter
@@ -155,12 +156,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			key = constructScopeAndMetricOnlyKey(scopeName, metricName);
 			found = bloomFilterScopeAndMetricOnly.mightContain(key);
 			if(!found) {
-				scopesAndMetricsNamesToPut.add(new Metric(scopeName, metricName));
+				scopesAndMetricsNamesToPut.add(Pair.of(scopeName, metricName));
 			}
 		}
 
-		List<Metric> scopesAndMetricsToPut = new ArrayList<>(scopesAndMetricsNamesToPut);
-		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsToPut);
+		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsNamesToPut);
 	}
 
 	/*
@@ -171,7 +171,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * @param  scopesAndMetricNames The scope and metric names that that will be written to a separate index.
 	 */
 	protected abstract void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
-													  List<Metric> scopesAndMetricNames);
+													  Set<Pair<String, String>> scopesAndMetricNames);
 
 	@Override
 	public void dispose() {
