@@ -65,15 +65,10 @@ import java.util.TreeMap;
  * 3. with constants, some metrics have null or empty value
  *      give it a "0.0", its normalized value will always be "0.0"
  *
- * <br/>
- * <tt>NORMALIZE(<expr>)</tt>
- * <br/>
- * <tt>NORMALIZE(<expr>, <constant>)</tt>
- *
- * @param metrics The list of metrics to evaluate. Cannot be null or empty.
- * @param limit The value to be used as the unit normal value. Can be null.
- * @return One or more metrics corresponding to the input metrics, having had their data point values normalized.
- *
+ * <br>
+ * <tt>NORMALIZE(&lt;expr&gt;)</tt>
+ * <br>
+ * <tt>NORMALIZE(&lt;expr&gt;, &lt;constant&gt;)</tt>
  *
  * @author Ruofan Zhang(rzhang@salesforce.com)
  */

@@ -49,7 +49,7 @@ import java.util.*;
  * Ex: ANOMALY_RPCA(-100d:-0d:foo:bar:sum, $7d), where $7d indicates that the length of
  * a season of the metric is 7 days.
  *
- * @author  Shouvik Mani & Vignesh Muruganantham
+ * @author  Shouvik Mani &amp; Vignesh Muruganantham
  */
 public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
 

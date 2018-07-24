@@ -291,7 +291,7 @@ public class NumberOperations {
 	/**
 	 * @param n1 the first number
 	 * @param n2 the second number
-	 * @return true iff n1 > n2
+	 * @return true iff {@code n1 < n2}
 	 */
 	public static boolean isGreaterThan(Number n1, Number n2) {
 		OperationBoolean op = new OperationBoolean() {
@@ -322,7 +322,7 @@ public class NumberOperations {
 	/**
 	 * @param n1 the first number
 	 * @param n2 the second number
-	 * @return true iff n1 >= n2
+	 * @return true iff {@code n1 >= n2}
 	 */
 	public static boolean isGreaterThanOrEqualTo(Number n1, Number n2) {
 		OperationBoolean op = new OperationBoolean() {
@@ -353,7 +353,7 @@ public class NumberOperations {
 	/**
 	 * @param n1 the first number
 	 * @param n2 the second number
-	 * @return true iff n1 < n2
+	 * @return true iff {@code n1 < n2}
 	 */
 	public static boolean isLessThan(Number n1, Number n2) {
 		OperationBoolean op = new OperationBoolean() {
@@ -384,7 +384,7 @@ public class NumberOperations {
 	/**
 	 * @param n1 the first number
 	 * @param n2 the second number
-	 * @return true iff n1 <= n2
+	 * @return true iff {@code n1 <= n2}
 	 */
 	public static boolean isLessThanOrEqualTo(Number n1, Number n2) {
 		OperationBoolean op = new OperationBoolean() {
@@ -491,7 +491,7 @@ public class NumberOperations {
 	/**
 	 * @param n1 the first number
 	 * @param n2 the second number
-	 * @return 1 if n1 > n2; 0 if n1 = n2; -1 if n1 < n2.
+	 * @return 1 if {@code n1 > n2}; 0 if {@code n1 = n2}; -1 if {@code n1 < n2}.
 	 */
 	public static int compare(Number n1, Number n2) {
 		if (isGreaterThan(n1, n2)) {
@@ -505,7 +505,7 @@ public class NumberOperations {
 	
 	/**
 	 * @param n the number to take the floor of
-	 * @return the largest int <= n
+	 * @return the largest int {@code <= n}
 	 */
 	public static int floor(Number n) {
 		switch (ValueType.value(n)) {
@@ -556,7 +556,7 @@ public class NumberOperations {
 	
 	/**
 	 * @param n the number to take the root of
-	 * @return the positive square root of n. Returns NaN if n < 0.
+	 * @return the positive square root of n. Returns NaN if {@code n < 0}.
 	 */
 	public static Number sqrt(Number n) {
 		switch (ValueType.value(n)) {

@@ -42,7 +42,7 @@ import java.util.List;
  * transform for either mapping if no constant input, or reduing with a constant input Similar to MetricReducerOrMappingTransform, but this class need
  * a required constant which is required for transform function Do a mapping or reducing depends on other constants.
  *
- * <p>So far, Such functions include: List<Metric> PERCENTILE(List <Metric> metrics, Double constant);</p>
+ * <p>So far, Such functions include: List&lt;Metric&gt; PERCENTILE(List &lt;Metric&gt; metrics, Double constant);</p>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */

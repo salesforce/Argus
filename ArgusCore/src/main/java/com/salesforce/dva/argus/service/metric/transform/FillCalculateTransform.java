@@ -45,19 +45,8 @@ import java.util.regex.Pattern;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 /**
- * Creates a constant line based on the calculated value.<br/>
- * <tt>FILL_CALCULATE(<expr>, <interval>, <interval>, <constant>)</tt>
- *
- * @param   metrics   The list of metrics to evaluate. Cannot be null or empty.
- * @param   interval  The interval at which to fill data points. For example 10m would create data points every 10 minutes if a gap greater than 10
- *                    minutes was encountered.
- * @param   offset    The offset for the created data points. For example, 1m would shift the timestamp of the created data point 1 minute forward.
- * @param   value     The value of the generated data points.
- * @param   start     The start time. Must occur prior to the end time. Cannot be null.
- * @param   end       The end time. Must occur later to the start time. Cannot be null.
- * @param   interval  The interval at which to fill data points. For example 10m would create data points every 10 minutes if a gap greater than 10
- * @param   offset    The offset for the created data points. For example, 1m would shift the timestamp of the created data point 1 minute forward.
- * @param   value     The value of the generated data points.
+ * Creates a constant line based on the calculated value.<br>
+ * <tt>FILL_CALCULATE(&lt;expr&gt;, &lt;interval&gt;, &lt;interval&gt;, &lt;constant&gt;)</tt>
  *
  * @author  Jigna Bhatt(jbhatt@salesforce.com)
  */
