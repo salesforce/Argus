@@ -40,11 +40,11 @@ public class TokenRequestDto implements Serializable  {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private String client_id;
-    private String client_secret;
-    private String grant_type;
+    private String clientId;
+    private String clientSecret;
+    private String grantType;
     private String code;
-    private String redirect_uri;
+    private String redirectUri;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -52,48 +52,48 @@ public class TokenRequestDto implements Serializable  {
      * Gets the Client Id
      * @return  Returns ID of the client sending this request
      */
-    public String getClient_id() {
-        return client_id;
+    public String getClientId() {
+        return clientId;
     }
 
     /**
      * Sets the Client Id
-     * @param client_id ClientId sending this request
+     * @param clientId ClientId sending this request
      */
-    public void setClient_id(String client_id) {
-        this.client_id = client_id;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     /**
      * Gets the client secret
      * @return  Returns client secret of the client sending this request
      */
-    public String getClient_secret() {
-        return client_secret;
+    public String getClientSecret() {
+        return clientSecret;
     }
 
     /**
      * Sets the client secret
-     * @param client_secret client secret of the client sending this request
+     * @param clientSecret client secret of the client sending this request
      */
-    public void setClient_secret(String client_secret) {
-        this.client_secret = client_secret;
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     /**
      * Gets the Grant Type
      * @return  Returns the grant type
      */
-    public String getGrant_type() {
-        return grant_type;
+    public String getGrantType() {
+        return grantType;
     }
 
     /**
      * Sets the grant type
-     * @param grant_type Type of Grant
+     * @param grantType Type of Grant
      */
-    public void setGrant_type(String grant_type) {
-        this.grant_type = grant_type;
+    public void setGrantType(String grantType) {
+        this.grantType = grantType;
     }
 
     /**
@@ -116,16 +116,16 @@ public class TokenRequestDto implements Serializable  {
      *Get Redirect URI
      * @return  Returns Redirect URI
      */
-    public String getRedirect_uri() {
-        return redirect_uri;
+    public String getRedirectUri() {
+        return redirectUri;
     }
 
     /**
      *Sets the Redirect URI
-     * @param redirect_uri  Redirect URI
+     * @param redirectUri  Redirect URI
      */
-    public void setRedirect_uri(String redirect_uri) {
-        this.redirect_uri = redirect_uri;
+    public void setRedirectUri(String redirectUri) {
+        this.redirectUri = redirectUri;
     }
 }
 

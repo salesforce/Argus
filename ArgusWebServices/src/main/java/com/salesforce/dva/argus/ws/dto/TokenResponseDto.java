@@ -41,10 +41,10 @@ public class TokenResponseDto implements Serializable {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private String access_token;
-    private String  token_type;
-    private Integer expires_in;
-    private String refresh_token;
+    private String accessToken;
+    private String tokenType;
+    private Integer expiresIn;
+    private String refreshToken;
 
     //~ Methods **************************************************************************************************************************************
 
@@ -53,15 +53,15 @@ public class TokenResponseDto implements Serializable {
      * @return  Returns JWT Access Token
      */
     public String getAccessToken() {
-        return access_token;
+        return accessToken;
     }
 
     /**
      * Sets the Access Token
-     * @param access_token  JWT Access Token
+     * @param accessToken  JWT Access Token
      */
-    public void setAccessToken(String access_token) {
-        this.access_token = access_token;
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
     /**
@@ -69,15 +69,15 @@ public class TokenResponseDto implements Serializable {
      * @return  Type of Access Token is returned
      */
     public String getTokenType() {
-        return token_type;
+        return tokenType;
     }
 
     /**
      * Access Token Type is set
-     * @param token_type    Token Type
+     * @param tokenType    Token Type
      */
-    public void setTokenType(String token_type) {
-        this.token_type = token_type;
+    public void setTokenType(String tokenType) {
+        this.tokenType = tokenType;
     }
 
     /**
@@ -85,15 +85,15 @@ public class TokenResponseDto implements Serializable {
      * @return  Expiry time of access token
      */
     public Integer getExpiresIn() {
-        return expires_in;
+        return expiresIn;
     }
 
     /**
      * Sets the expiry time of access token
-     * @param expires_in    Expiry time of access token
+     * @param expiresIn    Expiry time of access token
      */
-    public void setExpiresIn(Integer expires_in) {
-        this.expires_in = expires_in;
+    public void setExpiresIn(Integer expiresIn) {
+        this.expiresIn = expiresIn;
     }
 
     /**
@@ -101,15 +101,15 @@ public class TokenResponseDto implements Serializable {
      * @return  JWT Refresh Token
      */
     public String getRefreshToken() {
-        return refresh_token;
+        return refreshToken;
     }
 
     /**
      * Sets the Refresh Token
-     * @param refresh_token JWT Token
+     * @param refreshToken JWT Token
      */
-    public void setRefreshToken(String refresh_token) {
-        this.refresh_token = refresh_token;
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }
 /* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */
