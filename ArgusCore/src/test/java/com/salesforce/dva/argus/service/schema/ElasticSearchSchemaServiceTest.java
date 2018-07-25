@@ -340,7 +340,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
         JsonElement el = parser.parse(jsonString);
-        return gson.toJson(el); // done
+        return gson.toJson(el);
     }
 
     private ElasticSearchSchemaService _initializeSpyService(ElasticSearchSchemaService service, String reply) {
