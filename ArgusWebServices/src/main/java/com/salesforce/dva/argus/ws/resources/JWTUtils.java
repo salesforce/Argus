@@ -3,8 +3,12 @@ package com.salesforce.dva.argus.ws.resources;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +20,13 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import scala.Int;
 
+/**
+ * JWT Utility methods.
+ *
+ * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com)
+ */
 public class JWTUtils {
 	
 	//~ Static fields/initializers *******************************************************************************************************************
@@ -87,6 +97,54 @@ public class JWTUtils {
 		
     	return claims.getBody().getSubject();
 	}
+
+	/**
+	 * Expiry time of a given token
+	 * @param token JWT Token
+	 * @return JWT Token Expiry Time
+	 */
+	public static int getTokenExpiry(String token) {
+		String accessTokenPayload = token.substring(token.indexOf(".") + 1, token.lastIndexOf(".") );
+		byte[] decoded = Base64.getMimeDecoder().decode(accessTokenPayload);
+		String output = new String(decoded);
+		Map<String,Object> myMap = new HashMap<String, Object>();
+		int result = -1;
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			myMap = objectMapper.readValue(output, HashMap.class);
+			if(myMap.get("exp") instanceof Integer) {
+				result = (Integer) myMap.get("exp");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+
+    /**
+     * Username from a given JWT Token
+     * @param token JWT Token
+     * @return  Username from JWT Token.
+     */
+	public static String getUsername(String token) {
+		String accessTokenPayload = token.substring(token.indexOf(".") + 1, token.lastIndexOf(".") );
+		byte[] decoded = Base64.getMimeDecoder().decode(accessTokenPayload);
+		String output = new String(decoded);
+		Map<String,Object> myMap = new HashMap<String, Object>();
+		String result = "unknown";
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			myMap = objectMapper.readValue(output, HashMap.class);
+			if(myMap.get("sub") instanceof String) {
+				result = (String) myMap.get("sub");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
 	
 	static class Tokens {
 		public String accessToken;
@@ -106,3 +164,4 @@ public class JWTUtils {
 	}
 
 }
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

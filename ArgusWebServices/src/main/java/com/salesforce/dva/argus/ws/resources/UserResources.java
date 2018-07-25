@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Salesforce.com, Inc.
+ * Copyright (c) 2018, Salesforce.com, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,18 +31,34 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.salesforce.dva.argus.entity.OAuthAuthorizationCode;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.PrincipalUser.Preference;
+import com.salesforce.dva.argus.service.OAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.ws.annotation.Description;
+import com.salesforce.dva.argus.ws.business.oauth.OAuthFields;
+import com.salesforce.dva.argus.ws.business.oauth.ResponseCodes;
+import com.salesforce.dva.argus.ws.dto.OAuthAcceptDto;
+import com.salesforce.dva.argus.ws.dto.OAuthAcceptResponseDto;
+import com.salesforce.dva.argus.ws.dto.AuthenticatedOAuthAppDto;
 import com.salesforce.dva.argus.ws.dto.PrincipalUserDto;
+import com.salesforce.dva.argus.ws.exception.OAuthException;
+import org.apache.commons.lang.StringUtils;
+import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -59,7 +75,7 @@ import javax.ws.rs.core.Response.Status;
 /**
  * Provides methods to manipulate users.
  *
- * @author  Bhinav Sura (bsura@salesforce.com)
+ * @author  Bhinav Sura (bsura@salesforce.com), Gaurav Kumar (gaurav.kumar@salesforce.com), Chandravyas Annakula(cannakula@salesforce.com)
  */
 @Path("/users")
 @Description("Provides methods to manipulate users.")
@@ -68,6 +84,12 @@ public class UserResources extends AbstractResource {
     //~ Instance fields ******************************************************************************************************************************
 
     private UserService _uService = system.getServiceFactory().getUserService();
+    private String applicationName = system.getConfiguration().getValue(Property.OAUTH_APP_NAME.getName(), Property.OAUTH_APP_NAME.getDefaultValue());
+    private OAuthAuthorizationCodeService authService = system.getServiceFactory().getOAuthAuthorizationCodeService();
+    private String applicationRedirectURI = system.getConfiguration().getValue(Property.OAUTH_APP_REDIRECT_URI.getName(), Property.OAUTH_APP_REDIRECT_URI.getDefaultValue());
+    private String invalidateAuthCodeAfterUse = system.getConfiguration().getValue(Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getName(),
+            Property.OAUTH_AUTHORIZATION_CODE_INVALIDATE.getDefaultValue());
+
 
     //~ Methods **************************************************************************************************************************************
 
@@ -118,6 +140,14 @@ public class UserResources extends AbstractResource {
     @Description("Returns the user having the given username.")
     public PrincipalUserDto getUserByUsername(@Context HttpServletRequest req,
         @PathParam("username") final String userName) {
+
+        Enumeration<String> headerNames = req.getHeaderNames();
+        while(headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = req.getHeader(headerName);
+            System.out.println(headerName + ": " + headerValue);
+        }
+
         if (userName == null || userName.isEmpty()) {
             throw new WebApplicationException("Username cannot be null or empty.", Status.BAD_REQUEST);
         }
@@ -281,5 +311,147 @@ public class UserResources extends AbstractResource {
         user = _uService.updateUser(user);
         return PrincipalUserDto.transformToDto(user);
     }
+
+    /**
+     * Method to accept oauth access by third party applications. This method associates authorization_code with the logged in username.
+     * @param acceptDto Json Object which contains information for granting permission for an app to use argus OAuth resources
+     * @param request   The Http Request with authorization header
+     * @return OAuthAcceptResponseDto  Json Object which is returned after user grants an application to access argus oauth resources
+     */
+    @POST
+    @Path("/accept_oauth")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Description("Approves user for oauth based access.")
+    public OAuthAcceptResponseDto accept(OAuthAcceptDto acceptDto, @Context HttpServletRequest request) {
+        if(StringUtils.isBlank(acceptDto.getCode())) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+        }
+        if(StringUtils.isBlank(acceptDto.getState())) {
+            throw new OAuthException(ResponseCodes.INVALID_STATE, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        // Check if authorization code and state is valid, no need to check expiry as it might have been invalidated by token query
+        OAuthAuthorizationCode oauthAuthorizationCode = authService.findByCodeAndState(acceptDto.getCode(), acceptDto.getState());
+        if (oauthAuthorizationCode == null) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE_OR_STATE, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        String userName=findUserByToken(request);
+        if(Boolean.valueOf(invalidateAuthCodeAfterUse)) {
+            authService.deleteExpiredAuthCodesByUserName(new Timestamp(System.currentTimeMillis()),userName);
+        }
+
+        // updates userid in oauth_authorization_codes table
+        int updateResult = authService.updateUserId(acceptDto.getCode(), acceptDto.getState(), userName);
+        if(updateResult == 0) {
+            throw new OAuthException(ResponseCodes.INVALID_AUTH_CODE, HttpResponseStatus.BAD_REQUEST);
+        }
+
+        OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
+        responseDto.setRedirectURI(oauthAuthorizationCode.getRedirectUri());
+
+        return responseDto ;
+    }
+
+    /**
+     * OAuth2.0 UserInfo reference implementation to get logged in user information using the access token
+     * @param req   The Http Request with authorization header
+     * @return      User Information Json Object
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/userinfo")
+    @Description("Returns the user info of the user who is logged in.")
+    public PrincipalUserDto userInfo(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        PrincipalUser user = _uService.findUserByUsername(userName);
+        return PrincipalUserDto.transformToDto(user);
+    }
+
+    private String findUserByToken(HttpServletRequest req)
+    {
+        String token = req.getHeader(OAuthFields.AUTHORIZATION);
+        if(StringUtils.isBlank(token)) {
+            throw new OAuthException(ResponseCodes.INVALID_ACCESS_TOKEN, HttpResponseStatus.BAD_REQUEST);
+        }
+        return  JWTUtils.getUsername(token);
+
+    }
+
+    /**
+     * Returns redirectURI based on whether this user has previously accepted the authorization page
+     *
+     * @param req  The Http Request with authorization header
+     * @return     Returns either redirectURI or OauthException
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/check_oauth_access")
+    @Description("Returns redirectURI based on whether this user has previously accepted the authorization page")
+    public OAuthAcceptResponseDto checkOauthAccess(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        int result = authService.countByUserId(userName);
+        OAuthAcceptResponseDto responseDto = new OAuthAcceptResponseDto();
+        if (result==0) {
+            throw new OAuthException(ResponseCodes.ERR_FINDING_USERNAME, HttpResponseStatus.BAD_REQUEST);
+        }
+        else {
+            responseDto.setRedirectURI(applicationRedirectURI);
+            return responseDto;
+        }
+    }
+
+    /**
+     * Returns list of Oauth approved apps of argus for this user
+     *
+     * @param req   The Http Request with authorization header
+     * @return      Returns list of Oauth approved apps
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/oauth_approved_apps")
+    @Description("Returns list of Oauth approved apps of argus for this user")
+    public List<AuthenticatedOAuthAppDto> authenticatedApps(@Context HttpServletRequest req) {
+        String userName=findUserByToken(req);
+        int result = authService.countByUserId(userName);
+        AuthenticatedOAuthAppDto app = new AuthenticatedOAuthAppDto();
+        List<AuthenticatedOAuthAppDto> listApps = new ArrayList<>();
+        if (result==0) {
+            return listApps;
+        }
+        else {
+            app.setApplicationName(applicationName);
+            listApps.add(app);
+            return listApps;
+        }
+    }
+
+    /**
+     * Revokes Oauth access of app from argus for a particular user
+     *
+     * @param req       The Http Request with authorization header
+     * @param appName   Application Name which is recognized by Argus Oauth
+     * @return          Returns either Success or OAuthException
+     */
+    @DELETE
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/revoke_oauth_access/{appName}")
+    @Description("Revokes Oauth access of app from argus for a particular user")
+    public Response removeAccess(@Context HttpServletRequest req,@PathParam("appName") String appName) {
+        String userName=findUserByToken(req);
+
+        if(appName.equalsIgnoreCase(applicationName))
+        {
+            authService.deleteByUserId(userName);
+            return Response.status(Status.OK).build();
+        }
+        else
+        {
+            throw new OAuthException(ResponseCodes.ERR_DELETING_APP, HttpResponseStatus.BAD_REQUEST);
+        }
+
+    }
+
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2018, Salesforce.com, Inc.  All rights reserved. */
