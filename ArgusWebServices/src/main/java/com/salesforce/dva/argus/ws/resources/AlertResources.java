@@ -724,7 +724,7 @@ public class AlertResources extends AbstractResource {
 			notification.setSeverityLevel(notificationDto.getSeverityLevel());
 			notification.setCustomText(notificationDto.getCustomText());
 
-			// TODO: 14.12.16 validate notification
+			// TODO: 14.12.16 validateAuthorizationRequest notification
 
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 

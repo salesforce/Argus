@@ -85,6 +85,9 @@
 		<label class="chkBoxLbl" for="toggle-wheel-{{chartId}}">Use mousewheel to zoom in/out of the main graph.
 		<br /><span style="font-weight:normal;">(Move mouse off the main graph to page scroll)</span></label>
 
+		<br /><input class="chkBox pointer" id="toggle-showEmptyRange-{{chartId}}" type="checkbox" ng-model="menuOption.showEmptyRange" title="Show empty range on chart" />&nbsp;
+		<label class="chkBoxLbl" for="toggle-showEmptyRange-{{chartId}}">Show empty date range even when there is no data.</label>
+
 		<h4 class="sectionTitle btmBdr">Tooltips</h4>
 
 		<input class="chkBox pointer" id="tooltip-on-{{chartId}}" name="tooltip-on" type="checkbox" ng-model="menuOption.isTooltipOn" />&nbsp;<label class="chkBoxLbl" for="tooltip-on-{{chartId}}" title="Show tooltip">Show tooltip</label>

@@ -106,6 +106,9 @@ angular.module('argus.directives.charts.lineChart', [])
 			if ($scope.menuOption.localTimezone === undefined) {
 				$scope.menuOption.localTimezone = false;
 			}
+			if ($scope.menuOption.showEmptyRange === undefined) {
+				$scope.menuOption.showEmptyRange = false;
+			}
 
 			var dashboardId = $routeParams.dashboardId; //this is used in chartoptions scope
 			// user interactions
@@ -265,9 +268,10 @@ angular.module('argus.directives.charts.lineChart', [])
 					});
 				}
 				source.displaying = !source.displaying;
-				d3.selectAll('.' + source.graphClassName)
-					.style('display', displayProperty)
-					.attr('displayProperty', displayProperty);//this is for recording the display property when circle is outside range
+				ChartElementService.toggleGraphDisplay(source, displayProperty);
+				// d3.selectAll('.' + source.graphClassName)
+				// 	.style('display', displayProperty)
+				// 	.attr('displayProperty', displayProperty);//this is for recording the display property when circle is outside range
 			}
 		}],
 		// compile: function (iElement, iAttrs, transclude) {},
@@ -284,6 +288,9 @@ angular.module('argus.directives.charts.lineChart', [])
 			var GMTon = !scope.menuOption.localTimezone;
 			var chartOptions = scope.chartConfig;
 			var extraYAxisSet = scope.extraYAxisSet;
+
+			var showEmptyRange = scope.menuOption.showEmptyRange;
+			var movedToEmptyRange = false;
 
 			/** 'smallChart' settings:
 				height: 150
@@ -475,19 +482,26 @@ angular.module('argus.directives.charts.lineChart', [])
 				var yDomain = xyDomain.yDomain;
 				var extraYDomain = xyDomain.extraYDomain;
 
-				x.domain(xDomain); //doing this cause some date range are defined in metric queries and regardless of ag-date
 				y.domain(ChartToolService.processYDomain(yDomain, yScalePlain, yScaleType, agYMin, agYMax, isDataStacked, isChartDiscrete));
 				for (var iSet of extraYAxisSet){
 					extraY[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
 				}
+
+				scope.nonEmptyXDomain = xDomain;
+				dateExtent = [scope.dateConfig.startTime, scope.dateConfig.endTime];
+				if (!showEmptyRange) { //doing this cause some date range are defined in metric queries and regardless of ag-date
+					x.domain(xDomain);
+					x2.domain(xDomain);
+					dateExtent = xDomain;
+				}
+
 				// update brush's x and y
-				x2.domain(xDomain);
 				y2.domain(yDomain);
 				for (var iSet of extraYAxisSet){
 					extraY2[iSet].domain(ChartToolService.processYDomain(extraYDomain[iSet], extraYScalePlain[iSet], yScaleType, undefined, undefined, isDataStacked, isChartDiscrete));
 				}
 
-				dateExtent = xDomain;
+
 
 				// apply the actual x and y domain based on the data for axises and grids
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
@@ -570,7 +584,7 @@ angular.module('argus.directives.charts.lineChart', [])
 
 			// mouse interaction on the chart
 			function mouseMove(mousePositionData, noSync) {
-				if (!seriesBeingDisplayed || seriesBeingDisplayed.length === 0) return;
+				if (!seriesBeingDisplayed || seriesBeingDisplayed.length === 0 || movedToEmptyRange) return;
 				var brushInNonEmptyRange = ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent);
 				if (mousePositionData === undefined) mousePositionData = ChartElementService.getMousePositionData(x, y, d3.mouse(this));
 				var dataPoints, newMousePositionData;
@@ -741,7 +755,24 @@ angular.module('argus.directives.charts.lineChart', [])
 			//redraw the graph with new series
 			function redraw () {
 				if (ChartToolService.isBrushInNonEmptyRange(x.domain(), dateExtent)) {
+					if (scope.menuOption.showEmptyRange && movedToEmptyRange) {
+						scope.sources.forEach(function(source) {
+							if (source.displaying) {
+								ChartElementService.toggleGraphDisplay(source, null);
+							}
+						})
+						movedToEmptyRange = false;
+					}
 					ChartElementService.redrawGraphs(seriesBeingDisplayed, scope.sources, chartType, graph, mainChart, extraGraph);
+				} else {
+					if (scope.menuOption.showEmptyRange) {
+						movedToEmptyRange = true;
+						scope.sources.forEach(function(source) {
+							if (source.displaying) {
+								ChartElementService.toggleGraphDisplay(source, 'none')
+							}
+						})
+					}
 				}
 				ChartElementService.redrawAxis(xAxis, xAxisG, yAxis, yAxisG, yAxisR, yAxisRG, extraYAxisR, extraYAxisRG, extraYAxisSet, isSmallChart);
 				ChartElementService.redrawGrid(xGrid, xGridG, yGrid, yGridG);
@@ -1074,6 +1105,27 @@ angular.module('argus.directives.charts.lineChart', [])
 					// update date formatter
 					dateFormatter = ChartToolService.generateDateFormatter(GMTon, scope.menuOption.dateFormat, isSmallChart);
 					scope.dateRange = ChartElementService.updateDateRangeLabel(dateFormatter, GMTon, chartId, x);
+				}
+			}, true);
+
+			scope.$watch('menuOption.showEmptyRange', function (newValue, oldValue) {
+				// TODO: support bar and stackbar chart
+				if (newValue !== oldValue) {
+					var givenDomain = [scope.dateConfig.startTime, scope.dateConfig.endTime]
+					if (!ChartToolService.equalTimeDomain(givenDomain, scope.nonEmptyXDomain) && !isChartDiscrete && !scope.chartConfig.smallChart) {
+						if (newValue) {
+							x.domain(givenDomain);
+							x2.domain(givenDomain);
+						} else {
+							x.domain(scope.nonEmptyXDomain);
+							x2.domain(scope.nonEmptyXDomain);
+						}
+						redraw();
+						xAxisG2.call(xAxis2);
+						// redraw brush graph
+						ChartElementService.redrawBrushGraphsWithNewXDomain(currSeries, scope.sources, chartType, graph2, context)
+						ChartElementService.resetBothBrushes(svg_g, [{name: '.brush', brush: brush}, {name: '.brushMain', brush: brushMain}])
+					}
 				}
 			}, true);
 
