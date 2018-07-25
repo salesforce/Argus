@@ -48,7 +48,7 @@ public class ScopeAndMetricOnlySchemaRecordList {
     public ScopeAndMetricOnlySchemaRecordList(List<ScopeAndMetricOnlySchemaRecord> records, HashAlgorithm algorithm) {
         for(ScopeAndMetricOnlySchemaRecord record : records) {
             String id = null;
-            String scopeAndMetricName = ScopeAndMetricOnlySchemaRecord.print(record);
+            String scopeAndMetricName = ScopeAndMetricOnlySchemaRecord.getFieldsAsString(record);
             if(HashAlgorithm.MD5.equals(algorithm)) {
                 id = DigestUtils.md5Hex(scopeAndMetricName);
             } else {

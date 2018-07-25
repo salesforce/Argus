@@ -100,7 +100,7 @@ public class ScopeAndMetricOnlySchemaRecord {
         return MessageFormat.format("ScopeAndMetricOnlySchemaRecord (Scope = {0} Metric = {1}", scope, metric);
     }
 
-    public static String print(ScopeAndMetricOnlySchemaRecord msr) {
+    public static String getFieldsAsString(ScopeAndMetricOnlySchemaRecord msr) {
 
         StringBuilder sb = new StringBuilder(msr.getScope());
         sb.append(":");
