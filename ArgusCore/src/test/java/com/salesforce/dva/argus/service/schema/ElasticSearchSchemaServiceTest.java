@@ -118,7 +118,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             "  }",
             "}");
 
-    private String metricQuery1 = String.join("\n",
+    private String metricQueryTagvRegex = String.join("\n",
             "{",
             "  \"query\": {",
             "    \"bool\": {",
@@ -161,7 +161,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
             "  }",
             "}");
 
-    private String metricQuery2 = String.join("\n",
+    private String metricQueryNamespaceRegex = String.join("\n",
             "{",
             "  \"query\": {",
             "    \"bool\": {",
@@ -268,7 +268,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetUniqueUsingMetricSchemaIndex1() throws IOException {
+    public void testGetUniqueUsingMetricTagvRegexSchemaIndex() throws IOException {
 
         MetricSchemaRecordQuery queryForMetric = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system")
                 .metric("argus")
@@ -294,7 +294,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         String requestUrl = requestUrlCaptor.getValue();
         String queryJson = convertToPrettyJson(EntityUtils.toString(queryJsonCaptor.getValue()));
 
-        assertEquals(metricQuery1, queryJson);
+        assertEquals(metricQueryTagvRegex, queryJson);
         assertEquals("/metadata_index/metadata_type/_search", requestUrl);
 
         assertFalse(queryForMetric.isQueryOnlyOnScope());
@@ -302,7 +302,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testGetUniqueUsingMetricSchemaIndex2() throws IOException {
+    public void testGetUniqueUsingMetricNamespaceRegexSchemaIndex() throws IOException {
 
         MetricSchemaRecordQuery queryForMetric = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system")
                 .metric("argus")
@@ -328,7 +328,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         String requestUrl = requestUrlCaptor.getValue();
         String queryJson = convertToPrettyJson(EntityUtils.toString(queryJsonCaptor.getValue()));
 
-        assertEquals(metricQuery2, queryJson);
+        assertEquals(metricQueryNamespaceRegex, queryJson);
         assertEquals("/metadata_index/metadata_type/_search", requestUrl);
 
         assertFalse(queryForMetric.isQueryOnlyOnScope());
