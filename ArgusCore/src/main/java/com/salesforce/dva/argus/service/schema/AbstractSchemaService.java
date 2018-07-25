@@ -307,13 +307,13 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		BLOOMFILTER_SCOPE_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.only.error.rate", "0.00001"),
 
 		/*
-		 * Estimated Filter Size using bloomFilter 10 million entries
-		 * https://hur.st/bloomfilter/?n=10000000&p=1.0E-5&m=&k= 28.56MiB
-		 * Storing in a Set 1M entries with avg length of 30 chars would be 1M * 30 * 2 B = 60B * 1M = 60 MB
-		 * If # of entries is 10 million, then it would be 600 MB resulting in savings in space.
+		 * Estimated Filter Size using bloomFilter 500 million entries
+		 * https://hur.st/bloomfilter/?n=10000000&p=1.0E-5&m=&k= 1.39GiB
+		 * Storing in a Set 100M entries with avg length of 30 chars would be 100M * 30 * 2 B = 60B * 100M = 6 GB
+		 * If # of entries is 500 million, then it would be 30 GB resulting in savings in space.
 		*/
 
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "10000000"),
+		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "500000000"),
 		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001"),
 
 		/*
