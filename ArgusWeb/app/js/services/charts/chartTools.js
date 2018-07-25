@@ -146,7 +146,8 @@ angular.module('argus.services.charts.tools', [])
 			numTicksYaxis: defaultTicksYaxis
 		},
 		isSnapCrosslineOn: true,
-		localTimezone: false
+		localTimezone: false,
+		showEmptyRange: false
 	};
 	this.defaultMenuOptionSmallChart = {
 		dateFormat: numericalDate,
@@ -169,7 +170,8 @@ angular.module('argus.services.charts.tools', [])
 			numTicksYaxis: defaultTicksYaxis
 		},
 		isSnapCrosslineOn: true,
-		localTimezone: false
+		localTimezone: false,
+		showEmptyRange: false
 	};
 
 	// color
@@ -825,5 +827,10 @@ angular.module('argus.services.charts.tools', [])
 	this.getTheNumberValueFromThree = function(a, b, c){
 		var temp = (this.isNaN(a) ? Number(b) : Number(a));
 		return this.isNaN(temp) ? Number(c) : temp;
+	};
+
+	this.equalTimeDomain = function(domain1, domain2) {
+		return (new Date(domain1[0]).getTime() === new Date(domain2[0]).getTime()) &&
+				(new Date(domain1[1]).getTime() === new Date(domain2[1]).getTime());
 	};
 }]);
