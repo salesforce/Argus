@@ -21,12 +21,10 @@ angular.module('argus.directives.charts.chart', [])
 			lineChartScope.chartConfig.chartId = newChartId;
 			lineChartScope.chartConfig.smallChart = scope.chartOptions ? scope.chartOptions.smallChart : undefined;
 
-			// when there is no agDate, use
-			if (dateConfig.startTime === undefined || dateConfig.endTime === undefined) {
-				if (series[0].data && series[0].data.length > 0) {
-					dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
-					dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
-				}
+			// // when there is no agDate, use
+			if (series[0].data && series[0].data.length > 0) {
+				if (dateConfig.startTime === undefined)	dateConfig.startTime = DateHandlerService.getStartTimestamp(series);
+				if (dateConfig.endTime === undefined) dateConfig.endTime = DateHandlerService.getEndTimestamp(series);
 			}
 			lineChartScope.dateConfig = dateConfig;
 			scope.seriesDataLoaded = true;
