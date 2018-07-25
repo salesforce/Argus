@@ -255,7 +255,7 @@ public class OAuthAuthorizationCode implements Serializable {
     public static int deleteByTimeStamp(EntityManager em, Timestamp currentTime,String userName) {
         TypedQuery<OAuthAuthorizationCode> query = em.createNamedQuery("OAuthAuthorizationCode.deleteByExpiresAndUserId", OAuthAuthorizationCode.class);
             query.setParameter("currenttime", currentTime);
-        query.setParameter("username", currentTime);
+            query.setParameter("username", userName);
             return query.executeUpdate();
     }
 
