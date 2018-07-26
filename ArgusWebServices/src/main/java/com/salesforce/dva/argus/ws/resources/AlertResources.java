@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.AlertDto;
 import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
@@ -179,7 +180,9 @@ public class AlertResources extends AbstractResource {
 	public ItemsCountDto countAlertsMetaByOwner(@Context HttpServletRequest req,
 										@QueryParam("ownername") String ownerName) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
-		int result = alertService.countAlerts(false, false, owner);
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts()
+				.setPrincipalUser(owner).build();
+		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}
 	
@@ -201,7 +204,8 @@ public class AlertResources extends AbstractResource {
 	@Path("/meta/shared/count")
 	@Description("Returns all shared alerts' metadata count.")
 	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req) {
-		int result = alertService.countAlerts(true, false, null);
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().build();
+		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}
 	
@@ -235,7 +239,9 @@ public class AlertResources extends AbstractResource {
 			return ItemsCountDto.transformToDto(0);
 		}
 		
-		int result = alertService.countAlerts(false, true, owner);
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
+				.setPrincipalUser(owner).build();
+		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}
 
