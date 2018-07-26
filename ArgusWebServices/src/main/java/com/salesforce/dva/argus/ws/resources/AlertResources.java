@@ -82,8 +82,9 @@ public class AlertResources extends AbstractResource {
 
 	/**
 	 * Return all alerts in alert objects filtered by owner.
-	 * @param   alertname  	   The alert name filter.
-	 * @param   owner          The principlaUser owner for owner name filter.
+	 * @param   alertname  	                  The alert name filter.
+	 * @param   owner                         The principlaUser owner for owner name filter.
+	 * @param   populateMetaFieldsOnly        Flag to populate alert meta field only.
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
@@ -251,6 +252,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   shared     Flag for shared alerts. It is optional.
+	 * @param   limit      Number of alerts to return. It is optional.
 	 *
 	 * @return  The list of alerts created by the user.
 	 */
