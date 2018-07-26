@@ -478,8 +478,8 @@ public class FillTransformTest {
 
         Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(-1000L, 100L);
-        expected.put(1000L, 100L);
+        expected.put(0L, 100L);
+        expected.put(2000L, 100L);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
@@ -531,6 +531,29 @@ public class FillTransformTest {
         List<Metric> result = fillTransform.transform(null, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
+        assertEquals(expected, result.get(0).getDatapoints());
+    }
+
+    @Test
+    public void testFillLineWhenIntervalIsMultipleOfWindowSize() {
+        Transform fillTransform = new FillTransform();
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("15000000");
+        constants.add("115000000");
+        constants.add("10s");
+        constants.add("0s");
+        constants.add("1.0");
+        constants.add(String.valueOf(System.currentTimeMillis()));
+        constants.add("true");
+
+        Map<Long, Double> expected = new HashMap<Long, Double>();
+
+        for (long key = 15000000; key <= 115000000; key+= 10000) expected.put(key,1.0);
+
+        List<Metric> result = fillTransform.transform(null, constants);
+
+        assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
 

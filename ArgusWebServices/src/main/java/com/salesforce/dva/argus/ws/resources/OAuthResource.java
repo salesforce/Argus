@@ -222,10 +222,10 @@ public class OAuthResource extends AbstractResource {
                     JWTUtils.Tokens tokens = JWTUtils.generateTokens(oauthAuthorizationCode.getUserId());
                     if(StringUtils.isNotBlank(tokens.accessToken) && StringUtils.isNotBlank(tokens.refreshToken)) {
                         _logger.info("Generated access/refresh tokens for user: " + oauthAuthorizationCode.getUserId());
-                        response.setAccessToken(tokens.accessToken);
-                        response.setRefreshToken(tokens.refreshToken);
-                        response.setExpiresIn(JWTUtils.getTokenExpiry(tokens.accessToken));
-                        response.setTokenType(OAuthFields.TOKEN_TYPE_BEARER);
+                        response.setAccess_token(tokens.accessToken);
+                        response.setRefresh_token(tokens.refreshToken);
+                        response.setExpires_in(JWTUtils.getTokenExpiry(tokens.accessToken));
+                        response.setToken_type(OAuthFields.TOKEN_TYPE_BEARER);
                     } else {
                         throw new OAuthException(ERR_ISSUING_ACCESS_TOKEN, HttpResponseStatus.INTERNAL_SERVER_ERROR);
                     }
