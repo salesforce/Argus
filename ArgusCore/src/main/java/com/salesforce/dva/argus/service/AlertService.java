@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.*;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
@@ -317,19 +318,13 @@ public interface AlertService extends Service {
 	List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset);
 	
 	/**
-	 * Count alerts. If both countSharedAlertsOnly and countPrivateAlertsOnly
-	 * are false, it counts owner's alerts.
+	 * Count alerts with the given AlertsCountContext.
 	 * 
-	 * @param countSharedAlertsOnly
-	 *            The flag of whether to only count all shared alerts.
-	 * @param countPrivateAlertsOnly
-	 *            The flag of whether only count all private (non-shared)
-	 *            alerts. countSharedAlertsOnly must be false.
-	 * @param owner
-	 *            The owner
+	 * @param context
+	 *            The context of counting alerts.
 	 * @return Alerts count.
 	 */
-	int countAlerts(boolean countSharedAlertsOnly, boolean countPrivateAlertsOnly, PrincipalUser owner);
+	int countAlerts(AlertsCountContext context);
 	
 	//~ Enums ****************************************************************************************************************************************
 

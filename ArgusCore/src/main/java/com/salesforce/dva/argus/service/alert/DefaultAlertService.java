@@ -855,17 +855,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	@Override
-	public int countAlerts(boolean countSharedAlertsOnly, boolean countPrivateAlertsOnly, PrincipalUser owner) {
+	public int countAlerts(AlertsCountContext context) {
 		requireNotDisposed();
+		
+		if (context == null) {
+			return 0;
+		}
 
 		// Count total number of shared alerts for the shared alerts tab
-		if (countSharedAlertsOnly) {
+		if (context.isCountSharedAlerts()) {
 			return Alert.countSharedAlerts(_emProvider.get());
 		}
 
+		PrincipalUser owner = context.getPrincipalUser();
+
 		// Count total number of private alerts (non-shared alerts) if user is
 		// privileged user, otherwise return 0
-		if (countPrivateAlertsOnly) {
+		if (context.isCountPrivateAlerts()) {
 			// Invalid user nor non-privileged user shall not view other's
 			// non-shared alerts, thus immediately return 0
 			if (owner == null || !owner.isPrivileged()) {
