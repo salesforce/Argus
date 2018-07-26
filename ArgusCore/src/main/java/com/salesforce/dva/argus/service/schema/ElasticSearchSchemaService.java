@@ -428,8 +428,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					requestBody.put("scroll_id", scrollID);
 					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
-					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
-							new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+					String requestJson = new ObjectMapper().writeValueAsString(requestBody);
+					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson));
 
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 					records.addAll(list.getRecords());
