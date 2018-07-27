@@ -413,6 +413,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String queryJson = _constructTermQuery(query, from, scrollSize);
 
 		try {
+			_logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 
 			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
@@ -429,6 +430,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
 					String requestJson = new ObjectMapper().writeValueAsString(requestBody);
+					_logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
 					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson));
 
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
@@ -484,7 +486,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			indexName = SCOPE_INDEX_NAME;
 			typeName = SCOPE_TYPE_NAME;
 		}
-		else if (query.isQueryOnlyOnScopeAndMetric())
+		else if (query.isQueryOnlyOnScopeAndMetric() && (RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type)))
 		{
 			indexName = SCOPE_AND_METRIC_INDEX_NAME;
 			typeName = SCOPE_AND_METRIC_TYPE_NAME;
@@ -501,6 +503,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
 
+			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
@@ -510,14 +513,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 
-			} else if (query.isQueryOnlyOnScopeAndMetric()) {
+			} else if (query.isQueryOnlyOnScopeAndMetric() && (RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type))) {
 				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 			} else {
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 			}
-
 
 			int fromIndex = query.getLimit() * (query.getPage() - 1);
 			if(records.size() <= fromIndex) {
