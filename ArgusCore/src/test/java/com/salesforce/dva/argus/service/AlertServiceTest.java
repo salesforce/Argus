@@ -238,22 +238,22 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> actualAlerts = new ArrayList<>();
 		
 		// Fetch first page
-		List<Alert> page = alertService.findAlertsByOwnerPaged(user, true, limit, 0);
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch second page
-		page = alertService.findAlertsByOwnerPaged(user, true, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page); 
 		
 		// Fetch remaining alerts (less than a page)
-		page = alertService.findAlertsByOwnerPaged(user, true, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
 		assertEquals(page.size(), expectedAlerts.size() - actualAlerts.size());
 		actualAlerts.addAll(page);
 		
 		// Try to fetch again should be empty result
-		page = alertService.findAlertsByOwnerPaged(user, true, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
 		assertEquals(0, page.size());
 		
 		Set<Alert> actualSet = new HashSet<>();
@@ -649,17 +649,17 @@ public class AlertServiceTest extends AbstractTest {
 		sharedAlerts.add("alert2");
 		
 		// First page
-		List<Alert> page = alertService.findSharedAlertsPaged(true, 1, 0);
+		List<Alert> page = alertService.findSharedAlertsPaged(1, 0);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		
 		// Second page
-		page = alertService.findSharedAlertsPaged(true, 1, 1);
+		page = alertService.findSharedAlertsPaged(1, 1);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		
 		// Thrid page should be zero
-		page = alertService.findSharedAlertsPaged(true, 1, 2);
+		page = alertService.findSharedAlertsPaged(1, 2);
 		assertEquals(0, page.size());
 	}
 	
@@ -792,7 +792,7 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert3);
 
 		// Assert result is empty for non-privileged user
-		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(true, user1, 100, 0).size());
+		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 100, 0).size());
 	}
 	
 	@Test
@@ -846,17 +846,17 @@ public class AlertServiceTest extends AbstractTest {
 		Set<String> alertNames = new HashSet<>();
 		
 		// Fetch first page
-		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(true, user1, 1, 0);
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 0);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 		
 		// Fetch second page
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(true, user1, 1, 1);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 1);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 		
 		// Fetch third page, should be empty
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(true, user1, 1, 2);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 2);
 		assertEquals(0, page.size());
 				
 		// Assert all private alerts are fetched
@@ -1003,6 +1003,53 @@ public class AlertServiceTest extends AbstractTest {
 		assertTrue(n.getActiveStatusMap().size() == 1);
 		assertTrue(n.getCooldownExpirationMap().size() == 1);
 	}
+	
+	@Test
+	public void testAlertsCountContext() {
+		String userName = createRandomName();
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
 
+		// Test count user alerts context
+		// Normal case
+		AlertsCountContext userCtx1 = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts()
+				.setPrincipalUser(user).build();
+		assertTrue(userCtx1.isCountUserAlerts());
+
+		// Missing user
+		AlertsCountContext userCtx2 = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().build();
+		assertFalse(userCtx2.isCountUserAlerts());
+
+		// Not mutual exclusive
+		AlertsCountContext userCtx3 = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts()
+				.countSharedAlerts().setPrincipalUser(user).build();
+		assertFalse(userCtx3.isCountUserAlerts());
+
+		// Test count shared alerts context
+		// Normal case
+		AlertsCountContext sharedCtx1 = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().build();
+		assertTrue(sharedCtx1.isCountSharedAlerts());
+
+		// Not mutual exclusive
+		AlertsCountContext sharedCtx2 = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts()
+				.countPrivateAlerts().build();
+		assertFalse(sharedCtx2.isCountSharedAlerts());
+
+		// Test count private alerts context
+		// Normal case
+		AlertsCountContext privateCtx1 = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
+				.setPrincipalUser(user).build();
+		assertTrue(privateCtx1.isCountPrivateAlerts());
+
+		// Missing user
+		AlertsCountContext privateCtx2 = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
+				.build();
+		assertFalse(privateCtx2.isCountPrivateAlerts());
+
+		// Not mutual exclusive
+		AlertsCountContext privateCtx3 = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
+				.countUserAlerts().setPrincipalUser(user).build();
+		assertFalse(privateCtx3.isCountPrivateAlerts());
+	}
+	
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

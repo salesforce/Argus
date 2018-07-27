@@ -62,15 +62,18 @@ public class AlertsCountContext {
 	}
 
 	public boolean isCountUserAlerts() {
-		return countUserAlerts;
+		boolean isValid = owner != null && !countSharedAlerts && !countPrivateAlerts;
+		return isValid && countUserAlerts;
 	}
 
 	public boolean isCountSharedAlerts() {
-		return countSharedAlerts;
+		boolean isValid = !countUserAlerts && !countPrivateAlerts;
+		return isValid && countSharedAlerts;
 	}
 
 	public boolean isCountPrivateAlerts() {
-		return countPrivateAlerts;
+		boolean isValid = owner != null && !countUserAlerts && !countSharedAlerts;
+		return isValid && countPrivateAlerts;
 	}
 
 	public PrincipalUser getPrincipalUser() {

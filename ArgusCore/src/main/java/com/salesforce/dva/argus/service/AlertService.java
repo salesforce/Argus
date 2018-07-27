@@ -142,10 +142,12 @@ public interface AlertService extends Service {
 	 * Returns a list of alerts for an owner with given limit and offset.
 	 *
 	 * @param owner The owner to return alerts for. Cannot be null.
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
 	 *
 	 * @return The list of alerts.
 	 */
-	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, boolean metadataOnly, Integer limit, Integer offset);
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset);
 
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -280,10 +282,13 @@ public interface AlertService extends Service {
 	
 	/**
 	 * Return a list of shared alerts.
+	 * 
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
 	 *
 	 * @return The list of shared alerts.
 	 */
-	List<Alert> findSharedAlertsPaged(boolean metadataOnly, Integer limit, Integer offset);
+	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset);
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -312,10 +317,12 @@ public interface AlertService extends Service {
 	 * Find a list of private alerts (non-shared alerts) for the given privileged user.
 	 *
 	 * @param owner The owner to filter on.
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
 	 *
 	 * @return The list of private alerts if privileged user.
 	 */
-	List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset);
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset);
 	
 	/**
 	 * Count alerts with the given AlertsCountContext.
