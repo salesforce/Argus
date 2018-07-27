@@ -277,11 +277,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, boolean metadataOnly, Integer limit, Integer offset) {
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
 
-		return metadataOnly ? Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset) : Alert.findByOwnerPaged(_emProvider.get(), owner, limit, offset);
+		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset);
 	}
 
 	@Override
@@ -837,13 +837,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	public List<Alert> findSharedAlertsPaged(boolean metadataOnly, Integer limit, Integer offset) {
+	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset) {
 		requireNotDisposed();
-		return metadataOnly ? Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset) : Alert.findSharedAlertsPaged(_emProvider.get(), limit, offset);
+		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset);
 	}
 	
 	@Override
-	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(boolean metadataOnly, PrincipalUser owner, Integer limit, Integer offset) {
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset) {
 		requireNotDisposed();
 		
 		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
@@ -851,7 +851,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return new ArrayList<>(0);
 		}
 		
-		return metadataOnly ? Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset) : Alert.findPrivateAlertsForPrivilegedUserPaged(_emProvider.get(),  owner, limit, offset);
+		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset);
 	}
 
 	@Override

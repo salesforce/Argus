@@ -152,26 +152,14 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 					name = "Alert.getSharedAlertsByOwner", 
 					query = "SELECT a from Alert a where a.owner = :owner AND a.shared = true AND a.id not in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = true)"
 					),
-			// Paginated queries
-			@NamedQuery(
-					name = "Alert.findByOwnerPaged",
-					query = "SELECT a FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) order by a.id asc"
-					),
+			// Count alert queries
 			@NamedQuery(
 					name = "Alert.countByOwner",
 					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
 					),
 			@NamedQuery(
-					name = "Alert.getSharedAlertsPaged",
-					query = "SELECT a from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) order by a.id asc"
-					),
-			@NamedQuery(
 					name = "Alert.countSharedAlerts",
 					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
-					),
-			@NamedQuery(
-					name = "Alert.getPrivateAlertsForPrivilegedUserPaged",
-					query = "SELECT a from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) order by a.id asc"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
@@ -322,43 +310,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	}
 	
 	/**
-	 * Finds all alerts for the given owner with given limit and offset.
-	 *
-	 * @param em
-	 *            The entity manager to user. Cannot be null.
-	 * @param owner
-	 *            The owner to retrieve alerts for. Cannot be null.
-	 * @param limit
-	 *            The limit of return to return.
-	 * @param offset
-	 *            The starting offset of the result.
-	 *
-	 * @return The list of alerts for the owner.
-	 */
-	public static List<Alert> findByOwnerPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset) {
-		requireArgument(em != null, "Entity manager can not be null.");
-		requireArgument(owner != null, "Owner cannot be null.");
-		if (limit == null || limit <= 0) {
-			limit = DEFAULT_PAGE_LIMIT;
-		}
-		if (offset == null || offset < 0) {
-			offset = DEFAULT_PAGE_OFFSET;
-		}
-
-		TypedQuery<Alert> query = em.createNamedQuery("Alert.findByOwnerPaged", Alert.class);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-		try {
-			query.setParameter("owner", owner);
-			query.setMaxResults(limit);
-			query.setFirstResult(offset);
-			return query.getResultList();
-		} catch (NoResultException ex) {
-			return new ArrayList<>(0);
-		}
-	}
-	
-	/**
 	 * Count the number of alerts for the given owner.
 	 *
 	 * @param em
@@ -383,6 +334,15 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 	}
 
+	/**
+	 * Find alerts meta filtered by the owner.
+	 * 
+	 * @param em
+	 *            The entity manager to user. Cannot be null.
+	 * @param owner
+	 *            The owner to retrieve alerts for. Cannot be null.
+	 * @return A list of alerts owned by the owner.
+	 */
 	public static List<Alert> findByOwnerMeta(EntityManager em, PrincipalUser owner) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner can not be null.");
@@ -663,43 +623,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	}
 	
 	/**
-	 * Find all shared alerts with given limit and offset.
-	 * 
-	 * @param em
-	 *            The entity manager to user. Cannot be null.
-	 * @param owner
-	 *            The owner of shared alerts to filter on
-	 * @param limit
-	 *            The maximum number of rows to return.
-	 * @param offset
-	 *            The starting offset of the result.
-	 * 
-	 * @return The list of shared alerts with given limit and offset.
-	 */
-	public static List<Alert> findSharedAlertsPaged(EntityManager em, Integer limit, Integer offset) {
-		requireArgument(em != null, "Entity manager can not be null.");
-		if (limit == null || limit <= 0) {
-			limit = DEFAULT_PAGE_LIMIT;
-		}
-		if (offset == null || offset < 0) {
-			offset = DEFAULT_PAGE_OFFSET;
-		}
-
-		TypedQuery<Alert> query;
-		query = em.createNamedQuery("Alert.getSharedAlertsPaged", Alert.class);
-		query.setMaxResults(limit);
-		query.setFirstResult(offset);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-
-		try {
-			return query.getResultList();
-		} catch (NoResultException ex) {
-			return new ArrayList<>(0);
-		}
-	}
-	
-	/**
 	 * Count the total number of all shared alerts.
 	 *
 	 * @param em
@@ -779,49 +702,6 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 
 			// Get alerts meta
 			return getAlertsMetaPaged(em, limit, offset, whereParams);
-		} catch (NoResultException ex) {
-			return new ArrayList<>(0);
-		}
-	}
-	
-	/**
-	 * Find all private alerts (non-shared alerts) for given privileged user
-	 * with given limit and offset.
-	 *
-	 * @param em
-	 *            The entity manager to user. Cannot be null.
-	 * @param owner
-	 *            The owner to filter on
-	 * @param limit
-	 *            The maximum number of rows to return.
-	 * @param offset
-	 *            The starting offset of the result.
-	 *
-	 * @return The list of private alerts with given limit and offset.
-	 */
-	public static List<Alert> findPrivateAlertsForPrivilegedUserPaged(EntityManager em, PrincipalUser owner,
-			Integer limit, Integer offset) {
-		requireArgument(em != null, "Entity manager can not be null.");
-		// Invalid user nor non-privileged user shall not view other's
-		// non-shared alerts, thus immediately return empty list
-		if (owner == null || !owner.isPrivileged()) {
-			return new ArrayList<>(0);
-		}
-		if (limit == null || limit <= 0) {
-			limit = DEFAULT_PAGE_LIMIT;
-		}
-		if (offset == null || offset < 0) {
-			offset = DEFAULT_PAGE_OFFSET;
-		}
-
-		TypedQuery<Alert> query = em.createNamedQuery("Alert.getPrivateAlertsForPrivilegedUserPaged", Alert.class);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
-		try {
-			query.setParameter("owner", owner);
-			query.setMaxResults(limit);
-			query.setFirstResult(offset);
-			return query.getResultList();
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}

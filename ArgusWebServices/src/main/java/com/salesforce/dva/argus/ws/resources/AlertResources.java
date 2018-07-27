@@ -170,7 +170,7 @@ public class AlertResources extends AbstractResource {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findAlertsByOwnerPaged(owner, true, pagesize, (pagenumber - 1) * pagesize);
+		result = alertService.findAlertsByOwnerPaged(owner, pagesize, (pagenumber - 1) * pagesize);
 		return AlertDto.transformToDto(result);
 	}
 	
@@ -196,7 +196,7 @@ public class AlertResources extends AbstractResource {
 										@QueryParam("pagenumber") Integer pagenumber) {
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findSharedAlertsPaged(true, pagesize, (pagenumber - 1) * pagesize);
+		result = alertService.findSharedAlertsPaged(pagesize, (pagenumber - 1) * pagesize);
 		return AlertDto.transformToDto(result);
 	}
 	
@@ -225,7 +225,7 @@ public class AlertResources extends AbstractResource {
 		}
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findPrivateAlertsForPrivilegedUserPaged(true, owner, pagesize, pagenumber);
+		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pagesize, pagenumber);
 		return AlertDto.transformToDto(result);
 	}
 	
