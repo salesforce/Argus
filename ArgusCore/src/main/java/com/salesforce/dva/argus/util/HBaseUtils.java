@@ -6,7 +6,7 @@ public class HBaseUtils {
 	 * Return a 9's complement of the given timestamp. Since AsyncHBase doesn't allow a reverse scan and we want to scan data in descending order
 	 * of creation time.  
 	 * 
-	 * @param 	creationTime
+	 * @param 	creationTime	creation time
 	 * @return 	The 9's complement of the given timestamp. 
 	 */
 	public static long _9sComplement(long creationTime) {

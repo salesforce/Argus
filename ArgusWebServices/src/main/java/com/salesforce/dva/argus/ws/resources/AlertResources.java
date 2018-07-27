@@ -80,8 +80,9 @@ public class AlertResources extends AbstractResource {
 
 	/**
 	 * Return all alerts in alert objects filtered by owner.
-	 * @param   alertname  	   The alert name filter.
-	 * @param   owner          The principlaUser owner for owner name filter.
+	 * @param   alertname  	                  The alert name filter.
+	 * @param   owner                         The principlaUser owner for owner name filter.
+	 * @param   populateMetaFieldsOnly        Flag to populate alert meta field only.
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
@@ -138,7 +139,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
-	 *
+	 * @param   shared     If the alert is shared
+	 * @param   limit      Limit of results
 	 * @return  The list of alerts' metadata created by the user.
 	 */
 	@GET
@@ -161,6 +163,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   shared     Flag for shared alerts. It is optional.
+	 * @param   limit      Number of alerts to return. It is optional.
 	 *
 	 * @return  The list of alerts created by the user.
 	 */
@@ -724,7 +728,7 @@ public class AlertResources extends AbstractResource {
 			notification.setSeverityLevel(notificationDto.getSeverityLevel());
 			notification.setCustomText(notificationDto.getCustomText());
 
-			// TODO: 14.12.16 validate notification
+			// TODO: 14.12.16 validateAuthorizationRequest notification
 
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 
