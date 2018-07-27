@@ -152,22 +152,6 @@
                             <imageTag>${project.version}</imageTag>
                         </imageTags>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>build-image</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>push-image</id>
-                            <phase>deploy</phase>
-                            <goals>
-                                <goal>push</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
