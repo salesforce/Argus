@@ -101,6 +101,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final int _bulkIndexingSize;
 	private HashAlgorithm _idgenHashAlgo;
 
+	private final boolean _useScopeMetricNamesIndex;
+
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
@@ -150,6 +152,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_bulkIndexingSize = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getName(), Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getDefaultValue()));
+
+		_useScopeMetricNamesIndex = Boolean.parseBoolean(
+				config.getValue(Property.ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX.getName(), Property.ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX.getDefaultValue()));
 
 		String[] nodes = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue()).split(",");
 		HttpHost[] httpHosts = new HttpHost[nodes.length];
@@ -486,7 +491,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			indexName = SCOPE_INDEX_NAME;
 			typeName = SCOPE_TYPE_NAME;
 		}
-		else if (query.isQueryOnlyOnScopeAndMetric() && (RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type)))
+		else if (_useScopeMetricNamesIndex && query.isQueryOnlyOnScopeAndMetric() &&
+				(RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type)))
 		{
 			indexName = SCOPE_AND_METRIC_INDEX_NAME;
 			typeName = SCOPE_AND_METRIC_TYPE_NAME;
@@ -513,7 +519,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 
-			} else if (query.isQueryOnlyOnScopeAndMetric() && (RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type))) {
+			} else if (_useScopeMetricNamesIndex && query.isQueryOnlyOnScopeAndMetric() &&
+					(RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type))) {
 				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_COUNT, 1, tags);
 				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 			} else {
@@ -1344,6 +1351,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests
 		 */
 		ELASTICSEARCH_INDEXING_BATCH_SIZE("service.property.schema.elasticsearch.indexing.batch.size", "10000"),
+
+		ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.use.scopeandmetric.index", "false"),
+
 		/** The hashing algorithm to use for generating document id. */
 		ELASTICSEARCH_IDGEN_HASH_ALGO("service.property.schema.elasticsearch.idgen.hash.algo", "MD5"),
 
