@@ -47,6 +47,7 @@ public abstract class Pool<T> {
 	 * @param validationInterval time in seconds for periodical checking of minIdle / maxIdle conditions in a separate thread.
 	 *                           When the number of objects is less than minIdle, missing instances will be created.
 	 *                           When the number of objects is greater than maxIdle, too many instances will be removed.
+	 * @param unit               The time unit to use
 	 */
 	public Pool(final int minIdle, final int maxIdle, final long validationInterval, final TimeUnit unit) {
 		// initialize pool

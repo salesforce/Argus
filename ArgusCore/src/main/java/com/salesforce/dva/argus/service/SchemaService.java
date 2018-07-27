@@ -81,10 +81,7 @@ public interface SchemaService extends Service {
      * Returns a list of unique names for the given record type.
      *
      * @param   query  The query to evaluate.  Cannot be null.
-     * @param   limit  The maximum number of records to return.  Must be a positive integer.
      * @param   type   The record type for which to return unique names.
-     * @param   scanFrom   String representing the scanner start row
-     *
      * @return  A list of MetricSchemaRecords for the give record type.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);

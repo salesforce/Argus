@@ -43,8 +43,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Creates additional data points to fill gaps.<br/>
- * <tt>FILL(<expr>, <interval>, <interval>, <constant>)</tt>
+ * Creates additional data points to fill gaps.<br>
+ * <tt>FILL(&lt;expr&gt;, &lt;interval&gt;, &lt;interval&gt;, &lt;constant&gt;)</tt>
  *
  * @author  Ruofan Zhang(rzhang@salesforce.com)
  */
@@ -149,11 +149,15 @@ public class FillTransform implements Transform {
         SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
 
-        // snapping start and end time
-        long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
-        startTimestamp = startTimestamp - startSnapping;
-        long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
-        endTimestamp = endTimestamp - endSnapping;
+        boolean isDivisible = ((startTimestamp - endTimestamp) % (windowSizeInSeconds * 1000)) == 0;
+
+        // snapping start and end time if range is not a multiple of windowSize.
+        if (!isDivisible) {
+            long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
+            startTimestamp = startTimestamp - startSnapping;
+            long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
+            endTimestamp = endTimestamp - endSnapping;
+        }
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
         Map<Long, Double> filledDatapoints = new TreeMap<>();

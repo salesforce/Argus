@@ -1,0 +1,16 @@
+<section>
+  <div class='container'>
+      <div class='row'>
+          <div>
+              <p><span class='h3'>Authorized apps</span></p>
+          </div>
+      </div>
+      <div class='row' ng-repeat="app in apps">
+          <div>
+              {{app.applicationName}}
+              <button class="btn btn-primary" ng-click="deleteApp(app)">delete</button>
+          </div>
+      </div>
+  </div>
+<br/>
+</section>
