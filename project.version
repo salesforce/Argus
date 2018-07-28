@@ -1,1 +1,5 @@
+<<<<<<< 25a04cff929c75e22974b2d5a5608cb7770185c5
 export PROJECT_VERSION=2.21.0
+=======
+export PROJECT_VERSION=2.17.1
+>>>>>>> maven deploy with same version fails: Repository ='releases:Releases' does not allow updating artifact
