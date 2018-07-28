@@ -275,6 +275,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
+	
+	@Override
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset) {
+		requireNotDisposed();
+		requireArgument(owner != null, "Owner cannot be null.");
+
+		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset);
+	}
 
 	@Override
 	public Alert findAlertByPrimaryKey(BigInteger id) {
@@ -826,6 +834,59 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit) {
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
+	}
+	
+	@Override
+	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset) {
+		requireNotDisposed();
+		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset);
+	}
+	
+	@Override
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset) {
+		requireNotDisposed();
+		
+		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
+		if (owner == null || !owner.isPrivileged()) {
+			return new ArrayList<>(0);
+		}
+		
+		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset);
+	}
+
+	@Override
+	public int countAlerts(AlertsCountContext context) {
+		requireNotDisposed();
+		
+		if (context == null) {
+			return 0;
+		}
+
+		// Count total number of shared alerts for the shared alerts tab
+		if (context.isCountSharedAlerts()) {
+			return Alert.countSharedAlerts(_emProvider.get());
+		}
+
+		PrincipalUser owner = context.getPrincipalUser();
+
+		// Count total number of private alerts (non-shared alerts) if user is
+		// privileged user, otherwise return 0
+		if (context.isCountPrivateAlerts()) {
+			// Invalid user nor non-privileged user shall not view other's
+			// non-shared alerts, thus immediately return 0
+			if (owner == null || !owner.isPrivileged()) {
+				return 0;
+			}
+
+			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+		}
+
+		// Count total number of user alerts
+		if (owner != null) {
+			return Alert.countByOwner(_emProvider.get(), owner);
+		}
+
+		return 0;
 	}
 
 	/**
