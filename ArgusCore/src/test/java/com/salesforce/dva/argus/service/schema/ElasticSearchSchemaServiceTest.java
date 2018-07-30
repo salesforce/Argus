@@ -349,6 +349,8 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
         service.setRestClient(restClient);
 
+        service.enableScopeMetricNamesIndex();
+
         ElasticSearchSchemaService spyService = spy(service);
 
         doReturn(reply).when(spyService).extractResponse(any());
