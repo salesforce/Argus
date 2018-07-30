@@ -181,6 +181,8 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_CONSUMER_MESSAGES_TO_BUFFER("service.property.mq.kafka.consumer.messages.to.buffer", "1"),
         /** Specifies the default consumer group ID. */
         KAFKA_CONSUMER_GROUPID("service.property.mq.kafka.consumer.groupid", "argus-consumer-unit"),
+        /** Specifies the default consumer group ID. */
+        KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "smallest"),
         /** Specifies the Kafka ZooKeeper connection endpoint. */
         ZOOKEEPER_CONNECT("service.property.mq.zookeeper.connect", "localhost:2185"),
         /** SPecifies the Kafka Zookeeper connection timeout in milliseconds.  Default is 10000. */
