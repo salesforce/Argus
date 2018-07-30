@@ -151,7 +151,7 @@ public interface MQService extends Service {
     public enum MQQueue {
 
         /** The name of the queue into which submitted alert data is put. */
-        ALERT("argusAlertQueue"),
+        ALERT("argusAlertQueueTest"),
         /** The name of the queue into which submitted metric data is put. */
         METRIC("argusMetricQueue"),
         /** The name of the queue into which submitted annotation data is put. */

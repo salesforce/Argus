@@ -425,8 +425,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
+			if(new Integer(1357401).equals(alert.getId().intValue())) {
+				_logger.error("#### processing alert {} ", alert.getId().intValue());
+			}
 			for(Trigger trigger : alert.getTriggers()) {
 				if(trigger.getType().equals(TriggerType.NO_DATA)) {
+					_logger.error("#### missing data trigger present for alert {}", alert.getId());
 					missingDataTriggers.add(trigger);
 				}
 			}
@@ -511,12 +515,27 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
-				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
+				
+				if(logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
+					if (alert.isMissingDataNotificationEnabled()) {
+						_sendNotificationForMissingData(alert);
+					}
+					
+					if(missingDataTriggers.size()>0) {
+						for(Notification notification : alert.getNotifications()) {
+							if (!notification.getTriggers().isEmpty()) {
+							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+							}
+						}
+					}
+				}
+
+				_logger.warn(logMessage);
+				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -572,12 +591,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers associated with the notification and updates the job history.
 	 */
 	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing) {
-
+		_logger.error("#### processing missing data notification for alert {0}", alert.getId());
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
-				Metric m = new Metric("","");
+				Metric m = new Metric("test","test");
 				if(isDataMissing) {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {} does not exist", trigger.getName(), alert.getExpression());
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
@@ -587,7 +606,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					}
 				} else {
-					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is not fired as data exists for the expression {}", trigger.getName(), alert.getExpression());
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is not fired as data exists for the expression {1}", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination

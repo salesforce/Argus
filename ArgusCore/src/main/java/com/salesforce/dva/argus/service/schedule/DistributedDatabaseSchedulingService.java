@@ -36,13 +36,17 @@ import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.DistributedSchedulingLock;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
+import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord.Service;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.DistributedSchedulingLockService;
+import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.GlobalInterlockService.LockType;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchedulingService;
@@ -57,6 +61,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +93,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	private final UserService _userService;
 	private final ServiceManagementService _serviceManagementRecordService;
 	private final AuditService _auditService;
+	private final MetricService _metricService;
 	private final TSDBService _tsdbService;
 	private final BlockingQueue<Alert> _alertsQueue = new LinkedBlockingQueue<Alert>();
 	private ExecutorService _schedulerService;
@@ -95,7 +101,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	private SystemConfiguration _configuration;
 	private final DistributedSchedulingLockService _distributedSchedulingService;
 	private AlertDefinitionsCache _alertDefinitionsCache;
-	private AlertsKPIReporter _alertsKpiReporter;
+	private AlertSchedulingKPIReporter _alertSchedulingKpiReporter;
+	private AlertEvaluationKPIReporter _alertEvaluationKPIReporter;
 	private static final Integer ALERT_SCHEDULING_BATCH_SIZE = 100;
 	private static final Long SCHEDULING_REFRESH_INTERVAL_IN_MILLS = 60000L;
 	private static final Random _randomNumGenerator = new Random(System.nanoTime());
@@ -112,7 +119,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	 * @param  config                          The system configuration used to configure the service.
 	 */
 	@Inject
-	DistributedDatabaseSchedulingService(AlertService alertService, UserService userService, TSDBService tsdbService,
+	DistributedDatabaseSchedulingService(AlertService alertService, UserService userService, TSDBService tsdbService, MetricService metricService,
 			ServiceManagementService serviceManagementRecordService, AuditService auditService, SystemConfiguration config, DistributedSchedulingLockService distributedSchedulingLockService) {
 		super(config);
 		requireArgument(alertService != null, "Alert service cannot be null.");
@@ -122,6 +129,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		requireArgument(config != null, "System configuration cannot be null.");
 		_alertService = alertService;
 		_userService = userService;
+		_metricService = metricService;
 		_serviceManagementRecordService = serviceManagementRecordService;
 		_auditService = auditService;
 		_tsdbService = tsdbService;
@@ -144,9 +152,13 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			_schedulerService.submit(new AlertScheduler());
 		}
 
-		_alertsKpiReporter = new AlertsKPIReporter();
-		_alertsKpiReporter.setDaemon(true);
-		_alertsKpiReporter.start();
+		_alertSchedulingKpiReporter = new AlertSchedulingKPIReporter();
+		_alertSchedulingKpiReporter.setDaemon(true);
+		_alertSchedulingKpiReporter.start();
+		
+		_alertEvaluationKPIReporter = new AlertEvaluationKPIReporter();
+		_alertEvaluationKPIReporter.setDaemon(true);
+		_alertEvaluationKPIReporter.start();
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -376,7 +388,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		}
 	}
 
-	class AlertsKPIReporter extends Thread{
+	class AlertSchedulingKPIReporter extends Thread{
 
 		@Override
 		public void run() {
@@ -402,14 +414,103 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 							_tsdbService.putMetrics(Arrays.asList(new Metric[] {schedulingQueueSizeMetric, enabledAlertsMetric}));
 						} catch (Exception ex) {
 							_logger.error("Error occurred while pushing alert audit scheduling time series. Reason: {}", ex.getMessage());
-						}		
+						}
 					}else {
 						sleep(30*1000);
 					}
-				}
-				catch(Exception e) {
+				} catch(Exception e) {
 					_logger.error("Exception occured when scheduling alerts - "+ ExceptionUtils.getFullStackTrace(e));
 				}
+			}
+		}
+	}
+
+	class AlertEvaluationKPIReporter extends Thread{
+		@Override
+		public void run() {
+			while (!isInterrupted()) {
+				Alert alert = new Alert(_userService.findAdminUser(), _userService.findAdminUser(), "kpi-alert-"+SystemConfiguration.getHostname()+"-"+System.currentTimeMillis(), "-5m:argus.core:alerts.kpi{host="+SystemConfiguration.getHostname()+"}:avg", "* * * * *") ;
+				try {
+					_logger.error("###creating new alert");
+					long nextFiveMinuteStartTime = 5*60*1000*(System.currentTimeMillis()/(5*60*1000)) + 5*60*1000;
+					sleep(nextFiveMinuteStartTime - System.currentTimeMillis());
+					Notification notification1 = new Notification("notification1", alert, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", new ArrayList<String>(), 5000L);
+					Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger1", 0.0, 0);
+
+					alert.setNotifications(Arrays.asList(new Notification[] { notification1 }));
+					alert.setTriggers(Arrays.asList(new Trigger[] { trigger1 }));
+					alert.setEnabled(true);
+					for (Notification notification : alert.getNotifications()) {
+						notification.setTriggers(alert.getTriggers());
+					}
+					alert = _alertService.updateAlert(alert);
+					_logger.error("###created new alert with id {}", alert.getId().intValue());
+					Metric trackerMetric = new Metric("argus.core", "alerts.kpi");
+					trackerMetric.setTag("host",SystemConfiguration.getHostname());
+					Map<Long, Double> datapoints = new HashMap<>();
+					datapoints.put(nextFiveMinuteStartTime, 1.0);
+					trackerMetric.addDatapoints(datapoints);
+
+					try {
+						_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackerMetric}));
+					} catch (Exception ex) {
+						_logger.error("Error occurred while pushing tracker metric . Reason: {}", ex.getMessage());
+						continue;
+					}	
+					_logger.error("###put the tracking metric in tsdb {}", trackerMetric.toString());
+					long metricPublishTime = System.currentTimeMillis();
+					long currCycleEndTime = nextFiveMinuteStartTime + 5*60*1000 - 30*1000;
+					boolean alertEvaluated = false;
+					while(System.currentTimeMillis() < currCycleEndTime) {
+						try {
+							_logger.error("###checking for the notification sent metric in tsdb");
+							List<Metric> metrics = _metricService.getMetrics("-5m:notifications.sent:alert-"+alert.getId().intValue()+":zimsum:1m-sum");
+							if(metrics!=null && !metrics.isEmpty()) {
+								for(Metric metric : metrics) {
+									if(metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()>0) {
+										List<Long> notificationTimestamps = new ArrayList<Long>(metric.getDatapoints().keySet());
+										Collections.sort(notificationTimestamps);
+										long notificationSentTime = notificationTimestamps.get(0);
+										long alertEvaluationTime = notificationSentTime - metricPublishTime;
+										alertEvaluated = true;
+										publishKPIMetric(nextFiveMinuteStartTime, new Double(alertEvaluationTime));
+										_logger.error("### notification sent metric is found in tsdb");
+									}
+								}
+							}else {
+                                 sleep(10*1000);
+							}
+							if(alertEvaluated){
+								break;
+							}
+						}catch(Exception ex) {
+							_logger.error("Exception occured when getting notification related datapoints - "+ ex.getMessage());
+							 sleep(10*1000);
+						}
+					}
+
+					if(!alertEvaluated) {
+						_logger.error("### notification sent metric is not found in tsdb, publishing 5 minutes");
+						publishKPIMetric(nextFiveMinuteStartTime, new Double(5*60*1000));
+					}
+				} catch(Exception e) {
+					_logger.error("Exception occured when computing alert evaluation kpi metric - "+ ExceptionUtils.getFullStackTrace(e));
+				} finally {
+					_alertService.deleteAlert(alert);
+				}
+			}
+		}
+		
+		private void publishKPIMetric(long timestamp, Double kpiValue) {
+			Metric kpiMetric = new Metric(MonitorService.Counter.ALERT_EVALUATION_KPI.getScope(), MonitorService.Counter.ALERT_EVALUATION_KPI.getMetric());
+			kpiMetric.setTag("host",SystemConfiguration.getHostname());
+			Map<Long, Double> datapoints = new HashMap<>();
+			datapoints.put(timestamp, kpiValue);
+			kpiMetric.addDatapoints(datapoints);
+			try {
+				_tsdbService.putMetrics(Arrays.asList(new Metric[] {kpiMetric}));
+			} catch (Exception ex) {
+				_logger.error("Error occurred while pushing kpi metric . Reason: {}", ex.getMessage());
 			}
 		}
 	}
