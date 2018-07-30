@@ -303,7 +303,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
 		*/
 
-		BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.only.expected.number.insertions", "1000000"),
+		BLOOMFILTER_SCOPE_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.only.expected.number.insertions", "40"),
 		BLOOMFILTER_SCOPE_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.only.error.rate", "0.00001"),
 
 		/*
@@ -313,7 +313,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		 * If # of entries is 500 million, then it would be 30 GB resulting in savings in space.
 		*/
 
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "500000000"),
+		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "40"),
 		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001"),
 
 		/*
