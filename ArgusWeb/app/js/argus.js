@@ -127,7 +127,9 @@ angular.module('argus.controllers', [
 	'argus.controllers.namespace',
 	'argus.controllers.viewelements',
 	'argus.controllers.viewMetrics',
-	'argus.controllers.metricsBrowsing'
+	'argus.controllers.metricsBrowsing',
+	'argus.controllers.oauthConfirmation',
+	'argus.controllers.oauthManagement'
 ]);
 
 // Directives
@@ -162,6 +164,8 @@ require('./controllers/namespace');
 require('./controllers/viewElements');
 require('./controllers/viewMetrics');
 require('./controllers/metricsBrowsing');
+require('./controllers/oauthConfirmation');
+require('./controllers/oauthManagement');
 
 // services
 require('./services/auth');
