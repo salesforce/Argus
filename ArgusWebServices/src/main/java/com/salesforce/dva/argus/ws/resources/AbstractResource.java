@@ -268,5 +268,58 @@ public abstract class AbstractResource {
         HEAD,
         OPTIONS;
     }
+
+    //~ Enums ****************************************************************************************************************************************
+
+    /**
+     * The implementation specific configuration properties.
+     *
+     * @author  Gaurav Kumar (gaurav.kumar@salesforce.com)
+     */
+    public enum Property {
+
+        /** Oauth properties */
+        /** Specifies the OAuth application name */
+        OAUTH_APP_NAME("service.property.argus.webservices.oauth.application.name", "Grafana"),
+        /** Specifies the OAuth application name */
+        OAUTH_APP_WESBITE("service.property.webservices.oauth.application.website", "www.grafana.com"),
+        /** Specifies the OAuth application name */
+        OAUTH_APP_LOGO("service.property.webservices.oauth.application.logo", "www.grafana.com/logo.png"),
+        /** Specifies the OAuth application name */
+        OAUTH_APP_REDIRECT_URI("service.property.webservices.oauth.application.redirect_uri", "localhost:3000"),
+        OAUTH_APP_CLIENT_ID("service.property.webservices.oauth.application.client_id", "no_client_id"),
+        OAUTH_APP_CLIENT_SECRET("service.property.webservices.oauth.application.client_secret", "no_client_secret"),
+        OAUTH_AUTHORIZE_URL("service.property.webservices.oauth.login_authorize_page", ""),
+        OAUTH_AUTHORIZATION_CODE_EXPIRY_MILLIS("service.property.webservices.oauth.authorization_code.expiry.millis", "300000"),
+        OAUTH_AUTHORIZATION_CODE_INVALIDATE("service.property.webservices.oauth.invalidate_auth_token_after_use", "false"),
+        ;
+
+
+        private final String _name;
+        private final String _defaultValue;
+
+        private Property(String name, String defaultValue) {
+            _name = name;
+            _defaultValue = defaultValue;
+        }
+
+        /**
+         * Returns the property name.
+         *
+         * @return  The property name.
+         */
+        public String getName() {
+            return _name;
+        }
+
+        /**
+         * Returns the default property value.
+         *
+         * @return  The default value.
+         */
+        public String getDefaultValue() {
+            return _defaultValue;
+        }
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

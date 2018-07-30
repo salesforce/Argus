@@ -415,8 +415,11 @@ public class Trigger extends JPAEntity implements Serializable {
 
     @Override
     public String toString() {
-        return "Trigger{" + "type=" + type + ", name=" + name + ", threshold=" + threshold + ", secondaryThreshold=" + secondaryThreshold +
+        if (type == TriggerType.BETWEEN || type == TriggerType.NOT_BETWEEN)
+            return "Trigger{" + "type=" + type + ", name=" + name + ", primaryThreshold=" + threshold + ", secondaryThreshold=" + secondaryThreshold +
             ", inertia=" + inertia + '}';
+        else
+            return "Trigger{" + "type=" + type + ", name=" + name + ", threshold=" + threshold + ", inertia=" + inertia + '}';
     }
 
     //~ Enums ****************************************************************************************************************************************

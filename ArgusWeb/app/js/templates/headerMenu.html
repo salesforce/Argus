@@ -20,10 +20,12 @@
                 <li ng-class="{'activeTab': activeTab === 'beta', 'hide': true}">
                     <a class="betaTab" href="#beta" title="Features currently in Beta testing">Beta</a>
                 </li>
-                <li class="topMenu" ng-class="{'activeTab': activeTab === 'about' || activeTab === 'namespace'}">
+                <li class="topMenu" ng-class="{'activeTab': activeTab === 'about' || activeTab === 'namespace'}" style="
+                white-space: nowrap;">
                     <a class="glyphicon glyphicon-menu-hamburger"></a>
                     <ul class="subMenu menuPanel">
                         <li><a href="#namespace">Namespace</a></li>
+                        <li><a href="#/oauthManagement">OAuth Management</a></li>
                         <li><a href="#about">About</a></li>
                         <li><a href="#/login" ng-click="logout()">Logout</a></li>
                     </ul>
