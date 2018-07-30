@@ -101,7 +101,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final int _bulkIndexingSize;
 	private HashAlgorithm _idgenHashAlgo;
 
-	private final boolean _useScopeMetricNamesIndex;
+	private boolean _useScopeMetricNamesIndex;
 
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -1071,6 +1071,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	protected void setRestClient(RestClient restClient)
 	{
 		this._esRestClient = restClient;
+	}
+
+	/* Method to enable ScopeMetricNames Index. Used for testing. */
+	protected void enableScopeMetricNamesIndex()
+	{
+		this._useScopeMetricNamesIndex = true;
 	}
 
 	/** Helper to process the response.
