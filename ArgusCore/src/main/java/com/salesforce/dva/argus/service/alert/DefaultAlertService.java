@@ -433,12 +433,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
-			if(new Integer(1357401).equals(alert.getId().intValue())) {
-				_logger.error("#### processing alert {} ", alert.getId().intValue());
-			}
+
 			for(Trigger trigger : alert.getTriggers()) {
 				if(trigger.getType().equals(TriggerType.NO_DATA)) {
-					_logger.error("#### missing data trigger present for alert {}", alert.getId());
 					missingDataTriggers.add(trigger);
 				}
 			}
@@ -596,13 +593,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 
 	/**
-	 * Evaluates all triggers associated with the notification and updates the job history.
+	 * Evaluates all triggers associated with the missing data notification and updates the job history.
 	 */
 	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing) {
-		_logger.error("#### processing missing data notification for alert {0}", alert.getId());
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
-				Metric m = new Metric("test","test");
+				Metric m = new Metric("argus","argus");
 				if(isDataMissing) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);

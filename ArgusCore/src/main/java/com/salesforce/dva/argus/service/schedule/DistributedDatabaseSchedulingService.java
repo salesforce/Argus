@@ -431,9 +431,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			while (!isInterrupted()) {
 				Alert alert = new Alert(_userService.findAdminUser(), _userService.findAdminUser(), "kpi-alert-"+SystemConfiguration.getHostname()+"-"+System.currentTimeMillis(), "-5m:argus.core:alerts.kpi{host="+SystemConfiguration.getHostname()+"}:avg", "* * * * *") ;
 				try {
-					_logger.error("###creating new alert");
-					long nextFiveMinuteStartTime = 5*60*1000*(System.currentTimeMillis()/(5*60*1000)) + 5*60*1000;
-					sleep(nextFiveMinuteStartTime - System.currentTimeMillis());
+					long fiveMinuteStartTime = 5*60*1000*(System.currentTimeMillis()/(5*60*1000)) + 5*60*1000;
+					sleep(fiveMinuteStartTime - System.currentTimeMillis());
 					Notification notification1 = new Notification("notification1", alert, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", new ArrayList<String>(), 5000L);
 					Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger1", 0.0, 0);
 
@@ -444,11 +443,10 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						notification.setTriggers(alert.getTriggers());
 					}
 					alert = _alertService.updateAlert(alert);
-					_logger.error("###created new alert with id {}", alert.getId().intValue());
 					Metric trackerMetric = new Metric("argus.core", "alerts.kpi");
 					trackerMetric.setTag("host",SystemConfiguration.getHostname());
 					Map<Long, Double> datapoints = new HashMap<>();
-					datapoints.put(nextFiveMinuteStartTime, 1.0);
+					datapoints.put(fiveMinuteStartTime, 1.0);
 					trackerMetric.addDatapoints(datapoints);
 
 					try {
@@ -457,13 +455,12 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						_logger.error("Error occurred while pushing tracker metric . Reason: {}", ex.getMessage());
 						continue;
 					}	
-					_logger.error("###put the tracking metric in tsdb {}", trackerMetric.toString());
+
 					long metricPublishTime = System.currentTimeMillis();
-					long currCycleEndTime = nextFiveMinuteStartTime + 5*60*1000 - 30*1000;
+					long currCycleEndTime = fiveMinuteStartTime + 5*60*1000 - 30*1000;
 					boolean alertEvaluated = false;
 					while(System.currentTimeMillis() < currCycleEndTime) {
 						try {
-							_logger.error("###checking for the notification sent metric in tsdb");
 							List<Metric> metrics = _metricService.getMetrics("-5m:notifications.sent:alert-"+alert.getId().intValue()+":zimsum:1m-sum");
 							if(metrics!=null && !metrics.isEmpty()) {
 								for(Metric metric : metrics) {
@@ -473,8 +470,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 										long notificationSentTime = notificationTimestamps.get(0);
 										long alertEvaluationTime = notificationSentTime - metricPublishTime;
 										alertEvaluated = true;
-										publishKPIMetric(nextFiveMinuteStartTime, new Double(alertEvaluationTime));
-										_logger.error("### notification sent metric is found in tsdb");
+										publishKPIMetric(fiveMinuteStartTime, new Double(alertEvaluationTime));
 									}
 								}
 							}else {
@@ -484,14 +480,14 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 								break;
 							}
 						}catch(Exception ex) {
-							_logger.error("Exception occured when getting notification related datapoints - "+ ex.getMessage());
+							_logger.info("Exception occured when getting notification related datapoints - "+ ex.getMessage());
 							 sleep(10*1000);
 						}
 					}
 
 					if(!alertEvaluated) {
-						_logger.error("### notification sent metric is not found in tsdb, publishing 5 minutes");
-						publishKPIMetric(nextFiveMinuteStartTime, new Double(5*60*1000));
+						_logger.warn("Notification sent metric is not found in tsdb, so publishing 5 minutes as alert evaluation kpi");
+						publishKPIMetric(fiveMinuteStartTime, new Double(5*60*1000));
 					}
 				} catch(Exception e) {
 					_logger.error("Exception occured when computing alert evaluation kpi metric - "+ ExceptionUtils.getFullStackTrace(e));

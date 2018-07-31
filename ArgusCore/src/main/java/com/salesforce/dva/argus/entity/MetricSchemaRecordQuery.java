@@ -186,6 +186,18 @@ public class MetricSchemaRecordQuery extends SchemaQuery {
 		return false;
 	}
 
+	public boolean isQueryOnlyOnScopeAndMetric() {
+
+		if (Objects.equals(this.namespace, REGEX_MATCH_ANY) &&
+				Objects.equals(this.tagKey, REGEX_MATCH_ANY) &&
+				Objects.equals(this.tagValue, REGEX_MATCH_ANY))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	public void setScanFrom(MetricSchemaRecord scanFrom) {
 		this.scanFrom = scanFrom;
 	}
