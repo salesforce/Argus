@@ -4,7 +4,7 @@
 
     <groupId>com.salesforce.argus</groupId>
     <artifactId>argus</artifactId>
-    <version>${project.version}</version>
+    <version>2.17.1</version>
     <packaging>pom</packaging>
 
     <name>Argus</name>
@@ -118,7 +118,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <dockerImages.base.name>salesforce</dockerImages.base.name>
-        <project.version>2.17.0</project.version>
+        <project.version>2.17.1</project.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.9.5</jackson.version>
         <httpclient.version>4.5.3</httpclient.version>
@@ -152,22 +152,6 @@
                             <imageTag>${project.version}</imageTag>
                         </imageTags>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>build-image</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>push-image</id>
-                            <phase>deploy</phase>
-                            <goals>
-                                <goal>push</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
