@@ -22,7 +22,7 @@
 
 angular.module('argus.urlConfig', [])
 .constant('CONFIG', {
-	version: '2.15',
+	version: '2.17',
 	wsUrl: 'http://localhost:8080/argusws/',
 	wsBetaUrl: 'http://localhost:8080/argusws/beta/',
 	emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
@@ -31,8 +31,8 @@ angular.module('argus.urlConfig', [])
 	docUrl: 'https://github.com/salesforce/Argus/wiki',
 	issueUrl: 'https://groups.google.com/a/salesforce.com/forum/?hl=en#!forum/argus-dev',
 	templatePath: 'app/js/templates',
-    acceptOAuthPath:'users/accept_oauth',
-    checkOAuthAccessPath : 'users/check_oauth_access',
-    oauthListPath: 'users/oauth_approved_apps',
-    oauthDeletePath: 'users/revoke_oauth_access'
+    	acceptOAuthPath:'users/accept_oauth',
+    	checkOAuthAccessPath : 'users/check_oauth_access',
+    	oauthListPath: 'users/oauth_approved_apps',
+    	oauthDeletePath: 'users/revoke_oauth_access'
 });
