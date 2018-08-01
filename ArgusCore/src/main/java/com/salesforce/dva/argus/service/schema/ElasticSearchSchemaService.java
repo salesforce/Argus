@@ -759,7 +759,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				}
 				if(updateMtsFieldList.size()>0) {
 					_logger.info("mts field will be updated for {} docs",updateMtsFieldList.size()); 
-					Response response = _updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
+					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
 					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 					for(Item item: updateResponse.items) {
 						if(item.update != null && item.update.status != HttpStatus.SC_OK) {
@@ -886,7 +886,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private Response _updateMtsField(List<String> docIds, String index, String type) {
+	protected Response updateMtsField(List<String> docIds, String index, String type) {
 		Response result= null;
 		if(docIds != null && docIds.size()>0) {
 			String requestUrl = new StringBuilder().append("/")
