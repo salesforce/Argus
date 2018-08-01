@@ -4,7 +4,10 @@ import java.util.Collections;
 import java.util.stream.IntStream;
 
 import com.salesforce.dva.argus.AbstractTest;
-import com.salesforce.dva.argus.entity.*;
+import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
 import org.junit.Test;
