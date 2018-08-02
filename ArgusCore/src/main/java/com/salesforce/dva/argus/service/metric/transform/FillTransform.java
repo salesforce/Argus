@@ -57,6 +57,8 @@ public class FillTransform implements Transform {
 
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
+    public static final long MILLISECONDS_PER_MINUTE = 60 * 1000L;
+
 
     //~ Methods **************************************************************************************************************************************
 
@@ -146,18 +148,8 @@ public class FillTransform implements Transform {
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
         double value = Double.parseDouble(constants.get(4));
 
-        SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
+        SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occur later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
-
-        boolean isDivisible = ((startTimestamp - endTimestamp) % (windowSizeInSeconds * 1000)) == 0;
-
-        // snapping start and end time if range is not a multiple of windowSize.
-        if (!isDivisible) {
-            long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
-            startTimestamp = startTimestamp - startSnapping;
-            long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
-            endTimestamp = endTimestamp - endSnapping;
-        }
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
         Map<Long, Double> filledDatapoints = new TreeMap<>();
@@ -182,19 +174,25 @@ public class FillTransform implements Transform {
     }
 
     private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
+        long retVal = 0L;
         if (timeStr == null || timeStr.isEmpty()) {
-            return relativeTo;
-        }
-        try {
-            if (timeStr.charAt(0) == '-') {
-                long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
+            retVal = relativeTo;
+        } else {
+            try {
+                if (timeStr.charAt(0) == '-') {
+                    long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
 
-                return (relativeTo - timeToDeductInSeconds * 1000);
+                    retVal = (relativeTo - timeToDeductInSeconds * 1000);
+                } else {
+                    retVal = Long.parseLong(timeStr);
+                }
+            } catch (NumberFormatException nfe) {
+                throw new SystemException("Could not parse time.", nfe);
             }
-            return Long.parseLong(timeStr);
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Could not parse time.", nfe);
         }
+        long msRem = retVal % MILLISECONDS_PER_MINUTE;
+        retVal = retVal - msRem;
+        return retVal;
     }
 
     @Override
