@@ -1377,7 +1377,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		 */
 		ELASTICSEARCH_INDEXING_BATCH_SIZE("service.property.schema.elasticsearch.indexing.batch.size", "10000"),
 
-		ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.use.scopeandmetric.index", "false"),
+		ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.use.scopeandmetric.index", "true"),
 
 		/** The hashing algorithm to use for generating document id. */
 		ELASTICSEARCH_IDGEN_HASH_ALGO("service.property.schema.elasticsearch.idgen.hash.algo", "MD5"),
