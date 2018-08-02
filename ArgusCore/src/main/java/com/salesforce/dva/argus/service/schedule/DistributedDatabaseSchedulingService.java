@@ -492,7 +492,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 				} catch(Exception e) {
 					_logger.error("Exception occured when computing alert evaluation kpi metric - "+ ExceptionUtils.getFullStackTrace(e));
 				} finally {
-					_alertService.deleteAlert(alert);
+					_logger.error("marking alert with id {} for deletion", alert.getId().intValue());
+					_alertService.markAlertForDeletion(alert.getName(), _userService.findAdminUser());
 				}
 			}
 		}
