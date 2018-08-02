@@ -40,7 +40,7 @@ angular.module('argus.controllers.oauthConfirmation', [])
 					state: state,
 				}, function (resp) {
 					//make a call to get grafana OAuth uri
-					redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
+					redirectUrl = resp.redirectURI + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
 					$window.location = redirectUrl;
 					$scope.checkingAccess = false;
 					$scope.showAuthorizeButton = false;
@@ -62,7 +62,7 @@ angular.module('argus.controllers.oauthConfirmation', [])
 					state: state,
 				}, function (resp) {
 					//make a call to get grafana OAuth uri
-					redirectUrl = resp.redirect_uri + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
+					redirectUrl = resp.redirectURI + '?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state);
 					$window.location = redirectUrl;
 				}, function (err) {
 					growl.error('Error accessing argus OAuth service: ' + err);
