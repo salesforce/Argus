@@ -98,7 +98,7 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 .topMenu ul.subMenu a:hover {text-decoration:none;}
 .topMenu:hover ul.subMenu {display:block;}
 
-#navbar ul.subMenu {top:40px; right:4px; padding:0;}
+#navbar ul.subMenu {top:48px; right:4px; padding:0;}
 #navbar ul.subMenu li {text-align:right;}
 
 /* drop down common panel */
