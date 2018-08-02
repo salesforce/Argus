@@ -222,7 +222,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		cacheResults = CacheBuilder.newBuilder()
 				.maximumSize(1000)
-				.recordStats()
 				.expireAfterAccess(10, TimeUnit.SECONDS)
 				.build();
 	}
@@ -530,9 +529,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					throw new SystemException(e);
 				}
 			});
-
-			_logger.debug("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
-					cacheResults.stats().hitCount(), cacheResults.stats().requestCount(), cacheResults.stats().evictionCount());
 
 			if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type)) {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
