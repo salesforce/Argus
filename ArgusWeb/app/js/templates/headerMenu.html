@@ -2,8 +2,9 @@
 <nav class="navbar navbar-default navbar-fixed-top">
     <div style="width: 93%;" class="container">
         <div class="navbar-header">
-            <a href="#dashboards"><img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left"></a>
-            <p class="navbar-text" ng-show="isLoggedIn()" ng-cloak>Welcome {{currentUser()}}</p>
+            <a href="#dashboards">
+              <img src="img/argus_logo_rgb.png" alt="" style="height:50px;" class="pull-left">
+            </a>
         </div>
 
         <div id="navbar" class="navbar-collapse collapse">
@@ -12,7 +13,7 @@
                     <a class="glyphicon glyphicon-dashboard" href="#dashboards" title="Dashboards"></a>
                 </li>
                 <li ng-class="{'activeTab': activeTab === 'alerts'}">
-                    <a class="glyphicon glyphicon-bell" href="#alerts" title="Alerts"></a>
+                    <a class="glyphicon glyphicon-bell" href={{alertUrl}} title="Alerts"></a>
                 </li>
                 <li ng-class="{'activeTab': activeTab === 'metrics'}">
                     <a class="glyphicon glyphicon-stats" href="#viewmetrics" title="Metrics"></a>
@@ -20,8 +21,7 @@
                 <li ng-class="{'activeTab': activeTab === 'beta', 'hide': true}">
                     <a class="betaTab" href="#beta" title="Features currently in Beta testing">Beta</a>
                 </li>
-                <li class="topMenu" ng-class="{'activeTab': activeTab === 'about' || activeTab === 'namespace'}" style="
-                white-space: nowrap;">
+                <li class="topMenu" ng-class="{'activeTab': activeTab === 'about' || activeTab === 'namespace'}" style="white-space: nowrap;">
                     <a class="glyphicon glyphicon-menu-hamburger"></a>
                     <ul class="subMenu menuPanel">
                         <li><a href="#namespace">Namespace</a></li>
@@ -30,6 +30,7 @@
                         <li><a href="#/login" ng-click="logout()">Logout</a></li>
                     </ul>
                 </li>
+                <li><p class="navbar-text" ng-show="isLoggedIn()" ng-cloak>{{currentUser()}}</p></li>
             </ul>
         </div>
     </div>
