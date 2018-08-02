@@ -16,9 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import com.google.common.hash.BloomFilter;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -102,6 +105,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private HashAlgorithm _idgenHashAlgo;
 
 	private boolean _useScopeMetricNamesIndex;
+
+	private Cache<String, List<MetricSchemaRecord>> cacheResults;
 
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -214,6 +219,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_createIndexIfNotExists(SCOPE_AND_METRIC_INDEX_NAME, _replicationFactorForScopeAndMetricIndex,
 				_numShardsForScopeAndMetricIndex, () -> _createScopeAndMetricMappingsNode());
+
+		cacheResults = CacheBuilder.newBuilder()
+				.maximumSize(1000)
+				.recordStats()
+				.expireAfterAccess(10, TimeUnit.SECONDS)
+				.build();
 	}
 
 
@@ -509,11 +520,19 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
 
-			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
-			String str = extractResponse(response);
-			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
-					toEntity(str, new TypeReference<List<String>>() {}), type);
+			List<MetricSchemaRecord> records = cacheResults.get(queryJson, () -> {
+				try {
+					_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
+					Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+					String str = extractResponse(response);
+					return SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
+				} catch (IOException e) {
+					throw new SystemException(e);
+				}
+			});
+
+			_logger.debug("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
+					cacheResults.stats().hitCount(), cacheResults.stats().requestCount(), cacheResults.stats().evictionCount());
 
 			if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type)) {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
@@ -538,8 +557,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			} else {
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
-		} catch (IOException e) {
-			throw new SystemException(e);
+		} catch (ExecutionException e) {
+			throw new SystemException(e.getCause());
 		}
 	}
 
