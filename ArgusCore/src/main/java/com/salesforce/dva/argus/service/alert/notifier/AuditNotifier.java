@@ -149,6 +149,9 @@ public class AuditNotifier extends DefaultNotifier {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(notificationMessage);
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+		}
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
 		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
 		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
@@ -162,9 +165,7 @@ public class AuditNotifier extends DefaultNotifier {
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
 		}
 		sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("<br/>"); 
-		}
+
 		sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
 		sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
 		sb.append("for the time series data to be updated such that the alert condition is no longer met.  This may be avoided by ");
