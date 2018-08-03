@@ -147,7 +147,14 @@ public class FillTransform implements Transform {
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
         double value = Double.parseDouble(constants.get(4));
+        boolean isDivisible = ((startTimestamp - endTimestamp) % (windowSizeInSeconds * 1000)) == 0;
 
+        if (!isDivisible) {
+            long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
+            startTimestamp = startTimestamp - startSnapping;
+            long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
+            endTimestamp = endTimestamp - endSnapping;
+        }
         SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occur later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
 
@@ -173,6 +180,12 @@ public class FillTransform implements Transform {
         return lineMetrics;
     }
 
+    private long roundOffToNearestMinute(long timeInMillis) {
+        long msRem = timeInMillis % MILLISECONDS_PER_MINUTE;
+        timeInMillis = timeInMillis - msRem;
+        return  timeInMillis;
+    }
+
     private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
         long retVal = 0L;
         if (timeStr == null || timeStr.isEmpty()) {
@@ -190,9 +203,7 @@ public class FillTransform implements Transform {
                 throw new SystemException("Could not parse time.", nfe);
             }
         }
-        long msRem = retVal % MILLISECONDS_PER_MINUTE;
-        retVal = retVal - msRem;
-        return retVal;
+        return roundOffToNearestMinute(retVal);
     }
 
     @Override
