@@ -142,9 +142,9 @@ public class FillTransform implements Transform {
         SystemAssert.requireArgument(constants != null && constants.size() == 5,
             "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
 
-        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
-        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
+        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo, windowSizeInSeconds >= 60);
+        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo, windowSizeInSeconds >= 60);
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
         double value = Double.parseDouble(constants.get(4));
         boolean isDivisible = ((startTimestamp - endTimestamp) % (windowSizeInSeconds * 1000)) == 0;
@@ -180,13 +180,13 @@ public class FillTransform implements Transform {
         return lineMetrics;
     }
 
-    private long roundOffToNearestMinute(long timeInMillis) {
+    private long roundOffToCurrentMinute(long timeInMillis) {
         long msRem = timeInMillis % MILLISECONDS_PER_MINUTE;
         timeInMillis = timeInMillis - msRem;
         return  timeInMillis;
     }
 
-    private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
+    private long _parseStartAndEndTimestamps(String timeStr, long relativeTo, boolean isStepSizeMoreThanAMinute) {
         long retVal = 0L;
         if (timeStr == null || timeStr.isEmpty()) {
             retVal = relativeTo;
@@ -203,7 +203,9 @@ public class FillTransform implements Transform {
                 throw new SystemException("Could not parse time.", nfe);
             }
         }
-        return roundOffToNearestMinute(retVal);
+        if (isStepSizeMoreThanAMinute)
+            retVal = roundOffToCurrentMinute(retVal);
+        return retVal;
     }
 
     @Override
