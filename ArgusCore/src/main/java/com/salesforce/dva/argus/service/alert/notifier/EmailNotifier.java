@@ -160,8 +160,11 @@ public class EmailNotifier extends AuditNotifier {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(MessageFormat.format("<h3>Alert {0}  was {1} at {2}</h3>", context.getAlert().getName(), notificationMessage,
+        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", context.getAlert().getName(), context.getAlert().getId().intValue(), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
+        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+        }
         Alert currentAlert = notification.getAlert();
         if(currentAlert.getNotifications().size() > 1)
             sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
@@ -178,9 +181,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
         sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
-        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
-        }
+
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             sb.append("<a href='");
