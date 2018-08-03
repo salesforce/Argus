@@ -535,9 +535,9 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("1533237360346");
-        constants.add("1533239694039");
-        constants.add("13s");
+        constants.add("60432");
+        constants.add("180528");
+        constants.add("10s");
         constants.add("0s");
         constants.add("1.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
@@ -545,8 +545,7 @@ public class FillTransformTest {
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        for (long key = 1533237360000L; key <= 1533239640000L; key+= 13000) expected.put(key,1.0);
-        expected.put(1533239640000L,1.0);
+        for (long key = 60000; key <= 180000L; key+= 10000) expected.put(key,1.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
