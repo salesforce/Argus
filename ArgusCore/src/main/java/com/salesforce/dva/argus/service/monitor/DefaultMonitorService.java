@@ -291,7 +291,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			Number value = _metrics.get(key);
 			Number newValue = value == null ? delta : NumberOperations.add(value, delta);
 
-			_logger.debug("Modifying {} counter for {} to {}.", name, tags, newValue);
+			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
 			return newValue;
 		}
