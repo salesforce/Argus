@@ -47,6 +47,7 @@ import com.stumbleupon.async.Callback;
 import com.stumbleupon.async.Deferred;
 import com.stumbleupon.async.TimeoutException;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.hbase.async.CompareFilter.CompareOp;
 import org.hbase.async.FilterList;
@@ -192,7 +193,8 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames) {
+    protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
+                                             Set<Pair<String, String>> scopesAndMetricNames) {
         requireNotDisposed();
         SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
         

@@ -197,6 +197,7 @@ public interface MonitorService extends Service {
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),
+        ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
         DATAPOINT_READS("argus.core", "datapoint.reads"),
         DATAPOINT_WRITES("argus.core", "datapoint.writes"),
         UNIQUE_USERS("argus.core", "users.unique"),
@@ -205,6 +206,11 @@ public interface MonitorService extends Service {
         COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes"),
         COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes"),
         SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes"),
+
+        SCOPEANDMETRICNAMES_WRITTEN("argus.core", "scopeandmetricnames.written"),
+        SCOPEANDMETRICNAMES_WRITE_LATENCY("argus.core", "scopeandmetricnames.write.latency"),
+        SCOPEANDMETRICNAMES_QUERY_COUNT("argus.core", "scopeandmetricnames.query.count"),
+        SCOPEANDMETRICNAMES_QUERY_LATENCY("argus.core", "scopeandmetricnames.query.latency"),
 
         SCOPENAMES_WRITTEN("argus.core", "scopenames.written"),
         SCOPENAMES_WRITE_LATENCY("argus.core", "scopenames.write.latency"),

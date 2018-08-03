@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AlertService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.HistoryService;
@@ -57,6 +58,7 @@ import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.MissingDataException;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.Cron;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -81,6 +83,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,7 +128,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final NotifierFactory _notifierFactory;
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
-	private static Set<String> _whiteListedScopes = null;
+	private static List<Pattern> _whiteListedScopeRegexPatterns = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -275,6 +278,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
+	
+	@Override
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset) {
+		requireNotDisposed();
+		requireArgument(owner != null, "Owner cannot be null.");
+
+		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset);
+	}
 
 	@Override
 	public Alert findAlertByPrimaryKey(BigInteger id) {
@@ -396,16 +407,16 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
 				if(_monitorService.isDataLagging()) {
-					if(_whiteListedScopes==null) {
+					if(_whiteListedScopeRegexPatterns==null) {
 						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
 						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {
-							_whiteListedScopes = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> elem.toLowerCase()).collect(Collectors.toSet());
+							_whiteListedScopeRegexPatterns = Stream.of(whiteListedScopesProperty.split(",")).map (elem -> Pattern.compile(elem.toLowerCase())).collect(Collectors.toList());
 						}else {
-							_whiteListedScopes = new HashSet<String>();
+							_whiteListedScopeRegexPatterns = new ArrayList<Pattern>();
 						}
 					}
-					
-					if(_whiteListedScopes.isEmpty() || !isScopePresentInWhiteList(alert.getExpression())) {
+
+					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
 						_logger.info(logMessage);
@@ -421,6 +432,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 
 			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
+
+			for(Trigger trigger : alert.getTriggers()) {
+				if(trigger.getType().equals(TriggerType.NO_DATA)) {
+					missingDataTriggers.add(trigger);
+				}
+			}
+			
 			try {
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
 
@@ -437,9 +456,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					}
+
+					if(missingDataTriggers.size()>0) {
+						for(Notification notification : alert.getNotifications()) {
+							if (!notification.getTriggers().isEmpty()) {
+							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+							}
+						}
+					}
 				} else {
 					//Only evaluate those triggers which are associated with any notification. 
-					List<Trigger> triggersToEvaluate = new ArrayList<>();
+					Set<Trigger> triggersToEvaluate = new HashSet<>();
 					for(Notification notification : alert.getNotifications()) {
 						triggersToEvaluate.addAll(notification.getTriggers());
 					}
@@ -454,6 +481,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 							_appendMessageNUpdateHistory(history, logMessage, null, 0);
 						} else {
 							_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification);
+							if(missingDataTriggers.size()>0) {
+								// processing to possibly to clear missing data notification
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, false);
+							}
 						}
 					}
 				}
@@ -474,6 +505,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if (alert.isMissingDataNotificationEnabled()) {
 					_sendNotificationForMissingData(alert);
 				}
+				
+				if(missingDataTriggers.size()>0) {
+					for(Notification notification : alert.getNotifications()) {
+						if (!notification.getTriggers().isEmpty()) {
+						    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+						}
+					}
+				}
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -481,12 +520,27 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
-				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 
 				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 					_sendEmailToAdmin(alert, alert.getId(), ex);
 				}
+				
+				if(logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
+					if (alert.isMissingDataNotificationEnabled()) {
+						_sendNotificationForMissingData(alert);
+					}
+					
+					if(missingDataTriggers.size()>0) {
+						for(Notification notification : alert.getNotifications()) {
+							if (!notification.getTriggers().isEmpty()) {
+							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+							}
+						}
+					}
+				}
+
+				_logger.warn(logMessage);
+				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -502,14 +556,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-	private boolean isScopePresentInWhiteList(String expression) {
-		for(String scope : _whiteListedScopes) {
-			if(expression.toLowerCase().contains(":"+scope+":")) {
-				return true;
-			}
-		}
-		return false;
-	}
+
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
@@ -519,8 +566,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		for(Trigger trigger : notification.getTriggers()) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
+
 			for(Metric m : metrics) {
-				if(triggerFiredTimesForMetrics.containsKey(m)) {
+				if(triggerFiredTimesForMetrics!=null && triggerFiredTimesForMetrics.containsKey(m)) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired.", trigger.getName(), m.getIdentifier());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
@@ -532,6 +580,37 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 				} else {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.", trigger.getName(), m.getIdentifier());
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
+						// This is case when the notification was active for the given trigger, metric combination
+						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
+						_updateNotificationClearActiveStatus(trigger, m, notification);
+						sendClearNotification(trigger, m, history, notification, alert);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Evaluates all triggers associated with the missing data notification and updates the job history.
+	 */
+	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing) {
+		for(Trigger trigger : notification.getTriggers()) {
+			if(triggers.contains(trigger)) {
+				Metric m = new Metric("argus","argus");
+				if(isDataMissing) {
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
+					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+					if(!notification.onCooldown(trigger, m)) {
+						_updateNotificationSetActiveStatus(trigger, m, history, notification);
+						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis());
+					} else {
+						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
+						_appendMessageNUpdateHistory(history, logMessage, null, 0);
+					}
+				} else {
+					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is not fired as data exists for the expression {1}", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
@@ -566,7 +645,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
 	 * and the trigger fired time. 
 	 */
-	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(List<Trigger> triggers, List<Metric> metrics, History history) {
+	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
 
 		for(Trigger trigger : triggers) {
@@ -590,7 +669,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
 			Long triggerFiredTime) {
 
-		double value = metric.getDatapoints().get(triggerFiredTime);
+		double value = 0.0;
+		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		    value = metric.getDatapoints().get(triggerFiredTime);
+		}
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 		notifier.sendNotification(context);
@@ -599,7 +681,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-        publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/);
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
@@ -623,7 +705,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
-	
+
 	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
@@ -691,7 +773,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		message.append("<p>This is a missing data notification. </p>");
 		message.append(MessageFormat.format("Alert Id: {0}", alert.getId().intValue()));
 		message.append(MessageFormat.format("<br> Alert name: {0}" , alert.getName()));
-		message.append(MessageFormat.format("<br> No data found for the following metric expression: ", alert.getExpression()));
+		message.append(MessageFormat.format("<br> No data found for the following metric expression: {0}", alert.getExpression()));
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
 
@@ -826,6 +908,59 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit) {
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
+	}
+	
+	@Override
+	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset) {
+		requireNotDisposed();
+		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset);
+	}
+	
+	@Override
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset) {
+		requireNotDisposed();
+		
+		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
+		if (owner == null || !owner.isPrivileged()) {
+			return new ArrayList<>(0);
+		}
+		
+		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset);
+	}
+
+	@Override
+	public int countAlerts(AlertsCountContext context) {
+		requireNotDisposed();
+		
+		if (context == null) {
+			return 0;
+		}
+
+		// Count total number of shared alerts for the shared alerts tab
+		if (context.isCountSharedAlerts()) {
+			return Alert.countSharedAlerts(_emProvider.get());
+		}
+
+		PrincipalUser owner = context.getPrincipalUser();
+
+		// Count total number of private alerts (non-shared alerts) if user is
+		// privileged user, otherwise return 0
+		if (context.isCountPrivateAlerts()) {
+			// Invalid user nor non-privileged user shall not view other's
+			// non-shared alerts, thus immediately return 0
+			if (owner == null || !owner.isPrivileged()) {
+				return 0;
+			}
+
+			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+		}
+
+		// Count total number of user alerts
+		if (owner != null) {
+			return Alert.countByOwner(_emProvider.get(), owner);
+		}
+
+		return 0;
 	}
 
 	/**

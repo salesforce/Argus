@@ -1,4 +1,5 @@
 Argus  [![Build Status](https://travis-ci.org/salesforce/Argus.svg?branch=master)](https://travis-ci.org/salesforce/Argus)  [![Static Analysis](https://scan.coverity.com/projects/8155/badge.svg)](https://scan.coverity.com/projects/salesforceeng-argus)
+[![argus-sdk - Maven Central](https://maven-badges.herokuapp.com/maven-central/com.salesforce.argus/argus-sdk/badge.svg?maxAge=3600)](https://maven-badges.herokuapp.com/maven-central/com.salesforce.argus/argus-sdk)
 =====
 
 Argus is a time-series monitoring and alerting platform. It consists of discrete services to configure alerts, ingest and transform metrics & events, send notifications, create namespaces, and to both establish and enforce policies and quotas for usage.
