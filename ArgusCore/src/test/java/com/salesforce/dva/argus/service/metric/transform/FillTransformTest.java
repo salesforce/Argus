@@ -531,7 +531,7 @@ public class FillTransformTest {
     }
 
     @Test
-    public void testFillLineRoundingToNearestMinute() {
+    public void testFillLineRoundingToCurrentMinute() {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
