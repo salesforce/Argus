@@ -197,6 +197,7 @@ public interface MonitorService extends Service {
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),
+        ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
         DATAPOINT_READS("argus.core", "datapoint.reads"),
         DATAPOINT_WRITES("argus.core", "datapoint.writes"),
         UNIQUE_USERS("argus.core", "users.unique"),
