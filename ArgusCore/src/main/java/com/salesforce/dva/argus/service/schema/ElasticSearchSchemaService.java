@@ -547,6 +547,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			} else {
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
+
 		} catch (IOException e) {
 			throw new SystemException(e);
 		}
@@ -923,8 +924,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				}
 
 				if (item.update != null && item.update.status != HttpStatus.SC_OK) {
-					_logger.warn("Failed to update document. Reason: " + new ObjectMapper().writeValueAsString(item.update.error));
-					failedIds.add(item.update._id);
+
+					if (item.update.status == HttpStatus.SC_CONFLICT) {
+						updateRequiredIds.add(item.update._id);
+					} else {
+						_logger.warn("Failed to update document. Reason: " + new ObjectMapper().writeValueAsString(item.update.error));
+						failedIds.add(item.update._id);
+					}
 				}
 			}
 		}
