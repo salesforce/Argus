@@ -636,7 +636,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 	}
 
-
 	/**
 	 * Determines if the alert should be evaluated or not.
 	 */

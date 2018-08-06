@@ -446,7 +446,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					alert = _alertService.updateAlert(alert);
 					Metric trackerMetric = new Metric("argus.core", "alerts.kpi");
 					trackerMetric.setTag("host",SystemConfiguration.getHostname());
-					Map<Long, Double> datapoints = new HashMap<>();
+					Map<Long, Number> datapoints = new HashMap<>();
 					datapoints.put(fiveMinuteStartTime, 1.0);
 					trackerMetric.addDatapoints(datapoints);
 
@@ -502,7 +502,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		private void publishKPIMetric(long timestamp, Double kpiValue) {
 			Metric kpiMetric = new Metric(MonitorService.Counter.ALERT_EVALUATION_KPI.getScope(), MonitorService.Counter.ALERT_EVALUATION_KPI.getMetric());
 			kpiMetric.setTag("host",SystemConfiguration.getHostname());
-			Map<Long, Double> datapoints = new HashMap<>();
+			Map<Long, Number> datapoints = new HashMap<>();
 			datapoints.put(timestamp, kpiValue);
 			kpiMetric.addDatapoints(datapoints);
 			try {

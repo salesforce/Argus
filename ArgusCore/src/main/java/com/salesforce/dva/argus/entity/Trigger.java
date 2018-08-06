@@ -285,9 +285,9 @@ public class Trigger extends JPAEntity implements Serializable {
             	highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
             	return (NumberOperations.isGreaterThanOrEqualTo(actualValue, lowThreshold) && NumberOperations.isLessThanOrEqualTo(actualValue, highThreshold));
             case NOT_BETWEEN:
-                lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                return (NumberOperations.isLessThan(actualValue, lowThreshold) || NumberOperations.isGreaterThan(actualValue, highThreshold));
+            	lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
+            	highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
+            	return (NumberOperations.isLessThan(actualValue, lowThreshold) || NumberOperations.isGreaterThan(actualValue, highThreshold));
             case NO_DATA:
             	    return actualValue == null;
             default:
