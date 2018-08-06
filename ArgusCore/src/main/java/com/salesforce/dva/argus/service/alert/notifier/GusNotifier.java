@@ -56,6 +56,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -157,20 +158,38 @@ public class GusNotifier extends AuditNotifier {
 		String metricExpression = context.getAlert().getExpression();
 		String triggerDetails = getTriggerDetails(trigger);
 		Number triggerEventValue = context.getTriggerEventValue();
-		Object[] arguments = new Object[] {
-				notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-				triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
-		};
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("\n>"); 
+		}
+		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+			Object[] arguments = new Object[] {
+					notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
+					triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
+			};
 
-		/** gus feed template for notification information. */
-		String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
-				"Notification:   {0}\n" +
-				"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
-				"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
-				"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";
+			/** gus feed template for notification information. */
+			String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
+					"Notification:   {0}\n" +
+					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
+					"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
+					"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";
+	
+			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
+		} else {
+			Object[] arguments = new Object[] {
+					notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
+					String.valueOf(context.getTriggerFiredTime())
+			};
 
-		sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
+			/** gus feed template for notification information. */
+			String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
+					"Notification:   {0}\n" +
+					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
+					"Evaluated metric expression:   {5}\n" + "Trigger details:  {6}\n" +
+				    "Triggering event timestamp:   {7}\n\n";
 
+			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
+		}
 		/** gus feed template for links. */
 		String gusFeedLinkTemplate = "Click here to view {0}\n{1}\n";
 
@@ -178,15 +197,13 @@ public class GusNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
 					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n>"); 
-		}
+
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
 	
 	private void postToGus(Set<String> to, String feed) {
-		
+
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
 			// So far works for only one group, will accept a set of string in future.
 			String groupId = to.toArray(new String[to.size()])[0];

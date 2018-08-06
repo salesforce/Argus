@@ -81,9 +81,8 @@ public interface GlobalInterlockService extends Service {
      * @author  Tom Valine (tvaline@salesforce.com)
      */
     public static enum LockType {
-
-    	COLLECTION_SCHEDULING,
-        ALERT_SCHEDULING;
+        ALERT_SCHEDULING,
+        COLLECTION_SCHEDULING;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
