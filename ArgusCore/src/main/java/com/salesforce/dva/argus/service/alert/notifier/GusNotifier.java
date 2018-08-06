@@ -172,8 +172,7 @@ public class GusNotifier extends AuditNotifier {
 					"Notification:   {0}\n" +
 					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
 					"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
-					"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";
-	
+					"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";	
 			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
 		} else {
 			Object[] arguments = new Object[] {
