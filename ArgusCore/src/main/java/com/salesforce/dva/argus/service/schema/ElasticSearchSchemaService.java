@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.salesforce.dva.argus.entity.KeywordQuery;
@@ -89,8 +90,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String FIELD_TYPE_DATE ="date";
 
 	private final ObjectMapper _mapper;
-	private final ObjectMapper _scopeOnlyMapper;
-	private final ObjectMapper _scopeAndMetricOnlyMapper;
+	private final ObjectMapper _createScopeOnlyMapper;
+	private final ObjectMapper _updateScopeOnlyMapper;
+	private final ObjectMapper _createScopeAndMetricOnlyMapper;
+	private final ObjectMapper _updateScopeAndMetricOnlyMapper;
 
 	private Logger _logger = LoggerFactory.getLogger(getClass());
 	private final MonitorService _monitorService;
@@ -106,16 +109,18 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	private boolean _useScopeMetricNamesIndex;
 
-	private Cache<String, List<MetricSchemaRecord>> cacheResults;
-
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
 
 		_monitorService = monitorService;
 		_mapper = _createObjectMapper();
-		_scopeOnlyMapper = _createScopeOnlyObjectMapper();
-		_scopeAndMetricOnlyMapper = _createScopeAndMetricOnlyObjectMapper();
+
+		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
+		_updateScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.UpdateSerializer());
+
+		_createScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.CreateSerializer());
+		_updateScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.UpdateSerializer());
 
 		SCOPE_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getName(),
 				Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getDefaultValue());
@@ -219,11 +224,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_createIndexIfNotExists(SCOPE_AND_METRIC_INDEX_NAME, _replicationFactorForScopeAndMetricIndex,
 				_numShardsForScopeAndMetricIndex, () -> _createScopeAndMetricMappingsNode());
-
-		cacheResults = CacheBuilder.newBuilder()
-				.maximumSize(1000)
-				.expireAfterAccess(10, TimeUnit.SECONDS)
-				.build();
 	}
 
 
@@ -516,19 +516,13 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				.append("_search")
 				.toString();
 
-		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
 
-			List<MetricSchemaRecord> records = cacheResults.get(queryJson, () -> {
-				try {
-					_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
-					Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
-					String str = extractResponse(response);
-					return SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
-				} catch (IOException e) {
-					throw new SystemException(e);
-				}
-			});
+			String queryJson = _constructTermAggregationQuery(query, type);
+			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
+			String str = extractResponse(response);
+			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
 
 			if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type)) {
 				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
@@ -553,8 +547,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			} else {
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
-		} catch (ExecutionException e) {
-			throw new SystemException(e.getCause());
+		} catch (IOException e) {
+			throw new SystemException(e);
 		}
 	}
 
@@ -768,7 +762,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					}
 				}
 				if(recordsToRemove.size() != 0) {
-					_logger.info("{} records were not written to ES", recordsToRemove.size());
+					_logger.warn("{} records were not written to ES", recordsToRemove.size());
 					records.removeAll(recordsToRemove);
 				}
 			}
@@ -789,49 +783,56 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				.append("_bulk")
 				.toString();
 
-		String strResponse = "";
-
-		ScopeAndMetricOnlySchemaRecordList recordList = new ScopeAndMetricOnlySchemaRecordList(records, _idgenHashAlgo);
-
 		try {
-			String requestBody = _scopeAndMetricOnlyMapper.writeValueAsString(recordList);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
-			strResponse = extractResponse(response);
-		} catch (IOException e) {
-			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
-			throw new SystemException(e);
-		}
 
-		try {
-			PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-			//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
-			if(putResponse.errors) {
-				List<ScopeAndMetricOnlySchemaRecord> recordsToRemove = new ArrayList<>();
-				for(Item item : putResponse.items) {
-					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						_logger.warn("Failed to index scope. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-						recordsToRemove.add(recordList.getRecord(item.create._id));
-					}
+			ScopeAndMetricOnlySchemaRecordList createSchemaRecordList = new ScopeAndMetricOnlySchemaRecordList(records, _idgenHashAlgo);
+			String requestBody = _createScopeAndMetricOnlyMapper.writeValueAsString(createSchemaRecordList);
+			PutResponse putResponse = _performRequest(requestUrl, requestBody);
 
-					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-						_logger.warn("Scope Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-						recordsToRemove.add(recordList.getRecord(item.index._id));
-					}
+			Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
+
+			List<String> failedIds = failedResponses.getLeft();
+			List<String> updateRequiredIds = failedResponses.getRight();
+
+			if (updateRequiredIds.size() > 0) {
+
+				List<ScopeAndMetricOnlySchemaRecord> updateRequiredRecords = new ArrayList<>();
+
+				for (String id : updateRequiredIds) {
+					updateRequiredRecords.add(createSchemaRecordList.getRecord(id));
 				}
-				if(recordsToRemove.size() != 0) {
-					_logger.info("{} records were not written to ES", recordsToRemove.size());
-					records.removeAll(recordsToRemove);
-				}
+
+				ScopeAndMetricOnlySchemaRecordList updateSchemaRecordList = new ScopeAndMetricOnlySchemaRecordList(updateRequiredRecords, _idgenHashAlgo);
+				requestBody = _updateScopeAndMetricOnlyMapper.writeValueAsString(updateSchemaRecordList);
+				putResponse = _performRequest(requestUrl, requestBody);
+
+				failedResponses = _parseFailedResponses(putResponse);
+
+				// We collect new failures.
+				failedIds.addAll(failedResponses.getLeft());
+
+				// Do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// failedIds.addAll(failedResponses.getRight());
 			}
+
+			if (failedIds.size() > 0) {
+				_logger.warn("{} records were not written to scope and metric ES", failedIds.size());
+			}
+
+			for (String id : failedIds) {
+				records.remove(createSchemaRecordList.getRecord(id));
+			}
+
 			//add to bloom filter
 			_addToBloomFilterScopeAndMetricOnly(records);
 
-		} catch(IOException e) {
-			throw new SystemException("Failed to parse reponse of put scope names. The response was: " + strResponse, e);
+		} catch (IOException e) {
+			throw new SystemException("Failed to create/update scope and metric ES. ", e);
 		}
 	}
 
 	private void _upsertScopes(List<ScopeOnlySchemaRecord> records) {
+
 		String requestUrl = new StringBuilder().append("/")
 				.append(SCOPE_INDEX_NAME)
 				.append("/")
@@ -840,67 +841,115 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				.append("_bulk")
 				.toString();
 
-		String strResponse = "";
-
-		ScopeOnlySchemaRecordList scopeOnlySchemaRecordList = new ScopeOnlySchemaRecordList(records, _idgenHashAlgo);
-
 		try {
-			String requestBody = _scopeOnlyMapper.writeValueAsString(scopeOnlySchemaRecordList);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
-			strResponse = extractResponse(response);
-		} catch (IOException e) {
-			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
-			throw new SystemException(e);
-		}
 
-		try {
-			PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-			//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
-			if(putResponse.errors) {
-				List<ScopeOnlySchemaRecord> recordsToRemove = new ArrayList<>();
-				for(Item item : putResponse.items) {
-					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						_logger.warn("Failed to index scope. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-						recordsToRemove.add(scopeOnlySchemaRecordList.getRecord(item.create._id));
-					}
+			ScopeOnlySchemaRecordList createSchemaRecordList = new ScopeOnlySchemaRecordList(records, _idgenHashAlgo);
+			String requestBody = _createScopeOnlyMapper.writeValueAsString(createSchemaRecordList);
+			PutResponse putResponse = _performRequest(requestUrl, requestBody);
 
-					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-						_logger.warn("Scope Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-						recordsToRemove.add(scopeOnlySchemaRecordList.getRecord(item.index._id));
-					}
+			Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
+
+			List<String> failedIds = failedResponses.getLeft();
+			List<String> updateRequiredIds = failedResponses.getRight();
+
+			if (updateRequiredIds.size() > 0) {
+
+				List<ScopeOnlySchemaRecord> updateRequiredRecords = new ArrayList<>();
+
+				for (String id : updateRequiredIds) {
+					updateRequiredRecords.add(createSchemaRecordList.getRecord(id));
 				}
-				if(recordsToRemove.size() != 0) {
-					_logger.info("{} records were not written to ES", recordsToRemove.size());
-					records.removeAll(recordsToRemove);
-				}
+
+				ScopeOnlySchemaRecordList updateSchemaRecordList = new ScopeOnlySchemaRecordList(updateRequiredRecords, _idgenHashAlgo);
+				requestBody = _updateScopeOnlyMapper.writeValueAsString(updateSchemaRecordList);
+				putResponse = _performRequest(requestUrl, requestBody);
+
+				failedResponses = _parseFailedResponses(putResponse);
+
+				// We collect new failures.
+				failedIds.addAll(failedResponses.getLeft());
+
+				// Do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// failedIds.addAll(failedResponses.getRight());
 			}
+
+			if (failedIds.size() > 0) {
+				_logger.warn("{} records were not written to scope ES", failedIds.size());
+			}
+
+			for(String id : failedIds) {
+				records.remove(createSchemaRecordList.getRecord(id));
+			}
+
 			//add to bloom filter
 			_addToBloomFilterScopeOnly(records);
 
-		} catch(IOException e) {
-			throw new SystemException("Failed to parse reponse of put scope names. The response was: " + strResponse, e);
+		} catch (IOException e) {
+			throw new SystemException("Failed to create/update scope ES. ", e);
 		}
 	}
 
-	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
+	private PutResponse _performRequest(String requestUrl, String requestBody) throws IOException {
+
+		String strResponse = "";
+
+		Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+
+		//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
+
+		strResponse = extractResponse(response);
+
+		PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
+		return putResponse;
+	}
+
+	private Pair<List<String>, List<String>> _parseFailedResponses(PutResponse putResponse) throws IOException {
+
+		List<String> failedIds = new ArrayList<>();
+		List<String> updateRequiredIds = new ArrayList<>();
+
+		//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
+		if (putResponse.errors) {
+			for (Item item : putResponse.items) {
+
+				if (item.create != null && item.create.status != HttpStatus.SC_CREATED) {
+
+					if (item.create.status == HttpStatus.SC_CONFLICT) {
+						updateRequiredIds.add(item.create._id);
+					} else {
+						_logger.debug("Failed to create document. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
+						failedIds.add(item.create._id);
+					}
+				}
+
+				if (item.update != null && item.update.status != HttpStatus.SC_OK) {
+					_logger.warn("Failed to update document. Reason: " + new ObjectMapper().writeValueAsString(item.update.error));
+					failedIds.add(item.update._id);
+				}
+			}
+		}
+		return Pair.of(failedIds, updateRequiredIds);
+	}
+
+	protected void _addToBloomFilter(List<MetricSchemaRecord> records) {
 		_logger.info("Adding {} records into bloom filter.", records.size());
-		for(MetricSchemaRecord record : records) {
+		for (MetricSchemaRecord record : records) {
 			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
 			bloomFilter.put(key);
 		}
 	}
 
-	protected void _addToBloomFilterScopeAndMetricOnly(List<ScopeAndMetricOnlySchemaRecord> records){
+	protected void _addToBloomFilterScopeAndMetricOnly(List<ScopeAndMetricOnlySchemaRecord> records) {
 		_logger.info("Adding {} records into scope and metric only bloom filter.", records.size());
-		for(ScopeAndMetricOnlySchemaRecord record : records) {
+		for (ScopeAndMetricOnlySchemaRecord record : records) {
 			String key = constructScopeAndMetricOnlyKey(record.getScope(), record.getMetric());
 			bloomFilterScopeAndMetricOnly.put(key);
 		}
 	}
 
-	protected void _addToBloomFilterScopeOnly(List<ScopeOnlySchemaRecord> records){
+	protected void _addToBloomFilterScopeOnly(List<ScopeOnlySchemaRecord> records) {
 		_logger.info("Adding {} records into scope only bloom filter.", records.size());
-		for(ScopeOnlySchemaRecord record : records) {
+		for (ScopeOnlySchemaRecord record : records) {
 			String key = constructScopeOnlyKey(record.getScope());
 			bloomFilterScopeOnly.put(key);
 		}
@@ -1155,12 +1204,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return mapper;
 	}
 
-	private ObjectMapper _createScopeAndMetricOnlyObjectMapper() {
+	private ObjectMapper _getScopeAndMetricOnlyObjectMapper(JsonSerializer<ScopeAndMetricOnlySchemaRecordList> serializer) {
 		ObjectMapper mapper = new ObjectMapper();
 
 		mapper.setSerializationInclusion(Include.NON_NULL);
 		SimpleModule module = new SimpleModule();
-		module.addSerializer(ScopeAndMetricOnlySchemaRecordList.class, new ScopeAndMetricOnlySchemaRecordList.Serializer());
+		module.addSerializer(ScopeAndMetricOnlySchemaRecordList.class, serializer);
 		module.addDeserializer(ScopeAndMetricOnlySchemaRecordList.class, new ScopeAndMetricOnlySchemaRecordList.Deserializer());
 		module.addDeserializer(List.class, new SchemaRecordList.AggDeserializer());
 		mapper.registerModule(module);
@@ -1168,12 +1217,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return mapper;
 	}
 
-	private ObjectMapper _createScopeOnlyObjectMapper() {
+	private ObjectMapper _getScopeOnlyObjectMapper(JsonSerializer<ScopeOnlySchemaRecordList> serializer) {
 		ObjectMapper mapper = new ObjectMapper();
 
 		mapper.setSerializationInclusion(Include.NON_NULL);
 		SimpleModule module = new SimpleModule();
-		module.addSerializer(ScopeOnlySchemaRecordList.class, new ScopeOnlySchemaRecordList.Serializer());
+		module.addSerializer(ScopeOnlySchemaRecordList.class, serializer);
 		module.addDeserializer(ScopeOnlySchemaRecordList.class, new ScopeOnlySchemaRecordList.Deserializer());
 		module.addDeserializer(List.class, new SchemaRecordList.AggDeserializer());
 		mapper.registerModule(module);
@@ -1455,6 +1504,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		static class Item {
 			private CreateItem create;
 			private CreateItem index;
+			private CreateItem update;
 
 			public Item() {}
 
@@ -1473,6 +1523,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			public void setIndex(CreateItem index) {
 				this.index = index;
 			}
+
+			public CreateItem getUpdate() {
+				return update;
+			}
+
+			public void setUpdate(CreateItem update) {
+				this.update = update;
+			}
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
@@ -1481,6 +1539,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			private String _type;
 			private String _id;
 			private int status;
+			private int _version;
 			private Error error;
 
 			public CreateItem() {}
@@ -1507,6 +1566,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 			public void set_id(String _id) {
 				this._id = _id;
+			}
+
+			public int get_version() {
+				return _version;
+			}
+
+			public void set_version(int _version) {
+				this._version = _version;
 			}
 
 			public int getStatus() {
