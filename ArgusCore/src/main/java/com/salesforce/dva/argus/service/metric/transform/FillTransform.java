@@ -57,6 +57,8 @@ public class FillTransform implements Transform {
 
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
+    public static final long MILLISECONDS_PER_MINUTE = 60 * 1000L;
+
 
     //~ Methods **************************************************************************************************************************************
 
@@ -140,24 +142,21 @@ public class FillTransform implements Transform {
         SystemAssert.requireArgument(constants != null && constants.size() == 5,
             "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
 
-        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
-        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
+        long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo, windowSizeInSeconds >= 60);
+        long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo, windowSizeInSeconds >= 60);
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
         double value = Double.parseDouble(constants.get(4));
-
-        SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
-        SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
-
         boolean isDivisible = ((startTimestamp - endTimestamp) % (windowSizeInSeconds * 1000)) == 0;
 
-        // snapping start and end time if range is not a multiple of windowSize.
         if (!isDivisible) {
             long startSnapping = startTimestamp % (windowSizeInSeconds * 1000);
             startTimestamp = startTimestamp - startSnapping;
             long endSnapping = endTimestamp % (windowSizeInSeconds * 1000);
             endTimestamp = endTimestamp - endSnapping;
         }
+        SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occur later than start time!");
+        SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
         Map<Long, Double> filledDatapoints = new TreeMap<>();
@@ -181,20 +180,32 @@ public class FillTransform implements Transform {
         return lineMetrics;
     }
 
-    private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
-        if (timeStr == null || timeStr.isEmpty()) {
-            return relativeTo;
-        }
-        try {
-            if (timeStr.charAt(0) == '-') {
-                long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
+    private long roundOffToCurrentMinute(long timeInMillis) {
+        long msRem = timeInMillis % MILLISECONDS_PER_MINUTE;
+        timeInMillis = timeInMillis - msRem;
+        return  timeInMillis;
+    }
 
-                return (relativeTo - timeToDeductInSeconds * 1000);
+    private long _parseStartAndEndTimestamps(String timeStr, long relativeTo, boolean isStepSizeMoreThanAMinute) {
+        long retVal = 0L;
+        if (timeStr == null || timeStr.isEmpty()) {
+            retVal = relativeTo;
+        } else {
+            try {
+                if (timeStr.charAt(0) == '-') {
+                    long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
+
+                    retVal = (relativeTo - timeToDeductInSeconds * 1000);
+                } else {
+                    retVal = Long.parseLong(timeStr);
+                }
+            } catch (NumberFormatException nfe) {
+                throw new SystemException("Could not parse time.", nfe);
             }
-            return Long.parseLong(timeStr);
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Could not parse time.", nfe);
         }
+        if (isStepSizeMoreThanAMinute)
+            retVal = roundOffToCurrentMinute(retVal);
+        return retVal;
     }
 
     @Override
