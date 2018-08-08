@@ -99,7 +99,6 @@ public abstract class DefaultNotifier implements Notifier {
         Map<String, String> additionalFields = new HashMap<>();
 
         additionalFields.put("Notification status", "Notification created.");
-        updateTriggerName(notificationContext);
         _createAnnotation(notificationContext, additionalFields);
         sendAdditionalNotification(notificationContext);
         _dispose();
@@ -115,9 +114,9 @@ public abstract class DefaultNotifier implements Notifier {
 
     /*
     * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
-    * If no matches are found, nothing is done.
+    * If no matches are found, nothing is done. Should be a protected function, making public for unit testing.
     * */
-    protected void updateTriggerName(NotificationContext context) {
+    public String getDisplayTriggerName(NotificationContext context) {
         String newTriggerName = context.getTrigger().getName();
         Metric triggeredMetric = context.getTriggeredMetric();
         newTriggerName = newTriggerName.replaceAll("(?i)\\$\\{scope\\}", triggeredMetric.getScope());
@@ -130,7 +129,7 @@ public abstract class DefaultNotifier implements Notifier {
             if (lowerCaseTagMap.containsKey(currentTagKey))
                 newTriggerName = newTriggerName.replace(currentRegex, lowerCaseTagMap.get(currentTagKey));
         }
-        context.getTrigger().setName(newTriggerName);
+        return newTriggerName;
     }
 
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {
