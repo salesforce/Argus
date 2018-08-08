@@ -126,7 +126,7 @@ public class EmailNotifier extends AuditNotifier {
         if (currentAlert.getNotifications().size() > 1)
             currentSubject += " Notification: "+ context.getNotification().getName();
         if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + context.getTrigger().getName();
+            currentSubject += " Trigger:" + getDisplayTriggerName(context);
         return currentSubject;
     }
 
@@ -169,7 +169,7 @@ public class EmailNotifier extends AuditNotifier {
         if(currentAlert.getNotifications().size() > 1)
             sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
         if(currentAlert.getTriggers().size() > 1)
-            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
