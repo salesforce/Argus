@@ -176,7 +176,7 @@ public class EmailNotifier extends AuditNotifier {
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
         }
-        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
+        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
