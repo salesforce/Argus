@@ -477,7 +477,6 @@ public class FillTransformTest {
         Map<Long, Double> expected = new HashMap<Long, Double>();
         for(long key = 60000; key <= 180000; key += 2000) expected.put(key-1000, 100.0);
 
-
         List<Metric> result = fillTransform.transform(null, constants);
 
         assertEquals(expected.size(), result.get(0).getDatapoints().size());
@@ -554,6 +553,7 @@ public class FillTransformTest {
     }
 
     @Test
+
     public void testMinusTimestamp_1() {
     	long now = System.currentTimeMillis();
     	
