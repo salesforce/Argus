@@ -103,7 +103,7 @@ public class NotifierTest extends AbstractTest {
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GOC);
         notifier.sendNotification(context);
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", context.getTrigger().getName());
-        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}-val2", system.getNotifierFactory().getGOCNotifier().getDisplayTriggerName(context));
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}-val2", system.getNotifierFactory().getGOCNotifier().replaceTemplatesInTriggerName(context.getTrigger().getName(), "scope", "metric", tags));
 
 
     }
