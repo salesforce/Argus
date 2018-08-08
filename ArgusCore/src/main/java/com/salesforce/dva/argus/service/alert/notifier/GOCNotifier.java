@@ -279,7 +279,7 @@ public class GOCNotifier extends AuditNotifier {
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
-		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
+		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		}
