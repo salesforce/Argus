@@ -248,7 +248,7 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
+		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), getDisplayTriggerName(context), body,
 				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
@@ -264,8 +264,11 @@ public class GOCNotifier extends AuditNotifier {
 	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
-		sb.append(MessageFormat.format("Alert {0}  was triggered at {1}\n", context.getAlert().getName(),
+		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", context.getAlert().getName(), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("\n");
+		}
 		if(currentAlert.getNotifications().size() > 1)
 			sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
 		if(currentAlert.getTriggers().size() > 1)
@@ -276,7 +279,7 @@ public class GOCNotifier extends AuditNotifier {
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
-		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
+		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		}
@@ -284,9 +287,6 @@ public class GOCNotifier extends AuditNotifier {
 		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
 			sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
-		}
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n");
 		}
 		sb.append("\n");
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));

@@ -126,7 +126,7 @@ public class EmailNotifier extends AuditNotifier {
         if (currentAlert.getNotifications().size() > 1)
             currentSubject += " Notification: "+ context.getNotification().getName();
         if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + context.getTrigger().getName();
+            currentSubject += " Trigger:" + getDisplayTriggerName(context);
         return currentSubject;
     }
 
@@ -160,27 +160,28 @@ public class EmailNotifier extends AuditNotifier {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(MessageFormat.format("<h3>Alert {0}  was {1} at {2}</h3>", context.getAlert().getName(), notificationMessage,
+        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", context.getAlert().getName(), context.getAlert().getId().intValue(), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
+        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+        }
         Alert currentAlert = notification.getAlert();
         if(currentAlert.getNotifications().size() > 1)
             sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
         if(currentAlert.getTriggers().size() > 1)
-            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
         }
-        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
+        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
         sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
-        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
-        }
+
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             sb.append("<a href='");

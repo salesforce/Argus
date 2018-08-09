@@ -153,11 +153,14 @@ public class GusNotifier extends AuditNotifier {
 		String notificationName = context.getNotification().getName();
 		String alertName = context.getAlert().getName();
 		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
-		String triggerName = trigger.getName();
+		String triggerName = getDisplayTriggerName(context);
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = context.getAlert().getExpression();
-		String triggerDetails = getTriggerDetails(trigger);
+		String triggerDetails = getTriggerDetails(trigger, context);
 		double triggerEventValue = context.getTriggerEventValue();
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("\n>"); 
+		}
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			Object[] arguments = new Object[] {
 					notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
@@ -194,9 +197,7 @@ public class GusNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
 					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n>"); 
-		}
+
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
