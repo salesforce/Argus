@@ -203,6 +203,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				int socketTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getName(),
 						Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
 				requestConfigBuilder.setConnectTimeout(connTimeout).setSocketTimeout(socketTimeout);
+
+				_logger.info("_esRestClient set connTimeoutMillis {} socketTimeoutMillis {}",
+						connTimeout, socketTimeout);
+
 				return requestConfigBuilder;
 			}
 		};
@@ -212,6 +216,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				.setRequestConfigCallback(requestConfigCallback)
 				.setMaxRetryTimeoutMillis(MAX_RETRY_TIMEOUT)
 				.build();
+
+		_logger.info("_esRestClient set MaxRetryTimeoutsMillis {}", MAX_RETRY_TIMEOUT);
 
 		_createIndexIfNotExists(INDEX_NAME, _replicationFactor, _numShards, () -> _createMappingsNode());
 
@@ -249,62 +255,54 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 											 Set<Pair<String, String>> scopesAndMetricNames) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
 
-		_logger.info("{} new metrics need to be indexed on ES.", metrics.size());
-
 		long start = System.currentTimeMillis();
 		List<List<MetricSchemaRecord>> fracturedList = _fracture(metrics);
+
+        int count = 0;
 
 		for(List<MetricSchemaRecord> records : fracturedList) {
 			if(!records.isEmpty()) {
 				_upsert(records);
-			}
-		}
-
-		int count = 0;
-		for(List<MetricSchemaRecord> records : fracturedList) {
-			count += records.size();
+                count += records.size();
+            }
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, count, null);
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
 
-		_logger.info("{} new scopes need to be indexed on ES.", scopeNames.size());
+		_logger.info("{} new metrics were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 
 		start = System.currentTimeMillis();
 		List<List<ScopeOnlySchemaRecord>> fracturedScopesList = _fractureScopes(scopeNames);
 
+        count = 0;
 		for(List<ScopeOnlySchemaRecord> records : fracturedScopesList) {
 			if(!records.isEmpty()) {
 				_upsertScopes(records);
+                count += records.size();
 			}
-		}
-
-		count = 0;
-		for(List<ScopeOnlySchemaRecord> records : fracturedScopesList) {
-			count += records.size();
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITTEN, count, null);
 		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
 
-		_logger.info("{} new scope and metric names need to be indexed on ES.", scopesAndMetricNames.size());
+		_logger.info("{} new scopes were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 
 		start = System.currentTimeMillis();
 		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedScopesAndMetricsList = _fractureScopeAndMetrics(scopesAndMetricNames);
 
+        count = 0;
 		for(List<ScopeAndMetricOnlySchemaRecord> records : fracturedScopesAndMetricsList) {
 			if(!records.isEmpty()) {
 				_upsertScopeAndMetrics(records);
+                count += records.size();
 			}
-		}
-
-		count = 0;
-		for(List<ScopeAndMetricOnlySchemaRecord> records : fracturedScopesAndMetricsList) {
-			count += records.size();
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCOPEANDMETRICNAMES_WRITTEN, count, null);
 		_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+
+		_logger.info("{} new scope and metric names were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 	}
 
 	/* Convert the given list of metrics to a list of metric schema records. At the same time, fracture the records list
