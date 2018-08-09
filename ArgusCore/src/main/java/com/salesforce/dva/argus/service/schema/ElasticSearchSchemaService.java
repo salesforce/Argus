@@ -16,13 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -812,8 +808,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				// We collect new failures.
 				failedIds.addAll(failedResponses.getLeft());
 
-				// Do not collect update failures if they fail with 409 (version_conflict_engine_exception).
-				// failedIds.addAll(failedResponses.getRight());
+				// We do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// This usually happens when there is another concurrent update happening to mts field"
 			}
 
 			if (failedIds.size() > 0) {
@@ -870,8 +866,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				// We collect new failures.
 				failedIds.addAll(failedResponses.getLeft());
 
-				// Do not collect update failures if they fail with 409 (version_conflict_engine_exception).
-				// failedIds.addAll(failedResponses.getRight());
+				// We do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// This usually happens when there is another concurrent update happening to mts field"
 			}
 
 			if (failedIds.size() > 0) {
