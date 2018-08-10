@@ -120,7 +120,7 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     public List<String> browseRecords(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
         requireNotDisposed();
 
-        _logger.info(query.toString());
+        _logger.debug(query.toString());
 
         long start = System.nanoTime();
         List<String> tokens = _schemaService.browseUnique(query, type, indexLevel);

@@ -480,7 +480,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	@Override
 	public List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
 
-		List<MetricSchemaRecord> records = getUnique(query, type);
+        List<MetricSchemaRecord> records = getUnique(query, type);
 
         SortedSet<String> tokens = MetricSchemaRecordTokenizer.GetUniqueTokens(records, type, indexLevel);
 
@@ -526,7 +526,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		try {
 
 			String queryJson = _constructTermAggregationQuery(query, type);
-			_logger.info("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
+			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
