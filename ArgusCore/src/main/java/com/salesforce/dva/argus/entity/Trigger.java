@@ -514,6 +514,7 @@ public class Trigger extends JPAEntity implements Serializable {
         public String value() {
             return this.toString();
         }
+
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
