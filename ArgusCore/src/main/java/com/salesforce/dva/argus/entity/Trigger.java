@@ -155,6 +155,7 @@ public class Trigger extends JPAEntity implements Serializable {
 			TriggerType type = TriggerType.fromString(rootNode.get("type").asText());
 			trigger.setType(type);
 			
+			// BigDecimal used here since JPA rounds Number like Double, but maintains precision for BigDecimal
 			BigDecimal threshold;
 			if (rootNode.get("thresholdLong") != null) {
 				threshold = new BigDecimal(rootNode.get("thresholdLong").asLong());
