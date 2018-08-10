@@ -262,7 +262,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		for(List<MetricSchemaRecord> records : fracturedList) {
 			if(!records.isEmpty()) {
-				_upsert(records);
+				upsert(records);
                 count += records.size();
             }
 		}
@@ -278,7 +278,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
         count = 0;
 		for(List<ScopeOnlySchemaRecord> records : fracturedScopesList) {
 			if(!records.isEmpty()) {
-				_upsertScopes(records);
+				upsertScopes(records);
                 count += records.size();
 			}
 		}
@@ -294,7 +294,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
         count = 0;
 		for(List<ScopeAndMetricOnlySchemaRecord> records : fracturedScopesAndMetricsList) {
 			if(!records.isEmpty()) {
-				_upsertScopeAndMetrics(records);
+				upsertScopeAndMetrics(records);
                 count += records.size();
 			}
 		}
@@ -718,7 +718,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private void _upsert(List<MetricSchemaRecord> records) {
+	protected void upsert(List<MetricSchemaRecord> records) {
 		String requestUrl = new StringBuilder().append("/")
 				.append(INDEX_NAME)
 				.append("/")
@@ -769,7 +769,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private void _upsertScopeAndMetrics(List<ScopeAndMetricOnlySchemaRecord> records) {
+	protected void upsertScopeAndMetrics(List<ScopeAndMetricOnlySchemaRecord> records) {
 		String requestUrl = new StringBuilder().append("/")
 				.append(SCOPE_AND_METRIC_INDEX_NAME)
 				.append("/")
@@ -826,7 +826,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private void _upsertScopes(List<ScopeOnlySchemaRecord> records) {
+	protected void upsertScopes(List<ScopeOnlySchemaRecord> records) {
 
 		String requestUrl = new StringBuilder().append("/")
 				.append(SCOPE_INDEX_NAME)
