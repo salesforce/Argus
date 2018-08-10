@@ -41,8 +41,10 @@ import com.salesforce.dva.argus.service.SchemaService.RecordType;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.MetricDiscoveryQueryDto;
 import com.salesforce.dva.argus.ws.dto.MetricDiscoveryResultDto;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
@@ -131,7 +133,42 @@ public class DiscoveryResources extends AbstractResource {
             return _getValueForType(_getSubList(records, limit*(page-1), records.size()), RecordType.fromName(type)); 
         }
     }
-    
+
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/metrics/browsing")
+	@Description("Browse metric schema records.")
+	public List<? extends Object> browseRecords(@Context HttpServletRequest req,
+											 @QueryParam("query") String queryRegex) {
+
+    	if (StringUtils.isNotEmpty(queryRegex))
+		{
+			queryRegex = queryRegex + "*";
+		}
+		else
+		{
+			List<String> scopeLetters = Arrays.asList(
+					"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+					"N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+					"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+					"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z");
+
+			return scopeLetters;
+		}
+
+    	MetricSchemaRecordQuery query = new MetricSchemaRecordQueryBuilder().scope(queryRegex)
+				.namespace("*")
+				.metric("*")
+				.tagKey("*")
+				.tagValue("*")
+				.limit(10000)
+				.build();
+
+		int indexLevel = StringUtils.countMatches(queryRegex, ".");
+
+		return _discoveryService.browseRecords(query, RecordType.SCOPE, indexLevel);
+	}
+
     /**
      * Discover metric schema records. If type is specified, then records of that particular type are returned.
      *

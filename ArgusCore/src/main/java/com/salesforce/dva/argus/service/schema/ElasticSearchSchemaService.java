@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -477,6 +478,16 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	}
 
 	@Override
+	public List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
+
+		List<MetricSchemaRecord> records = getUnique(query, type);
+
+        SortedSet<String> tokens = MetricSchemaRecordTokenizer.GetUniqueTokens(records, type, indexLevel);
+
+        return new ArrayList<>(tokens);
+	}
+
+	@Override
 	public List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
@@ -515,7 +526,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		try {
 
 			String queryJson = _constructTermAggregationQuery(query, type);
-			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
+			_logger.info("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
 			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);

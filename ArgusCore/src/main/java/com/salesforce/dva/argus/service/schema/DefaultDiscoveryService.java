@@ -117,6 +117,19 @@ public class DefaultDiscoveryService extends DefaultService implements Discovery
     }
 
     @Override
+    public List<String> browseRecords(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
+        requireNotDisposed();
+
+        _logger.info(query.toString());
+
+        long start = System.nanoTime();
+        List<String> tokens = _schemaService.browseUnique(query, type, indexLevel);
+
+        _logger.info("Time to browse Tokens in ms: " + (System.nanoTime() - start) / 1000000);
+        return tokens;
+    }
+
+    @Override
     public List<MetricQuery> getMatchingQueries(MetricQuery query) {
         requireNotDisposed();
         SystemAssert.requireArgument(query != null, "Metric query cannot be null.");
