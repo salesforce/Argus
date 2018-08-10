@@ -190,6 +190,8 @@ public class TransformFactory {
                 return new AnomalyDetectionRPCATransform();
             case INTERPOLATE:
                 return new InterpolateTransform();
+            case MAX_DATAPOINT:
+            	return new MaxDatapointTransform();
             default:
                 throw new UnsupportedOperationException(functionName);
         } // end switch
@@ -264,8 +266,9 @@ public class TransformFactory {
         ANOMALY_ZSCORE("ANOMALY_ZSCORE", "Calculates an anomaly score (0-100) for each value of the metric based on the z-score of each value with a Gaussian distribution."),
         ANOMALY_KMEANS("ANOMALY_KMEANS", "Calculates an anomaly score (0-100) for each value of the metric based on a K-means clustering of the metric data."),
         ANOMALY_RPCA("ANOMALY_RPCA", "Calculates an anomaly score (0-100) for each value of the metric based on the RPCA matrix decomposition algorithm."),
-        INTERPOLATE("INTERPOLATE", "Performs interpolation of multiple time series, that can then be used for aggregation");
-
+        INTERPOLATE("INTERPOLATE", "Performs interpolation of multiple time series, that can then be used for aggregation"),
+    	MAX_DATAPOINT("MAX_DATAPOINT", "Filters metric datapoints down to contain at most the maximum number of datapoints provided");
+    	
         private final String _name;
         private final String _description;
 
