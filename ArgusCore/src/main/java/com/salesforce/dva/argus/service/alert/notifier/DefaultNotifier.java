@@ -40,6 +40,7 @@ import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
@@ -102,6 +103,25 @@ public abstract class DefaultNotifier implements Notifier {
         _createAnnotation(notificationContext, additionalFields);
         sendAdditionalNotification(notificationContext);
         _dispose();
+    }
+
+    public String getExpressionWithAbsoluteStartAndEndTimeStamps(NotificationContext context) {
+
+        String expression = context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*","");
+        String regexMatcher = "(?i)(\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
+        Matcher m = Pattern.compile(regexMatcher).matcher(expression);
+        Long relativeTo = context.getTriggerFiredTime();
+        while (m.find()) {
+            String timeStr = m.group();
+            String timeDigits = timeStr.substring(2, timeStr.length() - 1);
+            String timeUnit = timeStr.substring(timeStr.length() - 1);
+            Long time = Long.parseLong(timeDigits);
+            MetricReader.TimeUnit unit = MetricReader.TimeUnit.fromString(timeUnit);
+            Long absoluteTime = (relativeTo - (time * unit.getValue())) / 1000 * 1000;
+            expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
+        }
+        System.out.println(expression);
+        return expression;
     }
 
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
