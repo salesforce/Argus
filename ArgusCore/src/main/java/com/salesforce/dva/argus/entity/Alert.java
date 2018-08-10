@@ -161,7 +161,8 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 					),
 			@NamedQuery(
 					name = "Alert.countByOwnerWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlerts",
@@ -169,7 +170,8 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlertsWithSearchText",
-					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) "
+							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
@@ -177,7 +179,8 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText",
-					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
 					),
 		}
 		)
@@ -339,6 +342,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	public static int countByOwner(EntityManager em, PrincipalUser owner, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
 		try {
 			TypedQuery<Long> query = null;
@@ -405,6 +412,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
@@ -662,6 +673,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 */
 	public static int countSharedAlerts(EntityManager em, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
 		try {
 			TypedQuery<Long> query = null;
@@ -728,6 +743,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 */
 	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
+		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
 		}
@@ -762,6 +782,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 */
 	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
+		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
 		}
@@ -803,6 +828,10 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	public static int countPrivateAlertsForPrivilegedUser(EntityManager em, PrincipalUser owner, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
 		if (!owner.isPrivileged()) {
 			return 0;

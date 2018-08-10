@@ -403,7 +403,7 @@ public class AlertServiceTest extends AbstractTest {
 				Alert oddAlert = alertService.updateAlert(new Alert(user, user, "odd_alert_" + i, EXPRESSION, "* * * * *"));
 				expectedOddAlerts.add(oddAlert);
 				expectedAlerts.add(oddAlert);
-;			}
+			}
 		}
 
 		// Filter on user name
