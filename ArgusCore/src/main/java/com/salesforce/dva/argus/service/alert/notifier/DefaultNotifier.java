@@ -120,7 +120,6 @@ public abstract class DefaultNotifier implements Notifier {
             Long absoluteTime = (relativeTo - (time * unit.getValue())) / 1000 * 1000;
             expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
         }
-        System.out.println(expression);
         return expression;
     }
 
