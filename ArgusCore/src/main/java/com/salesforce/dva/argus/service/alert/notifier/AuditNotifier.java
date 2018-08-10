@@ -153,14 +153,14 @@ public class AuditNotifier extends DefaultNotifier {
 			sb.append(context.getNotification().getCustomText()).append("<br/>"); 
 		}
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
-		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
+		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
 		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 		}
-		sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
+		sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
 		}
@@ -180,9 +180,10 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The trigger detail information.
 	 */
-	protected String getTriggerDetails(Trigger trigger) {
+	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
+			triggerString = replaceTemplatesInTriggerName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
 
 			return triggerString.substring(triggerString.indexOf("{") + 1, triggerString.indexOf("}"));
 		} else {
