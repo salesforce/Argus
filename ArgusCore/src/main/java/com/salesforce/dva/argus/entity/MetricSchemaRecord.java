@@ -273,8 +273,6 @@ public class MetricSchemaRecord {
 			tagValue=null;
 		}
     	return new MetricSchemaRecord(namespace, scope, metric, tagKey, tagValue);
-    	
-    	
     }
     
     public static String print(MetricSchemaRecord msr) {
