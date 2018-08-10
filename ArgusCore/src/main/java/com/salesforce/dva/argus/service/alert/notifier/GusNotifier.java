@@ -153,10 +153,10 @@ public class GusNotifier extends AuditNotifier {
 		String notificationName = context.getNotification().getName();
 		String alertName = context.getAlert().getName();
 		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
-		String triggerName = trigger.getName();
+		String triggerName = getDisplayTriggerName(context);
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = context.getAlert().getExpression();
-		String triggerDetails = getTriggerDetails(trigger);
+		String triggerDetails = getTriggerDetails(trigger, context);
 		Number triggerEventValue = context.getTriggerEventValue();
 		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
 			sb.append(context.getNotification().getCustomText()).append("\n>"); 
