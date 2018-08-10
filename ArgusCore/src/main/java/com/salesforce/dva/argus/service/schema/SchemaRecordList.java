@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -14,6 +15,27 @@ import java.util.Iterator;
 import java.util.List;
 
 public class SchemaRecordList {
+
+    public static void addCreateJson(JsonGenerator jgen, String id, String fieldsData) throws IOException {
+
+        jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + id + "\"}}");
+        jgen.writeRaw(System.lineSeparator());
+
+        long currentTimeMillis = System.currentTimeMillis();
+
+        String createTimeStampField = "\"cts\":" + currentTimeMillis;
+        String updateTimeStampField = "\"mts\":" + currentTimeMillis;
+        jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + createTimeStampField + "," + updateTimeStampField + "}");
+        jgen.writeRaw(System.lineSeparator());
+    }
+
+    public static void addUpdateJson(JsonGenerator jgen, String id) throws IOException {
+        jgen.writeRaw("{ \"update\" : {\"_id\" : \"" + id + "\"}}");
+        jgen.writeRaw(System.lineSeparator());
+        String timeStampField = "\"mts\":" + System.currentTimeMillis();
+        jgen.writeRaw("{ \"doc\" :{" + timeStampField + "} }");
+        jgen.writeRaw(System.lineSeparator());
+    }
 
     static class AggDeserializer extends JsonDeserializer<List<String>> {
 
