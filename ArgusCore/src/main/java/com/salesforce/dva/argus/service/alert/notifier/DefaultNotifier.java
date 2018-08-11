@@ -113,11 +113,7 @@ public abstract class DefaultNotifier implements Notifier {
         Long relativeTo = context.getTriggerFiredTime();
         while (m.find()) {
             String timeStr = m.group();
-            String timeDigits = timeStr.substring(2, timeStr.length() - 1);
-            String timeUnit = timeStr.substring(timeStr.length() - 1);
-            Long time = Long.parseLong(timeDigits);
-            MetricReader.TimeUnit unit = MetricReader.TimeUnit.fromString(timeUnit);
-            Long absoluteTime = (relativeTo - (time * unit.getValue())) / 1000 * 1000;
+            Long absoluteTime = MetricReader.getTime(context.getTriggerFiredTime(), timeStr.substring(1));
             expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
         }
         return expression;
