@@ -110,10 +110,10 @@ public abstract class DefaultNotifier implements Notifier {
         String expression = context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*","");
         String regexMatcher = "(?i)(\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
         Matcher m = Pattern.compile(regexMatcher).matcher(expression);
-        Long relativeTo = context.getTriggerFiredTime();
+        Long relativeTo = context.getAlertEnqueueTimestamp();
         while (m.find()) {
             String timeStr = m.group();
-            Long absoluteTime = MetricReader.getTime(context.getTriggerFiredTime(), timeStr.substring(1));
+            Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
             expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
         }
         return expression;
