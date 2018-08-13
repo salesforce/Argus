@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.NumberOperations;
@@ -47,7 +47,8 @@ import java.util.Map.Entry;
  */
 public class LogValueMapping implements ValueMapping {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
@@ -64,16 +65,8 @@ public class LogValueMapping implements ValueMapping {
         }
         SystemAssert.requireArgument(constants.size() == 1, "Log Transform requires exactly one constant!");
 
-        Number base;
-        try {
-        	base = Long.parseLong(constants.get(0));
-        } catch (NumberFormatException nfe) {
-        	try {
-        		base = Double.parseDouble(constants.get(0));
-        	} catch (NumberFormatException nfe2) {
-        		throw new IllegalArgumentException("Base " + constants.get(0) + " is not a valid number.");
-        	}
-        }
+        Number base = NumberOperations.parseConstant(constants.get(0));
+        
         Map<Long, Number> logDatapoints = new HashMap<>();
 
         for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
@@ -83,7 +76,7 @@ public class LogValueMapping implements ValueMapping {
         }
         return logDatapoints;
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.LOG.name();

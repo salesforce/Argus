@@ -59,18 +59,13 @@ public abstract class AnomalyDetectionTransform implements Transform {
         SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
 
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> predictionDatapoints = new HashMap<>();
+        Map<Long, Number> predictionDatapoints = new HashMap<>();
 
         long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
 
         //Create a sorted array of the metric's timestamps
         Map<Long, Number> completeDatapoints = metrics.get(0).getDatapoints();
-        Map<Long, Double> completeDatapointsDouble;
-        try {
-        	completeDatapointsDouble = NumberOperations.getMapAsDoubles(completeDatapoints);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Anomaly Detection Transform is only supported for double data values.");
-        }
+        Map<Long, Double> completeDatapointsDouble = NumberOperations.getMapAsDoubles(completeDatapoints);
         
         Long[] timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
@@ -81,7 +76,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         calculateContextualAnomalyScores(predictionDatapoints, completeDatapointsDouble, timestamps,
                 currentIndex, detectionIntervalInSeconds);
 
-        predictions.setDatapoints(new HashMap<Long, Number>(predictionDatapoints));
+        predictions.setDatapoints(predictionDatapoints);
         List<Metric> resultMetrics = new ArrayList<>();
         resultMetrics.add(predictions);
         return resultMetrics;
@@ -117,18 +112,13 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @return Normalized metric
      */
     public Metric normalizePredictions(Metric predictions) {
-    	Map<Long, Double> metricData;
-    	try {
-    		metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
-    	} catch (IllegalArgumentException iae) {
-    		throw new UnsupportedOperationException("Normalize Predictions in Anomaly Detection Transform can only be used with double data values.");
-    	}
+    	Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
         Map<String, Double> minMax = getMinMax(metricData);
         double min = minMax.get("min");
         double max = minMax.get("max");
 
         Metric predictionsNormalized = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> metricDataNormalized = new HashMap<>();
+        Map<Long, Number> metricDataNormalized = new HashMap<>();
 
         if (max - min == 0.0) {
             /**
@@ -152,7 +142,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
             }
         }
 
-        predictionsNormalized.setDatapoints(new HashMap<Long, Number>(metricDataNormalized));
+        predictionsNormalized.setDatapoints(metricDataNormalized);
         return predictionsNormalized;
     }
 
@@ -200,7 +190,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @param detectionIntervalInSeconds anomaly detection interval
      * @return new advanced value of currentIndex
      */
-    private int advanceCurrentIndexByInterval(int currentIndex, Map<Long, Double> predictionDatapoints,
+    private int advanceCurrentIndexByInterval(int currentIndex, Map<Long, Number> predictionDatapoints,
                                                Long[] timestamps, long detectionIntervalInSeconds) {
         //Projected end of interval
         long firstIntervalEndTime = timestamps[0] + detectionIntervalInSeconds;
@@ -227,7 +217,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @param currentIndex index at which to start contextual anomaly detection
      * @param detectionIntervalInSeconds anomaly detection interval
      */
-    private void calculateContextualAnomalyScores(Map<Long, Double> predictionDatapoints,
+    private void calculateContextualAnomalyScores(Map<Long, Number> predictionDatapoints,
                                                   Map<Long, Double> completeDatapoints,
                                                   Long[] timestamps,
                                                   int currentIndex, long detectionIntervalInSeconds) {
@@ -242,12 +232,8 @@ public abstract class AnomalyDetectionTransform implements Transform {
 
             //Apply the anomaly detection transform to each interval separately
             Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0);
-            Map<Long, Double> intervalAnomaliesMetricData;
-            try {
-            	intervalAnomaliesMetricData = NumberOperations.getMapAsDoubles(intervalAnomaliesMetric.getDatapoints());
-            } catch (IllegalArgumentException iae) {
-            	throw new UnsupportedOperationException("Anomaly Detection Transform is only supported for double data values.");
-            }
+            Map<Long, Double> intervalAnomaliesMetricData = NumberOperations.getMapAsDoubles(intervalAnomaliesMetric.getDatapoints());
+            
             predictionDatapoints.put(timestamps[i],
                     intervalAnomaliesMetricData.get(timestamps[i]));
         }
@@ -267,7 +253,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
     private Metric createIntervalMetric(int currentDatapointIndex, Map<Long, Double> completeDatapoints,
                                         Long[] timestamps, long projectedIntervalStartTime) {
         Metric intervalMetric = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> intervalMetricData = new HashMap<>();
+        Map<Long, Number> intervalMetricData = new HashMap<>();
 
         //Decrease intervalStartIndex until it's at the start of the interval
         int intervalStartIndex = currentDatapointIndex;
@@ -278,7 +264,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
             intervalStartIndex--;
         }
 
-        intervalMetric.setDatapoints(new HashMap<Long, Number>(intervalMetricData));
+        intervalMetric.setDatapoints(intervalMetricData);
         return intervalMetric;
     }
     

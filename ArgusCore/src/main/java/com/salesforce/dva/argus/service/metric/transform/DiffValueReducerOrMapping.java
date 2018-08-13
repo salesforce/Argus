@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.NumberOperations;
@@ -39,14 +39,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Calculates an arithmetic difference. If a constant is provided, it is subtracted from each data point in the set of input metrics, otherwise the
- * data point values of each time stamp for all but the first metric are subtracted from the data point value of the first metric.
+ * Calculates an arithmetic difference. If a constant is provided, it is
+ * subtracted from each data point in the set of input metrics, otherwise the
+ * data point values of each time stamp for all but the first metric are
+ * subtracted from the data point value of the first metric.
  *
- * @author  Ruofan Zhang (rzhang@salesforce.com)
+ * @author Ruofan Zhang (rzhang@salesforce.com)
  */
 public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public Number reduce(List<Number> values) {
@@ -62,7 +65,7 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return difference;
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Diff Transform with mapping is not supposed to be used without a constant");
@@ -71,33 +74,30 @@ public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
-            "If constants provided for diff transform, only exactly one constant allowed.");
+                "If constants provided for diff transform, only exactly one constant allowed.");
 
         Map<Long, Number> diffDatapoints = new HashMap<>();
 
         Number subtrahend;
         try {
-        	subtrahend = Long.parseLong(constants.get(0));
-        } catch (NumberFormatException nfe) {
-        	try {
-        		subtrahend = Double.parseDouble(constants.get(0));
-        	} catch (NumberFormatException nfe2) {
-        		throw new SystemException("Illegal constant value " + constants.get(0) + " supplied to diff transform.");
-        	}
+            subtrahend = NumberOperations.parseConstant(constants.get(0));
+        } catch (IllegalArgumentException iae) {
+            throw new SystemException("Illegal constant supplied to Diff Value Reducer: " + constants.get(0));
         }
-        
+
         for (Map.Entry<Long, Number> entry : originalDatapoints.entrySet()) {
-        	diffDatapoints.put(entry.getKey(), NumberOperations.subtract(entry.getValue(), subtrahend));
+            diffDatapoints.put(entry.getKey(), NumberOperations.subtract(entry.getValue(), subtrahend));
         }
-        
+
         return diffDatapoints;
     }
-    
+
     @Override
     public Number reduce(List<Number> values, List<String> constants) {
-        throw new UnsupportedOperationException("Diff Transform with reducer is not supposed to be used without a constant");
+        throw new UnsupportedOperationException(
+                "Diff Transform with reducer is not supposed to be used without a constant");
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.DIFF.name();
