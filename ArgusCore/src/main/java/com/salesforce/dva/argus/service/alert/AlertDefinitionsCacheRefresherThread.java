@@ -82,7 +82,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 					// updating only the modified/deleted alerts in the cache
 					if(modifiedAlerts!=null && modifiedAlerts.size()>0) {
 						for(Alert a : modifiedAlerts) {
-							_logger.info("Processing modified alert - {},{},{},{} "+ a.getId(),a.getName(),a.getCronEntry(),a.getExpression());
+							_logger.debug("Processing modified alert - {},{},{},{} ", a.getId(), a.getName(), a.getCronEntry(), a.getExpression());
 							if(alertDefinitionsCache.getAlertsMapById().containsKey(a.getId())) {
 								if(a.isDeleted() || !a.isEnabled()) {
 									alertDefinitionsCache.getAlertsMapById().remove(a.getId());  
