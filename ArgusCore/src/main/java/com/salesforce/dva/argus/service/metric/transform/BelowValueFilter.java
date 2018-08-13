@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -39,13 +39,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class is used to filter metrics whose evaluation result is below the limit.
+ * This class is used to filter metrics whose evaluation result is below the
+ * limit.
  *
- * @author  Ruofan Zhang (rzhang@salesforce.com)
+ * @author Ruofan Zhang (rzhang@salesforce.com)
  */
 public class BelowValueFilter implements ValueFilter {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit) {
@@ -54,35 +56,17 @@ public class BelowValueFilter implements ValueFilter {
 
         List<Metric> result = new ArrayList<Metric>();
 
+        Number lim = NumberOperations.parseConstant(limit);
         for (Map.Entry<Metric, String> entry : extendedSortedMap.entrySet()) {
-        	Number lim;
-        	try {
-        		lim = Long.parseLong(limit);
-        	} catch (NumberFormatException nfe) {
-        		try {
-        			lim = Double.parseDouble(limit);
-        		} catch (NumberFormatException nfe2) {
-        			throw new IllegalArgumentException("The limit " + limit + " is not a valid number.");
-        		}
-        	}
-        	Number val;
-        	try {
-        		val = Long.parseLong(entry.getValue());
-        	} catch (NumberFormatException nfe) {
-        		try {
-        			val = Double.parseDouble(entry.getValue());
-        		} catch (NumberFormatException nfe2) {
-        			throw new IllegalArgumentException("The limit " + limit + " is not a valid number.");
-        		}
-        	}
-        	
+            Number val = NumberOperations.parseConstant(entry.getValue());
+            
             if (NumberOperations.isGreaterThan(lim, val)) {
                 result.add(entry.getKey());
             }
         }
         return result;
     }
-  
+
     @Override
     public String name() {
         return TransformFactory.Function.BELOW.name();

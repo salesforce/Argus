@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.base.Predicate;
@@ -50,12 +50,12 @@ import java.util.Map;
  */
 public class CullAboveValueMapping implements ValueMapping {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+    // ~ Static fields/initializers *******************************************************************************************************************
 
     private static final String PERCENTILE = "percentile";
     private static final String VALUE = "value";
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods **************************************************************************************************************************************
 
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
@@ -67,40 +67,31 @@ public class CullAboveValueMapping implements ValueMapping {
         SystemAssert.requireArgument(constants != null, "Moving Average Transform needs a window size of time interval");
         SystemAssert.requireArgument(constants.size() == 2, "Cull Above Transform must provide exactly 2 constants which are limit and type.");
 
-        Number limit;
-        try {
-        	limit = Long.parseLong(constants.get(0));
-        } catch (NumberFormatException nfe) {
-        	try {
-        		limit = Double.parseDouble(constants.get(0));
-        	} catch (NumberFormatException nfe2) {
-        		throw new IllegalArgumentException("The limit " + constants.get(0) + " is not a valid number.");
-        	}
-        }
+        Number limit = NumberOperations.parseConstant(constants.get(0));
         String type = constants.get(1);
 
         SystemAssert.requireArgument(type.equals(PERCENTILE) || type.equals(VALUE), "Only percentil and value is allowed for type input.");
-        
+
         if (type.equals(PERCENTILE)) {
-            SystemAssert.requireArgument(NumberOperations.isGreaterThan(limit, 0) && NumberOperations.isLessThanOrEqualTo(limit, 100),
-            		"Percentile number must in (0,100] !");
+            SystemAssert.requireArgument( NumberOperations.isGreaterThan(limit, 0) && NumberOperations.isLessThanOrEqualTo(limit, 100),
+                    "Percentile number must in (0,100] !");
         }
 
         final Number pivot = type.equals(PERCENTILE) ? findPivot(originalDatapoints, limit) : limit;
         Predicate<Map.Entry<Long, Number>> isAbove = new Predicate<Map.Entry<Long, Number>>() {
 
-                @Override
-                public boolean apply(Map.Entry<Long, Number> datapoint) {
-                    return NumberOperations.isLessThanOrEqualTo(datapoint.getValue(), pivot);
-                }
-            };
+            @Override
+            public boolean apply(Map.Entry<Long, Number> datapoint) {
+                return NumberOperations.isLessThanOrEqualTo(datapoint.getValue(), pivot);
+            }
+        };
 
         Map<Long, Number> result = new HashMap<>();
 
         result.putAll(Maps.filterEntries(originalDatapoints, isAbove));
         return result;
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.CULL_ABOVE.name();
@@ -111,13 +102,8 @@ public class CullAboveValueMapping implements ValueMapping {
      * value. That means to cull the elements greater than value or pivotValue prerequisite: array must be sorted
      */
     private Double findPivot(Map<Long, Number> datapoints, Number limit) {
-    	Map<Long, Double> datapointsDouble;
-    	try {
-    		datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
-    	} catch (IllegalArgumentException iae) {
-    		throw new UnsupportedOperationException("Cull Above Value Mapping with percentile is only supported for double data values.");
-    	}
-    	
+        Map<Long, Double> datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
+
         double[] doubleValues = new double[datapointsDouble.size()];
         int k = 0;
 

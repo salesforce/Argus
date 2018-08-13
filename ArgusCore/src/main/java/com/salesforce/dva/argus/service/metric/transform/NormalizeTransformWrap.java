@@ -162,16 +162,7 @@ public class NormalizeTransformWrap implements Transform {
         public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
             Map<Long, Number> divideByConstantDatapoints = new HashMap<>();
             
-            Number divisor;
-            try {
-            	divisor = Long.parseLong(constants.get(0));
-            } catch (NumberFormatException nfe) {
-            	try {
-            		divisor = Double.parseDouble(constants.get(0));
-            	} catch (NumberFormatException nfe2) {
-            		throw new IllegalArgumentException("The divisor " + constants.get(0) + " is not a valid number.");
-            	}
-            }
+            Number divisor = NumberOperations.parseConstant(constants.get(0));
 
             for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
                 Number adivideByConstantValue = null;

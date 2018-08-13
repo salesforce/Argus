@@ -90,12 +90,7 @@ public class AnomalySTLTransform implements Transform {
 
         Metric metric = metrics.get(0);
         Map<Long, Number> datapoints = metric.getDatapoints();
-        Map<Long, Double> datapointsDouble;
-        try {
-        	datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Anomaly STL Transform is only supported for double data values.");
-        }
+        Map<Long, Double> datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
 
         double[] values = new double[datapointsDouble.size()];
         List<Long> time_list = new ArrayList<>(datapointsDouble.keySet());
@@ -117,7 +112,7 @@ public class AnomalySTLTransform implements Transform {
         double mean = calcMean(remainder);
         double sd = calcSD(remainder, mean);
 
-        HashMap<Long, Double> remainder_map = new HashMap<>();
+        HashMap<Long, Number> remainder_map = new HashMap<>();
 
         if (constants.size() == 2 && constants.get(1).equals("resid")) {
             for (int i = 0; i < time_list.size(); i++) {
@@ -134,7 +129,7 @@ public class AnomalySTLTransform implements Transform {
         }
 
         Metric remainder_metric = new Metric(getResultScopeName(), "STL Anomaly Score");
-        remainder_metric.setDatapoints(new HashMap<Long, Number>(remainder_map));
+        remainder_metric.setDatapoints(remainder_map);
         List<Metric> result = new ArrayList<>(metrics.size());
         result.add(0, remainder_metric);
 

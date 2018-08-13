@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
@@ -67,34 +67,28 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     @Override
     public Number reduce(List<Number> values, List<String> constants) {
         parseConstants(constants);
-        List<Double> valuesDouble;
-        try {
-        	valuesDouble = NumberOperations.getListAsDoubles(values);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Percentile Value Reducer Or Mapping is only supported for double data values.");
-        }
+        List<Double> valuesDouble = NumberOperations.getListAsDoubles(values);
         return _calculateNthPercentile(valuesDouble, percentile);
     }
 
     private void parseConstants(List<String> constants) {
-        SystemAssert.requireArgument(constants != null && !constants.isEmpty(),
-            "Percentile Transform must provide at least percentile to calculate.");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Percentile Transform must provide at least percentile to calculate.");
         SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) > 0.0 && Double.parseDouble(constants.get(0)) < 100.0,
-            "For Percentile Transform, 0.0 < percentile < 100.0.");
-        
+                "For Percentile Transform, 0.0 < percentile < 100.0.");
+
         PercentileValueReducerOrMapping.percentile = Double.parseDouble(constants.get(0));
-        
+
         if (constants.size() > 1) {
-        	if(!INDIVIDUAL.equalsIgnoreCase(constants.get(1))) {
-        		String window = constants.get(1);
-            	try {
-                	MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
+            if (!INDIVIDUAL.equalsIgnoreCase(constants.get(1))) {
+                String window = constants.get(1);
+                try {
+                    MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
                     Long.parseLong(window.substring(0, window.length() - 1));
                 } catch (Exception t) {
                     throw new IllegalArgumentException(
-                    		"Invalid timeWindow: " + window + ". Please specify a valid window (E.g. 1s, 1m, 1h, 1d) ");
+                            "Invalid timeWindow: " + window + ". Please specify a valid window (E.g. 1s, 1m, 1h, 1d) ");
                 }
-        	}
+            }
         }
     }
 
@@ -106,35 +100,31 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         parseConstants(constants);
-        Map<Long, Double> originalDatapointsDouble;
-        try {
-        	originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Percentile Value Reducer or Mapping is only supported for double data values.");
-        }
+        Map<Long, Double> originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
         return new HashMap<Long, Number>(_calculateNthPercentileForOneMetric(originalDatapointsDouble, percentile));
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.PERCENTILE.name();
     }
 
-    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue) {
-    	
-	    Map<Long, Double> result = new TreeMap<>();
-	    for(Long timestamp : new TreeMap<>(originalDatapoints).keySet()) { // want to get the earliest timestamp
-	    	result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
-	    	break;
-	    }
-	    
-	    return result;
-    	
+    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints,
+            Double percentileValue) {
+
+        Map<Long, Double> result = new TreeMap<>();
+        for (Long timestamp : new TreeMap<>(originalDatapoints).keySet()) { // want to get the earliest timestamp
+            result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
+            break;
+        }
+
+        return result;
+
     }
-    
+
     private Double _calculateNthPercentile(Collection<Double> values, Double percentileValue) {
         return new Percentile().evaluate(Doubles.toArray(values), percentileValue);
     }
-    
+
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2016, Salesforce.com, Inc. All rights reserved. */

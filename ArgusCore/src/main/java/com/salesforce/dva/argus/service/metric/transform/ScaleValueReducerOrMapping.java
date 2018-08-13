@@ -74,13 +74,9 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         Map<Long, Number> scaleDatapoints = new HashMap<>();
         Number multiplicand;
         try {
-        	multiplicand = Long.parseLong(constants.get(0));
-        } catch (NumberFormatException nfe) {
-        	try {
-        		multiplicand = Double.parseDouble(constants.get(0));
-        	} catch (NumberFormatException nfe2) {
-        		throw new SystemException("Multiplicand " + constants.get(0) + " is not a valid number.");
-        	}
+            multiplicand = NumberOperations.parseConstant(constants.get(0));
+        } catch (IllegalArgumentException iae) {
+            throw new SystemException("Illegal constant supplied to Scale Value Reducer or Mapping: " + constants.get(0));
         }
         
         for (Map.Entry<Long, Number> entry : originalDatapoints.entrySet()) {

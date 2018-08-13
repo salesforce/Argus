@@ -70,12 +70,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
             throw new MissingDataException("Metric must contain data points to perform transforms.");
         }
         
-        Map<Long, Double> metricDataDouble;
-        try {
-        	metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
-        } catch (IllegalArgumentException e) {
-        	throw new UnsupportedOperationException("Anomaly Detection Transform is only supported for double data values.");
-        }
+        Map<Long, Double> metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
 
         fitParameters(metricDataDouble);
         Metric predictions = predictAnomalies(metricDataDouble);
