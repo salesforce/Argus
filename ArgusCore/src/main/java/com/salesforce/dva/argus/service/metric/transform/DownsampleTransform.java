@@ -90,11 +90,7 @@ public class DownsampleTransform implements Transform {
             case SUM:
                 return NumberOperations.sum(operands);
             case DEVIATION:
-            	try {
-            		return new StandardDeviation().evaluate(Doubles.toArray(NumberOperations.getListAsDoubles(operands)));
-            	} catch (IllegalArgumentException iae) {
-            		throw new UnsupportedOperationException("Downsample Transform with deviation is only supported for double data values.");
-            	}
+            	return new StandardDeviation().evaluate(Doubles.toArray(NumberOperations.getListAsDoubles(operands)));
             case COUNT:
             	values.removeAll(Collections.singleton(null));
             	return values.size();
