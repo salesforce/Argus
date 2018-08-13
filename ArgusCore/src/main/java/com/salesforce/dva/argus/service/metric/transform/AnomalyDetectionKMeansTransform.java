@@ -68,12 +68,8 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
                                             "k constant.");
 
         Map<Long, Number> metricData = metrics.get(0).getDatapoints();
-        Map<Long, Double> metricDataDouble;
-        try {
-        	metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Anomaly Detection K Means Transform is only supported for double data values.");
-        }
+        Map<Long, Double> metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
+        
         metricDataValues = metricDataDouble.values().stream().collect(Collectors.toList());
         if (metricDataDouble.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
 
@@ -165,7 +161,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
      */
     private Metric predictAnomalies(Map<Long, Double> metricData) {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> predictionDatapoints = new HashMap<>();
+        Map<Long, Number> predictionDatapoints = new HashMap<>();
 
         for (Map.Entry<Long, Double> entry : metricData.entrySet()) {
             Long timestamp = entry.getKey();
@@ -178,7 +174,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
             }
         }
 
-        predictions.setDatapoints(new HashMap<>(predictionDatapoints));
+        predictions.setDatapoints(predictionDatapoints);
         return predictions;
     }
 

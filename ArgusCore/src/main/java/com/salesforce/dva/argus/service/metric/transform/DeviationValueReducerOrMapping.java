@@ -86,12 +86,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     private Double calculateDeviation(List<Number> values, Double tolerance) {
-    	List<Double> valuesDouble;
-    	try {
-    		valuesDouble = NumberOperations.getListAsDoubles(values);
-    	} catch (IllegalArgumentException iae) {
-    		throw new UnsupportedOperationException("Deviation Value Reducer Or Mapping is only supported for double data values.");
-    	}
+    	List<Double> valuesDouble = NumberOperations.getListAsDoubles(values);
         if (!isUnderTolerance(valuesDouble, tolerance)) {
             return null;
         }
@@ -132,13 +127,8 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
     private Map<Long, Number> calculateNDeviationForOneMetric(Map<Long, Number> originalDatapoints, Double tolerance, Long pointNum) {
-        Map<Long, Double> originalDatapointsDouble;
-        try {
-        	originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
-        } catch (IllegalArgumentException iae) {
-        	throw new UnsupportedOperationException("Deviation Transform with mapping is only supported for double data values.");
-        }
-    	
+        Map<Long, Double> originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
+
     	if (pointNum > originalDatapointsDouble.size()) {
             pointNum = (long) originalDatapointsDouble.size();
         }

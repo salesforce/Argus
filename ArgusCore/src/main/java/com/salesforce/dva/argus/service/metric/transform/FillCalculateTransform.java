@@ -81,12 +81,7 @@ public class FillCalculateTransform implements Transform {
 
         if (matcher.matches()) {
             Integer target = Integer.valueOf(matcher.group(1));
-            List<Double> valueListDouble;
-            try {
-            	valueListDouble = NumberOperations.getListAsDoubles(valueList);
-            } catch (IllegalArgumentException iae) {
-            	throw new UnsupportedOperationException("Fill Calculate Transform with percentile is only supported for double data values.");
-            }
+            List<Double> valueListDouble = NumberOperations.getListAsDoubles(valueList);
             result = new Percentile().evaluate(Doubles.toArray(valueListDouble), target);
         } else {
             switch (calculationType) {

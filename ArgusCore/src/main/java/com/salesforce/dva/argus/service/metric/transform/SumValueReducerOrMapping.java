@@ -66,13 +66,9 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
         
         Number addend;
         try {
-        	addend = Long.parseLong(constants.get(0));
-        } catch (NumberFormatException nfe) {
-        	try {
-        		addend = Double.parseDouble(constants.get(0));
-        	} catch (NumberFormatException nfe2) {
-        		throw new SystemException("Addend " + constants.get(0) + " is not a valid number.");
-        	}
+            addend = NumberOperations.parseConstant(constants.get(0));
+        } catch (IllegalArgumentException iae) {
+            throw new SystemException("Illegal constant supplied to Sum Value Reducer or Mapping: " + constants.get(0));
         }
         final Number finalAddend = addend;
         

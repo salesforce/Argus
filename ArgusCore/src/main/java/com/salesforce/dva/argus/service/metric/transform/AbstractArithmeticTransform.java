@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -44,62 +44,64 @@ import java.util.Map.Entry;
 /**
  * Raj Sarkapally.
  *
- * @author  Raj Sarkapally (rsarkapally@salesforce.com)
+ * @author Raj Sarkapally  (rsarkapally@salesforce.com)
  */
 public abstract class AbstractArithmeticTransform implements Transform {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+    // ~ Static fields/initializers
+    // *******************************************************************************************************************
 
     private static final String RESULT_METRIC_NAME = "result";
 
-    //~ Methods **************************************************************************************************************************************
-    
+    // ~ Methods
+    // **************************************************************************************************************************************
+
     @Override
     public List<Metric> transform(List<Metric> metrics) {
-    	if (metrics == null) {
-    		throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
-    	}
-    	if (metrics.isEmpty()) {
-    		return metrics;
-    	}
-    	
-    	Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
-    	Map<Long, Number> resultDatapoints = new HashMap<>();
-    	Iterator<Entry<Long, Number>> it = metrics.get(0).getDatapoints().entrySet().iterator();
-    	
-    	while (it.hasNext()) {
-    		Entry<Long, Number> entry = it.next();
-    		List<Number> operands = null;
-    		
-    		try {
-    			operands = getOperands(entry.getKey(), metrics);
-    		} catch (MissingDataException mde) {
-    			continue;
-    		}
-    		resultDatapoints.put(entry.getKey(), performOperation(operands));
-     	}
-    	result.setDatapoints(resultDatapoints);
-    	MetricDistiller.setCommonAttributes(metrics, result);
-    	
-    	List<Metric> resultMetrics = new ArrayList<>();
-    
-    	Collections.addAll(resultMetrics, result);
-    	return resultMetrics;
+        if (metrics == null) {
+            throw new MissingDataException("The metrics list cannot be null or empty while performing arithmetic transformations.");
+        }
+        if (metrics.isEmpty()) {
+            return metrics;
+        }
+
+        Metric result = new Metric(getResultScopeName(), RESULT_METRIC_NAME);
+        Map<Long, Number> resultDatapoints = new HashMap<>();
+        Iterator<Entry<Long, Number>> it = metrics.get(0).getDatapoints().entrySet().iterator();
+
+        while (it.hasNext()) {
+            Entry<Long, Number> entry = it.next();
+            List<Number> operands = null;
+
+            try {
+                operands = getOperands(entry.getKey(), metrics);
+            } catch (MissingDataException mde) {
+                continue;
+            }
+            resultDatapoints.put(entry.getKey(), performOperation(operands));
+        }
+        result.setDatapoints(resultDatapoints);
+        MetricDistiller.setCommonAttributes(metrics, result);
+
+        List<Metric> resultMetrics = new ArrayList<>();
+
+        Collections.addAll(resultMetrics, result);
+        return resultMetrics;
     }
-    
+
     private List<Number> getOperands(Long timestamp, List<Metric> metrics) {
-    	List<Number> operands = new ArrayList<>();
-    	
-    	for (Metric metric : metrics) {
-    		Number operand = metric.getDatapoints().get(timestamp);
-    		
-    		if (operand == null) {
-    			throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", timestamp,
+        List<Number> operands = new ArrayList<>();
+
+        for (Metric metric : metrics) {
+            Number operand = metric.getDatapoints().get(timestamp);
+
+            if (operand == null) {
+                throw new MissingDataException(MessageFormat.format("Datapoint does not exist for timestamp: {0} for metric: {1}", timestamp,
                         metric));
-    		}
-    		operands.add(operand);
-    	}
-    	return operands;
+            }
+            operands.add(operand);
+        }
+        return operands;
     }
 
     /**
@@ -111,4 +113,4 @@ public abstract class AbstractArithmeticTransform implements Transform {
      */
     protected abstract Number performOperation(List<Number> operands);
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2016, Salesforce.com, Inc. All rights reserved. */
