@@ -199,22 +199,22 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the metric.
 	 */
-	@SuppressWarnings("deprecation")
 	protected String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
 		long start = triggerFiredTime - (6L * DateTimeConstants.MILLIS_PER_HOUR);
 		long end = Math.min(System.currentTimeMillis(), triggerFiredTime + (6L * DateTimeConstants.MILLIS_PER_HOUR));
 		String expression = MessageFormat.format("{0,number,#}:{1,number,#}:{2}", start, end, metricToAnnotate);
-		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
-
-		try {
-			expression = URLEncoder.encode(expression, "UTF-8");
-		} catch (Exception ex) {
-			expression = URLEncoder.encode(expression);
-		}
-		return template.replaceAll("\\$expression\\$", expression);
+		return getExpressionUrl(expression);
 	}
 
-	protected String getMetricUrl(String expression) {
+	/**
+	 * Returns the URL linking back to the expression for use in alert notification.
+	 *
+	 * @param   expression  The expression for which the URL has to be created.
+	 *
+	 * @return  The fully constructed URL for the expression.
+	 */
+	@SuppressWarnings("deprecation")
+	protected String getExpressionUrl(String expression) {
 		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
 		try {
 			expression = URLEncoder.encode(expression, "UTF-8");
