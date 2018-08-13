@@ -109,7 +109,7 @@ public class NotifierTest extends AbstractTest {
     @Test
     public void testAbsoluteTimeStampsInExpression() {
 
-        Long triggerFiredTime = 1418319600000L;
+        Long alertEnqueueTime = 1418319600000L;
         ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
                 "ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
                 "ABOVE(-1h:scope:metric:avg:4h-avg, #0.5#)",
@@ -143,7 +143,8 @@ public class NotifierTest extends AbstractTest {
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
         alert = system.getServiceFactory().getAlertService().updateAlert(alert);
 
-        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, triggerFiredTime, 0.0, new Metric("scope", "metric"));
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418320200000L, 0.0, new Metric("scope", "metric"));
+        context.setAlertEnqueueTimestamp(alertEnqueueTime);
 
         ArrayList<String> actualOutput = new ArrayList<String>();
         for (String currentExpression: expressionArray) {

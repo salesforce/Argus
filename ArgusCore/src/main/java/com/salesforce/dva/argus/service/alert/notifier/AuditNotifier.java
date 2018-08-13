@@ -214,6 +214,16 @@ public class AuditNotifier extends DefaultNotifier {
 		return template.replaceAll("\\$expression\\$", expression);
 	}
 
+	protected String getMetricUrl(String expression) {
+		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
+		try {
+			expression = URLEncoder.encode(expression, "UTF-8");
+		} catch (Exception ex) {
+			expression = URLEncoder.encode(expression);
+		}
+		return template.replaceAll("\\$expression\\$", expression);
+	}
+
 	/**
 	 * Returns the URL linking back to the alert for which notification is being sent.
 	 *
