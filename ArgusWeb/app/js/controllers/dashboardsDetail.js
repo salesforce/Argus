@@ -2,8 +2,8 @@
 /*global angular:false, console:false */
 
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
-.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
-	function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage, Auth) {
+.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', '$window', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
+	function (Storage, $scope,$http, $routeParams, $location, $window, growl, Dashboards, History, $sessionStorage, Auth) {
 		$scope.dashboardNotEditable = true;
 		$scope.isDashboardDirty = function () {
 			return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
@@ -18,6 +18,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 					$scope.fetchHistory();
 					// remove existing session storage for update
 					if ($sessionStorage.dashboards !== undefined) delete $sessionStorage.dashboards.cachedData;
+					$window.location.reload();
 				}, function () {
 					growl.error('Failed to update "' + dashboard.name + '"');
 				});
