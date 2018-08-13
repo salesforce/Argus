@@ -253,6 +253,8 @@ public class Trigger extends JPAEntity implements Serializable {
                 lowThreshold = Math.min(trigger.getThreshold(), trigger.getSecondaryThreshold());
                 highThreshold = Math.max(trigger.getThreshold(), trigger.getSecondaryThreshold());
                 return (actualValue.compareTo(lowThreshold) < 0 || actualValue.compareTo(highThreshold) > 0);
+            case NO_DATA:
+            	    return actualValue == null;
             default:
                 throw new SystemException("Unsupported trigger type " + trigger.type);
         }
@@ -444,7 +446,9 @@ public class Trigger extends JPAEntity implements Serializable {
         /** Between. */
         BETWEEN,
         /** Not between. */
-        NOT_BETWEEN;
+        NOT_BETWEEN,
+    	    /** Is NULL */
+    	    NO_DATA;
 
         /**
          * Converts a string to a trigger type.
@@ -474,6 +478,7 @@ public class Trigger extends JPAEntity implements Serializable {
         public String value() {
             return this.toString();
         }
+
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

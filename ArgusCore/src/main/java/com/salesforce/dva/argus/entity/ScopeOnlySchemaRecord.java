@@ -31,6 +31,8 @@
 
 package com.salesforce.dva.argus.entity;
 
+import com.google.common.base.Objects;
+
 import java.text.MessageFormat;
 
 /**
@@ -101,14 +103,7 @@ public class ScopeOnlySchemaRecord {
 
 		ScopeOnlySchemaRecord other = (ScopeOnlySchemaRecord) obj;
 
-		if (scope == null) {
-			if (other.scope != null) {
-				return false;
-			}
-		} else if (!scope.equals(other.scope)) {
-			return false;
-		}
-		return true;
+		return Objects.equal(scope, other.scope);
 	}
 
 	@Override
