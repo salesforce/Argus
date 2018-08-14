@@ -690,6 +690,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 															any(History.class), 
 															any(Notification.class), 
 															any(Alert.class), 
+															anyLong(),
 															anyLong());
 		
 		doAnswer(new Answer<Void>() {
@@ -703,7 +704,8 @@ public class DefaultAlertServiceTest extends AbstractTest {
 															any(Metric.class), 
 															any(History.class), 
 															any(Notification.class), 
-															any(Alert.class));
+															any(Alert.class),
+															anyLong());
 		
 		return spyAlertService;
 	}

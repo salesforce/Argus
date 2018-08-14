@@ -400,6 +400,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		for (Alert alert : alerts) {
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
+			Long alertEnqueueTimestamp = 0L;
+
 
 			String logMessage = null;
 			History history = null;
@@ -440,7 +442,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 			
 			try {
-				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestampsByAlertId.get(alert.getId()));
+				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
+				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 
 				if(metrics.isEmpty()) {
 					if (alert.isMissingDataNotificationEnabled()) {
@@ -459,7 +462,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					if(missingDataTriggers.size()>0) {
 						for(Notification notification : alert.getNotifications()) {
 							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
 							}
 						}
 					}
@@ -479,10 +482,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 							_logger.info(logMessage);
 							_appendMessageNUpdateHistory(history, logMessage, null, 0);
 						} else {
-							_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification);
+							_processNotification(alert, history, metrics, triggerFiredTimesAndMetricsByTrigger, notification, alertEnqueueTimestamp);
 							if(missingDataTriggers.size()>0) {
 								// processing to possibly to clear missing data notification
-								_processMissingDataNotification(alert, history, missingDataTriggers, notification, false);
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, false, alertEnqueueTimestamp);
 							}
 						}
 					}
@@ -494,16 +497,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/);
-				// publishing evaluation latency as a metric
-				Map<Long, Number> datapoints = new HashMap<>();
-				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
-				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
-				metric.addDatapoints(datapoints);
-				try {
-					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
-				} catch (Exception ex) {
-					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
-				}
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
@@ -519,7 +512,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if(missingDataTriggers.size()>0) {
 					for(Notification notification : alert.getNotifications()) {
 						if (!notification.getTriggers().isEmpty()) {
-						    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+						    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
 						}
 					}
 				}
@@ -543,7 +536,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					if(missingDataTriggers.size()>0) {
 						for(Notification notification : alert.getNotifications()) {
 							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true);
+							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
 							}
 						}
 					}
@@ -572,7 +565,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers associated with the notification and updates the job history.
 	 */
 	private void _processNotification(Alert alert, History history, List<Metric> metrics, 
-			Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger, Notification notification) {
+			Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger, Notification notification, Long alertEnqueueTimestamp) {
 
 		for(Trigger trigger : notification.getTriggers()) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
@@ -583,7 +576,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
-						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m));
+						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -595,7 +588,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
-						sendClearNotification(trigger, m, history, notification, alert);
+						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
 					}
 				}
 			}
@@ -605,7 +598,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	/**
 	 * Evaluates all triggers associated with the missing data notification and updates the job history.
 	 */
-	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing) {
+	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing, Long alertEnqueueTimestamp) {
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
 				Metric m = new Metric("argus","argus");
@@ -614,7 +607,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
-						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis());
+						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -626,7 +619,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
-						sendClearNotification(trigger, m, history, notification, alert);
+						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
 					}
 				}
 			}
@@ -677,13 +670,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
-			Long triggerFiredTime) {	
+			Long triggerFiredTime, Long alertEnqueueTime) {	
 		Number value = 0L;
 		if (!trigger.getType().equals(TriggerType.NO_DATA)) {
 			value = metric.getDatapoints().get(triggerFiredTime);
 		}
 
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
+		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 		notifier.sendNotification(context);
 
@@ -699,8 +693,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert) {
+	public void sendClearNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert, Long alertEnqueueTime) {
 		NotificationContext context = new NotificationContext(alert, trigger, notification, System.currentTimeMillis(), 0.0, metric);
+		context.setAlertEnqueueTimestamp(alertEnqueueTime);
 		Notifier notifier = getNotifier(SupportedNotifier.fromClassName(notification.getNotifierName()));
 
 		notifier.clearNotification(context);
@@ -824,7 +819,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
-		
+
 
 
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
@@ -1160,6 +1155,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		private long triggerFiredTime;
 		private Number triggerEventValue;
 		private Metric triggeredMetric;
+		private long alertEnqueueTimestamp;
 
 		/**
 		 * Creates a new Notification Context object.
@@ -1179,6 +1175,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			this.triggerFiredTime = triggerFiredTime;
 			this.triggerEventValue = triggerEventValue;
 			this.triggeredMetric = triggeredMetric;
+			this.alertEnqueueTimestamp = 0L;
 		}
 
 		/** Creates a new NotificationContext object. */
@@ -1299,6 +1296,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		public void setTriggeredMetric(Metric triggeredMetric) {
 			this.triggeredMetric = triggeredMetric;
 		}
+
+		public long getAlertEnqueueTimestamp() { return alertEnqueueTimestamp; }
+
+		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
 	}
 
 }
