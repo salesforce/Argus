@@ -112,7 +112,7 @@ public abstract class DefaultNotifier implements Notifier {
         return lowerCaseTagMap;
     }
 
-    public String replaceTemplatesInTriggerName(String triggerName, String scope, String metric,  Map<String, String> tags) {
+    public String replaceTemplatesInName(String triggerName, String scope, String metric,  Map<String, String> tags) {
         triggerName = triggerName.replaceAll("(?i)\\$\\{scope\\}", scope);
         triggerName = triggerName.replaceAll("(?i)\\$\\{metric\\}", metric);
         Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
@@ -130,12 +130,11 @@ public abstract class DefaultNotifier implements Notifier {
      * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
      * If no matches are found, nothing is done. Should be a protected function, making public for unit testing.
      * */
-    protected String getDisplayTriggerName(NotificationContext context) {
-        String triggerName = context.getTrigger().getName();
+    protected String getDisplayedName(NotificationContext context, String templatedString) {
         Metric triggeredMetric = context.getTriggeredMetric();
         String scope = triggeredMetric.getScope(), metric = triggeredMetric.getMetric();
         Map<String, String> tags = triggeredMetric.getTags();
-        return replaceTemplatesInTriggerName(triggerName, scope, metric, tags);
+        return replaceTemplatesInName(templatedString, scope, metric, tags);
     }
 
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {

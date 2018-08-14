@@ -248,7 +248,7 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), getDisplayTriggerName(context), body,
+		sendMessage(sev, context.getNotification().getName(), getDisplayedName(context, context.getAlert().getName()), getDisplayedName(context, context.getTrigger().getName()), body,
 				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 

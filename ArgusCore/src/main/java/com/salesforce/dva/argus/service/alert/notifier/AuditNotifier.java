@@ -125,7 +125,7 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The audit entry body to persist.
 	 */
 	protected String getAuditBody(NotificationContext context, NotificationStatus notificationStatus) {
-		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", context.getAlert().getName(),
+		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", getDisplayedName(context, context.getAlert().getName()),
 				notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared",
 						DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime())));
 		Notification notification = null;
@@ -153,7 +153,7 @@ public class AuditNotifier extends DefaultNotifier {
 			sb.append(context.getNotification().getCustomText()).append("<br/>"); 
 		}
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
-		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
+		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayedName(context, context.getTrigger().getName())));
 		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
@@ -183,7 +183,7 @@ public class AuditNotifier extends DefaultNotifier {
 	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
-			triggerString = replaceTemplatesInTriggerName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
+			triggerString = replaceTemplatesInName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
 
 			return triggerString.substring(triggerString.indexOf("{") + 1, triggerString.indexOf("}"));
 		} else {
