@@ -99,15 +99,13 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
     private Logger _logger = LoggerFactory.getLogger(AsyncHbaseSchemaService.class);
     private final HBaseClient _client;
-    private final MonitorService _monitorService;
-
+    
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
     private AsyncHbaseSchemaService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory, MonitorService monitorService) {
-    	super(systemConfig);
+    	super(systemConfig, monitorService);
         
-    	_monitorService = monitorService;
     	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(), 
     													Property.HBASE_METRICSCHEMA_TABLE.getDefaultValue());
     	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(), 
