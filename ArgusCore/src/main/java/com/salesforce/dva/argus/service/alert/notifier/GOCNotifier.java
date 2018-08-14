@@ -264,6 +264,7 @@ public class GOCNotifier extends AuditNotifier {
 	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
+		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", context.getAlert().getName(), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
@@ -275,7 +276,7 @@ public class GOCNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
@@ -289,6 +290,7 @@ public class GOCNotifier extends AuditNotifier {
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		sb.append("\n");
+		sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}

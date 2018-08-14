@@ -155,7 +155,7 @@ public class GusNotifier extends AuditNotifier {
 		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
 		String triggerName = getDisplayTriggerName(context);
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
-		String metricExpression = context.getAlert().getExpression();
+		String metricExpression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String triggerDetails = getTriggerDetails(trigger, context);
 		double triggerEventValue = context.getTriggerEventValue();
 		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
@@ -172,7 +172,7 @@ public class GusNotifier extends AuditNotifier {
 					"Notification:   {0}\n" +
 					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
 					"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
-					"Triggering event value:   {7}\n" + "Triggering event timestamp:   {8}\n\n";
+					"Triggering event value:   {7}\n" +  "Triggering event timestamp:   {8}\n\n";
 
 			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
 		}else {
@@ -197,7 +197,7 @@ public class GusNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
 					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
-
+		sb.append(MessageFormat.format(gusFeedLinkTemplate, "evaluated metric data.", super.getExpressionUrl(metricExpression)));
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
