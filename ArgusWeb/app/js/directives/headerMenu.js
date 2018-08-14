@@ -5,7 +5,7 @@ angular.module('argus.directives.headerMenu', [])
 .directive('headerMenu', ['Auth', function (Auth) {
 	return {
 		restrict: 'E',
-		template: require('../templates/headerMenu.html'),
+		templateUrl: 'js/templates/headerMenu.html',
 		scope: {},
 		controller: ['$rootScope', '$scope', '$location', function ($rootScope, $scope, $location) {
 

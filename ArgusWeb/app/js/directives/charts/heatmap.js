@@ -36,7 +36,7 @@ angular.module('argus.directives.charts.heatmap', [])
 				series: '=series',
 				dateConfig: '=dateconfig'
 			},
-			template: require('../../templates/charts/topToolbar.html'),
+			templateUrl: 'js/templates/charts/topToolbar.html',
 			controller: ['$scope', '$filter', '$uibModal', '$window', 'Metrics', 'DownloadHelper', 'growl',  '$routeParams', function($scope, $filter, $uibModal, $window, Metrics, DownloadHelper, growl, $routeParams) {
 				$scope.showToggleSources = false;
 				$scope.hideMenu = true;
@@ -109,7 +109,7 @@ angular.module('argus.directives.charts.heatmap', [])
 								return $scope.menuOption;
 							}
 						},
-						template: require('../../templates/modals/chartOptionsForHeatmap.html'),
+						templateUrl: 'js/templates/modals/chartOptionsForHeatmap.html',
 						windowClass: 'chartOptions',
 						size: 'lg',
 						// controller: chartOptions,     // ['optionsModal', 'menuOption', ChartOptions],
