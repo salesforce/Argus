@@ -140,6 +140,21 @@ public class MetricReader<T> {
 	private void setQueryTimeWindow(MetricQuery query){
 		this.queryTimeWindow = QueryTimeWindow.getWindow(query.getEndTimestamp() -  query.getStartTimestamp());
 	}
+
+	public static Long getTime(long relativeTo, String timeStr) {
+		try {
+			if(timeStr.charAt(0) == '-') {
+				String timeDigits = timeStr.substring(1, timeStr.length() - 1);
+				String timeUnit = timeStr.substring(timeStr.length() - 1);
+				Long time = Long.parseLong(timeDigits);
+				TimeUnit unit = TimeUnit.fromString(timeUnit);
+				return (relativeTo - (time * unit.getValue())) / 1000 * 1000;
+			}
+			return Long.parseLong(timeStr);
+		} catch(NumberFormatException nfe) {
+			throw new SystemException("Could not parse time.", nfe);
+		}
+	}
 }
 
 PARSER_END(MetricReader)
@@ -633,20 +648,8 @@ private Long getTime(long relativeTo) :
 {
 	t = <TIME>
 	{
-	  	try
-	  	{
-		  	String timeStr = t.image;
-		  	if(timeStr.charAt(0) == '-') {
-				String timeDigits = timeStr.substring(1, timeStr.length() - 1);
-				String timeUnit = timeStr.substring(timeStr.length() - 1);
-	  	  		Long time = Long.parseLong(timeDigits);
-	  	  		TimeUnit unit = TimeUnit.fromString(timeUnit);
-	  	  		return (relativeTo - (time * unit.getValue())) / 1000 * 1000;
-		  	}
-		  	return Long.parseLong(timeStr);
-		} catch(NumberFormatException nfe) {
-		  	throw new SystemException("Could not parse time.", nfe);
-		}
+	  	String timeStr = t.image;
+		return getTime(relativeTo, timeStr);
 	}
 }
 
