@@ -109,7 +109,7 @@ public class NotifierTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdatingAlertName() {
+    public void testTemplateNaming() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${TAg3}-${tAg2}", expression, "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
