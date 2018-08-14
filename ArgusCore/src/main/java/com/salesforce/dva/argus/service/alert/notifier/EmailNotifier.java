@@ -189,7 +189,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
             sb.append("'>Click here to view the annotated series for ").append(metricToAnnotate).append(".</a><br/>");
         }
-        sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view metric datapoints.</a><br/>");
+        sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>click here to view the evaluated metric data.</a><br/>");
         sb.append("<p><a href='").append(getAlertUrl(notification.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
