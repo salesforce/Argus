@@ -74,7 +74,7 @@ public class ScopeAndMetricOnlySchemaRecordList {
         return _idToSchemaRecordMap.get(id);
     }
 
-    static class Serializer extends JsonSerializer<ScopeAndMetricOnlySchemaRecordList> {
+    static class CreateSerializer extends JsonSerializer<ScopeAndMetricOnlySchemaRecordList> {
 
         @Override
         public void serialize(ScopeAndMetricOnlySchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
@@ -84,12 +84,23 @@ public class ScopeAndMetricOnlySchemaRecordList {
             mapper.setSerializationInclusion(Include.NON_NULL);
 
             for(Map.Entry<String, ScopeAndMetricOnlySchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
-                jgen.writeRaw("{ \"index\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
-                jgen.writeRaw(System.lineSeparator());
                 String fieldsData = mapper.writeValueAsString(entry.getValue());
-                String timeStampField = "\"mts\":" + System.currentTimeMillis();
-                jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + timeStampField + "}");
-                jgen.writeRaw(System.lineSeparator());
+                SchemaRecordList.addCreateJson(jgen, entry.getKey(), fieldsData);
+            }
+        }
+    }
+
+    static class UpdateSerializer extends JsonSerializer<ScopeAndMetricOnlySchemaRecordList> {
+
+        @Override
+        public void serialize(ScopeAndMetricOnlySchemaRecordList list, JsonGenerator jgen, SerializerProvider provider)
+                throws IOException {
+
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(Include.NON_NULL);
+
+            for(Map.Entry<String, ScopeAndMetricOnlySchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
+                SchemaRecordList.addUpdateJson(jgen, entry.getKey());
             }
         }
     }
