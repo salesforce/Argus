@@ -27,7 +27,7 @@ angular.module('argus.directives')
 .directive('tableList', function() {
 	return {
 		restrict: 'E',
-		template: require('../templates/tableList.html'),
+		templateUrl: 'js/templates/tableList.html',
 		scope: {
 			colName: '=',
 			properties: '=',
