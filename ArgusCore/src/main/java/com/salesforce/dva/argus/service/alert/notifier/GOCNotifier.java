@@ -290,7 +290,7 @@ public class GOCNotifier extends AuditNotifier {
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		sb.append("\n");
-		sb.append(MessageFormat.format("Metric Datapoints:  {0}\n", getExpressionUrl(expression)));
+		sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
