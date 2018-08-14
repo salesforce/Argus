@@ -36,6 +36,7 @@ import com.salesforce.dva.argus.entity.History;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.*;
 import com.salesforce.dva.argus.service.warden.WardenApiNotifier;
@@ -132,10 +133,21 @@ public interface AlertService extends Service {
 	 * Returns a list of alerts for an owner.
 	 *
 	 * @param   owner  The owner to return alerts for. Cannot be null.
-	 *
+	 * @param metadataOnly 	Return only metadata
 	 * @return  The list of alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findAlertsByOwner(PrincipalUser owner, boolean metadataOnly);
+	
+	/**
+	 * Returns a list of alerts for an owner with given limit and offset.
+	 *
+	 * @param owner The owner to return alerts for. Cannot be null.
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
+	 *
+	 * @return The list of alerts.
+	 */
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset);
 
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
@@ -184,6 +196,7 @@ public interface AlertService extends Service {
 	/**
 	 * Returns a list of all alerts.
 	 *
+	 * @param metadataOnly 	Whether to return only metadata
 	 * @return  The list of all alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findAllAlerts(boolean metadataOnly);
@@ -266,6 +279,16 @@ public interface AlertService extends Service {
 	 * @return  The list of all alerts. Will never be null, but may be empty.
 	 */
 	List<Alert> findSharedAlerts(boolean metadataOnly, PrincipalUser owner, Integer limit);
+	
+	/**
+	 * Return a list of shared alerts.
+	 * 
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
+	 *
+	 * @return The list of shared alerts.
+	 */
+	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset);
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -289,7 +312,26 @@ public interface AlertService extends Service {
 	 * @param notifications  The notifications to update.	
 	 */
 	void updateNotificationsActiveStatusAndCooldown(List<Notification> notifications);
-
+	
+	/**
+	 * Find a list of private alerts (non-shared alerts) for the given privileged user.
+	 *
+	 * @param owner The owner to filter on.
+	 * @param limit The number of items to fetch.
+	 * @param offset The starting point of current page.
+	 *
+	 * @return The list of private alerts if privileged user.
+	 */
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset);
+	
+	/**
+	 * Count alerts with the given AlertsCountContext.
+	 * 
+	 * @param context
+	 *            The context of counting alerts.
+	 * @return Alerts count.
+	 */
+	int countAlerts(AlertsCountContext context);
 	
 	//~ Enums ****************************************************************************************************************************************
 

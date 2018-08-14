@@ -197,18 +197,30 @@ public interface MonitorService extends Service {
         NOTIFICATIONS_SENT("argus.core", "notifications.sent"),
         TRIGGERS_VIOLATED("argus.core", "triggers.violated"),
         ALERTS_MAX("argus.core", "alerts.max"),
+        ALERT_EVALUATION_KPI("argus.core", "alert.evaluation.kpi"),
         DATAPOINT_READS("argus.core", "datapoint.reads"),
         DATAPOINT_WRITES("argus.core", "datapoint.writes"),
         UNIQUE_USERS("argus.core", "users.unique"),
         DAILY_USERS("argus.core", "users.daily"),
         MONTHLY_USERS("argus.core", "users.monthly"),
         COMMIT_CLIENT_DATAPOINT_WRITES("argus.core", "commit.client.datapoint.writes"),
-    	COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes"),
+        COMMIT_CLIENT_METRIC_WRITES("argus.core", "commit.client.metric.writes"),
         SCHEMACOMMIT_CLIENT_METRIC_WRITES("argus.core", "schemacommit.client.metric.writes"),
-    	SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written"),
-    	SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
-    	SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
-    	SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency");
+
+        SCOPEANDMETRICNAMES_WRITTEN("argus.core", "scopeandmetricnames.written"),
+        SCOPEANDMETRICNAMES_WRITE_LATENCY("argus.core", "scopeandmetricnames.write.latency"),
+        SCOPEANDMETRICNAMES_QUERY_COUNT("argus.core", "scopeandmetricnames.query.count"),
+        SCOPEANDMETRICNAMES_QUERY_LATENCY("argus.core", "scopeandmetricnames.query.latency"),
+
+        SCOPENAMES_WRITTEN("argus.core", "scopenames.written"),
+        SCOPENAMES_WRITE_LATENCY("argus.core", "scopenames.write.latency"),
+        SCOPENAMES_QUERY_COUNT("argus.core", "scopenames.query.count"),
+        SCOPENAMES_QUERY_LATENCY("argus.core", "scopenames.query.latency"),
+
+        SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written"),
+        SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
+        SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
+        SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency");
 
         private final String _scope;
         private final String _metric;

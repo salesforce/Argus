@@ -5,7 +5,7 @@
     <parent>
         <artifactId>argus</artifactId>
         <groupId>com.salesforce.argus</groupId>
-        <version>${project.version}</version>
+        <version>2.18.0</version>
         <relativePath>..</relativePath>
     </parent>
     <artifactId>argus-core</artifactId>

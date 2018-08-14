@@ -72,6 +72,7 @@ public class ClientNode implements Runnable{
 	 *
 	 * @param  zookeeperURL         The zookeeper cluster to connect to. Cannot be null.
 	 * @param  electionRootPath     The root path under which client ephemeral nodes are created
+	 * @throws IOException			If an I/O exception occurred
 	 */
 	public ClientNode(final String zookeeperURL, String electionRootPath) throws IOException {
 		requireArgument(zookeeperURL != null, "Zookeeper cluster url cannot be null.");
@@ -118,6 +119,7 @@ public class ClientNode implements Runnable{
 	/**
 	 * Gets node index and its peer count
 	 *
+	 * @return ClientsResult object with info
 	 */
 	public ClientsResult calculateAllNodesResult() {
 		final List<String> childNodePaths = getChildren(electionRootPath, false);
@@ -134,6 +136,7 @@ public class ClientNode implements Runnable{
 	 * @param  path 			The path of znode to create 
 	 * @param  watch			Whether to watch this node or not
 	 * @param  ephimeral		Create ephemeral or permanent node
+	 * @return	The created node path
 	 */
 	public String createNode(final String path, final boolean watch, final boolean ephimeral) {
 		String createdNodePath = null;
@@ -159,6 +162,7 @@ public class ClientNode implements Runnable{
 	 *
 	 * @param  path 			The path of the znode
 	 * @param  watch			Whether to watch this node or not
+	 * @return	List of children nodes of znode
 	 */
 	public List<String> getChildren(final String path, final boolean watch) {
 		List<String> childNodes = null;

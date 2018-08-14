@@ -35,9 +35,11 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
@@ -84,13 +86,12 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  metricService      The metric service. Cannot be null.
 	 * @param  annotationService  The annotation service. Cannot be null.
 	 * @param  auditService       The audit service. Cannot be null.
-	 * @param  gocService         The GOC service. Cannot be null.
 	 * @param  config             The system configuration. Cannot be null.
 	 * @param  emf                The entity manager factory. Cannot be null.
 	 */
 	@Inject
 	public GOCNotifier(MetricService metricService, AnnotationService annotationService, AuditService auditService,
-			SystemConfiguration config, Provider<EntityManager> emf) {
+					   SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
 	}
@@ -125,9 +126,10 @@ public class GOCNotifier extends AuditNotifier {
 	 * @param  severityLevel The severity level
 	 * @param  srActionable  Is the GOC notification SR actionable
 	 * @param  lastNotified  The last message time. (typically current time)
+	 * @param triggeredOnMetric The corresponding metric
 	 */
 	public void sendMessage(Severity severity, String className, String elementName, String eventName, String message,
-			int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
+							int severityLevel, boolean srActionable, long lastNotified, Metric triggeredOnMetric) {
 		requireArgument(elementName != null && !elementName.isEmpty(), "ElementName cannot be null or empty.");
 		requireArgument(eventName != null && !eventName.isEmpty(), "EventName cannot be null or empty.");
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GOC_ENABLED))) {
@@ -139,7 +141,7 @@ public class GOCNotifier extends AuditNotifier {
 				eventName = _truncateIfSizeGreaterThan(eventName, 100);
 
 				builder.withClassName(className).withElementName(elementName).withEventName(eventName).
-				withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
+						withSeverity(severityLevel).withSRActionable(srActionable).withEventText(message);
 				if (severity == Severity.OK) {
 					builder.withActive(false).withClearedAt(lastNotified);
 				} else {
@@ -246,7 +248,7 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), context.getTrigger().getName(), body,
+		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), getDisplayTriggerName(context), body,
 				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
@@ -261,26 +263,34 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
-
-		sb.append(MessageFormat.format("Alert {0}  was triggered at {1}\n", context.getAlert().getName(),
+		Alert currentAlert = notification.getAlert();
+		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", context.getAlert().getName(), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-		sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
-		sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
+		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
+			sb.append(context.getNotification().getCustomText()).append("\n");
+		}
+		if(currentAlert.getNotifications().size() > 1)
+			sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
+		if(currentAlert.getTriggers().size() > 1)
+			sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
-		sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
-		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger)));
-		sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
+		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
+		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
+		}
+		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
+		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		    sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
+		}
 		sb.append("\n");
 		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
 			sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n"); 
-		}
 		sb.append("\n");
+		sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
@@ -380,7 +390,7 @@ public class GOCNotifier extends AuditNotifier {
 
 		/** 
 		 * The name of the GOC alert ID field.  
-		 * @todo Move this to DefaultGOCService. 
+		 * TODO: Move this to DefaultGOCService.
 		 */
 		public static final String SM_ALERT_ID__C_FIELD = "SM_Alert_Id__c";
 		private static final String SM_CLASSNAME__C_FIELD = "SM_ClassName__c";
@@ -412,8 +422,8 @@ public class GOCNotifier extends AuditNotifier {
 		//~ Constructors *********************************************************************************************************************************
 
 		private GOCData(final boolean smActivec, final String smAlertIdc, final String smClassNamec, final long smClearedAtc, final long smCreatedAtc,
-				final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
-				final String smSourceDomainc, final boolean srActionablec) {
+						final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
+						final String smSourceDomainc, final boolean srActionablec) {
 			this.smActivec = smActivec;
 			this.smAlertIdc = smAlertIdc;
 			this.smClassNamec = smClassNamec;
@@ -616,7 +626,7 @@ public class GOCNotifier extends AuditNotifier {
 			this.srActionablec = sRActionablec;
 			return this;
 		}
-		
+
 		/**
 		 * Create the GOCData object, use defaults where needed.
 		 *
@@ -734,7 +744,7 @@ public class GOCNotifier extends AuditNotifier {
 					}
 					else {
 						logger.error("Failure - getting oauth2 token, check username/password: '{}'", post.getResponseBodyAsString());
-					} 
+					}
 
 				} catch (Exception e) {
 					logger.error("Failure - exception getting access_token '{}'", e);

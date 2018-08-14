@@ -69,6 +69,8 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 /* loading spinner small, eg input field */
 .loading {border-color:#777; background:url(../img/spin.gif) 97% center no-repeat;}
 
+.container {width:100%; padding:0 2em;}
+
 #navbar li.activeTab {border-left: solid 1px #DDD; border-right: solid 1px #DDD; background-color: #FFF; color:#444; font-weight:bold;}
 #navbar li a.glyphicon {font-size:20px; color:#777;}
 #navbar li a.betaTab {color:#ECF1F6; font-weight:700;
@@ -98,7 +100,7 @@ a.smallClose {width:10px; height:10px; background:url("../img/glyphicons-halflin
 .topMenu ul.subMenu a:hover {text-decoration:none;}
 .topMenu:hover ul.subMenu {display:block;}
 
-#navbar ul.subMenu {top:40px; right:4px; padding:0;}
+#navbar ul.subMenu {top:48px; right:4px; padding:0;}
 #navbar ul.subMenu li {text-align:right;}
 
 /* drop down common panel */
@@ -476,3 +478,11 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
 .tooltip > .tooltip-inner {background-color: steelblue; text-align: left}
 .tooltip.bottom > .tooltip-arrow {border-bottom-color: steelblue;}
 .tooltip.in {opacity: 1}
+
+/* dashboard markup editor fullscreen  */
+.CodeMirror-fullscreen {
+  position: fixed;
+  top: 55px; left: 0; right: 0; bottom: 0;
+  height: auto;
+  z-index: ;
+}

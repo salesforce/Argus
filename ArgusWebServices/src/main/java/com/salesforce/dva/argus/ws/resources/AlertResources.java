@@ -36,8 +36,10 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.alert.AlertsCountContext;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.AlertDto;
+import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
 import java.math.BigInteger;
@@ -80,8 +82,9 @@ public class AlertResources extends AbstractResource {
 
 	/**
 	 * Return all alerts in alert objects filtered by owner.
-	 * @param   alertname  	   The alert name filter.
-	 * @param   owner          The principlaUser owner for owner name filter.
+	 * @param   alertname  	                  The alert name filter.
+	 * @param   owner                         The principlaUser owner for owner name filter.
+	 * @param   populateMetaFieldsOnly        Flag to populate alert meta field only.
 	 *
 	 * @return  The list of filtered alerts in alert object.
 	 */
@@ -138,7 +141,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
-	 *
+	 * @param   shared     If the alert is shared
+	 * @param   limit      Limit of results
 	 * @return  The list of alerts' metadata created by the user.
 	 */
 	@GET
@@ -154,6 +158,93 @@ public class AlertResources extends AbstractResource {
 		List<Alert> result = getAlertsObj(alertName, owner, shared, true, limit);
 		return AlertDto.transformToDto(result);
 	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/user")
+	@Description("Returns user's alerts' metadata. This endpoint is paginated.")
+	public List<AlertDto> getAlertsMetaByOwner(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findAlertsByOwnerPaged(owner, pagesize, (pagenumber - 1) * pagesize);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/user/count")
+	@Description("Returns user's alerts' metadata count.")
+	public ItemsCountDto countAlertsMetaByOwner(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName) {
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts()
+				.setPrincipalUser(owner).build();
+		int result = alertService.countAlerts(context);
+		return ItemsCountDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/shared")
+	@Description("Returns all shared alerts' metadata. This endpoint is paginated.")
+	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findSharedAlertsPaged(pagesize, (pagenumber - 1) * pagesize);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/shared/count")
+	@Description("Returns all shared alerts' metadata count.")
+	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req) {
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().build();
+		int result = alertService.countAlerts(context);
+		return ItemsCountDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/privileged")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user. This endpoint is paginated.")
+	public List<AlertDto> getAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("pagesize")  Integer pagesize,
+										@QueryParam("pagenumber") Integer pagenumber) {
+		
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		if (owner == null || !owner.isPrivileged()) {
+			return new ArrayList<>(0);
+		}
+		
+		List<Alert> result = new ArrayList<>(); 
+		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pagesize, pagenumber);
+		return AlertDto.transformToDto(result);
+	}
+	
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/meta/privileged/count")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user.")
+	public ItemsCountDto countAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
+										@QueryParam("ownername") String ownerName) {
+		PrincipalUser owner = validateAndGetOwner(req, ownerName);
+		if (owner == null || !owner.isPrivileged()) {
+			return ItemsCountDto.transformToDto(0);
+		}
+		
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
+				.setPrincipalUser(owner).build();
+		int result = alertService.countAlerts(context);
+		return ItemsCountDto.transformToDto(result);
+	}
 
 	/**
 	 * Returns the list of alerts created by the user.
@@ -161,6 +252,8 @@ public class AlertResources extends AbstractResource {
 	 * @param   req        The HttpServlet request object. Cannot be null.
 	 * @param   alertName  Name of the alert. It is optional.
 	 * @param   ownerName  Name of the owner. It is optional.
+	 * @param   shared     Flag for shared alerts. It is optional.
+	 * @param   limit      Number of alerts to return. It is optional.
 	 *
 	 * @return  The list of alerts created by the user.
 	 */
@@ -724,7 +817,7 @@ public class AlertResources extends AbstractResource {
 			notification.setSeverityLevel(notificationDto.getSeverityLevel());
 			notification.setCustomText(notificationDto.getCustomText());
 
-			// TODO: 14.12.16 validate notification
+			// TODO: 14.12.16 validateAuthorizationRequest notification
 
 			notification.setMetricsToAnnotate(new ArrayList<>(notificationDto.getMetricsToAnnotate()));
 

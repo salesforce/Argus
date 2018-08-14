@@ -2,8 +2,8 @@
 /*global angular:false, console:false */
 
 angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemirror'])
-.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
-	function (Storage, $scope,$http, $routeParams, $location, growl, Dashboards, History, $sessionStorage, Auth) {
+.controller('DashboardsDetail', ['Storage', '$scope','$http', '$routeParams', '$location', '$window', 'growl', 'Dashboards', 'History','$sessionStorage', 'Auth',
+	function (Storage, $scope,$http, $routeParams, $location, $window, growl, Dashboards, History, $sessionStorage, Auth) {
 		$scope.dashboardNotEditable = true;
 		$scope.isDashboardDirty = function () {
 			return !angular.equals($scope.dashboard, $scope.unmodifiedDashboard);
@@ -18,6 +18,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 					$scope.fetchHistory();
 					// remove existing session storage for update
 					if ($sessionStorage.dashboards !== undefined) delete $sessionStorage.dashboards.cachedData;
+					$window.location.reload();
 				}, function () {
 					growl.error('Failed to update "' + dashboard.name + '"');
 				});
@@ -29,7 +30,7 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 		};
 
 		$scope.editorLoaded = function (editor) {
-			editor.setSize(null, '30em');
+			editor.setSize(null, 'auto');
 		};
 
 		$scope.isTabSelected = function (tab) {
@@ -88,7 +89,21 @@ angular.module('argus.controllers.dashboards.detail', ['ngResource', 'ui.codemir
 			lineWrapping: true,
 			lineNumbers: true,
 			mode: 'htmlmixed',
-			viewportMargin: 500
+			viewportMargin: Infinity,
+			tabSize: 2,
+			foldGutter: true,
+			gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+			autoCloseTags: true,
+			matchTags: {bothTags: true},
+			extraKeys: { /* key board short cuts in the the editor */
+				'Alt-Space': 'autocomplete',
+				'Ctrl-Alt-F': function(editor) {
+					editor.setOption('fullScreen', !editor.getOption('fullScreen'));
+				},
+				'Esc': function(editor) {
+					if (editor.getOption('fullScreen')) editor.setOption('fullScreen', false);
+				}
+			}
 		};
 
 		if ($scope.dashboardId > 0) {

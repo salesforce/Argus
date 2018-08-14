@@ -33,8 +33,10 @@ package com.salesforce.dva.argus.service.alert.notifier;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
+import com.salesforce.dva.argus.entity.Trigger.TriggerType;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MailService;
@@ -119,8 +121,13 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     private String getEmailSubject(NotificationContext context) {
-        return "[Argus] Notification for Alert: " + context.getAlert().getName() + 
-        		" Notification: "+ context.getNotification().getName() + " Trigger:" + context.getTrigger().getName();
+        String currentSubject = "[Argus] Notification for Alert: " + context.getAlert().getName();
+        Alert currentAlert = context.getAlert();
+        if (currentAlert.getNotifications().size() > 1)
+            currentSubject += " Notification: "+ context.getNotification().getName();
+        if (currentAlert.getTriggers().size() > 1)
+            currentSubject += " Trigger:" + getDisplayTriggerName(context);
+        return currentSubject;
     }
 
     /**
@@ -153,26 +160,36 @@ public class EmailNotifier extends AuditNotifier {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(MessageFormat.format("<h3>Alert {0}  was {1} at {2}</h3>", context.getAlert().getName(), notificationMessage,
+        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", context.getAlert().getName(), context.getAlert().getId().intValue(), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-        sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
-        sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", trigger.getName()));
-        sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
-                DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-        sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-        sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
-        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger)));
-        sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
-        sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
         if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
         	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
         }
+        Alert currentAlert = notification.getAlert();
+        String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+        if(currentAlert.getNotifications().size() > 1)
+            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
+        if(currentAlert.getTriggers().size() > 1)
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
+        sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
+                DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
+        sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+        if(!trigger.getType().equals(TriggerType.NO_DATA)){
+            sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
+        }
+        sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
+        if(!trigger.getType().equals(TriggerType.NO_DATA)){
+            sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
+        }
+        sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
+
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
             sb.append("<a href='");
             sb.append(getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
             sb.append("'>Click here to view the annotated series for ").append(metricToAnnotate).append(".</a><br/>");
         }
+        sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>click here to view the evaluated metric data.</a><br/>");
         sb.append("<p><a href='").append(getAlertUrl(notification.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");

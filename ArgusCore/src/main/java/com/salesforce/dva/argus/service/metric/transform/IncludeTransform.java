@@ -37,11 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Retains metrics based on the matching of a regular expression against the metric name.<br/>
- * <tt>INCLUDE(<expr>, <regex>)</tt>
- *
- * @param   metrics  The list of metrics to evaluate. Cannot be null or empty.
- * @param   filter   The regular expression to match against.
+ * Retains metrics based on the matching of a regular expression against the metric name.<br>
+ * <tt>INCLUDE(&lt;expr&gt;, &lt;regex&gt;)</tt>
  *
  * @author  Ruofan Zhang (rzhang@salesforce.com)
  */

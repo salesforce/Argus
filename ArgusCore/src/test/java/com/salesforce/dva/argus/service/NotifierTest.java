@@ -35,6 +35,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -58,7 +60,7 @@ public class NotifierTest extends AbstractTest {
     public void testDBNotifier() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
-        Notification notification = new Notification("notification_name", alert, "notifier_ame", new ArrayList<String>(), 23);
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
@@ -78,5 +80,80 @@ public class NotifierTest extends AbstractTest {
 
         assertEquals(count, AuditNotifier.class.cast(notifier).getAllNotifications(alert).size());
     }
+
+    @Test
+    public void testUpdatingTriggerName() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", 2D, 5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+
+        Metric m = new Metric("scope", "metric");
+        Map<String, String> tags = new HashMap<>();
+        tags.put("tag1","val1");
+        tags.put("tag2", "val2");
+        m.setTags(tags);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GOC);
+        notifier.sendNotification(context);
+        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", context.getTrigger().getName());
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}-val2", system.getNotifierFactory().getGOCNotifier().replaceTemplatesInTriggerName(context.getTrigger().getName(), "scope", "metric", tags));
+
+
+    }
+
+    @Test
+    public void testAbsoluteTimeStampsInExpression() {
+
+        Long alertEnqueueTime = 1418319600000L;
+        ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
+                "ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
+                "ABOVE(-1h:scope:metric:avg:4h-avg, #0.5#)",
+                "ALIASBYTAG(-1s:scope:metric{device=*,source=*}:sum)",
+                "FILL( #-1D#, #-0d#,#4h#,#0m#,#100#)",
+                "GROUPBY(-2d:-1d:scope:metricA{host=*}:avg,#(myhost[1-9])#, #SUM#, #union#)",
+                "LIMIT( -21d:-1d:scope:metricA:avg:4h-avg, -1d:scope:metricB:avg:4h-avg,#1#)",
+                "RANGE(-10d:scope:metric[ABCD]:avg:1d-max)",
+                "DOWNSAMPLE(DOWNSAMPLE(GROUPBYTAG(CULL_BELOW(-115m:-15m:iot-provisioning-server.PRD.SP2.-:health.status{device=provisioning-warden-*}:avg:1m-max, #1#, #value#), #DeploymentName#, #MAX#), #1m-max#), #10m-count#)",
+                "DOWNSAMPLE(CULL_BELOW(DERIVATIVE(-115m:-15m:iot-container.PRD.NONE.-:iot.flows.state.load.errors_count{flowsnakeEnvironmentName=iot-prd-stmfa-00ds70000000mqy}:zimsum:1m-sum), #0#, #value#), #10m-sum#)"
+        ));
+
+        ArrayList<String> expectedOutput = new ArrayList<String> (Arrays.asList(
+                "ABOVE(1418233200000:scope:metric:avg:4h-avg,#0.5#,#avg#)",
+                "ABOVE(1418316000000:scope:metric:avg:4h-avg,#0.5#)",
+                "ALIASBYTAG(1418319599000:scope:metric{device=*,source=*}:sum)",
+                "FILL(#1418233200000#,#1418319600000#,#4h#,#0m#,#100#)",
+                "GROUPBY(1418146800000:1418233200000:scope:metricA{host=*}:avg,#(myhost[1-9])#,#SUM#,#union#)",
+                "LIMIT(1416505200000:1418233200000:scope:metricA:avg:4h-avg,1418233200000:scope:metricB:avg:4h-avg,#1#)",
+                "RANGE(1417455600000:scope:metric[ABCD]:avg:1d-max)",
+                "DOWNSAMPLE(DOWNSAMPLE(GROUPBYTAG(CULL_BELOW(1418312700000:1418318700000:iot-provisioning-server.PRD.SP2.-:health.status{device=provisioning-warden-*}:avg:1m-max,#1#,#value#),#DeploymentName#,#MAX#),#1m-max#),#10m-count#)",
+                "DOWNSAMPLE(CULL_BELOW(DERIVATIVE(1418312700000:1418318700000:iot-container.PRD.NONE.-:iot.flows.state.load.errors_count{flowsnakeEnvironmentName=iot-prd-stmfa-00ds70000000mqy}:zimsum:1m-sum),#0#,#value#),#10m-sum#)"
+                ));
+
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expressionArray.get(0), "* * * * *");
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418320200000L, 0.0, new Metric("scope", "metric"));
+        context.setAlertEnqueueTimestamp(alertEnqueueTime);
+
+        ArrayList<String> actualOutput = new ArrayList<String>();
+        for (String currentExpression: expressionArray) {
+            alert.setExpression(currentExpression);
+            actualOutput.add(system.getNotifierFactory().getGOCNotifier().getExpressionWithAbsoluteStartAndEndTimeStamps(context));
+        }
+
+        assertEquals(expectedOutput, actualOutput);
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

@@ -127,7 +127,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	 * @param  alertService              The alert service. Cannot be null.
 	 * @param  serviceManagementService  The service management service. Cannot be null.
 	 * @param  dashboardService          The dashboard service. Cannot be null.
-	 * @param _sysConfig Service properties.
+	 * @param metricService              The metric service
+	 * @param mailService                The mail service
+	 * @param sysConfig                  The system config
 	 */
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
@@ -288,7 +290,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			Double value = _metrics.get(key);
 			double newValue = value == null ? delta : value + delta;
 
-			_logger.debug("Modifying {} counter for {} to {}.", name, tags, newValue);
+			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
 			return newValue;
 		}

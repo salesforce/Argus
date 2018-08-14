@@ -15,7 +15,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Supplier;
 
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.salesforce.dva.argus.entity.KeywordQuery;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
+import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
@@ -26,7 +36,6 @@ import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestClientBuilder.HttpClientConfigCallback;
@@ -45,10 +54,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.salesforce.dva.argus.entity.KeywordQuery;
-import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.MonitorService.Counter;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -66,6 +71,12 @@ import com.salesforce.dva.argus.system.SystemException;
 @Singleton
 public class ElasticSearchSchemaService extends AbstractSchemaService {
 
+	private static String SCOPE_INDEX_NAME;
+	private static String SCOPE_TYPE_NAME;
+
+	private static String SCOPE_AND_METRIC_INDEX_NAME;
+	private static String SCOPE_AND_METRIC_TYPE_NAME;
+
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
@@ -75,13 +86,24 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String FIELD_TYPE_DATE ="date";
 
 	private final ObjectMapper _mapper;
+	private final ObjectMapper _createScopeOnlyMapper;
+	private final ObjectMapper _updateScopeOnlyMapper;
+	private final ObjectMapper _createScopeAndMetricOnlyMapper;
+	private final ObjectMapper _updateScopeAndMetricOnlyMapper;
+
 	private Logger _logger = LoggerFactory.getLogger(getClass());
 	private final MonitorService _monitorService;
-	private final RestClient _esRestClient;
+	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
+	private final int _replicationFactorForScopeIndex;
+	private final int _numShardsForScopeIndex;
+	private final int _replicationFactorForScopeAndMetricIndex;
+	private final int _numShardsForScopeAndMetricIndex;
 	private final int _bulkIndexingSize;
 	private HashAlgorithm _idgenHashAlgo;
+
+	private boolean _useScopeMetricNamesIndex;
 
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
@@ -89,6 +111,22 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_monitorService = monitorService;
 		_mapper = _createObjectMapper();
+
+		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
+		_updateScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.UpdateSerializer());
+
+		_createScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.CreateSerializer());
+		_updateScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.UpdateSerializer());
+
+		SCOPE_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getName(),
+				Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getDefaultValue());
+		SCOPE_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_TYPE_NAME.getName(),
+				Property.ELASTICSEARCH_SCOPE_TYPE_NAME.getDefaultValue());
+
+		SCOPE_AND_METRIC_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME.getName(),
+				Property.ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME.getDefaultValue());
+		SCOPE_AND_METRIC_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME.getName(),
+				Property.ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME.getDefaultValue());
 
 		String algorithm = config.getValue(Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getName(), Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getDefaultValue());
 		try {
@@ -106,8 +144,23 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_numShards = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT.getName(), Property.ELASTICSEARCH_SHARDS_COUNT.getDefaultValue()));
 
+		_replicationFactorForScopeIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX.getName(), Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX.getDefaultValue()));
+
+		_numShardsForScopeIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX.getDefaultValue()));
+
+		_replicationFactorForScopeAndMetricIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX.getName(), Property.ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX.getDefaultValue()));
+
+		_numShardsForScopeAndMetricIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX.getDefaultValue()));
+
 		_bulkIndexingSize = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getName(), Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getDefaultValue()));
+
+		_useScopeMetricNamesIndex = Boolean.parseBoolean(
+				config.getValue(Property.ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX.getName(), Property.ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX.getDefaultValue()));
 
 		String[] nodes = config.getValue(Property.ELASTICSEARCH_ENDPOINT.getName(), Property.ELASTICSEARCH_ENDPOINT.getDefaultValue()).split(",");
 		HttpHost[] httpHosts = new HttpHost[nodes.length];
@@ -129,7 +182,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				try {
 					int connCount = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_CONNECTION_COUNT.getName(),
 							Property.ELASTICSEARCH_CONNECTION_COUNT.getDefaultValue()));
-					PoolingNHttpClientConnectionManager connMgr = 
+					PoolingNHttpClientConnectionManager connMgr =
 							new PoolingNHttpClientConnectionManager(new DefaultConnectingIOReactor());
 					connMgr.setMaxTotal(connCount);
 					connMgr.setDefaultMaxPerRoute(connCount / httpHosts.length);
@@ -150,6 +203,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				int socketTimeout = Integer.parseInt(config.getValue(Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getName(),
 						Property.ELASTICSEARCH_ENDPOINT_SOCKET_TIMEOUT.getDefaultValue()));
 				requestConfigBuilder.setConnectTimeout(connTimeout).setSocketTimeout(socketTimeout);
+
+				_logger.info("_esRestClient set connTimeoutMillis {} socketTimeoutMillis {}",
+						connTimeout, socketTimeout);
+
 				return requestConfigBuilder;
 			}
 		};
@@ -160,7 +217,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				.setMaxRetryTimeoutMillis(MAX_RETRY_TIMEOUT)
 				.build();
 
-		_createIndexIfNotExists();
+		_logger.info("_esRestClient set MaxRetryTimeoutsMillis {}", MAX_RETRY_TIMEOUT);
+
+		_createIndexIfNotExists(INDEX_NAME, _replicationFactor, _numShards, () -> _createMappingsNode());
+
+		_createIndexIfNotExists(SCOPE_INDEX_NAME, _replicationFactorForScopeIndex, _numShardsForScopeIndex,
+				() -> _createScopeMappingsNode());
+
+		_createIndexIfNotExists(SCOPE_AND_METRIC_INDEX_NAME, _replicationFactorForScopeAndMetricIndex,
+				_numShardsForScopeAndMetricIndex, () -> _createScopeAndMetricMappingsNode());
 	}
 
 
@@ -175,7 +240,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-
 	@Override
 	public Properties getServiceProperties() {
 		Properties serviceProps = new Properties();
@@ -186,37 +250,63 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return serviceProps;
 	}
 
-
 	@Override
-	protected void implementationSpecificPut(List<Metric> metrics) {
+	protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
+											 Set<Pair<String, String>> scopesAndMetricNames) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
-
-		_logger.info("{} new metrics need to be indexed on ES.", metrics.size());
 
 		long start = System.currentTimeMillis();
 		List<List<MetricSchemaRecord>> fracturedList = _fracture(metrics);
 
+        int count = 0;
+
 		for(List<MetricSchemaRecord> records : fracturedList) {
 			if(!records.isEmpty()) {
-				if(_syncPut) {
-					_upsert(records);
-				} else {
-					_upsertAsync(records);
-				}
-			}
-		}
-
-		int count = 0;
-		for(List<MetricSchemaRecord> records : fracturedList) {
-			count += records.size();
+				upsert(records);
+                count += records.size();
+            }
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, count, null);
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+
+		_logger.info("{} new metrics were indexed in {} ms.", count, (System.currentTimeMillis() - start));
+
+		start = System.currentTimeMillis();
+		List<List<ScopeOnlySchemaRecord>> fracturedScopesList = _fractureScopes(scopeNames);
+
+        count = 0;
+		for(List<ScopeOnlySchemaRecord> records : fracturedScopesList) {
+			if(!records.isEmpty()) {
+				upsertScopes(records);
+                count += records.size();
+			}
+		}
+
+		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITTEN, count, null);
+		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+
+		_logger.info("{} new scopes were indexed in {} ms.", count, (System.currentTimeMillis() - start));
+
+		start = System.currentTimeMillis();
+		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedScopesAndMetricsList = _fractureScopeAndMetrics(scopesAndMetricNames);
+
+        count = 0;
+		for(List<ScopeAndMetricOnlySchemaRecord> records : fracturedScopesAndMetricsList) {
+			if(!records.isEmpty()) {
+				upsertScopeAndMetrics(records);
+                count += records.size();
+			}
+		}
+
+		_monitorService.modifyCounter(MonitorService.Counter.SCOPEANDMETRICNAMES_WRITTEN, count, null);
+		_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+
+		_logger.info("{} new scope and metric names were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 	}
 
 	/* Convert the given list of metrics to a list of metric schema records. At the same time, fracture the records list
-	 * if its size is greater than INDEXING_BATCH_SIZE.
+	 * if its size is greater than ELASTICSEARCH_INDEXING_BATCH_SIZE.
 	 */
 	protected List<List<MetricSchemaRecord>> _fracture(List<Metric> metrics) {
 		List<List<MetricSchemaRecord>> fracturedList = new ArrayList<>();
@@ -235,7 +325,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			}
 
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
-				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
+				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(),
 						entry.getKey(), entry.getValue()));
 				if(records.size() == _bulkIndexingSize) {
 					fracturedList.add(records);
@@ -244,7 +334,56 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			}
 		}
 
-		fracturedList.add(records);
+		if(!records.isEmpty()) {
+			fracturedList.add(records);
+		}
+
+		return fracturedList;
+	}
+
+	/* Convert the given list of scope and metric names to a list of scope and metric only schema records.
+	 * At the same time, fracture the records list if its size is greater than ELASTICSEARCH_INDEXING_BATCH_SIZE.
+	 */
+	protected List<List<ScopeAndMetricOnlySchemaRecord>> _fractureScopeAndMetrics(Set<Pair<String, String>> scopesAndMetricNames) {
+		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedList = new ArrayList<>();
+
+		List<ScopeAndMetricOnlySchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
+		for(Pair<String, String> scopeAndMetric : scopesAndMetricNames) {
+			records.add(new ScopeAndMetricOnlySchemaRecord(scopeAndMetric.getLeft(), scopeAndMetric.getRight()));
+
+			if(records.size() == _bulkIndexingSize) {
+				fracturedList.add(records);
+				records = new ArrayList<>(_bulkIndexingSize);
+			}
+		}
+
+		if(!records.isEmpty()) {
+			fracturedList.add(records);
+		}
+
+		return fracturedList;
+	}
+
+	/* Convert the given list of scopes to a list of scope only schema records. At the same time, fracture the records list
+	 * if its size is greater than ELASTICSEARCH_INDEXING_BATCH_SIZE.
+	 */
+	protected List<List<ScopeOnlySchemaRecord>> _fractureScopes(Set<String> scopeNames) {
+		List<List<ScopeOnlySchemaRecord>> fracturedList = new ArrayList<>();
+
+		List<ScopeOnlySchemaRecord> records = new ArrayList<>(_bulkIndexingSize);
+		for(String scope : scopeNames) {
+			records.add(new ScopeOnlySchemaRecord(scope));
+
+			if(records.size() == _bulkIndexingSize) {
+				fracturedList.add(records);
+				records = new ArrayList<>(_bulkIndexingSize);
+			}
+		}
+
+		if(!records.isEmpty()) {
+			fracturedList.add(records);
+		}
+
 		return fracturedList;
 	}
 
@@ -253,7 +392,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
 		long size = (long) query.getLimit() * query.getPage();
-		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
 				"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
 
 
@@ -283,6 +422,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		String queryJson = _constructTermQuery(query, from, scrollSize);
 
 		try {
+			_logger.debug("get POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 
 			MetricSchemaRecordList list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
@@ -298,7 +438,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					requestBody.put("scroll_id", scrollID);
 					requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
-					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
+					String requestJson = new ObjectMapper().writeValueAsString(requestBody);
+					_logger.debug("get Scroll POST requestUrl {} queryJson {}", requestUrl, queryJson);
+					response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestJson));
 
 					list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
 					records.addAll(list.getRecords());
@@ -337,44 +479,69 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricSchemaRecordQuery cannot be null.");
 		long size = (long) query.getLimit() * query.getPage();
-		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
 				"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
 
 
 		Map<String, String> tags = new HashMap<>();
 		tags.put("type", "REGEXP_WITH_AGGREGATION");
 		long start = System.currentTimeMillis();
+
+		String indexName = INDEX_NAME;
+		String typeName = TYPE_NAME;
+
+		if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type))
+		{
+			indexName = SCOPE_INDEX_NAME;
+			typeName = SCOPE_TYPE_NAME;
+		}
+		else if (_useScopeMetricNamesIndex && query.isQueryOnlyOnScopeAndMetric() &&
+				(RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type)))
+		{
+			indexName = SCOPE_AND_METRIC_INDEX_NAME;
+			typeName = SCOPE_AND_METRIC_TYPE_NAME;
+		}
+
 		String requestUrl = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(indexName)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(typeName)
 				.append("/")
 				.append("_search")
 				.toString();
 
-		String queryJson = _constructTermAggregationQuery(query, type);
 		try {
+
+			String queryJson = _constructTermAggregationQuery(query, type);
+			_logger.debug("getUnique POST requestUrl {} queryJson {}", requestUrl, queryJson);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(queryJson));
 			String str = extractResponse(response);
-			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(
-					toEntity(str, new TypeReference<List<String>>() {}), type);
+			List<MetricSchemaRecord> records = SchemaService.constructMetricSchemaRecordsForType(toEntity(str, new TypeReference<List<String>>() {}), type);
+
+			if (query.isQueryOnlyOnScope() && RecordType.SCOPE.equals(type)) {
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCOPENAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+
+			} else if (_useScopeMetricNamesIndex && query.isQueryOnlyOnScopeAndMetric() &&
+					(RecordType.SCOPE.equals(type) || RecordType.METRIC.equals(type))) {
+				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+			} else {
+				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
+				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
+			}
 
 			int fromIndex = query.getLimit() * (query.getPage() - 1);
 			if(records.size() <= fromIndex) {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return Collections.emptyList();
 			}
 
 			if(records.size() < query.getLimit() * query.getPage()) {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, records.size());
 			} else {
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_COUNT, 1, tags);
-				_monitorService.modifyCounter(Counter.SCHEMARECORDS_QUERY_LATENCY, (System.currentTimeMillis() - start), tags);
 				return records.subList(fromIndex, query.getLimit() * query.getPage());
 			}
+
 		} catch (IOException e) {
 			throw new SystemException(e);
 		}
@@ -387,7 +554,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		SystemAssert.requireArgument(kq.getQuery() != null || kq.getType() != null, "Either the query string or the type must not be null.");
 
 		long size = (long) kq.getLimit() * kq.getPage();
-		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE, 
+		SystemAssert.requireArgument(size > 0 && size <= Integer.MAX_VALUE,
 				"(limit * page) must be greater than 0 and atmost Integer.MAX_VALUE");
 
 
@@ -433,7 +600,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 						requestBody.put("scroll_id", list.getScrollID());
 						requestBody.put("scroll", KEEP_SCROLL_CONTEXT_OPEN_FOR);
 
-						response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), 
+						response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
 								new StringEntity(new ObjectMapper().writeValueAsString(requestBody)));
 
 						list = toEntity(extractResponse(response), new TypeReference<MetricSchemaRecordList>() {});
@@ -523,7 +690,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-
 	private List<String> _analyzedTokens(String query) {
 
 		if(!SchemaService.containsFilter(query)) {
@@ -552,9 +718,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-
-	private void _upsert(List<MetricSchemaRecord> records) {
-
+	protected void upsert(List<MetricSchemaRecord> records) {
 		String requestUrl = new StringBuilder().append("/")
 				.append(INDEX_NAME)
 				.append("/")
@@ -570,6 +734,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			String requestBody = _mapper.writeValueAsString(msrList);
 			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
 			strResponse = extractResponse(response);
+
 		} catch (IOException e) {
 			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
 			throw new SystemException(e);
@@ -592,85 +757,202 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					}
 				}
 				if(recordsToRemove.size() != 0) {
-					_logger.info("{} records were not written to ES", recordsToRemove.size());
+					_logger.warn("{} records were not written to ES", recordsToRemove.size());
 					records.removeAll(recordsToRemove);
 				}
 			}
 			//add to bloom filter
 			_addToBloomFilter(records);
+
 		} catch(IOException e) {
 			throw new SystemException("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
 		}
 	}
 
-	private void _upsertAsync(List<MetricSchemaRecord> records) {
-
+	protected void upsertScopeAndMetrics(List<ScopeAndMetricOnlySchemaRecord> records) {
 		String requestUrl = new StringBuilder().append("/")
-				.append(INDEX_NAME)
+				.append(SCOPE_AND_METRIC_INDEX_NAME)
 				.append("/")
-				.append(TYPE_NAME)
+				.append(SCOPE_AND_METRIC_TYPE_NAME)
 				.append("/")
 				.append("_bulk")
 				.toString();
 
-		MetricSchemaRecordList msrList = new MetricSchemaRecordList(records, _idgenHashAlgo);
-		StringEntity entity;
 		try {
-			String requestBody = _mapper.writeValueAsString(msrList);
-			entity = new StringEntity(requestBody);
-		} catch (JsonProcessingException | UnsupportedEncodingException e) {
-			throw new SystemException("Failed to parse metrics to schema records when indexing.", e);
-		}
 
-		ResponseListener responseListener = new ResponseListener() {
+			ScopeAndMetricOnlySchemaRecordList createSchemaRecordList = new ScopeAndMetricOnlySchemaRecordList(records, _idgenHashAlgo);
+			String requestBody = _createScopeAndMetricOnlyMapper.writeValueAsString(createSchemaRecordList);
+			PutResponse putResponse = _performRequest(requestUrl, requestBody);
 
-			@Override
-			public void onSuccess(Response response) {
-				String strResponse = extractResponse(response);
-				try {
-					PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
-					//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
-					if(putResponse.errors) {
-						List<MetricSchemaRecord> recordsToRemove = new ArrayList<>();
-						for(Item item : putResponse.items) {
-							if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-								_logger.warn("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-								recordsToRemove.add(msrList.getRecord(item.create._id));
-							}
+			Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
 
-							if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-								_logger.warn("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-								recordsToRemove.add(msrList.getRecord(item.index._id));
-							}
-						}
-						if(recordsToRemove.size() != 0) {
-							_logger.info("{} records were not written to ES", recordsToRemove.size());
-							records.removeAll(recordsToRemove);
-						}
-					} 
-					//add to bloom filter
-					_addToBloomFilter(records);
-				} catch(IOException e) {
-					_logger.warn("Failed to parse reponse of put metrics. The response was: " + strResponse, e);
+			List<String> failedIds = failedResponses.getLeft();
+			List<String> updateRequiredIds = failedResponses.getRight();
+
+			if (updateRequiredIds.size() > 0) {
+
+				List<ScopeAndMetricOnlySchemaRecord> updateRequiredRecords = new ArrayList<>();
+
+				for (String id : updateRequiredIds) {
+					updateRequiredRecords.add(createSchemaRecordList.getRecord(id));
 				}
+
+				ScopeAndMetricOnlySchemaRecordList updateSchemaRecordList = new ScopeAndMetricOnlySchemaRecordList(updateRequiredRecords, _idgenHashAlgo);
+				requestBody = _updateScopeAndMetricOnlyMapper.writeValueAsString(updateSchemaRecordList);
+				putResponse = _performRequest(requestUrl, requestBody);
+
+				failedResponses = _parseFailedResponses(putResponse);
+
+				// We collect new failures.
+				failedIds.addAll(failedResponses.getLeft());
+
+				// We do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// This usually happens when there is another concurrent update happening to mts field"
 			}
 
-			@Override
-			public void onFailure(Exception e) {
-				//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
-				_logger.warn("Failed to execute the indexing request.", e);
+			if (failedIds.size() > 0) {
+				_logger.warn("{} records were not written to scope and metric ES", failedIds.size());
 			}
-		};
 
-		_esRestClient.performRequestAsync(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), entity, responseListener);
+			for (String id : failedIds) {
+				records.remove(createSchemaRecordList.getRecord(id));
+			}
+
+			//add to bloom filter
+			_addToBloomFilterScopeAndMetricOnly(records);
+
+		} catch (IOException e) {
+			throw new SystemException("Failed to create/update scope and metric ES. ", e);
+		}
 	}
 
-	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
+	protected void upsertScopes(List<ScopeOnlySchemaRecord> records) {
+
+		String requestUrl = new StringBuilder().append("/")
+				.append(SCOPE_INDEX_NAME)
+				.append("/")
+				.append(SCOPE_TYPE_NAME)
+				.append("/")
+				.append("_bulk")
+				.toString();
+
+		try {
+
+			ScopeOnlySchemaRecordList createSchemaRecordList = new ScopeOnlySchemaRecordList(records, _idgenHashAlgo);
+			String requestBody = _createScopeOnlyMapper.writeValueAsString(createSchemaRecordList);
+			PutResponse putResponse = _performRequest(requestUrl, requestBody);
+
+			Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
+
+			List<String> failedIds = failedResponses.getLeft();
+			List<String> updateRequiredIds = failedResponses.getRight();
+
+			if (updateRequiredIds.size() > 0) {
+
+				List<ScopeOnlySchemaRecord> updateRequiredRecords = new ArrayList<>();
+
+				for (String id : updateRequiredIds) {
+					updateRequiredRecords.add(createSchemaRecordList.getRecord(id));
+				}
+
+				ScopeOnlySchemaRecordList updateSchemaRecordList = new ScopeOnlySchemaRecordList(updateRequiredRecords, _idgenHashAlgo);
+				requestBody = _updateScopeOnlyMapper.writeValueAsString(updateSchemaRecordList);
+				putResponse = _performRequest(requestUrl, requestBody);
+
+				failedResponses = _parseFailedResponses(putResponse);
+
+				// We collect new failures.
+				failedIds.addAll(failedResponses.getLeft());
+
+				// We do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+				// This usually happens when there is another concurrent update happening to mts field"
+			}
+
+			if (failedIds.size() > 0) {
+				_logger.warn("{} records were not written to scope ES", failedIds.size());
+			}
+
+			for(String id : failedIds) {
+				records.remove(createSchemaRecordList.getRecord(id));
+			}
+
+			//add to bloom filter
+			_addToBloomFilterScopeOnly(records);
+
+		} catch (IOException e) {
+			throw new SystemException("Failed to create/update scope ES. ", e);
+		}
+	}
+
+	private PutResponse _performRequest(String requestUrl, String requestBody) throws IOException {
+
+		String strResponse = "";
+
+		Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+
+		//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
+
+		strResponse = extractResponse(response);
+
+		PutResponse putResponse = new ObjectMapper().readValue(strResponse, PutResponse.class);
+		return putResponse;
+	}
+
+	private Pair<List<String>, List<String>> _parseFailedResponses(PutResponse putResponse) throws IOException {
+
+		List<String> failedIds = new ArrayList<>();
+		List<String> updateRequiredIds = new ArrayList<>();
+
+		//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
+		if (putResponse.errors) {
+			for (Item item : putResponse.items) {
+
+				if (item.create != null && item.create.status != HttpStatus.SC_CREATED) {
+
+					if (item.create.status == HttpStatus.SC_CONFLICT) {
+						updateRequiredIds.add(item.create._id);
+					} else {
+						_logger.debug("Failed to create document. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
+						failedIds.add(item.create._id);
+					}
+				}
+
+				if (item.update != null && item.update.status != HttpStatus.SC_OK) {
+
+					if (item.update.status == HttpStatus.SC_CONFLICT) {
+						updateRequiredIds.add(item.update._id);
+					} else {
+						_logger.warn("Failed to update document. Reason: " + new ObjectMapper().writeValueAsString(item.update.error));
+						failedIds.add(item.update._id);
+					}
+				}
+			}
+		}
+		return Pair.of(failedIds, updateRequiredIds);
+	}
+
+	protected void _addToBloomFilter(List<MetricSchemaRecord> records) {
 		_logger.info("Adding {} records into bloom filter.", records.size());
-		for(MetricSchemaRecord record : records) {		
-			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());		
-			bloomFilter.put(key);		
-		}		
+		for (MetricSchemaRecord record : records) {
+			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
+			bloomFilter.put(key);
+		}
+	}
+
+	protected void _addToBloomFilterScopeAndMetricOnly(List<ScopeAndMetricOnlySchemaRecord> records) {
+		_logger.info("Adding {} records into scope and metric only bloom filter.", records.size());
+		for (ScopeAndMetricOnlySchemaRecord record : records) {
+			String key = constructScopeAndMetricOnlyKey(record.getScope(), record.getMetric());
+			bloomFilterScopeAndMetricOnly.put(key);
+		}
+	}
+
+	protected void _addToBloomFilterScopeOnly(List<ScopeOnlySchemaRecord> records) {
+		_logger.info("Adding {} records into scope only bloom filter.", records.size());
+		for (ScopeOnlySchemaRecord record : records) {
+			String key = constructScopeOnlyKey(record.getScope());
+			bloomFilterScopeOnly.put(key);
+		}
 	}
 
 	private String _constructTermAggregationQuery(MetricSchemaRecordQuery query, RecordType type) {
@@ -823,7 +1105,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return queryNode;
 	}
 
-
 	private ObjectNode _constructAggsNode(RecordType type, long limit, ObjectMapper mapper) {
 
 		ObjectNode termsNode = mapper.createObjectNode();
@@ -850,11 +1131,24 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
+	/* Method to change the rest client. Used for testing. */
+	protected void setRestClient(RestClient restClient)
+	{
+		this._esRestClient = restClient;
+	}
 
-	/** Helper to process the response. 
+	/* Method to enable ScopeMetricNames Index. Used for testing. */
+	protected void enableScopeMetricNamesIndex()
+	{
+		this._useScopeMetricNamesIndex = true;
+	}
+
+	/** Helper to process the response.
 	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
+	 * @param response ES response
+	 * @return	Stringified response
 	 */
-	private String extractResponse(Response response) {
+	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
 
 		int status = response.getStatusLine().getStatusCode();
@@ -904,14 +1198,39 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		SimpleModule module = new SimpleModule();
 		module.addSerializer(MetricSchemaRecordList.class, new MetricSchemaRecordList.Serializer());
 		module.addDeserializer(MetricSchemaRecordList.class, new MetricSchemaRecordList.Deserializer());
-		module.addDeserializer(List.class, new MetricSchemaRecordList.AggDeserializer());
+		module.addDeserializer(List.class, new SchemaRecordList.AggDeserializer());
 		mapper.registerModule(module);
 
 		return mapper;
 	}
 
+	private ObjectMapper _getScopeAndMetricOnlyObjectMapper(JsonSerializer<ScopeAndMetricOnlySchemaRecordList> serializer) {
+		ObjectMapper mapper = new ObjectMapper();
 
-	private ObjectNode _createSettingsNode() {
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(ScopeAndMetricOnlySchemaRecordList.class, serializer);
+		module.addDeserializer(ScopeAndMetricOnlySchemaRecordList.class, new ScopeAndMetricOnlySchemaRecordList.Deserializer());
+		module.addDeserializer(List.class, new SchemaRecordList.AggDeserializer());
+		mapper.registerModule(module);
+
+		return mapper;
+	}
+
+	private ObjectMapper _getScopeOnlyObjectMapper(JsonSerializer<ScopeOnlySchemaRecordList> serializer) {
+		ObjectMapper mapper = new ObjectMapper();
+
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(ScopeOnlySchemaRecordList.class, serializer);
+		module.addDeserializer(ScopeOnlySchemaRecordList.class, new ScopeOnlySchemaRecordList.Deserializer());
+		module.addDeserializer(List.class, new SchemaRecordList.AggDeserializer());
+		mapper.registerModule(module);
+
+		return mapper;
+	}
+
+	private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
 		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode metadataAnalyzer = mapper.createObjectNode();
@@ -930,17 +1249,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		ObjectNode indexNode = mapper.createObjectNode();
 		indexNode.put("max_result_window", INDEX_MAX_RESULT_WINDOW);
-		indexNode.put("number_of_replicas", _replicationFactor);
-		indexNode.put("number_of_shards", _numShards);
+		indexNode.put("number_of_replicas", replicationFactor);
+		indexNode.put("number_of_shards", numShards);
 
 		ObjectNode settingsNode = mapper.createObjectNode();
 		settingsNode.put("analysis", analysisNode);
 		settingsNode.put("index", indexNode);
 
 		return settingsNode;
-
 	}
-
 
 	private ObjectNode _createMappingsNode() {
 		ObjectMapper mapper = new ObjectMapper();
@@ -952,17 +1269,53 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 
-		propertiesNode.put("mts", _createFieldNode(FIELD_TYPE_DATE));
+		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		ObjectNode typeNode = mapper.createObjectNode();
 		typeNode.put("properties", propertiesNode);
 
 		ObjectNode mappingsNode = mapper.createObjectNode();
 		mappingsNode.put(TYPE_NAME, typeNode);
+		return mappingsNode;
+	}
+
+	private ObjectNode _createScopeAndMetricMappingsNode() {
+		ObjectMapper mapper = new ObjectMapper();
+
+		ObjectNode propertiesNode = mapper.createObjectNode();
+		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+
+		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.put("cts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+
+		ObjectNode typeNode = mapper.createObjectNode();
+		typeNode.put("properties", propertiesNode);
+
+		ObjectNode mappingsNode = mapper.createObjectNode();
+		mappingsNode.put(SCOPE_AND_METRIC_TYPE_NAME, typeNode);
 
 		return mappingsNode;
 	}
 
+
+	private ObjectNode _createScopeMappingsNode() {
+		ObjectMapper mapper = new ObjectMapper();
+
+		ObjectNode propertiesNode = mapper.createObjectNode();
+		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+
+		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.put("cts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+
+		ObjectNode typeNode = mapper.createObjectNode();
+		typeNode.put("properties", propertiesNode);
+
+		ObjectNode mappingsNode = mapper.createObjectNode();
+		mappingsNode.put(SCOPE_TYPE_NAME, typeNode);
+
+		return mappingsNode;
+	}
 
 	private ObjectNode _createFieldNode(String type) {
 		ObjectMapper mapper = new ObjectMapper();
@@ -978,27 +1331,37 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return fieldNode;
 	}
 
-	private void _createIndexIfNotExists() {
+	private ObjectNode _createFieldNodeNoAnalyzer(String type) {
+		ObjectMapper mapper = new ObjectMapper();
+
+		ObjectNode fieldNode = mapper.createObjectNode();
+		fieldNode.put("type", type);
+		return fieldNode;
+	}
+
+	private void _createIndexIfNotExists(String indexName, int replicationFactor, int numShards,
+										 Supplier<ObjectNode> createMappingsNode) {
 		try {
-			Response response = _esRestClient.performRequest(HttpMethod.HEAD.getName(), "/" + INDEX_NAME);
+			Response response = _esRestClient.performRequest(HttpMethod.HEAD.getName(), "/" + indexName);
 			boolean indexExists = response.getStatusLine().getStatusCode() == HttpStatus.SC_OK ? true : false;
 
 			if(!indexExists) {
-				_logger.info("Index [" + INDEX_NAME + "] does not exist. Will create one.");
+				_logger.info("Index [" + indexName + "] does not exist. Will create one.");
 				ObjectMapper mapper = new ObjectMapper();
 
 				ObjectNode rootNode = mapper.createObjectNode();
-				rootNode.put("settings", _createSettingsNode());
-				rootNode.put("mappings", _createMappingsNode());
+				rootNode.put("settings", _createSettingsNode(replicationFactor, numShards));
+				rootNode.put("mappings", createMappingsNode.get());
 
 				String settingsAndMappingsJson = rootNode.toString();
-				String requestUrl = new StringBuilder().append("/").append(INDEX_NAME).toString();
+				String requestUrl = new StringBuilder().append("/").append(indexName).toString();
 
 				response = _esRestClient.performRequest(HttpMethod.PUT.getName(), requestUrl, Collections.emptyMap(), new StringEntity(settingsAndMappingsJson));
 				extractResponse(response);
 			}
 		} catch (Exception e) {
-			_logger.error("Failed to check/create elasticsearch index. ElasticSearchSchemaService may not function.", e);
+			_logger.error("Failed to check/create {} index. ElasticSearchSchemaService may not function. {}",
+				indexName, e);
 		}
 	}
 
@@ -1050,12 +1413,34 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ELASTICSEARCH_NUM_REPLICAS("service.property.schema.elasticsearch.num.replicas", "1"),
 		/** Shard count for metadata_index. */
 		ELASTICSEARCH_SHARDS_COUNT("service.property.schema.elasticsearch.shards.count", "10"),
+		/** Replication factor for scopenames */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.index", "1"),
+		/** Shard count for scopenames */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "6"),
 		/** The no. of records to batch for bulk indexing requests.
-		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests 
+		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests
 		 */
 		ELASTICSEARCH_INDEXING_BATCH_SIZE("service.property.schema.elasticsearch.indexing.batch.size", "10000"),
+
+		ELASTICSEARCH_USE_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.use.scopeandmetric.index", "false"),
+
 		/** The hashing algorithm to use for generating document id. */
-		ELASTICSEARCH_IDGEN_HASH_ALGO("service.property.schema.elasticsearch.idgen.hash.algo", "MD5");
+		ELASTICSEARCH_IDGEN_HASH_ALGO("service.property.schema.elasticsearch.idgen.hash.algo", "MD5"),
+
+		/** Name of scope only index */
+		ELASTICSEARCH_SCOPE_INDEX_NAME("service.property.schema.elasticsearch.scope.index.name", "scopenames"),
+		/** Type within scope only index */
+		ELASTICSEARCH_SCOPE_TYPE_NAME("service.property.schema.elasticsearch.scope.type.name", "scope_type"),
+
+		/** Replication factor for scope and metric names */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.num.replicas.for.scopeandmetric.index", "1"),
+		/** Shard count for scope and metric names */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.shards.count.for.scopeandmetric.index", "6"),
+
+		/** Name of scope and metric only index */
+		ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME("service.property.schema.elasticsearch.scopeandmetric.index.name", "scopemetricnames"),
+		/** Type within scope and metric only index */
+		ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME("service.property.schema.elasticsearch.scopeandmetric.type.name", "scopemetric_type");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -1083,7 +1468,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			return _defaultValue;
 		}
 	}
-
 
 	static class PutResponse {
 		private int took;
@@ -1120,6 +1504,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		static class Item {
 			private CreateItem create;
 			private CreateItem index;
+			private CreateItem update;
 
 			public Item() {}
 
@@ -1138,6 +1523,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			public void setIndex(CreateItem index) {
 				this.index = index;
 			}
+
+			public CreateItem getUpdate() {
+				return update;
+			}
+
+			public void setUpdate(CreateItem update) {
+				this.update = update;
+			}
 		}
 
 		@JsonIgnoreProperties(ignoreUnknown = true)
@@ -1146,6 +1539,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			private String _type;
 			private String _id;
 			private int status;
+			private int _version;
 			private Error error;
 
 			public CreateItem() {}
@@ -1172,6 +1566,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 			public void set_id(String _id) {
 				this._id = _id;
+			}
+
+			public int get_version() {
+				return _version;
+			}
+
+			public void set_version(int _version) {
+				this._version = _version;
 			}
 
 			public int getStatus() {
