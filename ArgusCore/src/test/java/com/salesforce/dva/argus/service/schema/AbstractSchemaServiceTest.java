@@ -3,15 +3,10 @@ package com.salesforce.dva.argus.service.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -21,8 +16,6 @@ import org.mockito.stubbing.Answer;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
-import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.service.schema.ElasticSearchSchemaService;
 
 
 /**
@@ -188,7 +181,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 	}
 
 	@Test
-	public void getNumHoursUntilNextFlushBloomFilter() {
+	public void testNumHoursUntilNextFlushBloomFilter() {
 		ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
 
 		Calendar calendar = Calendar.getInstance();

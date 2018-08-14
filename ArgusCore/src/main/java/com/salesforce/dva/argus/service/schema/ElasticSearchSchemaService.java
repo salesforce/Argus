@@ -92,7 +92,6 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final ObjectMapper _updateScopeAndMetricOnlyMapper;
 
 	private Logger _logger = LoggerFactory.getLogger(getClass());
-	private final MonitorService _monitorService;
 	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
@@ -107,9 +106,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 	@Inject
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
-		super(config);
+		super(config, monitorService);
 
-		_monitorService = monitorService;
 		_mapper = _createObjectMapper();
 
 		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
