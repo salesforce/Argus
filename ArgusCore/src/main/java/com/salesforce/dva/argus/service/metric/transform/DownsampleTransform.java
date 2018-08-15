@@ -145,9 +145,9 @@ public class DownsampleTransform implements Transform {
 		Long endTime = null;
 		Double defaultValue = null;
 		if(constants.size()==4) {
-			long currMinuteStartTime = 60*1000*(System.currentTimeMillis()/(60*1000));
-			startTime = MetricReader.getTime(currMinuteStartTime, constants.get(1));
-			endTime = MetricReader.getTime(currMinuteStartTime, constants.get(2));
+			long currMinuteEndTime = 60*1000*(System.currentTimeMillis()/(60*1000)) + 60*1000;
+			startTime = MetricReader.getTime(currMinuteEndTime, constants.get(1));
+			endTime = MetricReader.getTime(currMinuteEndTime, constants.get(2));
 			defaultValue = Double.parseDouble(constants.get(3));
 		}
 		// init windowSize
