@@ -447,7 +447,7 @@ public class Trigger extends JPAEntity implements Serializable {
         BETWEEN,
         /** Not between. */
         NOT_BETWEEN,
-    	    /** Is NULL */
+    	    /** No Data */
     	    NO_DATA;
 
         /**

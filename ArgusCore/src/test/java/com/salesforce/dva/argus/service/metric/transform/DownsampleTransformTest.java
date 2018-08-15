@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -45,950 +45,996 @@ import static org.junit.Assert.assertEquals;
 
 public class DownsampleTransformTest {
 
-    private static final String TEST_SCOPE = "test-scope";
-    private static final String TEST_METRIC = "test-metric";
+	private static final String TEST_SCOPE = "test-scope";
+	private static final String TEST_METRIC = "test-metric";
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampleTransformWithIllegalUnit() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampleTransformWithIllegalUnit() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+		datapoints.put(1000L, 1.0);
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+		Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric.setDatapoints(datapoints);
+		metric.setDatapoints(datapoints);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric);
+		metrics.add(metric);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2k-avg");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("2k-avg");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampelTransformWithIllegalType() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampelTransformWithIllegalType() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+		datapoints.put(1000L, 1.0);
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+		Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric.setDatapoints(datapoints);
+		metric.setDatapoints(datapoints);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric);
+		metrics.add(metric);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2s-foobar");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("2s-foobar");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampleTransformWithoutUnit() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampleTransformWithoutUnit() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+		datapoints.put(1000L, 1.0);
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+		Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric.setDatapoints(datapoints);
+		metric.setDatapoints(datapoints);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric);
+		metrics.add(metric);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("-min");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("-min");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampleTransformWithoutType() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampleTransformWithoutType() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+		datapoints.put(1000L, 1.0);
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+		Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric.setDatapoints(datapoints);
+		metric.setDatapoints(datapoints);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric);
+		metrics.add(metric);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("6s-");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("6s-");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampleTransformWithIllegalExpFormat() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampleTransformWithIllegalExpFormat() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        datapoints.put(1000L, 1.0);
+		datapoints.put(1000L, 1.0);
 
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
+		Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
-        metric.setDatapoints(datapoints);
+		metric.setDatapoints(datapoints);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric);
+		metrics.add(metric);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("***test");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("***test");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDownsampleTransformWithoutMetrics() {
-        Transform downsampleTransform = new DownsampleTransform();
-        List<Metric> metrics = null;
-        List<String> constants = new ArrayList<String>();
+	@Test(expected = IllegalArgumentException.class)
+	public void testDownsampleTransformWithoutMetrics() {
+		Transform downsampleTransform = new DownsampleTransform();
+		List<Metric> metrics = null;
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2");
-        constants.add("average");
-        downsampleTransform.transform(metrics, constants);
-    }
+		constants.add("2");
+		constants.add("average");
+		downsampleTransform.transform(metrics, constants);
+	}
 
-    @Test
-    public void testDownsampleTransformAvgOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+	@Test
+	public void testDownsampleTransformAvgOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(0L, 1.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		datapoints_1.put(0L, 1.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        metric_1.setDatapoints(datapoints_1);
+		metric_1.setDatapoints(datapoints_1);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric_1);
+		metrics.add(metric_1);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2s-avg");
+		constants.add("2s-avg");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, 1.0);
-        expected_1.put(2000L, 2.5);
-        expected_1.put(4000L, 4.5);
-        expected_1.put(6000L, 6.5);
-        expected_1.put(8000L, 8.5);
+		expected_1.put(0L, 1.0);
+		expected_1.put(2000L, 2.5);
+		expected_1.put(4000L, 4.5);
+		expected_1.put(6000L, 6.5);
+		expected_1.put(8000L, 8.5);
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-    @Test
-    public void testDownsampleTransformMinOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+	@Test
+	public void testDownsampleTransformMinOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1L, 1.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		datapoints_1.put(1L, 1.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        metric_1.setDatapoints(datapoints_1);
+		metric_1.setDatapoints(datapoints_1);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric_1);
+		metrics.add(metric_1);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2s-min");
+		constants.add("2s-min");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, 1.0);
-        expected_1.put(2000L, 2.0);
-        expected_1.put(4000L, 4.0);
-        expected_1.put(6000L, 6.0);
-        expected_1.put(8000L, 8.0);
+		expected_1.put(0L, 1.0);
+		expected_1.put(2000L, 2.0);
+		expected_1.put(4000L, 4.0);
+		expected_1.put(6000L, 6.0);
+		expected_1.put(8000L, 8.0);
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-    @Test
-    public void testDownsampleTransformMaxOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+	@Test
+	public void testDownsampleTransformMaxOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1L, 1.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		datapoints_1.put(1L, 1.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        metric_1.setDatapoints(datapoints_1);
+		metric_1.setDatapoints(datapoints_1);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        metrics.add(metric_1);
+		metrics.add(metric_1);
 
-        List<String> constants = new ArrayList<String>();
+		List<String> constants = new ArrayList<String>();
 
-        constants.add("2s-max");
+		constants.add("2s-max");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, 1.0);
-        expected_1.put(2000L, 3.0);
-        expected_1.put(4000L, 5.0);
-        expected_1.put(6000L, 7.0);
-        expected_1.put(8000L, 9.0);
+		expected_1.put(0L, 1.0);
+		expected_1.put(2000L, 3.0);
+		expected_1.put(4000L, 5.0);
+		expected_1.put(6000L, 7.0);
+		expected_1.put(8000L, 9.0);
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformShouldReturnSameMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-       
+	@Test
+	public void testDownsampleTransformShouldReturnSameMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
 
-        metric_1.setDatapoints(datapoints_1);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        metrics.add(metric_1);
+		metric_1.setDatapoints(datapoints_1);
 
-        List<String> constants = new ArrayList<String>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        constants.add("1s-sum");
+		metrics.add(metric_1);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		List<String> constants = new ArrayList<String>();
 
-        expected_1.put(1000L, 1.0);
-        expected_1.put(2000L, 2.0);
-        expected_1.put(3000L, 3.0);
-        expected_1.put(4000L, 4.0);
-        expected_1.put(5000L, 5.0);
-        
+		constants.add("1s-sum");
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		expected_1.put(1000L, 1.0);
+		expected_1.put(2000L, 2.0);
+		expected_1.put(3000L, 3.0);
+		expected_1.put(4000L, 4.0);
+		expected_1.put(5000L, 5.0);
 
-    @Test
-    public void testDownsampleTransformSumOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        datapoints_1.put(1L, 0.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        metric_1.setDatapoints(datapoints_1);
+	@Test
+	public void testDownsampleTransformSumOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		datapoints_1.put(1L, 0.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        metrics.add(metric_1);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        List<String> constants = new ArrayList<String>();
+		metric_1.setDatapoints(datapoints_1);
 
-        constants.add("2s-sum");
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metrics.add(metric_1);
 
-        expected_1.put(0L, 1.0);
-        expected_1.put(2000L, 5.0);
-        expected_1.put(4000L, 9.0);
-        expected_1.put(6000L, 13.0);
-        expected_1.put(8000L, 17.0);
+		List<String> constants = new ArrayList<String>();
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		constants.add("2s-sum");
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-    @Test
-    public void testDownsampleTransformDevOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		expected_1.put(0L, 1.0);
+		expected_1.put(2000L, 5.0);
+		expected_1.put(4000L, 9.0);
+		expected_1.put(6000L, 13.0);
+		expected_1.put(8000L, 17.0);
 
-        datapoints_1.put(0L, 0.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
-        datapoints_1.put(10000L, 9.0);
-       
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        metric_1.setDatapoints(datapoints_1);
+	@Test
+	public void testDownsampleTransformDevOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		datapoints_1.put(0L, 0.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
+		datapoints_1.put(10000L, 9.0);
 
-        metrics.add(metric_1);
 
-        List<String> constants = new ArrayList<String>();
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        constants.add("3s-dev");
+		metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        expected_1.put(0L, 1.0);
-        expected_1.put(3000L, 1.0);
-        expected_1.put(6000L, 1.0);
-        expected_1.put(9000L, 0.0);
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		metrics.add(metric_1);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformAvgMultipleMetrics() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		List<String> constants = new ArrayList<String>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		constants.add("3s-dev");
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        metric_1.setDatapoints(datapoints_1);
+		expected_1.put(0L, 1.0);
+		expected_1.put(3000L, 1.0);
+		expected_1.put(6000L, 1.0);
+		expected_1.put(9000L, 0.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        datapoints_2.put(1L, 0.0);
-        datapoints_2.put(1000L, 100.0);
-        datapoints_2.put(2000L, 200.0);
-        datapoints_2.put(3000L, 300.0);
-        datapoints_2.put(4000L, 400.0);
-        datapoints_2.put(5000L, 500.0);
-        datapoints_2.put(6000L, 600.0);
-        datapoints_2.put(7000L, 700.0);
-        datapoints_2.put(8000L, 800.0);
-        datapoints_2.put(9000L, 900.0);
+	@Test
+	public void testDownsampleTransformAvgMultipleMetrics() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        metric_2.setDatapoints(datapoints_2);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		metric_1.setDatapoints(datapoints_1);
 
-        metrics.add(metric_1);
-        metrics.add(metric_2);
+		Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-        List<String> constants = new ArrayList<String>();
+		datapoints_2.put(1L, 0.0);
+		datapoints_2.put(1000L, 100.0);
+		datapoints_2.put(2000L, 200.0);
+		datapoints_2.put(3000L, 300.0);
+		datapoints_2.put(4000L, 400.0);
+		datapoints_2.put(5000L, 500.0);
+		datapoints_2.put(6000L, 600.0);
+		datapoints_2.put(7000L, 700.0);
+		datapoints_2.put(8000L, 800.0);
+		datapoints_2.put(9000L, 900.0);
 
-        constants.add("2s-avg");
+		Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metric_2.setDatapoints(datapoints_2);
 
-        expected_1.put(1000L, 1.5);
-        expected_1.put(3000L, 3.5);
-        expected_1.put(5000L, 5.5);
-        expected_1.put(7000L, 7.5);
-        expected_1.put(9000L, 9.0);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+		metrics.add(metric_1);
+		metrics.add(metric_2);
 
-        expected_2.put(0L, 50.0);
-        expected_2.put(2000L, 250.0);
-        expected_2.put(4000L, 450.0);
-        expected_2.put(6000L, 650.0);
-        expected_2.put(8000L, 850.0);
+		List<String> constants = new ArrayList<String>();
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		constants.add("2s-avg");
 
-        assertEquals(result.size(), 2);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-        assertEquals(expected_2, result.get(1).getDatapoints());
-    }
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-    @Test
-    public void testDownsampleTransformWindowGreaterThanRangeOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		expected_1.put(1000L, 1.5);
+		expected_1.put(3000L, 3.5);
+		expected_1.put(5000L, 5.5);
+		expected_1.put(7000L, 7.5);
+		expected_1.put(9000L, 9.0);
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		expected_2.put(0L, 50.0);
+		expected_2.put(2000L, 250.0);
+		expected_2.put(4000L, 450.0);
+		expected_2.put(6000L, 650.0);
+		expected_2.put(8000L, 850.0);
 
-        metric_1.setDatapoints(datapoints_1);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		assertEquals(result.size(), 2);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+		assertEquals(expected_2, result.get(1).getDatapoints());
+	}
 
-        metrics.add(metric_1);
+	@Test
+	public void testDownsampleTransformWindowGreaterThanRangeOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<String> constants = new ArrayList<String>();
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        constants.add("100s-avg");
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metric_1.setDatapoints(datapoints_1);
 
-        expected_1.put(1000L, 5.0);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		metrics.add(metric_1);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		List<String> constants = new ArrayList<String>();
 
-    @Test
-    public void testDownsampleTransformWindowLessThanUnitOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		constants.add("100s-avg");
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(9000L, 9.0);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		expected_1.put(1000L, 5.0);
 
-        metric_1.setDatapoints(datapoints_1);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        metrics.add(metric_1);
+	@Test
+	public void testDownsampleTransformWindowLessThanUnitOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<String> constants = new ArrayList<String>();
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(9000L, 9.0);
 
-        constants.add("2s-avg");
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metric_1.setDatapoints(datapoints_1);
 
-        expected_1.put(1000L, 1.0);
-        expected_1.put(5000L, 5.0);
-        expected_1.put(9000L, 9.0);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		metrics.add(metric_1);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
+		List<String> constants = new ArrayList<String>();
 
-    @Test
-    public void testDownsampleTransformMinOneMetricHavingNull() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		constants.add("2s-avg");
 
-        datapoints_1.put(1000L, null);
-        datapoints_1.put(2000L, null);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, null);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, null);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, null);
-        datapoints_1.put(9000L, 9.0);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		expected_1.put(1000L, 1.0);
+		expected_1.put(5000L, 5.0);
+		expected_1.put(9000L, 9.0);
 
-        metric_1.setDatapoints(datapoints_1);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        metrics.add(metric_1);
+	@Test
+	public void testDownsampleTransformMinOneMetricHavingNull() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<String> constants = new ArrayList<String>();
+		datapoints_1.put(1000L, null);
+		datapoints_1.put(2000L, null);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, null);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, null);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, null);
+		datapoints_1.put(9000L, 9.0);
 
-        constants.add("2s-min");
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metric_1.setDatapoints(datapoints_1);
 
-        expected_1.put(1000L, 0.0);
-        expected_1.put(3000L, 0.0);
-        expected_1.put(5000L, 0.0);
-        expected_1.put(7000L, 0.0);
-        expected_1.put(9000L, 9.0);
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test//_W-2905322
-    public void testDownsampleTransformBug_OnHourLevel() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		metrics.add(metric_1);
 
-        datapoints_1.put(1453798890000L, 1.0);
-        datapoints_1.put(1453802750000L, 2.0);
-        datapoints_1.put(1453806510000L, 3.0);
-        datapoints_1.put(1453809690000L, 4.0);
+		List<String> constants = new ArrayList<String>();
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		constants.add("2s-min");
 
-        metric_1.setDatapoints(datapoints_1);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		expected_1.put(1000L, 0.0);
+		expected_1.put(3000L, 0.0);
+		expected_1.put(5000L, 0.0);
+		expected_1.put(7000L, 0.0);
+		expected_1.put(9000L, 9.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        metrics.add(metric_1);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        List<String> constants = new ArrayList<String>();
+	@Test//_W-2905322
+	public void testDownsampleTransformBug_OnHourLevel() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        constants.add("1h-min");
+		datapoints_1.put(1453798890000L, 1.0);
+		datapoints_1.put(1453802750000L, 2.0);
+		datapoints_1.put(1453806510000L, 3.0);
+		datapoints_1.put(1453809690000L, 4.0);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
-        
-        expected_1.put(1453798800000L, 1.0);
-        expected_1.put(1453802400000L, 2.0);
-        expected_1.put(1453806000000L, 3.0);
-        expected_1.put(1453809600000L, 4.0);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		metric_1.setDatapoints(datapoints_1);
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    
-    @Test
-    public void testDownsampleTransformCountOneMetric() {
-    	Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        datapoints_1.put(1L, 1.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		metrics.add(metric_1);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		List<String> constants = new ArrayList<String>();
 
-        metric_1.setDatapoints(datapoints_1);
+		constants.add("1h-min");
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        metrics.add(metric_1);
+		expected_1.put(1453798800000L, 1.0);
+		expected_1.put(1453802400000L, 2.0);
+		expected_1.put(1453806000000L, 3.0);
+		expected_1.put(1453809600000L, 4.0);
 
-        List<String> constants = new ArrayList<String>();
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        constants.add("3s-count");
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, 3.0);
-        expected_1.put(3000L, 3.0);
-        expected_1.put(6000L, 3.0);
-        expected_1.put(9000L, 1.0);
+	@Test
+	public void testDownsampleTransformCountOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformCountOneMetricHavingNull() {
-    	Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		datapoints_1.put(1L, 1.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        datapoints_1.put(1L, null);
-        datapoints_1.put(1000L, null);
-        datapoints_1.put(2000L, null);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, null);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, null);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, null);
-        datapoints_1.put(9000L, 9.0);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		metric_1.setDatapoints(datapoints_1);
 
-        metric_1.setDatapoints(datapoints_1);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric_1);
 
-        metrics.add(metric_1);
+		List<String> constants = new ArrayList<String>();
 
-        List<String> constants = new ArrayList<String>();
+		constants.add("3s-count");
 
-        constants.add("3s-count");
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		expected_1.put(0L, 3.0);
+		expected_1.put(3000L, 3.0);
+		expected_1.put(6000L, 3.0);
+		expected_1.put(9000L, 1.0);
 
-        expected_1.put(0L, 0.0);
-        expected_1.put(3000L, 2.0);
-        expected_1.put(6000L, 1.0);
-        expected_1.put(9000L, 1.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformMetricIsAllNull() {
-    	Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
-        
-        Metric metric = new Metric(TEST_SCOPE + "1", TEST_METRIC);
-        metric.setDatapoints(datapoints);
-        List<Metric> metrics = new ArrayList<Metric>();
-        metrics.add(metric);
+	@Test
+	public void testDownsampleTransformCountOneMetricHavingNull() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        List<String> constants = new ArrayList<String>();
-        constants.add("3s-count");
-        Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
-        assertEquals(result.size(), 1);
-        assertEquals(expected, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformPercentileOneMetric() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		datapoints_1.put(1L, null);
+		datapoints_1.put(1000L, null);
+		datapoints_1.put(2000L, null);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, null);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, null);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, null);
+		datapoints_1.put(9000L, 9.0);
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		metric_1.setDatapoints(datapoints_1);
 
-        metric_1.setDatapoints(datapoints_1);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric_1);
 
-        metrics.add(metric_1);
+		List<String> constants = new ArrayList<String>();
 
-        List<String> constants = new ArrayList<String>();
+		constants.add("3s-count");
 
-        constants.add("2s-p90");
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		expected_1.put(0L, 0.0);
+		expected_1.put(3000L, 2.0);
+		expected_1.put(6000L, 1.0);
+		expected_1.put(9000L, 1.0);
 
-        expected_1.put(1000L, 2.0);
-        expected_1.put(3000L, 4.0);
-        expected_1.put(5000L, 6.0);
-        expected_1.put(7000L, 8.0);
-        expected_1.put(9000L, 9.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+	@Test
+	public void testDownsampleTransformMetricIsAllNull() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-        assertEquals(result.size(), 1);
-        assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testDownsampleTransformPercentileMultipleMetrics() {
-        Transform downsampleTransform = new DownsampleTransform();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+		Metric metric = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		metric.setDatapoints(datapoints);
+		List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric);
 
-        datapoints_1.put(000L, 10.0);
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
-        datapoints_1.put(4000L, 4.0);
-        datapoints_1.put(5000L, 5.0);
-        datapoints_1.put(6000L, 6.0);
-        datapoints_1.put(7000L, 7.0);
-        datapoints_1.put(8000L, 8.0);
-        datapoints_1.put(9000L, 9.0);
+		List<String> constants = new ArrayList<String>();
+		constants.add("3s-count");
+		Map<Long, Double> expected = new HashMap<Long, Double>();
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+		assertEquals(result.size(), 1);
+		assertEquals(expected, result.get(0).getDatapoints());
+	}
 
-        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+	@Test
+	public void testDownsampleTransformPercentileOneMetric() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-        metric_1.setDatapoints(datapoints_1);
-        
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-        datapoints_2.put(0L, 1.0);
-        datapoints_2.put(1000L, 20.0);
-        datapoints_2.put(2000L, 30.0);
-        datapoints_2.put(3000L, 40.0);
-        datapoints_2.put(4000L, 50.0);
-        datapoints_2.put(5000L, 60.0);
-        datapoints_2.put(6000L, 70.0);
-        datapoints_2.put(7000L, 80.0);
-        datapoints_2.put(8000L, 90.0);
-        datapoints_2.put(9000L, 100.0);
-        
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-        Metric metric_2 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		metric_1.setDatapoints(datapoints_1);
 
-        metric_2.setDatapoints(datapoints_2);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-        List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric_1);
 
-        metrics.add(metric_1);
-        metrics.add(metric_2);
+		List<String> constants = new ArrayList<String>();
 
-        List<String> constants = new ArrayList<String>();
-        constants.add("10s-p90");
+		constants.add("2s-p90");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-        expected_1.put(0L, 9.9);
-        
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+		expected_1.put(1000L, 2.0);
+		expected_1.put(3000L, 4.0);
+		expected_1.put(5000L, 6.0);
+		expected_1.put(7000L, 8.0);
+		expected_1.put(9000L, 9.0);
 
-        expected_2.put(0L, 99.0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-        List<Metric> result = downsampleTransform.transform(metrics, constants);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-        assertEquals(2, result.size());
-        assertEquals(expected_1, result.get(0).getDatapoints());
-        assertEquals(expected_2, result.get(1).getDatapoints());
-    }
-    
-    @Test
-    public void testSnappingSeconds(){
-    	 Transform downsampleTransform = new DownsampleTransform();
-         Map<Long, Double> datapoints = new HashMap<Long, Double>();
+	@Test
+	public void testDownsampleTransformPercentileMultipleMetrics() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
 
-         datapoints.put(1002L, 1.0);
-         datapoints.put(2002L, 1.0);
-         datapoints.put(2010L, 1.0);
-         datapoints.put(4001L, 1.0);
-         
-         datapoints.put(7000L, 1.0);
-         datapoints.put(8000L, 1.0);
-        
+		datapoints_1.put(000L, 10.0);
+		datapoints_1.put(1000L, 1.0);
+		datapoints_1.put(2000L, 2.0);
+		datapoints_1.put(3000L, 3.0);
+		datapoints_1.put(4000L, 4.0);
+		datapoints_1.put(5000L, 5.0);
+		datapoints_1.put(6000L, 6.0);
+		datapoints_1.put(7000L, 7.0);
+		datapoints_1.put(8000L, 8.0);
+		datapoints_1.put(9000L, 9.0);
 
-         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-         metric_1.setDatapoints(datapoints);
+		metric_1.setDatapoints(datapoints_1);
 
-         List<Metric> metrics = new ArrayList<Metric>();
+		Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
 
-         metrics.add(metric_1);
+		datapoints_2.put(0L, 1.0);
+		datapoints_2.put(1000L, 20.0);
+		datapoints_2.put(2000L, 30.0);
+		datapoints_2.put(3000L, 40.0);
+		datapoints_2.put(4000L, 50.0);
+		datapoints_2.put(5000L, 60.0);
+		datapoints_2.put(6000L, 70.0);
+		datapoints_2.put(7000L, 80.0);
+		datapoints_2.put(8000L, 90.0);
+		datapoints_2.put(9000L, 100.0);
 
-         List<String> constants = new ArrayList<String>();
 
-         constants.add("2s-sum");
+		Metric metric_2 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		metric_2.setDatapoints(datapoints_2);
 
-         expected_1.put(1000L, 3.0);
-         expected_1.put(3000L, 1.0);
-         expected_1.put(7000L, 2.0);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-         List<Metric> result = downsampleTransform.transform(metrics, constants);
+		metrics.add(metric_1);
+		metrics.add(metric_2);
 
-         assertEquals(result.size(), 1);
-         assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testSnappingMinutes(){
-    	 Transform downsampleTransform = new DownsampleTransform();
-         Map<Long, Double> datapoints = new HashMap<Long, Double>();
+		List<String> constants = new ArrayList<String>();
+		constants.add("10s-p90");
 
-         datapoints.put(61002L, 1.0);
-         datapoints.put(120002L, 1.0);
-         datapoints.put(180010L, 1.0);
-         datapoints.put(540000L, 1.0);
-         
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		expected_1.put(0L, 9.9);
 
-         metric_1.setDatapoints(datapoints);
+		Map<Long, Double> expected_2 = new HashMap<Long, Double>();
 
-         List<Metric> metrics = new ArrayList<Metric>();
+		expected_2.put(0L, 99.0);
 
-         metrics.add(metric_1);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-         List<String> constants = new ArrayList<String>();
+		assertEquals(2, result.size());
+		assertEquals(expected_1, result.get(0).getDatapoints());
+		assertEquals(expected_2, result.get(1).getDatapoints());
+	}
 
-         constants.add("3m-sum");
+	@Test
+	public void testSnappingSeconds(){
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		datapoints.put(1002L, 1.0);
+		datapoints.put(2002L, 1.0);
+		datapoints.put(2010L, 1.0);
+		datapoints.put(4001L, 1.0);
 
-         expected_1.put(60000L, 3.0);
-         expected_1.put(420000L, 1.0);
+		datapoints.put(7000L, 1.0);
+		datapoints.put(8000L, 1.0);
 
-         List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-         assertEquals(result.size(), 1);
-         assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testSnappingHours(){
-    	 Transform downsampleTransform = new DownsampleTransform();
-         Map<Long, Double> datapoints = new HashMap<Long, Double>();
-         
-         GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-         calendar.set(2010, 11, 9, 3, 31, 31); 
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.HOUR_OF_DAY, 4);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.HOUR_OF_DAY, 5);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.HOUR_OF_DAY, 6);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+		metric_1.setDatapoints(datapoints);
 
-         metric_1.setDatapoints(datapoints);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-         List<Metric> metrics = new ArrayList<Metric>();
+		metrics.add(metric_1);
 
-         metrics.add(metric_1);
+		List<String> constants = new ArrayList<String>();
 
-         List<String> constants = new ArrayList<String>();
+		constants.add("2s-sum");
 
-         constants.add("3h-sum");
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		expected_1.put(1000L, 3.0);
+		expected_1.put(3000L, 1.0);
+		expected_1.put(7000L, 2.0);
 
-         calendar.set(2010, 11, 9, 3, 0, 0); 
-         calendar.set(Calendar.MILLISECOND, 0);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-         expected_1.put(calendar.getTimeInMillis(), 3.0);
-         calendar.set(Calendar.HOUR_OF_DAY, 6);
-         expected_1.put(calendar.getTimeInMillis(), 1.0);
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
 
-         List<Metric> result = downsampleTransform.transform(metrics, constants);
+	@Test
+	public void testSnappingMinutes(){
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
 
-         assertEquals(result.size(), 1);
-         assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
-    @Test
-    public void testSnappingDays(){
-    	 Transform downsampleTransform = new DownsampleTransform();
-         Map<Long, Double> datapoints = new HashMap<Long, Double>();
-         
-         GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
-         calendar.set(2010, 11, 9, 3, 31, 31); 
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.DAY_OF_MONTH, 10);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.DAY_OF_MONTH, 11);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.DAY_OF_MONTH, 12);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         
-         calendar.set(Calendar.DAY_OF_MONTH, 18);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         calendar.set(Calendar.HOUR_OF_DAY, 18);
-         datapoints.put(calendar.getTimeInMillis(), 1.0);
-         
+		datapoints.put(61002L, 1.0);
+		datapoints.put(120002L, 1.0);
+		datapoints.put(180010L, 1.0);
+		datapoints.put(540000L, 1.0);
 
-         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-         metric_1.setDatapoints(datapoints);
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
 
-         List<Metric> metrics = new ArrayList<Metric>();
+		metric_1.setDatapoints(datapoints);
 
-         metrics.add(metric_1);
+		List<Metric> metrics = new ArrayList<Metric>();
 
-         List<String> constants = new ArrayList<String>();
+		metrics.add(metric_1);
 
-         constants.add("7d-sum");
+		List<String> constants = new ArrayList<String>();
 
-         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+		constants.add("3m-sum");
 
-         calendar.set(2010, 11, 9, 0, 0, 0); 
-         calendar.set(Calendar.MILLISECOND, 0);
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
 
-         expected_1.put(calendar.getTimeInMillis(), 4.0);
-         calendar.set(Calendar.DAY_OF_MONTH, 16);
-         expected_1.put(calendar.getTimeInMillis(), 2.0);
+		expected_1.put(60000L, 3.0);
+		expected_1.put(420000L, 1.0);
 
-         List<Metric> result = downsampleTransform.transform(metrics, constants);
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
 
-         assertEquals(result.size(), 1);
-         assertEquals(expected_1, result.get(0).getDatapoints());
-    }
-    
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
+	@Test
+	public void testSnappingHours(){
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+		GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+		calendar.set(2010, 11, 9, 3, 31, 31); 
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.HOUR_OF_DAY, 4);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.HOUR_OF_DAY, 5);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.HOUR_OF_DAY, 6);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+
+
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+		metric_1.setDatapoints(datapoints);
+
+		List<Metric> metrics = new ArrayList<Metric>();
+
+		metrics.add(metric_1);
+
+		List<String> constants = new ArrayList<String>();
+
+		constants.add("3h-sum");
+
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+		calendar.set(2010, 11, 9, 3, 0, 0); 
+		calendar.set(Calendar.MILLISECOND, 0);
+
+		expected_1.put(calendar.getTimeInMillis(), 3.0);
+		calendar.set(Calendar.HOUR_OF_DAY, 6);
+		expected_1.put(calendar.getTimeInMillis(), 1.0);
+
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
+	@Test
+	public void testSnappingDays(){
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints = new HashMap<Long, Double>();
+
+		GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"));
+		calendar.set(2010, 11, 9, 3, 31, 31); 
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.DAY_OF_MONTH, 10);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.DAY_OF_MONTH, 11);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.DAY_OF_MONTH, 12);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+
+		calendar.set(Calendar.DAY_OF_MONTH, 18);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+		calendar.set(Calendar.HOUR_OF_DAY, 18);
+		datapoints.put(calendar.getTimeInMillis(), 1.0);
+
+
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+		metric_1.setDatapoints(datapoints);
+
+		List<Metric> metrics = new ArrayList<Metric>();
+
+		metrics.add(metric_1);
+
+		List<String> constants = new ArrayList<String>();
+
+		constants.add("7d-sum");
+
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+		calendar.set(2010, 11, 9, 0, 0, 0); 
+		calendar.set(Calendar.MILLISECOND, 0);
+
+		expected_1.put(calendar.getTimeInMillis(), 4.0);
+		calendar.set(Calendar.DAY_OF_MONTH, 16);
+		expected_1.put(calendar.getTimeInMillis(), 2.0);
+
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
+	@Test
+	public void testDownsampleWithAbsoluteIntervals() {
+		Transform downsampleTransform = new DownsampleTransform();
+		Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        long startMillis = 1534368960000L; 
+		datapoints_1.put(startMillis, 1.0);
+		datapoints_1.put(startMillis+60000L, 1.0);
+		datapoints_1.put(startMillis+2*60000L, 2.0);
+		datapoints_1.put(startMillis+3*60000L, 3.0);
+		datapoints_1.put(startMillis+4*60000L, 4.0);
+		datapoints_1.put(startMillis+7*60000L, 7.0);
+		datapoints_1.put(startMillis+8*60000L, 8.0);
+
+		Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+		metric_1.setDatapoints(datapoints_1);
+
+		List<Metric> metrics = new ArrayList<Metric>();
+
+		metrics.add(metric_1);
+
+		List<String> constants = new ArrayList<String>();
+
+		constants.add("1m-sum");
+		constants.add("-10m");
+		constants.add("-0m");
+		constants.add("0.0");
+		Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+
+		expected_1.put(startMillis, 1.0);
+		expected_1.put(startMillis+60000L, 1.0);
+		expected_1.put(startMillis+2*60000L, 2.0);
+		expected_1.put(startMillis+3*60000L, 3.0);
+		expected_1.put(startMillis+4*60000L, 4.0);
+		expected_1.put(startMillis+5*60000L, 0.0);
+		expected_1.put(startMillis+6*60000L, 0.0);
+		expected_1.put(startMillis+7*60000L, 7.0);
+		expected_1.put(startMillis+8*60000L, 8.0);
+		expected_1.put(startMillis+9*60000L, 0.0);
+		
+		List<Metric> result = downsampleTransform.transform(metrics, constants);
+
+		assertEquals(result.size(), 1);
+		assertEquals(expected_1, result.get(0).getDatapoints());
+	}
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
