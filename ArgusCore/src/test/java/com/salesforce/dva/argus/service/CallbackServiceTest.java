@@ -7,6 +7,7 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
