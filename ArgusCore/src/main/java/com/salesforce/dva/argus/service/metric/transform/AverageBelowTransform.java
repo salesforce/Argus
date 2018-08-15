@@ -28,10 +28,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.ArrayList;
@@ -41,11 +42,12 @@ import java.util.Map;
 /**
  * Culls metrics that are below the average value.
  *
- * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class AverageBelowTransform implements Transform {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {
@@ -60,31 +62,22 @@ public class AverageBelowTransform implements Transform {
         }
         SystemAssert.requireArgument(constants != null && constants.size() == 1, "Average Below Transform must provide exactly 1 constant.");
 
-        Double value = 0.0;
-
-        try {
-            value = Double.parseDouble(constants.get(0));
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Illegal constant value supplied to average below transform", nfe);
-        }
+        Number value = NumberOperations.parseConstant(constants.get(0));
 
         List<Metric> result = new ArrayList<Metric>(metrics.size());
 
         for (Metric metric : metrics) {
-            if (calculateAverage(metric.getDatapoints()) < value) {
+            if (NumberOperations.isLessThan(calculateAverage(metric.getDatapoints()), value)) {
                 result.add(metric);
             }
         }
         return result;
     }
 
-    private Double calculateAverage(Map<Long, Double> datapoints) {
-        Double sum = 0.0;
+    private Number calculateAverage(Map<Long, Number> datapoints) {
+        Number sum = NumberOperations.sum(new ArrayList<>(datapoints.values()));
 
-        for (Double value : datapoints.values()) {
-        	sum += value;
-        }
-        return sum / datapoints.size();
+        return NumberOperations.divide(sum, datapoints.size());
     }
 
     @Override

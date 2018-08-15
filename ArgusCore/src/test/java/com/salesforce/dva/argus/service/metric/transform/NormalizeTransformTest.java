@@ -71,21 +71,21 @@ public class NormalizeTransformTest {
     @Test
     public void testNormalizeTransformNoConstantWithSameLenMetricList() {
         Transform normalizeTransform = new NormalizeTransformWrap();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 4.0);
-        datapoints_2.put(2000L, 8.0);
-        datapoints_2.put(3000L, 12.0);
+        datapoints_2.put(1000L, 4L);
+        datapoints_2.put(2000L, 8L);
+        datapoints_2.put(3000L, 12L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -96,13 +96,13 @@ public class NormalizeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.2);
         expected_1.put(2000L, 0.2);
         expected_1.put(3000L, 0.2);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 0.8);
         expected_2.put(2000L, 0.8);
@@ -115,24 +115,24 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testNormalizeTransformNoConstantWithDiffLenMetricList() {
         Transform normalizeTransform = new NormalizeTransformWrap();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 4.0);
-        datapoints_2.put(2000L, 8.0);
+        datapoints_2.put(1000L, 4L);
+        datapoints_2.put(2000L, 8L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -143,13 +143,13 @@ public class NormalizeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.2);
         expected_1.put(2000L, 0.2);
         expected_1.put(3000L, 1.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 0.8);
         expected_2.put(2000L, 0.8);
@@ -166,7 +166,7 @@ public class NormalizeTransformTest {
     @Test
     public void testNormalizeTransformWithNoConstantDpsContainsNullOrEmptyString() {
         Transform normalizeTransform = new NormalizeTransformWrap();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, 2.0);
@@ -176,7 +176,7 @@ public class NormalizeTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 4.0);
         datapoints_2.put(2000L, null);
@@ -191,13 +191,13 @@ public class NormalizeTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 0.2);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 1.0);
         expected_2.put(2000L, 0.0);
@@ -210,11 +210,11 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testNormalizeTransformWithConstant() {
         Transform normalizeTransform = new NormalizeTransformWrap();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -224,11 +224,11 @@ public class NormalizeTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 4.0);
-        datapoints_2.put(2000L, 8.0);
-        datapoints_2.put(3000L, 12.0);
+        datapoints_2.put(1000L, 4L);
+        datapoints_2.put(2000L, 8L);
+        datapoints_2.put(3000L, 12L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -243,13 +243,13 @@ public class NormalizeTransformTest {
 
         constants.add("2");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.5);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 1.5);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 2.0);
         expected_2.put(2000L, 4.0);
@@ -262,21 +262,21 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-
+    
     @Test
     public void testNormalizeTransformWithConstantDpsContainsNullOrEmptyString() {
         Transform normalizeTransform = new NormalizeTransformWrap();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, null);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, null);
         datapoints_2.put(2000L, 8.0);
@@ -293,15 +293,15 @@ public class NormalizeTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        constants.add("2");
+        constants.add("2.");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 1.5);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 0.0);
         expected_2.put(2000L, 4.0);

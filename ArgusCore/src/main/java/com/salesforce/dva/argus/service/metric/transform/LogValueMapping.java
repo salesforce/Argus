@@ -28,9 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,10 +47,11 @@ import java.util.Map.Entry;
  */
 public class LogValueMapping implements ValueMapping {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         List<String> constants = new ArrayList<String>();
 
         constants.add("10");
@@ -57,17 +59,18 @@ public class LogValueMapping implements ValueMapping {
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         if (constants == null || constants.isEmpty()) {
             return mapping(originalDatapoints);
         }
         SystemAssert.requireArgument(constants.size() == 1, "Log Transform requires exactly one constant!");
 
-        Double base = Double.parseDouble(constants.get(0));
-        Map<Long, Double> logDatapoints = new HashMap<>();
+        Number base = NumberOperations.parseConstant(constants.get(0));
+        
+        Map<Long, Number> logDatapoints = new HashMap<>();
 
-        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-            Double logValue = Math.log(entry.getValue()) / Math.log(base);
+        for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+            Number logValue = NumberOperations.divide(NumberOperations.log(entry.getValue()), NumberOperations.log(base));
 
             logDatapoints.put(entry.getKey(), logValue);
         }

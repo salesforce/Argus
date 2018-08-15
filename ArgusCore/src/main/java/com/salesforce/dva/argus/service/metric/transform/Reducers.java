@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import java.util.List;
 import java.util.Objects;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Implementation of basic reducers with necessary types transformation:
  *
@@ -44,13 +46,12 @@ public class Reducers {
     // All reducers are static methods
     private Reducers() { }
 
-    public static Double sumReducer(List<Double> values) {
-        double result = values.stream()
+    public static Number sumReducer(List<Number> values) {
+        Number result = values.stream()
         		.filter(Objects::nonNull)
-                .reduce(0.0, (a, b) -> a + b);
+                .reduce(0, (a, b) -> NumberOperations.add(a, b));
 
         return result;
     }
-
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

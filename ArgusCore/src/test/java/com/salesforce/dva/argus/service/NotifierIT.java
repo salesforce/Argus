@@ -46,6 +46,7 @@ import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -69,7 +70,7 @@ public class NotifierIT extends AbstractTest {
         list.add("tvaline@salesforce.com");
 
         Notification notification = new Notification("notification_name", alert, "notifier_ame", list, 23);
-        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
@@ -104,7 +105,7 @@ public class NotifierIT extends AbstractTest {
 
         notification.setMetricsToAnnotate(Arrays.asList("argus.jvm:file.descriptor.open{host=unknown-host}:avg"));
 
-        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
@@ -126,7 +127,7 @@ public class NotifierIT extends AbstractTest {
 
         Alert alert = new Alert(userService.findAdminUser(), user, "warden-" + user.getUserName() + "-DATAPOINTS_PER_HOUR", expression, "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
-        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));

@@ -32,12 +32,15 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AnomalyDetectionGaussianDensityTransformTest {
 
@@ -46,8 +49,8 @@ public class AnomalyDetectionGaussianDensityTransformTest {
     private Transform gaussianDensityTransform;
     private List<Metric> metrics;
     private Metric metric;
-    private Map<Long, Double> metricData;
-    private Map<Long, Double> expected;
+    private Map<Long, Number> metricData;
+    private Map<Long, Number> expected;
 
     @Before
     public void setup() {
@@ -67,15 +70,26 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 99.99);
         expected.put(2000L, 0.0);
         expected.put(3000L, 99.99);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
+    }
+    
+    @Test(expected = UnsupportedOperationException.class)
+    public void gaussianDensityTransformSimpleTestNew() {
+    	metricData.put(1000L, 5.0);
+        metricData.put(2000L, 10);
+        metricData.put(3000L, 15L);
+        metric.setDatapoints(metricData);
+        metrics.add(metric);
+
+        gaussianDensityTransform.transform(metrics);
     }
 
     @Test
@@ -92,7 +106,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 1.11);
         expected.put(2000L, 1.12);
@@ -104,10 +118,10 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(8000L, 1.12);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
-
+   
     @Test
     public void gaussianDensityTransformSimpleTest3() {
         metricData.put(1000L, 0.0);
@@ -124,7 +138,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.03);
         expected.put(2000L, 0.08);
@@ -138,10 +152,10 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(10000L, 14.25);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
-
+    
     @Test
     public void gaussianDensityTransformWithDetectionIntervalTest1() {
         metricData.put(2L, -1.20);
@@ -163,7 +177,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(2L, 0.0);
         expected.put(4L, 0.0);
@@ -178,10 +192,10 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(22L, 26.83);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
-
+    
     @Test
     public void gaussianDensityTransformWithDetectionIntervalTest2() {
         metricData.put(0L, 0.35);
@@ -205,7 +219,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(10800L, 0.0);
@@ -222,7 +236,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(129600L, 16.65);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -249,7 +263,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(151200L, 0.0);
@@ -266,7 +280,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(1814400L, 0.72);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -298,7 +312,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(1000L, 0.0);
@@ -315,7 +329,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(12000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -332,7 +346,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, 0.0);
@@ -341,7 +355,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         expected.put(5000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -364,11 +378,11 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianDensityTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         for (long i = 1; i < 10001; i++) {
             expected.put(i, 0.0);
-            assertEquals(expected.get(i), resultDatapoints.get(i), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.subtract(expected.get(i), resultDatapoints.get(i)), 0.01));
         }
         //Omitted point
         expected.put(10001L, null);
@@ -382,7 +396,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        gaussianDensityTransform.transform(metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -393,7 +407,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
-        Map<Long, Double> metricData_2 = new HashMap<>();
+        Map<Long, Number> metricData_2 = new HashMap<>();
         metricData_2.put(1000L, 4.0);
         metricData_2.put(2000L, 5.0);
         metricData_2.put(3000L, 6.0);
@@ -402,7 +416,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
         metrics.add(metric_2);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        gaussianDensityTransform.transform(metrics);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

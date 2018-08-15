@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
@@ -48,46 +49,44 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
-        Double product = 1.0;
+    public Number reduce(List<Number> values) {
+        Number product = 1;
 
-        for (Double value : values) {
+        for (Number value : values) {
             if (value == null) {
                 continue;
             }
-            product *= value;
+            product = NumberOperations.multiply(product, value);
         }
         return product;
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
             "If constants provided for scale transform, only exactly one constant allowed.");
 
-        Map<Long, Double> scaleDatapoints = new HashMap<>();
-
+        Map<Long, Number> scaleDatapoints = new HashMap<>();
+        Number multiplicand;
         try {
-            double multiplicand = Double.parseDouble(constants.get(0));
-
-            for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-                double productValue = entry.getValue() * multiplicand;
-
-                scaleDatapoints.put(entry.getKey(), productValue);
-            }
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Illegal constant value supplied to scale transform", nfe);
+            multiplicand = NumberOperations.parseConstant(constants.get(0));
+        } catch (IllegalArgumentException iae) {
+            throw new SystemException("Illegal constant supplied to Scale Value Reducer or Mapping: " + constants.get(0));
+        }
+        
+        for (Map.Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+        	scaleDatapoints.put(entry.getKey(), NumberOperations.multiply(entry.getValue(), multiplicand));
         }
         return scaleDatapoints;
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         throw new UnsupportedOperationException("Scale Transform with reducer is not supposed to be used without a constant");
     }
 

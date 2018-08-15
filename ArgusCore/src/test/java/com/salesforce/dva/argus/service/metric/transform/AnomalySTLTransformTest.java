@@ -1,12 +1,15 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by vmuruganantham on 7/26/16.
@@ -19,8 +22,8 @@ public class AnomalySTLTransformTest {
     private Metric metric;
     private List<String> constants;
     private String constant;
-    private Map<Long, Double> datapoints;
-    private Map<Long, Double> expected;
+    private Map<Long, Number> datapoints;
+    private Map<Long, Number> expected;
 
     @Before
     public void setup() {
@@ -28,8 +31,8 @@ public class AnomalySTLTransformTest {
         metrics = new ArrayList<Metric>();
         metric = new Metric("test-scope", "test-metric");
         constants = new ArrayList<String>();
-        datapoints = new HashMap<Long, Double>();
-        expected = new HashMap<Long, Double>();
+        datapoints = new HashMap<Long, Number>();
+        expected = new HashMap<Long, Number>();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -86,7 +89,7 @@ public class AnomalySTLTransformTest {
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Number> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 29.6493052);
         expected.put(2000L, 4.49420750);
@@ -100,8 +103,29 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
+    }
+    
+    @Test (expected = UnsupportedOperationException.class)
+    public void STLTestNew() {
+        constant = "2";
+        constants.add(constant);
+
+        datapoints.put(1000L, 1000L);
+        datapoints.put(2000L, 1000.0);
+        datapoints.put(3000L, 1000.0);
+        datapoints.put(4000L, 1000.0);
+        datapoints.put(5000L, 1000.0);
+        datapoints.put(6000L, 1000.0);
+        datapoints.put(7000L, 1000.0);
+        datapoints.put(8000L, 1000.0);
+
+
+        metric.setDatapoints(datapoints);
+        metrics.add(metric);
+
+        anomalySTLTransform.transform(metrics, constants);
     }
 
     @Test
@@ -126,7 +150,7 @@ public class AnomalySTLTransformTest {
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Number> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 12.83596);
         expected.put(2000L, 3.116556);
@@ -143,7 +167,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
     }
 
@@ -169,7 +193,7 @@ public class AnomalySTLTransformTest {
         metrics.add(metric);
 
         List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
-        Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
+        Map<Long, Number> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 0.932050);
         expected.put(2000L, 0.013450);
@@ -186,7 +210,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-            assertEquals(expected.get(time), anomalyScores.get(time), 0.01);
+        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
     }
 }

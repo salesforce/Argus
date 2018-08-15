@@ -10,6 +10,7 @@ import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.service.alert.notifier.CallbackNotifier;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -31,7 +32,7 @@ public class CallbackServiceTest extends AbstractTest {
 				"alert_name",
 				expression,
 				"* * * * *");
-		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
 		final String jsonBody = "{ \"uri\" : \"localhost:8080\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{\\\"triggerName\\\": \\\"«trigger.name>»\\\", \\\"alertName\\\": \\\"«alert.name»\\\"}\",\"template\": \"ST4\"}";
 		final Notification notification = new Notification("notification_name",

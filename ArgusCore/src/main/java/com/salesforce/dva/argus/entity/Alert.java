@@ -204,6 +204,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	@Metadata
 	private boolean shared;
 
+
 	// Default values for page limit and page offset
 	private static int DEFAULT_PAGE_LIMIT = 10;
 	private static int DEFAULT_PAGE_OFFSET = 0;

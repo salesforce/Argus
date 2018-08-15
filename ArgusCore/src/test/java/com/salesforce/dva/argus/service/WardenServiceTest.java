@@ -38,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -47,6 +48,7 @@ import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.WardenService.PolicyCounter;
@@ -226,7 +228,7 @@ public class WardenServiceTest extends AbstractTest {
         Alert alert = _alertService.findAlertByNameAndOwner(alertName, _userService.findAdminUser());
         Trigger trigger = alert.getTriggers().get(0);
 
-        assertEquals(Double.valueOf(200), trigger.getThreshold());
+        assertEquals(new BigDecimal(200), trigger.getThreshold());
     }
 
     @Test

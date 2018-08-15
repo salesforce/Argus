@@ -157,7 +157,7 @@ public class GusNotifier extends AuditNotifier {
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String triggerDetails = getTriggerDetails(trigger, context);
-		double triggerEventValue = context.getTriggerEventValue();
+		Number triggerEventValue = context.getTriggerEventValue();
 		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
 			sb.append(context.getNotification().getCustomText()).append("\n>"); 
 		}
@@ -173,7 +173,6 @@ public class GusNotifier extends AuditNotifier {
 					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
 					"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
 					"Triggering event value:   {7}\n" +  "Triggering event timestamp:   {8}\n\n";
-
 			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
 		}else {
 			Object[] arguments = new Object[] {

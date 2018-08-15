@@ -53,12 +53,12 @@ public interface ManagementService extends Service {
      */
     void setAdministratorPrivilege(PrincipalUser user, boolean isPrivileged);
 
-    /**
-     * @param  user     The user for which the policy will be updated. Cannot be null.
-     * @param  counter  The policy counter for which the limit will be set. Cannot be null.
-     * @param  value    The new value for the policy limit for the user.
-     * @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, double)  */
-    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, double value);
+	/**
+	 * @param  user     The user for which the policy will be updated. Cannot be null.
+	 * @param  counter  The policy counter for which the limit will be set. Cannot be null.
+	 * @param  value    The new value for the policy limit for the user.
+	 * @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, Number)  */
+    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, Number value);
 
     /**
      * @param  user       The user to reinstate. Cannot be null.

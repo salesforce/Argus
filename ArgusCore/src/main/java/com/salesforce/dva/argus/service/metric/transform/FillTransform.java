@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
@@ -46,11 +47,11 @@ import java.util.TreeMap;
  * Creates additional data points to fill gaps.<br>
  * <tt>FILL(&lt;expr&gt;, &lt;interval&gt;, &lt;interval&gt;, &lt;constant&gt;)</tt>
  *
- * @author  Ruofan Zhang(rzhang@salesforce.com)
+ * @author Ruofan Zhang(rzhang@salesforce.com)
  */
 public class FillTransform implements Transform {
 
-    //~ Static fields/initializers *******************************************************************************************************************
+    // ~ Static fields/initializers *******************************************************************************************************************
 
     /** The default metric name for results. */
     public static final String DEFAULT_METRIC_NAME = "result";
@@ -58,15 +59,15 @@ public class FillTransform implements Transform {
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods **************************************************************************************************************************************
 
-    private static Map<Long, Double> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, double value) {
-    	if(metric == null || metric.getDatapoints() == null || metric.getDatapoints().isEmpty()) {
-    		return Collections.emptyMap();
-    	}
-    	
-        Map<Long, Double> filledDatapoints = new TreeMap<>();
-        Map<Long, Double> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
+    private static Map<Long, Number> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, Number value) {
+        if (metric == null || metric.getDatapoints() == null || metric.getDatapoints().isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, Number> filledDatapoints = new TreeMap<>();
+        Map<Long, Number> sortedDatapoints = new TreeMap<>(metric.getDatapoints());
         Long[] sortedTimestamps = new Long[sortedDatapoints.size()];
 
         sortedDatapoints.keySet().toArray(sortedTimestamps);
@@ -93,9 +94,9 @@ public class FillTransform implements Transform {
 
         int newLength = filledDatapoints.size();
         List<Long> newTimestamps = new ArrayList<Long>();
-        List<Double> newValues = new ArrayList<>();
+        List<Number> newValues = new ArrayList<>();
 
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
             newTimestamps.add(entry.getKey());
             newValues.add(entry.getValue());
         }
@@ -107,9 +108,9 @@ public class FillTransform implements Transform {
             }
         }
 
-        Map<Long, Double> cleanFilledDatapoints = new TreeMap<>();
+        Map<Long, Number> cleanFilledDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
             if (entry.getValue() != null) {
                 cleanFilledDatapoints.put(entry.getKey(), entry.getValue());
             }
@@ -134,17 +135,17 @@ public class FillTransform implements Transform {
         }
     }
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods **************************************************************************************************************************************
 
     private List<Metric> _fillLine(List<String> constants, long relativeTo) {
         SystemAssert.requireArgument(constants != null && constants.size() == 5,
-            "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
+                "Line Filling Transform needs 5 constants (start, end, interval, offset, value)!");
 
         long startTimestamp = _parseStartAndEndTimestamps(constants.get(0), relativeTo);
         long endTimestamp = _parseStartAndEndTimestamps(constants.get(1), relativeTo);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(constants.get(2));
         long offsetInSeconds = _parseTimeIntervalInSeconds(constants.get(3));
-        double value = Double.parseDouble(constants.get(4));
+        Number value = NumberOperations.parseConstant(constants.get(4));
 
         SystemAssert.requireArgument(startTimestamp < endTimestamp, "End time must occure later than start time!");
         SystemAssert.requireArgument(windowSizeInSeconds >= 0, "Window size must be greater than ZERO!");
@@ -156,7 +157,7 @@ public class FillTransform implements Transform {
         endTimestamp = endTimestamp - endSnapping;
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
-        Map<Long, Double> filledDatapoints = new TreeMap<>();
+        Map<Long, Number> filledDatapoints = new TreeMap<>();
 
         while (startTimestamp < endTimestamp) {
             filledDatapoints.put(startTimestamp, value);
@@ -164,9 +165,9 @@ public class FillTransform implements Transform {
         }
         filledDatapoints.put(endTimestamp, value);
 
-        Map<Long, Double> newFilledDatapoints = new TreeMap<>();
+        Map<Long, Number> newFilledDatapoints = new TreeMap<>();
 
-        for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
+        for (Map.Entry<Long, Number> entry : filledDatapoints.entrySet()) {
             newFilledDatapoints.put(entry.getKey() + offsetInSeconds * 1000, entry.getValue());
         }
         metric.setDatapoints(newFilledDatapoints);
@@ -200,31 +201,31 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-    	
-    	// Last 2 constants for FILL Transform are added by MetricReader. 
-    	// The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
-    	// The second last constant is the timestamp using which relative start and end timestamps 
-    	// should be calculated for fillLine ( FILL(#constants#) ).
-    	
-    	boolean constantsOnly = false;
-    	if(constants != null && !constants.isEmpty()) {
-    		constantsOnly = Boolean.parseBoolean(constants.get(constants.size()-1));
-    		constants.remove(constants.size()-1);
-    	}
-    	
-    	long relativeTo = System.currentTimeMillis();
-    	if(constants != null && !constants.isEmpty()) {
-    		relativeTo = Long.parseLong(constants.get(constants.size()-1));
-    		constants.remove(constants.size() - 1);
-    	}
-    	
+        
+        // Last 2 constants for FILL Transform are added by MetricReader.
+        // The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
+        // The second last constant is the timestamp using which relative start and end timestamps
+        // should be calculated for fillLine ( FILL(#constants#) ).
+
+        boolean constantsOnly = false;
+        if (constants != null && !constants.isEmpty()) {
+            constantsOnly = Boolean.parseBoolean(constants.get(constants.size() - 1));
+            constants.remove(constants.size() - 1);
+        }
+
+        long relativeTo = System.currentTimeMillis();
+        if (constants != null && !constants.isEmpty()) {
+            relativeTo = Long.parseLong(constants.get(constants.size() - 1));
+            constants.remove(constants.size() - 1);
+        }
+
         if (constantsOnly) {
             return _fillLine(constants, relativeTo);
         }
-        
+
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics list!");
-        SystemAssert.requireArgument(constants != null && constants.size() == 3, 
-        		"Fill Transform needs exactly three constants: interval, offset, value");
+        SystemAssert.requireArgument(constants != null && constants.size() == 3,
+                "Fill Transform needs exactly three constants: interval, offset, value");
 
         String interval = constants.get(0);
         long windowSizeInSeconds = _parseTimeIntervalInSeconds(interval);
@@ -233,7 +234,7 @@ public class FillTransform implements Transform {
 
         String offset = constants.get(1);
         long offsetInSeconds = _parseTimeIntervalInSeconds(offset);
-        double value = Double.parseDouble(constants.get(2));
+        Number value = NumberOperations.parseConstant(constants.get(2));
 
         List<Metric> fillMetricList = new ArrayList<Metric>();
         for (Metric metric : metrics) {

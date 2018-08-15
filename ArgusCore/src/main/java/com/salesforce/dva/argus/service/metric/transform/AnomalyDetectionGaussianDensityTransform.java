@@ -79,6 +79,5 @@ public class AnomalyDetectionGaussianDensityTransform extends AnomalyDetectionGa
          */
         return -1.0 * Math.log(probabilityDensity);
     }
-
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

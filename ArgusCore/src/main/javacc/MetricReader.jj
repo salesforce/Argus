@@ -241,6 +241,7 @@ TOKEN : { < ANOMALY_RPCA : "ANOMALY_RPCA" > }
 TOKEN : { < GROUPBY : "GROUPBY" > }
 TOKEN : { < GROUPBYTAG : "GROUPBYTAG" > }
 TOKEN : { < INTERPOLATE : "INTERPOLATE" > }
+TOKEN : { < MAX_DATAPOINT: "MAX_DATAPOINT" > }
 
 TOKEN : { < COLON : ":" > }
 TOKEN : { < COMMA : "," > }
@@ -249,9 +250,11 @@ TOKEN : { < RIGHT_CURLY : "}" > }
 TOKEN : { < LEFT_PARENTHESIS : "(" > }
 TOKEN : { < RIGHT_PARENTHESIS : ")" > }
 TOKEN : { < AGGREGATOR : "avg" | "sum" | "min" | "max" | "dev" | "zimsum" | "mimmin" | "mimmax" | "count" | "none" > }
+TOKEN : { < FILTER_ALG : "nth" | "max" | "min" | "avg" | "avg" | "median" | "sample" > }
 
 TOKEN : { < TIME : (<DIGIT>)+ | <HYPHEN>(<DIGIT>)+<TIME_UNIT> > }
 TOKEN : { < DOWNSAMPLER : (<DIGIT>)+<TIME_UNIT><HYPHEN><AGGREGATOR> > }
+TOKEN: {  < MAX_DP_ALG: (<DIGIT>)+<FILTER_ALG> > } 
 
 TOKEN : { < NAMESPACE : <TSDB_ALLOWED_TEXT> > }
 TOKEN : { < SCOPE : <TSDB_ALLOWED_TEXT> > }
@@ -524,7 +527,10 @@ private String functionName() :
     { return t.image; }
     |
     t = <INTERPOLATE>
-    { return t.image; }    
+    { return t.image; }
+  	|
+    t = <MAX_DATAPOINT>
+    { return t.image; }  
 }
 
 private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly) :

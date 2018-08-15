@@ -80,7 +80,7 @@ public class Scale_VTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testScale_VTransformVectorWithoutPoints() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -99,7 +99,7 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithSameLenVectorAgainstOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -109,11 +109,11 @@ public class Scale_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -124,7 +124,7 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
@@ -135,26 +135,26 @@ public class Scale_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testScale_VTransformWithLongerLenVectorAgainstOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
-        vector_datapoints.put(4000L, 1.0);
+        vector_datapoints.put(3000L, 1L);
+        vector_datapoints.put(4000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -165,11 +165,11 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
-        expected.put(3000L, 3.0);
+        expected.put(3000L, 3L);
 
         List<Metric> result = scale_vTransform.transform(metrics);
 
@@ -180,20 +180,20 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithShorterLenVectorAgainstOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2L);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -204,11 +204,11 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 3.0);
+        expected.put(1000L, 1L);
+        expected.put(2000L, 2L);
+        expected.put(3000L, 3L);
 
         List<Metric> result = scale_vTransform.transform(metrics);
 
@@ -219,7 +219,7 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithMidMissingPointVectorAgainstOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -229,7 +229,7 @@ public class Scale_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(3000L, 1.0);
@@ -243,7 +243,7 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
@@ -254,21 +254,21 @@ public class Scale_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-
+    
     @Test
     public void testScale_VTransformWithNullPointVectorAgainstOneMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2L);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, null);
@@ -283,10 +283,10 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
+        expected.put(2000L, 2L);
         expected.put(3000L, 3.0);
 
         List<Metric> result = scale_vTransform.transform(metrics);
@@ -298,7 +298,7 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithVectorAgainstOneNullPointMetric() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, null);
@@ -308,7 +308,7 @@ public class Scale_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -323,7 +323,7 @@ public class Scale_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 1.0);
         expected.put(2000L, 1.0);
@@ -338,28 +338,28 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -368,11 +368,11 @@ public class Scale_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -385,20 +385,20 @@ public class Scale_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 2.0);
-        expected_1.put(3000L, 3.0);
+        expected_1.put(3000L, 3L);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 10.0);
-        expected_2.put(2000L, 100.0);
-        expected_2.put(3000L, 1000.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(1000L, 10L);
+        expected_2.put(2000L, 100L);
+        expected_2.put(3000L, 1000L);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 0.1);
         expected_3.put(2000L, 0.01);
@@ -416,7 +416,7 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithMissingPointNullPointVectorAgainstNullPointMetricList() {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -426,7 +426,7 @@ public class Scale_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
@@ -437,7 +437,7 @@ public class Scale_VTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -448,7 +448,7 @@ public class Scale_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -466,25 +466,25 @@ public class Scale_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 10.0);
         expected_2.put(2000L, 100.0);
         expected_2.put(4000L, 1000.0);
         expected_2.put(5000L, 10000.0);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 0.1);
         expected_3.put(2000L, 0.01);
         expected_3.put(4000L, 0.001);
-        expected_3.put(5000L, 1.0);
+        expected_3.put(5000L, 1L);
 
         List<Metric> result = scale_vTransform.transform(metrics);
 
@@ -499,28 +499,28 @@ public class Scale_VTransformTest {
     @Test
     public void testScale_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new ScaleValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 1.0);
         datapoints_3.put(2000L, 10.0);
@@ -529,7 +529,7 @@ public class Scale_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -546,20 +546,20 @@ public class Scale_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 1.0);
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 10.0);
         expected_2.put(2000L, 100.0);
         expected_2.put(3000L, 1000.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 1.0);
         expected_3.put(2000L, 10.0);

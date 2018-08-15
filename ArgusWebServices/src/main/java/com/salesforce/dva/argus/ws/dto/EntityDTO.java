@@ -31,8 +31,12 @@
 	 
 package com.salesforce.dva.argus.ws.dto;
 
+import java.math.BigDecimal;
 import com.salesforce.dva.argus.entity.JPAEntity;
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.ConvertUtils;
+import org.apache.commons.beanutils.converters.BigDecimalConverter;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.Date;
@@ -71,9 +75,14 @@ public abstract class EntityDTO extends BaseDto implements Serializable {
      */
     public static <D extends EntityDTO, E extends JPAEntity> D createDtoObject(Class<D> clazz, E entity) {
         D result = null;
+        
+        BigDecimal defaultValue = null;
+        BigDecimalConverter converter = new BigDecimalConverter(defaultValue);
+        ConvertUtils.register(converter, BigDecimal.class);
 
         try {
             result = clazz.newInstance();
+            
             BeanUtils.copyProperties(result, entity);
 
             // Now set IDs of JPA entity

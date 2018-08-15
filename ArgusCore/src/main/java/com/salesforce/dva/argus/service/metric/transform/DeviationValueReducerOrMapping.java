@@ -31,10 +31,12 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -51,17 +53,19 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static Double tolerance = 0.1;
+    private static Number toleranceNew = 0.1;
     private static Long pointNum = Long.MIN_VALUE;
+    
 
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Double reduce(List<Number> values) {
         throw new UnsupportedOperationException("Deviation Transform with reducer is not supposed to be used without a tolerance!");
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Double reduce(List<Number> values, List<String> constants) {
         parseConstants(constants);
         return calculateDeviation(values, tolerance);
     }
@@ -81,15 +85,16 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         }
     }
 
-    private Double calculateDeviation(List<Double> values, Double tolerance) {
-        if (!isUnderTolerance(values, tolerance)) {
+    private Double calculateDeviation(List<Number> values, Double tolerance) {
+    	List<Double> valuesDouble = NumberOperations.getListAsDoubles(values);
+        if (!isUnderTolerance(valuesDouble, tolerance)) {
             return null;
         }
 
-        double[] elements = new double[values.size()];
+        double[] elements = new double[valuesDouble.size()];
         int k = 0;
 
-        for (Double value : values) {
+        for (Double value : valuesDouble) {
             elements[k] = value;
             k++;
         }
@@ -98,7 +103,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
 
         return result;
     }
-
+    
     private boolean isUnderTolerance(List<Double> values, Double tolearnce) {
         double missingPointNumber = 0;
 
@@ -109,27 +114,29 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return missingPointNumber / values.size() <= tolerance ? true : false;
     }
-
+    
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         parseConstants(constants);
         return calculateNDeviationForOneMetric(originalDatapoints, tolerance, pointNum);
     }
 
-    private Map<Long, Double> calculateNDeviationForOneMetric(Map<Long, Double> originalDatapoints, Double tolerance, Long pointNum) {
-        if (pointNum > originalDatapoints.size()) {
-            pointNum = (long) originalDatapoints.size();
+    private Map<Long, Number> calculateNDeviationForOneMetric(Map<Long, Number> originalDatapoints, Double tolerance, Long pointNum) {
+        Map<Long, Double> originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
+
+    	if (pointNum > originalDatapointsDouble.size()) {
+            pointNum = (long) originalDatapointsDouble.size();
         }
 
         // construct list of values
         Long count = 0L;
         List<Double> values = new ArrayList<>();
-        TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapoints);
+        TreeMap<Long, Double> sortedDatapoints = new TreeMap<>(originalDatapointsDouble);
         Long lastTimestamp = sortedDatapoints.lastKey();
 
         while (count < pointNum) {
@@ -140,14 +147,14 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         }
 
         // calculate the deviation against string list
-        Double dev = calculateDeviation(values, tolerance);
+        Double dev = calculateDeviation(new ArrayList<Number>(values), tolerance);
 
         Map<Long, Double> deviationDatapoints = new TreeMap<>();
 
         deviationDatapoints.put(lastTimestamp, dev);
-        return deviationDatapoints;
+        return new HashMap<Long, Number>(deviationDatapoints);
     }
-
+    
     @Override
     public String name() {
         return TransformFactory.Function.DEVIATION.name();

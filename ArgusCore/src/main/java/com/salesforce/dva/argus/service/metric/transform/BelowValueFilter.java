@@ -28,23 +28,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * This class is used to filter metrics whose evaluation result is below the limit.
+ * This class is used to filter metrics whose evaluation result is below the
+ * limit.
  *
- * @author  Ruofan Zhang (rzhang@salesforce.com)
+ * @author Ruofan Zhang (rzhang@salesforce.com)
  */
 public class BelowValueFilter implements ValueFilter {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit) {
@@ -53,8 +56,11 @@ public class BelowValueFilter implements ValueFilter {
 
         List<Metric> result = new ArrayList<Metric>();
 
+        Number lim = NumberOperations.parseConstant(limit);
         for (Map.Entry<Metric, String> entry : extendedSortedMap.entrySet()) {
-            if (Double.parseDouble(limit) > Double.parseDouble(entry.getValue())) {
+            Number val = NumberOperations.parseConstant(entry.getValue());
+            
+            if (NumberOperations.isGreaterThan(lim, val)) {
                 result.add(entry.getKey());
             }
         }

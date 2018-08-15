@@ -32,7 +32,11 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Test;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -76,7 +80,7 @@ public class DerivativeTransformTest {
     public void transform_shouldReturnNullWhenOneDataPoint() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dps = new HashMap<Long, Double>();
+        HashMap<Long, Number> dps = new HashMap<Long, Number>();
 
         dps.put(1L, 5.0);
         m1.setDatapoints(dps);
@@ -86,7 +90,7 @@ public class DerivativeTransformTest {
 
         assertThat(results, equalTo(metrics));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
         assertEquals(metrics.get(0).getDatapoints(), expectedDps);
     }
@@ -95,10 +99,10 @@ public class DerivativeTransformTest {
     public void transform_shouldReturnDerivativeNullThenNumberWhenTwoDataPoints() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dp = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp = new HashMap<Long, Number>();
 
         dp.put(1L, 5.0);
-        dp.put(2L, 6.0);
+        dp.put(2L, 6L);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -106,21 +110,21 @@ public class DerivativeTransformTest {
 
         assertThat(results, equalTo(metrics));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
         expectedDps.put(2L, 1.0);
         assertEquals(metrics.get(0).getDatapoints(), expectedDps);
     }
-
+    
     @Test
     public void transform_shouldReturnDerivativeNullThenTwoNumbersWhenThreeDataPoints() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dp = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp = new HashMap<Long, Number>();
 
         dp.put(1L, 5.0);
-        dp.put(2L, 6.0);
-        dp.put(3L, 8.0);
+        dp.put(2L, 6L);
+        dp.put(3L, 8L);
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
@@ -128,10 +132,10 @@ public class DerivativeTransformTest {
 
         assertThat(results, equalTo(metrics));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
         expectedDps.put(2L, 1.0);
-        expectedDps.put(3L, 2.0);
+        expectedDps.put(3L, 2L);
         assertEquals(metrics.get(0).getDatapoints(), expectedDps);
     }
 
@@ -139,17 +143,17 @@ public class DerivativeTransformTest {
     public void transform_shouldReturnDerivativeForTwoMetrics() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dp1 = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp1 = new HashMap<Long, Number>();
 
         dp1.put(Long.valueOf(1), 5.0);
         dp1.put(Long.valueOf(2), 6.0);
         m1.setDatapoints(dp1);
 
         Metric m2 = new Metric("test", "m1");
-        HashMap<Long, Double> dp2 = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp2 = new HashMap<Long, Number>();
 
-        dp2.put(Long.valueOf(3), 5.0);
-        dp2.put(Long.valueOf(4), 8.0);
+        dp2.put(Long.valueOf(3), 5L);
+        dp2.put(Long.valueOf(4), 8L);
         m2.setDatapoints(dp2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
@@ -157,23 +161,23 @@ public class DerivativeTransformTest {
 
         assertEquals(results, metrics);
 
-        Map<Long, Double> expectedDps1 = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps1 = new HashMap<Long, Number>();
 
         expectedDps1.put(2L, 1.0);
         assertEquals(metrics.get(0).getDatapoints(), expectedDps1);
         assertEquals(results, metrics);
 
-        Map<Long, Double> expectedDps2 = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps2 = new HashMap<Long, Number>();
 
-        expectedDps2.put(4L, 3.0);
+        expectedDps2.put(4L, 3L);
         assertThat(metrics.get(1).getDatapoints(), equalTo(expectedDps2));
     }
-
+    
     @Test(expected = UnsupportedOperationException.class)
     public void transform_withConstants() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dp = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp = new HashMap<Long, Number>();
 
         dp.put(1L, 5.0);
         dp.put(2L, 6.0);
@@ -190,7 +194,7 @@ public class DerivativeTransformTest {
     public void transform_shouldReturnDerivativeNullThenTwoNumbersWhenThreeDataPointsHavingNull() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
-        HashMap<Long, Double> dp = new HashMap<Long, Double>();
+        HashMap<Long, Number> dp = new HashMap<Long, Number>();
 
         dp.put(1L, null);
         dp.put(2L, 6.0);
@@ -202,7 +206,7 @@ public class DerivativeTransformTest {
 
         assertThat(results, equalTo(metrics));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
         expectedDps.put(2L, 6.0);
         expectedDps.put(3L, 2.0);

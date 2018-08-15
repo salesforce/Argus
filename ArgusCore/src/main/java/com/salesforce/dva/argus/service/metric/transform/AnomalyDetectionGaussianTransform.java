@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,13 +65,15 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         }
 
         Metric metric = metrics.get(0);
-        Map<Long, Double> metricData = metric.getDatapoints();
+        Map<Long, Number> metricData = metric.getDatapoints();
         if (metricData.size() == 0) {
             throw new MissingDataException("Metric must contain data points to perform transforms.");
         }
+        
+        Map<Long, Double> metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
 
-        fitParameters(metricData);
-        Metric predictions = predictAnomalies(metricData);
+        fitParameters(metricDataDouble);
+        Metric predictions = predictAnomalies(metricDataDouble);
         Metric predictionsNormalized = normalizePredictions(predictions);
 
         List<Metric> resultMetrics = new ArrayList<>();
@@ -115,10 +118,10 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
             }
         }
 
-        predictions.setDatapoints(predictionDatapoints);
+        predictions.setDatapoints(new HashMap<Long, Number>(predictionDatapoints));
         return predictions;
     }
-
+    
     private double getMetricMean(Map<Long, Double> metricData) {
         double sum = 0;
         for (Double value : metricData.values()) {
@@ -126,7 +129,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         }
         return sum/metricData.size();
     }
-
+    
     private double getMetricVariance(Map<Long, Double> metricData) {
         double sumSquareDiff = 0;
         for (Double value : metricData.values()) {
@@ -134,6 +137,5 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         }
         return sumSquareDiff/metricData.size();
     }
-
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
