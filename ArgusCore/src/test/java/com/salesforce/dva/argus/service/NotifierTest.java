@@ -136,6 +136,8 @@ public class NotifierTest extends AbstractTest {
 
         Long alertEnqueueTime = 1418319600000L;
         ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
+                "-20m:-0d:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+                "  SCALE( SUM( DIVIDE( DIFF( DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE(                   -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.001#, #value# ), #union# ), #10m-sum# ), DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE(                   -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.01#, #value# ), #union# ), #10m-sum# ), #union# ), CULL_BELOW( DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE( -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.001#, #value# ), #union# ), #10m-sum# ), #1000#, #value# ) ), #-1# ), #-100# ) ",
                 "ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
                 "ABOVE(-1h:scope:metric:avg:4h-avg, #0.5#)",
                 "ALIASBYTAG(-1s:scope:metric{device=*,source=*}:sum)",
@@ -148,6 +150,8 @@ public class NotifierTest extends AbstractTest {
         ));
 
         ArrayList<String> expectedOutput = new ArrayList<String> (Arrays.asList(
+                "1418318400000:1418319600000:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+                "SCALE(SUM(DIVIDE(DIFF(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.01#,#value#),#union#),#10m-sum#),#union#),CULL_BELOW(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),#1000#,#value#)),#-1#),#-100#)",
                 "ABOVE(1418233200000:scope:metric:avg:4h-avg,#0.5#,#avg#)",
                 "ABOVE(1418316000000:scope:metric:avg:4h-avg,#0.5#)",
                 "ALIASBYTAG(1418319599000:scope:metric{device=*,source=*}:sum)",

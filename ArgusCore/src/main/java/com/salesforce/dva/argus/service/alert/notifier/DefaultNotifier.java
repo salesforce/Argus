@@ -107,8 +107,8 @@ public abstract class DefaultNotifier implements Notifier {
 
     public String getExpressionWithAbsoluteStartAndEndTimeStamps(NotificationContext context) {
 
-        String expression = context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*","");
-        String regexMatcher = "(?i)(\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
+        String expression = "@" + context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*","");
+        String regexMatcher = "(?i)(\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
         Matcher m = Pattern.compile(regexMatcher).matcher(expression);
         Long relativeTo = context.getAlertEnqueueTimestamp();
         while (m.find()) {
@@ -116,7 +116,7 @@ public abstract class DefaultNotifier implements Notifier {
             Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
             expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
         }
-        return expression;
+        return expression.substring(1);
     }
 
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
