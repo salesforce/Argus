@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
