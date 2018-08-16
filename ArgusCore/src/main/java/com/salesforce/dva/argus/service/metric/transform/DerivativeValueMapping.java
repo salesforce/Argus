@@ -70,12 +70,12 @@ public class DerivativeValueMapping implements ValueMapping {
         }
         return derivativeDatapoints;
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Derivative Transform doesn't accept constants!");
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.DERIVATIVE.name();

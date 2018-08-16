@@ -205,7 +205,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-   
+
     @Test
     public void testDownsampleTransformMinOneMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -289,7 +289,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformShouldReturnSameMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -370,7 +370,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformDevOneMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -412,7 +412,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test (expected = UnsupportedOperationException.class)
     public void testDownsampleTransformNewDevOneMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -445,7 +445,7 @@ public class DownsampleTransformTest {
 
         downsampleTransform.transform(metrics, constants);
     }
-    
+
     @Test
     public void testDownsampleTransformAvgMultipleMetrics() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -623,8 +623,8 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
-    @Test//_W-2905322
+
+    @Test
     public void testDownsampleTransformBug_OnHourLevel() {
         Transform downsampleTransform = new DownsampleTransform();
         Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
@@ -658,7 +658,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformCountOneMetric() {
     	Transform downsampleTransform = new DownsampleTransform();
@@ -698,7 +698,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformCountOneMetricHavingNull() {
     	Transform downsampleTransform = new DownsampleTransform();
@@ -738,7 +738,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformMetricIsAllNull() {
     	Transform downsampleTransform = new DownsampleTransform();
@@ -756,7 +756,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDownsampleTransformPercentileOneMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -797,7 +797,7 @@ public class DownsampleTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test (expected = UnsupportedOperationException.class)
     public void testDownsampleTransformNewPercentileOneMetric() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -827,7 +827,7 @@ public class DownsampleTransformTest {
 
         downsampleTransform.transform(metrics, constants);
     }
-    
+
     @Test
     public void testDownsampleTransformPercentileMultipleMetrics() {
         Transform downsampleTransform = new DownsampleTransform();
@@ -888,7 +888,7 @@ public class DownsampleTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testSnappingSeconds(){
     	 Transform downsampleTransform = new DownsampleTransform();
@@ -926,7 +926,7 @@ public class DownsampleTransformTest {
          assertEquals(result.size(), 1);
          assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSnappingMinutes(){
     	 Transform downsampleTransform = new DownsampleTransform();
@@ -960,7 +960,7 @@ public class DownsampleTransformTest {
          assertEquals(result.size(), 1);
          assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSnappingHours(){
     	 Transform downsampleTransform = new DownsampleTransform();
@@ -1003,7 +1003,7 @@ public class DownsampleTransformTest {
          assertEquals(result.size(), 1);
          assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSnappingDays(){
     	 Transform downsampleTransform = new DownsampleTransform();

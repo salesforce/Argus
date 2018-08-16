@@ -74,7 +74,7 @@ public class LogTransformTest {
         expectedDps.put(5L, 4.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps);
     }
-    
+
     @Test
     public void testLogTransformWithBaseForOneMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
@@ -101,7 +101,7 @@ public class LogTransformTest {
         expectedDps.put(5L, 5.0);
         assertEquals(result.get(0).getDatapoints(), expectedDps);
     }
-    
+
     @Test
     public void testLogWithoutBaseTransformForMultipleMetric() {
         Metric m1 = new Metric("test_scope", "test_metric");
@@ -181,7 +181,7 @@ public class LogTransformTest {
         assertEquals(result.get(0).getDatapoints(), expectedDps_1);
         assertEquals(result.get(1).getDatapoints(), expectedDps_2);
     }
-    
+
     @Test
     public void testLogTransformWithoutBaseForOneMetricHavingNull() {
         Metric m1 = new Metric("test_scope", "test_metric");

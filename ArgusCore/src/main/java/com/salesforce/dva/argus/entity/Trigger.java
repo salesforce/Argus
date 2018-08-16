@@ -195,7 +195,7 @@ public class Trigger extends JPAEntity implements Serializable {
     
     @Basic(optional = false)
     private BigDecimal threshold;
-            
+
     private BigDecimal secondaryThreshold;
     
     private Long inertia;
@@ -269,27 +269,27 @@ public class Trigger extends JPAEntity implements Serializable {
 
         switch (trigger.type) {
             case GREATER_THAN:
-            	return NumberOperations.isGreaterThan(actualValue, trigger.getThreshold());
+                return NumberOperations.isGreaterThan(actualValue, trigger.getThreshold());
             case GREATER_THAN_OR_EQ:
-            	return NumberOperations.isGreaterThanOrEqualTo(actualValue, trigger.getThreshold());
+                return NumberOperations.isGreaterThanOrEqualTo(actualValue, trigger.getThreshold());
             case LESS_THAN:
-            	return NumberOperations.isLessThan(actualValue, trigger.getThreshold());
+                return NumberOperations.isLessThan(actualValue, trigger.getThreshold());
             case LESS_THAN_OR_EQ:
-            	return NumberOperations.isLessThanOrEqualTo(actualValue, trigger.getThreshold());
+                return NumberOperations.isLessThanOrEqualTo(actualValue, trigger.getThreshold());
             case EQUAL:
-            	return NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
+                return NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
             case NOT_EQUAL:
-            	return !NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
+                return !NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
             case BETWEEN:
-            	lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
+                lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
             	highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
             	return (NumberOperations.isGreaterThanOrEqualTo(actualValue, lowThreshold) && NumberOperations.isLessThanOrEqualTo(actualValue, highThreshold));
             case NOT_BETWEEN:
-            	lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
-            	highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
-            	return (NumberOperations.isLessThan(actualValue, lowThreshold) || NumberOperations.isGreaterThan(actualValue, highThreshold));
+                lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
+                highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
+                return (NumberOperations.isLessThan(actualValue, lowThreshold) || NumberOperations.isGreaterThan(actualValue, highThreshold));
             case NO_DATA:
-            	    return actualValue == null;
+                return actualValue == null;
             default:
                 throw new SystemException("Unsupported trigger type " + trigger.type);
         }
@@ -380,7 +380,7 @@ public class Trigger extends JPAEntity implements Serializable {
     public void setSecondaryThreshold(BigDecimal secondaryThreshold) {
         this.secondaryThreshold = secondaryThreshold;
     }
-    
+
     /**
      * Returns the inertia associated with the trigger in milliseconds.
      *

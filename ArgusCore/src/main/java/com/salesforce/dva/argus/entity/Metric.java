@@ -208,7 +208,7 @@ public class Metric extends TSDBEntity implements Serializable {
 			}
 		}
 	}
-	
+
 	/**
 	 * If current set already has a value at that timestamp then sets the maximum of the two values for that timestamp at coinciding cutoff boundary, 
 	 * else adds the new data points to the current set.  

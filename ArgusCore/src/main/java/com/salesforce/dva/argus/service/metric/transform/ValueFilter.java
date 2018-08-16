@@ -53,7 +53,7 @@ public interface ValueFilter {
      * @return  The filtered metrics.
      */
     List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit);
-    
+
     /**
      * Returns the value filter name.
      *

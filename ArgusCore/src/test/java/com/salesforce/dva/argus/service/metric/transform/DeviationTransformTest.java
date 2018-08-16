@@ -147,7 +147,7 @@ public class DeviationTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test (expected = UnsupportedOperationException.class)
     public void testDevTransformWithLongOneMetricWithNumLessThanRangeUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
@@ -203,7 +203,7 @@ public class DeviationTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDevTransformOneMetricWithNumGreateThanRaneUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
@@ -236,7 +236,7 @@ public class DeviationTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDevTransformMetricListWithNumLessGreateEqualRangeUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
@@ -419,7 +419,7 @@ public class DeviationTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDevTransformWithNoNumShareCommonDPsBeyondTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
@@ -474,7 +474,7 @@ public class DeviationTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDevTransformWithNoNumShareNoCommonDPsUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
@@ -513,7 +513,7 @@ public class DeviationTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDevTransformWithNoNumWithUNIONShareNoCommonDPsUnderTolerance() {
         Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());

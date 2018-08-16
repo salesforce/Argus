@@ -81,7 +81,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         resultMetrics.add(predictions);
         return resultMetrics;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric>... metrics) {
         throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
@@ -112,7 +112,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @return Normalized metric
      */
     public Metric normalizePredictions(Metric predictions) {
-    	Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
+        Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
         Map<String, Double> minMax = getMinMax(metricData);
         double min = minMax.get("min");
         double max = minMax.get("max");
@@ -176,7 +176,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         minMax.put("max", max);
         return minMax;
     }
-    
+
     /**
      * Advances currentIndex to a point where it is one anomaly detection
      * interval beyond the first timestamp. Sets the anomaly scores for
@@ -205,7 +205,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         }
         return currentIndex;
     }
-    
+
     /**
      * Creates an interval for each data point (after currentIndex) in the metric
      * and calculates the anomaly score for that data point using only other data
@@ -267,7 +267,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
         intervalMetric.setDatapoints(intervalMetricData);
         return intervalMetric;
     }
-    
+
     @Override
     abstract public List<Metric> transform(List<Metric> metrics);
 

@@ -135,7 +135,7 @@ public class IncludeTransformTest {
         assertEquals("test-metric1", result.get(0).getMetric());
         assertEquals("test-metric2", result.get(1).getMetric());
     }
-    
+
     @Test
     public void testIncludeTransformLiteral() {
         Transform includeTransform = new IncludeTransform();

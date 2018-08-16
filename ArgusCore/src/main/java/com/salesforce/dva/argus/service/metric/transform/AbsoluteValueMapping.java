@@ -46,7 +46,7 @@ import com.salesforce.dva.argus.entity.NumberOperations;
 public class AbsoluteValueMapping implements ValueMapping {
 
     //~ Methods **************************************************************************************************************************************
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
     	Map<Long, Number> absDatapoints = new HashMap<>();
@@ -61,7 +61,7 @@ public class AbsoluteValueMapping implements ValueMapping {
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         throw new UnsupportedOperationException("Absolute transform doesn't need a constant!");
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.ABSOLUTE.name();

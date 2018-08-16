@@ -115,7 +115,7 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testNormalizeTransformNoConstantWithDiffLenMetricList() {
         Transform normalizeTransform = new NormalizeTransformWrap();
@@ -210,7 +210,7 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testNormalizeTransformWithConstant() {
         Transform normalizeTransform = new NormalizeTransformWrap();
@@ -262,7 +262,7 @@ public class NormalizeTransformTest {
         assertEquals(result.get(1).getDatapoints().size(), 3);
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testNormalizeTransformWithConstantDpsContainsNullOrEmptyString() {
         Transform normalizeTransform = new NormalizeTransformWrap();

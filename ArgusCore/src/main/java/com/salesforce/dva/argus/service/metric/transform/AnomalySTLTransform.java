@@ -135,7 +135,7 @@ public class AnomalySTLTransform implements Transform {
 
         return result;
     }
-    
+
     // Computes anomaly score based on time series statistics (mean and standard deviation)
     // Input: value of datapoint, mean of time series, standard deviation of time series
     // Output: anomaly score between 0 and 100

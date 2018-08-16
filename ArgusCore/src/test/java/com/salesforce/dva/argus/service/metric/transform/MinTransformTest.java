@@ -105,7 +105,7 @@ public class MinTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMinTransformWithNoCommonDPs() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
@@ -224,7 +224,7 @@ public class MinTransformTest {
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMinTransformWithAllMissingDPsAtTimestamp() {
         Transform minTransform = new MetricReducerTransform(new MinValueReducer());
@@ -264,7 +264,7 @@ public class MinTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMinTransformScopeNameWhenScopeIsSameAcrossMetrics() {
     	Transform minTransform = new MetricReducerTransform(new MinValueReducer());
@@ -293,7 +293,7 @@ public class MinTransformTest {
         
         assertEquals(metric_1.getScope(), result.getScope());
     }
-    
+
     @Test
     public void testMinTransformScopeNameWhenScopeIsDifferentAcrossMetrics() {
     	Transform minTransform = new MetricReducerTransform(new MinValueReducer());

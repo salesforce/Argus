@@ -39,12 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Calculates an arithmetic difference. If a constant is provided, it is
- * subtracted from each data point in the set of input metrics, otherwise the
- * data point values of each time stamp for all but the first metric are
- * subtracted from the data point value of the first metric.
+ * Calculates an arithmetic difference. If a constant is provided, it is subtracted from each data point in the set of input metrics, otherwise the
+ * data point values of each time stamp for all but the first metric are subtracted from the data point value of the first metric.
  *
- * @author Ruofan Zhang (rzhang@salesforce.com)
+ * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
 public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
 

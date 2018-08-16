@@ -193,7 +193,7 @@ public class FillTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testWithIntervalEqualsToFillRangeOffsetNegative() {
         Transform fillTransform = new FillTransform();
@@ -272,7 +272,7 @@ public class FillTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testWithMultipeFillRangeOffsetPositive() {
         Transform fillTransform = new FillTransform();
@@ -452,7 +452,7 @@ public class FillTransformTest {
         constants.add("true");
 
         Map<Long, Number> expected = new HashMap<Long, Number>();
-        
+
         expected.put(2000L, 100.0);
         expected.put(3000L, 100.0);
         expected.put(4000L, 100.0);
@@ -508,7 +508,7 @@ public class FillTransformTest {
         assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testFillLineWithFillRangeZeroAfterSnappingOffsetZero() {
         Transform fillTransform = new FillTransform();
@@ -619,7 +619,7 @@ public class FillTransformTest {
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
         assertEquals(new HashSet<Number>(Arrays.asList(100.0)), new HashSet<Number>(result.get(0).getDatapoints().values()));
     }
-    
+
     @Test
     public void testFillTransform_MetricWithEmptyDatapointsMap() {
     	Transform fillTransform = new FillTransform();
@@ -636,7 +636,7 @@ public class FillTransformTest {
         List<Metric> metrics = fillTransform.transform(Arrays.asList(m), constants);
     	assertEquals(metrics.size(), 1);
     }
-    
+
     @Test
     public void testFillTransform_EmptyMetricsList() {
     	Transform fillTransform = new FillTransform();

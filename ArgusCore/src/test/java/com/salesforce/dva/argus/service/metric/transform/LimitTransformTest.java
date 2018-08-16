@@ -143,7 +143,7 @@ public class LimitTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testLimitTransformWithLimitEqualToMetricsLen() {
         Transform limitTransform = new LimitTransform();

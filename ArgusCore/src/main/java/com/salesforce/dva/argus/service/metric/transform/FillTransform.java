@@ -51,7 +51,7 @@ import java.util.TreeMap;
  */
 public class FillTransform implements Transform {
 
-    // ~ Static fields/initializers *******************************************************************************************************************
+    //~ Static fields/initializers *******************************************************************************************************************
 
     /** The default metric name for results. */
     public static final String DEFAULT_METRIC_NAME = "result";
@@ -61,7 +61,7 @@ public class FillTransform implements Transform {
     public static final long MILLISECONDS_PER_MINUTE = 60 * 1000L;
 
 
-    // ~ Methods **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     private static Map<Long, Number> _fillMetricTransform(Metric metric, long windowSizeInSeconds, long offsetInSeconds, Number value) {
         if (metric == null || metric.getDatapoints() == null || metric.getDatapoints().isEmpty()) {
@@ -137,7 +137,7 @@ public class FillTransform implements Transform {
         }
     }
 
-    // ~ Methods **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     private List<Metric> _fillLine(List<String> constants, long relativeTo) {
         SystemAssert.requireArgument(constants != null && constants.size() == 5,
@@ -175,9 +175,9 @@ public class FillTransform implements Transform {
         metric.setDatapoints(newFilledDatapoints);
 
         List<Metric> lineMetrics = new ArrayList<Metric>();
-
-            lineMetrics.add(metric);
-            return lineMetrics;
+        
+        lineMetrics.add(metric);
+        return lineMetrics;
     }
 
     private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
@@ -205,7 +205,7 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        
+
         // Last 2 constants for FILL Transform are added by MetricReader.
         // The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
         // The second last constant is the timestamp using which relative start and end timestamps

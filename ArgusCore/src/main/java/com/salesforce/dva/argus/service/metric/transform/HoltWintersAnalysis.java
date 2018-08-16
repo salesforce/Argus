@@ -62,7 +62,7 @@ public class HoltWintersAnalysis {
     }
 
     //~ Methods **************************************************************************************************************************************
-    
+
     HoltWintersData _performHoltWintersAnalysis(Map<Long, Number> bootstrappedDps, double alpha, double beta, double gamma, int seasonLength,
             long startTimestamp) {
 

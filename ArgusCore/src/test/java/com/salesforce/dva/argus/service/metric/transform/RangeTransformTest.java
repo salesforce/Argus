@@ -83,7 +83,7 @@ public class RangeTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test(expected = UnsupportedOperationException.class)
     public void testRangeTransformWithConstants() {
         Transform rangeTransform = new RangeTransformWrap();
@@ -137,7 +137,7 @@ public class RangeTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testRangeTransformShareNoCommonDPs() {
         Transform rangeTransform = new RangeTransformWrap();
@@ -172,7 +172,7 @@ public class RangeTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testRangeTransformShareSomeCommonDPs() {
         Transform rangeTransform = new RangeTransformWrap();
@@ -238,7 +238,7 @@ public class RangeTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testRangeTransformShareCommonDPsHavingNull() {
         Transform rangeTransform = new RangeTransformWrap();

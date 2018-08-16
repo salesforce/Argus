@@ -162,7 +162,7 @@ public class FillCalculateTransform implements Transform {
         }
         return fillCalculateMetricList;
     }
-    
+
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.FILL_CALCULATE.name();

@@ -79,7 +79,7 @@ public class DerivativeTransform implements Transform {
         }
         return result;
     }
-    
+
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.DERIVATIVE.name();

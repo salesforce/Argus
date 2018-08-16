@@ -60,7 +60,7 @@ public class TriggerDto extends EntityDTO {
     private Long inertia;
     private BigInteger alertId;
     private List<BigInteger> notificationIds = new ArrayList<BigInteger>();
-    
+
     //~ Methods **************************************************************************************************************************************
 
     /**

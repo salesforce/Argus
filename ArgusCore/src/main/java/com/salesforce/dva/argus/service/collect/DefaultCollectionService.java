@@ -137,6 +137,7 @@ public class DefaultCollectionService extends DefaultJPAService implements Colle
         _monitorService.modifyCounter(Counter.DATAPOINT_WRITES, metricData.getDataPointsSize(), null);
         if (!submitter.isPrivileged() && _wardenService.isWardenServiceEnabled()) {
             checkSubmitMetricPolicyRequirementsMet(submitter, metrics);
+            _logger.info("Capturing warden metrics.");
             _wardenService.modifyPolicyCounter(submitter, PolicyCounter.METRICS_PER_HOUR, metrics.size());
             _wardenService.modifyPolicyCounter(submitter, PolicyCounter.DATAPOINTS_PER_HOUR, metricData.getDataPointsSize());
 

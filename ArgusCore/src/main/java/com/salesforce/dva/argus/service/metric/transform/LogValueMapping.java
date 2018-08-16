@@ -47,8 +47,7 @@ import java.util.Map.Entry;
  */
 public class LogValueMapping implements ValueMapping {
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {

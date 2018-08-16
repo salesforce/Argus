@@ -107,7 +107,7 @@ public class AverageTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testAverageTransformWithNoCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
@@ -146,7 +146,7 @@ public class AverageTransformTest {
         expected.putAll(datapoints_2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testAverageTransformWithSomeCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());

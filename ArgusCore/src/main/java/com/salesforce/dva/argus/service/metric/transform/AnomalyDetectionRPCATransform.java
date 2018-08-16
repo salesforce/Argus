@@ -96,12 +96,12 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         resultMetrics.add(predictionsNormalized);
         return resultMetrics;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric> metrics) {
         throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
     }
-    
+
     /*
      * Calculates the frequency of the metric (the number of data
      * points in one season of the metric)

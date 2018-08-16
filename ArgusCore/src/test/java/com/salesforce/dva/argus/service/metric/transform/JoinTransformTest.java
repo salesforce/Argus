@@ -126,7 +126,7 @@ public class JoinTransformTest {
         assertEquals(expected_2, result.get(1).getDatapoints());
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testJoinTransformWithOneMetric() {
         Transform joinTransform = new JoinTransform();

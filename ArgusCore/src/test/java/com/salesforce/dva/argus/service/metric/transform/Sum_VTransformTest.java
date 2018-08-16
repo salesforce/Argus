@@ -135,7 +135,7 @@ public class Sum_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSum_VTransformWithLongerLenVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
@@ -334,7 +334,7 @@ public class Sum_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
@@ -495,7 +495,7 @@ public class Sum_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());

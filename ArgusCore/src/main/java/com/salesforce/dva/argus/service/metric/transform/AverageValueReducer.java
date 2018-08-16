@@ -43,7 +43,7 @@ import com.salesforce.dva.argus.entity.NumberOperations;
 public class AverageValueReducer implements ValueReducer {
 
     //~ Methods **************************************************************************************************************************************
-    
+
     @Override
     public Number reduce(List<Number> values) {
     	Number sum = 0;

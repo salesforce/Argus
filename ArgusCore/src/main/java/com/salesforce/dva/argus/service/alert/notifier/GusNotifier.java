@@ -201,7 +201,7 @@ public class GusNotifier extends AuditNotifier {
 		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
-	
+
 	private void postToGus(Set<String> to, String feed) {
 
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {

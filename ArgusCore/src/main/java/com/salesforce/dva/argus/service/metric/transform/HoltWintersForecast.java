@@ -111,7 +111,7 @@ public class HoltWintersForecast extends HoltWintersAnalysis implements Transfor
         }
         return result;
     }
-    
+
     @SuppressWarnings("unchecked")
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {

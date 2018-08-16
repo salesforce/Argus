@@ -178,7 +178,7 @@ public class BelowTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testBelowTransformWithLimitNotEqualMidDPsEvalAvg() {
         Transform belowTransform = new MetricFilterWithInteralReducerTransform(new BelowValueFilter());

@@ -121,7 +121,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         predictions.setDatapoints(new HashMap<Long, Number>(predictionDatapoints));
         return predictions;
     }
-    
+
     private double getMetricMean(Map<Long, Double> metricData) {
         double sum = 0;
         for (Double value : metricData.values()) {
@@ -129,7 +129,7 @@ public abstract class AnomalyDetectionGaussianTransform extends AnomalyDetection
         }
         return sum/metricData.size();
     }
-    
+
     private double getMetricVariance(Map<Long, Double> metricData) {
         double sumSquareDiff = 0;
         for (Double value : metricData.values()) {

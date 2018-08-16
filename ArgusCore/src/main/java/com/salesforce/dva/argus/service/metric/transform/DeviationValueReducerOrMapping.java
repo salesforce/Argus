@@ -103,7 +103,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
 
         return result;
     }
-    
+
     private boolean isUnderTolerance(List<Double> values, Double tolearnce) {
         double missingPointNumber = 0;
 
@@ -114,7 +114,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return missingPointNumber / values.size() <= tolerance ? true : false;
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Deviation Transform with mapping is not supposed to be used without a tolerance!");
@@ -154,7 +154,7 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
         deviationDatapoints.put(lastTimestamp, dev);
         return new HashMap<Long, Number>(deviationDatapoints);
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.DEVIATION.name();

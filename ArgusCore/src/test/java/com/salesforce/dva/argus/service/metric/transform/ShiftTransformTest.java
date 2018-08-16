@@ -114,7 +114,7 @@ public class ShiftTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testShiftTransformWithMultipleMetricsBackwardsSec() {
         Transform shiftTransform = new MetricMappingTransform(new ShiftValueMapping());

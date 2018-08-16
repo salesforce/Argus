@@ -115,7 +115,7 @@ public class DerivativeTransformTest {
         expectedDps.put(2L, 1.0);
         assertEquals(metrics.get(0).getDatapoints(), expectedDps);
     }
-    
+
     @Test
     public void transform_shouldReturnDerivativeNullThenTwoNumbersWhenThreeDataPoints() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
@@ -172,7 +172,7 @@ public class DerivativeTransformTest {
         expectedDps2.put(4L, 3L);
         assertThat(metrics.get(1).getDatapoints(), equalTo(expectedDps2));
     }
-    
+
     @Test(expected = UnsupportedOperationException.class)
     public void transform_withConstants() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());

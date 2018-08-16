@@ -102,7 +102,7 @@ public class MaxTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMaxTransformWithNoCommonDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
@@ -181,7 +181,7 @@ public class MaxTransformTest {
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMaxTransformWithNullDPs() {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());

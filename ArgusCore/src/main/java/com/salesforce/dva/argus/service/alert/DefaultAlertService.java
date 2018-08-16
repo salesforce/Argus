@@ -497,16 +497,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/);
-				// publishing evaluation latency as a metric
-				Map<Long, Number> datapoints = new HashMap<>();
-				datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), Double.valueOf(evalLatency));
-				Metric metric = new Metric("alerts.evaluated", "alert-evaluation-latency-" + alert.getId().toString());
-				metric.addDatapoints(datapoints);
-				try {
-					_tsdbService.putMetrics(Arrays.asList(new Metric[] {metric}));
-				} catch (Exception ex) {
-					_logger.error("Exception occurred while pushing alert evaluation latency metric to tsdb - {}", ex.getMessage());
-				}
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);

@@ -294,7 +294,7 @@ public class CullAboveTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCullAboveTransformLimitUpperBorderDPsTypePercentile() {
         Transform cullAboveTransform = new MetricMappingTransform(new CullAboveValueMapping());

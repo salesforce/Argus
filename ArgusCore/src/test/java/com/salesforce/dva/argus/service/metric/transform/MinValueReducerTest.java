@@ -60,7 +60,7 @@ public class MinValueReducerTest {
 
         assertThat(r.reduce(Arrays.asList(5L, 1.0, 4)), equalTo(1.0));
     }
-    
+
     @Test
     public void reduce_shouldReturnMinWithNullValue() {
         MinValueReducer r = new MinValueReducer();

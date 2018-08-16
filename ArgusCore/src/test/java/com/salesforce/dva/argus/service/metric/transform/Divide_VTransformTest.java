@@ -281,7 +281,7 @@ public class Divide_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDivide_VTransformWithNullPointVectorAgainstOneMetric() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());
@@ -361,7 +361,7 @@ public class Divide_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDivide_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform divide_vTransform = new MetricZipperTransform(new DivideValueZipper());

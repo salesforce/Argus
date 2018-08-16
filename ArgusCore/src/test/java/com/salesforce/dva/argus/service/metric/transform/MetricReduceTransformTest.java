@@ -96,7 +96,7 @@ public class MetricReduceTransformTest {
 
         assertThat(results, equalTo(expected));
     }
-    
+
     @Test
     public void reduce_shouldUseDistilledScopeNameWhenCommon() {
         Metric m = new Metric("s", "m1");
@@ -162,7 +162,7 @@ public class MetricReduceTransformTest {
         expectedDps.put(2L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
-    
+
     @Test
     public void reduce_shouldUseDatapointsFromOneMetricWhenValueNull() {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
@@ -269,7 +269,7 @@ public class MetricReduceTransformTest {
         expected.put(4L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expected));
     }
-    
+
     @Test
     public void transform_checkScopeName() {
         Mockito.when(mockValueReducer.name()).thenReturn("s");

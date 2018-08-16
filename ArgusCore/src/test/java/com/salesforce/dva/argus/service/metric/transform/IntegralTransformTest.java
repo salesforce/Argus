@@ -69,7 +69,7 @@ public class IntegralTransformTest {
         expectedDps.put(5L, 10.2);
         assertThat(result.get(0).getDatapoints(), equalTo(expectedDps));
     }
-    
+
     @Test
     public void transform_shouldReturnIntegralForTwoMetrics() {
         Transform integralTransform = new MetricMappingTransform(new IntegralValueMapping());

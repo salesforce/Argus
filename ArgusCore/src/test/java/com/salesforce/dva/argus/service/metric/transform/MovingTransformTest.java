@@ -85,7 +85,7 @@ public class MovingTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
     }
-    
+
     @Test
     public void testMovingMedianTransformWithTimeInterval() {
         Transform movingTransform = new MetricMappingTransform(new MovingValueMapping());
@@ -127,7 +127,7 @@ public class MovingTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
     }
-    
+
     @Test
     public void testMovingSumTransformWithTimeInterval() {
         Transform movingTransform = new MetricMappingTransform(new MovingValueMapping());
@@ -169,7 +169,7 @@ public class MovingTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
     }
-    
+
     @Test
     public void testMovingAvgTransformWithTimeIntervalHasNullValue() {
         Transform movingTransform = new MetricMappingTransform(new MovingValueMapping());
@@ -211,7 +211,7 @@ public class MovingTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), actual.size());
         assertEquals(result.get(0).getDatapoints(), actual);
     }
-    
+
     @Test
     public void testMovingMedianTransformWithTimeIntervalHasNullValue() {
         Transform movingTransform = new MetricMappingTransform(new MovingValueMapping());
@@ -328,7 +328,7 @@ public class MovingTransformTest {
 
         movingTransform.transform(metrics);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void transform_ShouldThrowIllegalArgumentExceptionWhenNoWindowSizeIsSpecified() {
         List<Metric> metrics = new ArrayList<Metric>();

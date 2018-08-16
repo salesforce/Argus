@@ -52,7 +52,7 @@ public interface Transform {
      * @return  The result of the transform. Shall not be null.
      */
     List<Metric> transform(List<Metric> metrics);
-    
+
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
@@ -63,7 +63,7 @@ public interface Transform {
      * @return  The result of the transform.  Shall not be null.
      */
     List<Metric> transform(List<Metric> metrics, List<String> constants);
-    
+
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
@@ -73,7 +73,7 @@ public interface Transform {
      * @return  The result of the transform. Shall not be null.
      */
     List<Metric> transform(List<Metric>... metrics);
-    
+
     /**
      * Returns the scope name for the result.
      *

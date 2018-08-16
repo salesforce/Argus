@@ -236,7 +236,7 @@ public class CullBelowTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCullBelowTransformLimitLowerBorderDPsTypePercentile() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
@@ -336,7 +336,7 @@ public class CullBelowTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCullBelowTransformLimitGreaterThanUpperBorderDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
@@ -365,7 +365,7 @@ public class CullBelowTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCullBelowTransformMultipleMetricLimitMidInDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());

@@ -69,7 +69,7 @@ public class IntegralTransform implements Transform {
         }
         return result;
     }
-  
+
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Identity Transform is not supposed to be used with a constant");

@@ -91,7 +91,7 @@ public class ZeroIfMissingSumTransformTest {
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void transformWithNullValuesInTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
@@ -151,7 +151,7 @@ public class ZeroIfMissingSumTransformTest {
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void transformWithOneTimeSeriesHavingOneNullEmptyDatapoints() {
         Transform transform = new ZeroIfMissingSum();
@@ -179,7 +179,7 @@ public class ZeroIfMissingSumTransformTest {
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void transform_ShouldReturnEmptyListWhenMetricIsEmpty() {
         List<Metric> metrics = new ArrayList<Metric>();

@@ -39,16 +39,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Calculates an quotient. If a constant is provided, it is divided into each
- * data point in the set of input metrics, otherwise the data point values of
- * each time stamp for all but the first metric are divided into the data point
- * value of the first metric.
+ * Calculates an quotient. If a constant is provided, it is divided into each data point in the set of input metrics, otherwise the data point values
+ * of each time stamp for all but the first metric are divided into the data point value of the first metric.
  *
- * @author Ruofan Zhang (rzhang@salesforce.com)
+ * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
 public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
 
-    // ~ Methods **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public Number reduce(List<Number> values) {

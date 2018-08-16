@@ -71,7 +71,7 @@ public class MinValueReducer implements ValueReducer {
         }
         return min == null ? Double.POSITIVE_INFINITY : min;
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.MIN.name();

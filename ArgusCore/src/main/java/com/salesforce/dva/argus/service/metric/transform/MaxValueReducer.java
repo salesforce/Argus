@@ -71,7 +71,7 @@ public class MaxValueReducer implements ValueReducer {
         }
         return max == null ? Double.NEGATIVE_INFINITY : max;
     }
-    
+
     @Override
     public String name() {
         return TransformFactory.Function.MAX.name();

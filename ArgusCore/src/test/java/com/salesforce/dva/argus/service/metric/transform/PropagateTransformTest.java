@@ -132,7 +132,7 @@ public class PropagateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testWithWindowEqualsToPropagateRange() {
         Transform propagateTransform = new PropagateTransform();

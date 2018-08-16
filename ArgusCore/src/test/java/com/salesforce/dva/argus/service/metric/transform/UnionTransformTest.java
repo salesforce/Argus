@@ -112,7 +112,7 @@ public class UnionTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testUnionTransformWithoutSharedTimestamps() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
@@ -197,7 +197,7 @@ public class UnionTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testUnionTransformWithOnlyOneMetric() {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());

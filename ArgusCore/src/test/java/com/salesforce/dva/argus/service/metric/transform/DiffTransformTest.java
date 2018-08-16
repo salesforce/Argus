@@ -109,7 +109,7 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-   
+
     @Test
     public void testDiffTransformWithOneConstantAgainstMetricList() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
@@ -217,7 +217,7 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiffTransformWithNoConstantShareNoCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
@@ -253,7 +253,7 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiffTransformWithNoConstantShareSomeCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());
@@ -292,7 +292,7 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiffTransformWithFullConstantShareSomeCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());

@@ -62,7 +62,7 @@ import javax.xml.bind.DatatypeConverter;
  * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
  */
 class MetricTransform {
-	
+
     //~ Constructors *********************************************************************************************************************************
 
     private MetricTransform() { }
@@ -102,7 +102,7 @@ class MetricTransform {
     	if(datapoints.isEmpty()) {
     		return null;
     	}
-    	
+
     	Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
     	
     	Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));

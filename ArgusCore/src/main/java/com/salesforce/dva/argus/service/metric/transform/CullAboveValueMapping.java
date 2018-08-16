@@ -50,12 +50,12 @@ import java.util.Map;
  */
 public class CullAboveValueMapping implements ValueMapping {
 
-    // ~ Static fields/initializers *******************************************************************************************************************
+    //~ Static fields/initializers *******************************************************************************************************************
 
     private static final String PERCENTILE = "percentile";
     private static final String VALUE = "value";
 
-    // ~ Methods **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {

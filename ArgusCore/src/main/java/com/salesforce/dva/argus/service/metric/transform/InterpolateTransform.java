@@ -43,7 +43,7 @@ public class InterpolateTransform implements Transform {
 	public List<Metric> transform(List<Metric> metrics) {
 		throw new UnsupportedOperationException("Interpolation Transform needs an interpolation type to be specified");
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
@@ -151,7 +151,7 @@ public class InterpolateTransform implements Transform {
 			resultDatapoints.put(timestamp, NumberOperations.divide(value, num));
 		}
 	}
-	
+
 	private void interpolateMin(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
@@ -280,7 +280,7 @@ public class InterpolateTransform implements Transform {
 
 		return minTimestamp;
 	}
-	
+
 	/**
 	 * Makes iterator number i move forward to the next data point in internal buffer
 	 * Copies the next datapoint to current datapoint, and uses the iterator to populate the next section

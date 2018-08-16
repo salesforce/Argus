@@ -88,12 +88,12 @@ public class ZeroIfMissingSum implements Transform {
         Collections.addAll(resultMetrics, result);
         return resultMetrics;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a constant");
     }
-    
+
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.ZEROIFMISSINGSUM.name();
@@ -110,7 +110,7 @@ public class ZeroIfMissingSum implements Transform {
 
         return NumberOperations.add(operand1, operand2);
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Zero if missing Sum Transform is not supposed to be used with a list of metric list!");

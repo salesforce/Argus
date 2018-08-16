@@ -54,14 +54,14 @@ public class MaxValueReducerTest {
 
         assertThat(r.reduce(Arrays.asList(1.0)), equalTo(1.0));
     }
-    
+
     @Test
     public void reduce_shouldReturnMaxWithMultipleValues() {
         MaxValueReducer r = new MaxValueReducer();
 
         assertThat(r.reduce(Arrays.asList(5L, 1.0, 4.0)), equalTo(5L));
     }
-    
+
     @Test
     public void reduce_shouldReturnMaxWithNullValue() {
         MaxValueReducer r = new MaxValueReducer();

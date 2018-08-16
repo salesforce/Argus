@@ -135,7 +135,7 @@ public class Diff_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiff_VTransformWithLongerLenVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
@@ -176,7 +176,7 @@ public class Diff_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiff_VTransformWithShorterLenVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
@@ -334,7 +334,7 @@ public class Diff_VTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiff_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
@@ -495,7 +495,7 @@ public class Diff_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testDiff_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new DiffValueZipper());

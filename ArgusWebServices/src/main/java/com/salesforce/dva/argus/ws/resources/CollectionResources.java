@@ -83,7 +83,7 @@ public class CollectionResources extends AbstractResource {
         PrincipalUser remoteUser = getRemoteUser(req);
 
         SystemAssert.requireArgument(metricDtos != null, "Cannot submit null timeseries metrics list.");
-        
+
         List<Metric> legalMetrics = new ArrayList<>();
         List<MetricDto> illegalMetrics = new ArrayList<>();
         List<String> errorMessages = new ArrayList<>();

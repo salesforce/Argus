@@ -182,7 +182,7 @@ public class HighestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testHighestTransformWithLimitLessThanDPsLenAvg() {
         Transform highestTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
@@ -245,7 +245,7 @@ public class HighestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testHighestTransformWithLimitEqualToDPsLenMin() {
         Transform highestTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());
@@ -385,7 +385,7 @@ public class HighestTransformTest {
         assertEquals(expected_2, result.get(1).getDatapoints());
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testHighestTransformWithLimitLessThanDPsLenRecent() {
         Transform highestTransform = new MetricFilterWithInteralReducerTransform(new HighestValueFilter());

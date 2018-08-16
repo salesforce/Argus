@@ -115,7 +115,7 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithoutSharedTimestamps() {
         Transform countTransform = new CountTransformWrapUnion();
@@ -158,7 +158,7 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithSomeSharedTimestamps() {
         Transform countTransform = new CountTransformWrapUnion();
@@ -200,7 +200,7 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithOnlyOneMetric() {
         Transform countTransform = new CountTransformWrapUnion();
@@ -270,7 +270,7 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithThreeMetrics() {
         Transform countTransform = new CountTransformWrapUnion();

@@ -104,7 +104,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
 
         return transform(metrics);
     }
-   
+
     private void trainModel(Map<Long, Double> metricData) throws Exception {
         //Model has a single metric_value attribute
         Attribute value = new Attribute("metric_value");

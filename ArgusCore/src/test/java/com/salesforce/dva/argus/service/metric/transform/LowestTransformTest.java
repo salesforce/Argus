@@ -182,7 +182,7 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenAvg() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
@@ -245,7 +245,7 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testLowestTransformWithLimitEqualToDPsLenMin() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
@@ -315,7 +315,7 @@ public class LowestTransformTest {
         assertEquals(expected_2, result.get(1).getDatapoints());
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testLowestTransformWithLimitGreatToDPsLenMax() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());
@@ -448,7 +448,7 @@ public class LowestTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testLowestTransformWithLimitLessThanDPsLenDefaultHavingNull() {
         Transform lowestTransform = new MetricFilterWithInteralReducerTransform(new LowestValueFilter());

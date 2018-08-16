@@ -279,7 +279,7 @@ public class SortTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testSortTransformWithLimitEqualToLenMinAsc() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
@@ -485,7 +485,7 @@ public class SortTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test (expected = UnsupportedOperationException.class)
     public void testSortTransformWithLongWithLimitLessThanLenDevAsc() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
@@ -633,7 +633,7 @@ public class SortTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testSortTransform() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();

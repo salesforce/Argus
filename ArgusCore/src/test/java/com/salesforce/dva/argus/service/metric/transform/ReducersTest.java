@@ -54,10 +54,10 @@ public class ReducersTest {
         };
 
         for (int i = 0; i < results.length; i++) {
-        	Number[] test = testLists[i];
-        	Number expResult = results[i];
+            Number[] test = testLists[i];
+            Number expResult = results[i];
 
-        	Number result = Reducers.sumReducer(Arrays.asList(test));
+            Number result = Reducers.sumReducer(Arrays.asList(test));
             Assert.assertEquals(expResult, result);
         }
     }

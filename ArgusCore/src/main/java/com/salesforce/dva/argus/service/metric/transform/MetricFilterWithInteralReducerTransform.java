@@ -89,9 +89,7 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
          */
         public static String internalReducer(Metric metric, String reducerType) {
             Map<Long, Number> sortedDatapoints = new TreeMap<>();
-    
-            sortedDatapoints.putAll(metric.getDatapoints());
-    
+        
             List<Number> operands = new ArrayList<Number>();
     
             if (!reducerType.equals(InternalReducerType.NAME.getName())) {
