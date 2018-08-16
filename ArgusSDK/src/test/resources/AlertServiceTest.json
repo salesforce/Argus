@@ -67,49 +67,49 @@
     "jsonInput" :null,
     "status": 200,
     "message": "get triggers",
-    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
 },{
   "type": "POST",
     "endpoint": "/alerts/1/triggers",
-    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
+    "jsonInput" :"{\"id\":null,\"createdById\":null,\"createdDate\":null,\"modifiedById\":null,\"modifiedDate\":null,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
     "status": 200,
     "message": "create trigger",
-    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
 },{
   "type": "GET",
     "endpoint": "/alerts/1/triggers/1",
     "jsonInput" :null,
     "status": 200,
     "message": "get trigger",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
 },{
   "type": "PUT",
     "endpoint": "/alerts/1/triggers/1",
-    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
+    "jsonInput" :"{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}",
     "status": 200,
     "message": "update trigger",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"UpdatedTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
 },{
   "type": "GET",
     "endpoint": "/alerts/1/notifications/1/triggers",
     "jsonInput" :null,
     "status": 200,
     "message": "get linked triggers",
-    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
+    "jsonOutput" : "[{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}]"
 },{
   "type": "GET",
     "endpoint": "/alerts/1/notifications/1/triggers/1",
     "jsonInput" :null,
     "status": 200,
     "message": "get linked trigger",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
 },{
   "type": "POST",
     "endpoint": "/alerts/1/notifications/1/triggers/1",
     "jsonInput" :null,
     "status": 200,
     "message": "link trigger",
-    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100.0,\"secondaryThreshold\":200.0,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
+    "jsonOutput" : "{\"id\":1,\"createdById\":1,\"createdDate\":1472282830936,\"modifiedById\":1,\"modifiedDate\":1472282830936,\"type\":\"BETWEEN\",\"name\":\"TestTrigger\",\"threshold\":100,\"secondaryThreshold\":200,\"inertia\":60000,\"alertId\":1,\"notificationIds\":[]}"
 },{
   "type": "DELETE",
     "endpoint": "/alerts/1",

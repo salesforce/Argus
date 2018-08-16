@@ -53,7 +53,6 @@ public class DeviationValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Static fields/initializers *******************************************************************************************************************
 
     private static Double tolerance = 0.1;
-    private static Number toleranceNew = 0.1;
     private static Long pointNum = Long.MIN_VALUE;
     
 
