@@ -121,12 +121,12 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     private String getEmailSubject(NotificationContext context) {
-        String currentSubject = "[Argus] Notification for Alert: " + context.getAlert().getName();
+        String currentSubject = "[Argus] Notification for Alert: " + getDisplayedName(context, context.getAlert().getName());
         Alert currentAlert = context.getAlert();
         if (currentAlert.getNotifications().size() > 1)
-            currentSubject += " Notification: "+ context.getNotification().getName();
+            currentSubject += " Notification: "+ getDisplayedName(context, context.getNotification().getName());
         if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + getDisplayTriggerName(context);
+            currentSubject += " Trigger:" + getDisplayedName(context, context.getTrigger().getName());
         return currentSubject;
     }
 
@@ -160,17 +160,18 @@ public class EmailNotifier extends AuditNotifier {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", context.getAlert().getName(), context.getAlert().getId().intValue(), notificationMessage,
+        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-        if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-        	sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+        String customText = context.getNotification().getCustomText();
+        if( customText != null && customText.length()>0){
+            sb.append(getDisplayedName(context, customText)).append("<br/>");
         }
         Alert currentAlert = notification.getAlert();
         String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         if(currentAlert.getNotifications().size() > 1)
-            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
+            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", getDisplayedName(context, notification.getName())));
         if(currentAlert.getTriggers().size() > 1)
-            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayedName(context, context.getTrigger().getName())));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
         sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
