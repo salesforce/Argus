@@ -145,6 +145,7 @@ public class DownsampleTransform implements Transform {
 		Long endTime = null;
 		Double defaultValue = null;
 		if(constants.size()==4) {
+			// calculating till end of current minute to be more in line with how opentsdb does downsampling
 			long currMinuteEndTime = 60*1000*(System.currentTimeMillis()/(60*1000)) + 60*1000;
 			startTime = MetricReader.getTime(currMinuteEndTime, constants.get(1));
 			endTime = MetricReader.getTime(currMinuteEndTime, constants.get(2));
@@ -205,7 +206,7 @@ public class DownsampleTransform implements Transform {
 				startTime -= timeDrift;
 				endTime -= timeDrift;
 			}
-			windowStart = startTime;
+			windowStart = getWindowStartTime(startTime,windowUnit,windowSize);
 			List<Double> values = new ArrayList<>();
 			while(windowStart<endTime) {
 				long currWindowEndTime = windowStart + windowSize;
