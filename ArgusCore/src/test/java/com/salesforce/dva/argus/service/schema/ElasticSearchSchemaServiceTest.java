@@ -545,6 +545,196 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         assertFalse(queryForMetric.isQueryOnlyOnScopeAndMetric());
     }
 
+	@Test
+	public void testUpsertWhenAllNewDocsShouldNotUpdateMTSField() throws IOException {
+		String esCreateResponse=String.join("\n", "{" + 
+				"  \"took\": 127," + 
+				"  \"errors\": false," + 
+				"  \"items\": [" + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"1\"," + 
+				"        \"_version\": 1," + 
+				"        \"result\": \"created\"," + 
+				"        \"_shards\": {" + 
+				"          \"total\": 2," + 
+				"          \"successful\": 1," + 
+				"          \"failed\": 0" + 
+				"        }," + 
+				"        \"created\": true," + 
+				"        \"status\": 201" + 
+				"      }" + 
+				"    }," + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"2\"," + 
+				"        \"_version\": 1," + 
+				"        \"result\": \"created\"," + 
+				"        \"_shards\": {" + 
+				"          \"total\": 2," + 
+				"          \"successful\": 1," + 
+				"          \"failed\": 0" + 
+				"        }," + 
+				"        \"created\": true," + 
+				"        \"status\": 201" + 
+				"      }" + 
+				"    }" + 
+				"  ]" + 
+				"}");
+		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		RestClient _restClient = mock(RestClient.class);
+		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
+		spySchemaService.setRestClient(_restClient);
+		doReturn(esCreateResponse).when(spySchemaService).extractResponse(any());
+
+		List<Metric> metrics = new ArrayList<>();
+		Metric m1= new Metric("scope1", "metric1");
+		Metric m2= new Metric("scope2", "metric2");
+		metrics.add(m1);
+		metrics.add(m2);
+		spySchemaService.put(metrics);
+		verify(spySchemaService, never()).updateMtsField(any(), any(), any());
+	}
+	
+	@Test
+	public void testUpsertWhenSomeDocsExistShouldUpdateMTSFieldForExistingDocs() throws IOException {
+		String esCreateResponse=String.join("\n", "{" + 
+				"  \"took\": 5," + 
+				"  \"errors\": true," + 
+				"  \"items\": [" + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"1\"," + 
+				"        \"status\": 409," + 
+				"        \"error\": {" + 
+				"          \"type\": \"version_conflict_engine_exception\"," + 
+				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," + 
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
+				"          \"shard\": \"2\"," + 
+				"          \"index\": \"metadata_index\"" + 
+				"        }" + 
+				"      }" + 
+				"    }," + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"2\"," + 
+				"        \"_version\": 1," + 
+				"        \"result\": \"created\"," + 
+				"        \"_shards\": {" + 
+				"          \"total\": 2," + 
+				"          \"successful\": 1," + 
+				"          \"failed\": 0" + 
+				"        }," + 
+				"        \"created\": true," + 
+				"        \"status\": 201" + 
+				"      }" + 
+				"    }" + 
+				"  ]" + 
+				"}");
+		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		RestClient _restClient = mock(RestClient.class);
+		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
+		spySchemaService.setRestClient(_restClient);
+		doReturn(esCreateResponse).when(spySchemaService).extractResponse(any());
+		doNothing().when(spySchemaService).upsertScopeAndMetrics(any());
+		doNothing().when(spySchemaService).upsertScopes(any());
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				@SuppressWarnings("unchecked")
+				List<String> updateDocIds = List.class.cast(invocation.getArguments()[0]);
+				assertEquals("1", updateDocIds.get(0));
+				assertEquals(1, updateDocIds.size()); 
+				return null;
+			}
+		}).when(spySchemaService).updateMtsField(any(), any(), any());
+	
+		List<Metric> metrics = new ArrayList<>();
+		Metric m1= new Metric("scope1", "metric1");
+		Metric m2= new Metric("scope2", "metric2");
+		metrics.add(m1);
+		metrics.add(m2);
+		spySchemaService.put(metrics);
+		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
+	}
+	
+	@Test
+	public void testUpsertWhenAllDocsExistShouldUpdateMTSFieldForAllDocs() throws IOException {
+		String esCreateResponse=String.join("", "{" + 
+				"  \"took\": 0," + 
+				"  \"errors\": true," + 
+				"  \"items\": [" + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"1\"," + 
+				"        \"status\": 409," + 
+				"        \"error\": {" + 
+				"          \"type\": \"version_conflict_engine_exception\"," + 
+				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," + 
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
+				"          \"shard\": \"2\"," + 
+				"          \"index\": \"metadata_index\"" + 
+				"        }" + 
+				"      }" + 
+				"    }," + 
+				"    {" + 
+				"      \"create\": {" + 
+				"        \"_index\": \"metadata_index\"," + 
+				"        \"_type\": \"metadata_type\"," + 
+				"        \"_id\": \"2\"," + 
+				"        \"status\": 409," + 
+				"        \"error\": {" + 
+				"          \"type\": \"version_conflict_engine_exception\"," + 
+				"          \"reason\": \"[metadata_type][4f86f5e6dc6d4672830d97de21e75a20]: version conflict, document already exists (current version [1])\"," + 
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
+				"          \"shard\": \"4\"," + 
+				"          \"index\": \"metadata_index\"" + 
+				"        }" + 
+				"      }" + 
+				"    }" + 
+				"  ]" + 
+				"}");
+		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+		ElasticSearchSchemaService spySchemaService = spy(schemaService);
+		RestClient _restClient = mock(RestClient.class);
+		doReturn(null).when(_restClient).performRequest(any(), any(), any(),any());
+		spySchemaService.setRestClient(_restClient);
+		doReturn(esCreateResponse).when(spySchemaService).extractResponse(any());
+		doNothing().when(spySchemaService).upsertScopeAndMetrics(any());
+		doNothing().when(spySchemaService).upsertScopes(any());
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				@SuppressWarnings("unchecked")
+				List<String> updateDocIds = List.class.cast(invocation.getArguments()[0]);
+				assertEquals("1", updateDocIds.get(0));
+				assertEquals("2", updateDocIds.get(1));
+				assertEquals(2, updateDocIds.size()); 
+				return null;
+			}
+		}).when(spySchemaService).updateMtsField(any(), any(), any());
+	
+		List<Metric> metrics = new ArrayList<>();
+		Metric m1= new Metric("scope1", "metric1");
+		Metric m2= new Metric("scope2", "metric2");
+		metrics.add(m1);
+		metrics.add(m2);
+		spySchemaService.put(metrics);
+		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
+	}
+	
     private String convertToPrettyJson(String jsonString) {
         JsonParser parser = new JsonParser();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
