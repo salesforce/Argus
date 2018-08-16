@@ -176,6 +176,7 @@ public class EmailNotifier extends AuditNotifier {
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 
         if(!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+        else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
         }
@@ -183,7 +184,6 @@ public class EmailNotifier extends AuditNotifier {
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
-        sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
 
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
