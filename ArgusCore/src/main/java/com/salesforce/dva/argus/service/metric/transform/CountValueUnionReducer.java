@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.List;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Calculates a metric having the a set of timestamps that is the union of all input metric timestamp values where each timestamp value is the
  * constant value of the count of input metrics.
@@ -42,17 +44,17 @@ import java.util.List;
 public class CountValueUnionReducer implements ValueReducer {
 
     //~ Methods **************************************************************************************************************************************
-
+    
     @Override
-    public Double reduce(List<Double> values) {
-        Double sum = 0.0;
-
-        for (Double value : values) {
+    public Number reduce(List<Number> values) {
+        Number sum = 0;
+        
+        for (Number value : values) {
             if (value == null) {
-                value = 0.0;
+                value = 0;
             }
             
-            sum += value;
+            sum = NumberOperations.add(sum, value);
         }
         
         return sum;

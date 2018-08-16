@@ -33,8 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
-import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,141 +76,161 @@ public class MetricFilterWithInteralReducerTransform implements Transform {
 	}
 
 	//~ Methods **************************************************************************************************************************************
-
+	
 	/**
-	 * Reduces the give metric to a single value based on the specified reducer.
-	 *
-	 * @param   metric       The metric to reduce.
-	 * @param   reducerType  The type of reduction to perform.
-	 *
-	 * @return  The reduced value.
-	 *
-	 * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
-	 */
-	public static String internalReducer(Metric metric, String reducerType) {
-		Map<Long, Double> sortedDatapoints = new TreeMap<>();
-		List<Double> operands = new ArrayList<Double>();
-
-		if(!reducerType.equals(InternalReducerType.NAME.getName())) {
-			if(metric.getDatapoints()!=null && metric.getDatapoints().size()>0) {
-				sortedDatapoints.putAll(metric.getDatapoints());
-				for (Double value : sortedDatapoints.values()) {
-
-					if (value == null) {
-						operands.add(0.0);
-					} else {
-						operands.add(value);
-					}
-				}
-			}else {
-				return null;
-			}
-		}
-
-
-		InternalReducerType type = InternalReducerType.fromString(reducerType);
-
-		switch (type) {
-		case AVG:
-			return String.valueOf((new Mean()).evaluate(Doubles.toArray(operands)));
-		case MIN:
-			return String.valueOf(Collections.min(operands));
-		case MAX:
-			return String.valueOf(Collections.max(operands));
-		case RECENT:
-			return String.valueOf(operands.get(operands.size() - 1));
-		case MAXIMA:
-			return String.valueOf(Collections.max(operands));
-		case MINIMA:
-			return String.valueOf(Collections.min(operands));
-		case NAME:
-			return metric.getMetric();
-		case DEVIATION:
-			return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operands)));
-		default:
-			throw new UnsupportedOperationException(reducerType);
-		}
-	}
-
-	/**
-	 * Sorts a metric.
-	 *
-	 * @param   map  The metrics to sort.
-	 * @param reducerType 	Sort key / reducer to use
-	 * @return  The sorted metrics.
-	 */
-	public static Map<Metric, String> sortByValue(Map<Metric, String> map, final String reducerType) {
-		List<Map.Entry<Metric, String>> list = new LinkedList<>(map.entrySet());
-
-		Collections.sort(list, new Comparator<Map.Entry<Metric, String>>() {
-
-			@Override
-			public int compare(Map.Entry<Metric, String> o1, Map.Entry<Metric, String> o2) {
-				if(reducerType.equals("name")) {
-					return o1.getValue().compareTo(o2.getValue());
-				}
-
-				Double d1 = Double.parseDouble(o1.getValue());
-				Double d2 = Double.parseDouble(o2.getValue());
-				return (d1.compareTo(d2));
-			}
-		});
-
-		Map<Metric, String> result = new LinkedHashMap<>();
-
-		for (Map.Entry<Metric, String> entry : list) {
-			result.put(entry.getKey(), entry.getValue());
-		}
-		return result;
-	}
-
-	//~ Methods **************************************************************************************************************************************
-
-	@Override
-	public String getResultScopeName() {
-		return defaultScope;
-	}
-
-	@Override
-	public List<Metric> transform(List<Metric> metrics) {
-		throw new UnsupportedOperationException("Filter transform need constant input!");
-	}
-
-	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-		SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
-		if (metrics.isEmpty()) {
-			return metrics;
-		}
-		SystemAssert.requireArgument(!constants.isEmpty(), "Filter Transform must provide at least limit");
-		if (constants.size() == 1) {
-			constants.add(InternalReducerType.AVG.reducerName);
-		}
-
-		String limit = constants.get(0);
-		String type = constants.get(1);
-		Map<Metric, String> extendedSortedMap = createExtendedMap(metrics, type);
-		List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
-
-		return filteredMetricList;
-	}
-
-	private Map<Metric, String> createExtendedMap(List<Metric> metrics, String type) {
-		Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
-
-		for (Metric metric : metrics) {
-			String extendedEvaluation = internalReducer(metric, type);
-
-			if(extendedEvaluation!=null) {
-				extendedSortedMap.put(metric, extendedEvaluation);
-			}
-		}
-		return sortByValue(extendedSortedMap, type);
-	}
-
-	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
-		throw new UnsupportedOperationException("Filter doesn't need list of list!");
-	}
+         * Reduces the give metric to a single value based on the specified reducer.
+         *
+         * @param   metric       The metric to reduce.
+         * @param   reducerType  The type of reduction to perform.
+         *
+         * @return  The reduced value.
+         *
+         * @throws  UnsupportedOperationException  If an unknown reducer type is specified.
+         */
+        public static String internalReducer(Metric metric, String reducerType) {
+            Map<Long, Number> sortedDatapoints = new TreeMap<>();
+        
+            List<Number> operands = new ArrayList<Number>();
+    
+            if (!reducerType.equals(InternalReducerType.NAME.getName())) {
+            	if (metric.getDatapoints() != null && metric.getDatapoints().size() > 0) {
+            		sortedDatapoints.putAll(metric.getDatapoints());
+            		for (Number value : sortedDatapoints.values()) {
+            			if (value == null) {
+            				operands.add(0);
+            			} else {
+            				operands.add(value);
+            			}
+            		}
+            	}
+            }
+    
+            InternalReducerType type = InternalReducerType.fromString(reducerType);
+    
+            switch (type) {
+                case AVG:
+                    return String.valueOf(NumberOperations.mean(operands.toArray(new Number[operands.size()])));
+                case MIN:
+                    return String.valueOf(NumberOperations.min(operands));
+                case MAX:
+                    return String.valueOf(NumberOperations.max(operands));
+                case RECENT:
+                    return String.valueOf(operands.get(operands.size() - 1));
+                case MAXIMA:
+                    return String.valueOf(NumberOperations.max(operands));
+                case MINIMA:
+                    return String.valueOf(NumberOperations.min(operands));
+                case NAME:
+                    return metric.getMetric();
+                case DEVIATION:
+                	try {
+                		List<Double> operandsDouble = NumberOperations.getListAsDoubles(operands);
+                		return String.valueOf((new StandardDeviation()).evaluate(Doubles.toArray(operandsDouble)));
+                	} catch (IllegalArgumentException iae) {
+                		throw new UnsupportedOperationException("Metric Filter with Internal Reducer Transform with deviation can only be used with double data values.");
+                	}
+                default:
+                    throw new UnsupportedOperationException(reducerType);
+            }
+        }
+    	
+        /**
+         * Sorts a metric.
+         *
+         * @param   map  The metrics to sort.
+         *
+         * @return  The sorted metrics.
+         */
+        public static Map<Metric, String> sortByValue(Map<Metric, String> map, final String reducerType) {
+            List<Map.Entry<Metric, String>> list = new LinkedList<>(map.entrySet());
+    
+            Collections.sort(list, new Comparator<Map.Entry<Metric, String>>() {
+    
+                    @Override
+                    public int compare(Map.Entry<Metric, String> o1, Map.Entry<Metric, String> o2) {
+                    	if(reducerType.equals("name")) {
+                    		return o1.getValue().compareTo(o2.getValue());
+                    	}
+                    	
+                    	Number n1, n2;
+                    	try {
+                    		n1 = Long.parseLong(o1.getValue());
+                    	} catch (NumberFormatException nfe) {
+                    		try {
+                    			n1 = Double.parseDouble(o1.getValue());
+                    		} catch (NumberFormatException nfe2) {
+                    			throw new IllegalArgumentException("The value " + o1.getValue() + " is not a valid number.");
+                    		}
+                    	}
+                    	try {
+                    		n2 = Long.parseLong(o2.getValue());
+                    	} catch (NumberFormatException nfe) {
+                    		try {
+                    			n2 = Double.parseDouble(o2.getValue());
+                    		} catch (NumberFormatException nfe2) {
+                    			throw new IllegalArgumentException("The value " + o2.getValue() + " is not a valid number.");
+                    		}
+                    	}
+                    	
+                        return (NumberOperations.compare(n1, n2));
+                    }
+                });
+    
+            Map<Metric, String> result = new LinkedHashMap<>();
+    
+            for (Map.Entry<Metric, String> entry : list) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+            return result;
+        }
+    
+        //~ Methods **************************************************************************************************************************************
+    
+        @Override
+        public String getResultScopeName() {
+            return defaultScope;
+        }
+    
+        @Override
+        public List<Metric> transform(List<Metric> metrics) {
+            throw new UnsupportedOperationException("Filter transform need constant input!");
+        }
+    
+        @Override
+        public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+            SystemAssert.requireArgument(metrics != null, "Cannot transform empty metric/metrics");
+            if (metrics.isEmpty()) {
+                return metrics;
+            }
+            SystemAssert.requireArgument(!constants.isEmpty(), "Filter Transform must provide at least limit");
+            if (constants.size() == 1) {
+                constants.add(InternalReducerType.AVG.reducerName);
+            }
+    
+            String limit = constants.get(0);
+            String type = constants.get(1);
+            Map<Metric, String> extendedSortedMap = createExtendedMap(metrics, type);
+            List<Metric> filteredMetricList = this.valueFilter.filter(extendedSortedMap, limit);
+    
+            return filteredMetricList;
+        }
+      
+        private Map<Metric, String> createExtendedMap(List<Metric> metrics, String type) {
+            Map<Metric, String> extendedSortedMap = new HashMap<Metric, String>();
+    
+            for (Metric metric : metrics) {
+                String extendedEvaluation = internalReducer(metric, type);
+    
+                if (extendedEvaluation != null) {
+                	extendedSortedMap.put(metric, extendedEvaluation);
+                }
+            }
+            return sortByValue(extendedSortedMap, type);
+        }
+        
+        @Override
+        public List<Metric> transform(List<Metric>... listOfList) {
+            throw new UnsupportedOperationException("Filter doesn't need list of list!");
+        }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

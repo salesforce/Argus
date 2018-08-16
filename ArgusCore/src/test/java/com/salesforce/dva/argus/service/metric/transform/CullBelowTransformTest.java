@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CullBelowTransformTest {
 
@@ -48,7 +51,7 @@ public class CullBelowTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullBelowTransformWithIllegalType() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -70,7 +73,7 @@ public class CullBelowTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullBelowTransformWithIllegalPercentileNumber() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -92,7 +95,7 @@ public class CullBelowTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullBelowTransformWithoutLimit() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -113,7 +116,7 @@ public class CullBelowTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCullBelowTransformWithoutType() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -145,7 +148,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitMidInDPsTypePercentile() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, 2.0);
@@ -164,7 +167,7 @@ public class CullBelowTransformTest {
         constants.add("25");
         constants.add("percentile");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 3.0);
         expected_1.put(2000L, 2.0);
@@ -175,14 +178,39 @@ public class CullBelowTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
+    
+    @Test (expected = UnsupportedOperationException.class)
+    public void testCullBelowTransformNewLimitMidInDPsTypePercentile() {
+        Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
+
+        datapoints_1.put(1000L, 3L);
+        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(3000L, 1.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("25");
+        constants.add("percentile");
+
+        cullBelowTransform.transform(metrics, constants);
+    }
 
     @Test
     public void testCullBelowTransformLimitMidNotInDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
-        datapoints_1.put(2000L, 2.0);
+        datapoints_1.put(2000L, 2L);
         datapoints_1.put(3000L, 1.0);
 
         Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
@@ -198,10 +226,10 @@ public class CullBelowTransformTest {
         constants.add("1.5");
         constants.add("value");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 3.0);
-        expected_1.put(2000L, 2.0);
+        expected_1.put(2000L, 2L);
 
         List<Metric> result = cullBelowTransform.transform(metrics, constants);
 
@@ -212,7 +240,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitLowerBorderDPsTypePercentile() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, 2.0);
@@ -231,7 +259,7 @@ public class CullBelowTransformTest {
         constants.add("0.00000001");
         constants.add("percentile");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 3.0);
         expected_1.put(2000L, 2.0);
@@ -246,9 +274,9 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitLessThanLowerBorderDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 3.0);
+        datapoints_1.put(1000L, 3L);
         datapoints_1.put(2000L, 2.0);
         datapoints_1.put(3000L, 1.0);
 
@@ -265,9 +293,9 @@ public class CullBelowTransformTest {
         constants.add("0");
         constants.add("value");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
-        expected_1.put(1000L, 3.0);
+        expected_1.put(1000L, 3L);
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 1.0);
 
@@ -280,7 +308,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitUpperBorderDPsTypePercentile() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, 2.0);
@@ -299,7 +327,7 @@ public class CullBelowTransformTest {
         constants.add("100");
         constants.add("percentile");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 3.0);
 
@@ -312,7 +340,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitGreaterThanUpperBorderDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, 2.0);
@@ -328,10 +356,10 @@ public class CullBelowTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        constants.add("200");
+        constants.add("200.0");
         constants.add("value");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
         List<Metric> result = cullBelowTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);
@@ -341,7 +369,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformMultipleMetricLimitMidInDPsTypeValue() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -351,11 +379,11 @@ public class CullBelowTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 300.0);
-        datapoints_2.put(2000L, 2.0);
-        datapoints_2.put(3000L, 100.0);
+        datapoints_2.put(1000L, 300L);
+        datapoints_2.put(2000L, 2L);
+        datapoints_2.put(3000L, 100L);
 
         Metric metric_2 = new Metric(TEST_SCOPE + "2", TEST_METRIC);
 
@@ -368,19 +396,19 @@ public class CullBelowTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        constants.add("2");
+        constants.add("2.0");
         constants.add("value");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 300.0);
-        expected_2.put(2000L, 2.0);
-        expected_2.put(3000L, 100.0);
+        expected_2.put(1000L, 300L);
+        expected_2.put(2000L, 2L);
+        expected_2.put(3000L, 100L);
 
         List<Metric> result = cullBelowTransform.transform(metrics, constants);
 
@@ -392,7 +420,7 @@ public class CullBelowTransformTest {
     @Test
     public void testCullBelowTransformLimitMidNotInDPsTypeValueHavingNull() {
         Transform cullBelowTransform = new MetricMappingTransform(new CullBelowValueMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 3.0);
         datapoints_1.put(2000L, 2.0);
@@ -411,7 +439,7 @@ public class CullBelowTransformTest {
         constants.add("1.5");
         constants.add("value");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 3.0);
         expected_1.put(2000L, 2.0);

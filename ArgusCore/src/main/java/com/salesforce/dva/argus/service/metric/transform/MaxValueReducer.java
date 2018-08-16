@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Takes a list of doubles represents as Strings and returns the maximum value as a String. Values that do not convert to doubles are ignored.
  *
@@ -45,30 +47,29 @@ public class MaxValueReducer implements ValueReducer {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Number reduce(List<Number> values) {
     	if(values == null || values.isEmpty()) {
     		return null;
     	}
     	
-    	Stream<Double> stream = StreamSupport.stream(values.spliterator(), true);
+    	Stream<Number> stream = StreamSupport.stream(values.spliterator(), true);
     	if(stream.allMatch(o -> o == null)) {
     		stream.close();
     		return null;
     	}
     	stream.close();
     	
-        double max = Double.NEGATIVE_INFINITY;
-        for (Double value : values) {
+        Number max = null;
+        for (Number value : values) {
             if (value == null) {
                 continue;
             }
 
-            double candidate = value;
-            if (candidate > max) {
-                max = candidate;
+            if (max == null || NumberOperations.isGreaterThan(value, max)) {
+                max = value;
             }
         }
-        return max;
+        return max == null ? Double.NEGATIVE_INFINITY : max;
     }
 
     @Override

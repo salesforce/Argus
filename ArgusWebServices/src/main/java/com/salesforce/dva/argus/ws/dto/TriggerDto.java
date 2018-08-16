@@ -35,6 +35,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
+
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
@@ -53,8 +55,8 @@ public class TriggerDto extends EntityDTO {
 
     private TriggerType type;
     private String name;
-    private Double threshold;
-    private Double secondaryThreshold;
+    private BigDecimal threshold;
+    private BigDecimal secondaryThreshold;
     private Long inertia;
     private BigInteger alertId;
     private List<BigInteger> notificationIds = new ArrayList<BigInteger>();
@@ -138,7 +140,7 @@ public class TriggerDto extends EntityDTO {
      *
      * @return  The trigger threshold value.
      */
-    public Double getThreshold() {
+    public BigDecimal getThreshold() {
         return threshold;
     }
 
@@ -147,7 +149,7 @@ public class TriggerDto extends EntityDTO {
      *
      * @param  threshold  The trigger threshold value.
      */
-    public void setThreshold(Double threshold) {
+    public void setThreshold(BigDecimal threshold) {
         this.threshold = threshold;
     }
 
@@ -156,7 +158,7 @@ public class TriggerDto extends EntityDTO {
      *
      * @return  The trigger second threshold value.
      */
-    public Double getSecondaryThreshold() {
+    public BigDecimal getSecondaryThreshold() {
         return secondaryThreshold;
     }
 
@@ -165,7 +167,7 @@ public class TriggerDto extends EntityDTO {
      *
      * @param  secondaryThreshold  The trigger second threshold value.
      */
-    public void setSecondaryThreshold(Double secondaryThreshold) {
+    public void setSecondaryThreshold(BigDecimal secondaryThreshold) {
         this.secondaryThreshold = secondaryThreshold;
     }
 
@@ -236,8 +238,8 @@ public class TriggerDto extends EntityDTO {
         result.setModifiedDate(new Date());
         result.setCreatedDate(new Date());
         result.setName("sample-trigger");
-        result.setSecondaryThreshold(10.);
-        result.setThreshold(-10.);
+        result.setSecondaryThreshold(new BigDecimal(10));
+        result.setThreshold(new BigDecimal(-10));
         result.setType(TriggerType.NOT_BETWEEN);
         return result;
     }

@@ -69,14 +69,34 @@ public class MetricServiceTest extends AbstractTest {
             assertEquals(expected, result);
         }
     }
+    
+    @Test
+    public void testMaintainExpectedPrecision() throws IOException, TokenExpiredException {
+    	try (ArgusService argusService = new ArgusService(getMockedClient("/MetricServiceTest.json"))) {
+    		MetricService metricService = argusService.getMetricService();
+    		for (Metric metric : Arrays.asList(_constructMetricLong(false), _constructMetric(), _constructMetricLong(true))) {
+	    		List<Metric> metrics = Arrays.asList(new Metric[] { metric });
+	    		PutResult returned = metricService.putMetrics(metrics);
+	    		
+	    		assertEquals(_constructSuccessfulResult(metrics, 0), returned);
+	    		
+	    		List<String> expressions = Arrays.asList(new String[] { "-1d:TestScope:TestMetric:TestNamespace{TestTag=TagValue}:sum" });
+	    		List<Metric> result = metricService.getMetrics(expressions);
+	    		List<Metric> expected = Arrays.asList(new Metric[] { metric });
+	    		
+	    		assertEquals(expected, result);
+    		}
+    	}
+    }
 
     private Metric _constructMetric() throws JsonProcessingException {
         Metric result = new Metric();
         Map<String, String> fields = new TreeMap<>();
         Map<String, String> tags = new TreeMap<>();
-        Map<Long, Double> datapoints = new TreeMap<>();
+        Map<Long, Number> datapoints = new TreeMap<>();
 
         datapoints.put(0L, 0.0);
+        datapoints.put(1L, 101.0);
         fields.put("TestField", "FieldValue");
         tags.put("TestTag", "TagValue");
         result.setNamespace("TestNamespace");
@@ -84,6 +104,22 @@ public class MetricServiceTest extends AbstractTest {
         result.setScope("TestScope");
         result.setTags(tags);
         return result;
+    }
+    
+    private Metric _constructMetricLong(boolean useMax) throws JsonProcessingException {
+    	Metric result = new Metric();
+    	Map<String, String> fields = new TreeMap<>();
+    	Map<String, String> tags = new TreeMap<>();
+    	Map<Long, Number> datapoints = new TreeMap<>();
+    	
+    	datapoints.put(0L, useMax ? 9223372036854775807L : 101L);
+    	fields.put("TestField", "FieldValue");
+    	tags.put("TestTag", "TagValue");
+    	result.setNamespace("TestNamespace");
+    	result.setMetric("TestMetric");
+    	result.setScope("TestScope");
+    	result.setTags(tags);
+    	return result;
     }
 
     private PutResult _constructSuccessfulResult(List<Metric> metrics, int errorCount) {

@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CountTransformTest {
 
@@ -48,7 +51,7 @@ public class CountTransformTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testCountTransformWithConstant() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -76,7 +79,7 @@ public class CountTransformTest {
     @Test
     public void testCountTransformWithAllSharedTimestamps() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -86,11 +89,11 @@ public class CountTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -101,11 +104,11 @@ public class CountTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 2.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 2.0);
+        expected.put(1000L, 2L);
+        expected.put(2000L, 2L);
+        expected.put(3000L, 2L);
 
         List<Metric> result = countTransform.transform(metrics);
 
@@ -116,7 +119,7 @@ public class CountTransformTest {
     @Test
     public void testCountTransformWithoutSharedTimestamps() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -126,7 +129,7 @@ public class CountTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -141,14 +144,14 @@ public class CountTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(100L, 1.0);
-        expected.put(200L, 1.0);
-        expected.put(300L, 1.0);
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 1.0);
-        expected.put(3000L, 1.0);
+        expected.put(100L, 1);
+        expected.put(200L, 1);
+        expected.put(300L, 1);
+        expected.put(1000L, 1);
+        expected.put(2000L, 1);
+        expected.put(3000L, 1);
 
         List<Metric> result = countTransform.transform(metrics);
 
@@ -159,7 +162,7 @@ public class CountTransformTest {
     @Test
     public void testCountTransformWithSomeSharedTimestamps() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -169,11 +172,11 @@ public class CountTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(200L, 100.0);
-        datapoints_2.put(300L, 1000.0);
+        datapoints_2.put(300L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -184,13 +187,13 @@ public class CountTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(200L, 1.0);
-        expected.put(300L, 1.0);
-        expected.put(1000L, 2.0);
-        expected.put(2000L, 1.0);
-        expected.put(3000L, 1.0);
+        expected.put(200L, 1);
+        expected.put(300L, 1);
+        expected.put(1000L, 2L);
+        expected.put(2000L, 1);
+        expected.put(3000L, 1);
 
         List<Metric> result = countTransform.transform(metrics);
 
@@ -201,7 +204,7 @@ public class CountTransformTest {
     @Test
     public void testCountTransformWithOnlyOneMetric() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -215,11 +218,11 @@ public class CountTransformTest {
 
         metrics.add(metric_1);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 1.0);
-        expected.put(3000L, 1.0);
+        expected.put(1000L, 1);
+        expected.put(2000L, 1);
+        expected.put(3000L, 1);
 
         List<Metric> result = countTransform.transform(metrics);
 
@@ -230,19 +233,19 @@ public class CountTransformTest {
     @Test
     public void testCountTransformWithMissingPoints() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, null);
         datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
+        datapoints_2.put(1000L, 10L);
         datapoints_2.put(2000L, null);
         datapoints_2.put(300L, null);
 
@@ -255,46 +258,46 @@ public class CountTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(300L, 1.0);
-        expected.put(1000L, 2.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 1.0);
+        expected.put(300L, 1);
+        expected.put(1000L, 2L);
+        expected.put(2000L, 2L);
+        expected.put(3000L, 1);
 
         List<Metric> result = countTransform.transform(metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithThreeMetrics() {
         Transform countTransform = new CountTransformWrapUnion();
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 1.0);
-        datapoints_2.put(2000L, 2.0);
-        datapoints_2.put(3000L, 3.0);
+        datapoints_2.put(1000L, 1L);
+        datapoints_2.put(2000L, 2L);
+        datapoints_2.put(3000L, 3L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
         
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 1.0);
-        datapoints_3.put(3000L, 3.0);
+        datapoints_3.put(1000L, 1L);
+        datapoints_3.put(3000L, 3L);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -306,11 +309,11 @@ public class CountTransformTest {
         metrics.add(metric_2);
         metrics.add(metric_3);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 3.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 3.0);
+        expected.put(1000L, 3L);
+        expected.put(2000L, 2L);
+        expected.put(3000L, 3L);
 
         List<Metric> result = countTransform.transform(metrics);
 

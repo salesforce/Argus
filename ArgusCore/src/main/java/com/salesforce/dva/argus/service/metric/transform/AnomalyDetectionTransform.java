@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 
@@ -58,19 +59,21 @@ public abstract class AnomalyDetectionTransform implements Transform {
         SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
 
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> predictionDatapoints = new HashMap<>();
+        Map<Long, Number> predictionDatapoints = new HashMap<>();
 
         long detectionIntervalInSeconds = getTimePeriodInSeconds(constants.get(0));
 
         //Create a sorted array of the metric's timestamps
-        Map<Long, Double> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Number> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Double> completeDatapointsDouble = NumberOperations.getMapAsDoubles(completeDatapoints);
+        
         Long[] timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
         Arrays.sort(timestamps);
 
         int currentIndex = 0;
         currentIndex = advanceCurrentIndexByInterval(currentIndex, predictionDatapoints,
                         timestamps, detectionIntervalInSeconds);
-        calculateContextualAnomalyScores(predictionDatapoints, completeDatapoints, timestamps,
+        calculateContextualAnomalyScores(predictionDatapoints, completeDatapointsDouble, timestamps,
                 currentIndex, detectionIntervalInSeconds);
 
         predictions.setDatapoints(predictionDatapoints);
@@ -109,13 +112,13 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @return Normalized metric
      */
     public Metric normalizePredictions(Metric predictions) {
-        Map<Long, Double> metricData = predictions.getDatapoints();
+        Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
         Map<String, Double> minMax = getMinMax(metricData);
         double min = minMax.get("min");
         double max = minMax.get("max");
 
         Metric predictionsNormalized = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> metricDataNormalized = new HashMap<>();
+        Map<Long, Number> metricDataNormalized = new HashMap<>();
 
         if (max - min == 0.0) {
             /**
@@ -187,7 +190,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @param detectionIntervalInSeconds anomaly detection interval
      * @return new advanced value of currentIndex
      */
-    private int advanceCurrentIndexByInterval(int currentIndex, Map<Long, Double> predictionDatapoints,
+    private int advanceCurrentIndexByInterval(int currentIndex, Map<Long, Number> predictionDatapoints,
                                                Long[] timestamps, long detectionIntervalInSeconds) {
         //Projected end of interval
         long firstIntervalEndTime = timestamps[0] + detectionIntervalInSeconds;
@@ -214,7 +217,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @param currentIndex index at which to start contextual anomaly detection
      * @param detectionIntervalInSeconds anomaly detection interval
      */
-    private void calculateContextualAnomalyScores(Map<Long, Double> predictionDatapoints,
+    private void calculateContextualAnomalyScores(Map<Long, Number> predictionDatapoints,
                                                   Map<Long, Double> completeDatapoints,
                                                   Long[] timestamps,
                                                   int currentIndex, long detectionIntervalInSeconds) {
@@ -229,7 +232,8 @@ public abstract class AnomalyDetectionTransform implements Transform {
 
             //Apply the anomaly detection transform to each interval separately
             Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0);
-            Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
+            Map<Long, Double> intervalAnomaliesMetricData = NumberOperations.getMapAsDoubles(intervalAnomaliesMetric.getDatapoints());
+            
             predictionDatapoints.put(timestamps[i],
                     intervalAnomaliesMetricData.get(timestamps[i]));
         }
@@ -249,7 +253,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
     private Metric createIntervalMetric(int currentDatapointIndex, Map<Long, Double> completeDatapoints,
                                         Long[] timestamps, long projectedIntervalStartTime) {
         Metric intervalMetric = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> intervalMetricData = new HashMap<>();
+        Map<Long, Number> intervalMetricData = new HashMap<>();
 
         //Decrease intervalStartIndex until it's at the start of the interval
         int intervalStartIndex = currentDatapointIndex;

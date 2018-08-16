@@ -54,6 +54,7 @@ import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -77,7 +78,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
-		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
+		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", NumberOperations.bd(0.95), 60000);
 
 		notification.setAlert(expected);
 		expected.setNotifications(Arrays.asList(new Notification[] { notification }));
@@ -103,8 +104,8 @@ public class AlertServiceTest extends AbstractTest {
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
-		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", 0.95, 60000);
-		Trigger trigger2 = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name2", 0.95, 60000);
+		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", NumberOperations.bd(.95), 60000);
+		Trigger trigger2 = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name2", NumberOperations.bd(0.95), 60000);
 
 		alert.setNotifications(Arrays.asList(new Notification[] { notification1, notification2 }));
 		alert.setTriggers(Arrays.asList(new Trigger[] { trigger1, trigger2 }));
@@ -122,7 +123,7 @@ public class AlertServiceTest extends AbstractTest {
 		alert.setNotifications(null);
 		alert = alertService.updateAlert(alert);
 
-		Trigger trigger3 = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name3", 0.95, 60000);
+		Trigger trigger3 = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name3", NumberOperations.bd(0.95), 60000);
 		Notification notification3 = new Notification("notification3", alert, "notifier-name3", new ArrayList<String>(), 5000L);
 
 		notification3.setTriggers(Arrays.asList(new Trigger[] { trigger3 }));
@@ -217,7 +218,7 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualSet.contains(alert));
 		}
 	}
-	
+
 	@Test
 	public void testFindAlertsByOwnerPaged() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -427,8 +428,8 @@ public class AlertServiceTest extends AbstractTest {
 		Alert alert1 = new Alert(user, user, "alert_1", EXPRESSION, "* * * * *");
 		Notification not1 = new Notification("notification_1", alert1, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", null, 5000);
 		Notification not2 = new Notification("notification_2", alert1, "com.salesforce.dva.argus.service.alert.notifier.AuditNotifier", null, 5000);
-		Trigger trig1 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_1", 20, 0);
-		Trigger trig2 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_2", 40, 0);
+		Trigger trig1 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_1", NumberOperations.bd(20), 0);
+		Trigger trig2 = new Trigger(alert1, TriggerType.LESS_THAN, "trigger_2", NumberOperations.bd(40), 0);
 		alert1.setNotifications(Arrays.asList(new Notification[] {not1, not2}));
 		alert1.setTriggers(Arrays.asList(new Trigger[] {trig1, trig2}));
 		not1.setTriggers(Arrays.asList(new Trigger[] {trig1}));
@@ -444,7 +445,7 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert2);
 
 		Alert alert3 = new Alert(user, user, "alert_3", EXPRESSION, "* * * * *");
-		Trigger trig3 = new Trigger(alert3, TriggerType.LESS_THAN, "trigger_3", 40, 0);
+		Trigger trig3 = new Trigger(alert3, TriggerType.LESS_THAN, "trigger_3", NumberOperations.bd(40), 0);
 		alert3.setTriggers(Arrays.asList(new Trigger[] {trig3}));
 		alertService.updateAlert(alert3);
 
@@ -509,7 +510,7 @@ public class AlertServiceTest extends AbstractTest {
 		Notification notification1 = new Notification("notification1", alert, "notifier-name1", new ArrayList<String>(), 5000L);
 		Notification notification2 = new Notification("notification2", alert, "notifier-name2", new ArrayList<String>(), 5000L);
 		Notification notification3 = new Notification("notification3", alert, "notifier-name3", new ArrayList<String>(), 5000L);
-		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", 0.95, 60000);
+		Trigger trigger1 = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger-name1", NumberOperations.bd(0.95), 60000);
 
 		alert.setNotifications(Arrays.asList(new Notification[] { notification1, notification2, notification3 }));
 		alert.setTriggers(Arrays.asList(new Trigger[] { trigger1 }));
@@ -898,7 +899,7 @@ public class AlertServiceTest extends AbstractTest {
 		AlertService alertService = system.getServiceFactory().getAlertService();
 		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", alert, "notifier-name", new ArrayList<String>(), 5000L);
-		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", NumberOperations.bd(0.95), 60000);
 
 		alert.setNotifications(Arrays.asList(notification));
 		alert.setTriggers(Arrays.asList(trigger));
@@ -980,7 +981,7 @@ public class AlertServiceTest extends AbstractTest {
 
 		Alert expected = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", EXPRESSION, "* * * * *");
 		Notification notification = new Notification("notification", expected, "notifier-name", new ArrayList<String>(), 5000L);
-		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", 0.95, 60000);
+		Trigger trigger = new Trigger(expected, TriggerType.GREATER_THAN, "trigger-name", NumberOperations.bd(0.95), 60000);
 
 		notification.setAlert(expected);
 		expected.setNotifications(Arrays.asList(new Notification[] { notification }));

@@ -28,9 +28,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 import java.util.HashMap;
@@ -48,53 +49,53 @@ public class DivideValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
-        Double quotient = values.get(0);
+    public Number reduce(List<Number> values) {
+        Number quotient = values.get(0);
 
         for (int i = 1; i < values.size(); i++) {
-            Double value = values.get(i);
+            Number value = values.get(i);
 
             if (value == null) {
                 continue;
             }
-            if (value == 0.0) { // Sys Require argument
+            if (NumberOperations.isEqualTo(value, 0)) { // Sys Require argument
                 throw new ArithmeticException("this datapoints sets have a value of zero!");
             }
-            quotient /= value;
+            quotient = NumberOperations.divide(quotient, value);
         }
         return quotient;
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Divide Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && constants.size() == 1,
-            "If constants provided for divide transform, only exactly one constant allowed.");
+                "If constants provided for divide transform, only exactly one constant allowed.");
 
-        Map<Long, Double> divideDatapoints = new HashMap<>();
+        Map<Long, Number> divideDatapoints = new HashMap<>();
 
+        Number divisor;
         try {
-            double divisor = Double.parseDouble(constants.get(0));
-
-            SystemAssert.requireArgument(divisor != 0, "The constant divisor cannot be zero.");
-            for (Map.Entry<Long, Double> entry : originalDatapoints.entrySet()) {
-                Double dividend = entry.getValue();
-                double quotientValue = dividend / divisor;
-
-                divideDatapoints.put(entry.getKey(), quotientValue);
-            }
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Illegal constant value supplied to divide transform", nfe);
+            divisor = NumberOperations.parseConstant(constants.get(0));
+        } catch (IllegalArgumentException iae) {
+            throw new SystemException("Illegal constant provided to Divde Value Reducer Or Mapping: " + constants.get(0));
         }
+
+        SystemAssert.requireArgument(!NumberOperations.isEqualTo(divisor, 0), "The constant divisor cannot be zero.");
+
+        for (Map.Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+            divideDatapoints.put(entry.getKey(), NumberOperations.divide(entry.getValue(), divisor));
+        }
+
         return divideDatapoints;
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         throw new UnsupportedOperationException("Divide Transform with reducer is not supposed to be used without a constant");
     }
 

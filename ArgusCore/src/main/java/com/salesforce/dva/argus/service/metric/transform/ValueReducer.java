@@ -49,7 +49,7 @@ public interface ValueReducer {
      *
      * @return  The reduced value.
      */
-	Double reduce(List<Double> values);
+    Number reduce(List<Number> values);
 
     /**
      * Returns the name of the reducer.

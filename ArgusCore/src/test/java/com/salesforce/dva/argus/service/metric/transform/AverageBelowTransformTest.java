@@ -45,7 +45,7 @@ public class AverageBelowTransformTest {
     @Test
     public void testAverageBelowTransform() {
         Transform averageBelowTransform = new AverageBelowTransform();
-        Map<Long, Double> datapoints1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints1 = new HashMap<Long, Number>();
 
         datapoints1.put(1L, 1.0);
         datapoints1.put(2L, 2.0);
@@ -56,12 +56,12 @@ public class AverageBelowTransformTest {
 
         below.setDatapoints(datapoints1);
 
-        Map<Long, Double> datapoints2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints2 = new HashMap<Long, Number>();
 
-        datapoints2.put(1L, 10.0);
-        datapoints2.put(2L, 2.0);
-        datapoints2.put(3L, 3.0);
-        datapoints2.put(4L, 15.0);
+        datapoints2.put(1L, 10L);
+        datapoints2.put(2L, 2L);
+        datapoints2.put(3L, 3L);
+        datapoints2.put(4L, 15L);
 
         Metric above = new Metric("above-scope", "above-metric");
 
@@ -79,6 +79,7 @@ public class AverageBelowTransformTest {
         List<Metric> result = averageBelowTransform.transform(metrics, constants);
 
         assertEquals(result.size(), 1);
+        assertEquals(datapoints1, result.get(0).getDatapoints());
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

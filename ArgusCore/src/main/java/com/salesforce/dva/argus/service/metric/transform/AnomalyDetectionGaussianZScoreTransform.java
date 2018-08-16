@@ -64,6 +64,5 @@ public class AnomalyDetectionGaussianZScoreTransform extends AnomalyDetectionGau
         //Taking absolute value for a more human-readable anomaly score
         return Math.abs(zScore);
     }
-
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

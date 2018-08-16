@@ -34,8 +34,11 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,26 +77,34 @@ public class RangeTransformWrap implements Transform {
     }
 
     private List<Metric> rangeOfOneMetric(Metric metric) {
-        Map<Long, Double> cleanDPs = new HashMap<>();
+        Map<Long, Number> cleanDPs = new HashMap<>();
 
-        for (Map.Entry<Long, Double> entry : metric.getDatapoints().entrySet()) {
+        for (Map.Entry<Long, Number> entry : metric.getDatapoints().entrySet()) {
             if (entry.getValue() == null) {
-                cleanDPs.put(entry.getKey(), 0.0);
+                cleanDPs.put(entry.getKey(), 0);
             } else {
                 cleanDPs.put(entry.getKey(), entry.getValue());
             }
         }
 
         List<Metric> result = new ArrayList<Metric>();
-        final List<Double> dpNum = new ArrayList<Double>();
+        final List<Number> dpNum = new ArrayList<Number>();
 
-        for (Double value : cleanDPs.values()) {
+        for (Number value : cleanDPs.values()) {
             dpNum.add(value);
         }
-        Collections.sort(dpNum);
+        
+        Collections.sort(dpNum, new Comparator<Number>() {
+
+			@Override
+			public int compare(Number o1, Number o2) {
+				return NumberOperations.compare(o1, o2);
+			}
+        	
+        });
 
         @SuppressWarnings("serial")
-        final Set<Double> minMaxSet = new HashSet<Double>() {
+        final Set<Number> minMaxSet = new HashSet<Number>() {
 
                 {
                     add(dpNum.get(0));
@@ -101,15 +112,15 @@ public class RangeTransformWrap implements Transform {
                 }
             };
 
-        Predicate<Map.Entry<Long, Double>> isMinMax = new Predicate<Map.Entry<Long, Double>>() {
+        Predicate<Map.Entry<Long, Number>> isMinMax = new Predicate<Map.Entry<Long, Number>>() {
 
                 @Override
-                public boolean apply(Map.Entry<Long, Double> datapoint) {
+                public boolean apply(Map.Entry<Long, Number> datapoint) {
                     return minMaxSet.contains(datapoint.getValue());
                 }
             };
 
-        Map<Long, Double> resultDatapoints = new HashMap<>();
+        Map<Long, Number> resultDatapoints = new HashMap<>();
 
         resultDatapoints.putAll(Maps.filterEntries(cleanDPs, isMinMax));
         metric.setDatapoints(resultDatapoints);

@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemException;
 
 /**
@@ -44,12 +45,12 @@ public class SumValueZipper implements ValueZipper {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double zip(Double originalDp, Double baseDp) {
+    public Number zip(Number originalDp, Number baseDp) {
         try {
-            Double original = (originalDp == null) ? 0.0 : originalDp;
-            Double base = (baseDp == null) ? 0.0 : baseDp;
+            Number original = (originalDp == null) ? 0 : originalDp;
+            Number base = (baseDp == null) ? 0 : baseDp;
 
-            return original + base;
+            return NumberOperations.add(original, base);
         } catch (Exception e) {
             throw new SystemException("Fail to parse the double value of original Datapoint or base Datapoint!", e);
         }

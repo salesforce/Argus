@@ -80,7 +80,7 @@ public class Diff_VTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDiff_VTransformVectorWithoutPoints() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -99,7 +99,7 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithSameLenVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -109,11 +109,11 @@ public class Diff_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
+        vector_datapoints.put(3000L, 1);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -124,7 +124,7 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, 1.0);
@@ -139,20 +139,20 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithLongerLenVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2);
+        datapoints.put(3000L, 3);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
         vector_datapoints.put(3000L, 1.0);
         vector_datapoints.put(4000L, 1.0);
 
@@ -165,10 +165,10 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 0.0);
-        expected.put(2000L, 1.0);
+        expected.put(1000L, 0L);
+        expected.put(2000L, 1L);
         expected.put(3000L, 2.0);
 
         List<Metric> result = diff_vTransform.transform(metrics);
@@ -180,7 +180,7 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithShorterLenVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -190,7 +190,7 @@ public class Diff_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -204,7 +204,7 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, 1.0);
@@ -219,20 +219,20 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithMidMissingPointVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2L);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -243,11 +243,11 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 0.0);
-        expected.put(2000L, 2.0);
-        expected.put(3000L, 2.0);
+        expected.put(1000L, 0L);
+        expected.put(2000L, 2L);
+        expected.put(3000L, 2L);
 
         List<Metric> result = diff_vTransform.transform(metrics);
 
@@ -258,7 +258,7 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithNullPointVectorAgainstOneMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -268,7 +268,7 @@ public class Diff_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, null);
@@ -283,7 +283,7 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, 2.0);
@@ -298,21 +298,21 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithVectorAgainstOneNullPointMetric() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, null);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -323,11 +323,11 @@ public class Diff_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, -1.0);
-        expected.put(3000L, 2.0);
+        expected.put(3000L, 2L);
 
         List<Metric> result = diff_vTransform.transform(metrics);
 
@@ -338,7 +338,7 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -348,18 +348,18 @@ public class Diff_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -368,7 +368,7 @@ public class Diff_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -385,20 +385,20 @@ public class Diff_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 2.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 9.0);
         expected_2.put(2000L, 99.0);
         expected_2.put(3000L, 999.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, -0.9);
         expected_3.put(2000L, -0.99);
@@ -416,7 +416,7 @@ public class Diff_VTransformTest {
     @Test
     public void testDiff_VTransformWithMissingPointNullPointVectorAgainstNullPointMetricList() {
         Transform diff_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -426,18 +426,18 @@ public class Diff_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
         datapoints_2.put(4000L, 1000.0);
-        datapoints_2.put(5000L, 10000.0);
+        datapoints_2.put(5000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -448,7 +448,7 @@ public class Diff_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -466,25 +466,25 @@ public class Diff_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 9.0);
         expected_2.put(2000L, 99.0);
         expected_2.put(4000L, 999.0);
-        expected_2.put(5000L, 10000.0);
+        expected_2.put(5000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, -0.9);
         expected_3.put(2000L, -0.99);
         expected_3.put(4000L, -0.999);
-        expected_3.put(5000L, 0.0);
+        expected_3.put(5000L, 0L);
 
         List<Metric> result = diff_vTransform.transform(metrics);
 
@@ -495,11 +495,11 @@ public class Diff_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testDiff_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new DiffValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -509,27 +509,27 @@ public class Diff_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
         datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
-        datapoints_3.put(1000L, 1.0);
-        datapoints_3.put(2000L, 10.0);
+        datapoints_3.put(1000L, 1L);
+        datapoints_3.put(2000L, 10L);
 
         Metric metric_3 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -546,20 +546,20 @@ public class Diff_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 0.0);
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 2.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 9.0);
         expected_2.put(2000L, 99.0);
         expected_2.put(3000L, 999.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 0.0);
         expected_3.put(2000L, 9.0);

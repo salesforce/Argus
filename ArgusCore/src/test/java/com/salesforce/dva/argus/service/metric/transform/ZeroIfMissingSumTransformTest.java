@@ -45,7 +45,7 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithTwoTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -68,7 +68,7 @@ public class ZeroIfMissingSumTransformTest {
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
         datapoints.put(3000L, 3.0);
-        datapoints.put(4000L, 10.0);
+        datapoints.put(4000L, 10L);
         datapoints.put(8000L, 2.0);
         metric = new Metric("test-scope", "test-metric");
         metric.setDatapoints(datapoints);
@@ -77,12 +77,12 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDatapoints = new HashMap<Long, Number>();
 
         expectedDatapoints.put(1000L, 2.0);
         expectedDatapoints.put(2000L, 4.0);
         expectedDatapoints.put(3000L, 6.0);
-        expectedDatapoints.put(4000L, 10.0);
+        expectedDatapoints.put(4000L, 10L);
         expectedDatapoints.put(5000L, 10.0);
         expectedDatapoints.put(6000L, 2.0);
         expectedDatapoints.put(7000L, 3.0);
@@ -95,7 +95,7 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithNullValuesInTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -115,7 +115,7 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDatapoints = new HashMap<Long, Number>();
 
         expectedDatapoints.put(1000L, 1.0);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
@@ -125,9 +125,9 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithEmptyValuesInTimeSeries() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
+        datapoints.put(1000L, 1L);
 
         Metric metric = new Metric("test-scope", "test-metric");
 
@@ -145,9 +145,9 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDatapoints = new HashMap<Long, Number>();
 
-        expectedDatapoints.put(1000L, 1.0);
+        expectedDatapoints.put(1000L, 1L);
         assertEquals(expectedDatapoints.size(), result.get(0).getDatapoints().size());
         assertEquals(expectedDatapoints, result.get(0).getDatapoints());
     }
@@ -155,7 +155,7 @@ public class ZeroIfMissingSumTransformTest {
     @Test
     public void transformWithOneTimeSeriesHavingOneNullEmptyDatapoints() {
         Transform transform = new ZeroIfMissingSum();
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, null);
@@ -171,7 +171,7 @@ public class ZeroIfMissingSumTransformTest {
         metrics.add(metric);
 
         List<Metric> result = transform.transform(metrics);
-        Map<Long, Double> expectedDatapoints = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDatapoints = new HashMap<Long, Number>();
 
         expectedDatapoints.put(1000L, 1.0);
         expectedDatapoints.put(2000L, null);

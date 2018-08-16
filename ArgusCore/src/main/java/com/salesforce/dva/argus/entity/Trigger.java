@@ -41,10 +41,12 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.salesforce.dva.argus.entity.NumberOperations.ValueType;
 import com.salesforce.dva.argus.system.SystemException;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,22 +90,43 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 @Entity
 @Table(name = "TRIGGER", uniqueConstraints = @UniqueConstraint(columnNames = { "name", "alert_id" }))
 public class Trigger extends JPAEntity implements Serializable {
-	
-	
+		
 	public static class Serializer extends JsonSerializer<Trigger> {
 
 		@Override
 		public void serialize(Trigger trigger, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-			
 			jgen.writeStartObject();
 			
 			jgen.writeStringField("id", trigger.getId().toString());
 			jgen.writeStringField("name", trigger.getName());
 			jgen.writeStringField("type", trigger.getType().name());
-			jgen.writeNumberField("threshold", trigger.getThreshold().doubleValue());
+			
+			ValueType type = ValueType.value(trigger.getThreshold());
+			switch (type) {
+				case LONG:
+					jgen.writeNumberField("thresholdLong", trigger.getThreshold().longValue());
+					jgen.writeNumberField("threshold", trigger.getThreshold().doubleValue());
+					break;
+				case DOUBLE:
+					jgen.writeNumberField("threshold", trigger.getThreshold().doubleValue());
+					break;
+				default:
+					throw new IllegalStateException();
+			}
 			
 			if(trigger.getSecondaryThreshold() != null) {
-				jgen.writeNumberField("secondaryThreshold", trigger.getSecondaryThreshold());
+				ValueType type2 = ValueType.value(trigger.getSecondaryThreshold());
+				switch (type2) {
+					case LONG:
+						jgen.writeNumberField("secondaryThresholdLong", trigger.getSecondaryThreshold().longValue());
+						jgen.writeNumberField("secondaryThreshold", trigger.getSecondaryThreshold().doubleValue());
+						break;
+					case DOUBLE:
+						jgen.writeNumberField("secondaryThreshold", trigger.getSecondaryThreshold().doubleValue());
+						break;
+					default:
+						throw new IllegalStateException();
+				}
 			}
 			
 			if(trigger.getInertia() != null) {
@@ -114,12 +137,12 @@ public class Trigger extends JPAEntity implements Serializable {
 		}
 		
 	}
+
 	
 	public static class Deserializer extends JsonDeserializer<Trigger> {
 
 		@Override
-		public Trigger deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-			
+		public Trigger deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {	
 			Trigger trigger = new Trigger();
 			JsonNode rootNode = jp.getCodec().readTree(jp);
 			
@@ -132,11 +155,22 @@ public class Trigger extends JPAEntity implements Serializable {
 			TriggerType type = TriggerType.fromString(rootNode.get("type").asText());
 			trigger.setType(type);
 			
-			Double threshold = rootNode.get("threshold").asDouble();
+			BigDecimal threshold;
+			if (rootNode.get("thresholdLong") != null) {
+				threshold = new BigDecimal(rootNode.get("thresholdLong").asLong());
+			} else {
+				threshold = new BigDecimal(rootNode.get("threshold").asDouble());
+			}
 			trigger.setThreshold(threshold);
 			
 			if(rootNode.get("secondaryThreshold") != null) {
-				trigger.setSecondaryThreshold(rootNode.get("secondaryThreshold").asDouble());
+				BigDecimal secondaryThreshold;
+				if (rootNode.get("secondaryThresholdLong") != null) {
+					secondaryThreshold = new BigDecimal(rootNode.get("secondaryThresholdLong").asLong());
+				} else {
+					secondaryThreshold = new BigDecimal(rootNode.get("secondaryThreshold").asDouble());
+				}
+				trigger.setSecondaryThreshold(secondaryThreshold);
 			}
 			
 			if(rootNode.get("inertia") != null) {
@@ -160,9 +194,9 @@ public class Trigger extends JPAEntity implements Serializable {
     private String name;
     
     @Basic(optional = false)
-    private Double threshold;
-    
-    private Double secondaryThreshold;
+    private BigDecimal threshold;
+
+    private BigDecimal secondaryThreshold;
     
     private Long inertia;
     
@@ -184,7 +218,7 @@ public class Trigger extends JPAEntity implements Serializable {
      * @param  threshold      The threshold value for the alert.
      * @param  inertiaMillis  The amount of time in milliseconds a condition must exist for the trigger to fire. Cannot be negative.
      */
-    public Trigger(Alert alert, TriggerType type, String name, double threshold, long inertiaMillis) {
+    public Trigger(Alert alert, TriggerType type, String name, Number threshold, long inertiaMillis) {
         this(alert, type, name, threshold, null, inertiaMillis);
     }
 
@@ -198,13 +232,14 @@ public class Trigger extends JPAEntity implements Serializable {
      * @param  secondaryThreshold  The secondary threshold value for the alert. May be null for types that only require one threshold.
      * @param  inertiaMillis       The amount of time in milliseconds a condition must exist for the trigger to fire. Cannot be negative.
      */
-    public Trigger(Alert alert, TriggerType type, String name, Double threshold, Double secondaryThreshold, long inertiaMillis) {
+    public Trigger(Alert alert, TriggerType type, String name, Number threshold, Number secondaryThreshold, long inertiaMillis) {
         super(alert.getOwner());
         setAlert(alert);
         setType(type);
         setName(name);
-        setThreshold(threshold);
-        setSecondaryThreshold(secondaryThreshold);
+        // BigDecimal used here for thresholds since JPA rounds Number like double, but maintains precision for BigDecimal
+        setThreshold(NumberOperations.bd(threshold));
+        setSecondaryThreshold(NumberOperations.bd(secondaryThreshold));
         setInertia(inertiaMillis);
         preUpdate();
     }
@@ -226,35 +261,35 @@ public class Trigger extends JPAEntity implements Serializable {
      *
      * @throws  SystemException  If an error in evaluation occurs.
      */
-    public static boolean evaluateTrigger(Trigger trigger, Double actualValue) {
+    public static boolean evaluateTrigger(Trigger trigger, Number actualValue) {
         requireArgument(trigger != null, "Trigger cannot be null.");
         requireArgument(actualValue != null, "Trigger cannot be evaulated against null.");
 
-        Double lowThreshold, highThreshold;
+        Number lowThreshold, highThreshold;
 
         switch (trigger.type) {
             case GREATER_THAN:
-                return actualValue.compareTo(trigger.getThreshold()) > 0;
+                return NumberOperations.isGreaterThan(actualValue, trigger.getThreshold());
             case GREATER_THAN_OR_EQ:
-                return actualValue.compareTo(trigger.getThreshold()) >= 0;
+                return NumberOperations.isGreaterThanOrEqualTo(actualValue, trigger.getThreshold());
             case LESS_THAN:
-                return actualValue.compareTo(trigger.getThreshold()) < 0;
+                return NumberOperations.isLessThan(actualValue, trigger.getThreshold());
             case LESS_THAN_OR_EQ:
-                return actualValue.compareTo(trigger.getThreshold()) <= 0;
+                return NumberOperations.isLessThanOrEqualTo(actualValue, trigger.getThreshold());
             case EQUAL:
-                return actualValue.compareTo(trigger.getThreshold()) == 0;
+                return NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
             case NOT_EQUAL:
-                return actualValue.compareTo(trigger.getThreshold()) != 0;
+                return !NumberOperations.isEqualTo(actualValue, trigger.getThreshold());
             case BETWEEN:
-                lowThreshold = Math.min(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                highThreshold = Math.max(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                return (actualValue.compareTo(lowThreshold) >= 0 && actualValue.compareTo(highThreshold) <= 0);
+                lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
+            	highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
+            	return (NumberOperations.isGreaterThanOrEqualTo(actualValue, lowThreshold) && NumberOperations.isLessThanOrEqualTo(actualValue, highThreshold));
             case NOT_BETWEEN:
-                lowThreshold = Math.min(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                highThreshold = Math.max(trigger.getThreshold(), trigger.getSecondaryThreshold());
-                return (actualValue.compareTo(lowThreshold) < 0 || actualValue.compareTo(highThreshold) > 0);
+                lowThreshold = NumberOperations.getMin(trigger.getThreshold(), trigger.getSecondaryThreshold());
+                highThreshold = NumberOperations.getMax(trigger.getThreshold(), trigger.getSecondaryThreshold());
+                return (NumberOperations.isLessThan(actualValue, lowThreshold) || NumberOperations.isGreaterThan(actualValue, highThreshold));
             case NO_DATA:
-            	    return actualValue == null;
+                return actualValue == null;
             default:
                 throw new SystemException("Unsupported trigger type " + trigger.type);
         }
@@ -314,7 +349,7 @@ public class Trigger extends JPAEntity implements Serializable {
      *
      * @return  The trigger threshold.
      */
-    public Double getThreshold() {
+    public BigDecimal getThreshold() {
         return threshold;
     }
 
@@ -323,7 +358,7 @@ public class Trigger extends JPAEntity implements Serializable {
      *
      * @param  threshold  The trigger threshold. Cannot be null.
      */
-    public void setThreshold(Double threshold) {
+    public void setThreshold(BigDecimal threshold) {
         requireArgument(threshold != null, "Trigger threshold cannot be null.");
         this.threshold = threshold;
     }
@@ -333,7 +368,7 @@ public class Trigger extends JPAEntity implements Serializable {
      *
      * @return  The secondary threshold. Can return null for trigger types that only require a single threshold.
      */
-    public Double getSecondaryThreshold() {
+    public BigDecimal getSecondaryThreshold() {
         return secondaryThreshold;
     }
 
@@ -342,7 +377,7 @@ public class Trigger extends JPAEntity implements Serializable {
      *
      * @param  secondaryThreshold  The secondary threshold. Can be null for trigger types that only require a single threshold.
      */
-    public void setSecondaryThreshold(Double secondaryThreshold) {
+    public void setSecondaryThreshold(BigDecimal secondaryThreshold) {
         this.secondaryThreshold = secondaryThreshold;
     }
 

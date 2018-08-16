@@ -59,28 +59,28 @@ public class ConsecutiveValueMapping implements ValueMapping {
      *	
      * @return	resultMetric	A new time series that has been transformed.
      */
+	
 	@Override
-	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
-		SystemAssert.requireArgument(constants != null, "This transform needs constants");
-        SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");    
-        
-        this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
-        this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
-              
-        Map<Long, Double> resultMetric = new TreeMap<>();
-        this.keyList = new ArrayList<Long>();
-        this.resultKeyList = new ArrayList<Long>();
-		keyList.addAll(originalDatapoints.keySet());
-		Collections.sort(keyList);
-		
-		if (keyList.size() > 0){
-			connect(0, new ArrayList<>(Arrays.asList(keyList.get(0))));
-		}
-		
-		for(Long resultKey : resultKeyList){
-			resultMetric.put(resultKey, originalDatapoints.get(resultKey));
-		}
-		return resultMetric;
+	public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
+	    SystemAssert.requireArgument(constants != null, "This transform needs constants");
+	    SystemAssert.requireArgument(constants.size() == 2, "This transform must provide exactly 2 constants.");
+	    this.threshold = getOffsetInSeconds(constants.get(0)) * 1000;
+	    this.connectDistance = getOffsetInSeconds(constants.get(1)) * 1000;
+	    
+	    Map<Long, Number> resultMetric = new TreeMap<>();
+	    this.keyList = new ArrayList<Long>();
+	    this.resultKeyList = new ArrayList<Long>();
+	    keyList.addAll(originalDatapoints.keySet());
+	    Collections.sort(keyList);
+	    
+	    if (keyList.size() > 0) {
+	        connect(0, new ArrayList<>(Arrays.asList(keyList.get(0))));
+	    }
+	    
+	    for (Long resultKey : resultKeyList) {
+	        resultMetric.put(resultKey, originalDatapoints.get(resultKey));
+	    }
+	    return resultMetric;
 	}
 	
 	private Object connect(int current, ArrayList<Long> carryList){		
@@ -124,7 +124,7 @@ public class ConsecutiveValueMapping implements ValueMapping {
     }
 
 	@Override
-	public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+	public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
 		throw new UnsupportedOperationException("Consective Transform needs a threshold and type.");
 	}
 	

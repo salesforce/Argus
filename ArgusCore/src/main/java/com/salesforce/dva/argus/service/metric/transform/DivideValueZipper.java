@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.service.metric.transform;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
 
@@ -46,17 +47,16 @@ public class DivideValueZipper implements ValueZipper {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double zip(Double originalDp, Double baseDp) {
-        try {
-            Double original = (originalDp == null) ? 0.0 : originalDp;
-            Double base = (baseDp == null) ? 1.0 : baseDp;
-
-            SystemAssert.requireArgument(base != 0.0, "Datapoints in base metric shouldn't contain zero!");
-            
-            return (original / base);
-        } catch (Exception e) {
-            throw new SystemException("Fail to parse the double value of original Datapoint or base Datapoint!", e);
-        }
+    public Number zip(Number originalDp, Number baseDp) {
+    	try {
+    	    Number original = (originalDp == null) ? 0 : originalDp;
+    	    Number base = (baseDp == null) ? 1 : baseDp;
+    	    SystemAssert.requireArgument(!NumberOperations.isEqualTo(base, 0), "Datapoints in base metric shouldn't contain zero!");
+    	    
+    	    return NumberOperations.divide(original, base);
+    	} catch (Exception e) {
+    		throw new SystemException("Fail to parse the value of original datapoint of base datapoint!", e);
+    	}
     }
 
     @Override

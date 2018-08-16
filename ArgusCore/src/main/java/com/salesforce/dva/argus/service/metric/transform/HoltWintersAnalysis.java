@@ -40,6 +40,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 /**
  * Performs a Holt-Winters analysis.
  *
@@ -61,23 +63,23 @@ public class HoltWintersAnalysis {
 
     //~ Methods **************************************************************************************************************************************
 
-    HoltWintersData _performHoltWintersAnalysis(Map<Long, Double> bootstrappedDps, double alpha, double beta, double gamma, int seasonLength,
-        long startTimestamp) {
+    HoltWintersData _performHoltWintersAnalysis(Map<Long, Number> bootstrappedDps, double alpha, double beta, double gamma, int seasonLength,
+            long startTimestamp) {
 
-        List<Double> intercepts = new ArrayList<Double>();
-        List<Double> slopes = new ArrayList<Double>();
-        List<Double> seasonals = new ArrayList<Double>();
-        List<Double> deviations = new ArrayList<Double>();
-        Map<Long, Double> deviationDatapoints = new TreeMap<>();
-        Map<Long, Double> forecastedDatapoints = new TreeMap<>();
-        double next_pred = 0.0, prediction = 0.0;
+        List<Number> intercepts = new ArrayList<Number>();
+        List<Number> slopes = new ArrayList<Number>();
+        List<Number> seasonals = new ArrayList<Number>();
+        List<Number> deviations = new ArrayList<Number>();
+        Map<Long, Number> deviationDatapoints = new TreeMap<>();
+        Map<Long, Number> forecastedDatapoints = new TreeMap<>();
+        Number next_pred = 0, prediction = 0;
         int i = 0;
 
-        for (Map.Entry<Long, Double> entry : bootstrappedDps.entrySet()) {
+        for (Map.Entry<Long, Number> entry : bootstrappedDps.entrySet()) {
             Long timestamp = entry.getKey();
-            Double value = entry.getValue();
-            double lastIntercept = 0.0;
-            double lastSlope = 0.0;
+            Number value = entry.getValue();
+            Number lastIntercept = 0;
+            Number lastSlope = 0;
 
             if (i == 0) {
                 lastIntercept = value;
@@ -88,30 +90,35 @@ public class HoltWintersAnalysis {
             } else {
                 lastIntercept = intercepts.get(i - 1);
                 lastSlope = slopes.get(i - 1);
-                if (lastIntercept == 0.0) {
+                if (NumberOperations.isEqualTo(lastIntercept, 0)) {
                     lastIntercept = value;
                 }
                 prediction = next_pred;
             }
 
-            double last_seasonal = getLast(seasonals, i, seasonLength);
-            double next_last_seasonal = getLast(seasonals, i + 1, seasonLength);
-            double last_seasonal_dev = getLast(deviations, i, seasonLength);
-            double intercept = _holtWintersIntercept(alpha, value, last_seasonal, lastIntercept, lastSlope);
-            double slope = _holtWintersSlope(beta, intercept, lastIntercept, lastSlope);
-            double seasonal = _holtWintersSeasonal(gamma, value, intercept, last_seasonal);
+            Number last_seasonal = getLast(seasonals, i, seasonLength);
+            Number next_last_seasonal = getLast(seasonals, i + 1, seasonLength);
+            Number last_seasonal_dev = getLast(deviations, i, seasonLength);
+            Number intercept = _holtWintersIntercept(alpha, value, last_seasonal, lastIntercept, lastSlope);
+            Number slope = _holtWintersSlope(beta, intercept, lastIntercept, lastSlope);
+            Number seasonal = _holtWintersSeasonal(gamma, value, intercept, last_seasonal);
 
-            next_pred = intercept + slope + next_last_seasonal;
-
-            double deviation = _holtWintersDeviation(gamma, value, prediction, last_seasonal_dev);
+            next_pred = NumberOperations.add(NumberOperations.add(intercept, slope), next_last_seasonal);
+            
+            Number deviation = _holtWintersDeviation(gamma, value, prediction, last_seasonal_dev);
 
             intercepts.add(intercept);
             slopes.add(slope);
             seasonals.add(seasonal);
             deviations.add(deviation);
+            
             if (timestamp >= startTimestamp) {
-                forecastedDatapoints.put(timestamp, Double.parseDouble(DECIMAL_FORMAT.format(prediction)));
-                deviationDatapoints.put(timestamp, Double.parseDouble(DECIMAL_FORMAT.format(deviation)));
+            	Number predictionFormat = DECIMAL_FORMAT.format(prediction).contains(".") ? Double.parseDouble(DECIMAL_FORMAT.format(prediction)) :
+            			Long.parseLong(DECIMAL_FORMAT.format(prediction));
+            	Number deviationFormat = DECIMAL_FORMAT.format(deviation).contains(".") ? Double.parseDouble(DECIMAL_FORMAT.format(deviation)) : 
+            			Long.parseLong(DECIMAL_FORMAT.format(deviation));
+                forecastedDatapoints.put(timestamp, predictionFormat);
+                deviationDatapoints.put(timestamp, deviationFormat);
             }
             i++;
         }
@@ -120,30 +127,38 @@ public class HoltWintersAnalysis {
 
         return data;
     }
-
-    private double _holtWintersDeviation(double gamma, double actualValue, double prediction, double last_seasonal_dev) {
-        return gamma * Math.abs(actualValue - prediction) + (1 - gamma) * last_seasonal_dev;
-    }
-
-    private double _holtWintersSeasonal(double gamma, double actualValue, double intercept, double last_seasonal) {
-        return gamma * (actualValue - intercept) + (1 - gamma) * last_seasonal;
-    }
-
-    private double _holtWintersSlope(double beta, double intercept, double last_intercept, double last_slope) {
-        return beta * (intercept - last_intercept) + (1 - beta) * last_slope;
-    }
-
-    private double _holtWintersIntercept(double alpha, double actualValue, double last_seasonal, double last_intercept, double last_slope) {
-        return alpha * (actualValue - last_seasonal) + (1 - alpha) * (last_intercept + last_slope);
-    }
-
-    private double getLast(List<Double> list, int i, int seasonLength) {
-        int j = i - seasonLength;
-
-        if (j >= 0 && j < list.size()) {
-            return list.get(j);
-        }
-        return 0;
+	
+	private Number _holtWintersDeviation(double gamma, Number value, Number prediction, Number last_seasonal_dev) {
+		Number first = NumberOperations.multiply(gamma, NumberOperations.getAbsValue(NumberOperations.subtract(value, prediction)));
+		Number second = NumberOperations.multiply(1 - gamma, last_seasonal_dev);
+		return NumberOperations.add(first, second);
+	}
+    
+    private Number _holtWintersSeasonal(double gamma, Number value, Number intercept, Number last_seasonal) {
+		Number first = NumberOperations.multiply(gamma, NumberOperations.subtract(value, intercept));
+		Number second = NumberOperations.multiply(1 - gamma, last_seasonal);
+		return NumberOperations.add(first, second);
+	}
+    
+    private Number _holtWintersSlope(double beta, Number intercept, Number lastIntercept, Number lastSlope) {
+		Number first = NumberOperations.multiply(beta, NumberOperations.subtract(intercept, lastIntercept));
+		Number second = NumberOperations.multiply(1 - beta, lastSlope);
+		return NumberOperations.add(first, second);
+	}
+    
+    private Number _holtWintersIntercept(double alpha, Number value, Number last_seasonal, Number lastIntercept, Number lastSlope) {
+		Number first = NumberOperations.multiply(alpha, NumberOperations.subtract(value, last_seasonal));
+		Number second = NumberOperations.multiply(1 - alpha, NumberOperations.add(lastIntercept, lastSlope));
+		return NumberOperations.add(first, second);
+	}
+    
+    private Number getLast(List<Number> list, int i, int seasonLength) {
+    	int j = i - seasonLength;
+    	
+    	if (j >= 0 && j < list.size()) {
+    		return list.get(j);
+    	}
+    	return 0;
     }
 
     //~ Inner Classes ********************************************************************************************************************************
@@ -155,8 +170,8 @@ public class HoltWintersAnalysis {
      */
     static class HoltWintersData {
 
-        private final Map<Long, Double> _forecastedDatapoints;
-        private final Map<Long, Double> _deviationDatapoints;
+        private final Map<Long, Number> _forecastedDatapoints;
+        private final Map<Long, Number> _deviationDatapoints;
 
         /**
          * Creates a new HoltWintersData object.
@@ -164,7 +179,7 @@ public class HoltWintersAnalysis {
          * @param  forecastedDatapoints  The forecasted data points.
          * @param  deviationDatapoints   The calculated deviation data points.
          */
-        public HoltWintersData(Map<Long, Double> forecastedDatapoints, Map<Long, Double> deviationDatapoints) {
+        public HoltWintersData(Map<Long, Number> forecastedDatapoints, Map<Long, Number> deviationDatapoints) {
             this._forecastedDatapoints = forecastedDatapoints;
             this._deviationDatapoints = deviationDatapoints;
         }
@@ -174,7 +189,7 @@ public class HoltWintersAnalysis {
          *
          * @return  The forecasted data points.
          */
-        public Map<Long, Double> getForecastedDatapoints() {
+        public Map<Long, Number> getForecastedDatapoints() {
             return _forecastedDatapoints;
         }
 
@@ -183,7 +198,7 @@ public class HoltWintersAnalysis {
          *
          * @return  The deviation data points.
          */
-        public Map<Long, Double> getDeviationDatapoints() {
+        public Map<Long, Number> getDeviationDatapoints() {
             return _deviationDatapoints;
         }
     }

@@ -31,6 +31,8 @@
 package com.salesforce.dva.argus.sdk.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +51,8 @@ public class Trigger extends Entity {
 
     private String type;
     private String name;
-    private Double threshold;
-    private Double secondaryThreshold;
+    private BigDecimal threshold;
+    private BigDecimal secondaryThreshold;
     private Long inertia;
     private BigInteger alertId;
     private List<BigInteger> notificationIds = new ArrayList<BigInteger>();
@@ -98,7 +100,7 @@ public class Trigger extends Entity {
      *
      * @return  The trigger threshold value.
      */
-    public Double getThreshold() {
+    public BigDecimal getThreshold() {
         return threshold;
     }
 
@@ -107,8 +109,13 @@ public class Trigger extends Entity {
      *
      * @param  threshold  The trigger threshold value.
      */
-    public void setThreshold(Double threshold) {
-        this.threshold = threshold;
+    public void setThreshold(Number threshold) {
+        try {
+            Long.parseLong(threshold.toString());
+            this.threshold = new BigDecimal(threshold.longValue());
+        } catch (NumberFormatException nfe) {
+            this.threshold = new BigDecimal(threshold.doubleValue());
+        }
     }
 
     /**
@@ -116,7 +123,7 @@ public class Trigger extends Entity {
      *
      * @return  The trigger second threshold value.
      */
-    public Double getSecondaryThreshold() {
+    public BigDecimal getSecondaryThreshold() {
         return secondaryThreshold;
     }
 
@@ -125,8 +132,13 @@ public class Trigger extends Entity {
      *
      * @param  secondaryThreshold  The trigger second threshold value.
      */
-    public void setSecondaryThreshold(Double secondaryThreshold) {
-        this.secondaryThreshold = secondaryThreshold;
+    public void setSecondaryThreshold(Number secondaryThreshold) {
+        try {
+            Long.parseLong(secondaryThreshold.toString());
+            this.secondaryThreshold = new BigDecimal(secondaryThreshold.longValue());
+        } catch (NumberFormatException nfe) {
+            this.secondaryThreshold = new BigDecimal(secondaryThreshold.doubleValue());
+        }
     }
 
     /**

@@ -48,22 +48,26 @@ public class ShiftValueMapping implements ValueMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Shift transform requires an offset input!");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants.size() == 1, "Shift Transform can only have one constant which is offset.");
 
         Long offset = getOffsetInSeconds(constants.get(0)) * 1000;
-        Map<Long, Double> shiftDatapoints = new TreeMap<>();
+        Map<Long, Number> shiftDatapoints = new TreeMap<>();
 
-        for (Entry<Long, Double> entry : originalDatapoints.entrySet()) {
+        for (Entry<Long, Number> entry : originalDatapoints.entrySet()) {
+        	if (offset >= 0) {
+        		SystemAssert.requireArgument((entry.getKey() <= Long.MAX_VALUE - offset && entry.getKey() >= Long.MIN_VALUE), 
+        				"You are not allowed to shift like this, be nice to me!");
+        	} else {
+        		SystemAssert.requireArgument((entry.getKey() <= Long.MAX_VALUE && entry.getKey() >= Long.MIN_VALUE - offset),
+        				"You are not allowed to shift like this, be nice to me!");
+        	}
             Long newTimestamp = entry.getKey() + offset;
-
-            SystemAssert.requireArgument((newTimestamp <= Long.MAX_VALUE && newTimestamp >= Long.MIN_VALUE),
-                "You are not allowed to shift like this, be nice to me!");
             shiftDatapoints.put(newTimestamp, entry.getValue());
         }
         return shiftDatapoints;

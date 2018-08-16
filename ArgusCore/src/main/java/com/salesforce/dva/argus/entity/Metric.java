@@ -64,7 +64,7 @@ public class Metric extends TSDBEntity implements Serializable {
 	private String _namespace;
 	private String _displayName;
 	private String _units;
-	private final Map<Long, Double> _datapoints;
+	private final Map<Long, Number> _datapoints;
 	private MetricQuery _query;
 
 	//~ Constructors *********************************************************************************************************************************
@@ -142,7 +142,7 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @return  The map of time series data points. Will never be null, but may be empty.
 	 */
-	public Map<Long, Double> getDatapoints() {
+	public Map<Long, Number> getDatapoints() {
 		return Collections.unmodifiableMap(_datapoints);
 	}
 
@@ -151,7 +151,7 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The new set of data points. If null or empty, only the deletion of the current set of data points is performed.
 	 */
-	public void setDatapoints(Map<Long, Double> datapoints) {
+	public void setDatapoints(Map<Long, Number> datapoints) {
 		_datapoints.clear();
 		if (datapoints != null) {
 			_datapoints.putAll(datapoints);
@@ -163,12 +163,11 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, only the deletion of the current set of data points is performed.
 	 */
-	public void addDatapoints(Map<Long, Double> datapoints) {
+	public void addDatapoints(Map<Long, Number> datapoints) {
 		if (datapoints != null) {
 			_datapoints.putAll(datapoints);
 		}
 	}
-
 
 	/**
 	 * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp at coinciding cutoff boundary, 
@@ -176,20 +175,19 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
-	public void sumExistingDatapoints(Map<Long, Double> datapoints) {
+	public void sumExistingDatapoints(Map<Long, Number> datapoints) {
 		if (datapoints != null) {
 
-			for(Entry<Long, Double> entry : datapoints.entrySet()){
-				Double existingValue = _datapoints.get(entry.getKey());
+			for(Entry<Long, Number> entry : datapoints.entrySet()){
+				Number existingValue = _datapoints.get(entry.getKey());
 				if(existingValue == null){
 					_datapoints.put(entry.getKey(), entry.getValue());
 				} else {
-					_datapoints.put(entry.getKey(), entry.getValue() + existingValue);
+					_datapoints.put(entry.getKey(), NumberOperations.add(entry.getValue(), existingValue));
 				}
 			}
 		}
 	}
-
 
 	/**
 	 * If current set already has a value at that timestamp then sets the minimum of the two values for that timestamp at coinciding cutoff boundary, 
@@ -197,15 +195,15 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
-	public void minimumExistingDatapoints(Map<Long, Double> datapoints) {
+	public void minimumExistingDatapoints(Map<Long, Number> datapoints) {
 		if (datapoints != null) {
 
-			for(Entry<Long, Double> entry : datapoints.entrySet()){
-				Double existingValue = _datapoints.get(entry.getKey());
+			for(Entry<Long, Number> entry : datapoints.entrySet()){
+				Number existingValue = _datapoints.get(entry.getKey());
 				if(existingValue == null){
 					_datapoints.put(entry.getKey(), entry.getValue());
-				} else if (existingValue > entry.getValue()) {
-					_datapoints.put(entry.getKey(), entry.getValue());
+				} else {
+					_datapoints.put(entry.getKey(), NumberOperations.getMin(entry.getValue(), existingValue));
 				}
 			}
 		}
@@ -217,20 +215,19 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
-	public void maximumExistingDatapoints(Map<Long, Double> datapoints) {
+	public void maximumExistingDatapoints(Map<Long, Number> datapoints) {
 		if (datapoints != null) {
 
-			for(Entry<Long, Double> entry : datapoints.entrySet()){
-				Double existingValue = _datapoints.get(entry.getKey());
+			for(Entry<Long, Number> entry : datapoints.entrySet()){
+				Number existingValue = _datapoints.get(entry.getKey());
 				if(existingValue == null){
 					_datapoints.put(entry.getKey(), entry.getValue());
-				} else if (existingValue < entry.getValue()) {
-					_datapoints.put(entry.getKey(), entry.getValue());
+				} else {
+					_datapoints.put(entry.getKey(), NumberOperations.getMax(entry.getValue(), existingValue));
 				}
 			}
 		}
 	}
-
 
 	/**
 	 * If current set already has a value at that timestamp then replace the latest average value for that timestamp at coinciding cutoff boundary, 
@@ -238,10 +235,10 @@ public class Metric extends TSDBEntity implements Serializable {
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
-	public void averageExistingDatapoints(Map<Long, Double> datapoints) {
+	public void averageExistingDatapoints(Map<Long, Number> datapoints) {
 		if (datapoints != null) {
 
-			for(Entry<Long, Double> entry : datapoints.entrySet()){
+			for(Entry<Long, Number> entry : datapoints.entrySet()){
 				_datapoints.put(entry.getKey(), entry.getValue());
 			}
 		}

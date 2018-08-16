@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AverageTransformTest {
 
@@ -68,7 +71,7 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -78,11 +81,11 @@ public class AverageTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -108,17 +111,17 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithNoCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -133,11 +136,13 @@ public class AverageTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         List<Metric> result = averageTransform.transform(metrics);
 
         assertEquals(6, result.get(0).getDatapoints().size());
-        expected.putAll(datapoints_1);
+        expected.put(1000L, 1.0);
+        expected.put(2000L, 2.0);
+        expected.put(3000L, 3.0);
         expected.putAll(datapoints_2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
@@ -145,7 +150,7 @@ public class AverageTransformTest {
     @Test
     public void testAverageTransformWithSomeCommonDPs() {
         Transform averageTransform = new MetricReducerTransform(new AverageValueReducer());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -155,7 +160,7 @@ public class AverageTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -170,7 +175,7 @@ public class AverageTransformTest {
         metrics.add(metric_1);
         metrics.add(metric_2);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);

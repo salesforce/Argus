@@ -135,7 +135,7 @@ public class MetricFederationTest extends AbstractTest {
 		
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
-		assertEquals("{1477386300=7.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+		assertEquals("{1477386300=7, 1477386500=6, 1477386600=7}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
 	
 	@Test
@@ -164,7 +164,7 @@ public class MetricFederationTest extends AbstractTest {
 		
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
-		assertEquals("{1477386300=3.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+		assertEquals("{1477386300=3, 1477386500=6, 1477386600=7}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
 	
 	@Test
@@ -193,7 +193,7 @@ public class MetricFederationTest extends AbstractTest {
 		
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
-		assertEquals("{1477386300=4.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+		assertEquals("{1477386300=4, 1477386500=6, 1477386600=7}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
 
 	@Test
@@ -222,11 +222,11 @@ public class MetricFederationTest extends AbstractTest {
 		
 		// Three time series
 		assertEquals("{host=machineHost1}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
-		assertEquals("{1477386300=1.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+		assertEquals("{1477386300=1}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 		assertEquals("{host=machineHost2}", queryMetricsMap.get(queries.get(0)).get(1).getTags().toString());
-		assertEquals("{1477386300=1.0}", queryMetricsMap.get(queries.get(0)).get(1).getDatapoints().toString());
+		assertEquals("{1477386300=1}", queryMetricsMap.get(queries.get(0)).get(1).getDatapoints().toString());
 		assertEquals("{host=machineHost3}", queryMetricsMap.get(queries.get(0)).get(2).getTags().toString());
-		assertEquals("{1477386500=1.0, 1477386600=1.0}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
+		assertEquals("{1477386500=1, 1477386600=1}", queryMetricsMap.get(queries.get(0)).get(2).getDatapoints().toString());
 	}
 	
 	@Test
@@ -255,7 +255,7 @@ public class MetricFederationTest extends AbstractTest {
 		
 		// One time series, since no tag specified
 		assertEquals("{}", queryMetricsMap.get(queries.get(0)).get(0).getTags().toString());
-		assertEquals("{1477386300=7.0, 1477386500=6.0, 1477386600=7.0}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
+		assertEquals("{1477386300=7, 1477386500=6, 1477386600=7}", queryMetricsMap.get(queries.get(0)).get(0).getDatapoints().toString());
 	}
 	
 	private  List<Metric> getMetricsFromMetricString(String content){

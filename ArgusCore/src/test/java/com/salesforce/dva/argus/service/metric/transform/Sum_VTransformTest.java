@@ -80,7 +80,7 @@ public class Sum_VTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void testSum_VTransformVectorWithoutPoints() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -99,20 +99,20 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithSameLenVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
-        datapoints.put(3000L, 3.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2L);
+        datapoints.put(3000L, 3L);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
+        vector_datapoints.put(2000L, 1L);
         vector_datapoints.put(3000L, 1.0);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -124,10 +124,10 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
-        expected.put(2000L, 3.0);
+        expected.put(2000L, 3L);
         expected.put(3000L, 4.0);
 
         List<Metric> result = sum_vTransform.transform(metrics);
@@ -139,17 +139,17 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithLongerLenVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
+        datapoints.put(2000L, 2L);
         datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -165,7 +165,7 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
         expected.put(2000L, 3.0);
@@ -180,7 +180,7 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithShorterLenVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -190,7 +190,7 @@ public class Sum_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -204,7 +204,7 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
         expected.put(2000L, 3.0);
@@ -219,7 +219,7 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithMidMissingPointVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, 2.0);
@@ -229,7 +229,7 @@ public class Sum_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(3000L, 1.0);
@@ -243,7 +243,7 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
         expected.put(2000L, 2.0);
@@ -258,21 +258,21 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithNullPointVectorAgainstOneMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
-        datapoints.put(2000L, 2.0);
+        datapoints.put(1000L, 1L);
+        datapoints.put(2000L, 2L);
         datapoints.put(3000L, 3.0);
 
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
         vector_datapoints.put(2000L, null);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -283,10 +283,10 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 2.0);
-        expected.put(2000L, 2.0);
+        expected.put(1000L, 2L);
+        expected.put(2000L, 2L);
         expected.put(3000L, 4.0);
 
         List<Metric> result = sum_vTransform.transform(metrics);
@@ -298,7 +298,7 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithVectorAgainstOneNullPointMetric() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
         datapoints.put(2000L, null);
@@ -308,7 +308,7 @@ public class Sum_VTransformTest {
 
         metric.setDatapoints(datapoints);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -323,7 +323,7 @@ public class Sum_VTransformTest {
         metrics.add(metric);
         metrics.add(vector);
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 2.0);
         expected.put(2000L, 1.0);
@@ -338,7 +338,7 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -348,18 +348,18 @@ public class Sum_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -368,11 +368,11 @@ public class Sum_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1L);
+        vector_datapoints.put(2000L, 1L);
+        vector_datapoints.put(3000L, 1L);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -385,20 +385,20 @@ public class Sum_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 2.0);
         expected_1.put(2000L, 3.0);
         expected_1.put(3000L, 4.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 11.0);
-        expected_2.put(2000L, 101.0);
-        expected_2.put(3000L, 1001.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(1000L, 11L);
+        expected_2.put(2000L, 101L);
+        expected_2.put(3000L, 1001L);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 1.1);
         expected_3.put(2000L, 1.01);
@@ -416,7 +416,7 @@ public class Sum_VTransformTest {
     @Test
     public void testSum_VTransformWithMissingPointNullPointVectorAgainstNullPointMetricList() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -426,7 +426,7 @@ public class Sum_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
@@ -437,7 +437,7 @@ public class Sum_VTransformTest {
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -448,7 +448,7 @@ public class Sum_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
         vector_datapoints.put(1000L, 1.0);
         vector_datapoints.put(2000L, 1.0);
@@ -466,25 +466,25 @@ public class Sum_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 2.0);
         expected_1.put(2000L, 3.0);
         expected_1.put(3000L, 3.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
         expected_2.put(1000L, 11.0);
         expected_2.put(2000L, 101.0);
         expected_2.put(4000L, 1001.0);
         expected_2.put(5000L, 10000.0);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 1.1);
         expected_3.put(2000L, 1.01);
         expected_3.put(4000L, 1.001);
-        expected_3.put(5000L, 0.0);
+        expected_3.put(5000L, 0L);
 
         List<Metric> result = sum_vTransform.transform(metrics);
 
@@ -495,11 +495,11 @@ public class Sum_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -509,18 +509,18 @@ public class Sum_VTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
-        datapoints_2.put(4000L, 10000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
+        datapoints_2.put(4000L, 10000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_2.setDatapoints(datapoints_2);
 
-        Map<Long, Double> datapoints_3 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_3 = new HashMap<Long, Number>();
 
         datapoints_3.put(1000L, 0.1);
         datapoints_3.put(2000L, 0.01);
@@ -529,11 +529,11 @@ public class Sum_VTransformTest {
 
         metric_3.setDatapoints(datapoints_3);
 
-        Map<Long, Double> vector_datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> vector_datapoints = new HashMap<Long, Number>();
 
-        vector_datapoints.put(1000L, 1.0);
-        vector_datapoints.put(2000L, 1.0);
-        vector_datapoints.put(3000L, 1.0);
+        vector_datapoints.put(1000L, 1);
+        vector_datapoints.put(2000L, 1);
+        vector_datapoints.put(3000L, 1);
 
         Metric vector = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -546,24 +546,24 @@ public class Sum_VTransformTest {
         metrics.add(metric_3);
         metrics.add(vector);
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 2.0);
         expected_1.put(2000L, 3.0);
         expected_1.put(3000L, 4.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 11.0);
-        expected_2.put(2000L, 101.0);
-        expected_2.put(3000L, 1001.0);
-        expected_2.put(4000L, 10000.0);
+        expected_2.put(1000L, 11L);
+        expected_2.put(2000L, 101L);
+        expected_2.put(3000L, 1001L);
+        expected_2.put(4000L, 10000L);
 
-        Map<Long, Double> expected_3 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_3 = new HashMap<Long, Number>();
 
         expected_3.put(1000L, 1.1);
         expected_3.put(2000L, 1.01);
-        expected_3.put(3000L, 1.0);
+        expected_3.put(3000L, 1L);
         
         List<Metric> result = sum_vTransform.transform(metrics, Arrays.asList("UNION"));
 

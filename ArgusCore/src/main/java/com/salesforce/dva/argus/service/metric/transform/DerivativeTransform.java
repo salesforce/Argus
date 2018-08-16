@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,20 +57,20 @@ public class DerivativeTransform implements Transform {
         List<Metric> result = new ArrayList<>(metrics.size());
 
         for (Metric metric : metrics) {
-            Map<Long, Double> sortedDatapoints = new TreeMap<>();
+            Map<Long, Number> sortedDatapoints = new TreeMap<>();
 
             sortedDatapoints.putAll(metric.getDatapoints());
 
-            Map<Long, Double> derivativeDatapoints = new HashMap<>();
-            Double prev = null;
+            Map<Long, Number> derivativeDatapoints = new HashMap<>();
+            Number prev = null;
 
-            for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
-                Double curr = entry.getValue();
+            for (Entry<Long, Number> entry : sortedDatapoints.entrySet()) {
+                Number curr = entry.getValue();
 
                 if (prev == null) {
                     derivativeDatapoints.put(entry.getKey(), null);
                 } else {
-                    derivativeDatapoints.put(entry.getKey(), curr - prev);
+                    derivativeDatapoints.put(entry.getKey(), NumberOperations.subtract(curr, prev));
                 }
                 prev = curr;
             }

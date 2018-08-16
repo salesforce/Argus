@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.github.brandtg.stl.StlDecomposition;
 import com.github.brandtg.stl.StlResult;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
@@ -88,15 +89,16 @@ public class AnomalySTLTransform implements Transform {
         int season = Integer.parseInt(constants.get(0));
 
         Metric metric = metrics.get(0);
-        Map<Long, Double> datapoints = metric.getDatapoints();
+        Map<Long, Number> datapoints = metric.getDatapoints();
+        Map<Long, Double> datapointsDouble = NumberOperations.getMapAsDoubles(datapoints);
 
-        double[] values = new double[datapoints.size()];
-        List<Long> time_list = new ArrayList<>(datapoints.keySet());
+        double[] values = new double[datapointsDouble.size()];
+        List<Long> time_list = new ArrayList<>(datapointsDouble.keySet());
         Collections.sort(time_list);
-        double[] times = new double[datapoints.size()];
+        double[] times = new double[datapointsDouble.size()];
 
         for (int i = 0; time_list.size() > i; i++) {
-            values[i] = datapoints.get(time_list.get(i));
+            values[i] = datapointsDouble.get(time_list.get(i));
             times[i] = (double) time_list.get(i);
         }
 
@@ -110,7 +112,7 @@ public class AnomalySTLTransform implements Transform {
         double mean = calcMean(remainder);
         double sd = calcSD(remainder, mean);
 
-        HashMap<Long, Double> remainder_map = new HashMap<>();
+        HashMap<Long, Number> remainder_map = new HashMap<>();
 
         if (constants.size() == 2 && constants.get(1).equals("resid")) {
             for (int i = 0; i < time_list.size(); i++) {
@@ -185,5 +187,4 @@ public class AnomalySTLTransform implements Transform {
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
-
 }

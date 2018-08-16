@@ -58,7 +58,7 @@ public interface ManagementService extends Service {
      * @param  counter  The policy counter for which the limit will be set. Cannot be null.
      * @param  value    The new value for the policy limit for the user.
      * @see  WardenService#updatePolicyLimitForUser(PrincipalUser, PolicyCounter, double)  */
-    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, double value);
+    void updateWardenPolicyForUser(PrincipalUser user, PolicyCounter counter, Number value);
 
     /**
      * @param  user       The user to reinstate. Cannot be null.

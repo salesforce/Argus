@@ -28,14 +28,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.google.common.primitives.Doubles;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -58,47 +60,48 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public Double reduce(List<Double> values) {
+    public Number reduce(List<Number> values) {
         throw new UnsupportedOperationException("Percentile Transform with reducer is not supposed to be used without a constant");
     }
 
     @Override
-    public Double reduce(List<Double> values, List<String> constants) {
+    public Number reduce(List<Number> values, List<String> constants) {
         parseConstants(constants);
-        return _calculateNthPercentile(values, percentile);
+        List<Double> valuesDouble = NumberOperations.getListAsDoubles(values);
+        return _calculateNthPercentile(valuesDouble, percentile);
     }
 
     private void parseConstants(List<String> constants) {
-        SystemAssert.requireArgument(constants != null && !constants.isEmpty(),
-            "Percentile Transform must provide at least percentile to calculate.");
+        SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Percentile Transform must provide at least percentile to calculate.");
         SystemAssert.requireArgument(Double.parseDouble(constants.get(0)) > 0.0 && Double.parseDouble(constants.get(0)) < 100.0,
-            "For Percentile Transform, 0.0 < percentile < 100.0.");
-        
+                "For Percentile Transform, 0.0 < percentile < 100.0.");
+
         PercentileValueReducerOrMapping.percentile = Double.parseDouble(constants.get(0));
-        
+
         if (constants.size() > 1) {
-        	if(!INDIVIDUAL.equalsIgnoreCase(constants.get(1))) {
-        		String window = constants.get(1);
-            	try {
-                	MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
+            if (!INDIVIDUAL.equalsIgnoreCase(constants.get(1))) {
+                String window = constants.get(1);
+                try {
+                    MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
                     Long.parseLong(window.substring(0, window.length() - 1));
                 } catch (Exception t) {
                     throw new IllegalArgumentException(
-                    		"Invalid timeWindow: " + window + ". Please specify a valid window (E.g. 1s, 1m, 1h, 1d) ");
+                            "Invalid timeWindow: " + window + ". Please specify a valid window (E.g. 1s, 1m, 1h, 1d) ");
                 }
-        	}
+            }
         }
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Percentile Transform with mapping is not supposed to be used without a constant");
     }
 
     @Override
-    public Map<Long, Double> mapping(Map<Long, Double> originalDatapoints, List<String> constants) {
+    public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         parseConstants(constants);
-        return _calculateNthPercentileForOneMetric(originalDatapoints, percentile);
+        Map<Long, Double> originalDatapointsDouble = NumberOperations.getMapAsDoubles(originalDatapoints);
+        return new HashMap<Long, Number>(_calculateNthPercentileForOneMetric(originalDatapointsDouble, percentile));
     }
 
     @Override
@@ -106,21 +109,22 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
         return TransformFactory.Function.PERCENTILE.name();
     }
 
-    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints, Double percentileValue) {
-    	
-	    Map<Long, Double> result = new TreeMap<>();
-	    for(Long timestamp : originalDatapoints.keySet()) {
-	    	result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
-	    	break;
-	    }
-	    
-	    return result;
-    	
+    private Map<Long, Double> _calculateNthPercentileForOneMetric(Map<Long, Double> originalDatapoints,
+            Double percentileValue) {
+
+        Map<Long, Double> result = new TreeMap<>();
+        for (Long timestamp : new TreeMap<>(originalDatapoints).keySet()) { // want to get the earliest timestamp
+            result.put(timestamp, _calculateNthPercentile(originalDatapoints.values(), percentileValue));
+            break;
+        }
+
+        return result;
+
     }
 
     private Double _calculateNthPercentile(Collection<Double> values, Double percentileValue) {
         return new Percentile().evaluate(Doubles.toArray(values), percentileValue);
     }
-    
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

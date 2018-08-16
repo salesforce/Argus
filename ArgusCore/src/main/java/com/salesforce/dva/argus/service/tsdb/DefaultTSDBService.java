@@ -156,7 +156,6 @@ public class DefaultTSDBService extends AbstractTSDBService{
 
         List<Annotation> annotations = new ArrayList<>();
         String pattern = _readEndPoints.get(0) + "/api/query?{0}";
-
         try {
         	for (AnnotationQuery query : queries) {
             	long start = System.currentTimeMillis();

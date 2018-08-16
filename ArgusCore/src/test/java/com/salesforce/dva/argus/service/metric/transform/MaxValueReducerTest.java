@@ -45,7 +45,7 @@ public class MaxValueReducerTest {
     public void reduce_shouldReturnNullWhenZeroValues() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(new ArrayList<Double>()), is(nullValue()));
+        assertThat(r.reduce(new ArrayList<Number>()), is(nullValue()));
     }
 
     @Test
@@ -56,17 +56,17 @@ public class MaxValueReducerTest {
     }
 
     @Test
-    public void reduce_shouldReturnMaxWithMultipleDoubles() {
+    public void reduce_shouldReturnMaxWithMultipleValues() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(5.0, 1.0, 4.0)), equalTo(5.0));
+        assertThat(r.reduce(Arrays.asList(5L, 1.0, 4.0)), equalTo(5L));
     }
 
     @Test
     public void reduce_shouldReturnMaxWithNullValue() {
         MaxValueReducer r = new MaxValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(null, 5.0, 1.0, 4.0)), equalTo(5.0));
+        assertThat(r.reduce(Arrays.asList(null, 5.0, 1, 4L)), equalTo(5.0));
     }
 
 }

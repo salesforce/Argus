@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import org.slf4j.LoggerFactory;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
 /**
@@ -23,9 +24,10 @@ public class InterpolateTransform implements Transform {
 	/** Internal buffer of current and next timestamps from each time series that will be used for interpolation */
 	private long[] timestamps;
 	/** Internal buffer of current and next values from each time series that will be used for interpolation */
-	private Double[] values;
+	private Number[] values;
 	/** Array of Iterators for each time series */
-	private Iterator<Entry<Long, Double>>[] iterators;
+	private Iterator<Entry<Long, Number>>[] iterators;
+	
 	/** The index in current time series being used. This timestamp, will then be used to interpolate other time series. */
 	int current = 0;
 	/** The index of time series to interpolate. */
@@ -57,14 +59,14 @@ public class InterpolateTransform implements Transform {
 		result.setDisplayName(metrics.get(0).getDisplayName());
 		result.setTags(metrics.get(0).getTags());
 
-		Map<Long, Double> resultDatapoints = new HashMap<>();
+		Map<Long, Number> resultDatapoints = new HashMap<>();
 		Aggregator aggregator = Aggregator.valueOf(constants.get(0));
 
 		int size = metrics.size();
 		LoggerFactory.getLogger(getClass()).info(("Num time series # " + size));
 
 		timestamps = new long[size * 2];
-		values = new Double[size * 2];
+		values = new Number[size * 2];
 		iterators = new Iterator[size];
 
 		/*
@@ -77,7 +79,7 @@ public class InterpolateTransform implements Transform {
 				continue;
 			}
 
-			Entry<Long, Double> datapoint = (Entry<Long, Double>) iterators[i].next();
+			Entry<Long, Number> datapoint = (Entry<Long, Number>) iterators[i].next();
 			putDataPoint(size + i, datapoint);
 		}
 
@@ -111,95 +113,95 @@ public class InterpolateTransform implements Transform {
 
 		return resultMetric;
 	}
-
-	private void interpolateSum(Map<Long, Double> resultDatapoints, InterpolationType interpolationType){
+	
+	private void interpolateSum(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
 			indexToInterpolate = -1;
 
-			double value = 0.0;
+			Number value = 0;
 
 			value = fillInterpolatedValues(interpolationType);
 			resultDatapoints.put(timestamp, value);
 
 			// Fill all timestamps with interpolated values
 			while (shouldDoInterpolation()) {
-				value += fillInterpolatedValues(interpolationType);
+				value = NumberOperations.add(value, fillInterpolatedValues(interpolationType));
 				resultDatapoints.put(timestamp, value);
 			}
 		}
 	}
 
-	private void interpolateAverage(Map<Long, Double> resultDatapoints, InterpolationType interpolationType){
+	private void interpolateAverage(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
 			indexToInterpolate = -1;
 
-			double value = 0.0;
+			Number value = 0;
 
 			int num = 1;
 			value = fillInterpolatedValues(interpolationType);
 
 			// Fill all timestamps with interpolated values
 			while (shouldDoInterpolation()) {
-				value += fillInterpolatedValues(interpolationType);
+				value = NumberOperations.add(value, fillInterpolatedValues(interpolationType));
 				num++;
 			}
 
-			resultDatapoints.put(timestamp, value/num);
+			resultDatapoints.put(timestamp, NumberOperations.divide(value, num));
 		}
 	}
 
-	private void interpolateMin(Map<Long, Double> resultDatapoints, InterpolationType interpolationType){
+	private void interpolateMin(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
 			indexToInterpolate = -1;
 
-			double value = fillInterpolatedValues(interpolationType);
-			double min = Double.isNaN(value)? Double.POSITIVE_INFINITY : value;
+			Number value = fillInterpolatedValues(interpolationType);
+			Number min = NumberOperations.isNaN(value) ? null : value;
 
 			// Fill all timestamps with interpolated values
 			while (shouldDoInterpolation()) {
 				value = fillInterpolatedValues(interpolationType);
-				if(!Double.isNaN(value) && value < min){
+				if(!NumberOperations.isNaN(value) && (min == null || NumberOperations.isLessThan(value, min))){
 					min = value;
 				}
 			}
-			resultDatapoints.put(timestamp, (Double.POSITIVE_INFINITY == min) ? Double.NaN : min);
+			resultDatapoints.put(timestamp, min == null ? Double.NaN : min);
 		}
 	}
 
-	private void interpolateMax(Map<Long, Double> resultDatapoints, InterpolationType interpolationType){
+	private void interpolateMax(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
 			indexToInterpolate = -1;
 
-			double value = fillInterpolatedValues(interpolationType);
-			double max = Double.isNaN(value) ? Double.NEGATIVE_INFINITY : value;
+			Number value = fillInterpolatedValues(interpolationType);
+			Number max = NumberOperations.isNaN(value) ? null : value;
 
 			// Fill all timestamps with interpolated values
 			while (shouldDoInterpolation()) {
 				value = fillInterpolatedValues(interpolationType);
 
-				if(!Double.isNaN(value) && value > max){
+				if(!NumberOperations.isNaN(value) && (max == null || NumberOperations.isGreaterThan(value, max))){
 					max = value;
 				}				
 			}
-			resultDatapoints.put(timestamp, (Double.POSITIVE_INFINITY == max) ? Double.NaN : max);
+			resultDatapoints.put(timestamp, max == null ? Double.NaN : max);
 		}
 	}
 
-	private void interpolateCount(Map<Long, Double> resultDatapoints, InterpolationType interpolationType){
+	private void interpolateCount(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();
 			indexToInterpolate = -1;
 
-			double count = 0.0;
+			int count = 0;
 
 			// Fill all timestamps with interpolated values
 			while (shouldDoInterpolation()) {
-				double value = fillInterpolatedValues(interpolationType);
-				if (!Double.isNaN(value)) {
+				Number value = fillInterpolatedValues(interpolationType);
+				if (!NumberOperations.isNaN(value)) {
 					count++;
 				}
 				resultDatapoints.put(timestamp, count);
@@ -222,7 +224,7 @@ public class InterpolateTransform implements Transform {
 	 * @param i The index of the iterator.
 	 * @param datapoint The last data point returned by that iterator.
 	 */
-	private void putDataPoint(int i, Entry<Long, Double> datapoint) {
+	private void putDataPoint(int i, Entry<Long, Number> datapoint) {
 		timestamps[i] = datapoint.getKey();
 		values[i] = datapoint.getValue();
 	}
@@ -289,7 +291,7 @@ public class InterpolateTransform implements Transform {
 		timestamps[i] = timestamps[next];
 		values[i] = values[next];
 		if (iterators[i].hasNext()) {
-			putDataPoint(next, (Entry<Long, Double>) iterators[i].next());
+			putDataPoint(next, (Entry<Long, Number>) iterators[i].next());
 		} else {
 			markEndTimeSeries(i);
 		}
@@ -324,17 +326,17 @@ public class InterpolateTransform implements Transform {
 			}
 		}
 		return false;
-	}	
+	}
 
 	/* 
 	 * Fills interpolated value for a missing timestamp.
 	 * If there is already a value for a given timestamp, then don't do any operation. 
 	 */
-	private double fillInterpolatedValues(InterpolationType interpolationType) {
-		double interpolatedValue = 0;
+	private Number fillInterpolatedValues(InterpolationType interpolationType) {
+		Number interpolatedValue = 0;
 		if (shouldDoInterpolation(true)) {
 
-			double y1 = values[indexToInterpolate];
+			Number y1 = values[indexToInterpolate];
 
 			if (current == indexToInterpolate) {
 				return y1;
@@ -346,7 +348,7 @@ public class InterpolateTransform implements Transform {
 				return y1;
 			}
 			int next = indexToInterpolate + iterators.length;
-			double y2 = values[next];
+			Number y2 = values[next];
 			long x2 = timestamps[next];
 			if (x == x2) {
 				return y2;
@@ -354,7 +356,9 @@ public class InterpolateTransform implements Transform {
 
 			switch(interpolationType){
 			case LININT:
-				interpolatedValue = (y2 - y1) / (x2 - x1) * (x - x1) + y1;
+				interpolatedValue = NumberOperations.add(NumberOperations.multiply(NumberOperations.divide(
+						NumberOperations.subtract(y2, y1), NumberOperations.subtract(x2, x1)), 
+						NumberOperations.subtract(x, x1)), y1);
 				break;
 			case ZIMSUM:
 				interpolatedValue = 0;

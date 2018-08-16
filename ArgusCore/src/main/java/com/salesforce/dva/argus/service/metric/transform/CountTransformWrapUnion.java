@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.Arrays;
@@ -75,20 +76,20 @@ public class CountTransformWrapUnion implements Transform {
         return Arrays.asList(newMetric);
     }
     
-    private Map<Long, Double> _collate(List<Metric> metrics) {
-        Map<Long, Double> collated = new HashMap<>();
-
+    private Map<Long, Number> _collate(List<Metric> metrics) {
+        Map<Long, Number> collated = new HashMap<>();
+        
         for (Metric metric : metrics) {
-            for (Map.Entry<Long, Double> point : metric.getDatapoints().entrySet()) {
+            for (Map.Entry<Long, Number> point : metric.getDatapoints().entrySet()) {
                 if (!collated.containsKey(point.getKey())) {
-                    collated.put(point.getKey(), 1.0);
-                } else {
-                	double oldValue = collated.get(point.getKey());
-                	collated.put(point.getKey(), oldValue + 1.0);
-                }
-            }
-        }
-        return collated;
+                    collated.put(point.getKey(), 1);
+                    } else {
+                        Number oldValue = collated.get(point.getKey());
+                        collated.put(point.getKey(), NumberOperations.add(oldValue, 1));
+                    }
+    		}
+    	}
+    	return collated;
     }
 
     @Override

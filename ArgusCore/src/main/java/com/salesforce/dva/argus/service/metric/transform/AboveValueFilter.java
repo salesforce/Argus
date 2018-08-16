@@ -28,23 +28,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * This class is used to filter metrics whose evaluation result is above the limit.
+ * This class is used to filter metrics whose evaluation result is above the
+ * limit.
  *
- * @author  Ruofan Zhang (rzhang@salesforce.com)
+ * @author Ruofan Zhang (rzhang@salesforce.com)
  */
 public class AboveValueFilter implements ValueFilter {
 
-    //~ Methods **************************************************************************************************************************************
+    // ~ Methods
+    // **************************************************************************************************************************************
 
     @Override
     public List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit) {
@@ -52,9 +55,12 @@ public class AboveValueFilter implements ValueFilter {
         SystemAssert.requireArgument(limit != null && !limit.equals(""), "Limit must be provided!");
 
         List<Metric> result = new ArrayList<Metric>();
-
+        
+        Number bound = NumberOperations.parseConstant(limit);
+        
         for (Map.Entry<Metric, String> entry : extendedSortedMap.entrySet()) {
-            if (Double.parseDouble(limit) < Double.parseDouble(entry.getValue())) {
+            Number val = NumberOperations.parseConstant(entry.getValue());
+            if (NumberOperations.isGreaterThan(val, bound)) {
                 result.add(entry.getKey());
             }
         }
@@ -66,4 +72,4 @@ public class AboveValueFilter implements ValueFilter {
         return TransformFactory.Function.ABOVE.name();
     }
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2016, Salesforce.com, Inc. All rights reserved. */

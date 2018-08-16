@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,17 +67,19 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
         SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
                                             "k constant.");
 
-        Map<Long, Double> metricData = metrics.get(0).getDatapoints();
-        metricDataValues = metricData.values().stream().collect(Collectors.toList());
-        if (metricData.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
+        Map<Long, Number> metricData = metrics.get(0).getDatapoints();
+        Map<Long, Double> metricDataDouble = NumberOperations.getMapAsDoubles(metricData);
+        
+        metricDataValues = metricDataDouble.values().stream().collect(Collectors.toList());
+        if (metricDataDouble.size() == 0) throw new MissingDataException("Metric must contain data points to perform transforms.");
 
         try {
-            trainModel(metricData);
+            trainModel(metricDataDouble);
         } catch (Exception e) {
             throw new UnsupportedOperationException("Cluster creation unsuccessful");
         }
 
-        Metric predictions = predictAnomalies(metricData);
+        Metric predictions = predictAnomalies(metricDataDouble);
         Metric predictionsNormalized = normalizePredictions(predictions);
 
         List<Metric> resultMetrics = new ArrayList<>();
@@ -158,7 +161,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
      */
     private Metric predictAnomalies(Map<Long, Double> metricData) {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> predictionDatapoints = new HashMap<>();
+        Map<Long, Number> predictionDatapoints = new HashMap<>();
 
         for (Map.Entry<Long, Double> entry : metricData.entrySet()) {
             Long timestamp = entry.getKey();

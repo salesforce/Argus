@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AnomalyDetectionGaussianZScoreTransformTest {
 
@@ -49,8 +52,8 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
     private Transform gaussianZScoreTransform;
     private List<Metric> metrics;
     private Metric metric;
-    private Map<Long, Double> metricData;
-    private Map<Long, Double> expected;
+    private Map<Long, Number> metricData;
+    private Map<Long, Number> expected;
 
     @Before
     public void setup() {
@@ -70,15 +73,26 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 100.0);
         expected.put(2000L, 0.0);
         expected.put(3000L, 100.0);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
+    }
+
+    @Test (expected = UnsupportedOperationException.class)
+    public void gaussianZScoreTransformNewSimpleTest() {
+    	metricData.put(1000L, 5.0);
+    	metricData.put(2000L, 10);
+    	metricData.put(3000L, 15L);
+    	metric.setDatapoints(metricData);
+    	metrics.add(metric);
+    	
+    	gaussianZScoreTransform.transform(metrics);
     }
 
     @Test
@@ -95,7 +109,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 3.59);
         expected.put(2000L, 3.63);
@@ -107,7 +121,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(8000L, 3.61);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -127,7 +141,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 1.37);
         expected.put(2000L, 2.28);
@@ -141,7 +155,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(10000L, 37.28);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -166,7 +180,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(2L, 0.0);
         expected.put(4L, 0.0);
@@ -181,7 +195,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(22L, 47.20);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -208,7 +222,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(10800L, 0.0);
@@ -225,7 +239,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(129600L, 32.82);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -252,7 +266,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(151200L, 0.0);
@@ -269,7 +283,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(1814400L, 1.72);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -301,7 +315,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         constants.add(detectionInterval);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
         expected.put(1000L, 0.0);
@@ -318,7 +332,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(12000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -335,7 +349,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
 
         List<Metric> results = gaussianZScoreTransform.transform(metrics);
-        Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
+        Map<Long, Number> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.0);
         expected.put(2000L, 0.0);
@@ -344,7 +358,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(5000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-            assertEquals(expected.get(timestamp), resultDatapoints.get(timestamp), 0.01);
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -354,7 +368,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        gaussianZScoreTransform.transform(metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -365,7 +379,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
-        Map<Long, Double> metricData_2 = new HashMap<>();
+        Map<Long, Number> metricData_2 = new HashMap<>();
         metricData_2.put(1000L, 4.0);
         metricData_2.put(2000L, 5.0);
         metricData_2.put(3000L, 6.0);
@@ -374,7 +388,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
         metrics.add(metric_2);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        gaussianZScoreTransform.transform(metrics);
     }
 
 }

@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 
 import java.util.*;
@@ -68,9 +69,11 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
                 "one constant for the length of a season");
 
         //Create a sorted array of the metric's timestamps
-        Map<Long, Double> completeDatapoints = metrics.get(0).getDatapoints();
-        SystemAssert.requireState(completeDatapoints.size() != 0, "Cannot transform metric with no data points.");
-        timestamps = completeDatapoints.keySet().toArray(new Long[completeDatapoints.size()]);
+        Map<Long, Number> completeDatapoints = metrics.get(0).getDatapoints();
+        Map<Long, Double> completeDatapointsDouble = NumberOperations.getMapAsDoubles(completeDatapoints);
+        
+        SystemAssert.requireState(completeDatapointsDouble.size() != 0, "Cannot transform metric with no data points.");
+        timestamps = completeDatapointsDouble.keySet().toArray(new Long[completeDatapointsDouble.size()]);
         Arrays.sort(timestamps);
 
         String seasonLengthInput = constants.get(0);
@@ -78,9 +81,9 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
         frequency = calculateFrequency(seasonLengthInMilliseconds);
 
         //Array of the metric's standardized values ordered by time
-        metricValues = new double[completeDatapoints.size()];
+        metricValues = new double[completeDatapointsDouble.size()];
         for (int i = 0; i < metricValues.length; i++) {
-            Double value = completeDatapoints.get(timestamps[i]);
+            Double value = completeDatapointsDouble.get(timestamps[i]);
             metricValues[i] = value;
         }
         standardize(metricValues);
@@ -136,7 +139,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
      */
     private Metric predictAnomalies() {
         Metric predictions = new Metric(getResultScopeName(), getResultMetricName());
-        Map<Long, Double> predictionDatapoints = new HashMap<>();
+        Map<Long, Number> predictionDatapoints = new HashMap<>();
 
         double[][] noiseMatrix = rpca.getE().getData();
         double[] noiseVector = matrixToVector(noiseMatrix);

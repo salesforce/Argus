@@ -43,7 +43,6 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
-import com.salesforce.dva.argus.entity.Alert;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -55,6 +54,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -152,32 +152,32 @@ public class GusNotifier extends AuditNotifier {
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
-		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
-				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
+                String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+                sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
+                                DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){
-			sb.append(getDisplayedName(context, customText)).append("\n");
+		    sb.append(getDisplayedName(context, customText)).append("\n");
 		}
-		if(currentAlert.getNotifications().size() > 1)
-			sb.append(MessageFormat.format("Notification:  {0}\n", getDisplayedName(context, notification.getName())));
-		if(currentAlert.getTriggers().size() > 1)
-			sb.append(MessageFormat.format("Triggered by:  {0}\n", getDisplayedName(context, trigger.getName())));
-		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
-				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
-		else sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+		if(currentAlert.getNotifications().size() > 1)        
+                    sb.append(MessageFormat.format("Notification:  {0}\n", getDisplayedName(context, notification.getName())));     
+                if(currentAlert.getTriggers().size() > 1)       
+                    sb.append(MessageFormat.format("Triggered by:  {0}\n", getDisplayedName(context, trigger.getName())));  
+                    sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",     
+                            DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));       
+                if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));  
+                else sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-			sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
+		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
-		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-			sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
-		}
-		sb.append("\n");
+                if(!trigger.getType().equals(TriggerType.NO_DATA)){
+                        sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));      
+                }       
+                sb.append("\n");
 		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
-			sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
-					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
+		    sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
+		            getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		sb.append("\n");
 		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));

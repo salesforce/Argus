@@ -49,7 +49,7 @@ public class SumTransformTest {
     @Test(expected = SystemException.class)
     public void testSumTransformWithIllegalConstant() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
         datapoints.put(1000L, 1.0);
 
@@ -80,9 +80,9 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithOneConstantAgainstOneMetric() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints = new HashMap<Long, Number>();
 
-        datapoints.put(1000L, 1.0);
+        datapoints.put(1000L, 1L);
         datapoints.put(2000L, 2.0);
         datapoints.put(3000L, 3.0);
 
@@ -98,9 +98,9 @@ public class SumTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
-        expected.put(1000L, 6.0);
+        expected.put(1000L, 6L);
         expected.put(2000L, 7.0);
         expected.put(3000L, 8.0);
 
@@ -113,7 +113,7 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithOneConstantAgainstMetricList() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -123,11 +123,11 @@ public class SumTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(1000L, 10.0);
-        datapoints_2.put(2000L, 100.0);
-        datapoints_2.put(3000L, 1000.0);
+        datapoints_2.put(1000L, 10L);
+        datapoints_2.put(2000L, 100L);
+        datapoints_2.put(3000L, 1000L);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
 
@@ -142,17 +142,17 @@ public class SumTransformTest {
 
         constants.add("5");
 
-        Map<Long, Double> expected_1 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_1 = new HashMap<Long, Number>();
 
         expected_1.put(1000L, 6.0);
         expected_1.put(2000L, 7.0);
         expected_1.put(3000L, 8.0);
 
-        Map<Long, Double> expected_2 = new HashMap<Long, Double>();
+        Map<Long, Number> expected_2 = new HashMap<Long, Number>();
 
-        expected_2.put(1000L, 15.0);
-        expected_2.put(2000L, 105.0);
-        expected_2.put(3000L, 1005.0);
+        expected_2.put(1000L, 15L);
+        expected_2.put(2000L, 105L);
+        expected_2.put(3000L, 1005L);
 
         List<Metric> result = sumTransform.transform(metrics, constants);
 
@@ -180,7 +180,7 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithNoConstantShareCommonDPs() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
         datapoints_1.put(1000L, 1.0);
         datapoints_1.put(2000L, 2.0);
@@ -190,7 +190,7 @@ public class SumTransformTest {
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(1000L, 10.0);
         datapoints_2.put(2000L, 100.0);
@@ -206,7 +206,7 @@ public class SumTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1000L, 11.0);
         expected.put(2000L, 102.0);
@@ -221,17 +221,17 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithNoConstantShareNoCommonDPs() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -247,7 +247,7 @@ public class SumTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>();
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
         List<Metric> result = sumTransform.transform(metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
@@ -257,17 +257,17 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithNoConstantShareSomeCommonDPs() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
         datapoints_2.put(100L, 10.0);
         datapoints_2.put(200L, 100.0);
@@ -283,7 +283,7 @@ public class SumTransformTest {
         metrics.add(metric_2);
 
         List<String> constants = new ArrayList<String>(1);
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(3000L, 1003.0);
 
@@ -296,20 +296,20 @@ public class SumTransformTest {
     @Test
     public void testSumTransformWithFulljoinConstantShareSomeCommonDPs() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
-        Map<Long, Double> datapoints_1 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
 
-        datapoints_1.put(1000L, 1.0);
-        datapoints_1.put(2000L, 2.0);
-        datapoints_1.put(3000L, 3.0);
+        datapoints_1.put(1000L, 1L);
+        datapoints_1.put(2000L, 2L);
+        datapoints_1.put(3000L, 3L);
 
         Metric metric_1 = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metric_1.setDatapoints(datapoints_1);
 
-        Map<Long, Double> datapoints_2 = new HashMap<Long, Double>();
+        Map<Long, Number> datapoints_2 = new HashMap<Long, Number>();
 
-        datapoints_2.put(100L, 10.0);
-        datapoints_2.put(200L, 100.0);
+        datapoints_2.put(100L, 10L);
+        datapoints_2.put(200L, 100L);
         datapoints_2.put(3000L, 1000.0);
 
         Metric metric_2 = new Metric(TEST_SCOPE, TEST_METRIC);
@@ -323,11 +323,11 @@ public class SumTransformTest {
 
         List<String> constants = new ArrayList<String>();
         constants.add("union");
-        Map<Long, Double> expected = new HashMap<Long, Double>();
-        expected.put(100L, 10.0);
-        expected.put(200L, 100.0);
-        expected.put(1000L, 1.0);
-        expected.put(2000L, 2.0);
+        Map<Long, Number> expected = new HashMap<Long, Number>();
+        expected.put(100L, 10L);
+        expected.put(200L, 100L);
+        expected.put(1000L, 1L);
+        expected.put(2000L, 2L);
         expected.put(3000L, 1003.0);
         List<Metric> result = sumTransform.transform(metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());

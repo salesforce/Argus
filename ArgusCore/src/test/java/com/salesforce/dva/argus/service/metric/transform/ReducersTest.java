@@ -39,25 +39,25 @@ import java.util.Arrays;
 public class ReducersTest {
     @Test
     public void testSumReducer() {
-        Double[][] testLists = new Double[][] {
+        Number[][] testLists = new Number[][] {
                 {},
                 {null, null},
-                {1.0, null},
+                {1L, null},
                 {1.0, 2.1}
         };
 
-        Double[] results = new Double[] {
-                0.0,
-                0.0,
-                1.0,
+        Number[] results = new Number[] {
+                0,
+                0,
+                1L,
                 3.1
         };
 
         for (int i = 0; i < results.length; i++) {
-            Double[] test = testLists[i];
-            Double expResult = results[i];
+            Number[] test = testLists[i];
+            Number expResult = results[i];
 
-            Double result = Reducers.sumReducer(Arrays.asList(test));
+            Number result = Reducers.sumReducer(Arrays.asList(test));
             Assert.assertEquals(expResult, result);
         }
     }

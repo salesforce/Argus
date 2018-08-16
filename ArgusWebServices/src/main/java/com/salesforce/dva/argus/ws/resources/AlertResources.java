@@ -420,7 +420,6 @@ public class AlertResources extends AbstractResource {
 			if(!alert.isShared()) {
 				validateResourceAuthorization(req, alert.getOwner(), owner);
 			}
-			
 			return TriggerDto.transformToDto(alert.getTriggers());
 		}
 		

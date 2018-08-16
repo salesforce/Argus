@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.salesforce.dva.argus.entity.Metric;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -95,7 +96,7 @@ public class MetricReduceTransformTest {
 
         assertThat(results, equalTo(expected));
     }
-    
+
     @Test
     public void reduce_shouldUseDistilledScopeNameWhenCommon() {
         Metric m = new Metric("s", "m1");
@@ -139,20 +140,23 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, Double> dps = new HashMap<Long, Double>();
+        Map<Long, Number> dps = new HashMap<Long, Number>();
 
         dps.put(1L, 1.0);
-        dps.put(2L, 2.0);
+        dps.put(2L, 2L);
         m.setDatapoints(dps);
+        
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(1.0))).thenReturn(0.0);
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(2L))).thenReturn(0.0);
 
         List<Metric> expected = Arrays.asList(m);
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
 
         assertThat(results, equalTo(expected));
         verify(mockValueReducer).reduce(Arrays.asList(1.0));
-        verify(mockValueReducer).reduce(Arrays.asList(2.0));
+        verify(mockValueReducer).reduce(Arrays.asList(2L));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
         expectedDps.put(1L, 0.0);
         expectedDps.put(2L, 0.0);
@@ -164,18 +168,21 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, Double> dps = new HashMap<Long, Double>();
+        Map<Long, Number> dps = new HashMap<Long, Number>();
 
         dps.put(1L, null);
         dps.put(2L, 2.0);
         m.setDatapoints(dps);
 
         List<Metric> expected = Arrays.asList(m);
+        
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(2.0))).thenReturn(0.0);
+        
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
 
         assertThat(results, equalTo(expected));
 
-        List<Double> nullList = new ArrayList<>();
+        List<Number> nullList = new ArrayList<>();
 
         nullList.add(null);
         verify(mockValueReducer).reduce(nullList);
@@ -183,7 +190,7 @@ public class MetricReduceTransformTest {
 
         Map<Long, Double> expectedDps = new HashMap<Long, Double>();
 
-        expectedDps.put(1L, 0.0);
+        expectedDps.put(1L, null);
         expectedDps.put(2L, 0.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
@@ -193,10 +200,10 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, Double> dps = new HashMap<Long, Double>();
+        Map<Long, Number> dps = new HashMap<Long, Number>();
 
-        dps.put(1L, 1.0);
-        dps.put(2L, 2.0);
+        dps.put(1L, 1L);
+        dps.put(2L, 2L);
         m.setDatapoints(dps);
 
         Metric m2 = new Metric("s", "m");
@@ -205,17 +212,20 @@ public class MetricReduceTransformTest {
         dps.put(1L, 3.0);
         dps.put(2L, 4.0);
         m2.setDatapoints(dps);
+        
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(1L, 3.0))).thenReturn(4.0);
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(2L, 4.0))).thenReturn(6.0);
 
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
-        verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
-        verify(mockValueReducer).reduce(Arrays.asList(2.0, 4.0));
+        verify(mockValueReducer).reduce(Arrays.asList(1L, 3.0));
+        verify(mockValueReducer).reduce(Arrays.asList(2L, 4.0));
 
-        Map<Long, Double> expectedDps = new HashMap<Long, Double>();
+        Map<Long, Number> expectedDps = new HashMap<Long, Number>();
 
-        expectedDps.put(1L, 0.0);
-        expectedDps.put(2L, 0.0);
+        expectedDps.put(1L, 4.0);
+        expectedDps.put(2L, 6.0);
         assertThat(results.get(0).getDatapoints(), equalTo(expectedDps));
     }
 
@@ -224,7 +234,7 @@ public class MetricReduceTransformTest {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
 
         Metric m = new Metric("s", "m");
-        Map<Long, Double> dps = new HashMap<Long, Double>();
+        Map<Long, Number> dps = new HashMap<Long, Number>();
 
         dps.put(1L, 1.0);
         dps.put(3L, 2.0);
@@ -235,18 +245,23 @@ public class MetricReduceTransformTest {
         dps = new HashMap<>();
         dps.put(1L, 3.0);
         dps.put(2L, 4.0);
-        dps.put(4L, 5.0);
+        dps.put(4L, 5L);
         m2.setDatapoints(dps);
 
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(1.0, 3.0))).thenReturn(0.0);
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(4.0))).thenReturn(0.0);
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(2.0))).thenReturn(0.0);
+        Mockito.when(mockValueReducer.reduce(Arrays.asList(5L))).thenReturn(0.0);
+        
         List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
         verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
         verify(mockValueReducer).reduce(Arrays.asList(4.0));
         verify(mockValueReducer).reduce(Arrays.asList(2.0));
-        verify(mockValueReducer).reduce(Arrays.asList(5.0));
+        verify(mockValueReducer).reduce(Arrays.asList(5L));
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(1L, 0.0);
         expected.put(2L, 0.0);

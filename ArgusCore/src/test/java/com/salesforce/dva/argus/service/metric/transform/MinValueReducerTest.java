@@ -44,28 +44,28 @@ public class MinValueReducerTest {
     public void reduce_shouldReturnNullWhenZeroValues() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(new ArrayList<Double>()), is(nullValue()));
+        assertThat(r.reduce(new ArrayList<Number>()), is(nullValue()));
     }
 
     @Test
     public void reduce_shouldReturnMinWhenSingleValue() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(1.0)), equalTo(1.0));
+        assertThat(r.reduce(Arrays.asList(1L)), equalTo(1L));
     }
 
     @Test
-    public void reduce_shouldReturnMinWithMultipleDoubles() {
+    public void reduce_shouldReturnMinWithMultipleValues() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(5.0, 1.0, 4.0)), equalTo(1.0));
+        assertThat(r.reduce(Arrays.asList(5L, 1.0, 4)), equalTo(1.0));
     }
 
     @Test
     public void reduce_shouldReturnMinWithNullValue() {
         MinValueReducer r = new MinValueReducer();
 
-        assertThat(r.reduce(Arrays.asList(null, 5.0, 1.0, 4.0)), equalTo(1.0));
+        assertThat(r.reduce(Arrays.asList(null, 5L, 1L, 4L)), equalTo(1L));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

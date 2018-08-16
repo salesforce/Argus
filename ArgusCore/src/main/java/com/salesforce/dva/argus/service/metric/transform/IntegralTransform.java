@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.system.SystemAssert;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,12 +56,12 @@ public class IntegralTransform implements Transform {
         List<Metric> result = new ArrayList<>(metrics.size());
 
         for (Metric metric : metrics) {
-            Map<Long, Double> sortedDatapoints = new TreeMap<>();
-            Double prevSum = 0.0;
+            Map<Long, Number> sortedDatapoints = new TreeMap<>();
+            Number prevSum = 0;
 
             sortedDatapoints.putAll(metric.getDatapoints());
-            for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
-                prevSum += entry.getValue();
+            for (Entry<Long, Number> entry : sortedDatapoints.entrySet()) {
+            	prevSum = NumberOperations.add(prevSum, entry.getValue());
                 sortedDatapoints.put(entry.getKey(), prevSum);
             }
             metric.setDatapoints(sortedDatapoints);
