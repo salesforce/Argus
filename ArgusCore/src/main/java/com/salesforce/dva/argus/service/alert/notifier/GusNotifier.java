@@ -150,16 +150,17 @@ public class GusNotifier extends AuditNotifier {
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
-		String notificationName = context.getNotification().getName();
-		String alertName = context.getAlert().getName();
+		String notificationName = getDisplayedName(context, context.getNotification().getName());
+		String alertName = getDisplayedName(context, context.getAlert().getName());
 		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
-		String triggerName = getDisplayTriggerName(context);
+		String triggerName = getDisplayedName(context, context.getTrigger().getName());
 		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
 		String metricExpression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		String triggerDetails = getTriggerDetails(trigger, context);
 		Number triggerEventValue = context.getTriggerEventValue();
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n>"); 
+		String customText = context.getNotification().getCustomText();
+		if( customText != null && customText.length()>0){
+			sb.append(getDisplayedName(context, customText)).append("\n>");
 		}
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			Object[] arguments = new Object[] {
