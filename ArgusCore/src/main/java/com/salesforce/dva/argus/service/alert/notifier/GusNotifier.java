@@ -54,6 +54,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.entity.Trigger.TriggerType;
@@ -150,56 +151,37 @@ public class GusNotifier extends AuditNotifier {
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
-		String notificationName = getDisplayedName(context, context.getNotification().getName());
-		String alertName = getDisplayedName(context, context.getAlert().getName());
-		String triggerFiredTime = DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()));
-		String triggerName = getDisplayedName(context, context.getTrigger().getName());
-		String notificationCooldownExpiraton = DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()));
-		String metricExpression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		String triggerDetails = getTriggerDetails(trigger, context);
-		Number triggerEventValue = context.getTriggerEventValue();
+		Alert currentAlert = notification.getAlert();
+                String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+                sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
+                                DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){
-			sb.append(getDisplayedName(context, customText)).append("\n>");
+		    sb.append(getDisplayedName(context, customText)).append("\n");
 		}
+		if(currentAlert.getNotifications().size() > 1)        
+                    sb.append(MessageFormat.format("Notification:  {0}\n", getDisplayedName(context, notification.getName())));     
+                if(currentAlert.getTriggers().size() > 1)       
+                    sb.append(MessageFormat.format("Triggered by:  {0}\n", getDisplayedName(context, trigger.getName())));  
+                    sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",     
+                            DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));       
+                if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));  
+                else sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-			Object[] arguments = new Object[] {
-					notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-					triggerEventValue, String.valueOf(context.getTriggerFiredTime()), context.getTriggeredMetric().getIdentifier()
-			};
-
-			/** gus feed template for notification information. */
-			String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
-					"Notification:   {0}\n" +
-					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
-					"Evaluated metric expression:   {5}\n" + "Triggered on Metric:   {9}\n" + "Trigger details:  {6}\n" +
-					"Triggering event value:   {7}\n" +  "Triggering event timestamp:   {8}\n\n";
-
-			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
-		}else {
-			Object[] arguments = new Object[] {
-					notificationName, alertName, triggerFiredTime, triggerName, notificationCooldownExpiraton, metricExpression, triggerDetails,
-					String.valueOf(context.getTriggerFiredTime())
-			};
-
-			/** gus feed template for notification information. */
-			String gusFeedNotificationTemplate = "Alert Notification {0} is triggered, more info as following:\n" + "Alert {1}  was triggered at {2}\n" +
-					"Notification:   {0}\n" +
-					"Triggered by:   {3}\n" + "Notification is on cooldown until:   {4}\n" +
-					"Evaluated metric expression:   {5}\n" + "Trigger details:  {6}\n" +
-				    "Triggering event timestamp:   {7}\n\n";
-
-			sb.append(MessageFormat.format(gusFeedNotificationTemplate, arguments));
+		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
-		/** gus feed template for links. */
-		String gusFeedLinkTemplate = "Click here to view {0}\n{1}\n";
-
+		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
+                if(!trigger.getType().equals(TriggerType.NO_DATA)){
+                        sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));      
+                }       
+                sb.append("\n");
 		for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
-			sb.append(MessageFormat.format(gusFeedLinkTemplate, "the annotated series for",
-					super.getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
+		    sb.append(MessageFormat.format("Annotated series for {0}: {1}\n", metricToAnnotate,
+		            getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
-		sb.append(MessageFormat.format(gusFeedLinkTemplate, "evaluated metric data.", super.getExpressionUrl(metricExpression)));
-		sb.append(MessageFormat.format(gusFeedLinkTemplate, "alert definition.", super.getAlertUrl(notification.getAlert().getId())));
+		sb.append("\n");
+		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
+		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
 
