@@ -220,7 +220,11 @@ public interface MonitorService extends Service {
         SCHEMARECORDS_WRITTEN("argus.core", "schemarecords.written"),
         SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
         SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
-        SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency");
+        SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency"),
+        
+        BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
+        BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
+        BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count");
 
         private final String _scope;
         private final String _metric;

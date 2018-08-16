@@ -248,7 +248,7 @@ public class GOCNotifier extends AuditNotifier {
 		String body = getGOCMessageBody(notification, trigger, context);
 		Severity sev = status == NotificationStatus.CLEARED ? Severity.OK : Severity.ERROR;
 
-		sendMessage(sev, context.getNotification().getName(), context.getAlert().getName(), getDisplayTriggerName(context), body,
+		sendMessage(sev, getDisplayedName(context, context.getNotification().getName()), getDisplayedName(context, context.getAlert().getName()), getDisplayedName(context, context.getTrigger().getName()), body,
 				context.getNotification().getSeverityLevel(),context.getNotification().getSRActionable(), context.getTriggerFiredTime(), context.getTriggeredMetric());
 	}
 
@@ -265,18 +265,20 @@ public class GOCNotifier extends AuditNotifier {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
 		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", context.getAlert().getName(), context.getAlert().getId().intValue(),
+		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("\n");
+		String customText = context.getNotification().getCustomText();
+		if( customText != null && customText.length()>0){
+			sb.append(getDisplayedName(context, customText)).append("\n");
 		}
 		if(currentAlert.getNotifications().size() > 1)
-			sb.append(MessageFormat.format("Notification:  {0}\n", notification.getName()));
+			sb.append(MessageFormat.format("Notification:  {0}\n", getDisplayedName(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)
-			sb.append(MessageFormat.format("Triggered by:  {0}\n", trigger.getName()));
+			sb.append(MessageFormat.format("Triggered by:  {0}\n", getDisplayedName(context, trigger.getName())));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
+		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
+		else sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
@@ -290,7 +292,7 @@ public class GOCNotifier extends AuditNotifier {
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		sb.append("\n");
-		sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
+		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
