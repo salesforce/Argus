@@ -93,7 +93,7 @@ public class MetricZipperTransform implements Transform {
         
         return zip(metrics.subList(0, metrics.size() - 1), metrics.get(metrics.size() - 1));
     }
-    
+
     /**
      * Merges a list of metrics.
      *

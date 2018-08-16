@@ -101,7 +101,7 @@ public class PropagateTransform implements Transform {
         
         metric.setDatapoints(propagateDatapoints);
     }
-    
+
     private static long parseTimeIntervalInSeconds(String interval) {
         MetricReader.TimeUnit timeunit = null;
 
@@ -142,7 +142,7 @@ public class PropagateTransform implements Transform {
         }
         return metrics;
     }
-    
+
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.PROPAGATE.name();

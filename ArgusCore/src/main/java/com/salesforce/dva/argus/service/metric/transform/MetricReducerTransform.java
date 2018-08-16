@@ -134,7 +134,7 @@ public class MetricReducerTransform implements Transform {
 		}
 		return reducedDatapoints;
 	}
-	
+
 	@Override
 	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
 		throw new UnsupportedOperationException("Metric Reducer Transform is not supposed to be used with a constant");

@@ -60,7 +60,7 @@ public class ScaleValueReducerOrMapping implements ValueReducerOrMapping {
         }
         return product;
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Scale Transform with mapping is not supposed to be used without a constant");

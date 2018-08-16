@@ -104,7 +104,7 @@ public class SortTransformWrapAboveAndBelow implements Transform {
         }
         return sortTransform.transform(metrics, constants);
     }
-    
+
     @Override
     public String getResultScopeName() {
         return TransformFactory.Function.SORT.name();

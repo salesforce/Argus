@@ -46,8 +46,7 @@ import java.util.Map;
  */
 public class DiffValueReducerOrMapping implements ValueReducerOrMapping {
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public Number reduce(List<Number> values) {

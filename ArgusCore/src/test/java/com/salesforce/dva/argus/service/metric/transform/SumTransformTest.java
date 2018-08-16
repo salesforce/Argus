@@ -109,7 +109,7 @@ public class SumTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSumTransformWithOneConstantAgainstMetricList() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());
@@ -217,7 +217,7 @@ public class SumTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testSumTransformWithNoConstantShareNoCommonDPs() {
         Transform sumTransform = new MetricReducerOrMappingTransform(new SumValueReducerOrMapping());

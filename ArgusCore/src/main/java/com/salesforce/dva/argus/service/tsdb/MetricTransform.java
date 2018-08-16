@@ -104,7 +104,7 @@ class MetricTransform {
     	}
 
     	Map<String, String> tags = mapper.readValue(node.get("tags").traverse(), new TypeReference<Map<String, String>>() { });
-    	
+    
     	Map<String, String> meta = fromMeta(tags.get(ReservedField.META.getKey()));
     	String tsdbMetricName = node.get("metric").asText();
 

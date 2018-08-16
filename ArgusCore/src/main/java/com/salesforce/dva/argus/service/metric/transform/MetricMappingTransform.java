@@ -98,7 +98,7 @@ public class MetricMappingTransform implements Transform {
         }
         return newMetricsList;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         return mapping(metrics, constants);
@@ -133,7 +133,7 @@ public class MetricMappingTransform implements Transform {
         }
         return cleanDPs;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Mapping doesn't need list of list!");

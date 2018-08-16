@@ -44,17 +44,15 @@ import java.util.Map.Entry;
 /**
  * Raj Sarkapally.
  *
- * @author Raj Sarkapally  (rsarkapally@salesforce.com)
+ * @author  Raj Sarkapally  (rsarkapally@salesforce.com)
  */
 public abstract class AbstractArithmeticTransform implements Transform {
 
-    // ~ Static fields/initializers
-    // *******************************************************************************************************************
+    //~ Static fields/initializers *******************************************************************************************************************
 
     private static final String RESULT_METRIC_NAME = "result";
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {

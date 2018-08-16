@@ -42,12 +42,11 @@ import java.util.Map;
  * This class is used to filter metrics whose evaluation result is below the
  * limit.
  *
- * @author Ruofan Zhang (rzhang@salesforce.com)
+ * @author  Ruofan Zhang (rzhang@salesforce.com)
  */
 public class BelowValueFilter implements ValueFilter {
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public List<Metric> filter(Map<Metric, String> extendedSortedMap, String limit) {

@@ -42,12 +42,11 @@ import java.util.Map;
 /**
  * Culls metrics that are below the average value.
  *
- * @author Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public class AverageBelowTransform implements Transform {
 
-    // ~ Methods
-    // **************************************************************************************************************************************
+    //~ Methods **************************************************************************************************************************************
 
     @Override
     public List<Metric> transform(List<Metric> metrics) {

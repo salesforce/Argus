@@ -127,7 +127,7 @@ public class RangeTransformWrap implements Transform {
         result.add(metric);
         return result;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");

@@ -127,4 +127,4 @@ public class PercentileValueReducerOrMapping implements ValueReducerOrMapping {
     }
 
 }
-/* Copyright (c) 2016, Salesforce.com, Inc. All rights reserved. */
+/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

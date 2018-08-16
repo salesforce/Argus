@@ -228,7 +228,7 @@ public class AlertServiceTest extends AbstractTest {
             assertEquals(expected, result);
         }
     }
-    
+
     @Test
     public void testDeleteAlert() throws IOException, TokenExpiredException {
         try(ArgusService argusService = new ArgusService(getMockedClient("/AlertServiceTest.json"))) {

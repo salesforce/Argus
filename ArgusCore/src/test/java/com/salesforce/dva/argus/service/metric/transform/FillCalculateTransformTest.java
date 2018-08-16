@@ -45,7 +45,7 @@ public class FillCalculateTransformTest {
     private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
     private static final Map<Long, Number> input = new HashMap<>();
-  
+
     static {
         input.put(1000L, 1.0);
         input.put(2000L, 2.0);
@@ -60,7 +60,7 @@ public class FillCalculateTransformTest {
     }
     
     private static final Map<Long, Number> inputPercentile = new HashMap<>();
-    
+
     static {
     	inputPercentile.put(1000L, 1.0);
     	inputPercentile.put(2000L, 2.0);
@@ -242,7 +242,7 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testMetricListWithAvg() {
         Transform fillCalculateTransform = new FillCalculateTransform();
@@ -277,7 +277,7 @@ public class FillCalculateTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 10);
         assertEquals(expected_1, result.get(0).getDatapoints());
     }
-    
+
     @Test(expected = UnsupportedOperationException.class)
     public void testMetricListWithDev() {
         Transform fillCalculateTransform = new FillCalculateTransform();

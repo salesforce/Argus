@@ -182,7 +182,7 @@ public class NormalizeTransformWrap implements Transform {
         public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
             throw new UnsupportedOperationException("Divide By Constant transform needs a constant!");
         }
-        
+
         @Override
         public String name() {
             return TransformFactory.Function.DIVIDE.name();

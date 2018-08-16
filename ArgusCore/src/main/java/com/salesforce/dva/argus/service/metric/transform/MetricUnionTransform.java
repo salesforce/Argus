@@ -118,7 +118,7 @@ public class MetricUnionTransform implements Transform {
         newMetric.addDatapoints(unionDatapoints);
         return Arrays.asList(newMetric);
     }
-   
+
     /**
      * Reduce transform for the list of metrics.
      *
@@ -147,7 +147,7 @@ public class MetricUnionTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
-    
+
     private Map<Long, List<Number>> collate(List<Metric> metrics) {
         Map<Long, List<Number>> collated = new HashMap<>();
 
@@ -173,7 +173,7 @@ public class MetricUnionTransform implements Transform {
         }
         return reducedDatapoints;
     }
-    
+
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Union transform can't be used with constants!");

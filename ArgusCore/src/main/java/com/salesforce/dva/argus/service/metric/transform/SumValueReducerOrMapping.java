@@ -53,7 +53,7 @@ public class SumValueReducerOrMapping implements ValueReducerOrMapping {
     public Number reduce(List<Number> values) {
         return Reducers.sumReducer(values);
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Sum Transform with mapping is not supposed to be used without a constant");

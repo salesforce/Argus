@@ -61,7 +61,7 @@ public class MovingValueMapping implements ValueMapping {
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints) {
         throw new UnsupportedOperationException("Moving Average Transform needs a window size of time interval");
     }
-    
+
     @Override
     public Map<Long, Number> mapping(Map<Long, Number> originalDatapoints, List<String> constants) {
         SystemAssert.requireArgument(constants != null && !constants.isEmpty(), 
