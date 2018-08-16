@@ -206,7 +206,7 @@ public class DownsampleTransform implements Transform {
 				startTime -= timeDrift;
 				endTime -= timeDrift;
 			}
-			windowStart = getWindowStartTime(startTime,windowUnit,windowSize);
+			windowStart = getWindowStartTime(startTime, windowUnit, windowSize);
 			List<Double> values = new ArrayList<>();
 			while(windowStart<endTime) {
 				long currWindowEndTime = windowStart + windowSize;
