@@ -152,14 +152,14 @@ public class NotifierTest extends AbstractTest {
 
         ArrayList<String> expectedOutput = new ArrayList<String> (Arrays.asList(
                 "1418318400000:1418319600000:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
-                "SCALE(SUM(DIVIDE(DIFF(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.01#,#value#),#union#),#10m-sum#),#union#),CULL_BELOW(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),#1000#,#value#)),#-1#),#-100#)",
-                "ABOVE(1418233200000:scope:metric:avg:4h-avg,#0.5#,#avg#)",
-                "ABOVE(1418316000000:scope:metric:avg:4h-avg,#0.5#)",
-                "ALIASBYTAG(1418319599000:scope:metric{device=*,source=*}:sum)",
+                "SCALE(SUM(DIVIDE(DIFF(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:1418319600000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:1418319600000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.01#,#value#),#union#),#10m-sum#),#union#),CULL_BELOW(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:1418319600000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),#1000#,#value#)),#-1#),#-100#)",
+                "ABOVE(1418233200000:1418319600000:scope:metric:avg:4h-avg,#0.5#,#avg#)",
+                "ABOVE(1418316000000:1418319600000:scope:metric:avg:4h-avg,#0.5#)",
+                "ALIASBYTAG(1418319599000:1418319600000:scope:metric{device=*,source=*}:sum)",
                 "FILL(#1418233200000#,#1418319600000#,#4h#,#0m#,#100#)",
                 "GROUPBY(1418146800000:1418233200000:scope:metricA{host=*}:avg,#(myhost[1-9])#,#SUM#,#union#)",
                 "LIMIT(1416505200000:1418233200000:scope:metricA:avg:4h-avg,1418233200000:scope:metricB:avg:4h-avg,#1#)",
-                "RANGE(1417455600000:scope:metric[ABCD]:avg:1d-max)",
+                "RANGE(1417455600000:1418319600000:scope:metric[ABCD]:avg:1d-max)",
                 "DOWNSAMPLE(DOWNSAMPLE(GROUPBYTAG(CULL_BELOW(1418312700000:1418318700000:iot-provisioning-server.PRD.SP2.-:health.status{device=provisioning-warden-*}:avg:1m-max,#1#,#value#),#DeploymentName#,#MAX#),#1m-max#),#10m-count#)",
                 "DOWNSAMPLE(CULL_BELOW(DERIVATIVE(1418312700000:1418318700000:iot-container.PRD.NONE.-:iot.flows.state.load.errors_count{flowsnakeEnvironmentName=iot-prd-stmfa-00ds70000000mqy}:zimsum:1m-sum),#0#,#value#),#10m-sum#)"
                 ));
@@ -179,7 +179,9 @@ public class NotifierTest extends AbstractTest {
         ArrayList<String> actualOutput = new ArrayList<String>();
         for (String currentExpression: expressionArray) {
             alert.setExpression(currentExpression);
-            actualOutput.add(system.getNotifierFactory().getGOCNotifier().getExpressionWithAbsoluteStartAndEndTimeStamps(context));
+            String currentOutput = system.getNotifierFactory().getGOCNotifier().getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+            actualOutput.add(currentOutput);
+            assertEquals(true, MetricReader.isValid(currentOutput));
         }
 
         assertEquals(expectedOutput, actualOutput);
