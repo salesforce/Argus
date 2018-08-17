@@ -121,7 +121,7 @@ public abstract class DefaultNotifier implements Notifier {
             while (m.find()) {
                 for (String timeStr: m.group().split(":")) {
                     Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
-                    expression = expression.replace(timeStr, ""  + absoluteTime);
+                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
                 }
             }
 
@@ -129,7 +129,7 @@ public abstract class DefaultNotifier implements Notifier {
             while (m.find()) {
                 for (String timeStr: m.group().substring(1,m.group().length()-1).split("#,#")) {
                     Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
-                    expression = expression.replace(timeStr, ""  + absoluteTime);
+                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
                 }
             }
 
@@ -141,7 +141,7 @@ public abstract class DefaultNotifier implements Notifier {
             }
             absoluteExpression = expression.substring(1);
         } catch (Exception ex) {
-             _logger.error("Exception occurred while converting expression to absolute time.", ex.getMessage());
+             _logger.error("Exception occurred while converting relative time within the expression to absolute time.", ex.getMessage());
         }
         return absoluteExpression;
     }
