@@ -43,6 +43,8 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -74,6 +76,7 @@ public abstract class DefaultNotifier implements Notifier {
 
     private final MetricService _metricService;
     private final AnnotationService _annotationService;
+    private final Logger _logger = LoggerFactory.getLogger(DefaultNotifier.class);
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -106,17 +109,41 @@ public abstract class DefaultNotifier implements Notifier {
     }
 
     public String getExpressionWithAbsoluteStartAndEndTimeStamps(NotificationContext context) {
+        String absoluteExpression = "";
+        try {
+            String expression = "@" + context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*", "");
+            String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
+            String regexMatcherWithStartAndEndFill = "(?i)#\\-[0-9]+(d|h|m|s)#,#\\-[0-9]+(d|h|m|s)#";
+            String regexMatcherWithoutEnd = "(?i)(\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
+            Long relativeTo = context.getAlertEnqueueTimestamp();
 
-        String expression = context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*","");
-        String regexMatcher = "(?i)(\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)|#\\-[0-9]+(d|h|m|s))";
-        Matcher m = Pattern.compile(regexMatcher).matcher(expression);
-        Long relativeTo = context.getAlertEnqueueTimestamp();
-        while (m.find()) {
-            String timeStr = m.group();
-            Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
-            expression = expression.replace(timeStr, (""+timeStr.charAt(0)) + absoluteTime);
+            Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
+            while (m.find()) {
+                for (String timeStr: m.group().split(":")) {
+                    Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
+                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
+                }
+            }
+
+            m = Pattern.compile(regexMatcherWithStartAndEndFill).matcher(expression);
+            while (m.find()) {
+                for (String timeStr: m.group().substring(1,m.group().length()-1).split("#,#")) {
+                    Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
+                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
+                }
+            }
+
+            m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
+            while (m.find()) {
+                String timeStr = m.group();
+                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
+                expression = expression.replace(timeStr, ("" + timeStr.charAt(0)) + absoluteTime + (":" + relativeTo));
+            }
+            absoluteExpression = expression.substring(1);
+        } catch (Exception ex) {
+             _logger.error("Exception occurred while converting relative time within the expression to absolute time.", ex.getMessage());
         }
-        return expression;
+        return absoluteExpression;
     }
 
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
@@ -250,7 +277,7 @@ public abstract class DefaultNotifier implements Notifier {
      * @param  context  The notification context.  Cannot be null.
      */
     protected abstract void clearAdditionalNotification(NotificationContext context);
-    
+
     @Override
     public Properties getNotifierProperties(){
         return new Properties();

@@ -174,7 +174,12 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayedName(context, context.getTrigger().getName())));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-        sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+
+        if(!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+        else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+        if(!expression.equals("")) {
+        	    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+        }
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
         }
@@ -182,7 +187,6 @@ public class EmailNotifier extends AuditNotifier {
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
-        sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
 
         sb.append("<p>");
         for (String metricToAnnotate : notification.getMetricsToAnnotate()) {
@@ -190,7 +194,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(getMetricUrl(metricToAnnotate, context.getTriggerFiredTime()));
             sb.append("'>Click here to view the annotated series for ").append(metricToAnnotate).append(".</a><br/>");
         }
-        sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>click here to view the evaluated metric data.</a><br/>");
+        
         sb.append("<p><a href='").append(getAlertUrl(notification.getAlert().getId())).append("'>Click here to view alert definition.</a><br/>");
         sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
         sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
