@@ -113,8 +113,8 @@ public abstract class DefaultNotifier implements Notifier {
         try {
             String expression = "@" + context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*", "");
             String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
-            String regexMatcherWithStartAndEndFill = "(?i)FILL\\(#\\-[0-9]+(d|h|m|s)#,#\\-[0-9]+(d|h|m|s)#";
-            String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|:\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
+            String regexMatcherWithConstants = "(?i)#\\-[0-9]+(d|h|m|s)";
+            String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
             Long relativeTo = context.getAlertEnqueueTimestamp();
 
             Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
@@ -125,12 +125,11 @@ public abstract class DefaultNotifier implements Notifier {
                 }
             }
 
-            m = Pattern.compile(regexMatcherWithStartAndEndFill).matcher(expression);
+            m = Pattern.compile(regexMatcherWithConstants).matcher(expression);
             while (m.find()) {
-                for (String timeStr: m.group().substring(6,m.group().length()-1).split("#,#")) {
-                    Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
-                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
-                }
+                String timeStr = m.group();
+                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
+                expression = expression.replaceFirst(timeStr, ("" + timeStr.charAt(0)) + absoluteTime);
             }
 
             m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
