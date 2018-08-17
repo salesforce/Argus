@@ -160,7 +160,10 @@ public class AuditNotifier extends DefaultNotifier {
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
 		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
-
+		if(!expression.equals("")) {
+			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+		}
+		
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 		}
@@ -168,7 +171,7 @@ public class AuditNotifier extends DefaultNotifier {
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
 		}
-		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
+
 		sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
 		sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
 		sb.append("for the time series data to be updated such that the alert condition is no longer met.  This may be avoided by ");
