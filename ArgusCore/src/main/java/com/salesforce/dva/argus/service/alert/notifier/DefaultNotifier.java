@@ -40,8 +40,11 @@ import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -73,6 +76,7 @@ public abstract class DefaultNotifier implements Notifier {
 
     private final MetricService _metricService;
     private final AnnotationService _annotationService;
+    private final Logger _logger = LoggerFactory.getLogger(DefaultNotifier.class);
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -104,6 +108,44 @@ public abstract class DefaultNotifier implements Notifier {
         _dispose();
     }
 
+    public String getExpressionWithAbsoluteStartAndEndTimeStamps(NotificationContext context) {
+        String absoluteExpression = "";
+        try {
+            String expression = "@" + context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*", "");
+            String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
+            String regexMatcherWithConstants = "(?i)#\\-[0-9]+(d|h|m|s)";
+            String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
+            Long relativeTo = context.getAlertEnqueueTimestamp();
+
+            Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
+            while (m.find()) {
+                for (String timeStr: m.group().split(":")) {
+                    Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
+                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
+                }
+            }
+
+            m = Pattern.compile(regexMatcherWithConstants).matcher(expression);
+            while (m.find()) {
+                String timeStr = m.group();
+                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
+                expression = expression.replaceFirst(timeStr, ("" + timeStr.charAt(0)) + absoluteTime);
+            }
+
+            m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
+            while (m.find()) {
+                String timeStr = m.group();
+                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
+                expression = expression.replace(timeStr, ("" + timeStr.charAt(0)) + absoluteTime + (":" + relativeTo));
+            }
+            absoluteExpression = expression.substring(1);
+        } catch (Exception ex) {
+             _logger.error("Exception occurred while converting relative time within the expression to absolute time.", ex.getMessage());
+        }
+
+        return absoluteExpression;
+    }
+
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
         Map<String, String> lowerCaseTagMap = new HashMap<>();
         for (String originalTags: tags.keySet()) {
@@ -112,7 +154,7 @@ public abstract class DefaultNotifier implements Notifier {
         return lowerCaseTagMap;
     }
 
-    public String replaceTemplatesInTriggerName(String triggerName, String scope, String metric,  Map<String, String> tags) {
+    public String replaceTemplatesInName(String triggerName, String scope, String metric,  Map<String, String> tags) {
         triggerName = triggerName.replaceAll("(?i)\\$\\{scope\\}", scope);
         triggerName = triggerName.replaceAll("(?i)\\$\\{metric\\}", metric);
         Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
@@ -130,12 +172,11 @@ public abstract class DefaultNotifier implements Notifier {
      * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
      * If no matches are found, nothing is done. Should be a protected function, making public for unit testing.
      * */
-    protected String getDisplayTriggerName(NotificationContext context) {
-        String triggerName = context.getTrigger().getName();
+    protected String getDisplayedName(NotificationContext context, String templatedString) {
         Metric triggeredMetric = context.getTriggeredMetric();
         String scope = triggeredMetric.getScope(), metric = triggeredMetric.getMetric();
         Map<String, String> tags = triggeredMetric.getTags();
-        return replaceTemplatesInTriggerName(triggerName, scope, metric, tags);
+        return replaceTemplatesInName(templatedString, scope, metric, tags);
     }
 
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {
@@ -236,7 +277,7 @@ public abstract class DefaultNotifier implements Notifier {
      * @param  context  The notification context.  Cannot be null.
      */
     protected abstract void clearAdditionalNotification(NotificationContext context);
-    
+
     @Override
     public Properties getNotifierProperties(){
         return new Properties();

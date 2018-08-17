@@ -443,8 +443,8 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("0");
-        constants.add("60000");
+        constants.add("1000");
+        constants.add("3000");
         constants.add("1s");
         constants.add("1s");
         constants.add("100.0");
@@ -452,12 +452,14 @@ public class FillTransformTest {
         constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        for(long key = 0; key <= 60000; key += 1000) expected.put(key+1000, 100.0);
 
+        expected.put(2000L, 100.0);
+        expected.put(3000L, 100.0);
+        expected.put(4000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(expected.size(), result.get(0).getDatapoints().size());
+        assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -466,8 +468,8 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("60000");
-        constants.add("180000");
+        constants.add("1000");
+        constants.add("3000");
         constants.add("2s");
         constants.add("-1s");
         constants.add("100.0");
@@ -475,11 +477,13 @@ public class FillTransformTest {
         constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        for(long key = 60000; key <= 180000; key += 2000) expected.put(key-1000, 100.0);
+
+        expected.put(-1000L, 100.0);
+        expected.put(1000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(expected.size(), result.get(0).getDatapoints().size());
+        assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -488,8 +492,8 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("60000");
-        constants.add("180000");
+        constants.add("1000");
+        constants.add("3000");
         constants.add("3s");
         constants.add("-1s");
         constants.add("100.0");
@@ -497,58 +501,36 @@ public class FillTransformTest {
         constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        for(long key = 60000; key <= 180000; key += 3000) expected.put(key-1000, 100.0);
 
+        expected.put(-1000L, 100.0);
+        expected.put(2000L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(expected.size(), result.get(0).getDatapoints().size());
+        assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
     @Test
-    public void testFillLineWhenIntervalIsMultipleOfWindowSize() {
+    public void testFillLineWithFillRangeZeroAfterSnappingOffsetZero() {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("0");
-        constants.add("115020000");
-        constants.add("10s");
+        constants.add("1000");
+        constants.add("3000");
+        constants.add("4s");
         constants.add("0s");
-        constants.add("1.0");
-        constants.add(String.valueOf(0));
-        constants.add("true");
-
-        Map<Long, Double> expected = new HashMap<Long, Double>();
-
-        for (long key = 0; key <= 115020000; key+= 10000) expected.put(key,1.0);
-
-        List<Metric> result = fillTransform.transform(null, constants);
-
-        assertEquals(expected.size(), result.get(0).getDatapoints().size());
-        assertEquals(expected, result.get(0).getDatapoints());
-    }
-
-    @Test
-    public void testFillLineRoundingToCurrentMinute() {
-        Transform fillTransform = new FillTransform();
-        List<String> constants = new ArrayList<String>();
-
-        constants.add("60432");
-        constants.add("180528");
-        constants.add("10s");
-        constants.add("0s");
-        constants.add("1.0");
+        constants.add("100.0");
         constants.add(String.valueOf(System.currentTimeMillis()));
         constants.add("true");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
-        for (long key = 60000; key <= 180000L; key+= 10000) expected.put(key,1.0);
+        expected.put(0L, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(expected.size(), result.get(0).getDatapoints().size());
+        assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
