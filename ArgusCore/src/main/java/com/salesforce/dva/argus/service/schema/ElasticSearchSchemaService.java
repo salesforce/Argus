@@ -765,7 +765,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 					for(Item item: updateResponse.items) {
 						if(item.update != null && item.update.status != HttpStatus.SC_OK) {
-							_logger.debug("Failed to update mts field for metric {}. Reason: {}",msrList.getRecord(item.update._id),
+							_logger.warn("Failed to update mts field for metric {}. Reason: {}",msrList.getRecord(item.update._id),
 									new ObjectMapper().writeValueAsString(item.update.error));
 							recordsToRemove.add(msrList.getRecord(item.update._id));
 						}
