@@ -165,8 +165,11 @@ public class GusNotifier extends AuditNotifier {
 			sb.append(MessageFormat.format("Triggered by:  {0}\n", getDisplayedName(context, trigger.getName())));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", expression));
-		else sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+		if(!expression.equals("")) {
+			sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
+		}	else {
+			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
+		}
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
@@ -180,7 +183,6 @@ public class GusNotifier extends AuditNotifier {
 					getMetricUrl(metricToAnnotate, context.getTriggerFiredTime())));
 		}
 		sb.append("\n");
-		if(!expression.equals("")) sb.append(MessageFormat.format("Evaluated Metric datapoints:  {0}\n", getExpressionUrl(expression)));
 		sb.append(MessageFormat.format("Alert definition:  {0}\n", getAlertUrl(notification.getAlert().getId())));
 		return sb.toString();
 	}
