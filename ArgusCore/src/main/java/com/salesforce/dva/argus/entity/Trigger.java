@@ -41,7 +41,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -165,6 +171,7 @@ public class Trigger extends JPAEntity implements Serializable {
     private Double secondaryThreshold;
     
     private Long inertia;
+    private final Logger _logger = LoggerFactory.getLogger(Trigger.class);
     
     @ManyToOne(optional = false)
     @JoinColumn(nullable = false, name = "alert_id")
@@ -362,6 +369,9 @@ public class Trigger extends JPAEntity implements Serializable {
      */
     public void setInertia(Long inertiaMillis) {
         requireArgument(inertiaMillis != null && inertiaMillis >= 0, "Inertia cannot be negative.");
+        Long longestIntervalLength = getMaximumIntervalLength(this.alert.getExpression());
+        if (inertiaMillis > longestIntervalLength)
+            throw new IllegalArgumentException(String.format("Inertia %d cannot be more than width of the longest interval %d.",inertiaMillis, longestIntervalLength));
         this.inertia = inertiaMillis;
     }
 
@@ -479,6 +489,42 @@ public class Trigger extends JPAEntity implements Serializable {
             return this.toString();
         }
 
+    }
+
+    private Long getMaximumIntervalLength(String expression) {
+        expression = "@" + expression.replaceAll("[\\s\\t\\r\\n\\f]*", "");
+        String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
+        String regexMatcherWithFILL = "(?i)FILL\\(#\\-[0-9]+(d|h|m|s),#\\-[0-9]+(d|h|m|s)";
+        String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
+        Long relativeTo = System.currentTimeMillis(), longestLength = 0L;
+        try {
+            Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
+            while (m.find()) {
+                String[] times = m.group().split(":");
+                Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
+                longestLength = Math.max(currentLength, longestLength);
+                expression = expression.replaceAll(m.group(),"");
+            }
+
+            m = Pattern.compile(regexMatcherWithFILL).matcher(expression);
+            while (m.find()) {
+                String[] times = m.group().substring(6, m.group().length() - 1).split("#,#");
+                Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
+                longestLength = Math.max(currentLength, longestLength);
+                expression = expression.replaceAll(m.group(),"");
+            }
+
+            m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
+            while (m.find()) {
+                String timeStr = m.group();
+                Long currentLength = relativeTo - MetricReader.getTime(relativeTo, timeStr.substring(1));
+                longestLength = Math.max(currentLength, longestLength);
+            }
+        } catch (Exception ex) {
+            this._logger.error("Exception occurred while calculating the maximum time interval.", ex.getMessage());
+        }
+
+        return longestLength;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
