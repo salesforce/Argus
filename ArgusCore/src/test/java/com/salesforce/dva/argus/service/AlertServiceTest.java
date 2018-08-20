@@ -1050,6 +1050,25 @@ public class AlertServiceTest extends AbstractTest {
 				.countUserAlerts().setPrincipalUser(user).build();
 		assertFalse(privateCtx3.isCountPrivateAlerts());
 	}
-	
+
+	@Test
+	public void testTriggerInertiaSetting() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
+				"ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
+				"LIMIT( -21d:-1d:scope:metricA:avg:4h-avg, -1d:scope:metricB:avg:4h-avg,#1#)",
+				"-20m:-0d:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+				"DOWNSAMPLE(-2d:alerts.scheduled:alert-1429851:zimsum, #5m-sum#,#-2d#, #-0m#, #0#)"
+		));
+		for (String currentExpression: expressionArray) {
+			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", currentExpression, "* * * * *");
+			try {
+				Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 120000);
+			} catch (IllegalArgumentException ex) {
+				fail("Should not failed in the test for inertia setting.");
+			}
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
