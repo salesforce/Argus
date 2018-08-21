@@ -43,7 +43,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,7 +54,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntUnaryOperator;
 
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
@@ -83,7 +81,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -112,17 +109,13 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	private final ObjectMapper _mapper;
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
 
-	private final String[] _writeEndpoints;
+	private final String _writeEndpoint;
 	protected final CloseableHttpClient _writeHttpClient;
 
 	protected final List<String> _readEndPoints;
 	protected final List<String> _readBackupEndPoints;
 	protected final Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
 	protected final Map<String, String> _readBackupEndPointsMap = new HashMap<>();
-
-	/** Round robin iterator for write endpoints. 
-	 * We will cycle through this iterator to select an endpoint from the set of available endpoints  */
-	private final Iterator<String> _roundRobinIterator;
 
 	protected final ExecutorService _executorService;
 	protected final MonitorService _monitorService;
@@ -168,14 +161,10 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				_readBackupEndPoints.add("");
 		}
 
-		_writeEndpoints = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue()).split(",");
-		requireArgument(_writeEndpoints.length > 0, "At least one TSD write endpoint required");
+		_writeEndpoint = config.getValue(Property.TSD_ENDPOINT_WRITE.getName(), Property.TSD_ENDPOINT_WRITE.getDefaultValue());
+		requireArgument((_writeEndpoint != null) && (!_writeEndpoint.isEmpty()), "Illegal write endpoint URL.");
 		RETRY_COUNT = Integer.parseInt(config.getValue(Property.TSD_RETRY_COUNT.getName(),
 				Property.TSD_RETRY_COUNT.getDefaultValue()));
-
-		for(String writeEndpoint : _writeEndpoints) {
-			requireArgument((writeEndpoint != null) && (!writeEndpoint.isEmpty()), "Illegal write endpoint URL.");
-		}
 
 		requireArgument(connCount >= 2, "At least two connections are required.");
 		requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
@@ -192,9 +181,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, readBackupEndpoint));
 			}
 
-			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
+			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoint);
 
-			_roundRobinIterator = constructCyclingIterator(_writeEndpoints);
 			_executorService = Executors.newFixedThreadPool(connCount);
 		} catch (MalformedURLException ex) {
 			throw new SystemException("Error initializing the TSDB HTTP Client.", ex);
@@ -203,46 +191,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	//~ Methods **************************************************************************************************************************************
-
-	Iterator<String> constructCyclingIterator(String[] endpoints) {
-		// Return repeating, non-blocking iterator if single element
-		if (endpoints.length == 1) {
-			return new Iterator<String>() {
-				String item = endpoints[0];
-
-				@Override
-				public boolean hasNext() {
-					return true;
-				}
-
-				@Override
-				public String next() {
-					return item;
-				}
-			};
-		}
-		return new Iterator<String>() {
-			AtomicInteger index = new AtomicInteger(0);
-			List<String> items = Arrays.asList(endpoints);
-			IntUnaryOperator updater = (operand) -> {
-				if (operand == items.size() - 1) {
-					return 0;
-				} else {
-					return operand + 1;
-				}
-			};
-
-			@Override
-			public boolean hasNext() {
-				return true;
-			}
-
-			@Override
-			public String next() {
-				return items.get(index.getAndUpdate(updater));
-			}
-		};
-	}
 
 	/* Generates the metric names for metrics used for annotations. */
 	static String toAnnotationKey(String scope, String metric, String type, Map<String, String> tags) {
@@ -344,8 +292,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireArgument(TSDB_DATAPOINTS_WRITE_MAX_SIZE > 0, "Max Chunk size can not be less than 1");
 		requireArgument(metrics != null, "Metrics can not be null");
 
-		String endpoint = _roundRobinIterator.next();
-		_logger.debug("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), endpoint);
+		_logger.debug("Pushing {} metrics to TSDB using endpoint {}.", metrics.size(), _writeEndpoint);
 
 		List<Metric> fracturedList = new ArrayList<>();
 
@@ -358,17 +305,16 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		try {
-			put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
+			put(fracturedList, _writeEndpoint + "/api/put", HttpMethod.POST);
 		} catch(IOException ex) {
 			_logger.warn("IOException while trying to push metrics", ex);
-			_retry(fracturedList, _roundRobinIterator);
+			_retry(fracturedList, _writeEndpoint);
 		}
 	}
 
-	public <T> void _retry(List<T> objects, Iterator<String> endPointIterator) {
+	public <T> void _retry(List<T> objects, String endpoint) {
 		for(int i=0;i<RETRY_COUNT;i++) {
 			try {
-				String endpoint = endPointIterator.next();
 				_logger.info("Retrying using endpoint {}.", endpoint);
 				put(objects, endpoint + "/api/put", HttpMethod.POST);
 				return;
@@ -387,13 +333,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireNotDisposed();
 		if (annotations != null) {
 			List<AnnotationWrapper> wrappers = reconcileWrappers(toAnnotationWrappers(annotations));
-			String endpoint = _roundRobinIterator.next();
 
 			try {
-				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
+				put(wrappers, _writeEndpoint + "/api/annotation/bulk", HttpMethod.POST);
 			} catch(IOException ex) {
 				_logger.warn("IOException while trying to push annotations", ex);
-				_retry(wrappers, _roundRobinIterator);
+				_retry(wrappers, _writeEndpoint);
 			}
 		}
 	}
@@ -664,7 +609,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		/** The TSDB read endpoint. */
 		TSD_ENDPOINT_READ("service.property.tsdb.endpoint.read", "http://localhost:4466,http://localhost:4467"),
 		/** The TSDB write endpoint. */
-		TSD_ENDPOINT_WRITE("service.property.tsdb.endpoint.write", "http://localhost:4477,http://localhost:4488"),
+		TSD_ENDPOINT_WRITE("service.property.tsdb.endpoint.write", "http://argusdev-tsdb.data.sfdc.net:4466"),
 		/** The TSDB connection timeout. */
 		TSD_ENDPOINT_CONNECTION_TIMEOUT("service.property.tsdb.endpoint.connection.timeout", "10000"),
 		/** The TSDB socket connection timeout. */
