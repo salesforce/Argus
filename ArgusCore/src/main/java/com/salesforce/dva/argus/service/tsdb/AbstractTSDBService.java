@@ -609,7 +609,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		/** The TSDB read endpoint. */
 		TSD_ENDPOINT_READ("service.property.tsdb.endpoint.read", "http://localhost:4466,http://localhost:4467"),
 		/** The TSDB write endpoint. */
-		TSD_ENDPOINT_WRITE("service.property.tsdb.endpoint.write", "http://argusdev-tsdb.data.sfdc.net:4466"),
+		TSD_ENDPOINT_WRITE("service.property.tsdb.endpoint.write", "http://localhost:4477"),
 		/** The TSDB connection timeout. */
 		TSD_ENDPOINT_CONNECTION_TIMEOUT("service.property.tsdb.endpoint.connection.timeout", "10000"),
 		/** The TSDB socket connection timeout. */
