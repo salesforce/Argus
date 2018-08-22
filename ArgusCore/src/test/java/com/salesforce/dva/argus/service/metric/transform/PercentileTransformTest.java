@@ -110,21 +110,6 @@ public class PercentileTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
-    @Test (expected = UnsupportedOperationException.class)
-    public void testPercentileTransformLongDataValues() {
-    	Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
-    	Map<Long, Number> datapoints = new HashMap<Long, Number>();
-    	datapoints.put(1000L, 14L);
-    	datapoints.put(2000L, 39);
-    	
-    	Metric m = new Metric(TEST_SCOPE, TEST_METRIC);
-    	m.setDatapoints(datapoints);
-    	
-    	List<Metric> metrics = Arrays.asList(m);
-    	List<String> constants = Arrays.asList("14");
-    	percentileTransform.transform(metrics, constants);
-    }
 
     @Test (expected = UnsupportedOperationException.class)
     public void testPercentileTransformLongDataValues() {

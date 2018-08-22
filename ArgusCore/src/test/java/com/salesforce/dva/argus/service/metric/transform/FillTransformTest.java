@@ -504,9 +504,7 @@ public class FillTransformTest {
         constants.add("true");
 
         Map<Long, Number> expected = new HashMap<Long, Number>();
-
-        expected.put(-1000L, 100.0);
-        expected.put(2000L, 100.0);
+        for(long key = 60000; key <= 180000; key += 3000) expected.put(key-1000, 100.0);
 
         List<Metric> result = fillTransform.transform(null, constants);
 

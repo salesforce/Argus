@@ -147,30 +147,6 @@ public class DeviationTransformTest {
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
-    @Test (expected = UnsupportedOperationException.class)
-    public void testDevTransformWithLongOneMetricWithNumLessThanRangeUnderTolerance() {
-        Transform devTransform = new MetricReducerOrMappingWithConstantTransform(new DeviationValueReducerOrMapping());
-        Map<Long, Number> datapoints = new HashMap<Long, Number>();
-
-        datapoints.put(1000L, 6.0);
-        datapoints.put(2000L, 6L);
-
-        Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
-
-        metric.setDatapoints(datapoints);
-
-        List<Metric> metrics = new ArrayList<Metric>();
-
-        metrics.add(metric);
-
-        List<String> constants = new ArrayList<String>();
-
-        constants.add("0.99");
-        constants.add("3");
-
-        devTransform.transform(metrics, constants);
-    }
 
     @Test (expected = UnsupportedOperationException.class)
     public void testDevTransformWithLongOneMetricWithNumLessThanRangeUnderTolerance() {

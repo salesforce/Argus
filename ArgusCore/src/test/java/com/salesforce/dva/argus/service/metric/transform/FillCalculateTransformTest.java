@@ -45,11 +45,7 @@ public class FillCalculateTransformTest {
     private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
     private static final Map<Long, Number> input = new HashMap<>();
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> f03d0b4b2919bcc6e94d57574cea2a4627b4ba76
     static {
         input.put(1000L, 1.0);
         input.put(2000L, 2.0);
@@ -64,11 +60,7 @@ public class FillCalculateTransformTest {
     }
     
     private static final Map<Long, Number> inputPercentile = new HashMap<>();
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> f03d0b4b2919bcc6e94d57574cea2a4627b4ba76
     static {
     	inputPercentile.put(1000L, 1.0);
     	inputPercentile.put(2000L, 2.0);
