@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
+import com.salesforce.dva.argus.util.AlertUtils;
 
 import java.sql.Date;
 import java.text.MessageFormat;
@@ -167,7 +168,7 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(getDisplayedName(context, customText)).append("<br/>");
         }
         Alert currentAlert = notification.getAlert();
-        String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+        String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         if(currentAlert.getNotifications().size() > 1)
             sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", getDisplayedName(context, notification.getName())));
         if(currentAlert.getTriggers().size() > 1)
