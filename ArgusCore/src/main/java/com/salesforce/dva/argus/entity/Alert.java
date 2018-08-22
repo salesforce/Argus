@@ -162,7 +162,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 			@NamedQuery(
 					name = "Alert.countByOwnerWithSearchText",
 					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
-							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countSharedAlerts",
@@ -171,7 +171,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 			@NamedQuery(
 					name = "Alert.countSharedAlertsWithSearchText",
 					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) "
-							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
@@ -180,7 +180,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText",
 					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
-							+ "AND (a.name LIKE :searchtext OR a.owner.userName LIKE :searchtext)"
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
 					),
 		}
 		)
@@ -354,7 +354,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countByOwner", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countByOwnerWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText + "%");
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -685,7 +685,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countSharedAlerts", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countSharedAlertsWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText + "%");
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -844,7 +844,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUser", Long.class);
 			} else {
 				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUserWithSearchText", Long.class);
-				query.setParameter(SEARCHTEXT_KEY, "%" + searchText + "%");
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
 			}
 
 			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
@@ -916,12 +916,14 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 		}
 		
-		// Filter on alert name and owner name if not empty
+		// Filter on alert name and owner name if not empty. All values are
+		// normalized to lower case for case insensitive search.
 		if (searchText != null && !searchText.isEmpty()) {
-			String searchPattern = "%" + searchText + "%";
+			String searchPattern = "%" + searchText.toLowerCase() + "%";
 			Expression<String> alertName = e.get("name");
 			Expression<String> ownerName = e.join("owner").get("userName");
-			predicates.add(cb.or(cb.like(alertName, searchPattern), cb.like(ownerName, searchPattern)));
+			predicates.add(cb.or(cb.like(cb.function("LOWER", String.class, alertName), searchPattern),
+					cb.like(cb.function("LOWER", String.class, ownerName), searchPattern)));
 		}
 		
 		if (predicates.size() > 0) {
