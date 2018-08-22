@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
 import org.joda.time.DateTimeConstants;
 import java.math.BigInteger;
 import java.net.URLEncoder;
@@ -130,7 +131,7 @@ public class AuditNotifier extends DefaultNotifier {
 						DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime())));
 		Notification notification = null;
 		Trigger trigger = null;
-		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 
 		for (Notification tempNotification : context.getAlert().getNotifications()) {
 			if (tempNotification.getName().equalsIgnoreCase(context.getNotification().getName())) {
