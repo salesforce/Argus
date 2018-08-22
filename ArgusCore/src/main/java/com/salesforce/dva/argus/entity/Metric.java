@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Objects;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 
@@ -247,6 +248,25 @@ public class Metric extends TSDBEntity implements Serializable {
 		}
 	}
 
+	public double addIfNotExistsDatapoints(Map<Long, Double> datapoints) {
+
+		double deduped = 0;
+
+		if (datapoints != null) {
+
+			for(Entry<Long, Double> entry : datapoints.entrySet()){
+
+				if(!_datapoints.containsKey(entry.getKey())) {
+					_datapoints.put(entry.getKey(), entry.getValue());
+				} else {
+					deduped++;
+				}
+			}
+		}
+
+		return deduped;
+	}
+
 	/**
 	 * Sets the display name for the metric.
 	 *
@@ -299,6 +319,100 @@ public class Metric extends TSDBEntity implements Serializable {
 	 */
 	public MetricQuery getQuery() {
 		return _query;
+	}
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+
+		String scope = getScope();
+		String metric = getMetric();
+
+		result = prime * result + ((_namespace == null) ? 0 : _namespace.hashCode());
+		result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+		result = prime * result + ((metric == null) ? 0 : metric.hashCode());
+
+		Map<String, String> sortedTags = new TreeMap<>();
+		sortedTags.putAll(getTags());
+
+		if(!sortedTags.isEmpty()) {
+			for (String tagKey : sortedTags.keySet()) {
+
+				String tagValue = sortedTags.get(tagKey);
+				result = prime * result + ((tagKey == null) ? 0 : tagKey.hashCode());
+				result = prime * result + ((tagValue == null) ? 0 : tagValue.hashCode());
+			}
+		}
+
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+
+		if (this == obj) {
+			return true;
+		}
+
+		if (obj == null) {
+			return false;
+		}
+
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+
+		Metric other = (Metric) obj;
+
+		if (!Objects.equal(_namespace, other.getNamespace())) {
+				return false;
+		}
+
+		if (!Objects.equal(getScope(), other.getScope())) {
+			return false;
+		}
+
+		if (!Objects.equal(getMetric(), other.getMetric())) {
+			return false;
+		}
+
+		Map<String, String> sortedTags = new TreeMap<>();
+		sortedTags.putAll(getTags());
+
+		Map<String, String> otherSortedTags = new TreeMap<>();
+		otherSortedTags.putAll(other.getTags());
+
+		for (String tagKey : sortedTags.keySet()) {
+
+			String tagValue = sortedTags.get(tagKey);
+
+			if(otherSortedTags.containsKey(tagKey)) {
+				if (!Objects.equal(tagValue, otherSortedTags.get(tagKey))) {
+					return false;
+				}
+			}
+			else {
+				return false;
+			}
+		}
+
+		for (String otherTagKey : otherSortedTags.keySet()) {
+
+			String otherTagValue = otherSortedTags.get(otherTagKey);
+
+			if(sortedTags.containsKey(otherTagKey)) {
+				if (!Objects.equal(otherTagValue, sortedTags.get(otherTagKey))) {
+					return false;
+				}
+			}
+			else {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	@Override
