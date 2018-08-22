@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.salesforce.dva.argus.service.metric.MetricReader;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
@@ -61,7 +62,7 @@ public class NotifierTest extends AbstractTest {
     public void testDBNotifier() {
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
-        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Notification notification = new Notification("notification_name", alert, "notifier_ame", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", NumberOperations.bd(2D), 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
@@ -102,7 +103,32 @@ public class NotifierTest extends AbstractTest {
         Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GOC);
         notifier.sendNotification(context);
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", context.getTrigger().getName());
-        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}-val2", system.getNotifierFactory().getGOCNotifier().replaceTemplatesInTriggerName(context.getTrigger().getName(), "scope", "metric", tags));
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${tag3}-val2", system.getNotifierFactory().getGOCNotifier().replaceTemplatesInName(context.getTrigger().getName(), "scope", "metric", tags));
+
+
+    }
+
+    @Test
+    public void testTemplateNaming() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${TAg3}-${tAg2}", expression, "* * * * *");
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+
+        Metric m = new Metric("scope", "metric");
+        Map<String, String> tags = new HashMap<>();
+        tags.put("tag1","val1");
+        tags.put("tag2", "val2");
+        m.setTags(tags);
+        NotificationContext context = new NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
+        Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(SupportedNotifier.GOC);
+        notifier.sendNotification(context);
+        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${TAg3}-${tAg2}", context.getAlert().getName());
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-${TAg3}-val2", system.getNotifierFactory().getGOCNotifier().replaceTemplatesInName(context.getAlert().getName(), "scope", "metric", tags));
 
 
     }
@@ -112,6 +138,8 @@ public class NotifierTest extends AbstractTest {
 
         Long alertEnqueueTime = 1418319600000L;
         ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
+                "-20m:-0d:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+                "  SCALE( SUM( DIVIDE( DIFF( DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE(                   -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.001#, #value# ), #union# ), #10m-sum# ), DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE(                   -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.01#, #value# ), #union# ), #10m-sum# ), #union# ), CULL_BELOW( DOWNSAMPLE( SUM( CULL_BELOW( DERIVATIVE( -40m:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max ), #0.001#, #value# ), #union# ), #10m-sum# ), #1000#, #value# ) ), #-1# ), #-100# ) ",
                 "ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
                 "ABOVE(-1h:scope:metric:avg:4h-avg, #0.5#)",
                 "ALIASBYTAG(-1s:scope:metric{device=*,source=*}:sum)",
@@ -124,6 +152,8 @@ public class NotifierTest extends AbstractTest {
         ));
 
         ArrayList<String> expectedOutput = new ArrayList<String> (Arrays.asList(
+                "1418318400000:1418319600000:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+                "SCALE(SUM(DIVIDE(DIFF(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Search_Fallbacks__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.01#,#value#),#union#),#10m-sum#),#union#),CULL_BELOW(DOWNSAMPLE(SUM(CULL_BELOW(DERIVATIVE(1418317200000:core.*.*.na63:SFDC_type-Stats-name1-Search-name2-Client-name3-Query_Count__SolrLive.Count{device=na63-app*}:sum:1m-max),#0.001#,#value#),#union#),#10m-sum#),#1000#,#value#)),#-1#),#-100#)",
                 "ABOVE(1418233200000:scope:metric:avg:4h-avg,#0.5#,#avg#)",
                 "ABOVE(1418316000000:scope:metric:avg:4h-avg,#0.5#)",
                 "ALIASBYTAG(1418319599000:scope:metric{device=*,source=*}:sum)",

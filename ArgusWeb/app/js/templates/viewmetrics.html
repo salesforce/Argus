@@ -20,6 +20,36 @@
             <input type="checkbox" ng-model="includeAnnotations">
             Include annotations related to the metric
         </label>
+        <div class="max-dp-options">
+	        <label class="checkbox-inline">
+	        	<input type="checkbox" ng-model="useMaxDatapoints">
+	        	Filter each metric to a maximum number of datapoints
+	        </label>
+	        <label class="number-inline">
+	        	<input type="number" ng-model="maxDatapointNumber">
+	        	Max number datapoints to show
+	        </label>
+	        <label class="number-inline">
+	        	<input type="text" ng-model="maxDatapointMinWindow">
+	        	Auto min interval window
+	        </label>
+	        <label class="text-inline">
+	        	<select ng-model="maxDatapointAlg">
+	        		<option selected="selected">avg</option>
+	        		<option>max</option>
+	        		<option>min</option>
+	        		<option>nth</option>
+	        		<option>median</option>
+	        		<option>sample</option>
+	        		<option>sum</option>
+	        		<option>zimsum</option>
+	        		<option>count</option>
+	        		<option>percentile</option>
+	        		<option>dev</option>
+	        	</select>
+	        	Filtering algorithm
+	        </label>
+	   </div>
     </div>
 
     <div id="discoveryLookup" ng-show="showMetricDiscovery">

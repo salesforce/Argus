@@ -495,7 +495,7 @@ public class Sum_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testSum_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new SumValueZipper());

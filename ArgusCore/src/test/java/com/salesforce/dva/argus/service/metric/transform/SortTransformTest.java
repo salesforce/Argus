@@ -511,6 +511,31 @@ public class SortTransformTest {
         sortTransform.transform(metrics, constants);
     }
 
+    @Test (expected = UnsupportedOperationException.class)
+    public void testSortTransformWithLongWithLimitLessThanLenDevAsc() {
+        Transform sortTransform = new SortTransformWrapAboveAndBelow();
+        Map<Long, Number> datapoints_1 = new HashMap<Long, Number>();
+
+        datapoints_1.put(1000L, 1);
+        datapoints_1.put(2000L, 4.0);
+        datapoints_1.put(3000L, 7.0);
+
+        Metric metric_1 = new Metric(TEST_SCOPE + "1", TEST_METRIC);
+
+        metric_1.setDatapoints(datapoints_1);
+
+        List<Metric> metrics = new ArrayList<Metric>();
+        metrics.add(metric_1);
+
+        List<String> constants = new ArrayList<String>();
+
+        constants.add("2");
+        constants.add("dev");
+        constants.add("ascending");
+
+        sortTransform.transform(metrics, constants);
+    }
+
     @Test
     public void testSortTransformWithLimitGreaterThanLenMaxDesHavingNull() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();
@@ -633,7 +658,7 @@ public class SortTransformTest {
         assertEquals(expected_1, result.get(0).getDatapoints());
         assertEquals(expected_2, result.get(1).getDatapoints());
     }
-    
+
     @Test
     public void testSortTransform() {
         Transform sortTransform = new SortTransformWrapAboveAndBelow();

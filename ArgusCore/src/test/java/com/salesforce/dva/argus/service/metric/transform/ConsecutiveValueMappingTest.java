@@ -45,7 +45,7 @@ import com.salesforce.dva.argus.entity.NumberOperations;
 public class ConsecutiveValueMappingTest {
 	private static final String TEST_SCOPE = "test-scope";
     private static final String TEST_METRIC = "test-metric";
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testconsecutiveTransformWithoutMetrics() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -56,7 +56,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("2s");
         transform.transform(metrics, constants);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testconsecutiveTransformWithoutThreshold() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -67,7 +67,7 @@ public class ConsecutiveValueMappingTest {
         List<String> constants = new ArrayList<String>();
         transform.transform(metrics, constants);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testconsecutiveTransformWithOnlyOneThreshold() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -79,7 +79,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("1s");
         transform.transform(metrics, constants);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void testconsecutiveTransformWithZeroconsecutiveThreshold() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -92,7 +92,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("0");
         transform.transform(metrics, constants);
     }
-    
+
     @Test
     public void testconsecutiveValueMappingSingleBaseCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -157,7 +157,7 @@ public class ConsecutiveValueMappingTest {
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testconsecutiveValueMappingSingleIntervalCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -188,7 +188,7 @@ public class ConsecutiveValueMappingTest {
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testconsecutiveValueMappingSingleZeroCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -213,7 +213,7 @@ public class ConsecutiveValueMappingTest {
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testconsecutiveValueMappingEmptySeriesCases() {
         Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());
@@ -233,7 +233,7 @@ public class ConsecutiveValueMappingTest {
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testconsecutiveValueMappingMultipleSeriesCases() {
     	Transform transform = new MetricMappingTransform(new ConsecutiveValueMapping());

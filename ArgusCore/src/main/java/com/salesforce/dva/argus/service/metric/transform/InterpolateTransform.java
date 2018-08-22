@@ -151,7 +151,7 @@ public class InterpolateTransform implements Transform {
 			resultDatapoints.put(timestamp, NumberOperations.divide(value, num));
 		}
 	}
-	
+
 	private void interpolateMin(Map<Long, Number> resultDatapoints, InterpolationType interpolationType){
 		while(doesAnyTimeSeriesHaveData()){
 			long timestamp = updateBufferChronologically();

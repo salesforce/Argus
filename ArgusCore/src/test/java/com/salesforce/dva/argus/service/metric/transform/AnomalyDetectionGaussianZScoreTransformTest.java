@@ -80,7 +80,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(3000L, 100.0);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
     
@@ -121,7 +121,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(8000L, 3.61);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
     
@@ -155,7 +155,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(10000L, 37.28);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -195,7 +195,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(22L, 47.20);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
     
@@ -239,7 +239,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(129600L, 32.82);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -283,7 +283,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(1814400L, 1.72);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -332,7 +332,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(12000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 
@@ -358,7 +358,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         expected.put(5000L, 0.0);
 
         for (Long timestamp : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(timestamp), resultDatapoints.get(timestamp))), 0.01));
         }
     }
 

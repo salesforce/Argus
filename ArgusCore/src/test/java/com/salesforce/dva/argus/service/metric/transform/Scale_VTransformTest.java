@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-     
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
@@ -495,7 +495,7 @@ public class Scale_VTransformTest {
         assertEquals(result.get(2).getDatapoints().size(), 4);
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
-    
+
     @Test
     public void testScale_VTransformWithSameShorterLongerVectorAgainstMetricList_fullJoinIndicator() {
         Transform sum_vTransform = new MetricZipperTransform(new ScaleValueZipper());
@@ -564,7 +564,7 @@ public class Scale_VTransformTest {
         expected_3.put(1000L, 1.0);
         expected_3.put(2000L, 10.0);
         expected_3.put(3000L, 1.0);
-        
+
         List<Metric> result = sum_vTransform.transform(metrics, Arrays.asList("UNION"));
 
         assertEquals(3, result.get(0).getDatapoints().size());
@@ -575,4 +575,4 @@ public class Scale_VTransformTest {
         assertEquals(expected_3, result.get(2).getDatapoints());
     }
 }
-/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
+/* Copyright (c) 2016, Salesforce.com, Inc. All rights reserved. */

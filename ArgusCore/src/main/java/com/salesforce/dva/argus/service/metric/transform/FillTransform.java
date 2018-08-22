@@ -58,6 +58,8 @@ public class FillTransform implements Transform {
 
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
+    public static final long MILLISECONDS_PER_MINUTE = 60 * 1000L;
+
 
     // ~ Methods **************************************************************************************************************************************
 
@@ -173,7 +175,7 @@ public class FillTransform implements Transform {
         metric.setDatapoints(newFilledDatapoints);
 
         List<Metric> lineMetrics = new ArrayList<Metric>();
-
+        
         lineMetrics.add(metric);
         return lineMetrics;
     }
@@ -181,16 +183,18 @@ public class FillTransform implements Transform {
     private long _parseStartAndEndTimestamps(String timeStr, long relativeTo) {
         if (timeStr == null || timeStr.isEmpty()) {
             return relativeTo;
-        }
-        try {
-            if (timeStr.charAt(0) == '-') {
-                long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
+        } else {
+            try {
+                if (timeStr.charAt(0) == '-') {
+                    long timeToDeductInSeconds = _parseTimeIntervalInSeconds(timeStr.substring(1));
 
-                return (relativeTo - timeToDeductInSeconds * 1000);
+                    return (relativeTo - timeToDeductInSeconds * 1000);
+                } else {
+                    return Long.parseLong(timeStr);
+                }
+            } catch (NumberFormatException nfe) {
+                throw new SystemException("Could not parse time.", nfe);
             }
-            return Long.parseLong(timeStr);
-        } catch (NumberFormatException nfe) {
-            throw new SystemException("Could not parse time.", nfe);
         }
     }
 
@@ -201,7 +205,7 @@ public class FillTransform implements Transform {
 
     @Override
     public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        
+
         // Last 2 constants for FILL Transform are added by MetricReader.
         // The last constant is used to distinguish between FILL(expr, #constants#) and FILL(#constants#).
         // The second last constant is the timestamp using which relative start and end timestamps

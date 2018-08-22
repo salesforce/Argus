@@ -218,7 +218,7 @@ public class AlertServiceTest extends AbstractTest {
 			assertTrue(actualSet.contains(alert));
 		}
 	}
-	
+
 	@Test
 	public void testFindAlertsByOwnerPaged() {
 		UserService userService = system.getServiceFactory().getUserService();

@@ -103,7 +103,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
     }
     
@@ -167,7 +167,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
     }
 
@@ -210,7 +210,7 @@ public class AnomalySTLTransformTest {
         assertEquals(expected.keySet(), anomalyScores.keySet());
 
         for (Long time : expected.keySet()) {
-        	assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
+            assertTrue(NumberOperations.isLessThan(NumberOperations.getAbsValue(NumberOperations.subtract(expected.get(time), anomalyScores.get(time))), 0.01));
         }
     }
 }

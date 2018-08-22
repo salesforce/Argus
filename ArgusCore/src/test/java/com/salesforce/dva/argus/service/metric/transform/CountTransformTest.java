@@ -270,7 +270,7 @@ public class CountTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testCountTransformWithThreeMetrics() {
         Transform countTransform = new CountTransformWrapUnion();

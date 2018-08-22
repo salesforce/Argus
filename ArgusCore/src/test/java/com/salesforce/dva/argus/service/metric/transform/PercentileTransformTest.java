@@ -126,6 +126,21 @@ public class PercentileTransformTest {
     	percentileTransform.transform(metrics, constants);
     }
 
+    @Test (expected = UnsupportedOperationException.class)
+    public void testPercentileTransformLongDataValues() {
+    	Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
+    	Map<Long, Number> datapoints = new HashMap<Long, Number>();
+    	datapoints.put(1000L, 14L);
+    	datapoints.put(2000L, 39);
+    	
+    	Metric m = new Metric(TEST_SCOPE, TEST_METRIC);
+    	m.setDatapoints(datapoints);
+    	
+    	List<Metric> metrics = Arrays.asList(m);
+    	List<String> constants = Arrays.asList("14");
+    	percentileTransform.transform(metrics, constants);
+    }
+
     @Test
     public void testPercentileTransformWithOneConstantShareSomeCommonDPs() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
@@ -257,8 +272,7 @@ public class PercentileTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
-    
+
     @Test
     public void testPercentileTransformWithOneConstantShareNoCommonDPs_fullJoinIndicator() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
@@ -326,7 +340,6 @@ public class PercentileTransformTest {
         assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
 
     @Test(expected = IllegalArgumentException.class)
     public void testPercentileTransformWithoutConstants() {
@@ -417,7 +430,7 @@ public class PercentileTransformTest {
         expected.put(1000L, 9.9);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testPercentile95TransformMultipleMetrics_LegacySupport() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());
@@ -503,7 +516,7 @@ public class PercentileTransformTest {
         expected.put(1000L, 9.9);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testPercentile95TransformMultipleMetrics_individualEvaluation() {
         Transform percentileTransform = new MetricReducerOrMappingWithConstantTransform(new PercentileValueReducerOrMapping());

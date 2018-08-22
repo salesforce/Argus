@@ -44,7 +44,8 @@ import java.util.Map.Entry;
 /**
  * Raj Sarkapally.
  *
- * @author Raj Sarkapally  (rsarkapally@salesforce.com)
+ * @author  Raj Sarkapally  (rsarkapally@salesforce.com)
+>>>>>>> f03d0b4b2919bcc6e94d57574cea2a4627b4ba76
  */
 public abstract class AbstractArithmeticTransform implements Transform {
 

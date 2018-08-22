@@ -49,8 +49,8 @@ public interface ValueReducer {
      *
      * @return  The reduced value.
      */
-	Number reduce(List<Number> values);
-	
+    Number reduce(List<Number> values);
+
     /**
      * Returns the name of the reducer.
      *

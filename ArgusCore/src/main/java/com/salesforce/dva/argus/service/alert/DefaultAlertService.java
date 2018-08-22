@@ -626,7 +626,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 	}
 
-
 	/**
 	 * Determines if the alert should be evaluated or not.
 	 */
@@ -670,10 +669,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 
 	public void sendNotification(Trigger trigger, Metric metric, History history, Notification notification, Alert alert,
-			Long triggerFiredTime, Long alertEnqueueTime) {	
-		Number value = 0L;
-		if (!trigger.getType().equals(TriggerType.NO_DATA)) {
-			value = metric.getDatapoints().get(triggerFiredTime);
+			Long triggerFiredTime, Long alertEnqueueTime) {
+
+		Number value = 0;
+		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		    value = metric.getDatapoints().get(triggerFiredTime);
 		}
 
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
@@ -819,6 +819,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+		
 
 
 

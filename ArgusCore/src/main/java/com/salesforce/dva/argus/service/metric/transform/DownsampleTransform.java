@@ -199,7 +199,7 @@ public class DownsampleTransform implements Transform {
     	}
     	return result;
     }
-    
+
     private long getWindowStartTime(long time, String windowUnit, long windowSize){
     	switch (windowUnit) {
 		case "m":

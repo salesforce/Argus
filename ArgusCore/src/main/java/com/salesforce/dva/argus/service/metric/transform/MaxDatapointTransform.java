@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -11,6 +12,10 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+
+import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.NumberOperations;
 import com.salesforce.dva.argus.service.metric.MetricReader;
@@ -18,7 +23,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 
 public class MaxDatapointTransform implements Transform {
 
-    private Map.Entry<Long, Number> updateChunk(FilterType filter, List<Map.Entry<Long, Number>> chunkValues) {
+    private Map.Entry<Long, Number> updateChunk(FilterType filter, List<Map.Entry<Long, Number>> chunkValues, int percentile) {
         switch (filter) {
         case NTH:
             return chunkValues.get(0);
@@ -96,6 +101,14 @@ public class MaxDatapointTransform implements Transform {
                 }
             }
             return new SimpleEntry<Long, Number>(chunkValues.get(0).getKey(), count);
+        case PERCENTILE:
+            Number pth = new Percentile().evaluate(Doubles.toArray(
+                    NumberOperations.getListAsDoubles(Arrays.asList(getNumbers(chunkValues)))), percentile);
+            return new SimpleEntry<Long, Number>(chunkValues.get(0).getKey(), pth);
+        case DEVIATION:
+            Number dev = new StandardDeviation().evaluate(Doubles.toArray(
+                    NumberOperations.getListAsDoubles(Arrays.asList(getNumbers(chunkValues)))));
+            return new SimpleEntry<Long, Number>(chunkValues.get(0).getKey(), dev);
         default:
             throw new IllegalArgumentException(
                     "Max Datapoint Transform does not support the filter algorithm " + filter);
@@ -128,7 +141,7 @@ public class MaxDatapointTransform implements Transform {
     }
 
     private Map<Long, Number> filter(Map<Long, Number> originalDatapoints, int maxDps, int n, int smallerChunks,
-            FilterType filter, long minInterval) {
+            FilterType filter, long minInterval, int percentile) {
         if (filter == FilterType.SAMPLE) {
             return sample(originalDatapoints, maxDps);
         }
@@ -146,7 +159,7 @@ public class MaxDatapointTransform implements Transform {
                 // check that this chunk will span at least the requisite amount of time
                 Long nextKey = sortedDatapoints.higherKey(entry.getKey());
                 if (nextKey == null || (chunkValues.get(0).getKey() - nextKey >= minInterval)) {
-                    Map.Entry<Long, Number> chunkRepresentative = updateChunk(filter, chunkValues);
+                    Map.Entry<Long, Number> chunkRepresentative = updateChunk(filter, chunkValues, percentile);
                     filteredDatapoints.put(chunkRepresentative.getKey(), chunkRepresentative.getValue());
                     // start a new chunk
                     element = 0;
@@ -158,7 +171,7 @@ public class MaxDatapointTransform implements Transform {
 
         // handle any remaining values -- should only have remaining due to minInterval
         if (!chunkValues.isEmpty()) {
-            Map.Entry<Long, Number> chunkRepresentative = updateChunk(filter, chunkValues);
+            Map.Entry<Long, Number> chunkRepresentative = updateChunk(filter, chunkValues, percentile);
             filteredDatapoints.put(chunkRepresentative.getKey(), chunkRepresentative.getValue());
         }
         return filteredDatapoints;
@@ -178,6 +191,7 @@ public class MaxDatapointTransform implements Transform {
 
         long minInterval = 0;
         FilterType filter = FilterType.AVG;
+        int percentile = -1;
         if (constants.size() > 1) {
             try {
                 // first check for a time window
@@ -185,9 +199,15 @@ public class MaxDatapointTransform implements Transform {
 
                 if (constants.size() > 2) {
                     filter = FilterType.getType(constants.get(2));
+                    if (filter == FilterType.PERCENTILE) {
+                        percentile = Integer.parseInt(constants.get(2).substring(1));
+                    }
                 }
             } catch (IllegalArgumentException iae) {
                 filter = FilterType.getType(constants.get(1));
+                if (filter == FilterType.PERCENTILE) {
+                    percentile = Integer.parseInt(constants.get(1).substring(1));
+                }
             }
         }
 
@@ -195,7 +215,7 @@ public class MaxDatapointTransform implements Transform {
             if (metric.getDatapoints().size() > maxDps) {
                 int n = (int) Math.ceil(metric.getDatapoints().size() * 1.0 / maxDps);
                 int smallerChunks = (maxDps * n) - metric.getDatapoints().size();
-                metric.setDatapoints(filter(metric.getDatapoints(), maxDps, n, smallerChunks, filter, minInterval));
+                metric.setDatapoints(filter(metric.getDatapoints(), maxDps, n, smallerChunks, filter, minInterval, percentile));
             }
         }
 
@@ -233,7 +253,7 @@ public class MaxDatapointTransform implements Transform {
         SAMPLE("sample"),
         ZIMSUM("zimsum"),
         SUM("sum"),
-        DEV("deviation"),
+        DEVIATION("dev"),
         COUNT("count"),
         PERCENTILE("percentile");
 
@@ -250,6 +270,10 @@ public class MaxDatapointTransform implements Transform {
                         return type;
                     }
                 }
+            }
+            
+            if (filterType.matches("^p\\d{1,2}$")) {
+                return PERCENTILE;
             }
 
             throw new IllegalArgumentException("Illegal type: " + filterType + ". Please provide a valid type.");

@@ -47,17 +47,18 @@ public class CountValueUnionReducer implements ValueReducer {
     
     @Override
     public Number reduce(List<Number> values) {
-    	Number sum = 0;
-    	
-    	for (Number value : values) {
-    		if (value == null) {
-    			value = 0;
-    		}
-    		
-    		sum = NumberOperations.add(sum, value);
-    	}
-    	
-    	return sum;
+
+        Number sum = 0;
+        
+        for (Number value : values) {
+            if (value == null) {
+                value = 0;
+            }
+            
+            sum = NumberOperations.add(sum, value);
+        }
+        
+        return sum;
     }
 
     @Override

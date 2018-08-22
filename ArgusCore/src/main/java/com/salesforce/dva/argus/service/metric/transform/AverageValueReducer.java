@@ -46,16 +46,17 @@ public class AverageValueReducer implements ValueReducer {
     
     @Override
     public Number reduce(List<Number> values) {
-    	Number sum = 0;
-    	
-    	for (Number value : values) {
-    		if (value == null) {
-    			continue;
-    		}
-    		sum = NumberOperations.add(sum, value);
-    	}
-    	
-    	return NumberOperations.divide(sum, values.size());
+
+        Number sum = 0;
+        
+        for (Number value : values) {
+            if (value == null) {
+                continue;
+            }
+            sum = NumberOperations.add(sum, value);
+        }
+        
+        return NumberOperations.divide(sum, values.size());
     }
 
     @Override

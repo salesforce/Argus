@@ -96,7 +96,7 @@ public class MetricReduceTransformTest {
 
         assertThat(results, equalTo(expected));
     }
-    
+
     @Test
     public void reduce_shouldUseDistilledScopeNameWhenCommon() {
         Metric m = new Metric("s", "m1");

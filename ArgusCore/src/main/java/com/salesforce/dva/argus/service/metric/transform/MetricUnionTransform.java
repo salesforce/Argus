@@ -147,7 +147,7 @@ public class MetricUnionTransform implements Transform {
         newMetric.setDatapoints(minDatapoints);
         return newMetric;
     }
-    
+
     private Map<Long, List<Number>> collate(List<Metric> metrics) {
         Map<Long, List<Number>> collated = new HashMap<>();
 

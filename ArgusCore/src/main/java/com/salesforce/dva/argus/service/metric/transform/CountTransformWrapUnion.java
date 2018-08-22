@@ -77,16 +77,16 @@ public class CountTransformWrapUnion implements Transform {
     }
     
     private Map<Long, Number> _collate(List<Metric> metrics) {
-    	Map<Long, Number> collated = new HashMap<>();
-    	
-    	for (Metric metric : metrics) {
-    		for (Map.Entry<Long, Number> point : metric.getDatapoints().entrySet()) {
-    			if (!collated.containsKey(point.getKey())) {
-    				collated.put(point.getKey(), 1);
-    			} else {
-    				Number oldValue = collated.get(point.getKey());
-    				collated.put(point.getKey(), NumberOperations.add(oldValue, 1));
-    			}
+        Map<Long, Number> collated = new HashMap<>();
+        
+        for (Metric metric : metrics) {
+            for (Map.Entry<Long, Number> point : metric.getDatapoints().entrySet()) {
+                if (!collated.containsKey(point.getKey())) {
+                    collated.put(point.getKey(), 1);
+                    } else {
+                        Number oldValue = collated.get(point.getKey());
+                        collated.put(point.getKey(), NumberOperations.add(oldValue, 1));
+                    }
     		}
     	}
     	return collated;

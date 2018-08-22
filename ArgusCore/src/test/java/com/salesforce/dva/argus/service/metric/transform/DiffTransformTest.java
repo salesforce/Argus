@@ -292,7 +292,7 @@ public class DiffTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
+
     @Test
     public void testDiffTransformWithFullConstantShareSomeCommonDPs() {
         Transform diffTransform = new MetricReducerOrMappingTransform(new DiffValueReducerOrMapping());

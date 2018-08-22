@@ -49,12 +49,11 @@ public class DivideValueZipper implements ValueZipper {
     @Override
     public Number zip(Number originalDp, Number baseDp) {
     	try {
-    		Number original = (originalDp == null) ? 0 : originalDp;
-    		Number base = (baseDp == null) ? 1 : baseDp;
-    		
-    		SystemAssert.requireArgument(!NumberOperations.isEqualTo(base, 0), "Datapoints in base metric shouldn't contain zero!");
-    		
-    		return NumberOperations.divide(original, base);
+    	    Number original = (originalDp == null) ? 0 : originalDp;
+    	    Number base = (baseDp == null) ? 1 : baseDp;
+    	    SystemAssert.requireArgument(!NumberOperations.isEqualTo(base, 0), "Datapoints in base metric shouldn't contain zero!");
+    	    
+    	    return NumberOperations.divide(original, base);
     	} catch (Exception e) {
     		throw new SystemException("Fail to parse the value of original datapoint of base datapoint!", e);
     	}

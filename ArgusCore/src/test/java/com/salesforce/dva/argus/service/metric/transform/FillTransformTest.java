@@ -459,7 +459,7 @@ public class FillTransformTest {
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 3);
+        assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -480,10 +480,13 @@ public class FillTransformTest {
 
         expected.put(-1000L, 100L);
         expected.put(1000L, 100L);
+
+        expected.put(-1000L, 100L);
+        expected.put(1000L, 100L);
         
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -492,8 +495,8 @@ public class FillTransformTest {
         Transform fillTransform = new FillTransform();
         List<String> constants = new ArrayList<String>();
 
-        constants.add("1000");
-        constants.add("3000");
+        constants.add("60000");
+        constants.add("180000");
         constants.add("3s");
         constants.add("-1s");
         constants.add("100.0");
@@ -507,7 +510,7 @@ public class FillTransformTest {
 
         List<Metric> result = fillTransform.transform(null, constants);
 
-        assertEquals(result.get(0).getDatapoints().size(), 2);
+        assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
 
@@ -524,7 +527,7 @@ public class FillTransformTest {
         constants.add(String.valueOf(System.currentTimeMillis()));
         constants.add("true");
 
-        Map<Long, Double> expected = new HashMap<Long, Double>();
+        Map<Long, Number> expected = new HashMap<Long, Number>();
 
         expected.put(0L, 100.0);
 
@@ -621,7 +624,7 @@ public class FillTransformTest {
         assertEquals(true, timestampSet[timestampSet.length - 1] - expectedEndTimestamp <= 1000L);
         assertEquals(new HashSet<Number>(Arrays.asList(100.0)), new HashSet<Number>(result.get(0).getDatapoints().values()));
     }
-    
+
     @Test
     public void testFillTransform_MetricWithEmptyDatapointsMap() {
     	Transform fillTransform = new FillTransform();
@@ -638,7 +641,7 @@ public class FillTransformTest {
         List<Metric> metrics = fillTransform.transform(Arrays.asList(m), constants);
     	assertEquals(metrics.size(), 1);
     }
-    
+
     @Test
     public void testFillTransform_EmptyMetricsList() {
     	Transform fillTransform = new FillTransform();

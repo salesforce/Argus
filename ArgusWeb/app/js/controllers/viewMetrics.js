@@ -11,6 +11,24 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 		$scope.$watch('includeAnnotations', function (newValue) {
 			InputTracker.updateDefaultValue('viewMetricsWithAnnotation', true, newValue);
 		});
+		$scope.useMaxDatapoints = InputTracker.getDefaultValue('viewMetricsWithMaxDatapoints', false);
+		$scope.$watch('useMaxDatapoints', function (newValue) {
+			InputTracker.updateDefaultValue('viewMetricsWithMaxDatapoints', false, newValue)
+		});
+		$scope.maxDatapointNumber = InputTracker.getDefaultValue('viewMaxDatapoints', -1)
+		$scope.$watch('maxDatapointNumber', function (newValue) {
+			InputTracker.updateDefaultValue('viewMaxDatapoints', 0, newValue)
+		});
+		$scope.maxDatapointMinWindow = InputTracker.getDefaultValue('viewMaxDatapointsMinWindow', '0m')
+		$scope.$watch('maxDatapointMinWindow', function (newValue) {
+			InputTracker.updateDefaultValue('viewMaxDatapointsMinWindow', '0m', newValue)
+		});
+		$scope.maxDatapointAlg = InputTracker.getDefaultValue('viewMaxDatapointsAlgorithm', 'avg')
+		$scope.$watch('maxDatapointAlg', function (newValue) {
+			console.log("Trying to update algorithm")
+			InputTracker.updateDefaultValue('viewMaxDatapointsAlgorithm', 'avg', newValue)
+			console.log("Updated to " + $scope.maxDatapointAlg)
+		});
 		// sub-views: (1) single chart, (2) metric discovery
 		$scope.checkMetricExpression = function() {
 			if ($scope.expression) {
@@ -35,6 +53,15 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 			var tempSeries = [];
 			var annotationInfo = [];
 			if ($scope.expression !== null && $scope.expression.length) {
+				var fullExpression = $scope.expression
+				console.log("Looking at execution")
+				// look if we need to update expression
+				if ($scope.useMaxDatapoints) {
+					var maxDatapointsAsString = $scope.maxDatapointNumber.toString()
+					fullExpression = 'MAX_DATAPOINT(' + $scope.expression + ',#' + $scope.maxDatapointNumber + '#,' +
+						'#' + $scope.maxDatapointMinWindow + '#,#' + $scope.maxDatapointAlg + '#)'
+				}
+				
 				// clear old chart and annotation label tip
 				angular.element('#' + 'container').empty();
 				angular.element('.d3-tip').remove();
@@ -42,7 +69,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 				// show loading spinner
 				$scope.chartLoaded = false;
 
-				Metrics.query({expression: $scope.expression}, function (data) {
+				Metrics.query({expression: fullExpression}, function (data) {
 					if (data && data.length > 0) {
 						tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, {});
 						if ($scope.includeAnnotations) {
@@ -54,7 +81,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 						tempSeries = [{
 							noData: true,
 							errorMessage: 'Empty result returned for the metric expression',
-							name: JSON.stringify($scope.expression).slice(1, -1),
+							name: JSON.stringify(fullExpression).slice(1, -1),
 							color: 'Maroon'
 						}];
 					}

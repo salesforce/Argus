@@ -292,8 +292,7 @@ public class ScaleTransformTest {
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
-    
-    
+
     @Test
     public void testScaleTransformWithFullConstantShareSomeCommonDPs() {
         Transform scaleTransform = new MetricReducerOrMappingTransform(new ScaleValueReducerOrMapping());

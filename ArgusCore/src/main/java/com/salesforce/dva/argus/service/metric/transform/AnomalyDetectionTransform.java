@@ -112,7 +112,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      * @return Normalized metric
      */
     public Metric normalizePredictions(Metric predictions) {
-    	Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
+        Map<Long, Double> metricData = NumberOperations.getMapAsDoubles(predictions.getDatapoints());
         Map<String, Double> minMax = getMinMax(metricData);
         double min = minMax.get("min");
         double max = minMax.get("max");
