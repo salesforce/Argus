@@ -120,7 +120,7 @@ public class Trigger extends JPAEntity implements Serializable {
 
 		@Override
 		public Trigger deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-			
+
 			Trigger trigger = new Trigger();
 			JsonNode rootNode = jp.getCodec().readTree(jp);
 			
@@ -135,7 +135,7 @@ public class Trigger extends JPAEntity implements Serializable {
 			
 			Double threshold = rootNode.get("threshold").asDouble();
 			trigger.setThreshold(threshold);
-			
+
 			if(rootNode.get("secondaryThreshold") != null) {
 				trigger.setSecondaryThreshold(rootNode.get("secondaryThreshold").asDouble());
 			}
@@ -362,12 +362,15 @@ public class Trigger extends JPAEntity implements Serializable {
      * @param  inertiaMillis  The inertia associated with the trigger in milliseconds. Cannot be null or negative.
      */
     public void setInertia(Long inertiaMillis) {
-        this.inertia = inertiaMillis;
-        if (this.alert == null) return;
-        requireArgument(inertiaMillis != null && inertiaMillis >= 0, "Inertia cannot be negative.");
-        Long longestIntervalLength = AlertUtils.getMaximumIntervalLength(this.alert.getExpression());
-        if (inertiaMillis > longestIntervalLength)
-            throw new IllegalArgumentException(String.format("Inertia %d cannot be more than width of the longest interval %d.",inertiaMillis, longestIntervalLength));
+        if (this.alert == null) { // Only during deserialization.
+            this.inertia = inertiaMillis;
+        } else {
+            requireArgument(inertiaMillis != null && inertiaMillis >= 0, "Inertia cannot be negative.");
+            Long longestIntervalLength = AlertUtils.getMaximumIntervalLength(this.alert.getExpression());
+            if (inertiaMillis > longestIntervalLength)
+                throw new IllegalArgumentException(String.format("Inertia %d cannot be more than width of the longest interval %d.", inertiaMillis, longestIntervalLength));
+            this.inertia = inertiaMillis;
+        }
     }
 
     /**
