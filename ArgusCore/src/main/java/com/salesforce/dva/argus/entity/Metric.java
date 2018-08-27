@@ -159,6 +159,10 @@ public class Metric extends TSDBEntity implements Serializable {
 		}
 	}
 
+	public void clearDatapoints() {
+		_datapoints.clear();
+	}
+
 	/**
 	 * Adds the current set of data points to the current set.
 	 *
