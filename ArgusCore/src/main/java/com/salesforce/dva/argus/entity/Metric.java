@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Objects;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
 
@@ -158,6 +159,10 @@ public class Metric extends TSDBEntity implements Serializable {
 		}
 	}
 
+	public void clearDatapoints() {
+		_datapoints.clear();
+	}
+
 	/**
 	 * Adds the current set of data points to the current set.
 	 *
@@ -245,6 +250,25 @@ public class Metric extends TSDBEntity implements Serializable {
 				_datapoints.put(entry.getKey(), entry.getValue());
 			}
 		}
+	}
+
+	public double addIfNotExistsDatapoints(Map<Long, Double> datapoints) {
+
+		double deduped = 0;
+
+		if (datapoints != null) {
+
+			for(Entry<Long, Double> entry : datapoints.entrySet()){
+
+				if(!_datapoints.containsKey(entry.getKey())) {
+					_datapoints.put(entry.getKey(), entry.getValue());
+				} else {
+					deduped++;
+				}
+			}
+		}
+
+		return deduped;
 	}
 
 	/**
