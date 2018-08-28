@@ -53,12 +53,16 @@ public class AlertsCountContext {
 	// Current owner
 	private PrincipalUser owner;
 
+	// Search text
+	private String searchText;
+
 	// Constructor
 	private AlertsCountContext(AlertsCountContextBuilder builder) {
 		this.countUserAlerts = builder.userAlerts;
 		this.countSharedAlerts = builder.sharedAlerts;
 		this.countPrivateAlerts = builder.privateAlerts;
 		this.owner = builder.owner;
+		this.searchText = builder.searchText;
 	}
 
 	public boolean isCountUserAlerts() {
@@ -80,12 +84,17 @@ public class AlertsCountContext {
 		return owner;
 	}
 
+	public String getSearchText() {
+		return searchText;
+	}
+
 	// Builder for the context.
 	public static class AlertsCountContextBuilder {
 		private boolean userAlerts = false;
 		private boolean sharedAlerts = false;
 		private boolean privateAlerts = false;
 		private PrincipalUser owner = null;
+		private String searchText = null;
 
 		public AlertsCountContextBuilder countUserAlerts() {
 			this.userAlerts = true;
@@ -104,6 +113,11 @@ public class AlertsCountContext {
 
 		public AlertsCountContextBuilder setPrincipalUser(PrincipalUser owner) {
 			this.owner = owner;
+			return this;
+		}
+
+		public AlertsCountContextBuilder setSearchText(String searchText) {
+			this.searchText = searchText;
 			return this;
 		}
 

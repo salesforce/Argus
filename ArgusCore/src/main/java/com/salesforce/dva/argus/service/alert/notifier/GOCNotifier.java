@@ -56,6 +56,7 @@ import java.util.Properties;
 
 import javax.persistence.EntityManager;
 
+import com.salesforce.dva.argus.util.AlertUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -264,7 +265,7 @@ public class GOCNotifier extends AuditNotifier {
 	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context) {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
-		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
