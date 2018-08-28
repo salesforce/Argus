@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.util.AlertUtils;
 import org.junit.Test;
 
 import com.salesforce.dva.argus.AbstractTest;
@@ -181,7 +182,7 @@ public class NotifierTest extends AbstractTest {
         ArrayList<String> actualOutput = new ArrayList<String>();
         for (String currentExpression: expressionArray) {
             alert.setExpression(currentExpression);
-            String currentOutput = system.getNotifierFactory().getGOCNotifier().getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+            String currentOutput = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
             actualOutput.add(currentOutput);
             assertEquals(true, MetricReader.isValid(currentOutput));
         }

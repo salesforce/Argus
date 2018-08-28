@@ -238,22 +238,22 @@ public class AlertServiceTest extends AbstractTest {
 		List<Alert> actualAlerts = new ArrayList<>();
 		
 		// Fetch first page
-		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0);
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page);
 
 		// Fetch second page
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
 		assertEquals(page.size(), limit);
 		actualAlerts.addAll(page); 
 		
 		// Fetch remaining alerts (less than a page)
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
 		assertEquals(page.size(), expectedAlerts.size() - actualAlerts.size());
 		actualAlerts.addAll(page);
 		
 		// Try to fetch again should be empty result
-		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size());
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), null);
 		assertEquals(0, page.size());
 		
 		Set<Alert> actualSet = new HashSet<>();
@@ -261,6 +261,104 @@ public class AlertServiceTest extends AbstractTest {
 		actualSet.addAll(actualAlerts);
 		for (Alert alert : expectedAlerts) {
 			assertTrue(actualSet.contains(alert));
+		}
+	}
+	
+	@Test
+	public void testFindAlertsByOwnerPagedWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		String userName = createRandomName();
+		int alertsCount = 25;
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
+
+		user = userService.updateUser(user);
+
+		List<Alert> expectedAlerts = new ArrayList<>();
+		List<Alert> expectedEvenAlerts = new ArrayList<>(); 
+		List<Alert> expectedOddAlerts = new ArrayList<>();
+
+		for (int i = 0; i < alertsCount; i++) {
+			if (i % 2 == 0) {
+				Alert evenAlert = alertService.updateAlert(new Alert(user, user, "even_alert_" + i, EXPRESSION, "* * * * *"));
+				expectedAlerts.add(evenAlert);
+				expectedEvenAlerts.add(evenAlert);
+			} else {
+				Alert oddAlert = alertService.updateAlert(new Alert(user, user, "odd_alert_" + i, EXPRESSION, "* * * * *"));
+				expectedAlerts.add(oddAlert);
+				expectedOddAlerts.add(oddAlert);
+			}
+		}
+
+		// ==================================================
+		// Test search by owner's name
+		// ==================================================
+		int limit = 10; // Page size
+		List<Alert> actualAlerts = new ArrayList<>();
+
+		// Fetch first page
+		List<Alert> page = alertService.findAlertsByOwnerPaged(user, limit, 0, userName);
+		assertEquals(page.size(), limit);
+		actualAlerts.addAll(page);
+
+		// Fetch with invalid owner's name should be empty
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_owner");
+		assertEquals(page.size(), 0);
+
+		// Fetch second page
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		assertEquals(page.size(), limit);
+		actualAlerts.addAll(page);
+
+		// Fetch remaining alerts (less than a page)
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		assertEquals(page.size(), expectedAlerts.size() - actualAlerts.size());
+		actualAlerts.addAll(page);
+
+		// Try to fetch again should be empty result
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualAlerts.size(), userName);
+		assertEquals(0, page.size());
+
+		Set<Alert> actualSet = new HashSet<>();
+
+		actualSet.addAll(actualAlerts);
+		for (Alert alert : expectedAlerts) {
+			assertTrue(actualSet.contains(alert));
+		}
+
+		// ==================================================
+		// Test search by alerts name
+		// ==================================================
+		
+		List<Alert> actualEvenAlerts = new ArrayList<>();
+		
+		// Fetch with invalid alert name should be empty
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "invalid_alert_name");
+		assertEquals(page.size(), 0);
+
+		// Fetch first page of even number alerts
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "even");
+		assertEquals(page.size(), limit);
+		actualEvenAlerts.addAll(page);
+		
+		// Fetch first page of even number alerts case insensitive
+		page = alertService.findAlertsByOwnerPaged(user, limit, 0, "EvEn");
+		assertEquals(page.size(), limit);
+
+		// Fetch second page of even number alerts (less than a page)
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even");
+		assertEquals(page.size(), expectedEvenAlerts.size() - actualEvenAlerts.size());
+		actualEvenAlerts.addAll(page);
+
+		// Try to fetch again should be empty result
+		page = alertService.findAlertsByOwnerPaged(user, limit, actualEvenAlerts.size(), "even");
+		assertEquals(0, page.size());
+
+		Set<Alert> actualEvenSet = new HashSet<>();
+
+		actualEvenSet.addAll(actualEvenAlerts);
+		for (Alert alert : expectedEvenAlerts) {
+			assertTrue(actualEvenSet.contains(alert));
 		}
 	}
 	
@@ -284,6 +382,64 @@ public class AlertServiceTest extends AbstractTest {
 		int cnt = alertService.countAlerts(context);
 
 		assertEquals(cnt, expectedAlerts.size());
+	}
+	
+	@Test
+	public void testCountAlertsByOwnerWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		String userName = createRandomName();
+		int alertsCount = random.nextInt(20) + 1;
+		PrincipalUser user = new PrincipalUser(admin, userName, userName + "@testcompany.com");
+
+		user = userService.updateUser(user);
+
+		List<Alert> expectedAlerts = new ArrayList<>();
+		List<Alert> expectedEvenAlerts = new ArrayList<>(); 
+		List<Alert> expectedOddAlerts = new ArrayList<>();
+
+		for (int i = 0; i < alertsCount; i++) {
+			if (i % 2 == 0) {
+				Alert evenAlert = alertService.updateAlert(new Alert(user, user, "even_alert_" + i, EXPRESSION, "* * * * *"));
+				expectedEvenAlerts.add(evenAlert);
+				expectedAlerts.add(evenAlert);
+			} else {
+				Alert oddAlert = alertService.updateAlert(new Alert(user, user, "odd_alert_" + i, EXPRESSION, "* * * * *"));
+				expectedOddAlerts.add(oddAlert);
+				expectedAlerts.add(oddAlert);
+			}
+		}
+
+		// Filter on user name
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText(userName).build();
+		int cnt = alertService.countAlerts(context);
+
+		assertEquals(cnt, expectedAlerts.size());
+		
+		// Count alerts have "even" in its name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("even").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedEvenAlerts.size());
+		
+		// Count alerts have "even" in its name case insensitive
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("EvEn").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedEvenAlerts.size());
+		
+		// Count alerts have "odd" in its name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("odd").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedOddAlerts.size());
+		
+		// Count alerts have "odd" in its name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("OdD").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, expectedOddAlerts.size());
+		
+		// Invalid alert name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts().setPrincipalUser(user).setSearchText("invalid_alert_name").build();
+		cnt = alertService.countAlerts(context);
+		assertEquals(cnt, 0);
 	}
 
 	@Test
@@ -649,17 +805,69 @@ public class AlertServiceTest extends AbstractTest {
 		sharedAlerts.add("alert2");
 		
 		// First page
-		List<Alert> page = alertService.findSharedAlertsPaged(1, 0);
+		List<Alert> page = alertService.findSharedAlertsPaged(1, 0, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		
 		// Second page
-		page = alertService.findSharedAlertsPaged(1, 1);
+		page = alertService.findSharedAlertsPaged(1, 1, null);
 		assertEquals(1, page.size());
 		assertTrue(sharedAlerts.contains(page.get(0).getName()));
 		
 		// Thrid page should be zero
-		page = alertService.findSharedAlertsPaged(1, 2);
+		page = alertService.findSharedAlertsPaged(1, 2, null);
+		assertEquals(0, page.size());
+	}
+	
+	@Test
+	public void testFindSharedAlertsMetaPagedWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert3", EXPRESSION, "* * * * *"));
+
+
+		alert1.setShared(true);
+		alertService.updateAlert(alert1);
+		alert2.setShared(true);
+		alertService.updateAlert(alert2);
+		alert3.setShared(false);
+		alertService.updateAlert(alert3);
+		
+		Set<String> sharedAlerts = new HashSet<>();
+		sharedAlerts.add("alert1");
+		sharedAlerts.add("alert2");
+		
+		// Search by owner name
+		List<Alert> page = alertService.findSharedAlertsPaged(10, 0, "test1");
+		assertEquals(1, page.size());
+		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
+		
+		// Search by owner name case insensitive
+		page = alertService.findSharedAlertsPaged(10, 0, "TeSt1");
+		assertEquals(1, page.size());
+		assertTrue("test1".equals(page.get(0).getOwner().getUserName()));
+		
+		// Search by alert name
+		page = alertService.findSharedAlertsPaged(10, 0, "alert2");
+		assertEquals(1, page.size());
+		assertTrue("alert2".equals(page.get(0).getName()));
+		
+		// Search by alert name case insensitive
+		page = alertService.findSharedAlertsPaged(10, 0, "aLeRt2");
+		assertEquals(1, page.size());
+		assertTrue("alert2".equals(page.get(0).getName()));
+		
+		// Search private alert
+		page = alertService.findSharedAlertsPaged(1, 2, "alert3");
+		assertEquals(0, page.size());
+		
+		// Invalid search text
+		page = alertService.findSharedAlertsPaged(1, 2, "invalid_search_text");
 		assertEquals(0, page.size());
 	}
 	
@@ -684,6 +892,49 @@ public class AlertServiceTest extends AbstractTest {
 		
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().build();
 		assertEquals(2, alertService.countAlerts(context));
+	}
+	
+	@Test
+	public void testCountSharedAlertsMetaPagedWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert1", EXPRESSION, "* * * * *"));
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert2", EXPRESSION, "* * * * *"));
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert3", EXPRESSION, "* * * * *"));
+
+
+		alert1.setShared(true);
+		alertService.updateAlert(alert1);
+		alert2.setShared(true);
+		alertService.updateAlert(alert2);
+		alert3.setShared(false);
+		alertService.updateAlert(alert3);
+		
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("alert").build();
+		assertEquals(2, alertService.countAlerts(context));
+		
+		// count by alert name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("alert1").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by alert name case insensitive
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("aLeRt1").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by user name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("test1").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by user name case insensitive
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("tEsT1").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// Invalid search text
+		context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().setSearchText("invalid_search_text").build();
+		assertEquals(0, alertService.countAlerts(context));
 	}
 
 	@Test
@@ -792,7 +1043,7 @@ public class AlertServiceTest extends AbstractTest {
 		alertService.updateAlert(alert3);
 
 		// Assert result is empty for non-privileged user
-		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 100, 0).size());
+		assertEquals(0, alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 100, 0, null).size());
 	}
 	
 	@Test
@@ -846,22 +1097,78 @@ public class AlertServiceTest extends AbstractTest {
 		Set<String> alertNames = new HashSet<>();
 		
 		// Fetch first page
-		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 0);
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 0, null);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 		
 		// Fetch second page
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 1);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 1, null);
 		assertEquals(1, page.size());
 		alertNames.add(page.get(0).getName());
 		
 		// Fetch third page, should be empty
-		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 2);
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 1, 2, null);
 		assertEquals(0, page.size());
 				
 		// Assert all private alerts are fetched
 		assertTrue(alertNames.contains("alert-name_private1"));
 		assertTrue(alertNames.contains("alert-name-private2"));
+	}
+	
+	@Test
+	public void testFindPrivateAlertsPagedForPrivilegedUserWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		ManagementService managementService = system.getServiceFactory().getManagementService();
+		
+		// By default user is not privileged
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		managementService.setAdministratorPrivilege(user1, true);
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+
+		alert1.setShared(false);
+		alertService.updateAlert(alert1);
+		alert2.setShared(false);
+		alertService.updateAlert(alert2);
+		alert3.setShared(true);
+		alertService.updateAlert(alert3);
+		
+		// Search by alert name 
+		List<Alert> page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "alert-name");
+		assertEquals(2, page.size());
+		
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "private1");
+		assertEquals(1, page.size());
+		
+		// Search by alert name case insensitive
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "aLerT-NamE");
+		assertEquals(2, page.size());
+		
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "PrIvAtE1");
+		assertEquals(1, page.size());
+		
+		// Search shared alert name
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "shared3");
+		assertEquals(0, page.size());
+		
+		// Search shared alert name case insensitive
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "SHaReD3");
+		assertEquals(0, page.size());
+		
+		// Search by owner name
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "test2");
+		assertEquals(1, page.size());
+		assertEquals("test2", page.get(0).getOwner().getUserName());
+		
+		// Search by owner name case insensitive
+		page = alertService.findPrivateAlertsForPrivilegedUserPaged(user1, 10, 0, "TeSt2");
+		assertEquals(1, page.size());
+		assertEquals("test2", page.get(0).getOwner().getUserName());
 	}
 	
 	@Test
@@ -889,6 +1196,54 @@ public class AlertServiceTest extends AbstractTest {
 		
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).build();
 		assertEquals(2, alertService.countAlerts(context));
+	}
+	
+	@Test
+	public void testCountPrivateAlertsForPrivilegedUserWithSearchText() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		ManagementService managementService = system.getServiceFactory().getManagementService();
+		
+		// By default user is not privileged
+		PrincipalUser user1 = userService.updateUser(new PrincipalUser(admin, "test1", "test1@salesforce.com"));
+		managementService.setAdministratorPrivilege(user1, true);
+		PrincipalUser user2 = userService.updateUser(new PrincipalUser(admin, "test2", "test2@salesforce.com"));
+
+
+		Alert alert1 = alertService.updateAlert(new Alert(user1, user1, "alert-name_private1", EXPRESSION, "* * * * *"));
+		Alert alert2 = alertService.updateAlert(new Alert(user2, user2, "alert-name-private2", EXPRESSION, "* * * * *"));
+		Alert alert3 = alertService.updateAlert(new Alert(user2, user2, "alert-name-shared3", EXPRESSION, "* * * * *"));
+
+		alert1.setShared(false);
+		alertService.updateAlert(alert1);
+		alert2.setShared(false);
+		alertService.updateAlert(alert2);
+		alert3.setShared(true);
+		alertService.updateAlert(alert3);
+		
+		// count by alert name 
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("alert").build();
+		assertEquals(2, alertService.countAlerts(context));
+		
+		// count by alert name case insensitive
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("AlErT").build();
+		assertEquals(2, alertService.countAlerts(context));
+		
+		// count by alert name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("alert-name_private1").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by owner name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("test2").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by owner name case insensitive
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("TeST2").build();
+		assertEquals(1, alertService.countAlerts(context));
+		
+		// count by invalid name
+		context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts().setPrincipalUser(user1).setSearchText("invalid_name").build();
+		assertEquals(0, alertService.countAlerts(context));	
 	}
 
 	@Test
@@ -1050,6 +1405,25 @@ public class AlertServiceTest extends AbstractTest {
 				.countUserAlerts().setPrincipalUser(user).build();
 		assertFalse(privateCtx3.isCountPrivateAlerts());
 	}
-	
+
+	@Test
+	public void testTriggerInertiaSetting() {
+		UserService userService = system.getServiceFactory().getUserService();
+		AlertService alertService = system.getServiceFactory().getAlertService();
+		ArrayList<String> expressionArray = new ArrayList<String> (Arrays.asList(
+				"ABOVE(-1d:scope:metric:avg:4h-avg, #0.5#, #avg#)",
+				"LIMIT( -21d:-1d:scope:metricA:avg:4h-avg, -1d:scope:metricB:avg:4h-avg,#1#)",
+				"-20m:-0d:scone.*.*.cs19:acs.DELETERequestProcessingTime_95thPercentile{device=*acs2-1*}:avg",
+				"DOWNSAMPLE(-2d:alerts.scheduled:alert-1429851:zimsum, #5m-sum#,#-2d#, #-0m#, #0#)"
+		));
+		for (String currentExpression: expressionArray) {
+			Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert-name", currentExpression, "* * * * *");
+			try {
+				Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN, "trigger-name", 0.95, 120000);
+			} catch (IllegalArgumentException ex) {
+				fail("Should not failed in the test for inertia setting.");
+			}
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

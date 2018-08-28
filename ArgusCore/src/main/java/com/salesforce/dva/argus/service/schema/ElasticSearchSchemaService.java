@@ -45,10 +45,14 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -730,9 +734,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		MetricSchemaRecordList msrList = new MetricSchemaRecordList(records, _idgenHashAlgo);
 		try {
 			String requestBody = _mapper.writeValueAsString(msrList);
-			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(), new StringEntity(requestBody));
+			Response response = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl,
+					Collections.emptyMap(), new StringEntity(requestBody));
 			strResponse = extractResponse(response);
-
 		} catch (IOException e) {
 			//TODO: Retry with exponential back-off for handling EsRejectedExecutionException/RemoteTransportException/TimeoutException??
 			throw new SystemException(e);
@@ -743,17 +747,32 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			//TODO: If response contains HTTP 429 Too Many Requests (EsRejectedExecutionException), then retry with exponential back-off.
 			if(putResponse.errors) {
 				List<MetricSchemaRecord> recordsToRemove = new ArrayList<>();
+				List<String> updateMtsFieldList = new ArrayList<>();
 				for(Item item : putResponse.items) {
-					if(item.create != null && item.create.status != HttpStatus.SC_CONFLICT && item.create.status != HttpStatus.SC_CREATED) {
-						_logger.warn("Failed to index metric. Reason: " + new ObjectMapper().writeValueAsString(item.create.error));
-						recordsToRemove.add(msrList.getRecord(item.create._id));
-					}
-
-					if(item.index != null && item.index.status == HttpStatus.SC_NOT_FOUND) {
-						_logger.warn("Index does not exist. Error: " + new ObjectMapper().writeValueAsString(item.index.error));
-						recordsToRemove.add(msrList.getRecord(item.index._id));
+					if(item.create != null) {
+						if(item.create.status == HttpStatus.SC_CONFLICT) {
+							updateMtsFieldList.add(item.create._id);
+						}else if(item.create.status != HttpStatus.SC_CREATED) {
+							_logger.warn("Failed to index metric {}. Reason: {}", msrList.getRecord(item.create._id),
+									new ObjectMapper().writeValueAsString(item.create.error));
+							recordsToRemove.add(msrList.getRecord(item.create._id));
+						}
 					}
 				}
+				if(updateMtsFieldList.size()>0) {
+					_logger.debug("mts filed will be updated for docs with ids {}", updateMtsFieldList); 
+					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
+					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
+					for(Item item: updateResponse.items) {
+						if(item.update != null && item.update.status != HttpStatus.SC_OK) {
+							_logger.debug("Failed to update mts field for metric {}. Reason: {}",msrList.getRecord(item.update._id),
+									new ObjectMapper().writeValueAsString(item.update.error));
+							recordsToRemove.add(msrList.getRecord(item.update._id));
+						}
+					}
+					
+				}
+
 				if(recordsToRemove.size() != 0) {
 					_logger.warn("{} records were not written to ES", recordsToRemove.size());
 					records.removeAll(recordsToRemove);
@@ -929,7 +948,39 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return Pair.of(failedIds, updateRequiredIds);
 	}
 
-	protected void _addToBloomFilter(List<MetricSchemaRecord> records) {
+	protected Response updateMtsField(List<String> docIds, String index, String type) {
+		Response result= null;
+		if(docIds != null && docIds.size()>0) {
+			String requestUrl = new StringBuilder().append("/")
+					.append(index)
+					.append("/")
+					.append(type)				
+					.append("/")
+					.append("_bulk")
+					.toString();
+			try {
+				String requestBody = _getRequestBodyForMtsFieldUpdate(docIds);
+				result = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
+						new StringEntity(requestBody));
+			} catch (IOException e) {
+				throw new SystemException(e);
+			}
+		}
+		return result;
+	}
+
+	private String _getRequestBodyForMtsFieldUpdate(List<String> docIds) {
+		StringBuilder result = new StringBuilder();
+		for(String docId:docIds) {
+			result.append("{\"update\" : {\"_id\" : \"" + docId + "\" } }");
+			result.append(System.lineSeparator());
+			result.append("{\"doc\" : {\"mts\": " + System.currentTimeMillis() + "}}");
+			result.append(System.lineSeparator());
+		}
+		return result.toString();	
+	}
+
+	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
 		_logger.info("Adding {} records into bloom filter.", records.size());
 		for (MetricSchemaRecord record : records) {
 			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
@@ -1615,5 +1666,4 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			}
 		}
 	}
-
 }
