@@ -160,7 +160,7 @@ public class EmailNotifier extends AuditNotifier {
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(MessageFormat.format("<h3>Alert {0} with id {1} was {2} at {3}</h3>", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(), notificationMessage,
+        sb.append(MessageFormat.format("<h3>Alert {0} was {1} at {2}</h3>", getDisplayedName(context, context.getAlert().getName()), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
         String customText = context.getNotification().getCustomText();
         if( customText != null && customText.length()>0){
@@ -178,7 +178,7 @@ public class EmailNotifier extends AuditNotifier {
         if(!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
         else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
         if(!expression.equals("")) {
-        	    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+        	    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
         }
         if(!trigger.getType().equals(TriggerType.NO_DATA)){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
