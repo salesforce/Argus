@@ -42,6 +42,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +123,18 @@ public class Producer {
         producerConfig.put(ProducerConfig.BATCH_SIZE_CONFIG,
             Integer.parseInt(
                 _configuration.getValue(Property.KAFKA_PRODUCER_BATCH_SIZE.getName(), Property.KAFKA_PRODUCER_BATCH_SIZE.getDefaultValue())));
+        producerConfig.put("security.protocol",
+                _configuration.getValue(Property.KAFKA_SECURITY_PROTOCOL.getName(), Property.KAFKA_SECURITY_PROTOCOL.getDefaultValue()));
+        producerConfig.put(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+                _configuration.getValue(Property.KAFKA_SSL_TRUSTSTORE_LOCATION.getName(), Property.KAFKA_SSL_TRUSTSTORE_LOCATION.getDefaultValue()));
+        producerConfig.put(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
+                _configuration.getValue(Property.KAFKA_SSL_TRUSTSTORE_PASSWORD.getName(), Property.KAFKA_SSL_TRUSTSTORE_PASSWORD.getDefaultValue()));
+        producerConfig.put(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
+                _configuration.getValue(Property.KAFKA_SSL_KEYSTORE_LOCATION.getName(), Property.KAFKA_SSL_KEYSTORE_LOCATION.getDefaultValue()));
+        producerConfig.put(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
+                _configuration.getValue(Property.KAFKA_SSL_KEYSTORE_PASSWORD.getName(), Property.KAFKA_SSL_KEYSTORE_PASSWORD.getDefaultValue()));
+        producerConfig.put(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
+                _configuration.getValue(Property.KAFKA_SSL_KEY_PASSWORD.getName(), Property.KAFKA_SSL_KEY_PASSWORD.getDefaultValue()));
         return new KafkaProducer<String, String>(producerConfig, new StringSerializer(), new StringSerializer());
     }
 
@@ -135,9 +148,12 @@ public class Producer {
      * @return  The number of objects that were successfully added to the Producer Buffer.
      */
     public <T extends Serializable> int enqueue(final String topic, List<T> objects) {
+        _logger.info("*****\n\n\n\n\n");
+        _logger.info("ENQUEUEING TO TOPIC: " + topic);
         int messagesBuffered = 0;
 
         for (T object : objects) {
+            _logger.info("On object " + object.toString());
             final String value;
 
             if (String.class.isAssignableFrom(object.getClass())) {
@@ -145,12 +161,14 @@ public class Producer {
             } else {
                 try {
                     value = _mapper.writeValueAsString(object);
+                    _logger.info("serialized to: " + value);
                 } catch (JsonProcessingException e) {
                     _logger.warn("Exception while serializing the object to a string. Skipping this object.", e);
                     continue;
                 }
             }
             try {
+                _logger.info("starting executor submit to " + topic);
                 boolean addedToBuffer = _executorService.submit(new ProducerWorker(topic, value)).get();
 
                 if (addedToBuffer) {
@@ -211,6 +229,7 @@ public class Producer {
             ProducerRecord<String, String> record = new ProducerRecord<>(_topic, _message);
 
             try {
+                _logger.info("STARTING PRODUCERWORKER SEND");
                 _producer.send(record, new Callback() {
 
                         @Override
@@ -218,6 +237,7 @@ public class Producer {
                             if (exception != null) {
                                 _logger.warn("Exception while sending message. ", exception);
                             } else {
+                                _logger.info("Message sent to partition {} with offset {}.", metaData.partition(), metaData.offset());
                                 _logger.trace("Message sent to partition {} with offset {}.", metaData.partition(), metaData.offset());
                             }
                         }

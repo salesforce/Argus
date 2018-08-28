@@ -35,18 +35,29 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import kafka.consumer.ConsumerConfig;
+import kafka.Kafka;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.MessageAndMetadata;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.config.SslConfigs;
+import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +68,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -107,46 +119,37 @@ public class Consumer {
                     _logger.info("Initializing streams for topic: {}", topic);
 
                     Properties props = new Properties();
-
+                    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                            _configuration.getValue(Property.KAFKA_BROKERS.getName(), Property.KAFKA_BROKERS.getDefaultValue()));
                     props.setProperty("zookeeper.connect",
                         _configuration.getValue(Property.ZOOKEEPER_CONNECT.getName(), Property.ZOOKEEPER_CONNECT.getDefaultValue()));
                     props.setProperty("group.id",
                         _configuration.getValue(Property.KAFKA_CONSUMER_GROUPID.getName(), Property.KAFKA_CONSUMER_GROUPID.getDefaultValue()));
                     props.setProperty("auto.offset.reset", _configuration.getValue(Property.KAFKA_CONSUMER_OFFSET_RESET.getName(), Property.KAFKA_CONSUMER_OFFSET_RESET.getDefaultValue()));
-                    props.setProperty("auto.commit.interval.ms", "60000");
+                    props.setProperty("auto.commit.interval.ms", "5000");
                     props.setProperty("fetch.message.max.bytes", "2000000");
+                    props.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+                    props.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+                    props.setProperty("security.protocol",
+                            _configuration.getValue(Property.KAFKA_SECURITY_PROTOCOL.getName(), Property.KAFKA_SECURITY_PROTOCOL.getDefaultValue()));
+                    props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+                            _configuration.getValue(Property.KAFKA_SSL_TRUSTSTORE_LOCATION.getName(), Property.KAFKA_SSL_TRUSTSTORE_LOCATION.getDefaultValue()));
+                    props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
+                            _configuration.getValue(Property.KAFKA_SSL_TRUSTSTORE_PASSWORD.getName(), Property.KAFKA_SSL_TRUSTSTORE_PASSWORD.getDefaultValue()));
+                    props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
+                            _configuration.getValue(Property.KAFKA_SSL_KEYSTORE_LOCATION.getName(), Property.KAFKA_SSL_KEYSTORE_LOCATION.getDefaultValue()));
+                    props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
+                            _configuration.getValue(Property.KAFKA_SSL_KEYSTORE_PASSWORD.getName(), Property.KAFKA_SSL_KEYSTORE_PASSWORD.getDefaultValue()));
+                    props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
+                            _configuration.getValue(Property.KAFKA_SSL_KEY_PASSWORD.getName(), Property.KAFKA_SSL_KEY_PASSWORD.getDefaultValue()));
 
-                    ConsumerConnector consumer = kafka.consumer.Consumer.createJavaConsumerConnector(new ConsumerConfig(props));
-                    List<KafkaStream<byte[], byte[]>> streams = _createStreams(consumer, topic);
-                    Topic t = new Topic(topic, consumer, streams.size());
-
+                    int numStreams = Math.max(Integer.parseInt(_configuration.getValue(Property.KAFKA_CONSUMER_STREAMS_PER_TOPIC.getName(),
+                            Property.KAFKA_CONSUMER_STREAMS_PER_TOPIC.getDefaultValue())),
+                            2);
+                    Topic t = new Topic(topic, props, numStreams);
                     _topics.put(topic, t);
-                    _startStreamingMessages(topic, streams);
                 }
             }
-        }
-    }
-
-    private List<KafkaStream<byte[], byte[]>> _createStreams(ConsumerConnector consumer, String topicName) {
-        int numStreams = Math.max(Integer.parseInt(
-            _configuration.getValue(Property.KAFKA_CONSUMER_STREAMS_PER_TOPIC.getName(),
-                Property.KAFKA_CONSUMER_STREAMS_PER_TOPIC.getDefaultValue())), 2);
-
-        return consumer.createMessageStreamsByFilter(new Whitelist(topicName), numStreams);
-    }
-
-    /**
-     * Retrieves the executor service for the given topic from the map of topics and submits a KafkaConsumer task for each stream in the list of
-     * streams.
-     *
-     * @param  topic    The topic to start streaming messages from.
-     * @param  streams  The streams for those messages.
-     */
-    private void _startStreamingMessages(String topic, List<KafkaStream<byte[], byte[]>> streams) {
-        ExecutorService executorService = _topics.get(topic).getStreamExecutorService();
-
-        for (final KafkaStream<byte[], byte[]> stream : streams) {
-            executorService.submit(new KafkaConsumer(stream));
         }
     }
 
@@ -241,12 +244,12 @@ public class Consumer {
     /** Enqueue un-flushed messages back on to Kafka. */
     public void shutdown() {
         for (Topic topic : _topics.values()) {
-            if (topic.getConsumerConnector() != null) {
-                topic.getConsumerConnector().shutdown();
+            for (ConsumerWorker worker: topic.getWorkers()) {
+                worker.shutdown();
             }
-            topic.getStreamExecutorService().shutdownNow();
+            topic.getExecutorService().shutdownNow();
             try {
-                topic.getStreamExecutorService().awaitTermination(60, TimeUnit.SECONDS);
+                topic.getExecutorService().awaitTermination(60, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 _logger.warn("Stream executor service was interrupted while awaiting termination. This should never happen.");
             }
@@ -276,53 +279,79 @@ public class Consumer {
      *
      * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
-    private class KafkaConsumer implements Runnable {
-
-        private final KafkaStream<byte[], byte[]> _stream;
+    private class ConsumerWorker implements Runnable {
+        private final AtomicBoolean closed = new AtomicBoolean(false);
+        private final KafkaConsumer<String, String> _consumer;
+        private final String _topic;
 
         /**
          * Creates a new Consumer object.
          *
-         * @param  stream  The Kafka stream to consume.
          */
-        public KafkaConsumer(KafkaStream<byte[], byte[]> stream) {
+        public ConsumerWorker(KafkaConsumer<String, String> consumer, String topic) {
             _logger.debug("Creating a new stream");
-            _stream = stream;
+            _consumer = consumer;
+            _topic = topic;
+        }
+
+        public void shutdown() {
+            closed.set(true);
+            _consumer.wakeup();
         }
 
         @Override
         public void run() {
-            ConsumerIterator<byte[], byte[]> it = _stream.iterator();
-
-            while (it.hasNext()) {
-                Thread.yield();
-                if (Thread.currentThread().isInterrupted()) {
-                    _logger.info("Interrupted... Will exit now.");
-                    break;
-                }
-
-                MessageAndMetadata<byte[], byte[]> m = it.next();
-
-                try {
-                    String message = new String(m.message());
-                    String topic = m.topic();
-
-                    if (message != null) {
-                        _topics.get(topic).getMessages().put(message);
-
-                        long c = count.incrementAndGet();
-
-                        if (c % 50000 == 0) {
-                            _logger.debug("Read {} messages.", count.get());
-                        }
-                        if (_topics.get(topic).getMessages().size() % 1000 == 0) {
-                            _logger.debug("Message queued. Queue size = {}", _topics.get(topic).getMessages().size());
-                        }
+            try {
+                _consumer.subscribe(Arrays.asList(_topic), new ConsumerRebalanceListener() {
+                    @Override
+                    public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                        for (TopicPartition tp: partitions)
+                            _logger.info("Partitions revoked for topic=" + tp.topic() + " and partition=" + tp.partition());
                     }
-                } catch (InterruptedException ie) {
-                    _logger.debug("Interrupted while consuming message.");
-                    Thread.currentThread().interrupt();
+
+                    @Override
+                    public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                        for (TopicPartition tp: partitions)
+                            _logger.info("Partitions assigned for topic=" + tp.topic() + " and partition=" + tp.partition());
+                    }
+                });
+                while (!closed.get()) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        _logger.info("Interrupted... Will exit now.");
+                        break;
+                    }
+
+                    ConsumerRecords<String, String> records = _consumer.poll(Long.MAX_VALUE);
+                    try {
+                        for (ConsumerRecord<String, String> record : records) {
+                            String message = record.value();
+                            _logger.info("GOT MESSAGE " + message);
+                            String topic = record.topic();
+
+                            if (message != null) {
+                                _topics.get(topic).getMessages().put(message);
+
+                                long c = count.incrementAndGet();
+
+                                if (c % 50000 == 0) {
+                                    _logger.debug("Read {} messages.", count.get());
+                                }
+                                if (_topics.get(topic).getMessages().size() % 1000 == 0) {
+                                    _logger.debug("Message queued. Queue size = {}", _topics.get(topic).getMessages().size());
+                                }
+                            }
+                        }
+                    } catch (InterruptedException ex) {
+                        _logger.debug("Interrupted while consuming message.");
+                        Thread.currentThread().interrupt();
+                    }
                 }
+            } catch (WakeupException e) {
+                // Ignore exception if closing
+                if (!closed.get()) throw e;
+            } finally {
+                _logger.info("ConsumerWorker hit finally block");
+                _consumer.close();
             }
         }
     }
@@ -335,41 +364,33 @@ public class Consumer {
      */
     private class Topic {
 
-        private ConsumerConnector _consumerConnector;
-        private ExecutorService _streamExecutorService;
-        private BlockingQueue<String> _messages;
+        ExecutorService executorService;
+        BlockingQueue<String> messages;
+        List<ConsumerWorker> workers = new ArrayList<>();
 
         /**
          * Creates a new Topic object.
          *
-         * @param  name               The topic name.
-         * @param  consumerConnector  The Kafka consumer connector.
+         * @param topicName
+         * @param consumerProps
          * @param  numStreams         The number of streams with which to consume the topic.
          */
-        public Topic(String name, ConsumerConnector consumerConnector, int numStreams) {
-            this(name, consumerConnector, numStreams, new LinkedBlockingQueue<String>(MAX_BUFFER_SIZE));
-        }
+        public Topic(final String topicName, Properties consumerProps, int numStreams) {
+            messages = new LinkedBlockingQueue<>(MAX_BUFFER_SIZE);
+            executorService = Executors.newFixedThreadPool(numStreams, new ThreadFactory() {
+                AtomicInteger id = new AtomicInteger(0);
 
-        /**
-         * Creates a new Topic object.
-         *
-         * @param  name               The topic name.
-         * @param  consumerConnector  The Kafka consumer connector.
-         * @param  numStreams         The number of streams with which to consume the topic.
-         * @param  messages           The queue into which messages will be consumed.
-         */
-        public Topic(final String name, ConsumerConnector consumerConnector, int numStreams, BlockingQueue<String> messages) {
-            _consumerConnector = consumerConnector;
-            _messages = messages;
-            _streamExecutorService = Executors.newFixedThreadPool(numStreams, new ThreadFactory() {
-
-                    AtomicInteger id = new AtomicInteger(0);
-
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        return new Thread(r, MessageFormat.format("{0}-stream-{1}", name, id.getAndIncrement()));
-                    }
-                });
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, MessageFormat.format("{0}-consumerworker-{1}", topicName, id.getAndIncrement()));
+                }
+            });
+            for (int i = 0; i < numStreams; i++) {
+                KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps);
+                ConsumerWorker worker = new ConsumerWorker(consumer, topicName);
+                workers.add(worker);
+                executorService.submit(worker);
+            }
         }
 
         /**
@@ -377,8 +398,8 @@ public class Consumer {
          *
          * @return  The consumer connector.
          */
-        public ConsumerConnector getConsumerConnector() {
-            return _consumerConnector;
+        public List<ConsumerWorker> getWorkers() {
+            return workers;
         }
 
         /**
@@ -386,8 +407,8 @@ public class Consumer {
          *
          * @return  The stream executor service.
          */
-        public ExecutorService getStreamExecutorService() {
-            return _streamExecutorService;
+        public ExecutorService getExecutorService(){
+            return executorService;
         }
 
         /**
@@ -396,7 +417,7 @@ public class Consumer {
          * @return  The dequeued messages.
          */
         public BlockingQueue<String> getMessages() {
-            return _messages;
+            return messages;
         }
     }
 }

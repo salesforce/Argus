@@ -37,6 +37,8 @@ import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import org.apache.kafka.common.config.SslConfigs;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +59,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
 
     private Producer _producer = null;
     private Consumer _consumer = null;
+    private final SystemConfiguration _config;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -75,6 +78,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         if (!Boolean.parseBoolean(config.getValue(Property.KAFKA_DISABLE_CONSUMER.getName(), Property.KAFKA_DISABLE_CONSUMER.getDefaultValue()))) {
             _consumer = new Consumer(config);
         }
+        _config = config;
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -85,6 +89,21 @@ public class KafkaMessageService extends DefaultService implements MQService {
 
     private void requireConsumerEnabled() {
         requireState(_consumer != null, "Cannot perform this action when Consumer is disabled");
+    }
+
+    /*
+     * Transform an MQService MQQueue name to the configured topic name if in .properties file
+     */
+    private String toKafkaTopic(String topic) {
+        if (topic.equals(MQQueue.ALERT.getQueueName())) {
+            return _config.getValue(Property.KAFKA_ALERTS_TOPIC.getName(), Property.KAFKA_ALERTS_TOPIC.getDefaultValue());
+        } else if (topic.equals(MQQueue.ANNOTATION.getQueueName())) {
+            return _config.getValue(Property.KAFKA_ANNOTATIONS_TOPIC.getName(), Property.KAFKA_ANNOTATIONS_TOPIC.getDefaultValue());
+        } else if (topic.equals(MQQueue.METRIC.getQueueName())) {
+            return _config.getValue(Property.KAFKA_METRICS_TOPIC.getName(), Property.KAFKA_METRICS_TOPIC.getDefaultValue());
+        } else {
+            return topic;
+        }
     }
 
     @Override
@@ -105,7 +124,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireProducerEnabled();
         requireArgument(topic != null && !topic.trim().isEmpty(), "Topic name cannot be null or empty.");
         requireArgument(objects != null, "The list of objects to enqueue cannot be null.");
-        _producer.enqueue(topic, objects);
+        _producer.enqueue(toKafkaTopic(topic), objects);
     }
 
     @Override
@@ -140,6 +159,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
         requireArgument(limit > 0, "Limit must be non-negative.");
+        topic = toKafkaTopic(topic);
         _consumer.initializeTopic(topic);
         return _consumer.dequeueFromBuffer(topic, type, timeout, limit);
     }
@@ -152,6 +172,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
         requireArgument(limit > 0, "Limit must be non-negative.");
+        topic = toKafkaTopic(topic);
         _consumer.initializeTopic(topic);
         return _consumer.dequeueFromBuffer(topic, type, timeout, limit);
     }
@@ -203,7 +224,16 @@ public class KafkaMessageService extends DefaultService implements MQService {
         /** Specifies the default consumer group ID. */
         KAFKA_CONSUMER_GROUPID("service.property.mq.kafka.consumer.groupid", "argus-consumer-unit"),
         /** Specifies the default consumer group ID. */
-        KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "smallest"),
+        KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "earliest"),
+        KAFKA_ALERTS_TOPIC("service.property.mq.kafka.alerts.topic", "argusAlertQueue"),
+        KAFKA_ANNOTATIONS_TOPIC("service.property.mq.kafka.annotations.topic", "argusAnnotationQueue"),
+        KAFKA_METRICS_TOPIC("service.property.mq.kafka.metrics.topic", "argusMetricQueue"),
+        KAFKA_SECURITY_PROTOCOL("service.property.mq.kafka.security.protocol", "PLAINTEXT"),
+        KAFKA_SSL_TRUSTSTORE_LOCATION("service.property.mq.kafka.ssl.truststore.location", ""),
+        KAFKA_SSL_TRUSTSTORE_PASSWORD("service.property.mq.kafka.ssl.truststore.password", ""),
+        KAFKA_SSL_KEYSTORE_LOCATION("service.property.mq.kafka.ssl.keystore.location", ""),
+        KAFKA_SSL_KEYSTORE_PASSWORD("service.property.mq.kafka.ssl.keystore.password", ""),
+        KAFKA_SSL_KEY_PASSWORD("service.property.mq.kafka.ssl.key.password", ""),
         /** Specifies the Kafka ZooKeeper connection endpoint. */
         ZOOKEEPER_CONNECT("service.property.mq.zookeeper.connect", "localhost:2185"),
         /** Specifies the Kafka Zookeeper connection timeout in milliseconds.  Default is 10000. */
