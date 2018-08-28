@@ -69,6 +69,9 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.salesforce.dva.argus.service.AlertService;
+import org.apache.commons.math.ArgumentOutsideDomainException;
+import org.apache.commons.math.exception.OutOfRangeException;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -431,6 +434,16 @@ public class Notification extends JPAEntity implements Serializable {
      */
     public void setSubscriptions(List<String> subscriptions) {
         this.subscriptions.clear();
+        if(subscriptions == null) return;
+        for(String currentSubscription: subscriptions) {
+            if (this.getNotifierName().equals(AlertService.SupportedNotifier.GUS.getName())) {
+                if (currentSubscription.length() < 10)
+                    throw new IllegalArgumentException("GUS subjectId is incorrect.");
+            } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
+                if (!currentSubscription.matches("[a-zA-Z0-9\\-\\_\\.]+@[a-zA-Z0-9\\-\\_\\.]+\\.[a-zA-Z0-9]{3}"))
+                    throw new IllegalArgumentException("Email Address is incorrect.");
+            }
+        }
         if (subscriptions != null && !subscriptions.isEmpty()) {
             this.subscriptions.addAll(subscriptions);
         }
