@@ -64,6 +64,7 @@ import javax.persistence.TypedQuery;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Selection;
@@ -104,6 +105,7 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
  * @author  Tom Valine (tvaline@salesforce.com)
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
  * @author	Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author  Dongpu Jin (djin@salesforce.com)
  */
 @SuppressWarnings("serial")
 @Entity
@@ -158,13 +160,28 @@ import com.salesforce.dva.argus.service.metric.MetricReader;
 					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
 					),
 			@NamedQuery(
+					name = "Alert.countByOwnerWithSearchText",
+					query = "SELECT count(a) FROM Alert a WHERE a.owner = :owner AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
+					),
+			@NamedQuery(
 					name = "Alert.countSharedAlerts",
 					query = "SELECT count(a) from Alert a where a.shared = true AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
 					),
 			@NamedQuery(
+					name = "Alert.countSharedAlertsWithSearchText",
+					query = "SELECT count(a) FROM Alert a WHERE a.shared = true AND a.id IN (SELECT jpa.id FROM JPAEntity jpa WHERE jpa.deleted = false) "
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
+					),
+			@NamedQuery(
 					name = "Alert.countPrivateAlertsForPrivilegedUser",
 					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false)"
-					)
+					),
+			@NamedQuery(
+					name = "Alert.countPrivateAlertsForPrivilegedUserWithSearchText",
+					query = "SELECT count(a) from Alert a where a.shared = false AND a.id in (SELECT jpa.id from JPAEntity jpa where jpa.deleted = false) "
+							+ "AND (FUNCTION('LOWER', a.name) LIKE :searchtext OR FUNCTION('LOWER', a.owner.userName) LIKE :searchtext)"
+					),
 		}
 		)
 public class Alert extends JPAEntity implements Serializable, CronJob {
@@ -212,6 +229,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	private static String DELETED_KEY = "deleted";
 	private static String SHARED_KEY = "shared";
 	private static String OWNER_KEY = "owner";
+	private static String SEARCHTEXT_KEY = "searchtext";
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -316,18 +334,33 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The entity manager to user. Cannot be null.
 	 * @param owner
 	 *            owner The owner to retrieve alerts for. Cannot be null.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 *
 	 * @return The total number of alerts for the owner.
 	 */
-	public static int countByOwner(EntityManager em, PrincipalUser owner) {
+	public static int countByOwner(EntityManager em, PrincipalUser owner, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
-		TypedQuery<Long> query = em.createNamedQuery("Alert.countByOwner", Long.class);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
-			query.setParameter("owner", owner);
+			TypedQuery<Long> query = null;
+
+			if (searchText == null || searchText.isEmpty()) {
+				query = em.createNamedQuery("Alert.countByOwner", Long.class);
+			} else {
+				query = em.createNamedQuery("Alert.countByOwnerWithSearchText", Long.class);
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+			}
+
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+			query.setParameter(OWNER_KEY, owner);
+
 			return query.getSingleResult().intValue();
 		} catch (NoResultException ex) {
 			return 0;
@@ -353,7 +386,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams);
+			return getAlertsMetaPaged(em, null, null, whereParams, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -370,13 +403,19 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The limit of return to return.
 	 * @param offset
 	 *            The starting offset of the result.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 *
 	 * @return The list of alerts for the owner.
 	 */
 	public static List<Alert> findByOwnerMetaPaged(EntityManager em, PrincipalUser owner, Integer limit,
-			Integer offset) {
+			Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
@@ -391,7 +430,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(OWNER_KEY, owner);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -432,7 +471,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(DELETED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, null, null, whereParams);
+			return getAlertsMetaPaged(em, null, null, whereParams, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -627,16 +666,31 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *
 	 * @param em
 	 *            The entity manager to user. Cannot be null.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 *
 	 * @return The count of all shared alerts.
 	 */
-	public static int countSharedAlerts(EntityManager em) {
+	public static int countSharedAlerts(EntityManager em, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
-		TypedQuery<Long> query = em.createNamedQuery("Alert.countSharedAlerts", Long.class);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
 		try {
+			TypedQuery<Long> query = null;
+
+			if (searchText == null || searchText.isEmpty()) {
+				query = em.createNamedQuery("Alert.countSharedAlerts", Long.class);
+			} else {
+				query = em.createNamedQuery("Alert.countSharedAlertsWithSearchText", Long.class);
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+			}
+
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
 			return query.getSingleResult().intValue();
 		} catch (NoResultException ex) {
 			return 0;
@@ -665,7 +719,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			}
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, null, whereParams);
+			return getAlertsMetaPaged(em, limit, null, whereParams, null);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -682,11 +736,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The maximum number of rows to return.
 	 * @param offset
 	 *            The starting offset of the result.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 * 
 	 * @return The list of shared alerts with given limit and offset.
 	 */
-	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset) {
+	public static List<Alert> findSharedAlertsMetaPaged(EntityManager em, Integer limit, Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
+		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
 		}
@@ -701,7 +762,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, true);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -714,11 +775,18 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * @param   owner  The owner to filter on 
 	 * @param   limit  The maximum number of rows to return.
 	 * @param 	offset The starting offset of the result.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 *
 	 * @return The list of private alerts' meta with given limit and offset.
 	 */
-	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset) {
+	public static List<Alert> findPrivateAlertsForPrivilegedUserMetaPaged(EntityManager em, PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
+		
 		if (limit == null || limit <= 0) {
 			limit = DEFAULT_PAGE_LIMIT;
 		}
@@ -738,7 +806,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			whereParams.put(SHARED_KEY, false);
 
 			// Get alerts meta
-			return getAlertsMetaPaged(em, limit, offset, whereParams);
+			return getAlertsMetaPaged(em, limit, offset, whereParams, searchText);
 		} catch (NoResultException ex) {
 			return new ArrayList<>(0);
 		}
@@ -752,25 +820,40 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 *            The entity manager to user. Cannot be null.
 	 * @param owner
 	 *            The owner to filter on.
+	 * @param searchText
+	 * 			  The text to filter the search results.
 	 * 
 	 * @return The total number of private alerts for privileged user.
 	 */
-	public static int countPrivateAlertsForPrivilegedUser(EntityManager em, PrincipalUser owner) {
+	public static int countPrivateAlertsForPrivilegedUser(EntityManager em, PrincipalUser owner, String searchText) {
 		requireArgument(em != null, "Entity manager can not be null.");
 		requireArgument(owner != null, "Owner cannot be null.");
+		
+		if (searchText != null) {
+			searchText.trim();
+		}
 
 		if (!owner.isPrivileged()) {
 			return 0;
 		}
-
-		TypedQuery<Long> query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUser", Long.class);
-		query.setHint(QueryHints.REFRESH, HintValues.TRUE);
-		query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+		
 		try {
+			TypedQuery<Long> query = null;
+
+			if (searchText == null || searchText.isEmpty()) {
+				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUser", Long.class);
+			} else {
+				query = em.createNamedQuery("Alert.countPrivateAlertsForPrivilegedUserWithSearchText", Long.class);
+				query.setParameter(SEARCHTEXT_KEY, "%" + searchText.toLowerCase() + "%");
+			}
+
+			query.setHint(QueryHints.REFRESH, HintValues.TRUE);
+			query.setHint("javax.persistence.cache.storeMode", "REFRESH");
+
 			return query.getSingleResult().intValue();
 		} catch (NoResultException ex) {
 			return 0;
-		}
+		} 
 	}
 
 	/**
@@ -803,7 +886,7 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 	 * limit and offset.
 	 */
 	private static List<Alert> getAlertsMetaPaged(EntityManager em, Integer limit, Integer offset,
-			Map<String, Object> whereParams) {
+			Map<String, Object> whereParams, String searchText) {
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<Tuple> cq = cb.createTupleQuery();
 		Root<Alert> e = cq.from(Alert.class);
@@ -815,11 +898,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 		}
 		cq.multiselect(fieldsToSelect);
 
-		// Set where conditions, so far we only use boolean and PrincipalUser
+		List<Predicate> predicates = new ArrayList<>();
+		
+		// Set WHERE conditions, so far we only use boolean and PrincipalUser
 		// type conditions. New types can be easily added here on demand.
 		if (whereParams != null && whereParams.size() > 0) {
-			List<Predicate> predicates = new ArrayList<>();
-
 			for (String key : whereParams.keySet()) {
 				Object value = whereParams.get(key);
 				if (value instanceof Boolean) {
@@ -831,10 +914,20 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 					predicates.add(cb.equal(e.get(key), (PrincipalUser) value));
 				}
 			}
-
-			if (predicates.size() > 0) {
-				cq.where(predicates.toArray(new Predicate[predicates.size()]));
-			}
+		}
+		
+		// Filter on alert name and owner name if not empty. All values are
+		// normalized to lower case for case insensitive search.
+		if (searchText != null && !searchText.isEmpty()) {
+			String searchPattern = "%" + searchText.toLowerCase() + "%";
+			Expression<String> alertName = e.get("name");
+			Expression<String> ownerName = e.join("owner").get("userName");
+			predicates.add(cb.or(cb.like(cb.function("LOWER", String.class, alertName), searchPattern),
+					cb.like(cb.function("LOWER", String.class, ownerName), searchPattern)));
+		}
+		
+		if (predicates.size() > 0) {
+			cq.where(predicates.toArray(new Predicate[predicates.size()]));
 		}
 
 		// Sort result by alert id
@@ -871,6 +964,11 @@ public class Alert extends JPAEntity implements Serializable, CronJob {
 			a.modifiedBy = PrincipalUser.class.cast(tuple.get("modifiedBy"));
 
 			alerts.add(a);
+		}
+		
+		// Trim excessive items more then limit in the end
+		if (limit != null && limit > 0) {
+			alerts = alerts.subList(0, Math.min(alerts.size(), limit));
 		}
 
 		return alerts;

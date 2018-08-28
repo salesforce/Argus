@@ -50,7 +50,7 @@ import java.util.Properties;
 /**
  * Provides methods to create, update and delete alerts.
  *
- * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com), Dongpu Jin (djin@salesforce.com)
  */
 public interface AlertService extends Service {
 
@@ -144,11 +144,12 @@ public interface AlertService extends Service {
 	 * @param owner The owner to return alerts for. Cannot be null.
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
+	 * @param searchText The text to filter on the search results if not null or empty.
 	 *
 	 * @return The list of alerts.
 	 */
-	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset);
-
+	List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
+	
 	/**
 	 * Returns a list of alerts that have been marked for deletion.
 	 *
@@ -285,10 +286,11 @@ public interface AlertService extends Service {
 	 * 
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
+	 * @param searchText The text to filter on the search results if not null or empty.
 	 *
 	 * @return The list of shared alerts.
 	 */
-	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset);
+	List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText);
 
 	/**
 	 * Returns the list of supported notifiers.
@@ -319,10 +321,11 @@ public interface AlertService extends Service {
 	 * @param owner The owner to filter on.
 	 * @param limit The number of items to fetch.
 	 * @param offset The starting point of current page.
+	 * @param searchText The text to filter on the search results if not null or empty.
 	 *
 	 * @return The list of private alerts if privileged user.
 	 */
-	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset);
+	List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText);
 	
 	/**
 	 * Count alerts with the given AlertsCountContext.
