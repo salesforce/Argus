@@ -2,6 +2,8 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import freemarker.template.Configuration;
+import freemarker.template.TemplateExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 public class AlertUtils {
 
 	private static final Logger _logger = LoggerFactory.getLogger(AlertUtils.class);
+
 	public static boolean isScopePresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
 		for(Pattern regexPattern : scopeRegexPatterns) {
 			if(regexPattern.matcher(expression.toLowerCase()).find()) {
@@ -100,4 +103,5 @@ public class AlertUtils {
 
 		return absoluteExpression;
 	}
+
 }

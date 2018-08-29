@@ -43,6 +43,8 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,39 +110,6 @@ public abstract class DefaultNotifier implements Notifier {
         _dispose();
     }
 
-    private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
-        Map<String, String> lowerCaseTagMap = new HashMap<>();
-        for (String originalTags: tags.keySet()) {
-            lowerCaseTagMap.put(originalTags.toLowerCase(), tags.get(originalTags));
-        }
-        return lowerCaseTagMap;
-    }
-
-    public String replaceTemplatesInName(String triggerName, String scope, String metric,  Map<String, String> tags) {
-        triggerName = triggerName.replaceAll("(?i)\\$\\{scope\\}", scope);
-        triggerName = triggerName.replaceAll("(?i)\\$\\{metric\\}", metric);
-        Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
-        Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(triggerName);
-        while (m.find()) {
-            String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1).toLowerCase();
-            if (lowerCaseTagMap.containsKey(currentTagKey))
-                triggerName = triggerName.replace(currentRegex, lowerCaseTagMap.get(currentTagKey));
-        }
-        return triggerName;
-
-    }
-
-    /*
-     * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
-     * If no matches are found, nothing is done. Should be a protected function, making public for unit testing.
-     * */
-    protected String getDisplayedName(NotificationContext context, String templatedString) {
-        Metric triggeredMetric = context.getTriggeredMetric();
-        String scope = triggeredMetric.getScope(), metric = triggeredMetric.getMetric();
-        Map<String, String> tags = triggeredMetric.getTags();
-        return replaceTemplatesInName(templatedString, scope, metric, tags);
-    }
-
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {
         Alert alert = notificationContext.getAlert();
         Notification notification = null;
@@ -162,9 +131,9 @@ public abstract class DefaultNotifier implements Notifier {
                 Map<String, String> fields = new TreeMap<>();
 
                 fields.putAll(additionalFields);
-                fields.put("Alert Name", notificationContext.getAlert().getName());
-                fields.put("Notification Name", notificationContext.getNotification().getName());
-                fields.put("Trigger Name", notificationContext.getTrigger().getName());
+                fields.put("Alert Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getAlert().getName()));
+                fields.put("Notification Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getNotification().getName()));
+                fields.put("Trigger Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getTrigger().getName()));
                 fields.put("Tags", resolvedTags.toString());
                 annotation.setFields(fields);
                 annotation.setTags(resolvedTags);
