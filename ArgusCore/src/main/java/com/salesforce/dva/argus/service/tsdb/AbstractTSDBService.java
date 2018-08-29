@@ -52,11 +52,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -128,6 +132,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	protected final MonitorService _monitorService;
 	private final int RETRY_COUNT;
 
+	private Cache<String, String> _annotationUidCache;
+
 	//~ Constructors *********************************************************************************************************************************
 
 	/**
@@ -179,6 +185,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 		requireArgument(connCount >= 2, "At least two connections are required.");
 		requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
+
+		_annotationUidCache = CacheBuilder.newBuilder()
+				.maximumSize(100000)
+				.recordStats()
+				.expireAfterAccess(1, TimeUnit.DAYS)
+				.build();
 
 		try {
 			int index = 0;
@@ -738,7 +750,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
-	static class AnnotationWrapper {
+	class AnnotationWrapper {
 
 		String _uid;
 		Long _timestamp;
@@ -756,7 +768,18 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			_service = service;
 			for (Annotation annotation : annotations) {
 				if (_uid == null) {
-					_uid = getUid(annotation);
+
+					String key = toAnnotationKey(annotation);
+
+					try {
+						_uid = _annotationUidCache.get(key, () -> getUid(annotation, key));
+					} catch (ExecutionException e) {
+						throw new SystemException(e.getCause());
+					}
+
+					_logger.info("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
+							_annotationUidCache.stats().hitCount(), _annotationUidCache.stats().requestCount(), _annotationUidCache.stats().evictionCount());
+
 					_timestamp = annotation.getTimestamp();
 				}
 				_custom.put(annotation.getSource() + "." + annotation.getId(), annotation);
@@ -767,8 +790,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			return new ArrayList<>(_custom.values());
 		}
 
-		private String getUid(Annotation annotation) {
-			String scope = toAnnotationKey(annotation);
+		private String getUid(Annotation annotation, String annotationKey) {
+			String scope = annotationKey;
 			String type = annotation.getType();
 			Map<String, String> tags = annotation.getTags();
 			MetricQuery query = new MetricQuery(scope, type, tags, 0L, 2L);
