@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.MessageFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -46,10 +47,9 @@ public class TemplateReplacement {
 
     private String replaceKeywordsToLowerCase(String templateString) {
         String lowercasedString = templateString;
-        Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(templateString);
+        Matcher m = Pattern.compile("(?i)\\$\\{scope\\}|\\$\\{metric\\}|\\$\\{tag\\..*?\\}|\\sscope\\s|\\smetric\\s|\\stag\\..*?\\s").matcher(templateString);
         while (m.find()) {
             String currentSubstring = m.group();
-            if(currentSubstring.contains(".") || currentSubstring.contains("triggerTimestamp") || currentSubstring.contains("triggerValue")) continue;
             lowercasedString = lowercasedString.replace(currentSubstring, currentSubstring.toLowerCase());
         }
         return lowercasedString;
@@ -67,16 +67,16 @@ public class TemplateReplacement {
         root.put("scope", triggeredMetric.getScope());
         root.put("metric", triggeredMetric.getMetric());
         Map<String, String> lowerCaseTagMap = singletonInstance.getLowerCaseTagMap(triggeredMetric.getTags());
-        root.put("tags", lowerCaseTagMap);
-        root.put("triggerTimestamp", context.getTriggerFiredTime());
+        root.put("tag", lowerCaseTagMap);
+        root.put("triggerTimestamp", new Date(context.getTriggerFiredTime()));
         root.put("triggerValue", context.getTriggerEventValue());
-        for(String key: lowerCaseTagMap.keySet()) root.put(key, lowerCaseTagMap.get(key));
 
-        while(generatedString.contains("${")) { // If we unwrap alert.name, it may also be templatize, we should replace that as well.
+        do {
+            templateString = generatedString;
             templateString = singletonInstance.replaceKeywordsToLowerCase(templateString);
             Template configuredTemplate = null;
             try {
-                configuredTemplate = new Template("name", new StringReader(templateString), cfg);
+                configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
                 configuredTemplate.process(root, stringWriter);
                 generatedString = stringWriter.toString();
@@ -84,8 +84,7 @@ public class TemplateReplacement {
                 _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
                 return null;
             }
-            templateString = generatedString;
-        }
+        } while(!generatedString.equals(templateString)); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
 
         return generatedString;
     }

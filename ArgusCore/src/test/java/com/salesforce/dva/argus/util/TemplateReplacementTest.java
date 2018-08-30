@@ -25,9 +25,9 @@ public class TemplateReplacementTest extends AbstractTest {
     @Test
     public void testTemplateNaming() {
         UserService userService = system.getServiceFactory().getUserService();
-        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${TAg3}-${tAg2}", expression, "* * * * *");
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}", expression, "* * * * *");
         Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
-        Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", 2D, 5);
+        Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.tag3}-${tag.tAg2}", 2D, 5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
         alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
@@ -42,8 +42,8 @@ public class TemplateReplacementTest extends AbstractTest {
         DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
         AlertService.Notifier notifier = system.getServiceFactory().getAlertService().getNotifier(AlertService.SupportedNotifier.GOC);
         notifier.sendNotification(context);
-        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${TAg3}-${tAg2}", context.getAlert().getName());
-        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag1}-trigger_tag1-${tag2}-trigger_tag2-${tag3}-${tAg2}", context.getTrigger().getName());
+        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}", context.getAlert().getName());
+        assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.tag3}-${tag.tAg2}", context.getTrigger().getName());
         assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-val3-val2", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()));
     }
 
@@ -52,7 +52,7 @@ public class TemplateReplacementTest extends AbstractTest {
 
         UserService userService = system.getServiceFactory().getUserService();
         Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name-${mETRIc}", expression, "* * * * *");
-        Notification notification = new Notification("notification_name-${tAg}", alert, "notifier_name", new ArrayList<String>(), 23);
+        Notification notification = new Notification("notification_name-${tag.tAg}", alert, "notifier_name", new ArrayList<String>(), 23);
         Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "${sCopE}-trigger_name", 2D, 7D,5);
 
         alert.setNotifications(Arrays.asList(new Notification[] { notification }));
@@ -65,7 +65,7 @@ public class TemplateReplacementTest extends AbstractTest {
         m.setTags(tags);
         DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 0.0, m);
 
-        String customTemplate = "Alert Name = ${alert.name}, \n" +
+        String customTemplate = "Alert Name = ${alert.name?upper_case}, \n" +
                 "Alert Expression = ${alert.expression}, \n" +
                 "Alert cronEntry = ${alert.cronEntry}, \n" +
                 "Alert enabled = ${alert.enabled?then('alert enabled', 'alert not enabled')}, \n" +
@@ -77,12 +77,12 @@ public class TemplateReplacementTest extends AbstractTest {
                 "Trigger Inertia = ${trigger.inertia}, \n" +
                 "Trigger Value = ${triggerValue}, \n" +
                 "Trigger Timestamp = ${triggerTimestamp}, \n" +
-                "Notification Name = ${notification.name}, \n" +
+                "Notification Name = ${notification.name?cap_first}, \n" +
                 "Notification cooldownPeriod = ${notification.cooldownPeriod}, \n" +
                 "Notification SRActionable = ${notification.SRActionable?then('SR Actionable','Not SR Actionable')}, \n" +
                 "Notification severityLevel = ${notification.severityLevel}";
 
-        String expectedOutput = "Alert Name = alert_name-metric, \n" +
+        String expectedOutput = "Alert Name = ALERT_NAME-metric, \n" +
                 "Alert Expression = DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg), \n" +
                 "Alert cronEntry = * * * * *, \n" +
                 "Alert enabled = alert not enabled, \n" +
@@ -94,10 +94,46 @@ public class TemplateReplacementTest extends AbstractTest {
                 "Trigger Inertia = 5, \n" +
                 "Trigger Value = 0, \n" +
                 "Trigger Timestamp = 1,418,319,600,000, \n" +
-                "Notification Name = notification_name-val, \n" +
+                "Notification Name = Notification_name-val, \n" +
                 "Notification cooldownPeriod = 23, \n" +
                 "Notification SRActionable = Not SR Actionable, \n" +
                 "Notification severityLevel = 5";
+        assertEquals(expectedOutput, TemplateReplacement.applyTemplateChanges(context, customTemplate));
+    }
+
+    @Test
+    public void testConditionalOutput() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "alert_name", expression, "* * * * *");
+        Notification notification = new Notification("notification_name", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 7.1D,5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+
+        Metric m = new Metric("scope", "metric");
+        Map<String, String> tags = new HashMap<>();
+        tags.put("tag","val");
+        m.setTags(tags);
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 1.5, m);
+
+        String customTemplate = "<#if trigger.threshold <= 4> Primary Threshold is less than 4 </#if>, \n" +
+                "<#if (trigger.secondaryThreshold == 7.1)> Secondary Threshold is 7.1 </#if>, \n" +
+                "<#if trigger.inertia == 5 && (trigger.threshold > 5)> Inertia is 5, Primary Threshold more than 5 <#elseif  (trigger.threshold > 5)>Primary Threshold more than 5 <#elseif trigger.inertia == 5> Inertia is 5 </#if>, \n" +
+                "<#if trigger.name?matches('trigger_name') && triggerValue < 2.0> Trigger name matches and trigger value is < 1 </#if>, \n" +
+                "<#if triggerValue?round == 2> Trigger fired rounded value is 2 </#if>, \n" +
+                "<#assign dt = triggerTimestamp?datetime> Trigger fired date-time: ${dt?iso('GMT')}, \n" +
+                " Time before 2.5 hrs of firing: ${dt?iso('GMT-02:30')}";
+
+
+        String expectedOutput = " Primary Threshold is less than 4 , \n" +
+                " Secondary Threshold is 7.1 , \n" +
+                " Inertia is 5 , \n" +
+                " Trigger name matches and trigger value is < 1 , \n" +
+                " Trigger fired rounded value is 2 , \n" +
+                " Trigger fired date-time: 2014-12-11T17:40:00Z, \n" +
+                " Time before 2.5 hrs of firing: 2014-12-11T15:10:00-02:30";
         assertEquals(expectedOutput, TemplateReplacement.applyTemplateChanges(context, customTemplate));
     }
 
