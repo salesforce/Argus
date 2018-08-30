@@ -76,7 +76,7 @@ public class TemplateReplacementTest extends AbstractTest {
                 "Trigger secondaryThreshold = ${trigger.secondaryThreshold}, \n" +
                 "Trigger Inertia = ${trigger.inertia}, \n" +
                 "Trigger Value = ${triggerValue}, \n" +
-                "Trigger Timestamp = ${triggerTimestamp}, \n" +
+                "Trigger Timestamp = ${triggerTimestamp?datetime}, \n" +
                 "Notification Name = ${notification.name?cap_first}, \n" +
                 "Notification cooldownPeriod = ${notification.cooldownPeriod}, \n" +
                 "Notification SRActionable = ${notification.SRActionable?then('SR Actionable','Not SR Actionable')}, \n" +
@@ -93,7 +93,7 @@ public class TemplateReplacementTest extends AbstractTest {
                 "Trigger secondaryThreshold = 7, \n" +
                 "Trigger Inertia = 5, \n" +
                 "Trigger Value = 0, \n" +
-                "Trigger Timestamp = 1,418,319,600,000, \n" +
+                "Trigger Timestamp = Dec 11, 2014 9:40:00 AM, \n" +
                 "Notification Name = Notification_name-val, \n" +
                 "Notification cooldownPeriod = 23, \n" +
                 "Notification SRActionable = Not SR Actionable, \n" +
