@@ -499,7 +499,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				itemsByTimestamp.add(item);
 			}
 			for (Set<Annotation> itemsByTimestamp : sortedByUidAndTimestamp.values()) {
-				result.add(new AnnotationWrapper(itemsByTimestamp, this));
+				result.add(new AnnotationWrapper(itemsByTimestamp, this, _annotationUidCache, _logger));
 			}
 		}
 		return result;
@@ -750,7 +750,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	 *
 	 * @author  Tom Valine (tvaline@salesforce.com), Bhinav Sura (bhinav.sura@salesforce.com)
 	 */
-	class AnnotationWrapper {
+	static class AnnotationWrapper {
 
 		String _uid;
 		Long _timestamp;
@@ -763,7 +763,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		/* Annotations should have the same scope, metric, type and tags and timestamp. */
-		private AnnotationWrapper(Set<Annotation> annotations, TSDBService service) {
+		private AnnotationWrapper(Set<Annotation> annotations, TSDBService service,
+								  Cache<String, String> annotationUidCache, Logger logger) {
 			this();
 			_service = service;
 			for (Annotation annotation : annotations) {
@@ -772,13 +773,13 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 					String key = toAnnotationKey(annotation);
 
 					try {
-						_uid = _annotationUidCache.get(key, () -> getUid(annotation, key));
+						_uid = annotationUidCache.get(key, () -> getUid(annotation, key));
 					} catch (ExecutionException e) {
 						throw new SystemException(e.getCause());
 					}
 
-					_logger.info("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
-							_annotationUidCache.stats().hitCount(), _annotationUidCache.stats().requestCount(), _annotationUidCache.stats().evictionCount());
+					logger.info("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
+							annotationUidCache.stats().hitCount(), annotationUidCache.stats().requestCount(), annotationUidCache.stats().evictionCount());
 
 					_timestamp = annotation.getTimestamp();
 				}
