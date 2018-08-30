@@ -2,10 +2,8 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
-import com.salesforce.dva.argus.service.alert.notifier.DefaultNotifier;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
-import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
