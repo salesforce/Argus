@@ -155,7 +155,7 @@ public class GOCNotifier extends AuditNotifier {
 				GOCTransport gocTransport = new GOCTransport();
 				HttpClient httpclient = gocTransport.getHttpClient(_config);
 
-				for (int i = 0; i < 2; i++) {
+				for (int i = 0; i < 1; i++) {
 
 					PostMethod post = null;
 
