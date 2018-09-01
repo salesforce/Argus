@@ -446,7 +446,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 
-				if(metrics.isEmpty()) {
+				if(areDatapointsEmpty(metrics)) {
 					if (alert.isMissingDataNotificationEnabled()) {
 						_sendNotificationForMissingData(alert);
 						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
@@ -559,7 +559,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-
+	private boolean areDatapointsEmpty(List<Metric> metrics) {
+		if(metrics==null || metrics.size()==0) {
+			return true;
+		}else {
+			for(Metric metric : metrics) {
+				if(metric!=null && metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()!=0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
