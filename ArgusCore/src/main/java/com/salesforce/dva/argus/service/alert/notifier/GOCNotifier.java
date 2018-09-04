@@ -155,7 +155,7 @@ public class GOCNotifier extends AuditNotifier {
 				GOCTransport gocTransport = new GOCTransport();
 				HttpClient httpclient = gocTransport.getHttpClient(_config);
 
-				for (int i = 0; i < 2; i++) {
+				for (int i = 0; i < 1; i++) {
 
 					PostMethod post = null;
 
@@ -266,7 +266,7 @@ public class GOCNotifier extends AuditNotifier {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", getDisplayedName(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
+		sb.append(MessageFormat.format("Alert {0} was triggered at {1}\n", getDisplayedName(context, context.getAlert().getName()),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){
