@@ -17,7 +17,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TemplateReplacementTest extends AbstractTest {
+public class TemplateReplacerTest extends AbstractTest {
 
     private static final String expression =
             "DIVIDE(-1h:argus.jvm:file.descriptor.open{host=unknown-host}:avg, -1h:argus.jvm:file.descriptor.max{host=unknown-host}:avg)";
@@ -44,7 +44,7 @@ public class TemplateReplacementTest extends AbstractTest {
         notifier.sendNotification(context);
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.TAg3}-${tag.tAg2}", context.getAlert().getName());
         assertEquals("${sCopE}-trigger_name-${MEtriC}-trigger_metric-${tag.tag1}-trigger_tag1-${tag.tag2}-trigger_tag2-${tag.tag3}-${tag.tAg2}", context.getTrigger().getName());
-        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-val3-val2", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()));
+        assertEquals("scope-trigger_name-metric-trigger_metric-val1-trigger_tag1-val2-trigger_tag2-val3-val2", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()));
     }
 
     @Test
@@ -98,7 +98,7 @@ public class TemplateReplacementTest extends AbstractTest {
                 "Notification cooldownPeriod = 23, \n" +
                 "Notification SRActionable = Not SR Actionable, \n" +
                 "Notification severityLevel = 5";
-        assertEquals(expectedOutput, TemplateReplacement.applyTemplateChanges(context, customTemplate));
+        assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
     @Test
@@ -134,7 +134,7 @@ public class TemplateReplacementTest extends AbstractTest {
                 " Trigger fired rounded value is 2 , \n" +
                 " Trigger fired date-time: 2014-12-11T17:40:00Z, \n" +
                 " Time before 2.5 hrs of firing: 2014-12-11T15:10:00-02:30";
-        assertEquals(expectedOutput, TemplateReplacement.applyTemplateChanges(context, customTemplate));
+        assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
 }

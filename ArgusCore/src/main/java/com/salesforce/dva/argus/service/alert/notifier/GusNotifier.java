@@ -45,7 +45,7 @@ import javax.persistence.EntityManager;
 
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacement;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
@@ -155,16 +155,16 @@ public class GusNotifier extends AuditNotifier {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
+		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){
-			sb.append(TemplateReplacement.applyTemplateChanges(context, customText)).append("\n");
+			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("\n");
 		}
 		if(currentAlert.getNotifications().size() > 1)
-			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacement.applyTemplateChanges(context, notification.getName())));
+			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)
-			sb.append(MessageFormat.format("Triggered by:  {0}\n", TemplateReplacement.applyTemplateChanges(context, trigger.getName())));
+			sb.append(MessageFormat.format("Triggered by:  {0}\n", TemplateReplacer.applyTemplateChanges(context, trigger.getName())));
 		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		if(!expression.equals("")) {
