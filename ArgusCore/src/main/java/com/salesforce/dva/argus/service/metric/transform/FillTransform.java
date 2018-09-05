@@ -81,7 +81,7 @@ public class FillTransform implements Transform {
         // expected timestamps, then fill the missing value
         int index = 1;
         int numDatapoints = 0;
-        while (startTimestamp <= endTimestamp && numDatapoints++<MAX_DATAPOINTS_FOR_FILL) {
+        while (startTimestamp <= endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
             filledDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
                 break;
@@ -162,7 +162,7 @@ public class FillTransform implements Transform {
         Map<Long, Double> filledDatapoints = new TreeMap<>();
         int numDatapoints = 0;
         
-        while (startTimestamp < endTimestamp && numDatapoints++<MAX_DATAPOINTS_FOR_FILL) {
+        while (startTimestamp < endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
             filledDatapoints.put(startTimestamp, value);
             startTimestamp += windowSizeInSeconds * 1000;
         }
