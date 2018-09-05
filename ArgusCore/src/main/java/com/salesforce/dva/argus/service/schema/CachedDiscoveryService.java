@@ -99,6 +99,11 @@ public class CachedDiscoveryService extends DefaultService implements DiscoveryS
 	}
 
 	@Override
+	public List<String> browseRecords(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
+		return _discoveryService.browseRecords(query, type, indexLevel);
+	}
+
+	@Override
 	public List<MetricQuery> getMatchingQueries(MetricQuery query) {
 		requireNotDisposed();
 		SystemAssert.requireArgument(query != null, "MetricQuery cannot be null.");
