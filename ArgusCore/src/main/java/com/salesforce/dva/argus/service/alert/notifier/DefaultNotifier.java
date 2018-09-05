@@ -34,17 +34,14 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacement;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Default implementation of the Notifier interface. It creates an annotation on the specific time series specified in the alert expression which
@@ -131,9 +126,9 @@ public abstract class DefaultNotifier implements Notifier {
                 Map<String, String> fields = new TreeMap<>();
 
                 fields.putAll(additionalFields);
-                fields.put("Alert Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getAlert().getName()));
-                fields.put("Notification Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getNotification().getName()));
-                fields.put("Trigger Name", TemplateReplacement.applyTemplateChanges(notificationContext, notificationContext.getTrigger().getName()));
+                fields.put("Alert Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getAlert().getName()));
+                fields.put("Notification Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getNotification().getName()));
+                fields.put("Trigger Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getTrigger().getName()));
                 fields.put("Tags", resolvedTags.toString());
                 annotation.setFields(fields);
                 annotation.setTags(resolvedTags);

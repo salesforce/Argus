@@ -16,23 +16,20 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TemplateReplacement {
+public class TemplateReplacer {
 
-    private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacement.class);
-    private static TemplateReplacement singletonInstance = new TemplateReplacement();
-    private static final String DATE_FORMAT = "MM/dd/yyyy HH:mm:ss z";
-    private static Configuration cfg;
+    private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
+    private static TemplateReplacer singletonInstance = new TemplateReplacer();
+    private static Configuration cfg = null;
 
-    private TemplateReplacement() {
-        cfg = new Configuration(Configuration.VERSION_2_3_28);
-        cfg.setDefaultEncoding("UTF-8");
-        cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
-        cfg.setLogTemplateExceptions(false);
-        cfg.setWrapUncheckedExceptions(true);
-    }
-
-    public static TemplateReplacement getInstance( ) {
-        return singletonInstance;
+    private TemplateReplacer() {
+        if ( cfg == null ) {
+            cfg = new Configuration(Configuration.VERSION_2_3_28);
+            cfg.setDefaultEncoding("UTF-8");
+            cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+            cfg.setLogTemplateExceptions(false);
+            cfg.setWrapUncheckedExceptions(true);
+        }
     }
 
     private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
@@ -55,7 +52,7 @@ public class TemplateReplacement {
 
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
-        String generatedString = templateString;
+        String originalString = templateString, generatedString = templateString;
         // Prepare Data.
         Map root = new HashMap();
         root.put("alert", context.getAlert());
@@ -72,15 +69,14 @@ public class TemplateReplacement {
         do {
             templateString = generatedString;
             templateString = singletonInstance.replaceKeywordsToLowerCase(templateString);
-            Template configuredTemplate = null;
             try {
-                configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
+                Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
                 configuredTemplate.process(root, stringWriter);
                 generatedString = stringWriter.toString();
             } catch (Exception e) {
                 _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
-                return null;
+                return originalString;
             }
         } while(!generatedString.equals(templateString)); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
 

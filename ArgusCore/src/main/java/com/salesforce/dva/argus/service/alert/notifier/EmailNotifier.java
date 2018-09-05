@@ -45,7 +45,7 @@ import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationCo
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import com.salesforce.dva.argus.util.AlertUtils;
-import com.salesforce.dva.argus.util.TemplateReplacement;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 
 import java.sql.Date;
 import java.text.MessageFormat;
@@ -123,12 +123,12 @@ public class EmailNotifier extends AuditNotifier {
     }
 
     private String getEmailSubject(NotificationContext context) {
-        String currentSubject = "[Argus] Notification for Alert: " + TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName());
+        String currentSubject = "[Argus] Notification for Alert: " + TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName());
         Alert currentAlert = context.getAlert();
         if (currentAlert.getNotifications().size() > 1)
-            currentSubject += " Notification: "+ TemplateReplacement.applyTemplateChanges(context, context.getNotification().getName());
+            currentSubject += " Notification: "+ TemplateReplacer.applyTemplateChanges(context, context.getNotification().getName());
         if (currentAlert.getTriggers().size() > 1)
-            currentSubject += " Trigger:" + TemplateReplacement.applyTemplateChanges(context, context.getTrigger().getName());
+            currentSubject += " Trigger:" + TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName());
         return currentSubject;
     }
 
@@ -161,19 +161,19 @@ public class EmailNotifier extends AuditNotifier {
         requireArgument(trigger != null, "Trigger in notification context cannot be null.");
 
         StringBuilder sb = new StringBuilder();
-        
-        sb.append(MessageFormat.format("<h3>Alert {0} was {1} at {2}</h3>", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
+
+        sb.append(MessageFormat.format("<h3>Alert {0} was {1} at {2}</h3>", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
         String customText = context.getNotification().getCustomText();
         if( customText != null && customText.length()>0){
-            sb.append(TemplateReplacement.applyTemplateChanges(context, customText)).append("<br/>");
+            sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
         }
         Alert currentAlert = notification.getAlert();
         String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
         if(currentAlert.getNotifications().size() > 1)
-            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacement.applyTemplateChanges(context, notification.getName())));
+            sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
         if(currentAlert.getTriggers().size() > 1)
-            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacement.applyTemplateChanges(context, context.getTrigger().getName())));
+            sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
         sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 
