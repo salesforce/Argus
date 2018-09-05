@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 public class AlertUtils {
 
 	private static final Logger _logger = LoggerFactory.getLogger(AlertUtils.class);
+
 	public static boolean isScopePresentInWhiteList(String expression, List<Pattern> scopeRegexPatterns) {
 		for(Pattern regexPattern : scopeRegexPatterns) {
 			if(regexPattern.matcher(expression.toLowerCase()).find()) {
@@ -100,4 +101,5 @@ public class AlertUtils {
 
 		return absoluteExpression;
 	}
+
 }
