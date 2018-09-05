@@ -209,25 +209,18 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	public abstract List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
 
 	@Override
+	public abstract List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
+
+	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
 	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
-		StringBuilder sb = new StringBuilder(metric.getScope());
-		sb.append('\0').append(metric.getMetric());
 
-		if(metric.getNamespace() != null) {
-			sb.append('\0').append(metric.getNamespace());
+		if (tagEntry == null) {
+			return constructKey(metric.getScope(), metric.getMetric(), null, null, metric.getNamespace());
+		} else {
+			return constructKey(metric.getScope(), metric.getMetric(), tagEntry.getKey(), tagEntry.getValue(), metric.getNamespace());
 		}
-
-		if(tagEntry != null) {
-			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
-		}
-
-		// Add randomness for each instance of bloom filter running on different
-		// schema clients to reduce probability of false positives that metric schemas are not written to ES
-		sb.append('\0').append(randomNumber);
-
-		return sb.toString();
 	}
 
 	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace) {

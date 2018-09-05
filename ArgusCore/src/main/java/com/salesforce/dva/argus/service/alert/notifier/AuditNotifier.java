@@ -43,6 +43,8 @@ import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.joda.time.DateTimeConstants;
 import java.math.BigInteger;
 import java.net.URLEncoder;
@@ -125,12 +127,12 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The audit entry body to persist.
 	 */
 	protected String getAuditBody(NotificationContext context, NotificationStatus notificationStatus) {
-		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", getDisplayedName(context, context.getAlert().getName()),
+		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()),
 				notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared",
 						DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime())));
 		Notification notification = null;
 		Trigger trigger = null;
-		String expression = getExpressionWithAbsoluteStartAndEndTimeStamps(context);
+		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 
 		for (Notification tempNotification : context.getAlert().getNotifications()) {
 			if (tempNotification.getName().equalsIgnoreCase(context.getNotification().getName())) {
@@ -152,10 +154,10 @@ public class AuditNotifier extends DefaultNotifier {
 		sb.append(notificationMessage);
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){
-			sb.append(getDisplayedName(context, customText)).append("<br/>");
+			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
 		}
-		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", getDisplayedName(context,notification.getName())));
-		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayedName(context, context.getTrigger().getName())));
+		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
+		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
 		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
 		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
@@ -189,7 +191,7 @@ public class AuditNotifier extends DefaultNotifier {
 	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
-			triggerString = replaceTemplatesInName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
+			triggerString = TemplateReplacer.applyTemplateChanges(context, triggerString);
 
 			return triggerString.substring(triggerString.indexOf("{") + 1, triggerString.indexOf("}"));
 		} else {

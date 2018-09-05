@@ -42,6 +42,7 @@ import com.salesforce.dva.argus.ws.dto.AlertDto;
 import com.salesforce.dva.argus.ws.dto.ItemsCountDto;
 import com.salesforce.dva.argus.ws.dto.NotificationDto;
 import com.salesforce.dva.argus.ws.dto.TriggerDto;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,6 +70,7 @@ import javax.ws.rs.core.Response.Status;
  * Web services for Alert.
  *
  * @author  Raj Sarkapally (rsarkapally@salesforce.com)
+ * @author Dongpu Jin (djin@salesforce.com)
  */
 @Path("/alerts")
 @Description("Provides methods to manipulate alerts.")
@@ -162,27 +164,29 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/user")
-	@Description("Returns user's alerts' metadata. This endpoint is paginated.")
+	@Description("Returns user's alerts' metadata filtered on search text if any. This endpoint is paginated.")
 	public List<AlertDto> getAlertsMetaByOwner(@Context HttpServletRequest req,
 										@QueryParam("ownername") String ownerName,
-										@QueryParam("pagesize")  Integer pagesize,
-										@QueryParam("pagenumber") Integer pagenumber) {
+										@QueryParam("pagesize")  Integer pageSize,
+										@QueryParam("pagenumber") Integer pageNumber,
+										@QueryParam("searchtext") String searchText) {
 		
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findAlertsByOwnerPaged(owner, pagesize, (pagenumber - 1) * pagesize);
+		result = alertService.findAlertsByOwnerPaged(owner, pageSize, (pageNumber - 1) * pageSize, searchText);
 		return AlertDto.transformToDto(result);
 	}
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/user/count")
-	@Description("Returns user's alerts' metadata count.")
+	@Description("Returns user's alerts' metadata count filtered on search text if any.")
 	public ItemsCountDto countAlertsMetaByOwner(@Context HttpServletRequest req,
-										@QueryParam("ownername") String ownerName) {
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("searchtext") String searchText) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countUserAlerts()
-				.setPrincipalUser(owner).build();
+				.setPrincipalUser(owner).setSearchText(searchText).build();
 		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}
@@ -190,22 +194,25 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/shared")
-	@Description("Returns all shared alerts' metadata. This endpoint is paginated.")
+	@Description("Returns all shared alerts' metadata filtered on search text if any. This endpoint is paginated.")
 	public List<AlertDto> getSharedAlertsMeta(@Context HttpServletRequest req,
-										@QueryParam("pagesize")  Integer pagesize,
-										@QueryParam("pagenumber") Integer pagenumber) {
+										@QueryParam("pagesize")  Integer pageSize,
+										@QueryParam("pagenumber") Integer pageNumber,
+										@QueryParam("searchtext") String searchText) {
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findSharedAlertsPaged(pagesize, (pagenumber - 1) * pagesize);
+		result = alertService.findSharedAlertsPaged(pageSize, (pageNumber - 1) * pageSize, searchText);
 		return AlertDto.transformToDto(result);
 	}
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/shared/count")
-	@Description("Returns all shared alerts' metadata count.")
-	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req) {
-		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts().build();
+	@Description("Returns all shared alerts' metadata count filtered on search text if any.")
+	public ItemsCountDto countSharedAlertsMeta(@Context HttpServletRequest req, 
+										@QueryParam("searchtext") String searchText) {
+		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countSharedAlerts()
+				.setSearchText(searchText).build();
 		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}
@@ -213,35 +220,37 @@ public class AlertResources extends AbstractResource {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/privileged")
-	@Description("Returns all private (non-shared) alerts's meta for given priviledged user. This endpoint is paginated.")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user filtered on search text if any. This endpoint is paginated.")
 	public List<AlertDto> getAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
 										@QueryParam("ownername") String ownerName,
-										@QueryParam("pagesize")  Integer pagesize,
-										@QueryParam("pagenumber") Integer pagenumber) {
-		
+										@QueryParam("pagesize")  Integer pageSize,
+										@QueryParam("pagenumber") Integer pageNumber,
+										@QueryParam("searchtext") String searchText) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		if (owner == null || !owner.isPrivileged()) {
 			return new ArrayList<>(0);
 		}
 		
 		List<Alert> result = new ArrayList<>(); 
-		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pagesize, pagenumber);
+		result = alertService.findPrivateAlertsForPrivilegedUserPaged(owner, pageSize, (pageNumber - 1) * pageSize,
+				searchText);
 		return AlertDto.transformToDto(result);
 	}
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/meta/privileged/count")
-	@Description("Returns all private (non-shared) alerts's meta for given priviledged user.")
+	@Description("Returns all private (non-shared) alerts's meta for given priviledged user filtered on search text if any.")
 	public ItemsCountDto countAlertsMetaForPrivilegedUser(@Context HttpServletRequest req,
-										@QueryParam("ownername") String ownerName) {
+										@QueryParam("ownername") String ownerName,
+										@QueryParam("searchtext") String searchText) {
 		PrincipalUser owner = validateAndGetOwner(req, ownerName);
 		if (owner == null || !owner.isPrivileged()) {
 			return ItemsCountDto.transformToDto(0);
 		}
 		
 		AlertsCountContext context = new AlertsCountContext.AlertsCountContextBuilder().countPrivateAlerts()
-				.setPrincipalUser(owner).build();
+				.setPrincipalUser(owner).setSearchText(searchText).build();
 		int result = alertService.countAlerts(context);
 		return ItemsCountDto.transformToDto(result);
 	}

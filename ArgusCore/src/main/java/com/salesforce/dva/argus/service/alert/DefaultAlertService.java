@@ -31,6 +31,38 @@
 
 package com.salesforce.dva.argus.service.alert;
 
+import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
+import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static java.math.BigInteger.ZERO;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -61,42 +93,10 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.util.AlertUtils;
 import com.salesforce.dva.argus.util.Cron;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.persistence.EntityManager;
-
-import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
-import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
-import static java.math.BigInteger.ZERO;
-
 /**
  * Default implementation of the alert service.
  *
- * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com)
+ * @author  Tom Valine (tvaline@salesforce.com), Raj sarkapally (rsarkapally@salesforce.com), Dongpu Jin (djin@salesforce.com)
  */
 public class DefaultAlertService extends DefaultJPAService implements AlertService {    
 
@@ -280,11 +280,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset) {
+	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
 		requireArgument(owner != null, "Owner cannot be null.");
 
-		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset);
+		return Alert.findByOwnerMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
 	}
 
 	@Override
@@ -420,7 +420,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
-						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId().intValue());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
@@ -446,7 +446,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 
-				if(metrics.isEmpty()) {
+				if(areDatapointsEmpty(metrics)) {
 					if (alert.isMissingDataNotificationEnabled()) {
 						_sendNotificationForMissingData(alert);
 						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
@@ -559,7 +559,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-
+	private boolean areDatapointsEmpty(List<Metric> metrics) {
+		if(metrics==null || metrics.size()==0) {
+			return true;
+		}else {
+			for(Metric metric : metrics) {
+				if(metric!=null && metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()!=0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
@@ -757,7 +768,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if (alert != null) {
 			message.append(MessageFormat.format("<br> Alert name: {0} <br> Exception message: {1} ", alert.getName(), ex.toString()));
 		} else {
-			message.append(MessageFormat.format("<br> Exception message: The alert with id {0} does not exist.", alertId));
+			message.append(MessageFormat.format("<br> Exception message: The alert with id {0} does not exist.", alertId.intValue()));
 		}
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
@@ -916,13 +927,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	}
 	
 	@Override
-	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset) {
+	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
-		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset);
+		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset, searchText);
 	}
 	
 	@Override
-	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset) {
+	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
 		
 		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
@@ -930,7 +941,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return new ArrayList<>(0);
 		}
 		
-		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset);
+		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
 	}
 
 	@Override
@@ -943,7 +954,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		// Count total number of shared alerts for the shared alerts tab
 		if (context.isCountSharedAlerts()) {
-			return Alert.countSharedAlerts(_emProvider.get());
+			return Alert.countSharedAlerts(_emProvider.get(), context.getSearchText());
 		}
 
 		PrincipalUser owner = context.getPrincipalUser();
@@ -956,13 +967,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if (owner == null || !owner.isPrivileged()) {
 				return 0;
 			}
-
-			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner);
+			
+			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner, context.getSearchText());
 		}
 
 		// Count total number of user alerts
 		if (owner != null) {
-			return Alert.countByOwner(_emProvider.get(), owner);
+			return Alert.countByOwner(_emProvider.get(), owner, context.getSearchText());
 		}
 
 		return 0;
