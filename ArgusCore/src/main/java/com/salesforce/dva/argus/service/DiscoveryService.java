@@ -87,6 +87,14 @@ public interface DiscoveryService extends Service {
      */
     List<MetricSchemaRecord> getUniqueRecords(MetricSchemaRecordQuery query, RecordType type);
 
+	/**
+	 * @param query             The query
+	 * @param type            The field to return.  Cannot be null.
+	 * @param indexLevel      The index of the tokenized results to return.
+	 * @return A unique list of tokenized results.  Will never return null, but may be empty.
+	 */
+	List<String> browseRecords(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
+
     /**
      * Expands a given wildcard query into a list of distinct queries.
      *

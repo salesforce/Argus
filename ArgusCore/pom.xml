@@ -434,16 +434,21 @@
             <artifactId>concurrent-trees</artifactId>
             <version>2.6.0</version>
         </dependency>
-		<dependency>
-		    <groupId>org.elasticsearch.client</groupId>
-		    <artifactId>rest</artifactId>
-		    <version>5.5.1</version>
-		</dependency>
-		<dependency>
-		  	<groupId>net.openhft</groupId>
-		  	<artifactId>zero-allocation-hashing</artifactId>
-		  	<version>0.8</version>
-		</dependency>
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>rest</artifactId>
+            <version>5.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>zero-allocation-hashing</artifactId>
+            <version>0.8</version>
+        </dependency>
+        <dependency>
+          <groupId>org.freemarker</groupId>
+          <artifactId>freemarker</artifactId>
+          <version>2.3.28</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
