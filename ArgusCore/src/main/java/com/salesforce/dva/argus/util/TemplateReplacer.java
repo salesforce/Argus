@@ -19,10 +19,9 @@ import java.util.regex.Pattern;
 public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
-    private static TemplateReplacer singletonInstance = new TemplateReplacer();
     private static Configuration cfg = null;
 
-    private TemplateReplacer() {
+    private static void initCfg() {
         if ( cfg == null ) {
             cfg = new Configuration(Configuration.VERSION_2_3_28);
             cfg.setDefaultEncoding("UTF-8");
@@ -32,7 +31,7 @@ public class TemplateReplacer {
         }
     }
 
-    private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
+    private  static Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
         Map<String, String> lowerCaseTagMap = new HashMap<>();
         for (String originalTags: tags.keySet()) {
             lowerCaseTagMap.put(originalTags.toLowerCase(), tags.get(originalTags));
@@ -40,7 +39,7 @@ public class TemplateReplacer {
         return lowerCaseTagMap;
     }
 
-    private String replaceKeywordsToLowerCase(String templateString) {
+    private static String replaceKeywordsToLowerCase(String templateString) {
         String lowercasedString = templateString;
         Matcher m = Pattern.compile("(?i)\\$\\{scope\\}|\\$\\{metric\\}|\\$\\{tag\\..*?\\}|\\sscope\\s|\\smetric\\s|\\stag\\..*?\\s").matcher(templateString);
         while (m.find()) {
@@ -61,15 +60,16 @@ public class TemplateReplacer {
         Metric triggeredMetric = context.getTriggeredMetric();
         root.put("scope", triggeredMetric.getScope());
         root.put("metric", triggeredMetric.getMetric());
-        Map<String, String> lowerCaseTagMap = singletonInstance.getLowerCaseTagMap(triggeredMetric.getTags());
+        Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(triggeredMetric.getTags());
         root.put("tag", lowerCaseTagMap);
         root.put("triggerTimestamp", new Date(context.getTriggerFiredTime()));
         root.put("triggerValue", context.getTriggerEventValue());
 
         do {
             templateString = generatedString;
-            templateString = singletonInstance.replaceKeywordsToLowerCase(templateString);
+            templateString = replaceKeywordsToLowerCase(templateString);
             try {
+                initCfg();
                 Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
                 configuredTemplate.process(root, stringWriter);
