@@ -1,7 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
-import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.SchemaService;
 import org.junit.Test;
 
@@ -9,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 
-import static com.salesforce.dva.argus.service.schema.MetricSchemaRecordTokenizer.GetUniqueTokens;
 import static org.junit.Assert.assertTrue;
 
 public class MetricSchemaRecordTokenizerTest {
