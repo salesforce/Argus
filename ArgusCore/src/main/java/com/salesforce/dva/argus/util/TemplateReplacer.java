@@ -21,7 +21,7 @@ public class TemplateReplacer {
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
     private static Configuration cfg = null;
 
-    private static void initCfg() {
+    private static void init() {
         if ( cfg == null ) {
             cfg = new Configuration(Configuration.VERSION_2_3_28);
             cfg.setDefaultEncoding("UTF-8");
@@ -51,6 +51,7 @@ public class TemplateReplacer {
 
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
+        init();
         String originalString = templateString, generatedString = templateString;
         // Prepare Data.
         Map root = new HashMap();
@@ -69,7 +70,6 @@ public class TemplateReplacer {
             templateString = generatedString;
             templateString = replaceKeywordsToLowerCase(templateString);
             try {
-                initCfg();
                 Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
                 configuredTemplate.process(root, stringWriter);
