@@ -137,4 +137,28 @@ public class TemplateReplacerTest extends AbstractTest {
         assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
     }
 
+    @Test
+    public void testCornerCases() {
+        UserService userService = system.getServiceFactory().getUserService();
+        Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "${alert.name}", expression, "* * * * *");
+        Notification notification = new Notification("${notification.name}", alert, "notifier_name", new ArrayList<String>(), 23);
+        Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "${trigger.name}", 2D, 7.1D,5);
+
+        alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+        alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+        alert = system.getServiceFactory().getAlertService().updateAlert(alert);
+
+        Metric m = new Metric("scope", "metric");
+        Map<String, String> tags = new HashMap<>();
+        tags.put("tag","val");
+        m.setTags(tags);
+        DefaultAlertService.NotificationContext context = new DefaultAlertService.NotificationContext(alert, alert.getTriggers().get(0), notification, 1418319600000L, 1.5, m);
+
+        String customTemplate = "Alert Name = ${alert.name}, Notification Name = ${notification.name}, Trigger Name = ${trigger.name}";
+
+
+        String expectedOutput = customTemplate;
+        assertEquals(expectedOutput, TemplateReplacer.applyTemplateChanges(context, customTemplate));
+    }
+
 }

@@ -20,7 +20,7 @@ public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
     private static Configuration cfg = null;
-
+    private static int MAX_ITERATIONS = 100;
     private static void init() {
         if ( cfg == null ) {
             cfg = new Configuration(Configuration.VERSION_2_3_28);
@@ -66,6 +66,7 @@ public class TemplateReplacer {
         root.put("triggerTimestamp", new Date(context.getTriggerFiredTime()));
         root.put("triggerValue", context.getTriggerEventValue());
 
+        int numOfIterations = 0;
         do {
             templateString = generatedString;
             templateString = replaceKeywordsToLowerCase(templateString);
@@ -78,7 +79,7 @@ public class TemplateReplacer {
                 _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
                 return originalString;
             }
-        } while(!generatedString.equals(templateString)); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
+        } while(!generatedString.equals(templateString) && ++numOfIterations < MAX_ITERATIONS); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
 
         return generatedString;
     }
