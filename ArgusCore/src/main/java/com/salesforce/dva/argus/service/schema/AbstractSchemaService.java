@@ -1,5 +1,7 @@
 package com.salesforce.dva.argus.service.schema;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +29,7 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.service.DefaultService;
+import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
@@ -49,6 +52,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	protected static BloomFilter<CharSequence> bloomFilter;
 	protected static BloomFilter<CharSequence> bloomFilterScopeOnly;
 	protected static BloomFilter<CharSequence> bloomFilterScopeAndMetricOnly;
+	
+	protected final MonitorService _monitorService;
 	private Random rand = new Random();
 	private int randomNumber = rand.nextInt();
 	private int bloomFilterExpectedNumberInsertions;
@@ -63,8 +68,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
 
-	protected AbstractSchemaService(SystemConfiguration config) {
+	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
+		
+		_monitorService = monitorService;
 
 		bloomFilterExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(),
 				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
@@ -93,8 +100,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		_bloomFilterMonitorThread = new Thread(new BloomFilterMonitorThread(), "bloom-filter-monitor");
 		_bloomFilterMonitorThread.start();
 
-		bloomFilterFlushHourToStartAt = Integer.parseInt(config.getValue(Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getName(),
-				Property.BLOOM_FILTER_FLUSH_HOUR_TO_START_AT.getDefaultValue()));
+		bloomFilterFlushHourToStartAt = getBloomFilterFlushHourToStartAt();
 		createScheduledExecutorService(bloomFilterFlushHourToStartAt);
 	}
 
@@ -206,22 +212,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
 	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
-		StringBuilder sb = new StringBuilder(metric.getScope());
-		sb.append('\0').append(metric.getMetric());
 
-		if(metric.getNamespace() != null) {
-			sb.append('\0').append(metric.getNamespace());
+		if (tagEntry == null) {
+			return constructKey(metric.getScope(), metric.getMetric(), null, null, metric.getNamespace());
+		} else {
+			return constructKey(metric.getScope(), metric.getMetric(), tagEntry.getKey(), tagEntry.getValue(), metric.getNamespace());
 		}
-
-		if(tagEntry != null) {
-			sb.append('\0').append(tagEntry.getKey()).append('\0').append(tagEntry.getValue());
-		}
-
-		// Add randomness for each instance of bloom filter running on different
-		// schema clients to reduce probability of false positives that metric schemas are not written to ES
-		sb.append('\0').append(randomNumber);
-
-		return sb.toString();
 	}
 
 	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace) {
@@ -260,7 +256,28 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		return constructKey(scope, metric, null, null, null);
 	}
+	
+	protected int getNumHoursUntilTargetHour(int targetHour){
+		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
+		Calendar calendar = Calendar.getInstance();
+		int hour = calendar.get(Calendar.HOUR_OF_DAY);
+		return hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
+	}
 
+	/*
+	 * Have a different flush start hour for schema committers based on hostname, to prevent thundering herd problem.
+	 */
+	private int getBloomFilterFlushHourToStartAt() {
+		int bloomFilterFlushHourToStartAt = 0;
+		try {
+			bloomFilterFlushHourToStartAt = Math.abs(InetAddress.getLocalHost().getHostName().hashCode() % 24);
+		} catch (UnknownHostException e) {
+			_logger.warn("BloomFilter UnknownHostException", e);
+		}
+		_logger.info("BloomFilter flush hour to start at {}th hour of day", bloomFilterFlushHourToStartAt);
+		return bloomFilterFlushHourToStartAt;
+	}
+	
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
@@ -278,14 +295,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			Thread.currentThread().interrupt();
 		}
 	}
-
-	protected int getNumHoursUntilTargetHour(int targetHour){
-		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
-		Calendar calendar = Calendar.getInstance();
-		int hour = calendar.get(Calendar.HOUR_OF_DAY);
-		return hour < targetHour ? (targetHour - hour) : (targetHour + 24 - hour);
-	}
-
+	
 	/**
 	 * The set of implementation specific configuration properties.
 	 *
@@ -314,12 +324,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		*/
 
 		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "40"),
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001"),
-
-		/*
-		 *  Have a different configured flush start hour for different machines to prevent thundering herd problem.
-		*/
-		BLOOM_FILTER_FLUSH_HOUR_TO_START_AT("service.property.schema.bloomfilter.flush.hour.to.start.at","2");
+		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -373,11 +378,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		}
 
 		private void _checkBloomFilterUsage() {
-			_logger.info("Metrics Bloom approx no. elements = {}", bloomFilter.approximateElementCount());
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT, bloomFilter.approximateElementCount(), null);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeOnly.approximateElementCount(), null);
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeAndMetricOnly.approximateElementCount(), null);
+			
 			_logger.info("Metrics Bloom expected error rate = {}", bloomFilter.expectedFpp());
-			_logger.info("Scope only Bloom approx no. elements = {}", bloomFilterScopeOnly.approximateElementCount());
 			_logger.info("Scope only Bloom expected error rate = {}", bloomFilterScopeOnly.expectedFpp());
-			_logger.info("Scope and metric only Bloom approx no. elements = {}", bloomFilterScopeAndMetricOnly.approximateElementCount());
 			_logger.info("Scope and metric only Bloom expected error rate = {}", bloomFilterScopeAndMetricOnly.expectedFpp());
 		}
 

@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.AlertUtils;
 import org.joda.time.DateTimeConstants;
 import java.math.BigInteger;
 import java.net.URLEncoder;
@@ -125,11 +126,12 @@ public class AuditNotifier extends DefaultNotifier {
 	 * @return  The audit entry body to persist.
 	 */
 	protected String getAuditBody(NotificationContext context, NotificationStatus notificationStatus) {
-		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", context.getAlert().getName(),
+		String notificationMessage = MessageFormat.format("<b>Alert {0} was {1} at {2}</b><br/>", getDisplayedName(context, context.getAlert().getName()),
 				notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared",
 						DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime())));
 		Notification notification = null;
 		Trigger trigger = null;
+		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
 
 		for (Notification tempNotification : context.getAlert().getNotifications()) {
 			if (tempNotification.getName().equalsIgnoreCase(context.getNotification().getName())) {
@@ -149,14 +151,20 @@ public class AuditNotifier extends DefaultNotifier {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(notificationMessage);
-		if(context.getNotification().getCustomText() != null && context.getNotification().getCustomText().length()>0){
-			sb.append(context.getNotification().getCustomText()).append("<br/>"); 
+		String customText = context.getNotification().getCustomText();
+		if( customText != null && customText.length()>0){
+			sb.append(getDisplayedName(context, customText)).append("<br/>");
 		}
-		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", notification.getName()));
-		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayTriggerName(context)));
+		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", getDisplayedName(context,notification.getName())));
+		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", getDisplayedName(context, context.getTrigger().getName())));
 		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
-		sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
+		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
+		if(!expression.equals("")) {
+			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
+		}
+		
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 		}
@@ -164,7 +172,6 @@ public class AuditNotifier extends DefaultNotifier {
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
 		}
-		sb.append(MessageFormat.format("<b>Triggering event timestamp:  </b> {0}<br/>", String.valueOf(context.getTriggerFiredTime())));
 
 		sb.append("<p><small>Disclaimer:  This alert was evaluated using the time series data as it existed at the time of evaluation.  ");
 		sb.append("If the data source has inherent lag or a large aggregation window is used during data collection, it is possible ");
@@ -183,7 +190,7 @@ public class AuditNotifier extends DefaultNotifier {
 	protected String getTriggerDetails(Trigger trigger, NotificationContext context) {
 		if (trigger != null) {
 			String triggerString = trigger.toString();
-			triggerString = replaceTemplatesInTriggerName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
+			triggerString = replaceTemplatesInName(triggerString, context.getTriggeredMetric().getScope(), context.getTriggeredMetric().getMetric(), context.getTriggeredMetric().getTags());
 
 			return triggerString.substring(triggerString.indexOf("{") + 1, triggerString.indexOf("}"));
 		} else {
@@ -199,13 +206,23 @@ public class AuditNotifier extends DefaultNotifier {
 	 *
 	 * @return  The fully constructed URL for the metric.
 	 */
-	@SuppressWarnings("deprecation")
 	protected String getMetricUrl(String metricToAnnotate, long triggerFiredTime) {
 		long start = triggerFiredTime - (6L * DateTimeConstants.MILLIS_PER_HOUR);
 		long end = Math.min(System.currentTimeMillis(), triggerFiredTime + (6L * DateTimeConstants.MILLIS_PER_HOUR));
 		String expression = MessageFormat.format("{0,number,#}:{1,number,#}:{2}", start, end, metricToAnnotate);
-		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
+		return getExpressionUrl(expression);
+	}
 
+	/**
+	 * Returns the URL linking back to the expression for use in alert notification.
+	 *
+	 * @param   expression  The expression for which the URL has to be created.
+	 *
+	 * @return  The fully constructed URL for the expression.
+	 */
+	@SuppressWarnings("deprecation")
+	protected String getExpressionUrl(String expression) {
+		String template = _config.getValue(Property.AUDIT_METRIC_URL_TEMPLATE.getName(), Property.AUDIT_METRIC_URL_TEMPLATE.getDefaultValue());
 		try {
 			expression = URLEncoder.encode(expression, "UTF-8");
 		} catch (Exception ex) {
