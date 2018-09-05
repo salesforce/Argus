@@ -85,7 +85,9 @@ public interface SchemaService extends Service {
      * @return  A list of MetricSchemaRecords for the give record type.  Will never return null, but may be empty.
      */
     List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
-    
+
+    List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
+
     List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
     
     static boolean containsWildcard(String str) {

@@ -209,6 +209,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	public abstract List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
 
 	@Override
+	public abstract List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
+
+	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
 	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
