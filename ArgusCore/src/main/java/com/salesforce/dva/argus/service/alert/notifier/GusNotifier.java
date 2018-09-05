@@ -155,7 +155,7 @@ public class GusNotifier extends AuditNotifier {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		sb.append(MessageFormat.format("Alert {0} with id {1} was triggered at {2}\n", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()), context.getAlert().getId().intValue(),
+		sb.append(MessageFormat.format("Alert {0} was triggered at {1}\n", TemplateReplacement.applyTemplateChanges(context, context.getAlert().getName()),
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
 		if( customText != null && customText.length()>0){

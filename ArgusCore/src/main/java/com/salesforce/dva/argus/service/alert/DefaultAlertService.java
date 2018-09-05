@@ -420,7 +420,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
 						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
-						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId());
+						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId().intValue());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 						history = _historyService.createHistory(alert, history.getMessage(), history.getJobStatus(), history.getExecutionTime());
@@ -446,7 +446,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
 
-				if(metrics.isEmpty()) {
+				if(areDatapointsEmpty(metrics)) {
 					if (alert.isMissingDataNotificationEnabled()) {
 						_sendNotificationForMissingData(alert);
 						logMessage = MessageFormat.format("Metric data does not exist for alert expression: {0}. Sent notification for missing data.",
@@ -559,7 +559,18 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-
+	private boolean areDatapointsEmpty(List<Metric> metrics) {
+		if(metrics==null || metrics.size()==0) {
+			return true;
+		}else {
+			for(Metric metric : metrics) {
+				if(metric!=null && metric.getDatapoints()!=null && metric.getDatapoints().keySet().size()!=0) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 
 	/**
 	 * Evaluates all triggers associated with the notification and updates the job history.
@@ -757,7 +768,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if (alert != null) {
 			message.append(MessageFormat.format("<br> Alert name: {0} <br> Exception message: {1} ", alert.getName(), ex.toString()));
 		} else {
-			message.append(MessageFormat.format("<br> Exception message: The alert with id {0} does not exist.", alertId));
+			message.append(MessageFormat.format("<br> Exception message: The alert with id {0} does not exist.", alertId.intValue()));
 		}
 		message.append(MessageFormat.format("<br> Time stamp: {0}", DATE_FORMATTER.get().format(new Date(System.currentTimeMillis()))));
 		_mailService.sendMessage(to, subject, message.toString(), "text/html; charset=utf-8", MailService.Priority.HIGH);
