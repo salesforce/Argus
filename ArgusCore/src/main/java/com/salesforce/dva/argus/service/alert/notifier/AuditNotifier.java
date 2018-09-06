@@ -158,8 +158,10 @@ public class AuditNotifier extends DefaultNotifier {
 		}
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
 		sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
-		sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
+		if(notificationStatus == NotificationStatus.TRIGGERED) {
+		    sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
+		}
 		if (!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
 		else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
 		if(!expression.equals("")) {

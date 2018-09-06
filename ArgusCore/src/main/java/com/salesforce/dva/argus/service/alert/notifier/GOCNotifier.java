@@ -264,35 +264,37 @@ public class GOCNotifier extends AuditNotifier {
 	 *
 	 * @return  The goc++ message body.
 	 */
-	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus status) {
+	protected String getGOCMessageBody(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus notificationStatus) {
 		StringBuilder sb = new StringBuilder();
 		Alert currentAlert = notification.getAlert();
 		String expression = AlertUtils.getExpressionWithAbsoluteStartAndEndTimeStamps(context);
-		String notificationMessage = status == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared";
+		String notificationMessage = notificationStatus == NotificationStatus.TRIGGERED ? "Triggered" : "Cleared";
 		
 		sb.append(MessageFormat.format("Alert {0} was {1} at 21}\n", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
 				DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
 		String customText = context.getNotification().getCustomText();
-		if( customText != null && customText.length()>0 && status == NotificationStatus.TRIGGERED){
+		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("\n");
 		}
 		if(currentAlert.getNotifications().size() > 1)
 			sb.append(MessageFormat.format("Notification:  {0}\n", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
 		if(currentAlert.getTriggers().size() > 1)
 			sb.append(MessageFormat.format("Triggered by:  {0}\n", TemplateReplacer.applyTemplateChanges(context, trigger.getName())));
-		sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
+		if(notificationStatus == NotificationStatus.TRIGGERED) {
+		    sb.append(MessageFormat.format("Notification is on cooldown until:  {0}\n",
 				DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
+		}
 		if(!expression.equals("")) {
 			sb.append(MessageFormat.format("URL for evaluated metric expression:  {0}\n", getExpressionUrl(expression)));
 		}else {
 			sb.append(MessageFormat.format("Evaluated metric expression:  {0}\n", context.getAlert().getExpression()));
 		}
 
-		if(!trigger.getType().equals(TriggerType.NO_DATA) && status == NotificationStatus.TRIGGERED){
+		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
 		    sb.append(MessageFormat.format("Triggered on Metric:  {0}\n", context.getTriggeredMetric().getIdentifier()));
 		}
 		sb.append(MessageFormat.format("Trigger details: {0}\n", getTriggerDetails(trigger, context)));
-		if(!trigger.getType().equals(TriggerType.NO_DATA) && status == NotificationStatus.TRIGGERED){
+		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
 		    sb.append(MessageFormat.format("Triggering event value:  {0}\n", context.getTriggerEventValue()));
 		}
 		sb.append("\n");
