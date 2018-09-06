@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.schema;
 
 import com.google.inject.Inject;
@@ -37,6 +37,7 @@ import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.service.AsyncHBaseClientFactory;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -73,6 +74,9 @@ import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.HashMap;
+import java.util.Map;
+
 
 /**
  * Implementation of the schema service using Asynchbase.
@@ -83,7 +87,7 @@ import java.util.TreeSet;
 public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
     //~ Static fields/initializers *******************************************************************************************************************
-	
+
 	private static String METRIC_SCHEMA_TABLENAME;
 	private static String SCOPE_SCHEMA_TABLENAME ;
     private static final byte[] COLUMN_FAMILY = "f".getBytes(Charset.forName("UTF-8"));
@@ -91,26 +95,26 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     private static final byte[] CELL_VALUE = new byte[1];
     private static final char ROWKEY_SEPARATOR = '\u0000';
     private static final char PLACEHOLDER_FOR_NULL_STRINGS = '\u0023';
-    
+
     private static final long TIMEOUT_MS = 30 * 1000;
-    private static final long SCAN_TIMEOUT_MS = 2 * 60 * 1000; 
+    private static final long SCAN_TIMEOUT_MS = 2 * 60 * 1000;
 
     //~ Instance fields ******************************************************************************************************************************
 
     private Logger _logger = LoggerFactory.getLogger(AsyncHbaseSchemaService.class);
     private final HBaseClient _client;
-    
+
     //~ Constructors *********************************************************************************************************************************
 
     @Inject
     private AsyncHbaseSchemaService(SystemConfiguration systemConfig, AsyncHBaseClientFactory factory, MonitorService monitorService) {
     	super(systemConfig, monitorService);
-        
-    	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(), 
+
+    	METRIC_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_METRICSCHEMA_TABLE.getName(),
     													Property.HBASE_METRICSCHEMA_TABLE.getDefaultValue());
-    	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(), 
+    	SCOPE_SCHEMA_TABLENAME = systemConfig.getValue(Property.HBASE_SCOPESCHEMA_TABLE.getName(),
     												   Property.HBASE_SCOPESCHEMA_TABLE.getDefaultValue());
-    	
+
     	_client = factory.getClient();
     }
 
@@ -136,7 +140,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     private static String _constructRowKey(MetricSchemaRecord schema, String tableName){
     	return _constructRowKey(schema.getNamespace(), schema.getScope(), schema.getMetric(), schema.getTagKey(), schema.getTagValue(), tableName);
     }
-    
+
     private static MetricSchemaRecord _constructMetricSchemaRecord(String rowKey, String tableName) {
         SystemAssert.requireArgument(rowKey != null && !rowKey.isEmpty(), "This should never happen. Rowkey should never be null or empty.");
 
@@ -150,7 +154,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         } else {
             throw new SystemException(new IllegalArgumentException("Unknown table: " + tableName));
         }
-        
+
         String placeholder = Character.toString(PLACEHOLDER_FOR_NULL_STRINGS);
         if (!placeholder.equals(parts[2])) {
             record.setTagKey(parts[2]);
@@ -163,7 +167,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         }
         return record;
     }
-    
+
     private  String _plusOneNConstructRowKey(MetricSchemaRecord record, String tableName, RecordType type){
     	if(type==null){
     		return  _plusOne(_constructRowKey(record, tableName));
@@ -191,20 +195,22 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
-                                             Set<Pair<String, String>> scopesAndMetricNames) {
+    protected void implementationSpecificPut(List<Metric> metrics,
+                                             Set<String> scopeNames,
+                                             Set<Pair<String, String>> scopesAndMetricNames,
+                                             Map<String, MetatagsRecord> metatagsToPut) {
         requireNotDisposed();
         SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
-        
+
         for (Metric metric : metrics) {
             if (metric.getTags().isEmpty()) {
                 _putWithoutTag(metric);
             }
-            
+
             for (Entry<String, String> tag : metric.getTags().entrySet()) {
                 _putWithTag(metric, tag);
-            }  
-        } 
+            }
+        }
     }
 
     @Override
@@ -220,18 +226,18 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         String tagKey = SchemaService.convertToRegex(query.getTagKey());
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         MetricSchemaRecord scanFrom = query.getScanFrom();
-        
+
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
         String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow)
         									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName, null);
-        
+
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
-        
+
         _logger.debug("Scan startRow: " + scanStartRow);
         _logger.debug("Scan stopRow: " + metadata.stopRow.toString());
-        
+
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
 
         filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
@@ -275,9 +281,9 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                         scanner.close();
                         return null;
                     }
-                    
+
                     _logger.debug("Retrieved " + rows.size() + " rows.");
-                   
+
                     for(ArrayList<KeyValue> row:rows){
                     	byte[] rowKey=row.get(0).key();
                     	MetricSchemaRecord record = _constructMetricSchemaRecord(Bytes.toString(rowKey), metadata.tableName);
@@ -295,9 +301,9 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                 }
             }
         }
-        
+
         new ScannerCB().scan();
-        
+
         try {
 			return results.join(SCAN_TIMEOUT_MS);
 		} catch (InterruptedException e) {
@@ -310,15 +316,15 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 		}
 
     }
-    
+
     /**
-     * Fast scan works when trying to discover either scopes or metrics with all other fields being *. 
+     * Fast scan works when trying to discover either scopes or metrics with all other fields being *.
      * In this case, when the first result is obtained, we skip all other rows starting with that prefix and directly move
-     * on to the next possible value which is obtained value incremented by 1 Ascii character. If that value exists, then 
-     * it is returned, otherwise HBase returns the next possible value in lexicographical order. 
-     * 
+     * on to the next possible value which is obtained value incremented by 1 Ascii character. If that value exists, then
+     * it is returned, otherwise HBase returns the next possible value in lexicographical order.
+     *
      * For e.g. suppose if we have the following rows in HBase:
-     * 
+     *
      * scope\0metric1\0$\0$\0$
      * scope\0metric2\0$\0$\0$
      * .
@@ -331,21 +337,21 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
      * .
      * .
      * scopu\0metric1000\0$\0$\0$
-     * 
+     *
      * And our start row is "sco", then this method would first find "scope" and then jump the next 1000 rows
      * to start from the next possible value of scopf. Since nothing like scopf exists, HBase would directly
-     * jump to scopu and return that. 
-     * 
+     * jump to scopu and return that.
+     *
      */
     private List<MetricSchemaRecord> _getUniqueFastScan(MetricSchemaRecordQuery query, final RecordType type) {
     	requireNotDisposed();
-    	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type), 
+    	SystemAssert.requireArgument(RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type),
     			"This method is only for use with metric or scope.");
-    	
+
     	_logger.info("Using FastScan. Will skip rows while scanning.");
-    	
+
     	final Set<MetricSchemaRecord> records = new HashSet<>();
-    	
+
     	final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
         String scope = SchemaService.convertToRegex(query.getScope());
@@ -353,34 +359,34 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         String tagKey = SchemaService.convertToRegex(query.getTagKey());
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         MetricSchemaRecord scanFrom = query.getScanFrom();
-        
+
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
-    	
+
     	List<ScanFilter> filters = new ArrayList<ScanFilter>();
     	filters.add(new RowFilter(CompareOp.EQUAL, new RegexStringComparator(rowKeyRegex)));
         filters.add(new KeyOnlyFilter());
         filters.add(new FirstKeyOnlyFilter());
         FilterList filterList = new FilterList(filters, FilterList.Operator.MUST_PASS_ALL);
-    	
-        
-        String start = scanFrom == null ? Bytes.toString(metadata.startRow) 
+
+
+        String start = scanFrom == null ? Bytes.toString(metadata.startRow)
         								: _plusOneNConstructRowKey(scanFrom, metadata.tableName, type);
-        
+
         String end = Bytes.toString(metadata.stopRow);
         ArrayList<ArrayList<KeyValue>> rows = _getSingleRow(start, end, filterList, metadata.tableName);
         while(rows != null && !rows.isEmpty()) {
         	String rowKey = Bytes.toString(rows.get(0).get(0).key());
         	String splits[] = rowKey.split(String.valueOf(ROWKEY_SEPARATOR));
-        	String record = (RecordType.METRIC.equals(type) && metadata.tableName.equals(METRIC_SCHEMA_TABLENAME)) || 
+        	String record = (RecordType.METRIC.equals(type) && metadata.tableName.equals(METRIC_SCHEMA_TABLENAME)) ||
         			(RecordType.SCOPE.equals(type) && metadata.tableName.equals(SCOPE_SCHEMA_TABLENAME)) ? splits[0] : splits[1];
-        
-		MetricSchemaRecord schemaRecord = RecordType.METRIC.equals(type) ? 
-				new MetricSchemaRecord(null, record) : new MetricSchemaRecord(record, null);	
+
+		MetricSchemaRecord schemaRecord = RecordType.METRIC.equals(type) ?
+				new MetricSchemaRecord(null, record) : new MetricSchemaRecord(record, null);
         	records.add(schemaRecord);
         	if(records.size() == query.getLimit()) {
     			break;
     		}
-        	
+
         	String newScanStart;
         	if(!SchemaService.containsFilter(query.getScope()) || !SchemaService.containsFilter(query.getMetric())) {
         		newScanStart = _plusOne(record);
@@ -389,25 +395,25 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         	}
         	rows = _getSingleRow(newScanStart, end, filterList, metadata.tableName);
         }
-        
+
     	return new ArrayList<>(records);
     }
-    
 
-	private ArrayList<ArrayList<KeyValue>> _getSingleRow(final String start, final String end, 
+
+	private ArrayList<ArrayList<KeyValue>> _getSingleRow(final String start, final String end,
 			final FilterList filterList, final String tableName) {
 		final Scanner scanner = _client.newScanner(tableName);
     	scanner.setStartKey(start);
     	scanner.setStopKey(end);
     	scanner.setMaxNumRows(1);
     	scanner.setFilter(filterList);
-    	
+
     	_logger.debug("Using table: " + tableName);
         _logger.debug("Scan startRow: " + start);
         _logger.debug("Scan stopRow: " + end);
-        
+
         Deferred<ArrayList<ArrayList<KeyValue>>> deferred = scanner.nextRows();
-        
+
         deferred.addCallback(new Callback<ArrayList<ArrayList<KeyValue>>, ArrayList<ArrayList<KeyValue>>>() {
 
 			@Override
@@ -416,7 +422,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 				return rows;
 			}
 		});
-        
+
         try {
 			ArrayList<ArrayList<KeyValue>> result = deferred.join(SCAN_TIMEOUT_MS);
 			return result;
@@ -430,38 +436,38 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 		return null;
 	}
 
-	//TSDB allowed characteers are: [A-Za-z0-9./-_]. The lowest ASCII value (45) out of these is for hyphen (-). 
+	//TSDB allowed characteers are: [A-Za-z0-9./-_]. The lowest ASCII value (45) out of these is for hyphen (-).
 	private String _plusOne(String prefix) {
 		char newChar = 45;
 		return prefix + newChar;
 	}
-	
+
 	/**
 	 * Check if we can perform a faster scan. We can only perform a faster scan when we are trying to discover scopes or metrics
 	 * without having information on any other fields.
 	 */
 	private boolean _canSkipWhileScanning(MetricSchemaRecordQuery query, RecordType type) {
-		
-		
-		if( (RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type)) 
-				&& !SchemaService.containsFilter(query.getTagKey()) 
-				&& !SchemaService.containsFilter(query.getTagValue()) 
+
+
+		if( (RecordType.METRIC.equals(type) || RecordType.SCOPE.equals(type))
+				&& !SchemaService.containsFilter(query.getTagKey())
+				&& !SchemaService.containsFilter(query.getTagValue())
 				&& !SchemaService.containsFilter(query.getNamespace())) {
 			if(RecordType.METRIC.equals(type) && !SchemaService.containsFilter(query.getMetric())) {
 				return false;
 			}
-			
+
 			if(RecordType.SCOPE.equals(type) && !SchemaService.containsFilter(query.getScope())) {
 				return false;
 			}
-			
+
 			return true;
 		}
-		
+
 		return false;
 	}
-	
-	
+
+
 
     @Override
     public List<MetricSchemaRecord> getUnique(final MetricSchemaRecordQuery query, final RecordType type) {
@@ -469,11 +475,11 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         SystemAssert.requireArgument(query != null, "Metric Schema Record query cannot be null.");
         SystemAssert.requireArgument(type != null, "Record type cannot be null.");
         SystemAssert.requireArgument(!query.getScope().startsWith("*") || !query.getMetric().startsWith("*"), "Must specify at least some filtering criteria on either scope or metric name.");
-        
+
         if(_canSkipWhileScanning(query, type)) {
         	return _getUniqueFastScan(query, type);
         }
-        
+
         final Set<String> records = new TreeSet<String>();
         final ScanMetadata metadata = _constructScanMetadata(query);
         String namespace = SchemaService.convertToRegex(query.getNamespace());
@@ -482,12 +488,12 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         String tagKey = SchemaService.convertToRegex(query.getTagKey());
         String tagValue = SchemaService.convertToRegex(query.getTagValue());
         MetricSchemaRecord scanFrom = query.getScanFrom();
-        
+
         String rowKeyRegex = "^" + _constructRowKey(namespace, scope, metric, tagKey, tagValue, metadata.tableName) + "$";
 
         String scanStartRow = scanFrom == null ? Bytes.toString(metadata.startRow)
         									   : _plusOneNConstructRowKey(scanFrom, metadata.tableName, type);
-        
+
         _logger.info("Using table: " + metadata.tableName);
         _logger.info("Rowkey: " + rowKeyRegex);
         _logger.debug("Scan startRow: " + scanStartRow);
@@ -508,10 +514,10 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         scanner.setMaxNumRows(10000);
 
         final Deferred<List<MetricSchemaRecord>> results = new Deferred<List<MetricSchemaRecord>>();
-        
+
         List<MetricSchemaRecord> listMetricSchemarecords = new ArrayList<>();
-        
-        
+
+
         final class ScannerCB implements Callback<Object, ArrayList<ArrayList<KeyValue>>> {
 
             /**
@@ -551,9 +557,9 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                 }
             }
         }
-        
+
         new ScannerCB().scan();
-        
+
         try {
 			return new ArrayList<>(results.join(SCAN_TIMEOUT_MS));
 		} catch (InterruptedException e) {
@@ -564,15 +570,15 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 		} catch (Exception e) {
 			throw new SystemException("Exception occurred in getting results for query: " + query, e);
 		}
-        
+
     }
-    
+
     @Override
 	public List<MetricSchemaRecord> keywordSearch(KeywordQuery query) {
 		throw new UnsupportedOperationException("Keyword search is not supported by AsyncHbaseSchemaService. "
 				+ "Please use ElasticSearchSchemaService. ");
 	}
-    
+
 	@Override
 	public Properties getServiceProperties() {
 		Properties serviceProps = new Properties();
@@ -598,7 +604,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                     return null;
                 }
             });
-            
+
             deferred.addErrback(new Callback<Void, Exception>() {
                 @Override
                 public Void call(Exception arg) throws Exception {
@@ -606,7 +612,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                     return null;
                 }
             });
-            
+
             try {
                 deferred.join(TIMEOUT_MS);
             } catch (Exception e) {
@@ -616,22 +622,22 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
     }
 
     private void _putWithoutTag(Metric metric) {
-    	String rowKeyScopeTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
+    	String rowKeyScopeTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(),
     			null, null, SCOPE_SCHEMA_TABLENAME);
-    	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), 
+    	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(),
     			null, null, METRIC_SCHEMA_TABLENAME);
 
     	_put(SCOPE_SCHEMA_TABLENAME, rowKeyScopeTable);
 		_put(METRIC_SCHEMA_TABLENAME, rowKeyMetricTable);
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, 2, null);
     }
-    
+
     private void _putWithTag(Metric metric, Entry<String, String> tag) {
-    	String rowKeyScopeTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), 
+    	String rowKeyScopeTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(),
     			tag.getValue(), SCOPE_SCHEMA_TABLENAME);
-    	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(), 
+    	String rowKeyMetricTable = _constructRowKey(metric.getNamespace(), metric.getScope(), metric.getMetric(), tag.getKey(),
     			tag.getValue(), METRIC_SCHEMA_TABLENAME);
-    	
+
     	_put(SCOPE_SCHEMA_TABLENAME, rowKeyScopeTable);
 		_put(METRIC_SCHEMA_TABLENAME, rowKeyMetricTable);
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, 2, null);
@@ -642,7 +648,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 
         final PutRequest put = new PutRequest(Bytes.toBytes(tableName), Bytes.toBytes(rowKey), COLUMN_FAMILY, COLUMN_QUALIFIER, CELL_VALUE);
         Deferred<Object> deferred = _client.put(put);
-        
+
     	deferred.addCallback(new Callback<Object, Object>() {
 			@Override
 			public Object call(Object arg) throws Exception {
@@ -657,7 +663,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                 throw new SystemException("Error occurred while trying to execute put().", e);
             }
         });
-        
+
 
         if(_syncPut) {
         	try {
@@ -670,7 +676,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 			}
         }
 	}
-    
+
     private String _getValueForType(MetricSchemaRecord record, RecordType type) {
         switch (type) {
             case NAMESPACE:
@@ -776,7 +782,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
      * @author  Bhinav Sura (bhinav.sura@salesforce.com)
      */
     public enum Property {
-        
+
         HBASE_METRICSCHEMA_TABLE("service.property.schema.hbase.metricschema.table", "metric-schema"),
     	HBASE_SCOPESCHEMA_TABLE("service.property.schema.hbase.scopeschema.table", "scope-schema");
 
@@ -825,6 +831,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
         /** The table type. */
         public String tableName = SCOPE_SCHEMA_TABLENAME;
     }
-    
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
