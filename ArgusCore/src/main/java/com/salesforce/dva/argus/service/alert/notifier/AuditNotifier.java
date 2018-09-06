@@ -153,7 +153,7 @@ public class AuditNotifier extends DefaultNotifier {
 
 		sb.append(notificationMessage);
 		String customText = context.getNotification().getCustomText();
-		if( customText != null && customText.length()>0){
+		if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
 		}
 		sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context,notification.getName())));
@@ -166,11 +166,11 @@ public class AuditNotifier extends DefaultNotifier {
 			sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/>");
 		}
 		
-		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
 		}
 		sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
-		if(!trigger.getType().equals(TriggerType.NO_DATA)){
+		if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
 			sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
 		}
 
