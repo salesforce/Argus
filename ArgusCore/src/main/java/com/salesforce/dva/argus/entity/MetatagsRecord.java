@@ -39,10 +39,29 @@ import java.util.TreeMap;
 import com.salesforce.dva.argus.entity.TSDBEntity.ReservedField;
 
 
+/**
+ * Time series Metatags object. This entity encapsulates all meta tags for a given timeseries
+ * The following tag names are reserved. If these reserved tag names are used as metatags, they will be ignored.
+ *
+ * <ul>
+ *   <li>metric</li>
+ *   <li>displayName</li>
+ *   <li>units</li>
+ * </ul>
+ *
+ * @author  Kunal Nawale (knawale@salesforce.com)
+ */
+
 public class MetatagsRecord {
     private Map<String, String> _metatags = new HashMap<>(0);
     private String _key = null;
 
+    /**
+     * Creates a MetatagsRecord object.
+     *
+     * @param  metatags   A key-value pairs of metatags. Cannot be null or empty.
+     * @param  key        A unique identifier to be used while indexing this metatags into a schema db.
+     */
     public MetatagsRecord(Map<String, String> metatags, String key) {
         setMetatags(metatags, key);
     }
@@ -68,7 +87,9 @@ public class MetatagsRecord {
     /**
      * Replaces the metatags for a metric. Metatags cannot use any of the reserved tag names.
      *
-     * @param  metatags  The new metatags for the metric.
+     *
+     * @param  metatags   A key-value pairs of metatags. Cannot be null or empty.
+     * @param  key        A unique identifier to be used while indexing this metatags into a schema db.
      */
     public void setMetatags(Map<String, String> metatags, String key) {
         if (metatags != null) {
@@ -81,6 +102,7 @@ public class MetatagsRecord {
 
     /**
      *   Sets the key identifier
+     * @param  key        A unique identifier to be used while indexing this metatags into a schema db.
     */
     public void setKey(String key) {
         _key = key;
