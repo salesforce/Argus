@@ -566,7 +566,13 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 		}
         
     }
-    
+
+    @Override
+    public List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
+        throw new UnsupportedOperationException("browse Unique is not supported by AsyncHbaseSchemaService. "
+                + "Please use ElasticSearchSchemaService. ");
+    }
+
     @Override
 	public List<MetricSchemaRecord> keywordSearch(KeywordQuery query) {
 		throw new UnsupportedOperationException("Keyword search is not supported by AsyncHbaseSchemaService. "
