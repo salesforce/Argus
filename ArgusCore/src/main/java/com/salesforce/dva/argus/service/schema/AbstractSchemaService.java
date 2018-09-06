@@ -186,9 +186,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
                         MetatagsRecord mtags = metric.getMetatagsRecord();
                         if(mtags != null) {
                             key = mtags.getKey();
-                            found = bloomFilterMetatags.mightContain(key);
-                            if(!found) {
-                                metatagsToPut.put(key, mtags);
+                            if(key != null) {
+                                found = bloomFilterMetatags.mightContain(key);
+                                if(!found) {
+                                    metatagsToPut.put(key, mtags);
+                                }
                             }
                         }
 		}
