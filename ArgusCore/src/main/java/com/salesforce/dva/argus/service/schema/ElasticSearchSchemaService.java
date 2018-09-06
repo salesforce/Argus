@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -557,6 +558,16 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		} catch (IOException e) {
 			throw new SystemException("IOException when trying to perform ES request.", e);
 		}
+	}
+
+	@Override
+	public List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel) {
+
+        List<MetricSchemaRecord> records = getUnique(query, type);
+
+        SortedSet<String> tokens = MetricSchemaRecordTokenizer.GetUniqueTokens(records, type, indexLevel);
+
+        return new ArrayList<>(tokens);
 	}
 
 	@Override

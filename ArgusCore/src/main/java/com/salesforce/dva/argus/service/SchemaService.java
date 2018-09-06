@@ -86,6 +86,8 @@ public interface SchemaService extends Service {
      */
     List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
 
+    List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
+
     List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
     static boolean containsWildcard(String str) {
