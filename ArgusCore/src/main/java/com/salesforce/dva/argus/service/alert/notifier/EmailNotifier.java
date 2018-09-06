@@ -165,7 +165,7 @@ public class EmailNotifier extends AuditNotifier {
         sb.append(MessageFormat.format("<h3>Alert {0} was {1} at {2}</h3>", TemplateReplacer.applyTemplateChanges(context, context.getAlert().getName()), notificationMessage,
                 DATE_FORMATTER.get().format(new Date(context.getTriggerFiredTime()))));
         String customText = context.getNotification().getCustomText();
-        if( customText != null && customText.length()>0){
+        if( customText != null && customText.length()>0 && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(TemplateReplacer.applyTemplateChanges(context, customText)).append("<br/>");
         }
         Alert currentAlert = notification.getAlert();
@@ -174,19 +174,21 @@ public class EmailNotifier extends AuditNotifier {
             sb.append(MessageFormat.format("<b>Notification:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, notification.getName())));
         if(currentAlert.getTriggers().size() > 1)
             sb.append(MessageFormat.format("<b>Triggered by:  </b> {0}<br/>", TemplateReplacer.applyTemplateChanges(context, context.getTrigger().getName())));
-        sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
+        if(notificationStatus == NotificationStatus.TRIGGERED) {
+            sb.append(MessageFormat.format("<b>Notification is on cooldown until:  </b> {0}<br/>",
                 DATE_FORMATTER.get().format(new Date(context.getCoolDownExpiration()))));
+        }
 
         if(!expression.equals("")) sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", expression));
         else sb.append(MessageFormat.format("<b>Evaluated metric expression:  </b> {0}<br/>", context.getAlert().getExpression()));
         if(!expression.equals("")) {
         	    sb.append("<p><a href='").append(getExpressionUrl(expression)).append("'>Click here to view the evaluated metric data.</a><br/><br/>");
         }
-        if(!trigger.getType().equals(TriggerType.NO_DATA)){
+        if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(MessageFormat.format("<b>Triggered on Metric:  </b> {0}<br/>", context.getTriggeredMetric().getIdentifier()));
         }
         sb.append(MessageFormat.format("<b>Trigger details: </b> {0}<br/>", getTriggerDetails(trigger, context)));
-        if(!trigger.getType().equals(TriggerType.NO_DATA)){
+        if(!trigger.getType().equals(TriggerType.NO_DATA) && notificationStatus == NotificationStatus.TRIGGERED){
             sb.append(MessageFormat.format("<b>Triggering event value:  </b> {0}<br/>", context.getTriggerEventValue()));
         }
 
