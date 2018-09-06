@@ -59,7 +59,10 @@ public class MetatagsRecord {
     /**
      * Creates a MetatagsRecord object.
      *
-     * @param  metatags   A key-value pairs of metatags. Cannot be null or empty.
+     * @param  metatags   A key-value pairs of metatags. Cannot be null or empty. It is recommended that
+     *                    the number of metatags should not exceed 50, across your entire metrics volume.
+     *                    Otherwise it will create a very sparse ES index (metatags) with all the unique metatags
+     *                    in it.
      * @param  key        A unique identifier to be used while indexing this metatags into a schema db.
      */
     public MetatagsRecord(Map<String, String> metatags, String key) {
