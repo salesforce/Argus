@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.DiscoveryService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemException;
@@ -57,6 +58,8 @@ public class FillTransform implements Transform {
 
     /** The default metric scope for results. */
     public static final String DEFAULT_SCOPE_NAME = "scope";
+    
+    public static final int MAX_DATAPOINTS_FOR_FILL = DiscoveryService.MAX_DATAPOINTS_PER_RESPONSE;    
 
     //~ Methods **************************************************************************************************************************************
 
@@ -77,8 +80,8 @@ public class FillTransform implements Transform {
         // create a new datapoints map propagateDatpoints, which have all the
         // expected timestamps, then fill the missing value
         int index = 1;
-
-        while (startTimestamp <= endTimestamp) {
+        int numDatapoints = 0;
+        while (startTimestamp <= endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
             filledDatapoints.put(startTimestamp, sortedDatapoints.containsKey(startTimestamp) ? sortedDatapoints.get(startTimestamp) : null);
             if (index >= sortedDatapoints.size()) {
                 break;
@@ -94,7 +97,7 @@ public class FillTransform implements Transform {
         int newLength = filledDatapoints.size();
         List<Long> newTimestamps = new ArrayList<Long>();
         List<Double> newValues = new ArrayList<>();
-
+        
         for (Map.Entry<Long, Double> entry : filledDatapoints.entrySet()) {
             newTimestamps.add(entry.getKey());
             newValues.add(entry.getValue());
@@ -157,8 +160,9 @@ public class FillTransform implements Transform {
 
         Metric metric = new Metric(DEFAULT_SCOPE_NAME, DEFAULT_METRIC_NAME);
         Map<Long, Double> filledDatapoints = new TreeMap<>();
-
-        while (startTimestamp < endTimestamp) {
+        int numDatapoints = 0;
+        
+        while (startTimestamp < endTimestamp && numDatapoints++ < MAX_DATAPOINTS_FOR_FILL) {
             filledDatapoints.put(startTimestamp, value);
             startTimestamp += windowSizeInSeconds * 1000;
         }

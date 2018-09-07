@@ -34,15 +34,14 @@ package com.salesforce.dva.argus.service.alert.notifier;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Annotation;
-import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.service.AlertService.Notifier;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
+import com.salesforce.dva.argus.util.TemplateReplacer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,8 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Default implementation of the Notifier interface. It creates an annotation on the specific time series specified in the alert expression which
@@ -108,77 +105,6 @@ public abstract class DefaultNotifier implements Notifier {
         _dispose();
     }
 
-    public String getExpressionWithAbsoluteStartAndEndTimeStamps(NotificationContext context) {
-        String absoluteExpression = "";
-        try {
-            String expression = "@" + context.getAlert().getExpression().replaceAll("[\\s\\t\\r\\n\\f]*", "");
-            String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
-            String regexMatcherWithConstants = "(?i)#\\-[0-9]+(d|h|m|s)";
-            String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
-            Long relativeTo = context.getAlertEnqueueTimestamp();
-
-            Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
-            while (m.find()) {
-                for (String timeStr: m.group().split(":")) {
-                    Long absoluteTime = MetricReader.getTime(relativeTo, timeStr);
-                    expression = expression.replaceFirst(timeStr, ""  + absoluteTime);
-                }
-            }
-
-            m = Pattern.compile(regexMatcherWithConstants).matcher(expression);
-            while (m.find()) {
-                String timeStr = m.group();
-                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
-                expression = expression.replaceFirst(timeStr, ("" + timeStr.charAt(0)) + absoluteTime);
-            }
-
-            m = Pattern.compile(regexMatcherWithoutEnd).matcher(expression);
-            while (m.find()) {
-                String timeStr = m.group();
-                Long absoluteTime = MetricReader.getTime(relativeTo, timeStr.substring(1));
-                expression = expression.replace(timeStr, ("" + timeStr.charAt(0)) + absoluteTime + (":" + relativeTo));
-            }
-            absoluteExpression = expression.substring(1);
-        } catch (Exception ex) {
-             _logger.error("Exception occurred while converting relative time within the expression to absolute time.", ex.getMessage());
-        }
-
-        return absoluteExpression;
-    }
-
-    private  Map<String, String> getLowerCaseTagMap(final Map<String, String> tags) {
-        Map<String, String> lowerCaseTagMap = new HashMap<>();
-        for (String originalTags: tags.keySet()) {
-            lowerCaseTagMap.put(originalTags.toLowerCase(), tags.get(originalTags));
-        }
-        return lowerCaseTagMap;
-    }
-
-    public String replaceTemplatesInName(String triggerName, String scope, String metric,  Map<String, String> tags) {
-        triggerName = triggerName.replaceAll("(?i)\\$\\{scope\\}", scope);
-        triggerName = triggerName.replaceAll("(?i)\\$\\{metric\\}", metric);
-        Map<String, String> lowerCaseTagMap = getLowerCaseTagMap(tags);
-        Matcher m = Pattern.compile("(?i)\\$\\{.*?\\}").matcher(triggerName);
-        while (m.find()) {
-            String currentRegex = m.group(), currentTagKey = currentRegex.substring(2, currentRegex.length()-1).toLowerCase();
-            if (lowerCaseTagMap.containsKey(currentTagKey))
-                triggerName = triggerName.replace(currentRegex, lowerCaseTagMap.get(currentTagKey));
-        }
-        return triggerName;
-
-    }
-
-    /*
-     * Finds all the templates like ${scope}, ${metric} and replaces it with the required fields.
-     * If no matches are found, nothing is done. Should be a protected function, making public for unit testing.
-     * */
-    protected String getDisplayedName(NotificationContext context, String templatedString) {
-        Metric triggeredMetric = context.getTriggeredMetric();
-        String scope = triggeredMetric.getScope(), metric = triggeredMetric.getMetric();
-        Map<String, String> tags = triggeredMetric.getTags();
-        return replaceTemplatesInName(templatedString, scope, metric, tags);
-    }
-
     private void _createAnnotation(NotificationContext notificationContext, Map<String, String> additionalFields) {
         Alert alert = notificationContext.getAlert();
         Notification notification = null;
@@ -200,9 +126,9 @@ public abstract class DefaultNotifier implements Notifier {
                 Map<String, String> fields = new TreeMap<>();
 
                 fields.putAll(additionalFields);
-                fields.put("Alert Name", notificationContext.getAlert().getName());
-                fields.put("Notification Name", notificationContext.getNotification().getName());
-                fields.put("Trigger Name", notificationContext.getTrigger().getName());
+                fields.put("Alert Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getAlert().getName()));
+                fields.put("Notification Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getNotification().getName()));
+                fields.put("Trigger Name", TemplateReplacer.applyTemplateChanges(notificationContext, notificationContext.getTrigger().getName()));
                 fields.put("Tags", resolvedTags.toString());
                 annotation.setFields(fields);
                 annotation.setTags(resolvedTags);
