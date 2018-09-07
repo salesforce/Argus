@@ -88,17 +88,22 @@ angular.module('argus.directives.charts.table', [])
 			}
 		};
 
+		//sort the columns based on selected row
 		scope.sortSourceIndices = function(item){
 			var sortedArray =[];
 			for(var key in item)
 			{
+				//pair of <"valueN", value>
 				if(key.startsWith('value')) sortedArray.push([key, item[key]]);
 			}
+		
 			if(item['firstCol'] === scope.colNames.firstCol){
+					//sort the columns in the first row, which are headers
 				sortedArray.sort(function(a, b){
 					return (a[1].localeCompare(b[1])) * scope.reverse;
 				});
 			}else{
+				//sort the columns based on the value of each column in the selected row.
 				sortedArray.sort(function(a, b){
 					return (a[1] - b[1]) * scope.reverse;
 				});
