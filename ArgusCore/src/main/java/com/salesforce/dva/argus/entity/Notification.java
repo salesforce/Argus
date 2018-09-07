@@ -611,7 +611,7 @@ public class Notification extends JPAEntity implements Serializable {
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
     }
-    
+
     /**
      * Gets the severity level of notification
      *
