@@ -132,7 +132,17 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	protected final MonitorService _monitorService;
 	private final int RETRY_COUNT;
 
-	private Cache<String, String> _annotationUidCache;
+	/*
+		Given a key for an annotation, we cache its tuid obtained from TSDB
+		when storing the metric portion of annotation.
+		Annotations cannot directly be stored as metric_name and tags.
+		You need to store the metric_name with tags, get the generated tuid and store the annotation using the tuid.
+
+		Feature request to fix this is mentioned below.
+		https://github.com/OpenTSDB/opentsdb/issues/913
+
+	*/
+	private Cache<String, String> _keyUidCache;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -186,7 +196,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireArgument(connCount >= 2, "At least two connections are required.");
 		requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
 
-		_annotationUidCache = CacheBuilder.newBuilder()
+		_keyUidCache = CacheBuilder.newBuilder()
 				.maximumSize(100000)
 				.recordStats()
 				.expireAfterAccess(1, TimeUnit.HOURS)
@@ -399,27 +409,32 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireNotDisposed();
 		if (annotations != null) {
 
+			// Dictionary of annotation key and the annotation
 			Map<String, Annotation> keyAnnotationMap = new HashMap<>();
 
 			List<AnnotationWrapper> wrappers = new ArrayList<>();
 
 			for(Annotation annotation : annotations) {
 				String key = toAnnotationKey(annotation);
-				String uid = _annotationUidCache.getIfPresent(key);
+				String uid = _keyUidCache.getIfPresent(key);
 
 				if(StringUtils.isEmpty(uid)) {
+					// Not in cache, populate keyAnnotationMap so that we can query TSDB.
 					keyAnnotationMap.put(key, annotation);
 				} else {
+					// If we find uid in the cache, we construct the AnnotationWrapper object.
 					AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
 					wrappers.add(wrapper);
 				}
 			}
 
-			Map<String, String> keyUidMap = getUids(keyAnnotationMap);
+			// query TSDB to get uids for annotations.
+			Map<String, String> keyUidMap = getUidMapFromTSDB(keyAnnotationMap);
 
 			for(Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
-				_annotationUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
 
+				// We add new uids to the cache and create AnnotationWrapper objects.
+				_keyUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
 				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
 						keyAnnotationMap.get(keyUidEntry.getKey()));
 
@@ -428,8 +443,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			_logger.info("putAnnotations CacheStats hitCount {} requestCount {} " +
 							"evictionCount {} annotationsCount {}",
-					_annotationUidCache.stats().hitCount(), _annotationUidCache.stats().requestCount(),
-					_annotationUidCache.stats().evictionCount(), annotations.size());
+					_keyUidCache.stats().hitCount(), _keyUidCache.stats().requestCount(),
+					_keyUidCache.stats().evictionCount(), annotations.size());
 
 			String endpoint = _roundRobinIterator.next();
 
@@ -447,16 +462,15 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 	}
 
-	private Map<String, String> getUids(Map<String, Annotation> annotationMap) {
+	private Map<String, String> getUidMapFromTSDB(Map<String, Annotation> keyAnnotationMap) {
 
 		List<MetricQuery> queries = new ArrayList<>();
-
 		List<Metric> metrics = new ArrayList<>();
 
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1L, 0.0);
 
-		for(Map.Entry<String, Annotation> annotationEntry : annotationMap.entrySet()) {
+		for(Map.Entry<String, Annotation> annotationEntry : keyAnnotationMap.entrySet()) {
 			String annotationKey = annotationEntry.getKey();
 			Annotation annotation = annotationEntry.getValue();
 			String type = annotation.getType();
@@ -484,14 +498,14 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			try {
 
-				Map<String, String> uids = new HashMap<>();
+				Map<String, String> keyUidMap = new HashMap<>();
 				Map<MetricQuery, List<Metric>> metricMap = getMetrics(queries);
 				for(List<Metric> getMetrics : metricMap.values()) {
 					Metric firstMetric = getMetrics.get(0);
-					uids.put(firstMetric.getScope(), firstMetric.getUid());
+					keyUidMap.put(firstMetric.getScope(), firstMetric.getUid());
 				}
 
-				return uids;
+				return keyUidMap;
 
 			} catch (Exception e) {
 				backOff += 1000L;
