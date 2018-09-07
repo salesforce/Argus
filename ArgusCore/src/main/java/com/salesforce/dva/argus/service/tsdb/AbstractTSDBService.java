@@ -399,7 +399,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireNotDisposed();
 		if (annotations != null) {
 
-			Map<String, Annotation> annotationMap = new HashMap<>();
+			Map<String, Annotation> keyAnnotationMap = new HashMap<>();
 
 			List<AnnotationWrapper> wrappers = new ArrayList<>();
 
@@ -408,17 +408,22 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				String uid = _annotationUidCache.getIfPresent(key);
 
 				if(StringUtils.isEmpty(uid)) {
-					annotationMap.put(key, annotation);
+					keyAnnotationMap.put(key, annotation);
 				} else {
-					wrappers.add(new AnnotationWrapper(uid, annotation));
+					AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
+					wrappers.add(wrapper);
 				}
 			}
 
-			Map<String, String> annotationUidMap = getUids(annotationMap);
+			Map<String, String> keyUidMap = getUids(keyAnnotationMap);
 
-			for(Map.Entry<String, String> annotationEntry : annotationUidMap.entrySet()) {
-				_annotationUidCache.put(annotationEntry.getKey(), annotationEntry.getValue());
-				wrappers.add(new AnnotationWrapper(annotationEntry.getValue(), annotationMap.get(annotationEntry.getKey())));
+			for(Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
+				_annotationUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
+
+				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
+						keyAnnotationMap.get(keyUidEntry.getKey()));
+
+				wrappers.add(wrapper);
 			}
 
 			_logger.info("putAnnotations CacheStats hitCount {} requestCount {} " +
@@ -452,17 +457,17 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		datapoints.put(1L, 0.0);
 
 		for(Map.Entry<String, Annotation> annotationEntry : annotationMap.entrySet()) {
-			String scope = annotationEntry.getKey();
+			String annotationKey = annotationEntry.getKey();
 			Annotation annotation = annotationEntry.getValue();
 			String type = annotation.getType();
 			Map<String, String> tags = annotation.getTags();
 
-			Metric metric = new Metric(scope, type);
+			Metric metric = new Metric(annotationKey, type);
 			metric.setDatapoints(datapoints);
 			metric.setTags(tags);
 			metrics.add(metric);
 
-			MetricQuery query = new MetricQuery(scope, type, tags, 0L, 2L);
+			MetricQuery query = new MetricQuery(annotationKey, type, tags, 0L, 2L);
 			queries.add(query);
 		}
 
