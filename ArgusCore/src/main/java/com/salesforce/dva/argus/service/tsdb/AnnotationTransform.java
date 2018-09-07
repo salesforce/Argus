@@ -133,7 +133,7 @@ class AnnotationTransform {
 
             jgen.writeStartObject();
             jgen.writeNumberField("startTime", annotation.getTimestamp());
-            jgen.writeStringField("tsuid", annotation.getUid());
+            jgen.writeStringField("tsuid", wrapper.getUid());
             jgen.writeObjectFieldStart("custom");
             jgen.writeStringField(wrapper.getAnnotationKey(), toMeta(annotation));
             jgen.writeEndObject();
