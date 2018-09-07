@@ -84,11 +84,9 @@ class AnnotationTransform {
                     Iterator<JsonNode> annotationsIter = annotationsNode.elements();
 
                     while (annotationsIter.hasNext()) {
-                        AnnotationWrapper wrapper = new AnnotationWrapper();
                         JsonNode annotationNode = annotationsIter.next();
                         Long timestamp = annotationNode.get("startTime").asLong();
                         String uid = annotationNode.get("tsuid").asText();
-                        Map<String, Annotation> annotations = new HashMap<>();
                         Iterator<Map.Entry<String, JsonNode>> entries = annotationNode.get("custom").fields();
 
                         while (entries.hasNext()) {
@@ -101,12 +99,10 @@ class AnnotationTransform {
                             Annotation annotation = new Annotation(source, id, "null", "null", "null", timestamp);
 
                             annotation.setFields(fields);
-                            annotations.put(key, annotation);
+
+                            AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
+                            result.add(wrapper);
                         }
-                        wrapper.setCustom(annotations);
-                        wrapper.setTimestamp(timestamp);
-                        wrapper.setUid(uid);
-                        result.add(wrapper);
                     }
                 }
             }
@@ -133,15 +129,13 @@ class AnnotationTransform {
 
         @Override
         public void serialize(AnnotationWrapper wrapper, JsonGenerator jgen, SerializerProvider sp) throws IOException {
-            Map<String, Annotation> annotations = wrapper.getCustom();
+            Annotation annotation = wrapper.getAnnotation();
 
             jgen.writeStartObject();
-            jgen.writeNumberField("startTime", wrapper.getTimestamp());
-            jgen.writeStringField("tsuid", wrapper.getUid());
+            jgen.writeNumberField("startTime", annotation.getTimestamp());
+            jgen.writeStringField("tsuid", annotation.getUid());
             jgen.writeObjectFieldStart("custom");
-            for (Map.Entry<String, Annotation> entry : annotations.entrySet()) {
-                jgen.writeStringField(entry.getKey(), toMeta(entry.getValue()));
-            }
+            jgen.writeStringField(wrapper.getAnnotationKey(), toMeta(annotation));
             jgen.writeEndObject();
             jgen.writeEndObject();
         }

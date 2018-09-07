@@ -110,7 +110,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
     public Map<MetricQuery, List<Metric>> getMetrics(List<MetricQuery> queries) {
         requireNotDisposed();
         requireArgument(queries != null, "Metric Queries cannot be null.");
-        _logger.trace("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
+        _logger.info("Active Threads in the pool = " + ((ThreadPoolExecutor) _executorService).getActiveCount());
 
         long start = System.currentTimeMillis();
         Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
@@ -121,6 +121,9 @@ public class DefaultTSDBService extends AbstractTSDBService{
 
         for (MetricQuery query : queries) {
         	String requestBody = fromEntity(query);
+
+            _logger.info("requestUrl {} requestBody {}", requestUrl, requestBody);
+
             futures.put(query, _executorService.submit(new QueryWorker(requestUrl, _readEndPoints.get(0), requestBody)));
             queryStartExecutionTime.put(query, System.currentTimeMillis());
         }
@@ -144,7 +147,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
-        _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));
+        _logger.info("Time to get Metrics = " + (System.currentTimeMillis() - start));
         return metricsMap;
     }
 

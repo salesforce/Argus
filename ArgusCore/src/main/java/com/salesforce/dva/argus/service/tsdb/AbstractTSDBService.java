@@ -61,6 +61,7 @@ import java.util.function.IntUnaryOperator;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -87,7 +88,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -189,7 +189,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		_annotationUidCache = CacheBuilder.newBuilder()
 				.maximumSize(100000)
 				.recordStats()
-				.expireAfterAccess(1, TimeUnit.DAYS)
+				.expireAfterAccess(1, TimeUnit.HOURS)
 				.build();
 
 		try {
@@ -398,16 +398,102 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	public void putAnnotations(List<Annotation> annotations) {
 		requireNotDisposed();
 		if (annotations != null) {
-			List<AnnotationWrapper> wrappers = reconcileWrappers(toAnnotationWrappers(annotations));
+
+			Map<String, Annotation> annotationMap = new HashMap<>();
+
+			List<AnnotationWrapper> wrappers = new ArrayList<>();
+
+			for(Annotation annotation : annotations) {
+				String key = toAnnotationKey(annotation);
+				String uid = _annotationUidCache.getIfPresent(key);
+
+				if(StringUtils.isEmpty(uid)) {
+					annotationMap.put(key, annotation);
+				} else {
+					wrappers.add(new AnnotationWrapper(uid, annotation));
+				}
+			}
+
+			Map<String, String> annotationUidMap = getUids(annotationMap);
+
+			for(Map.Entry<String, String> annotationEntry : annotationUidMap.entrySet()) {
+				_annotationUidCache.put(annotationEntry.getKey(), annotationEntry.getValue());
+				wrappers.add(new AnnotationWrapper(annotationEntry.getValue(), annotationMap.get(annotationEntry.getKey())));
+			}
+
+			_logger.info("putAnnotations CacheStats hitCount {} requestCount {} " +
+							"evictionCount {} annotationsCount {}",
+					_annotationUidCache.stats().hitCount(), _annotationUidCache.stats().requestCount(),
+					_annotationUidCache.stats().evictionCount(), annotations.size());
+
 			String endpoint = _roundRobinIterator.next();
 
 			try {
+
+				long start = System.currentTimeMillis();
 				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
+
+				_logger.info("Updating {} annotations takes {} ms", wrappers.size(), System.currentTimeMillis()- start);
+
 			} catch(IOException ex) {
 				_logger.warn("IOException while trying to push annotations", ex);
 				_retry(wrappers, _roundRobinIterator);
 			}
 		}
+	}
+
+	private Map<String, String> getUids(Map<String, Annotation> annotationMap) {
+
+		List<MetricQuery> queries = new ArrayList<>();
+
+		List<Metric> metrics = new ArrayList<>();
+
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(1L, 0.0);
+
+		for(Map.Entry<String, Annotation> annotationEntry : annotationMap.entrySet()) {
+			String scope = annotationEntry.getKey();
+			Annotation annotation = annotationEntry.getValue();
+			String type = annotation.getType();
+			Map<String, String> tags = annotation.getTags();
+
+			Metric metric = new Metric(scope, type);
+			metric.setDatapoints(datapoints);
+			metric.setTags(tags);
+			metrics.add(metric);
+
+			MetricQuery query = new MetricQuery(scope, type, tags, 0L, 2L);
+			queries.add(query);
+		}
+
+		long backOff = 1000L;
+
+		for (int attempts = 0; attempts < 3; attempts++) {
+
+			putMetrics(metrics);
+			try {
+				Thread.sleep(backOff);
+			} catch (InterruptedException ex) {
+				// We continue if interrupted.
+			}
+
+			try {
+
+				Map<String, String> uids = new HashMap<>();
+				Map<MetricQuery, List<Metric>> metricMap = getMetrics(queries);
+				for(List<Metric> getMetrics : metricMap.values()) {
+					Metric firstMetric = getMetrics.get(0);
+					uids.put(firstMetric.getScope(), firstMetric.getUid());
+				}
+
+				return uids;
+
+			} catch (Exception e) {
+				backOff += 1000L;
+			}
+		}
+
+		throw new SystemException("Failed to create new annotation metric.");
 	}
 
 	private ObjectMapper getMapper() {
@@ -433,7 +519,13 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
 				try {
-					StringEntity entity = new StringEntity(fromEntity(objects.subList(chunkStart, chunkEnd)));
+
+					String createBody = fromEntity(objects.subList(chunkStart, chunkEnd));
+
+					StringEntity entity = new StringEntity(createBody);
+
+					_logger.info("createUrl {} createBody {}", endpoint, createBody);
+
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
@@ -464,51 +556,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}else {
 			return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
 		}
-	}
-
-	/* Converts a list of annotations into a list of annotation wrappers for use in serialization.  Resulting list is sorted by target annotation
-	 * scope and timestamp.
-	 */
-	private List<AnnotationWrapper> toAnnotationWrappers(List<Annotation> annotations) {
-		Map<String, Set<Annotation>> sortedByUid = new TreeMap<>();
-
-		for (Annotation annotation : annotations) {
-			String key = toAnnotationKey(annotation);
-			Set<Annotation> items = sortedByUid.get(key);
-
-			if (items == null) {
-				items = new HashSet<>();
-				sortedByUid.put(key, items);
-			}
-			items.add(annotation);
-		}
-
-		List<AnnotationWrapper> result = new LinkedList<>();
-
-		for (Set<Annotation> items : sortedByUid.values()) {
-			Map<Long, Set<Annotation>> sortedByUidAndTimestamp = new HashMap<>();
-
-			for (Annotation item : items) {
-				Long timestamp = item.getTimestamp();
-				Set<Annotation> itemsByTimestamp = sortedByUidAndTimestamp.get(timestamp);
-
-				if (itemsByTimestamp == null) {
-					itemsByTimestamp = new HashSet<>();
-					sortedByUidAndTimestamp.put(timestamp, itemsByTimestamp);
-				}
-				itemsByTimestamp.add(item);
-			}
-			for (Set<Annotation> itemsByTimestamp : sortedByUidAndTimestamp.values()) {
-				result.add(new AnnotationWrapper(itemsByTimestamp, this, _annotationUidCache, _logger));
-			}
-		}
-		return result;
-	}
-
-	/* This method should merge and update existing annotations rather than adding a duplicate annotation. */
-	private List<AnnotationWrapper> reconcileWrappers(List<AnnotationWrapper> wrappers) {
-		_logger.debug("Reconciling and merging of duplicate annotations is not yet implemented.");
-		return wrappers;
 	}
 
 	/*
@@ -753,95 +800,23 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	static class AnnotationWrapper {
 
 		String _uid;
-		Long _timestamp;
-		Map<String, Annotation> _custom;
-		private TSDBService _service;
+		String _annotationKey;
+		Annotation _annotation;
 
-		/** Creates a new AnnotationWrapper object. */
-		AnnotationWrapper() {
-			_custom = new HashMap<>();
-		}
-
-		/* Annotations should have the same scope, metric, type and tags and timestamp. */
-		private AnnotationWrapper(Set<Annotation> annotations, TSDBService service,
-								  Cache<String, String> annotationUidCache, Logger logger) {
-			this();
-			_service = service;
-			for (Annotation annotation : annotations) {
-				if (_uid == null) {
-
-					String key = toAnnotationKey(annotation);
-
-					try {
-						_uid = annotationUidCache.get(key, () -> getUid(annotation, key));
-					} catch (ExecutionException e) {
-						throw new SystemException(e.getCause());
-					}
-
-					logger.info("getUnique POST CacheStats hitCount {} requestCount {} evictionCount {}",
-							annotationUidCache.stats().hitCount(), annotationUidCache.stats().requestCount(), annotationUidCache.stats().evictionCount());
-
-					_timestamp = annotation.getTimestamp();
-				}
-				_custom.put(annotation.getSource() + "." + annotation.getId(), annotation);
-			}
-		}
-
-		List<Annotation> getAnnotations() {
-			return new ArrayList<>(_custom.values());
-		}
-
-		private String getUid(Annotation annotation, String annotationKey) {
-			String scope = annotationKey;
-			String type = annotation.getType();
-			Map<String, String> tags = annotation.getTags();
-			MetricQuery query = new MetricQuery(scope, type, tags, 0L, 2L);
-			long backOff = 1000L;
-
-			for (int attempts = 0; attempts < 3; attempts++) {
-				try {
-					return _service.getMetrics(Arrays.asList(query)).get(query).get(0).getUid();
-				} catch (Exception e) {
-					Metric metric = new Metric(scope, type);
-					Map<Long, Double> datapoints = new HashMap<>();
-
-					datapoints.put(1L, 0.0);
-					metric.setDatapoints(datapoints);
-					metric.setTags(annotation.getTags());
-					_service.putMetrics(Arrays.asList(new Metric[] { metric }));
-					try {
-						Thread.sleep(backOff);
-					} catch (InterruptedException ex) {
-						break;
-					}
-					backOff += 1000L;
-				}
-			}
-			throw new SystemException("Failed to create new annotation metric.");
-		}
-
-		String getUid() {
-			return _uid;
-		}
-
-		Long getTimestamp() {
-			return _timestamp;
-		}
-
-		Map<String, Annotation> getCustom() {
-			return Collections.unmodifiableMap(_custom);
-		}
-
-		void setUid(String uid) {
+		AnnotationWrapper(String uid, Annotation annotation) {
 			_uid = uid;
+			_annotation = annotation;
+			_annotationKey = annotation.getSource() + "." + annotation.getId();
 		}
 
-		void setTimestamp(Long timestamp) {
-			_timestamp = timestamp;
+		Annotation getAnnotation() {
+			return _annotation;
 		}
 
-		void setCustom(Map<String, Annotation> custom) {
-			_custom = custom;
+		String getUid() { return _uid; }
+
+		String getAnnotationKey() {
+			return _annotationKey;
 		}
 	}
 
