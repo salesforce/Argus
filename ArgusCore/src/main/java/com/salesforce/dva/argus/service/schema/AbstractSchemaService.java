@@ -367,8 +367,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
 		*/
 
-		BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.metric.metatags.expected.number.insertions", "1000000"),
-		BLOOMFILTER_METATAGS_ERROR_RATE("service.property.schema.bloomfilter.metric.metatags.error.rate", "0.00001");
+		BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.metatags.expected.number.insertions", "1000000"),
+		BLOOMFILTER_METATAGS_ERROR_RATE("service.property.schema.bloomfilter.metatags.error.rate", "0.00001");
 
 
 		private final String _name;
