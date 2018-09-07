@@ -805,13 +805,11 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	static class AnnotationWrapper {
 
 		String _uid;
-		String _annotationKey;
 		Annotation _annotation;
 
 		AnnotationWrapper(String uid, Annotation annotation) {
 			_uid = uid;
 			_annotation = annotation;
-			_annotationKey = annotation.getSource() + "." + annotation.getId();
 		}
 
 		Annotation getAnnotation() {
@@ -821,7 +819,15 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		String getUid() { return _uid; }
 
 		String getAnnotationKey() {
-			return _annotationKey;
+			return _annotation.getSource() + "." + _annotation.getId();
+		}
+
+		public void setUid(String uid) {
+			_uid = uid;
+		}
+
+		public void setAnnotation(Annotation annotation) {
+			_annotation = annotation;
 		}
 	}
 

@@ -168,35 +168,34 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 List<AnnotationWrapper> wrappers = toEntity(extractResponse(response), new TypeReference<AnnotationWrappers>() { });
                 if (wrappers != null) {
                     for (AnnotationWrapper wrapper : wrappers) {
-                        for (Annotation existing : wrapper.getAnnotations()) {
-                            String source = existing.getSource();
-                            String id = existing.getId();
-                            String type = query.getType();
-                            String scope = query.getScope();
-                            String metric = query.getMetric();
-			    
-                            //Convert all timestamps to millis, so that we can compare them
-                            long timestamp = existing.getTimestamp();
-                            if(String.valueOf(timestamp).length() < 12) {
-                            	timestamp = timestamp * 1000;
-                            }
-                            
-                            long queryStart = query.getStartTimestamp();
-                            long queryEnd = query.getEndTimestamp();
-                            if(String.valueOf(queryStart).length() < 12) {
-                            	queryStart = queryStart * 1000;
-                            }
-                            
-                            if(String.valueOf(queryEnd).length() < 12) {
-                            	queryEnd = queryEnd * 1000;
-                            }
-                            
-                            if(timestamp > queryStart && timestamp <= queryEnd) {
-                            	Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
-                                updated.setFields(existing.getFields());
-                                updated.setTags(query.getTags());
-                                annotations.add(updated);
-                            }
+                        Annotation existing = wrapper.getAnnotation();
+                        String source = existing.getSource();
+                        String id = existing.getId();
+                        String type = query.getType();
+                        String scope = query.getScope();
+                        String metric = query.getMetric();
+
+                        //Convert all timestamps to millis, so that we can compare them
+                        long timestamp = existing.getTimestamp();
+                        if (String.valueOf(timestamp).length() < 12) {
+                            timestamp = timestamp * 1000;
+                        }
+
+                        long queryStart = query.getStartTimestamp();
+                        long queryEnd = query.getEndTimestamp();
+                        if (String.valueOf(queryStart).length() < 12) {
+                            queryStart = queryStart * 1000;
+                        }
+
+                        if (String.valueOf(queryEnd).length() < 12) {
+                            queryEnd = queryEnd * 1000;
+                        }
+
+                        if (timestamp > queryStart && timestamp <= queryEnd) {
+                            Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
+                            updated.setFields(existing.getFields());
+                            updated.setTags(query.getTags());
+                            annotations.add(updated);
                         }
                     }
                 }
