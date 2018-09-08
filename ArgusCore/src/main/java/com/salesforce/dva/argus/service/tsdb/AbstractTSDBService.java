@@ -449,12 +449,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			String endpoint = _roundRobinIterator.next();
 
 			try {
-
-				long start = System.currentTimeMillis();
 				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
-
-				_logger.info("Updating {} annotations takes {} ms", wrappers.size(), System.currentTimeMillis()- start);
-
 			} catch(IOException ex) {
 				_logger.warn("IOException while trying to push annotations", ex);
 				_retry(wrappers, _roundRobinIterator);
@@ -543,7 +538,9 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 					StringEntity entity = new StringEntity(createBody);
 
-					_logger.info("createUrl {} createBody {}", endpoint, createBody);
+					if (endpoint.contains("put")) {
+						_logger.info("createUrl {} createBody {}", endpoint, createBody);
+					}
 
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
@@ -560,13 +557,17 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
 		connMgr.setMaxTotal(connCount);
 
+		_logger.info("Setting ConnectionCount {}", connCount);
 		for(String endpoint : endpoints) {
 			URL url = new URL(endpoint);
 			int port = url.getPort();
 			requireArgument(port != -1, "TSDB endpoint must include explicit port.");
 			HttpHost host = new HttpHost(url.getHost(),	url.getPort());
 			connMgr.setMaxPerRoute(new HttpRoute(host), connCount / endpoints.length);
+			_logger.info("Setting ConnectionCount {} for host {}", connCount / endpoints.length, host.toString());
 		}
+
+		_logger.info("Setting connectionReuseCount {}", connectionReuseCount);
 
 		RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
 				socketTimeout).build();
@@ -882,7 +883,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 		@Override
 		public List<Metric> call() {
-			_logger.debug("TSDB Query = " + _requestBody);
+			_logger.info("TSDB requestUrl {} requestBody {}", _requestUrl, _requestBody);
 
 			try {
 				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl, _readPortMap.get(_requestEndPoint), new StringEntity(_requestBody));
