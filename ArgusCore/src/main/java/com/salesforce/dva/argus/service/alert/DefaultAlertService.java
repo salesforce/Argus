@@ -495,9 +495,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				jobEndTime = System.currentTimeMillis();
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
-
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, null);
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", SystemConfiguration.getHostname());
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
@@ -516,8 +517,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						}
 					}
 				}
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, null);
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", SystemConfiguration.getHostname());
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
@@ -544,8 +547,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, null);
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", SystemConfiguration.getHostname());
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
@@ -698,6 +703,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("host", SystemConfiguration.getHostname());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -719,6 +725,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("host", SystemConfiguration.getHostname());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
