@@ -704,6 +704,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", SystemConfiguration.getHostname());
+		tags.put("metric", metric.getIdentifier());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
@@ -726,6 +727,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
 		tags.put("host", SystemConfiguration.getHostname());
+		tags.put("metric", metric.getIdentifier());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
