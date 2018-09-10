@@ -496,7 +496,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, null);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
@@ -516,7 +516,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						}
 					}
 				}
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, null);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
@@ -544,7 +544,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 				_logger.warn(logMessage);
 				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, null);
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
@@ -696,7 +696,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/);
+		tags = new HashMap<>();
+		tags.put("notification_id", notification.getId().intValue()+"");
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
@@ -715,18 +717,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "clear");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/);
+		tags = new HashMap<>();
+		tags.put("notification_id", notification.getId().intValue()+"");
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value) {
+	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
 		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
 		trackingMetric.addDatapoints(datapoints);
+		if(tags!=null) {
+		    trackingMetric.setTags(tags);
+		}
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
