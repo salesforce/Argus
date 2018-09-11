@@ -55,6 +55,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
@@ -117,11 +119,11 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
 
 	private final String[] _writeEndpoints;
-	protected final CloseableHttpClient _writeHttpClient;
+	protected CloseableHttpClient _writeHttpClient;
 
 	protected final List<String> _readEndPoints;
 	protected final List<String> _readBackupEndPoints;
-	protected final Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
+	protected Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
 	protected final Map<String, String> _readBackupEndPointsMap = new HashMap<>();
 
 	/** Round robin iterator for write endpoints. 
@@ -205,13 +207,13 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		try {
 			int index = 0;
 			for (String readEndpoint : _readEndPoints) {
-				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount ,readEndpoint));
+				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout, tsdbConnectionReuseCount ,readEndpoint));
 				_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
 				index ++;
 			}
 			for (String readBackupEndpoint : _readBackupEndPoints) {
 				if (!readBackupEndpoint.isEmpty())
-					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, readBackupEndpoint));
+					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout, tsdbConnectionReuseCount, readBackupEndpoint));
 			}
 
 			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
@@ -225,6 +227,14 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	//~ Methods **************************************************************************************************************************************
+
+	/* Used in tests to mock Tsdb clients. */
+	void SetTsdbClients(CloseableHttpClient writeHttpClient, CloseableHttpClient readHttpClient) {
+		_writeHttpClient = writeHttpClient;
+		for(String key : _readPortMap.keySet()) {
+			_readPortMap.put(key, readHttpClient);
+		}
+	}
 
 	Iterator<String> constructCyclingIterator(String[] endpoints) {
 		// Return repeating, non-blocking iterator if single element
@@ -429,7 +439,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			}
 
 			// query TSDB to get uids for annotations.
-			Map<String, String> keyUidMap = getUidMapFromTSDB(keyAnnotationMap);
+			Map<String, String> keyUidMap = getUidMapFromTsdb(keyAnnotationMap);
 
 			for(Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
 
@@ -457,7 +467,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 	}
 
-	private Map<String, String> getUidMapFromTSDB(Map<String, Annotation> keyAnnotationMap) {
+	private Map<String, String> getUidMapFromTsdb(Map<String, Annotation> keyAnnotationMap) {
 
 		List<MetricQuery> queries = new ArrayList<>();
 		List<Metric> metrics = new ArrayList<>();
@@ -523,6 +533,59 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		return mapper;
 	}
 
+	/* gets objects in chunks.
+	public Map<MetricQuery, List<Metric>> get(List<MetricQuery> queries) {
+		requireNotDisposed();
+		requireArgument(queries != null, "Metric Queries cannot be null.");
+
+		Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
+		Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
+		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
+		// Only one endpoint for AbstractTSDBService
+		String requestUrl = _readEndPoints.get(0) + "/api/query";
+
+		int chunkEnd = 0;
+
+		while (chunkEnd < queries.size()) {
+			int chunkStart = chunkEnd;
+
+			long start = System.currentTimeMillis();
+
+			chunkEnd = Math.min(queries.size(), chunkStart + CHUNK_SIZE);
+
+			String requestBody = fromEntity(queries.subList(chunkStart, chunkEnd));
+
+			_logger.info("requestUrl {} requestBody {}", requestUrl, requestBody);
+
+			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, _readPortMap.get(requestUrl), new StringEntity(requestBody));
+			List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
+		}
+
+		for (Map.Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
+			try {
+				List<Metric> m = entry.getValue().get();
+				List<Metric> metrics = new ArrayList<>();
+
+				if (m != null) {
+					for (Metric metric : m) {
+						if (metric != null) {
+							metric.setQuery(entry.getKey());
+							metrics.add(metric);
+						}
+					}
+				}
+
+				instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
+				metricsMap.put(entry.getKey(), metrics);
+			} catch (InterruptedException | ExecutionException e) {
+				throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
+			}
+		}
+		_logger.info("Time to get Metrics = " + (System.currentTimeMillis() - start));
+		return metricsMap;
+	}
+	*/
+
 	/* Writes objects in chunks. */
 	private <T> void put(List<T> objects, String endpoint, HttpMethod method) throws IOException {
 		if (objects != null) {
@@ -530,6 +593,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			while (chunkEnd < objects.size()) {
 				int chunkStart = chunkEnd;
+
+				long start = System.currentTimeMillis();
 
 				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
 				try {
@@ -545,6 +610,8 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
+
+					_logger.info("Time to put Metrics = " + (System.currentTimeMillis() - start));
 				} catch (UnsupportedEncodingException ex) {
 					throw new SystemException("Error posting data", ex);
 				}
@@ -557,17 +624,13 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		PoolingHttpClientConnectionManager connMgr = new PoolingHttpClientConnectionManager();
 		connMgr.setMaxTotal(connCount);
 
-		_logger.info("Setting ConnectionCount {}", connCount);
 		for(String endpoint : endpoints) {
 			URL url = new URL(endpoint);
 			int port = url.getPort();
 			requireArgument(port != -1, "TSDB endpoint must include explicit port.");
 			HttpHost host = new HttpHost(url.getHost(),	url.getPort());
 			connMgr.setMaxPerRoute(new HttpRoute(host), connCount / endpoints.length);
-			_logger.info("Setting ConnectionCount {} for host {}", connCount / endpoints.length, host.toString());
 		}
-
-		_logger.info("Setting connectionReuseCount {}", connectionReuseCount);
 
 		RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(connTimeout).setConnectTimeout(connTimeout).setSocketTimeout(
 				socketTimeout).build();
