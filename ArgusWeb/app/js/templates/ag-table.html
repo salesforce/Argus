@@ -7,7 +7,8 @@
         <div class="col-md-4 h4">{{processedOptions.title? processedOptions.title.text: ""}}</div>
 
         <div class="col-md-4 text-right">
-            <dir-pagination-controls></dir-pagination-controls>
+            <!-- $id is scope id, cannot use tableId here because it is generated after first render -->
+            <dir-pagination-controls pagination-id="$id"></dir-pagination-controls>
         </div>
         <div class="col-md-1">
             <select class="form-control" ng-model="itemsPerPage"
@@ -48,7 +49,7 @@
             </thead>
             <tbody>
             <tr dir-paginate="item in results |itemsPerPage:itemsPerPage track by $index"
-                current-page="currentPage">
+                current-page="currentPage" pagination-id="$id">
                 <td class="agTableHead" ng-style="{'z-index': 1, 'left': headerLeft +'px', 'height': rowHeight = processRowHeight(item) + 'px'}" ng-click="sort(item)">{{oneRow?item.firstCol : item.dateTime}}
                     <span class="glyphicon sort-icon" ng-show="sortKey===item.firstCol"
                           ng-class="{'glyphicon-chevron-right': reverse == -1,'glyphicon-chevron-left': reverse == 1}"></span>

@@ -29,6 +29,14 @@ angular.module('argus.directives.charts.table', [])
 		}
 		scope.GMTOn = GMTon;
 
+		scope.update = function(){
+			scope.start = (scope.currentPage - 1)* scope.itemsPerPage + 1;
+			var end = scope.start + scope.itemsPerPage - 1;
+			if (scope.series) {
+				scope.end = end < scope.dataSet.length ? end : scope.dataSet.length;
+			}
+		};
+
 		// itemsPerPage setting
 		var storageId = scope.dashboardId + '_' + newTableId;
 		scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
@@ -36,14 +44,20 @@ angular.module('argus.directives.charts.table', [])
 		scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, scope.itemsPerPageOptions[1]);
 		scope.$watch('itemsPerPage', function(newValue) {
 			InputTracker.updateDefaultValue(itemsPerPageFromStorage, scope.itemsPerPageOptions[1], newValue);
-			update();
+			scope.update();
 		});
 
+		// pagination page setting
+		var currentPageFromStorage = storageId + '-currentPage';
+		scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
+		scope.$watch('currentPage', function (newValue) {
+			InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
+			scope.update();
+		});
+		
 		// searchText setting
 		var searchTextFromStorage = storageId + '-searchText';
 		scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, '');
-
-
 		scope.$watch('searchText', function(newVal, oldVal) {
 			InputTracker.updateDefaultValue(searchTextFromStorage, '', newVal);
 			if(newVal !== undefined && newVal !== oldVal){
@@ -52,13 +66,7 @@ angular.module('argus.directives.charts.table', [])
 			}
 		});
 
-		// pagination page setting
-		var currentPageFromStorage = storageId + '-currentPage';
-		scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
-		scope.$watch('currentPage', function (newValue) {
-			InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
-			update();
-		});
+		
 
 		// sort setting
 		var sortKeyFromStorage = storageId + '-sortKey';
@@ -110,14 +118,6 @@ angular.module('argus.directives.charts.table', [])
 			}
 			scope.sortedSourceIndices = sortedArray.map(function(d){ return d[0]; });
 		};
-
-		function update(){
-			scope.start = (scope.currentPage - 1)* scope.itemsPerPage + 1;
-			var end = scope.start + scope.itemsPerPage - 1;
-			if (scope.series) {
-				scope.end = end < scope.dataSet.length ? end : scope.dataSet.length;
-			}
-		}
 	}
 
 	function queryMetricData(scope, controls){
