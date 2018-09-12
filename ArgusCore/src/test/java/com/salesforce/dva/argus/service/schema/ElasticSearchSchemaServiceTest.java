@@ -6,6 +6,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -21,6 +22,10 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Map.Entry;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -410,6 +415,49 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
     }
 
     @Test
+    public void testPutCreateUsingMetatagsIndex() throws IOException {
+
+        List<Metric> metrics = new ArrayList<>();
+
+        Map<String, String> mtags = new HashMap<>();
+        for(int i=1;i<4;i++) {
+            mtags.put("dc"+i, "metav"+i);
+        }
+        MetatagsRecord metatags = new MetatagsRecord(mtags, "mymtagsid");
+        Metric myMetric = new Metric("myscope", "mymetricname");
+        myMetric.setMetatagsRecord(metatags);
+        metrics.add(myMetric);
+
+        ElasticSearchSchemaService service = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
+
+        ElasticSearchSchemaService spyService = _initializeSpyService(service, createSucessReply, createSucessReply);
+
+        List<MetatagsRecord> records = new ArrayList<>();
+
+        for(Metric m : metrics) {
+            MetatagsRecord msr = new MetatagsRecord(m.getMetatagsRecord().getMetatags(), m.getMetatagsRecord().getKey());
+            records.add(msr);
+        }
+
+        spyService.upsertMetatags(records);
+
+        ArgumentCaptor<String> requestUrlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<StringEntity> createJsonCaptor = ArgumentCaptor.forClass(StringEntity.class);
+
+        verify(restClient, times(1)).performRequest(any(), requestUrlCaptor.capture(), any(), createJsonCaptor.capture());
+
+        String requestUrl = requestUrlCaptor.getValue();
+        String createJson = EntityUtils.toString(createJsonCaptor.getValue());
+
+        assertTrue(createJson.contains("create"));
+        assertFalse(createJson.contains("update"));
+        assertTrue(createJson.contains("cts"));
+        assertTrue(createJson.contains("mts"));
+        assertEquals("/metatags/metatags_type/_bulk", requestUrl);
+    }
+
+
+    @Test
     public void testGetUniqueUsingScopeSchemaIndex() throws IOException {
 
         MetricSchemaRecordQuery queryForScope = new MetricSchemaRecordQuery.MetricSchemaRecordQueryBuilder().scope("system*")
@@ -547,43 +595,43 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 
 	@Test
 	public void testUpsertWhenAllNewDocsShouldNotUpdateMTSField() throws IOException {
-		String esCreateResponse=String.join("\n", "{" + 
-				"  \"took\": 127," + 
-				"  \"errors\": false," + 
-				"  \"items\": [" + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"1\"," + 
-				"        \"_version\": 1," + 
-				"        \"result\": \"created\"," + 
-				"        \"_shards\": {" + 
-				"          \"total\": 2," + 
-				"          \"successful\": 1," + 
-				"          \"failed\": 0" + 
-				"        }," + 
-				"        \"created\": true," + 
-				"        \"status\": 201" + 
-				"      }" + 
-				"    }," + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"2\"," + 
-				"        \"_version\": 1," + 
-				"        \"result\": \"created\"," + 
-				"        \"_shards\": {" + 
-				"          \"total\": 2," + 
-				"          \"successful\": 1," + 
-				"          \"failed\": 0" + 
-				"        }," + 
-				"        \"created\": true," + 
-				"        \"status\": 201" + 
-				"      }" + 
-				"    }" + 
-				"  ]" + 
+		String esCreateResponse=String.join("\n", "{" +
+				"  \"took\": 127," +
+				"  \"errors\": false," +
+				"  \"items\": [" +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"1\"," +
+				"        \"_version\": 1," +
+				"        \"result\": \"created\"," +
+				"        \"_shards\": {" +
+				"          \"total\": 2," +
+				"          \"successful\": 1," +
+				"          \"failed\": 0" +
+				"        }," +
+				"        \"created\": true," +
+				"        \"status\": 201" +
+				"      }" +
+				"    }," +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"2\"," +
+				"        \"_version\": 1," +
+				"        \"result\": \"created\"," +
+				"        \"_shards\": {" +
+				"          \"total\": 2," +
+				"          \"successful\": 1," +
+				"          \"failed\": 0" +
+				"        }," +
+				"        \"created\": true," +
+				"        \"status\": 201" +
+				"      }" +
+				"    }" +
+				"  ]" +
 				"}");
 		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
 		ElasticSearchSchemaService spySchemaService = spy(schemaService);
@@ -600,45 +648,45 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		spySchemaService.put(metrics);
 		verify(spySchemaService, never()).updateMtsField(any(), any(), any());
 	}
-	
+
 	@Test
 	public void testUpsertWhenSomeDocsExistShouldUpdateMTSFieldForExistingDocs() throws IOException {
-		String esCreateResponse=String.join("\n", "{" + 
-				"  \"took\": 5," + 
-				"  \"errors\": true," + 
-				"  \"items\": [" + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"1\"," + 
-				"        \"status\": 409," + 
-				"        \"error\": {" + 
-				"          \"type\": \"version_conflict_engine_exception\"," + 
-				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," + 
-				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
-				"          \"shard\": \"2\"," + 
-				"          \"index\": \"metadata_index\"" + 
-				"        }" + 
-				"      }" + 
-				"    }," + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"2\"," + 
-				"        \"_version\": 1," + 
-				"        \"result\": \"created\"," + 
-				"        \"_shards\": {" + 
-				"          \"total\": 2," + 
-				"          \"successful\": 1," + 
-				"          \"failed\": 0" + 
-				"        }," + 
-				"        \"created\": true," + 
-				"        \"status\": 201" + 
-				"      }" + 
-				"    }" + 
-				"  ]" + 
+		String esCreateResponse=String.join("\n", "{" +
+				"  \"took\": 5," +
+				"  \"errors\": true," +
+				"  \"items\": [" +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"1\"," +
+				"        \"status\": 409," +
+				"        \"error\": {" +
+				"          \"type\": \"version_conflict_engine_exception\"," +
+				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," +
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," +
+				"          \"shard\": \"2\"," +
+				"          \"index\": \"metadata_index\"" +
+				"        }" +
+				"      }" +
+				"    }," +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"2\"," +
+				"        \"_version\": 1," +
+				"        \"result\": \"created\"," +
+				"        \"_shards\": {" +
+				"          \"total\": 2," +
+				"          \"successful\": 1," +
+				"          \"failed\": 0" +
+				"        }," +
+				"        \"created\": true," +
+				"        \"status\": 201" +
+				"      }" +
+				"    }" +
+				"  ]" +
 				"}");
 		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
 		ElasticSearchSchemaService spySchemaService = spy(schemaService);
@@ -654,11 +702,11 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				@SuppressWarnings("unchecked")
 				List<String> updateDocIds = List.class.cast(invocation.getArguments()[0]);
 				assertEquals("1", updateDocIds.get(0));
-				assertEquals(1, updateDocIds.size()); 
+				assertEquals(1, updateDocIds.size());
 				return null;
 			}
 		}).when(spySchemaService).updateMtsField(any(), any(), any());
-	
+
 		List<Metric> metrics = new ArrayList<>();
 		Metric m1= new Metric("scope1", "metric1");
 		Metric m2= new Metric("scope2", "metric2");
@@ -667,44 +715,44 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		spySchemaService.put(metrics);
 		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
 	}
-	
+
 	@Test
 	public void testUpsertWhenAllDocsExistShouldUpdateMTSFieldForAllDocs() throws IOException {
-		String esCreateResponse=String.join("", "{" + 
-				"  \"took\": 0," + 
-				"  \"errors\": true," + 
-				"  \"items\": [" + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"1\"," + 
-				"        \"status\": 409," + 
-				"        \"error\": {" + 
-				"          \"type\": \"version_conflict_engine_exception\"," + 
-				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," + 
-				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
-				"          \"shard\": \"2\"," + 
-				"          \"index\": \"metadata_index\"" + 
-				"        }" + 
-				"      }" + 
-				"    }," + 
-				"    {" + 
-				"      \"create\": {" + 
-				"        \"_index\": \"metadata_index\"," + 
-				"        \"_type\": \"metadata_type\"," + 
-				"        \"_id\": \"2\"," + 
-				"        \"status\": 409," + 
-				"        \"error\": {" + 
-				"          \"type\": \"version_conflict_engine_exception\"," + 
-				"          \"reason\": \"[metadata_type][4f86f5e6dc6d4672830d97de21e75a20]: version conflict, document already exists (current version [1])\"," + 
-				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," + 
-				"          \"shard\": \"4\"," + 
-				"          \"index\": \"metadata_index\"" + 
-				"        }" + 
-				"      }" + 
-				"    }" + 
-				"  ]" + 
+		String esCreateResponse=String.join("", "{" +
+				"  \"took\": 0," +
+				"  \"errors\": true," +
+				"  \"items\": [" +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"1\"," +
+				"        \"status\": 409," +
+				"        \"error\": {" +
+				"          \"type\": \"version_conflict_engine_exception\"," +
+				"          \"reason\": \"[metadata_type][dd123151c817644189a2d28757b5be8a]: version conflict, document already exists (current version [1])\"," +
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," +
+				"          \"shard\": \"2\"," +
+				"          \"index\": \"metadata_index\"" +
+				"        }" +
+				"      }" +
+				"    }," +
+				"    {" +
+				"      \"create\": {" +
+				"        \"_index\": \"metadata_index\"," +
+				"        \"_type\": \"metadata_type\"," +
+				"        \"_id\": \"2\"," +
+				"        \"status\": 409," +
+				"        \"error\": {" +
+				"          \"type\": \"version_conflict_engine_exception\"," +
+				"          \"reason\": \"[metadata_type][4f86f5e6dc6d4672830d97de21e75a20]: version conflict, document already exists (current version [1])\"," +
+				"          \"index_uuid\": \"lFrI7n47Sp-rpmuyqvhWvw\"," +
+				"          \"shard\": \"4\"," +
+				"          \"index\": \"metadata_index\"" +
+				"        }" +
+				"      }" +
+				"    }" +
+				"  ]" +
 				"}");
 		ElasticSearchSchemaService schemaService = new ElasticSearchSchemaService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
 		ElasticSearchSchemaService spySchemaService = spy(schemaService);
@@ -721,11 +769,11 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				List<String> updateDocIds = List.class.cast(invocation.getArguments()[0]);
 				assertEquals("1", updateDocIds.get(0));
 				assertEquals("2", updateDocIds.get(1));
-				assertEquals(2, updateDocIds.size()); 
+				assertEquals(2, updateDocIds.size());
 				return null;
 			}
 		}).when(spySchemaService).updateMtsField(any(), any(), any());
-	
+
 		List<Metric> metrics = new ArrayList<>();
 		Metric m1= new Metric("scope1", "metric1");
 		Metric m2= new Metric("scope2", "metric2");
@@ -734,7 +782,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		spySchemaService.put(metrics);
 		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
 	}
-	
+
     private String convertToPrettyJson(String jsonString) {
         JsonParser parser = new JsonParser();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
