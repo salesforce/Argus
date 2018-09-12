@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
  */
 public interface SchemaService extends Service {
-	
+
 	static final char[] WILDCARD_CHARSET = new char[] { '*', '?', '[', ']', '|' };
 
     //~ Methods **************************************************************************************************************************************
@@ -89,7 +89,7 @@ public interface SchemaService extends Service {
     List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
 
     List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
-    
+
     static boolean containsWildcard(String str) {
         if (str == null || str.isEmpty()) {
             return false;
@@ -112,18 +112,18 @@ public interface SchemaService extends Service {
         }
         return false;
     }
-    
+
     static boolean containsFilter(String str) {
     	if(str == null || str.isEmpty()) {
     		return false;
     	}
-    	
+
 		Pattern pattern = Pattern.compile("\\**");
 		Matcher matcher = pattern.matcher(str);
-		
+
 		return !matcher.matches();
 	}
-    
+
     static String convertToRegex(String wildcardStr) {
         if (wildcardStr == null || wildcardStr.isEmpty()) {
             return wildcardStr;
@@ -161,7 +161,7 @@ public interface SchemaService extends Service {
         }
         return new String(result).trim();
     }
-    
+
     static int replace(char[] dest, char[] orig, int destIndex, int origIndex) {
         if (orig[origIndex] == '?') {
             dest[destIndex] = '.';
@@ -178,10 +178,10 @@ public interface SchemaService extends Service {
         dest[destIndex] = orig[origIndex];
         return destIndex;
     }
-    
+
     static MetricSchemaRecord constructMetricSchemaRecordForType(String str, RecordType type) {
     	SystemAssert.requireArgument(type != null, "type cannot be null.");
-    	
+
     	MetricSchemaRecord record = new MetricSchemaRecord();
     	switch(type) {
     		case SCOPE:
@@ -200,19 +200,19 @@ public interface SchemaService extends Service {
     			record.setNamespace(str);
     			break;
     		default:
-    			throw new IllegalArgumentException("Invalid record type: " + type);	
+    			throw new IllegalArgumentException("Invalid record type: " + type);
     	}
-    	
+
     	return record;
     }
-    
+
     static List<MetricSchemaRecord> constructMetricSchemaRecordsForType(List<String> values, RecordType type) {
-    	
+
     	List<MetricSchemaRecord> records = new ArrayList<>(values.size());
 		for(String value : values) {
 			records.add(SchemaService.constructMetricSchemaRecordForType(value, type));
 		}
-		
+
 		return records;
     }
 
@@ -234,7 +234,9 @@ public interface SchemaService extends Service {
         /** Match against the tag key field. */
         TAGK("tagk"),
         /** Match against the tag value field. */
-        TAGV("tagv");
+        TAGV("tagv"),
+        /** Match against the metatags value field. */
+        METATAGS("metatags");
 
         private String _name;
 
@@ -256,7 +258,7 @@ public interface SchemaService extends Service {
                     return type;
                 }
             }
-            
+
             throw new IllegalArgumentException("Illegal record type: " + name);
         }
 
