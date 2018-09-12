@@ -39,6 +39,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.eclipse.persistence.config.HintValues;
+import org.eclipse.persistence.config.QueryHints;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +53,7 @@ public class NotificationsCacheRefresherThread extends Thread{
 
 	private final Logger _logger = LoggerFactory.getLogger(NotificationsCacheRefresherThread.class);
 	
-	// keeping the refresh interval at 1 minute, as this corresponds to the minimum alert execution interval based on cron expression
-	private static final Long REFRESH_INTERVAL_MILLIS = 60*1000L;
+	private static final Long REFRESH_INTERVAL_MILLIS = 30*1000L;
 	
 	private NotificationsCache notificationsCache = null;
 	
@@ -74,6 +75,7 @@ public class NotificationsCacheRefresherThread extends Thread{
 				
 				// populating notifications cooldown cache
 				Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
+				q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 				List<Object[]> objects = q.getResultList();
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> currNotificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
 
@@ -90,6 +92,7 @@ public class NotificationsCacheRefresherThread extends Thread{
 
 				// populating the active status cache
 				q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
+				q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 				objects = q.getResultList();
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Boolean/*activeStatus*/>> currNotificationActiveStatusMap = new HashMap<BigInteger, Map<String, Boolean>>();
 
