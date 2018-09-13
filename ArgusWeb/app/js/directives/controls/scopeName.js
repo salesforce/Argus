@@ -104,7 +104,7 @@ angular.module('argus.directives.controls.scopeName', [])
 		},
 		require: '^agDashboard',
 		template: 
-		'<label>Scope</label><span ng-if="noScopeResults" class="error"> &nbsp; No results</span>' + 
+		'<label>Scope</label>' + 
 		'<input id="{{elemId}}"  type="text" class="{{cssName}}" size="{{size}}" style="{{style}}"' +
 		'placeholder="Scope" autocomplete="off" ng-model="ctrlVal"' +
 		'ng-class="{\'loading\': (loadingScope) ? true : false, \'cancel\': (noScopeResults) ? true : false}"'+
@@ -112,6 +112,7 @@ angular.module('argus.directives.controls.scopeName', [])
 		'typeahead-wait-ms="500"'+
 		'typeahead-no-results="noScopeResults"'+
 		'typeahead-loading="loadingScope"'+
+		'typeahead-focus-first="false"'+
 		'uib-typeahead="result for result in searchMetrics($viewValue, \'scope\')"'+
 		'typeahead-popup-template-url="scopeTemplate.html"'+
 		'/>'+

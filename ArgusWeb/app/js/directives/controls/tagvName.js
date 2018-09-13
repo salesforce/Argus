@@ -104,7 +104,7 @@ angular.module('argus.directives.controls.tagvName', [])
 		},
 		require: '^agDashboard',
 		template:
-		'<label>Tag value</label><span ng-if="noTagvResults" class="error"> &nbsp; No results</span>'+
+		'<label>Tag value</label>'+
 		'<input id="{{elemId}}"  type="text" class="{{cssName}}" size="{{size}}" style="{{style}}"'+
 		'type="text" class="form-control" placeholder="Tag value" autocomplete="off" ng-model="ctrlVal"'+
 		'ng-class="{\'loading\': (loadingTagv) ? true : false, \'cancel\': (noTagvResults) ? true : false}"'+
@@ -115,6 +115,7 @@ angular.module('argus.directives.controls.tagvName', [])
 		'uib-typeahead="result for result in searchMetrics($viewValue, \'tagv\')"'+
 		'typeahead-popup-template-url="tagvTemplate.html"'+
 		'ng-disabled="isSearchMetricDisabled()"'+
+		'typeahead-focus-first="false"'+
 		'/>'+
 		'<script type="text/ng-template" id="tagvTemplate.html">'+
 				'<ul class="dropdown-menu viewMetricsUl"'+

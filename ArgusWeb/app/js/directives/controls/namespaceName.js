@@ -103,7 +103,7 @@ angular.module('argus.directives.controls.namespaceName', [])
 		},
 		require: '^agDashboard',
 		template:
-		'<label>Namespace</label><span ng-if="noNamespaceResults" class="error"> &nbsp; No results</span>'+
+		'<label>Namespace</label>'+
 		'<input id="{{elemId}}"  type="text" class="{{cssName}}" size="{{size}}" style="{{style}}"'+
 		'type="text" class="form-control" placeholder="Namespace" autocomplete="off" ng-model="ctrlVal"'+
 		'ng-class="{\'loading\': (loadingNamespace) ? true : false, \'cancel\': (noNamespaceResults) ? true : false}"'+
@@ -111,6 +111,7 @@ angular.module('argus.directives.controls.namespaceName', [])
 		'typeahead-wait-ms="500"'+
 		'typeahead-no-results="noNamespaceResults"'+
 		'typeahead-loading="loadingNamespace"'+
+		'typeahead-focus-first="false"'+
 		'uib-typeahead="result for result in searchMetrics($viewValue, \'namespace\')"'+
 		'typeahead-popup-template-url="namespaceTemplate.html"'+
 		'ng-disabled="isSearchMetricDisabled()"'+

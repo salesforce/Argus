@@ -104,10 +104,9 @@ angular.module('argus.directives.controls.metricName', [])
 		require: '^agDashboard',
 		template: 
 		'<label>Metric</label>'+
-		'<span ng-if="noMetricResults" class="error"> &nbsp; No results</span>'+
 		'<input id="{{elemId}}"  type="text" class="{{cssName}}" size="{{size}}" style="{{style}}"'+
 			'type="text" placeholder="Metric" autocomplete="off" ng-model="ctrlVal" ng-class="{\'loading\': (loadingMetric) ? true : false, \'cancel\': (noMetricResults) ? true : false}"'+
-			'typeahead-min-length="1" typeahead-wait-ms="500" typeahead-no-results="noMetricResults" typeahead-loading="loadingMetric"'+
+			'typeahead-min-length="1" typeahead-wait-ms="500" typeahead-no-results="noMetricResults" typeahead-loading="loadingMetric" typeahead-focus-first="false"'+
 			'uib-typeahead="result for result in searchMetrics($viewValue, \'metric\')" typeahead-popup-template-url="metricTemplate.html"'+
 		'/>'+
 		'<script type="text/ng-template" id="metricTemplate.html">'+
