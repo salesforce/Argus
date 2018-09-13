@@ -19,10 +19,10 @@ import com.salesforce.dva.argus.entity.Metric;
 
 
 /**
- * This test suite tests the bloom filter caching in the AbstractSchemaService class. Although we are instantiating 
- * ElasticSearchSchemaService object, the implemtationSpecificPut (which is part of ES Schema Service) has been 
- * mocked out. In essence, these tests only test the caching functionality. 
- * 
+ * This test suite tests the bloom filter caching in the AbstractSchemaService class. Although we are instantiating
+ * ElasticSearchSchemaService object, the implemtationSpecificPut (which is part of ES Schema Service) has been
+ * mocked out. In essence, these tests only test the caching functionality.
+ *
  * @author Bhinav Sura (bhinav.sura@salesforce.com)
  *
  */
@@ -170,7 +170,7 @@ public class AbstractSchemaServiceTest extends AbstractTest {
 
 				return null;
 			}
-		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any());
+		}).when(spyService).implementationSpecificPut(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
 		return spyService;
 	}
 

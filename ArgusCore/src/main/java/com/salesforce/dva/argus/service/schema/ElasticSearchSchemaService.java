@@ -26,6 +26,7 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
 import com.salesforce.dva.argus.entity.ScopeOnlySchemaRecord;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -82,6 +83,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static String SCOPE_AND_METRIC_INDEX_NAME;
 	private static String SCOPE_AND_METRIC_TYPE_NAME;
 
+	private static String METATAGS_INDEX_NAME;
+	private static String METATAGS_TYPE_NAME;
+
 	private static final String INDEX_NAME = "metadata_index";
 	private static final String TYPE_NAME = "metadata_type";
 	private static final String KEEP_SCROLL_CONTEXT_OPEN_FOR = "1m";
@@ -95,6 +99,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final ObjectMapper _updateScopeOnlyMapper;
 	private final ObjectMapper _createScopeAndMetricOnlyMapper;
 	private final ObjectMapper _updateScopeAndMetricOnlyMapper;
+	private final ObjectMapper _createMetatagsMapper;
+	private final ObjectMapper _updateMetatagsMapper;
 
 	private Logger _logger = LoggerFactory.getLogger(getClass());
 	private RestClient _esRestClient;
@@ -104,6 +110,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final int _numShardsForScopeIndex;
 	private final int _replicationFactorForScopeAndMetricIndex;
 	private final int _numShardsForScopeAndMetricIndex;
+	private final int _replicationFactorForMetatagsIndex;
+	private final int _numShardsForMetatagsIndex;
 	private final int _bulkIndexingSize;
 	private HashAlgorithm _idgenHashAlgo;
 
@@ -121,6 +129,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		_createScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.CreateSerializer());
 		_updateScopeAndMetricOnlyMapper = _getScopeAndMetricOnlyObjectMapper(new ScopeAndMetricOnlySchemaRecordList.UpdateSerializer());
 
+		_createMetatagsMapper = _getMetatagsObjectMapper(new MetatagsSchemaRecordList.CreateSerializer());
+		_updateMetatagsMapper = _getMetatagsObjectMapper(new MetatagsSchemaRecordList.UpdateSerializer());
+
 		SCOPE_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getName(),
 				Property.ELASTICSEARCH_SCOPE_INDEX_NAME.getDefaultValue());
 		SCOPE_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_TYPE_NAME.getName(),
@@ -130,6 +141,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				Property.ELASTICSEARCH_SCOPE_AND_METRIC_INDEX_NAME.getDefaultValue());
 		SCOPE_AND_METRIC_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME.getName(),
 				Property.ELASTICSEARCH_SCOPE_AND_METRIC_TYPE_NAME.getDefaultValue());
+
+		METATAGS_INDEX_NAME = config.getValue(Property.ELASTICSEARCH_METATAGS_INDEX_NAME.getName(),
+                                                      Property.ELASTICSEARCH_METATAGS_INDEX_NAME.getDefaultValue());
+		METATAGS_TYPE_NAME = config.getValue(Property.ELASTICSEARCH_METATAGS_TYPE_NAME.getName(),
+                                                     Property.ELASTICSEARCH_METATAGS_TYPE_NAME.getDefaultValue());
 
 		String algorithm = config.getValue(Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getName(), Property.ELASTICSEARCH_IDGEN_HASH_ALGO.getDefaultValue());
 		try {
@@ -158,6 +174,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_numShardsForScopeAndMetricIndex = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX.getName(), Property.ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_AND_METRIC_INDEX.getDefaultValue()));
+
+		_replicationFactorForMetatagsIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX.getName(),
+                                                Property.ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX.getDefaultValue()));
+
+		_numShardsForMetatagsIndex = Integer.parseInt(
+				config.getValue(Property.ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX.getName(),
+                                                Property.ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX.getDefaultValue()));
 
 		_bulkIndexingSize = Integer.parseInt(
 				config.getValue(Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getName(), Property.ELASTICSEARCH_INDEXING_BATCH_SIZE.getDefaultValue()));
@@ -229,6 +253,9 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		_createIndexIfNotExists(SCOPE_AND_METRIC_INDEX_NAME, _replicationFactorForScopeAndMetricIndex,
 				_numShardsForScopeAndMetricIndex, () -> _createScopeAndMetricMappingsNode());
+
+		_createIndexIfNotExists(METATAGS_INDEX_NAME, _replicationFactorForMetatagsIndex,
+                                        _numShardsForMetatagsIndex, () -> _createMetatagsMappingsNode());
 	}
 
 
@@ -254,58 +281,94 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	}
 
 	@Override
-	protected void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
-											 Set<Pair<String, String>> scopesAndMetricNames) {
+	protected void implementationSpecificPut(List<Metric> metrics,
+                                                 Set<String> scopeNames,
+                                                 Set<Pair<String, String>> scopesAndMetricNames,
+                                                 Map<String, MetatagsRecord> metatagsToPut) {
 		SystemAssert.requireArgument(metrics != null, "Metrics list cannot be null.");
 
+                // Put metric tags
 		long start = System.currentTimeMillis();
 		List<List<MetricSchemaRecord>> fracturedList = _fracture(metrics);
 
-        int count = 0;
-
+                int count = 0;
 		for(List<MetricSchemaRecord> records : fracturedList) {
-			if(!records.isEmpty()) {
-				upsert(records);
-                count += records.size();
-            }
+                    if(!records.isEmpty()) {
+                        upsert(records);
+                        count += records.size();
+                    }
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITTEN, count, null);
-		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+		_monitorService.modifyCounter(MonitorService.Counter.SCHEMARECORDS_WRITE_LATENCY,
+                                              (System.currentTimeMillis() - start),
+                                              null);
 
 		_logger.info("{} new metrics were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 
+                // Put scopes
 		start = System.currentTimeMillis();
 		List<List<ScopeOnlySchemaRecord>> fracturedScopesList = _fractureScopes(scopeNames);
 
-        count = 0;
+                count = 0;
 		for(List<ScopeOnlySchemaRecord> records : fracturedScopesList) {
-			if(!records.isEmpty()) {
-				upsertScopes(records);
-                count += records.size();
-			}
+                    if(!records.isEmpty()) {
+                        upsertScopes(records);
+                        count += records.size();
+                    }
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITTEN, count, null);
-		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+		_monitorService.modifyCounter(MonitorService.Counter.SCOPENAMES_WRITE_LATENCY,
+                                              (System.currentTimeMillis() - start),
+                                              null);
 
 		_logger.info("{} new scopes were indexed in {} ms.", count, (System.currentTimeMillis() - start));
 
+                // Put scopes+metrics
 		start = System.currentTimeMillis();
-		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedScopesAndMetricsList = _fractureScopeAndMetrics(scopesAndMetricNames);
+		List<List<ScopeAndMetricOnlySchemaRecord>> fracturedScopesAndMetricsList =
+                    _fractureScopeAndMetrics(scopesAndMetricNames);
 
-        count = 0;
+                count = 0;
 		for(List<ScopeAndMetricOnlySchemaRecord> records : fracturedScopesAndMetricsList) {
-			if(!records.isEmpty()) {
-				upsertScopeAndMetrics(records);
-                count += records.size();
-			}
+                    if(!records.isEmpty()) {
+                        upsertScopeAndMetrics(records);
+                        count += records.size();
+                    }
 		}
 
 		_monitorService.modifyCounter(MonitorService.Counter.SCOPEANDMETRICNAMES_WRITTEN, count, null);
-		_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_WRITE_LATENCY, (System.currentTimeMillis() - start), null);
+		_monitorService.modifyCounter(Counter.SCOPEANDMETRICNAMES_WRITE_LATENCY,
+                                              (System.currentTimeMillis() - start),
+                                              null);
 
-		_logger.info("{} new scope and metric names were indexed in {} ms.", count, (System.currentTimeMillis() - start));
+		_logger.info("{} new scope and metric names were indexed in {} ms.",
+                             count,
+                             (System.currentTimeMillis() - start));
+
+                // Put Metric MetatagsRecord
+		start = System.currentTimeMillis();
+		List<List<MetatagsRecord>> fracturedMetatagsList =
+                    _fractureMetatags(metatagsToPut);
+
+                count = 0;
+		for(List<MetatagsRecord> records : fracturedMetatagsList) {
+                    if(!records.isEmpty()) {
+                        upsertMetatags(records);
+                        count += records.size();
+                    }
+		}
+
+		_monitorService.modifyCounter(MonitorService.Counter.METATAGS_WRITTEN, count, null);
+		_monitorService.modifyCounter(Counter.METATAGS_WRITE_LATENCY,
+                                              (System.currentTimeMillis() - start),
+                                              null);
+
+		_logger.info("{} new metatags were indexed in {} ms.",
+                             count,
+                             (System.currentTimeMillis() - start));
+
 	}
 
 	/* Convert the given list of metrics to a list of metric schema records. At the same time, fracture the records list
@@ -381,6 +444,26 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				fracturedList.add(records);
 				records = new ArrayList<>(_bulkIndexingSize);
 			}
+		}
+
+		if(!records.isEmpty()) {
+			fracturedList.add(records);
+		}
+
+		return fracturedList;
+	}
+
+	protected List<List<MetatagsRecord>> _fractureMetatags(Map<String, MetatagsRecord> metatagsToPut) {
+		List<List<MetatagsRecord>> fracturedList = new ArrayList<>();
+
+		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
+                for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
+                    MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
+                    records.add(mtag);
+                    if(records.size() == _bulkIndexingSize) {
+                        fracturedList.add(records);
+                        records = new ArrayList<>(_bulkIndexingSize);
+                    }
 		}
 
 		if(!records.isEmpty()) {
@@ -771,7 +854,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					}
 				}
 				if(updateMtsFieldList.size()>0) {
-					_logger.debug("mts filed will be updated for docs with ids {}", updateMtsFieldList); 
+					_logger.debug("mts filed will be updated for docs with ids {}", updateMtsFieldList);
 					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
 					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 					for(Item item: updateResponse.items) {
@@ -781,7 +864,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 							recordsToRemove.add(msrList.getRecord(item.update._id));
 						}
 					}
-					
+
 				}
 
 				if(recordsToRemove.size() != 0) {
@@ -912,6 +995,63 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
+	protected void upsertMetatags(List<MetatagsRecord> records) {
+            String requestUrl = new StringBuilder().append("/")
+                .append(METATAGS_INDEX_NAME)
+                .append("/")
+                .append(METATAGS_TYPE_NAME)
+                .append("/")
+                .append("_bulk")
+                .toString();
+
+            try {
+                MetatagsSchemaRecordList createMetatagsSchemaRecordList  =
+                    new MetatagsSchemaRecordList(records,
+                                                 _idgenHashAlgo);
+                String requestBody = _createMetatagsMapper.writeValueAsString(createMetatagsSchemaRecordList);
+                PutResponse putResponse = _performRequest(requestUrl, requestBody);
+
+                Pair<List<String>, List<String>> failedResponses = _parseFailedResponses(putResponse);
+
+                List<String> failedIds = failedResponses.getLeft();
+                List<String> updateRequiredIds = failedResponses.getRight();
+
+                if (updateRequiredIds.size() > 0) {
+                    List<MetatagsRecord> updateRequiredRecords = new ArrayList<>();
+                    for (String id : updateRequiredIds) {
+                        updateRequiredRecords.add(createMetatagsSchemaRecordList.getRecord(id));
+                    }
+                    MetatagsSchemaRecordList updateMetatagsSchemaRecordList =
+                        new MetatagsSchemaRecordList(updateRequiredRecords, _idgenHashAlgo);
+                    requestBody = _updateMetatagsMapper.writeValueAsString(updateMetatagsSchemaRecordList);
+                    putResponse = _performRequest(requestUrl, requestBody);
+
+                    failedResponses = _parseFailedResponses(putResponse);
+
+		    // We collect new failures.
+                    failedIds.addAll(failedResponses.getLeft());
+
+                    // We do not collect update failures if they fail with 409 (version_conflict_engine_exception).
+                    // This usually happens when there is another concurrent update happening to mts field"
+                }
+
+                if (failedIds.size() > 0) {
+                    _logger.warn("{} records were not written to metatags ES", failedIds.size());
+                }
+
+                for(String id : failedIds) {
+                    records.remove(createMetatagsSchemaRecordList.getRecord(id));
+                }
+
+                //add to bloom filter
+                _addToBloomFilterMetatags(records);
+
+		} catch (IOException e) {
+                throw new SystemException("Failed to create/update scope ES. ", e);
+            }
+
+        }
+
 	private PutResponse _performRequest(String requestUrl, String requestBody) throws IOException {
 
 		String strResponse = "";
@@ -965,7 +1105,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			String requestUrl = new StringBuilder().append("/")
 					.append(index)
 					.append("/")
-					.append(type)				
+					.append(type)
 					.append("/")
 					.append("_bulk")
 					.toString();
@@ -988,7 +1128,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			result.append("{\"doc\" : {\"mts\": " + System.currentTimeMillis() + "}}");
 			result.append(System.lineSeparator());
 		}
-		return result.toString();	
+		return result.toString();
 	}
 
 	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
@@ -1012,6 +1152,14 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		for (ScopeOnlySchemaRecord record : records) {
 			String key = constructScopeOnlyKey(record.getScope());
 			bloomFilterScopeOnly.put(key);
+		}
+	}
+
+	protected void _addToBloomFilterMetatags(List<MetatagsRecord> records) {
+		_logger.info("Adding {} records into metatags bloom filter.", records.size());
+		for (MetatagsRecord record : records) {
+			String key = record.getKey();
+			bloomFilterMetatags.put(key);
 		}
 	}
 
@@ -1290,6 +1438,18 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return mapper;
 	}
 
+	private ObjectMapper _getMetatagsObjectMapper(JsonSerializer<MetatagsSchemaRecordList> serializer) {
+		ObjectMapper mapper = new ObjectMapper();
+
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(MetatagsSchemaRecordList.class, serializer);
+		module.addDeserializer(MetatagsSchemaRecordList.class, new MetatagsSchemaRecordList.Deserializer());
+		mapper.registerModule(module);
+
+		return mapper;
+	}
+
 	private ObjectNode _createSettingsNode(int replicationFactor, int numShards) {
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -1373,6 +1533,24 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		ObjectNode mappingsNode = mapper.createObjectNode();
 		mappingsNode.put(SCOPE_TYPE_NAME, typeNode);
+
+		return mappingsNode;
+	}
+
+	private ObjectNode _createMetatagsMappingsNode() {
+		ObjectMapper mapper = new ObjectMapper();
+
+		ObjectNode propertiesNode = mapper.createObjectNode();
+		propertiesNode.put(RecordType.METATAGS.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+
+		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.put("cts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+
+		ObjectNode typeNode = mapper.createObjectNode();
+		typeNode.put("properties", propertiesNode);
+
+		ObjectNode mappingsNode = mapper.createObjectNode();
+		mappingsNode.put(METATAGS_TYPE_NAME, typeNode);
 
 		return mappingsNode;
 	}
@@ -1477,6 +1655,10 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.num.replicas.for.scope.index", "1"),
 		/** Shard count for scopenames */
 		ELASTICSEARCH_SHARDS_COUNT_FOR_SCOPE_INDEX("service.property.schema.elasticsearch.shards.count.for.scope.index", "6"),
+		/** Replication factor for metatags */
+		ELASTICSEARCH_NUM_REPLICAS_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.num.replicas.for.metatags.index", "1"),
+		/** Shard count for metatags */
+		ELASTICSEARCH_SHARDS_COUNT_FOR_METATAGS_INDEX("service.property.schema.elasticsearch.shards.count.for.metatags.index", "6"),
 		/** The no. of records to batch for bulk indexing requests.
 		 * https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html#_using_and_sizing_bulk_requests
 		 */
@@ -1491,6 +1673,11 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ELASTICSEARCH_SCOPE_INDEX_NAME("service.property.schema.elasticsearch.scope.index.name", "scopenames"),
 		/** Type within scope only index */
 		ELASTICSEARCH_SCOPE_TYPE_NAME("service.property.schema.elasticsearch.scope.type.name", "scope_type"),
+
+		/** Name of metatags only index */
+		ELASTICSEARCH_METATAGS_INDEX_NAME("service.property.schema.elasticsearch.metatags.index.name", "metatags"),
+		/** Type within metatags only index */
+		ELASTICSEARCH_METATAGS_TYPE_NAME("service.property.schema.elasticsearch.metatags.type.name", "metatags_type"),
 
 		/** Replication factor for scope and metric names */
 		ELASTICSEARCH_NUM_REPLICAS_FOR_SCOPE_AND_METRIC_INDEX("service.property.schema.elasticsearch.num.replicas.for.scopeandmetric.index", "1"),

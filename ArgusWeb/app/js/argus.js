@@ -47,6 +47,11 @@ angular.module('argus', [
 	'argus.directives.controls.submit',
 	'argus.directives.controls.text',
 	'argus.directives.controls.select',
+	'argus.directives.controls.scopeName',
+	'argus.directives.controls.metricName',
+	'argus.directives.controls.tagkName',
+	'argus.directives.controls.tagvName',
+	'argus.directives.controls.namespaceName',
 	'argus.directives.charts.chart',
 	'argus.directives.charts.lineChart',
 	'argus.directives.charts.flags',
@@ -218,6 +223,11 @@ require('./directives/controls/date');
 require('./directives/controls/submit');
 require('./directives/controls/text');
 require('./directives/controls/select');
+require('./directives/controls/scopeName');
+require('./directives/controls/metricName');
+require('./directives/controls/tagkName');
+require('./directives/controls/tagvName');
+require('./directives/controls/namespaceName');
 require('./directives/charts/chart');
 require('./directives/charts/lineChart');
 require('./directives/charts/flags');
