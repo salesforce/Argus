@@ -88,7 +88,9 @@ public abstract class DefaultJPAService extends DefaultService {
 	public <E extends Identifiable> E mergeEntity(EntityManager em, E entity) {
 		requireArgument(em != null, "The entity manager cannot be null.");
 		requireArgument(entity != null, "The entity cannot be null.");
-		return em.merge(entity);
+		E ret = em.merge(entity);
+		em.flush();
+		return ret;
 	}
 
 	/**
