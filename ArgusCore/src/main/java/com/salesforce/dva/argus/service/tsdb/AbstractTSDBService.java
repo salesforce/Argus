@@ -603,10 +603,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 					StringEntity entity = new StringEntity(createBody);
 
-					if (endpoint.contains("put")) {
-						_logger.info("createUrl {} createBody {}", endpoint, createBody);
-					}
-
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
