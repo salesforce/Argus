@@ -20,7 +20,7 @@ public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
     private static Configuration cfg = null;
-    private static int MAX_ITERATIONS = 100;
+    private static int MAX_ITERATIONS = 10;
     private static void init() {
         if ( cfg == null ) {
             cfg = new Configuration(Configuration.VERSION_2_3_28);
