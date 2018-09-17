@@ -408,7 +408,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			History history = null;
 
 			if(Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.DATA_LAG_MONITOR_ENABLED))){
-				if(_monitorService.isDataLagging()) {
+				String currentDC = AlertUtils.getDCFromExpression(alert.getExpression());
+				if(_monitorService.isDataLagging(currentDC)) {
 					if(_whiteListedScopeRegexPatterns==null) {
 						String whiteListedScopesProperty = _configuration.getValue(SystemConfiguration.Property.DATA_LAG_WHITE_LISTED_SCOPES);
 						if(!StringUtils.isEmpty(whiteListedScopesProperty)) {

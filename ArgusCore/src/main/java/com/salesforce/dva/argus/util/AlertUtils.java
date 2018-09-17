@@ -2,10 +2,13 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.system.SystemConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +30,15 @@ public class AlertUtils {
 		}
 		return false;
 	}
+
+	public static String getDCFromExpression(String expression) {
+        String dcInExpression = "PRD";
+        String [] dcArray = {"CAP","CRZ","SFZ","XRD","CDG","CDU","CHI","CHX","CRD","DFW","FRA","FRF","HND","IA2","IAD","LON","ORD","PAR","PH2","PHX","PRD","SFM","SPZ","SYD","UKB","WAS","WAX","XRD","YHU","YUL"};
+        ArrayList<String> dcList = new ArrayList<>(Arrays.asList(dcArray));
+        for (String currentDC: dcList)
+            if(expression.contains(currentDC) || expression.contains(currentDC.toLowerCase())) dcInExpression = currentDC;
+	    return dcInExpression;
+    }
 
 	public static Long getMaximumIntervalLength(String originalExpression) {
 		String expression = "@" + originalExpression.replaceAll("[\\s\\t\\r\\n\\f]*", "");

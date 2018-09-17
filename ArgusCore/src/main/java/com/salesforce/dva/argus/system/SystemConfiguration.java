@@ -44,6 +44,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
@@ -224,6 +225,9 @@ public final class SystemConfiguration extends Properties {
         
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
         DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
+        DATA_LAG_QUERY_EXPRESSION_EXCEPTIONS("system.property.data.lag.expression.exceptions", "sampleExpression"),
+        DATA_LAG_QUERY_DC_LIST("system.property.dc.list", "listOfDCs"),
+        DATA_LAG_QUERY_DC_LIST_EXCEPTIONS("system.property.dc.list.exceptions", "ListOfDCs"),
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),

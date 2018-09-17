@@ -371,9 +371,9 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	}
 
 	@Override
-	public boolean isDataLagging() {
+	public boolean isDataLagging(String dataCenter) {
 		if(_dataLagMonitorThread!=null) {
-			return _dataLagMonitorThread.isDataLagging();
+			return _dataLagMonitorThread.isDataLagging(dataCenter);
 		}else {
 			return false;
 		}

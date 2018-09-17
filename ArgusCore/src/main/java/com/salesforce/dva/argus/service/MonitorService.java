@@ -146,7 +146,7 @@ public interface MonitorService extends Service {
      *
      * @return isDataLagging boolean flag
      */
-    boolean isDataLagging();
+    boolean isDataLagging(String dataCenter);
 
     //~ Enums ****************************************************************************************************************************************
 
