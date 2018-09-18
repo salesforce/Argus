@@ -35,14 +35,7 @@ angular.module('argus.controllers.oauthManagement', [])
 			$scope.authorizedAppsLoaded = false;
 			
 			//  test
-			$scope.apps = [
-				{
-					name: 'grafana'
-				},
-				{
-					name: 'google'
-				},
-			];
+			$scope.apps = [];
 			$scope.authorizedAppsLoaded = true;
 
 			

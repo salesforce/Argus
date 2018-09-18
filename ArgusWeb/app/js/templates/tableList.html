@@ -70,7 +70,8 @@
             </button>
         </td>
         <td class="text-center">
-            <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Delete {{properties.title}} " ng-disabled="isDisabled(item)"
+            <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Delete {{properties.title}} "
+                ng-disabled="isDisabled(item) && properties.type !== 'Authorized Apps'"
                 confirm-message="Delete '{{item.name}}'?" confirm-call="deleteItem(item)">
                 <i class="glyphicon glyphicon-trash"></i>
             </button>
