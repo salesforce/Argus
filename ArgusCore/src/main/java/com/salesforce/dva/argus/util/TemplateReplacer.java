@@ -2,6 +2,7 @@ package com.salesforce.dva.argus.util;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
+import freemarker.core.InvalidReferenceException;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
@@ -77,7 +78,8 @@ public class TemplateReplacer {
                 generatedString = stringWriter.toString();
             } catch (Exception e) {
                 _logger.error(MessageFormat.format("Exception occurred while applying template change on {0}, with error message {1}.", templateString, e.getMessage()));
-                return originalString;
+                generatedString = MessageFormat.format("ERROR occurred during applying template change to the following variable: {0}\n\n Detailed Message: {1}",((InvalidReferenceException) e).getBlamedExpressionString(), e.getMessage());
+                break;
             }
         } while(!generatedString.equals(templateString) && ++numOfIterations < MAX_ITERATIONS); // If we unwrap alert.name, it may also be templatize, we should replace that as well.
 
