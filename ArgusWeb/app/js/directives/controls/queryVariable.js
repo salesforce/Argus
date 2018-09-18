@@ -106,7 +106,7 @@ angular.module('argus.directives.controls.queryVariable', [])
 		},
 		require: '^agDashboard',
 		template: 
-		'<label> {{label}} </label>' + 
+		'<strong> {{label}} </strong>' + 
 		'<input id="{{elemId}}"  type="text" class="{{cssName}}" size="{{size}}" style="{{style}}"' +
 		'placeholder="{{placeholder}}" autocomplete="off" ng-model="ctrlVal"' +
 		'ng-class="{\'loading\': (loadingQuery) ? true : false, \'cancel\': (noQueryResults) ? true : false}"'+
