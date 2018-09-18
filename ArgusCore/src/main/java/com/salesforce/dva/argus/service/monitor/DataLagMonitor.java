@@ -57,6 +57,7 @@ public class DataLagMonitor extends Thread{
 				if(!firstTime) {
 				    sleep(SLEEP_INTERVAL_MILLIS);
 				}else {
+					// waiting 5 seconds for everything to initialize
 					sleep(5*1000);
 					firstTime = false;
 				}
