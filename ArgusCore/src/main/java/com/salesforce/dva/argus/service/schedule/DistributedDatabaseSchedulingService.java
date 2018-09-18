@@ -448,7 +448,9 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					Map<Long, Double> datapoints = new HashMap<>();
 					datapoints.put(fiveMinuteStartTime, 1.0);
 					trackerMetric.addDatapoints(datapoints);
-
+					//sleeping for a minute to make sure the new alert is updated in cache
+					sleep(60*1000);
+					
 					try {
 						_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackerMetric}));
 					} catch (Exception ex) {
@@ -486,8 +488,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 					}
 
 					if(!alertEvaluated) {
-						_logger.warn("Notification sent metric is not found in tsdb, so publishing 5 minutes as alert evaluation kpi");
-						publishKPIMetric(fiveMinuteStartTime, new Double(5*60*1000));
+						_logger.warn("Notification sent metric is not found in tsdb, so publishing 4 minutes as alert evaluation kpi");
+						publishKPIMetric(fiveMinuteStartTime, new Double(4*60*1000));
 					}
 				} catch(Exception e) {
 					_logger.error("Exception occured when computing alert evaluation kpi metric - "+ ExceptionUtils.getFullStackTrace(e));

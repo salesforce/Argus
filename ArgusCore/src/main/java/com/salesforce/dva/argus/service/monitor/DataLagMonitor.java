@@ -51,9 +51,15 @@ public class DataLagMonitor extends Thread{
 	@Override
 	public void run() {
 		_logger.info("Data lag monitor thread started");
+		boolean firstTime = true;
 		while (!isInterrupted()) {
 			try {
-				sleep(SLEEP_INTERVAL_MILLIS);
+				if(!firstTime) {
+				    sleep(SLEEP_INTERVAL_MILLIS);
+				}else {
+					sleep(5*1000);
+					firstTime = false;
+				}
 				long currTime = System.currentTimeMillis();
 				List<Metric> metrics = _metricService.getMetrics(_dataLagQueryExpression, currTime);
 				if(metrics==null || metrics.isEmpty()) {
