@@ -31,6 +31,7 @@
 	 
 package com.salesforce.dva.argus.ws.resources;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
@@ -39,7 +40,9 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.ws.annotation.Description;
 import com.salesforce.dva.argus.ws.dto.AnnotationDto;
 import com.salesforce.dva.argus.ws.dto.MetricDto;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +62,8 @@ import javax.ws.rs.core.MediaType;
 @Path("/collection")
 @Description("Provides methods to collect annotation events and metric data.")
 public class CollectionResources extends AbstractResource {
+
+    static final String[] INTERNAL_TAGS = {"_retention_discovery_"};
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -90,10 +95,7 @@ public class CollectionResources extends AbstractResource {
 
         for (MetricDto metricDto : metricDtos) {
             try {
-                Metric metric = new Metric(metricDto.getScope(), metricDto.getMetric());
-                metric.setTags(metricDto.getTags());
-
-                copyProperties(metric, metricDto);
+                Metric metric = createMetric(metricDto);
                 legalMetrics.add(metric);
             } catch (Exception e) {
                 illegalMetrics.add(metricDto);
@@ -108,6 +110,21 @@ public class CollectionResources extends AbstractResource {
         result.put("Error", illegalMetrics.size() + " metrics");
         result.put("Error Messages", errorMessages);
         return result;
+    }
+
+    @VisibleForTesting
+    static Metric createMetric(MetricDto source) {
+        Metric metric = new Metric(source.getScope(), source.getMetric());
+
+        //remove internal tags (e.g. _retention_discovery_) before creating the metric object
+        Map<String, String> tags = source.getTags();
+        Arrays.stream(INTERNAL_TAGS).forEach(it -> tags.remove(it));
+
+        metric.setTags(tags);
+
+        copyProperties(metric, source);
+
+        return metric;
     }
 
     /**

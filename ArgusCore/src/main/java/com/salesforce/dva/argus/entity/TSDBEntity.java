@@ -201,6 +201,9 @@ public abstract class TSDBEntity implements Serializable {
     /**
      * Returns the hash code for the entity based on the scope, metric and tags.
      *
+     * TODO using mutable objects as key/hashcode is a dangerous practice:
+     * https://www.ibm.com/developerworks/library/j-jtp05273/#N10172
+     *
      * @return  The hash code for the entity.
      */
     @Override

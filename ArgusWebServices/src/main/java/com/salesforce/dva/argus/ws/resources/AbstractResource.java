@@ -244,7 +244,7 @@ public abstract class AbstractResource {
      *
      * @throws  WebApplicationException  Throws exception if beanutils encounter a problem.
      */
-    protected void copyProperties(Object dest, Object source) {
+    static void copyProperties(Object dest, Object source) {
         try {
             BeanUtils.copyProperties(dest, source);
         } catch (IllegalAccessException | InvocationTargetException e) {
