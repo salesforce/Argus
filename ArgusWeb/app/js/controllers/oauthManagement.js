@@ -24,25 +24,49 @@ angular.module('argus.controllers.oauthManagement', [])
 	.controller('OauthManagement', ['$scope', '$window', 'Auth', '$routeParams', 'CONFIG', '$resource', 'growl',
 		function ($scope, $window, Auth, $routeParams, CONFIG, $resource, growl) {
 			$scope.user = Auth.getUsername() + '@salesforce.com';
+			$scope.colName = {
+				name: 'Name',
+			};
+			$scope.properties = {
+				title: 'Authorized Apps',
+				type: 'Authorized Apps'
+			};
+			
+			$scope.authorizedAppsLoaded = false;
+			
+			//  test
+			$scope.apps = [];
+			$scope.authorizedAppsLoaded = true;
 
-			// on page load, make an api call to see if grafana is already authorized
-			// if yes, redirect directly
+			
+			$scope.refreshApps = function () {
+				$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, { 'get': { method: 'GET', isArray: true } }).get({},
+					function (apps) {
+						$scope.apps = apps.map(function (app) {
+							return {
+								name: app.applicationName
+							};
+						});
+						$scope.authorizedAppsLoaded = true;
+					}, function (err) {
+						console.log(err + 'not authorized before!');
+						$scope.authorizedAppsLoaded = true;
+					});
+			};
 
-			$resource(CONFIG.wsUrl + CONFIG.oauthListPath, {}, {'get': {method: 'GET', isArray: true}}).get({},
-				function (apps) {
-					$scope.apps = apps;
-				}, function (err) {
-					console.log(err + 'not authorized before!');
-				});
+			$scope.refreshApps();
 
 			$scope.deleteApp = function (app) {
-				$resource(CONFIG.wsUrl + CONFIG.oauthDeletePath + '/' + app.applicationName, {}, {}).delete({
+				$scope.authorizedAppsLoaded = false;
+				$resource(CONFIG.wsUrl + CONFIG.oauthDeletePath + '/' + app.name, {}, {}).delete({
 				}, function () {
-					$scope.apps = $scope.apps.filter( function(app_){
-						return app_.applicationName !== app.applicationName;
+					$scope.apps = $scope.apps.filter(function (app_) {
+						return app_.name !== app.name;
 					});
+					$scope.authorizedAppsLoaded = true;
 				}, function (err) {
 					growl.error('fail to delete the app!' + err);
+					$scope.authorizedAppsLoaded = true;
 				});
 			};
 		}]);
