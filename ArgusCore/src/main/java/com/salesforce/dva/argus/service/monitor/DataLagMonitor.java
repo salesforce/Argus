@@ -11,7 +11,6 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.MailService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import scala.collection.mutable.HashMap;
 
 /*
  * This class runs a thread which periodically checks if there is data lag on Argus side.
@@ -46,8 +45,8 @@ public class DataLagMonitor extends Thread{
 		_mailService = mailService;
 		_dataLagQueryExpressions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION);
         _dataLagQueryExpressionsWithExceptions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION_EXCEPTIONS);
-        _dataLagQueryDCLists = new ArrayList<String>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST).split(",")));
-        _dataLagQueryDCListsWithExceptions = new ArrayList<String>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST_EXCEPTIONS).split(",")));
+        _dataLagQueryDCLists = new ArrayList<>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST).split(",")));
+        _dataLagQueryDCListsWithExceptions = new ArrayList<>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST_EXCEPTIONS).split(",")));
         _dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		_dataLagNotificationEmailId = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_NOTIFICATION_EMAIL_ADDRESS);
 		_hostName = sysConfig.getHostname();
