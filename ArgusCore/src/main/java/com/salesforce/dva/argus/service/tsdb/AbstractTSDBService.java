@@ -57,6 +57,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -350,6 +352,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		List<Metric> fracturedList = new ArrayList<>();
 
 		for (Metric metric : metrics) {
+			MetatagsRecord metatagsRecord = metric.getMetatagsRecord();
+			if (metatagsRecord != null) {
+				//W-5349757: remove this special metatag to prevent it from going to TSDB
+				metatagsRecord.removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
+			}
+
 			if (metric.getDatapoints().size() <= TSDB_DATAPOINTS_WRITE_MAX_SIZE) {
 				fracturedList.add(metric);
 			} else {

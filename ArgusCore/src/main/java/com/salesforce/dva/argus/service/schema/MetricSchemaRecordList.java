@@ -133,12 +133,14 @@ public class MetricSchemaRecordList {
 					JsonNode metricNode = source.get(RecordType.METRIC.getName());
 					JsonNode tagkNode = source.get(RecordType.TAGK.getName());
 					JsonNode tagvNode = source.get(RecordType.TAGV.getName());
+					JsonNode retentionNode = source.get(RecordType.RETENTIONDISCOVERY.getName());
 					
 					records.add(new MetricSchemaRecord(namespaceNode == null ? null : namespaceNode.asText(), 
-													   scopeNode.asText(), 
-													   metricNode.asText(), 
-													   tagkNode == null ? null : tagkNode.asText(), 
-													   tagvNode == null ? null : tagvNode.asText()));
+													   	scopeNode.asText(),
+													   	metricNode.asText(),
+													   	tagkNode == null ? null : tagkNode.asText(),
+													   	tagvNode == null ? null : tagvNode.asText(),
+														retentionNode == null? null : retentionNode.asInt()));
 				}
 			}
 			

@@ -236,7 +236,9 @@ public interface SchemaService extends Service {
         /** Match against the tag value field. */
         TAGV("tagv"),
         /** Match against the metatags value field. */
-        METATAGS("metatags");
+        METATAGS("metatags"),
+        /** Match against the retention discovery field */
+        RETENTIONDISCOVERY(MetricSchemaRecord.RETENTION_DISCOVERY);
 
         private String _name;
 

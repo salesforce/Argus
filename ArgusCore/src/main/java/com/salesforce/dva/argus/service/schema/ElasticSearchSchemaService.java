@@ -390,9 +390,19 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				continue;
 			}
 
+			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(MetricSchemaRecord.RETENTION_DISCOVERY);
+			Integer retentionInt = null;
+			if (retention != null) {
+				try {
+					retentionInt = Integer.parseInt(retention);
+				}
+				catch(NumberFormatException e) {
+					_logger.warn("expect _retention_discovery_ to be a numeric value; {} is invalid", retention);
+				}
+			}
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
 				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(),
-						entry.getKey(), entry.getValue()));
+						entry.getKey(), entry.getValue(), retentionInt));
 				if(records.size() == _bulkIndexingSize) {
 					fracturedList.add(records);
 					records = new ArrayList<>(_bulkIndexingSize);
