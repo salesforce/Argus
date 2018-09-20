@@ -49,7 +49,7 @@ $ bower -v
 
 ##### Build Commands
 #
-###### Run npm to build and install:
+###### Run npm to build and install (Note: has run the command under %this_repo%/ArgusWeb/):
 #
 ```sh
 $ npm install
