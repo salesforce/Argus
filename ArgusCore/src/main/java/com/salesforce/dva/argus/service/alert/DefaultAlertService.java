@@ -358,6 +358,17 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		List<History> historyList = new ArrayList<>();
 		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
+		
+		/**
+		 * Tao: we suspect that evaluation has constant delay which contribute the difference,
+		 *      between scheduled and evaluated.  We want to see whether when picked up scheduled
+		 *      alerts(it always try to get all of them in one shot), it shows that this size
+		 *      is growing due to delay.  This is for investigation, may be dropped or changed
+		 *      later.
+		 */
+		Map<String, String> pickedup_list_tags = new HashMap<>();
+		pickedup_list_tags.put(USERTAG, SystemConfiguration.getHostname());
+		_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP_LIST_SIZE, alertsWithTimestamp.size(), pickedup_list_tags);
 
 		List<Notification> allNotifications = new ArrayList<>();
 		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
@@ -402,6 +413,28 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
 			Long alertEnqueueTimestamp = 0L;
+			
+			/**
+			 * Tao: the pickedup alert counter count every alert that comes inside the processing loop.
+			 *      since currently system reports no data lagging and alert skipping, we want to put 
+			 *      counter before the lagging detection and skipping logic so that we
+			 *      can see whether the evaluated alert count = pickedup alert count as expected.
+			 *      this will also provide another validation of lagging detection / skipping logic
+			 *      which is hard to test.
+			 *      
+			 *      Since we assume there is time delay between picking up all scheduled alerts from the
+			 *      queue and try to evaluate each one of them, so this counter should not be the same 
+			 *      as the previous pickedup list size count.
+			 *      
+			 *      There also could be, depend our performance, time delay between pickedup alert counter
+			 *      and evaluated alert counter, we will see how it goes.
+			 *      
+			 *      We also want to the relationship between scheduled alert counter, and pickedup alert
+			 *      counter.
+			 */
+			Map<String, String> pickedup_counter_tags = new HashMap<>();
+			pickedup_counter_tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP, 1, pickedup_counter_tags);
 
 
 			String logMessage = null;
