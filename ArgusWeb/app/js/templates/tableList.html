@@ -69,10 +69,16 @@
                 <i class="glyphicon glyphicon-duplicate"></i>
             </button>
         </td>
-        <td class="text-center">
+        <td ng-if="properties.type !== 'Authorized Apps'" class="text-center">
             <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Delete {{properties.title}} "
-                ng-disabled="isDisabled(item) && properties.type !== 'Authorized Apps'"
-                confirm-message="Delete '{{item.name}}'?" confirm-call="deleteItem(item)">
+                ng-disabled="isDisabled(item)"
+                confirm-message="Delete &quot;{{item.name}}&quot;?" confirm-call="deleteItem(item)">
+                <i class="glyphicon glyphicon-trash"></i>
+            </button>
+        </td>
+        <td ng-if="properties.type === 'Authorized Apps'" class="text-center">
+            <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Remove Authorization "
+                confirm-message="Remove authorization for &quot;{{item.name}}&quot;?" confirm-call="deleteItem(item)">
                 <i class="glyphicon glyphicon-trash"></i>
             </button>
         </td>
