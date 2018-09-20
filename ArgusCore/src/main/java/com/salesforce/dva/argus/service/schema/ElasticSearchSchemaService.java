@@ -468,6 +468,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
                 for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
+                	//W-5349757: remove this special metatag to prevent it from going to ES
+                	entry.getValue().removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
                     MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
                     records.add(mtag);
                     if(records.size() == _bulkIndexingSize) {

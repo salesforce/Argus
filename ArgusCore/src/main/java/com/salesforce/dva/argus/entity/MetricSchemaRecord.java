@@ -221,6 +221,7 @@ public class MetricSchemaRecord {
         result = prime * result + ((metric == null) ? 0 : metric.hashCode());
         result = prime * result + ((tagKey == null) ? 0 : tagKey.hashCode());
         result = prime * result + ((tagValue == null) ? 0 : tagValue.hashCode());
+        //member retentionDiscovery has been left out intentionally
         return result;
     }
 
@@ -273,6 +274,7 @@ public class MetricSchemaRecord {
         } else if (!tagValue.equals(other.tagValue)) {
             return false;
         }
+        //member retentionDiscovery has been left out intentionally
         return true;
     }
 
@@ -308,7 +310,7 @@ public class MetricSchemaRecord {
 		}
     	return new MetricSchemaRecord(namespace, scope, metric, tagKey, tagValue, null);
     }
-    
+
     public static String print(MetricSchemaRecord msr) {
     	
     	StringBuilder sb = new StringBuilder(msr.getScope());
@@ -322,7 +324,9 @@ public class MetricSchemaRecord {
     	if(msr.getNamespace() != null) {
     		sb.append(":").append(msr.getNamespace());
     	}
-    	
+
+        //member retentionDiscovery has been left out intentionally
+
     	return sb.toString();
     }
 }
