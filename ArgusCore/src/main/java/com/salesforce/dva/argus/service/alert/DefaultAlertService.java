@@ -877,9 +877,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
-		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alertsWithTimestamp.size(), null);
 		
-
 		Map<Long, Double> datapoints = new HashMap<>();
 		// convert timestamp to nearest minute since cron is Least scale resolution of minute
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
@@ -893,7 +891,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			metric.setTag("host",currentHostname);
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
-
+			Map<String, String> tags = new HashMap<>();
+			tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 
 		try {

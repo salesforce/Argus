@@ -18,21 +18,20 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 'use strict';
-/*global angular:false */
 
-angular.module('argus.urlConfig', [])
+angular.module("argus.urlConfig", [])
 .constant('CONFIG', {
-	version: '2.20',
-	wsUrl: 'http://localhost:8080/argusws/',
-	wsBetaUrl: 'http://localhost:8080/argusws/beta/',
-	emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
-	feedUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-user',
-	wikiUrl: 'https://github.com/salesforce/Argus/wiki',
-	docUrl: 'https://github.com/salesforce/Argus/wiki',
-	issueUrl: 'https://groups.google.com/a/salesforce.com/forum/?hl=en#!forum/argus-dev',
-	templatePath: 'app/js/templates',
-    acceptOAuthPath:'users/accept_oauth',
-    checkOAuthAccessPath : 'users/check_oauth_access',
-    oauthListPath: 'users/oauth_approved_apps',
-    oauthDeletePath: 'users/revoke_oauth_access'
+    version: '2.20',
+    wsUrl: 'http://localhost:8080/argusws/',
+    wsBetaUrl: 'https://beta.mycompany.com:443/argusws/',
+    emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',
+    feedUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-user',
+    wikiUrl: 'https://github.com/salesforce/Argus/wiki',
+    docUrl: '@@docUrl',
+    issueUrl: 'https://groups.google.com/a/mycompany.com/forum/?hl=en#!forum/argus-dev',
+    templatePath: '/app/js/templates/',
+    acceptOAuthPath: 'accept_oauth',
+    checkOAuthAccessPath : 'checkoauthaccess',
+    oauthListPath: 'oauthlist',
+    oauthDeletePath: 'oauthdelete'
 });
