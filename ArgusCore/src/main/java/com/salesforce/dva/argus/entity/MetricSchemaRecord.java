@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.salesforce.dva.argus.service.SchemaService;
+
+import javax.annotation.Nullable;
 import java.text.MessageFormat;
 
 /**
@@ -43,8 +46,7 @@ import java.text.MessageFormat;
  */
 public class MetricSchemaRecord {
     public static final String RETENTION_DISCOVERY = "_retention_discovery_";
-    public static final int DEFAULT_RETENTION_DISCOVERY = 45;
-    public static final int MAX_RETENTION_DISCOVERY = 120;
+    public static final int MAX_RETENTION_DISCOVERY_DAYS = 120;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -202,9 +204,14 @@ public class MetricSchemaRecord {
     }
 
     public void setRetentionDiscovery(Integer retentionDiscovery) {
-        if (retentionDiscovery!=null
-                && (retentionDiscovery < DEFAULT_RETENTION_DISCOVERY || retentionDiscovery > MAX_RETENTION_DISCOVERY)) {
-            this.retentionDiscovery = DEFAULT_RETENTION_DISCOVERY;
+        if (retentionDiscovery != null) {
+            if (retentionDiscovery > MAX_RETENTION_DISCOVERY_DAYS) {
+                this.retentionDiscovery = MAX_RETENTION_DISCOVERY_DAYS; //capped at max value
+            }
+            else if (retentionDiscovery > 0) {  //within the legal range
+                this.retentionDiscovery = retentionDiscovery;
+            }
+            // else ignore the incoming value
         }
         else {
             this.retentionDiscovery = retentionDiscovery;
@@ -329,5 +336,32 @@ public class MetricSchemaRecord {
 
     	return sb.toString();
     }
+
+    /**
+     * consolidate this method to where it belongs without fixing its legacy expectation that
+     * all members are of string type.
+     * @param type which member
+     * @return String representation of the member or null if it's not set
+     */
+    @Nullable
+    public String getStringValueForType(SchemaService.RecordType type) {
+        switch (type) {
+            case NAMESPACE:
+                return getNamespace();
+            case SCOPE:
+                return getScope();
+            case METRIC:
+                return getMetric();
+            case TAGK:
+                return getTagKey();
+            case TAGV:
+                return getTagValue();
+            case RETENTION_DISCOVERY:
+                return getRetentionDiscovery()==null?null:getRetentionDiscovery().toString();
+            default:
+                return null;
+        }
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

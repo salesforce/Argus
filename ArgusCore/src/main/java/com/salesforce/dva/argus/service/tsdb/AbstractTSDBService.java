@@ -85,7 +85,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -354,7 +353,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		for (Metric metric : metrics) {
 			MetatagsRecord metatagsRecord = metric.getMetatagsRecord();
 			if (metatagsRecord != null) {
-				//W-5349757: remove this special metatag to prevent it from going to TSDB
+				//remove this special metatag to prevent it from going to TSDB
 				metatagsRecord.removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
 			}
 

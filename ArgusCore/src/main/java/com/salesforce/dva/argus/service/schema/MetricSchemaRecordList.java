@@ -133,7 +133,7 @@ public class MetricSchemaRecordList {
 					JsonNode metricNode = source.get(RecordType.METRIC.getName());
 					JsonNode tagkNode = source.get(RecordType.TAGK.getName());
 					JsonNode tagvNode = source.get(RecordType.TAGV.getName());
-					JsonNode retentionNode = source.get(RecordType.RETENTIONDISCOVERY.getName());
+					JsonNode retentionNode = source.get(RecordType.RETENTION_DISCOVERY.getName());
 					
 					records.add(new MetricSchemaRecord(namespaceNode == null ? null : namespaceNode.asText(), 
 													   	scopeNode.asText(),

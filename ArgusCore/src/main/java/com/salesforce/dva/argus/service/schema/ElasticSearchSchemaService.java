@@ -47,14 +47,10 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -397,12 +393,16 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					retentionInt = Integer.parseInt(retention);
 				}
 				catch(NumberFormatException e) {
-					_logger.warn("expect _retention_discovery_ to be a numeric value; {} is invalid", retention);
+					_logger.debug("expect _retention_discovery_ to be a numeric value; {} is invalid", retention);
 				}
 			}
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
-				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(),
-						entry.getKey(), entry.getValue(), retentionInt));
+				records.add(new MetricSchemaRecord(metric.getNamespace(),
+													metric.getScope(),
+													metric.getMetric(),
+													entry.getKey(),
+													entry.getValue(),
+													retentionInt));
 				if(records.size() == _bulkIndexingSize) {
 					fracturedList.add(records);
 					records = new ArrayList<>(_bulkIndexingSize);
@@ -468,7 +468,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
                 for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
-                	//W-5349757: remove this special metatag to prevent it from going to ES
+                	//remove this special metatag to prevent it from going to ES
                 	entry.getValue().removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
                     MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
                     records.add(mtag);
@@ -1500,6 +1500,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.put(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 
 		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
