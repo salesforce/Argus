@@ -366,9 +366,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		 *      is growing due to delay.  This is for investigation, may be dropped or changed
 		 *      later.
 		 */
-		Map<String, String> pickedup_list_tags = new HashMap<>();
-		pickedup_list_tags.put(USERTAG, SystemConfiguration.getHostname());
-		_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP_LIST_SIZE, alertsWithTimestamp.size(), pickedup_list_tags);
+		_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP_LIST_SIZE, alertsWithTimestamp.size(), null);
 
 		List<Notification> allNotifications = new ArrayList<>();
 		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
@@ -879,23 +877,23 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
+		_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, alertsWithTimestamp.size(), null);
+		
 
-
+		Map<Long, Double> datapoints = new HashMap<>();
+		// convert timestamp to nearest minute since cron is Least scale resolution of minute
+		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
+		String currentHostname = SystemConfiguration.getHostname();
+		
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
-			Map<Long, Double> datapoints = new HashMap<>();
-			// convert timestamp to nearest minute since cron is Least scale resolution of minute
-			datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
-			metric.setTag("host",SystemConfiguration.getHostname());
+			metric.setTag("host",currentHostname);
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
 
-			Map<String, String> tags = new HashMap<>();
-			tags.put(USERTAG, alert.getOwner().getUserName());
-			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
 		}
 
 		try {
