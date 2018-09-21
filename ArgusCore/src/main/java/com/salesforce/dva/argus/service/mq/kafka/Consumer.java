@@ -35,23 +35,18 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService.Property;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import kafka.Kafka;
-import kafka.consumer.ConsumerIterator;
-import kafka.consumer.KafkaStream;
-import kafka.consumer.Whitelist;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.MessageAndMetadata;
+import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.errors.WakeupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.MessageFormat;
@@ -321,11 +316,10 @@ public class Consumer {
                         break;
                     }
 
-                    ConsumerRecords<String, String> records = _consumer.poll(Long.MAX_VALUE);
                     try {
+                        ConsumerRecords<String, String> records = _consumer.poll(Long.MAX_VALUE);
                         for (ConsumerRecord<String, String> record : records) {
                             String message = record.value();
-                            _logger.info("GOT MESSAGE " + message);
                             String topic = record.topic();
 
                             if (message != null) {
@@ -344,14 +338,16 @@ public class Consumer {
                     } catch (InterruptedException ex) {
                         _logger.debug("Interrupted while consuming message.");
                         Thread.currentThread().interrupt();
+                    } catch (CommitFailedException ex) {
+                        _logger.error("Commit failed, continuing polls: ", ex) ;
                     }
                 }
             } catch (WakeupException e) {
                 // Ignore exception if closing
                 if (!closed.get()) throw e;
             } finally {
-                _logger.info("ConsumerWorker hit finally block");
                 _consumer.close();
+                _logger.info("ConsumerWorker finished");
             }
         }
     }

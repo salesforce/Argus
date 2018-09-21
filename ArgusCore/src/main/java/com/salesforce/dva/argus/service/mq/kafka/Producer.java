@@ -148,8 +148,6 @@ public class Producer {
      * @return  The number of objects that were successfully added to the Producer Buffer.
      */
     public <T extends Serializable> int enqueue(final String topic, List<T> objects) {
-        _logger.info("*****\n\n\n\n\n");
-        _logger.info("ENQUEUEING TO TOPIC: " + topic);
         int messagesBuffered = 0;
 
         for (T object : objects) {
@@ -229,15 +227,12 @@ public class Producer {
             ProducerRecord<String, String> record = new ProducerRecord<>(_topic, _message);
 
             try {
-                _logger.info("STARTING PRODUCERWORKER SEND");
                 _producer.send(record, new Callback() {
-
                         @Override
                         public void onCompletion(RecordMetadata metaData, Exception exception) {
                             if (exception != null) {
                                 _logger.warn("Exception while sending message. ", exception);
                             } else {
-                                _logger.info("Message sent to partition {} with offset {}.", metaData.partition(), metaData.offset());
                                 _logger.trace("Message sent to partition {} with offset {}.", metaData.partition(), metaData.offset());
                             }
                         }

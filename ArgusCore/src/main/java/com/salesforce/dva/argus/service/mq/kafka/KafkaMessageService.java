@@ -37,7 +37,6 @@ import com.google.inject.Singleton;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MQService;
 import com.salesforce.dva.argus.system.SystemConfiguration;
-import org.apache.kafka.common.config.SslConfigs;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
     }
 
     /*
-     * Transform an MQService MQQueue name to the configured topic name if in .properties file
+     * Transform an MQService MQQueue name to the configured topic name if redefined in .properties file
      */
     private String toKafkaTopic(String topic) {
         if (topic.equals(MQQueue.ALERT.getQueueName())) {
