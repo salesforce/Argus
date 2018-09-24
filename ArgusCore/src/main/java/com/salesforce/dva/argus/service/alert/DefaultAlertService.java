@@ -129,8 +129,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
 	private static List<Pattern> _whiteListedScopeRegexPatterns = null;
+	private static final String HOSTNAME;
 
 	//~ Constructors *********************************************************************************************************************************
+
+	static {
+		HOSTNAME = SystemConfiguration.getHostname();
+	}
 
 	/**
 	 * Creates a new DefaultAlertService object.
@@ -419,7 +424,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 
 					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
-						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
+						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId().intValue());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -433,7 +438,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			}
 
-			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), HOSTNAME, alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
@@ -526,31 +531,38 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+				_logger.warn(logMessage);
 
-				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-					_sendEmailToAdmin(alert, alert.getId(), ex);
-				}
-				
-				if(logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
-					if (alert.isMissingDataNotificationEnabled()) {
-						_sendNotificationForMissingData(alert);
+				try {
+
+					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+						_sendEmailToAdmin(alert, alert.getId(), ex);
 					}
-					
-					if(missingDataTriggers.size()>0) {
-						for(Notification notification : alert.getNotifications()) {
-							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+
+					if (logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
+						if (alert.isMissingDataNotificationEnabled()) {
+							_sendNotificationForMissingData(alert);
+						}
+
+						if (missingDataTriggers.size() > 0) {
+							for (Notification notification : alert.getNotifications()) {
+								if (!notification.getTriggers().isEmpty()) {
+									_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+								}
 							}
 						}
 					}
+
+					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+				}
+				catch (Exception e) {
+					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+					_logger.warn(logMessage);
 				}
 
-				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
 				Map<String, String> tags = new HashMap<>();
-				tags.put("host", SystemConfiguration.getHostname());
+				tags.put("host", HOSTNAME);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
@@ -856,7 +868,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			// convert timestamp to nearest minute since cron is Least scale resolution of minute
 			datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
-			metric.setTag("host",SystemConfiguration.getHostname());
+			metric.setTag("host", HOSTNAME);
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
 
