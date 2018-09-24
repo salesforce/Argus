@@ -73,6 +73,8 @@ public abstract class AbstractTest {
         apacheLogger.setLevel(ch.qos.logback.classic.Level.OFF);
         ch.qos.logback.classic.Logger kafkaLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("kafka");
         kafkaLogger.setLevel(ch.qos.logback.classic.Level.OFF);
+        ch.qos.logback.classic.Logger zkLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.I0Itec.zkclient");
+        zkLogger.setLevel(ch.qos.logback.classic.Level.OFF);
     }
 
     protected TestingServer zkTestServer;

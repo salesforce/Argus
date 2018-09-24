@@ -712,7 +712,7 @@ public class AlertServiceTest extends AbstractTest {
 		}
 		alertService.enqueueAlerts(actualAlertList);
 
-		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 1000, 10);
+		List<AlertWithTimestamp> expectedList = mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, 5000, 10);
 
 		assertEquals(actualAlertList.size(), expectedList.size());
 	}

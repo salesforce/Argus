@@ -151,7 +151,6 @@ public class Producer {
         int messagesBuffered = 0;
 
         for (T object : objects) {
-            _logger.info("On object " + object.toString());
             final String value;
 
             if (String.class.isAssignableFrom(object.getClass())) {
@@ -159,14 +158,12 @@ public class Producer {
             } else {
                 try {
                     value = _mapper.writeValueAsString(object);
-                    _logger.info("serialized to: " + value);
                 } catch (JsonProcessingException e) {
                     _logger.warn("Exception while serializing the object to a string. Skipping this object.", e);
                     continue;
                 }
             }
             try {
-                _logger.info("starting executor submit to " + topic);
                 boolean addedToBuffer = _executorService.submit(new ProducerWorker(topic, value)).get();
 
                 if (addedToBuffer) {
