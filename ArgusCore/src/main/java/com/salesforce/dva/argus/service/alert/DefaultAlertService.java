@@ -563,6 +563,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				Map<String, String> tags = new HashMap<>();
 				tags.put("host", HOSTNAME);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
