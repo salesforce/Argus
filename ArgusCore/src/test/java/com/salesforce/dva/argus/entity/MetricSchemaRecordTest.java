@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 
 public class MetricSchemaRecordTest {
     @Test
@@ -20,7 +24,7 @@ public class MetricSchemaRecordTest {
 
         MetricSchemaRecord deserialized = objectMapper.readValue(s, MetricSchemaRecord.class);
         assertEquals("expect the deserialized object to be equal to the original", original, deserialized);
-        assertNull("expect the deserialized object has null retention value", deserialized.getRetentionDiscovery());
+        assertNull("expect the deserialized object to have null retention value", deserialized.getRetentionDiscovery());
 
         //update the original record with a retention value and test things out
         original.setRetentionDiscovery(50);

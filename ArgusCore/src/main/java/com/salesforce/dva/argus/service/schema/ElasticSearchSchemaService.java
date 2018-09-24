@@ -89,6 +89,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final int MAX_RETRY_TIMEOUT = 300 * 1000;
 	private static final String FIELD_TYPE_TEXT = "text";
 	private static final String FIELD_TYPE_DATE ="date";
+	private static final String FIELD_TYPE_INTEGER = "integer";
 
 	private final ObjectMapper _mapper;
 	private final ObjectMapper _createScopeOnlyMapper;
@@ -1500,7 +1501,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
 		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.put(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
 
 		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
