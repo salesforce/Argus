@@ -23,7 +23,6 @@ cache:
   - "$HOME/.m2/repository"
 before_script:
 - pip install --user codecov
-- df -h
 after_success:
 - codecov
 - df -h
