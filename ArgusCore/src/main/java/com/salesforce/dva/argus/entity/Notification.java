@@ -441,7 +441,7 @@ public class Notification extends JPAEntity implements Serializable {
                     throw new IllegalArgumentException("GUS subjectId is incorrect.");
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
                 if (!currentSubscription.matches("[a-zA-Z0-9\\-\\_\\.]+@[a-zA-Z0-9\\-\\_\\.]+\\.[a-zA-Z0-9]{3}"))
-                    throw new IllegalArgumentException("Email Address is incorrect.");
+                    throw new IllegalArgumentException("Email Address is incorrect. {0}", currentSubscription);
             }
         }
         if (subscriptions != null && !subscriptions.isEmpty()) {

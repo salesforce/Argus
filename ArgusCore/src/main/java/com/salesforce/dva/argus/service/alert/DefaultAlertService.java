@@ -373,10 +373,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Alert alert;
 			try {
 				alert = _mapper.readValue(serializedAlert, Alert.class);
-			} catch (IOException e) {
+			} catch (Exception e) {
 				_logger.warn("Failed to deserialize alert.", e);
 				continue;
-			} 
+			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 				continue;
