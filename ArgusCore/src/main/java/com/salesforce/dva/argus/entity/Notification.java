@@ -225,6 +225,8 @@ public class Notification extends JPAEntity implements Serializable {
 		
 	}
 
+	private static final String EMAILREGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9]+";
+
     //~ Instance fields ******************************************************************************************************************************
 
     @Basic(optional = false)
@@ -442,7 +444,7 @@ public class Notification extends JPAEntity implements Serializable {
                 if (currentSubscription.length() < 10)
                     throw new IllegalArgumentException("GUS subjectId is incorrect.");
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
-                if (!currentSubscription.matches("[a-zA-Z0-9\\-\\_\\.]+@[a-zA-Z0-9\\-\\_\\.]+\\.[a-zA-Z0-9]{3}")) {
+                if (!currentSubscription.matches(EMAILREGEX)) {
                     String errorMessage = MessageFormat.format("Email Address is incorrect. {0}", currentSubscription);
                     throw new IllegalArgumentException(errorMessage);
                 }
