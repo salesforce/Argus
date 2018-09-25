@@ -15,7 +15,8 @@ angular.module('argus.directives.charts.table', [])
 
 		scope.tableId = newTableId;
 		scope.tData = [];
-
+		scope.results = [];
+		
 		var GMTon = false;
 		for (var i = 0; i < controls.length; i++) {
 			if (controls[i].type === 'agDate') {
@@ -29,6 +30,14 @@ angular.module('argus.directives.charts.table', [])
 		}
 		scope.GMTOn = GMTon;
 
+		scope.update = function(){
+			scope.start = (scope.currentPage - 1)* scope.itemsPerPage + 1;
+			var end = scope.start + scope.itemsPerPage - 1;
+			if (scope.results) {
+				scope.end = end < scope.results.length ? end : scope.results.length;
+			}
+		};
+
 		// itemsPerPage setting
 		var storageId = scope.dashboardId + '_' + newTableId;
 		scope.itemsPerPageOptions = [5, 10, 15, 25, 50, 100, 200];
@@ -36,14 +45,20 @@ angular.module('argus.directives.charts.table', [])
 		scope.itemsPerPage = InputTracker.getDefaultValue(itemsPerPageFromStorage, scope.itemsPerPageOptions[1]);
 		scope.$watch('itemsPerPage', function(newValue) {
 			InputTracker.updateDefaultValue(itemsPerPageFromStorage, scope.itemsPerPageOptions[1], newValue);
-			update();
+			scope.update();
 		});
 
+		// pagination page setting
+		var currentPageFromStorage = storageId + '-currentPage';
+		scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
+		scope.$watch('currentPage', function (newValue) {
+			InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
+			scope.update();
+		});
+		
 		// searchText setting
 		var searchTextFromStorage = storageId + '-searchText';
 		scope.searchText = InputTracker.getDefaultValue(searchTextFromStorage, '');
-
-
 		scope.$watch('searchText', function(newVal, oldVal) {
 			InputTracker.updateDefaultValue(searchTextFromStorage, '', newVal);
 			if(newVal !== undefined && newVal !== oldVal){
@@ -52,13 +67,7 @@ angular.module('argus.directives.charts.table', [])
 			}
 		});
 
-		// pagination page setting
-		var currentPageFromStorage = storageId + '-currentPage';
-		scope.currentPage = InputTracker.getDefaultValue(currentPageFromStorage, 1);
-		scope.$watch('currentPage', function (newValue) {
-			InputTracker.updateDefaultValue(currentPageFromStorage, 1, newValue);
-			update();
-		});
+		
 
 		// sort setting
 		var sortKeyFromStorage = storageId + '-sortKey';
@@ -88,31 +97,28 @@ angular.module('argus.directives.charts.table', [])
 			}
 		};
 
+		//sort the columns based on selected row
 		scope.sortSourceIndices = function(item){
 			var sortedArray =[];
 			for(var key in item)
 			{
+				//pair of <"valueN", value>
 				if(key.startsWith('value')) sortedArray.push([key, item[key]]);
 			}
+		
 			if(item['firstCol'] === scope.colNames.firstCol){
+					//sort the columns in the first row, which are headers
 				sortedArray.sort(function(a, b){
 					return (a[1].localeCompare(b[1])) * scope.reverse;
 				});
 			}else{
+				//sort the columns based on the value of each column in the selected row.
 				sortedArray.sort(function(a, b){
 					return (a[1] - b[1]) * scope.reverse;
 				});
 			}
 			scope.sortedSourceIndices = sortedArray.map(function(d){ return d[0]; });
 		};
-
-		function update(){
-			scope.start = (scope.currentPage - 1)* scope.itemsPerPage + 1;
-			var end = scope.start + scope.itemsPerPage - 1;
-			if (scope.series) {
-				scope.end = end < scope.dataSet.length ? end : scope.dataSet.length;
-			}
-		}
 	}
 
 	function queryMetricData(scope, controls){
@@ -142,8 +148,10 @@ angular.module('argus.directives.charts.table', [])
 				scope.headerHeight = AgTableService.processRowHeight(scope.colNames);
 				scope.results = $filter('filter')(scope.tData, scope.searchText);
 				AgTableService.processResults(scope);
+				scope.update();
 			}else{
 				console.log('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
+				scope.tableLoaded = true;
 			}
 		}).error(function(data) {
 			growl.error(data.message);

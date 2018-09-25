@@ -228,7 +228,12 @@ public class GOCNotifier extends AuditNotifier {
 	 */
 	protected void _sendAdditionalNotification(NotificationContext context, NotificationStatus status) {
 		requireArgument(context != null, "Notification context cannot be null.");
-		super.sendAdditionalNotification(context);
+		
+		if(status == NotificationStatus.TRIGGERED) {
+		    super.sendAdditionalNotification(context);
+		}else {
+			super.clearAdditionalNotification(context);
+		}
 
 		Notification notification = null;
 		Trigger trigger = null;

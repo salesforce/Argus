@@ -69,7 +69,7 @@ public class Producer {
 
     private final Logger _logger = LoggerFactory.getLogger(getClass());
     private final SystemConfiguration _configuration;
-    private final KafkaProducer<String, String> _producer;
+    private KafkaProducer<String, String> _producer;
     private final ExecutorService _executorService;
     private final ObjectMapper _mapper;
 
