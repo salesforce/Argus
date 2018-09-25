@@ -103,6 +103,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	private static final String USERTAG = "user";
+	private static final String REASONTAG = "reason";
+
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
@@ -374,11 +376,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			try {
 				alert = _mapper.readValue(serializedAlert, Alert.class);
 			} catch (Exception e) {
-				_logger.warn("Failed to deserialize alert.", e);
+				String logMessage = MessageFormat.format("Failed to deserialize alert {0}. Full stack trace of exception {1}", serializedAlert, ExceptionUtils.getFullStackTrace(e));
+				_logger.warn(logMessage);
+
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, "");
+				tags.put(REASONTAG, "DeserializeError");
+				_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 				continue;
 			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
+				Map<String, String> tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				tags.put(REASONTAG, "Disabled");
+				_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 				continue;
 			}
 
@@ -432,6 +444,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						historyList.add(history);
 						Map<String, String> tags = new HashMap<>();
 						tags.put(USERTAG, alert.getOwner().getUserName());
+						tags.put(REASONTAG, "MetricDataLag");
 						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 						continue;
 					}
@@ -510,18 +523,26 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
 				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				if (alert.isMissingDataNotificationEnabled()) {
-					_sendNotificationForMissingData(alert);
-				}
-				
-				if(missingDataTriggers.size()>0) {
-					for(Notification notification : alert.getNotifications()) {
-						if (!notification.getTriggers().isEmpty()) {
-						    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+
+				try {
+					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+					if (alert.isMissingDataNotificationEnabled()) {
+						_sendNotificationForMissingData(alert);
+					}
+
+					if (missingDataTriggers.size() > 0) {
+						for (Notification notification : alert.getNotifications()) {
+							if (!notification.getTriggers().isEmpty()) {
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+							}
 						}
 					}
 				}
+				catch (Exception e) {
+					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+					_logger.warn(logMessage);
+				}
+
 				Map<String, String> tags = new HashMap<>();
 				tags.put("host", SystemConfiguration.getHostname());
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
