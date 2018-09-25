@@ -29,4 +29,3 @@ package_generation_command: "echo \"Creating users inside container...\"\nFILE=/
 package_repository: mandm
 integration_tests_command: echo docker override
 docker_image_name: argus2
-publish_jar: true
