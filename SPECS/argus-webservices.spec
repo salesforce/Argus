@@ -3,7 +3,9 @@
 #
 BuildArch:     noarch
 Name:          argusws
+
 Version:       4.40
+
 Release:       1 
 License:       BSD-3-Clause
 Group:         Applications/System
