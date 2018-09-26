@@ -226,7 +226,7 @@ public class Notification extends JPAEntity implements Serializable {
 	}
 
 	// We allow a-zA-Z0-9-_+. in the name, then @ then a-zA-Z0-9- followed by . and a-zA-Z0-9.
-    // ToDo Consider email.contains("@") if we see more issues in future
+	// ToDo Consider email.contains("@") if we see more issues in future
 	private static final String EMAILREGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9]+";
 
     //~ Instance fields ******************************************************************************************************************************
