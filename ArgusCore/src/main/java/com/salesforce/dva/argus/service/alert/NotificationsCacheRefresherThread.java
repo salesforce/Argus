@@ -75,7 +75,6 @@ public class NotificationsCacheRefresherThread extends Thread{
 				
 				// populating notifications cooldown cache
 				Query q = em.createNativeQuery("select * from notification_cooldownexpirationbytriggerandmetric");
-				q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 				List<Object[]> objects = q.getResultList();
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Long/*coolDownExpiration*/>> currNotificationCooldownExpirationMap = new HashMap<BigInteger, Map<String, Long>>();
 
@@ -92,7 +91,6 @@ public class NotificationsCacheRefresherThread extends Thread{
 
 				// populating the active status cache
 				q = em.createNativeQuery("select * from notification_activestatusbytriggerandmetric");
-				q.setHint(QueryHints.REFRESH, HintValues.TRUE);
 				objects = q.getResultList();
 				Map<BigInteger/*notificationId*/, Map<String/*metricKey*/, Boolean/*activeStatus*/>> currNotificationActiveStatusMap = new HashMap<BigInteger, Map<String, Boolean>>();
 
