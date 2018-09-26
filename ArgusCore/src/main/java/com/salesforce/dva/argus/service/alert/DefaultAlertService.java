@@ -103,7 +103,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	private static final String USERTAG = "user";
-	private static final String REASONTAG = "reason";
 	private static final BigInteger DEFAULTALERTID = new BigInteger("0");
 	private static final String DEFAULTUSER = "none";
 
