@@ -437,7 +437,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
-				if(trigger.getType().equals(TriggerType.NO_DATA)) {
+                if(trigger.getType().equals(TriggerType.NO_DATA)) {
 					missingDataTriggers.add(trigger);
 				}
 			}
@@ -1065,7 +1065,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		int endIndex = sortedDatapoints.size();
 
-		if(trigger.getType().equals(TriggerType.NO_DATA)) {
+        if(trigger.getType().equals(TriggerType.NO_DATA)) {
             Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
             if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
             	    return sortedDatapoints.get(0).getKey();
@@ -1082,7 +1082,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
             	    	    }
             	    }
             }
-            
 		}else {
 			for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
 				if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
