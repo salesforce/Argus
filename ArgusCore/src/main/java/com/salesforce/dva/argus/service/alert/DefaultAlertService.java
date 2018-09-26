@@ -1071,7 +1071,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
             	    return sortedDatapoints.get(0).getKey();
             }
             	
-            if((sortedDatapoints.get(sortedDatapoints.size()-1).getKey()-queryTimes[1]) > trigger.getInertia()) {
+            if((queryTimes[1] - sortedDatapoints.get(sortedDatapoints.size()-1).getKey()) > trigger.getInertia()) {
             	    return sortedDatapoints.get(sortedDatapoints.size()-1).getKey();
             }
             
