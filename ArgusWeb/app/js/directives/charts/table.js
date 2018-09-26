@@ -15,7 +15,8 @@ angular.module('argus.directives.charts.table', [])
 
 		scope.tableId = newTableId;
 		scope.tData = [];
-
+		scope.results = [];
+		
 		var GMTon = false;
 		for (var i = 0; i < controls.length; i++) {
 			if (controls[i].type === 'agDate') {
@@ -32,8 +33,8 @@ angular.module('argus.directives.charts.table', [])
 		scope.update = function(){
 			scope.start = (scope.currentPage - 1)* scope.itemsPerPage + 1;
 			var end = scope.start + scope.itemsPerPage - 1;
-			if (scope.series) {
-				scope.end = end < scope.dataSet.length ? end : scope.dataSet.length;
+			if (scope.results) {
+				scope.end = end < scope.results.length ? end : scope.results.length;
 			}
 		};
 
@@ -147,8 +148,10 @@ angular.module('argus.directives.charts.table', [])
 				scope.headerHeight = AgTableService.processRowHeight(scope.colNames);
 				scope.results = $filter('filter')(scope.tData, scope.searchText);
 				AgTableService.processResults(scope);
+				scope.update();
 			}else{
 				console.log('No data found for the metric expressions: ' + JSON.stringify(metricExpressionList));
+				scope.tableLoaded = true;
 			}
 		}).error(function(data) {
 			growl.error(data.message);
