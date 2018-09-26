@@ -225,6 +225,8 @@ public class Notification extends JPAEntity implements Serializable {
 		
 	}
 
+	// We allow a-zA-Z0-9-_+. in the name, then @ then a-zA-Z0-9- followed by . and a-zA-Z0-9.
+    // ToDo Consider email.contains("@") if we see more issues in future
 	private static final String EMAILREGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9]+";
 
     //~ Instance fields ******************************************************************************************************************************
@@ -445,7 +447,8 @@ public class Notification extends JPAEntity implements Serializable {
                     throw new IllegalArgumentException("GUS subjectId is incorrect.");
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
                 if (!currentSubscription.matches(EMAILREGEX)) {
-                    String errorMessage = MessageFormat.format("Email Address is incorrect. {0}", currentSubscription);
+                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed according to Regex {1}.",
+                            currentSubscription, EMAILREGEX);
                     throw new IllegalArgumentException(errorMessage);
                 }
             }

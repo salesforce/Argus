@@ -104,6 +104,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 	private static final String USERTAG = "user";
 	private static final String REASONTAG = "reason";
+	private static final BigInteger DEFAULTALERTID = new BigInteger("0");
+	private static final String DEFAULTUSER = "none";
 
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
@@ -136,6 +138,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	//~ Constructors *********************************************************************************************************************************
 
 	static {
+		// Can fail if DNS is broken.
+		// ToDo Handle the failure.
 		HOSTNAME = SystemConfiguration.getHostname();
 	}
 
@@ -380,17 +384,27 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn(logMessage);
 
 				Map<String, String> tags = new HashMap<>();
-				tags.put(USERTAG, "");
-				tags.put(REASONTAG, "DeserializeError");
-				_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), DEFAULTALERTID, -1.0/*failure*/, tags);
+				tags = new HashMap<>();
+				tags.put(USERTAG, DEFAULTUSER);
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+
 				continue;
 			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
+
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
-				tags.put(REASONTAG, "Disabled");
-				_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 				continue;
 			}
 
@@ -444,7 +458,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 						historyList.add(history);
 						Map<String, String> tags = new HashMap<>();
 						tags.put(USERTAG, alert.getOwner().getUserName());
-						tags.put(REASONTAG, "MetricDataLag");
 						_monitorService.modifyCounter(Counter.ALERTS_SKIPPED, 1, tags);
 						continue;
 					}
@@ -514,7 +527,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
 				Map<String, String> tags = new HashMap<>();
-				tags.put("host", SystemConfiguration.getHostname());
+				tags.put("host", HOSTNAME);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, tags);
 				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -544,7 +557,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 
 				Map<String, String> tags = new HashMap<>();
-				tags.put("host", SystemConfiguration.getHostname());
+				tags.put("host", HOSTNAME);
 				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
 				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -737,7 +750,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
-		tags.put("host", SystemConfiguration.getHostname());
+		tags.put("host", HOSTNAME);
 		tags.put("metric", metric.getIdentifier());
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
@@ -760,7 +773,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
 		tags = new HashMap<>();
 		tags.put("notification_id", notification.getId().intValue()+"");
-		tags.put("host", SystemConfiguration.getHostname());
+		tags.put("host", HOSTNAME);
 		tags.put("metric", metric.getIdentifier().hashCode()+"");
 		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
