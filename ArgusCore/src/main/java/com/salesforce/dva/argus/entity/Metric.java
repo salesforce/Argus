@@ -67,6 +67,7 @@ public class Metric extends TSDBEntity implements Serializable {
 	private String _units;
 	private final Map<Long, Double> _datapoints;
 	private MetricQuery _query;
+        private MetatagsRecord _metatagsRecord = null;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -86,6 +87,7 @@ public class Metric extends TSDBEntity implements Serializable {
 		setDisplayName(metric.getDisplayName());
 		setUnits(metric.getUnits());
 		setQuery(metric.getQuery());
+                setMetatagsRecord(metric.getMetatagsRecord());
 	}
 
 	/**
@@ -176,8 +178,8 @@ public class Metric extends TSDBEntity implements Serializable {
 
 
 	/**
-	 * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp at coinciding cutoff boundary, 
-	 * else adds the new data points to the current set.  
+	 * If current set already has a value at that timestamp then sums up the datapoint value for that timestamp at coinciding cutoff boundary,
+	 * else adds the new data points to the current set.
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
@@ -197,8 +199,8 @@ public class Metric extends TSDBEntity implements Serializable {
 
 
 	/**
-	 * If current set already has a value at that timestamp then sets the minimum of the two values for that timestamp at coinciding cutoff boundary, 
-	 * else adds the new data points to the current set.  
+	 * If current set already has a value at that timestamp then sets the minimum of the two values for that timestamp at coinciding cutoff boundary,
+	 * else adds the new data points to the current set.
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
@@ -217,8 +219,8 @@ public class Metric extends TSDBEntity implements Serializable {
 	}
 
 	/**
-	 * If current set already has a value at that timestamp then sets the maximum of the two values for that timestamp at coinciding cutoff boundary, 
-	 * else adds the new data points to the current set.  
+	 * If current set already has a value at that timestamp then sets the maximum of the two values for that timestamp at coinciding cutoff boundary,
+	 * else adds the new data points to the current set.
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
@@ -238,8 +240,8 @@ public class Metric extends TSDBEntity implements Serializable {
 
 
 	/**
-	 * If current set already has a value at that timestamp then replace the latest average value for that timestamp at coinciding cutoff boundary, 
-	 * else adds the new data points to the current set.  
+	 * If current set already has a value at that timestamp then replace the latest average value for that timestamp at coinciding cutoff boundary,
+	 * else adds the new data points to the current set.
 	 *
 	 * @param  datapoints  The set of data points to add. If null or empty, no operation is performed.
 	 */
@@ -361,5 +363,22 @@ public class Metric extends TSDBEntity implements Serializable {
 		return MessageFormat.format(format, params);
 	}
 
+    /**
+     * Returns an unmodifiable collection of metatags associated with the metric.
+     *
+     * @return  The metatags for a metric.
+     */
+    public MetatagsRecord getMetatagsRecord() {
+        return _metatagsRecord;
+    }
+
+    /**
+     * Replaces the metatags for a metric. MetatagsRecord cannot use any of the reserved tag names.
+     *
+     * @param  metatags  The new metatags for the metric.
+     */
+    public void setMetatagsRecord(MetatagsRecord metatagsRec) {
+        _metatagsRecord = metatagsRec;
+    }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

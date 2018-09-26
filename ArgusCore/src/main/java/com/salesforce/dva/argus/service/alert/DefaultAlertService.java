@@ -103,6 +103,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	//~ Static fields/initializers *******************************************************************************************************************
 
 	private static final String USERTAG = "user";
+	private static final BigInteger DEFAULTALERTID = new BigInteger("0");
+	private static final String DEFAULTUSER = "none";
+
 	private static final ThreadLocal<SimpleDateFormat> DATE_FORMATTER = new ThreadLocal<SimpleDateFormat>() {
 
 		@Override
@@ -129,8 +132,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private final ObjectMapper _mapper = new ObjectMapper();
 	private static NotificationsCache _notificationsCache = null;
 	private static List<Pattern> _whiteListedScopeRegexPatterns = null;
+	private static final String HOSTNAME;
 
 	//~ Constructors *********************************************************************************************************************************
+
+	static {
+		// Can fail if DNS is broken.
+		// ToDo Handle the failure.
+		HOSTNAME = SystemConfiguration.getHostname();
+	}
 
 	/**
 	 * Creates a new DefaultAlertService object.
@@ -368,12 +378,32 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Alert alert;
 			try {
 				alert = _mapper.readValue(serializedAlert, Alert.class);
-			} catch (IOException e) {
-				_logger.warn("Failed to deserialize alert.", e);
+			} catch (Exception e) {
+				String logMessage = MessageFormat.format("Failed to deserialize alert {0}. Full stack trace of exception {1}", serializedAlert, ExceptionUtils.getFullStackTrace(e));
+				_logger.warn(logMessage);
+
+				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), DEFAULTALERTID, -1.0/*failure*/, tags);
+				tags = new HashMap<>();
+				tags.put(USERTAG, DEFAULTUSER);
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+
 				continue;
-			} 
+			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
+
+				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
+				tags.put(USERTAG, alert.getOwner().getUserName());
+				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 				continue;
 			}
 
@@ -419,7 +449,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 
 					if(_whiteListedScopeRegexPatterns.isEmpty() || !AlertUtils.isScopePresentInWhiteList(alert.getExpression(), _whiteListedScopeRegexPatterns)) {
-						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.SKIPPED);
+						history = new History(addDateToMessage(JobStatus.SKIPPED.getDescription()), HOSTNAME, alert.getId(), JobStatus.SKIPPED);
 						logMessage = MessageFormat.format("Skipping evaluating the alert with id: {0}. because metric data was lagging", alert.getId().intValue());
 						_logger.info(logMessage);
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
@@ -433,7 +463,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				}
 			}
 
-			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), SystemConfiguration.getHostname(), alert.getId(), JobStatus.STARTED);
+			history = new History(addDateToMessage(JobStatus.STARTED.getDescription()), HOSTNAME, alert.getId(), JobStatus.STARTED);
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
@@ -495,57 +525,78 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				jobEndTime = System.currentTimeMillis();
 				long evalLatency = jobEndTime - jobStartTime;
 				_appendMessageNUpdateHistory(history, "Alert was evaluated successfully.", JobStatus.SUCCESS, evalLatency);
-
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/);
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), 1.0/*success*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
 				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				if (alert.isMissingDataNotificationEnabled()) {
-					_sendNotificationForMissingData(alert);
-				}
-				
-				if(missingDataTriggers.size()>0) {
-					for(Notification notification : alert.getNotifications()) {
-						if (!notification.getTriggers().isEmpty()) {
-						    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+
+				try {
+					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+					if (alert.isMissingDataNotificationEnabled()) {
+						_sendNotificationForMissingData(alert);
+					}
+
+					if (missingDataTriggers.size() > 0) {
+						for (Notification notification : alert.getNotifications()) {
+							if (!notification.getTriggers().isEmpty()) {
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+							}
 						}
 					}
 				}
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
+				catch (Exception e) {
+					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+					_logger.warn(logMessage);
+				}
+
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} catch (Exception ex) {
 				jobEndTime = System.currentTimeMillis();
 				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+				_logger.warn(logMessage);
 
-				if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-					_sendEmailToAdmin(alert, alert.getId(), ex);
-				}
-				
-				if(logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
-					if (alert.isMissingDataNotificationEnabled()) {
-						_sendNotificationForMissingData(alert);
+				try {
+
+					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+						_sendEmailToAdmin(alert, alert.getId(), ex);
 					}
-					
-					if(missingDataTriggers.size()>0) {
-						for(Notification notification : alert.getNotifications()) {
-							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+
+					if (logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
+						if (alert.isMissingDataNotificationEnabled()) {
+							_sendNotificationForMissingData(alert);
+						}
+
+						if (missingDataTriggers.size() > 0) {
+							for (Notification notification : alert.getNotifications()) {
+								if (!notification.getTriggers().isEmpty()) {
+									_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+								}
 							}
 						}
 					}
+
+					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+				}
+				catch (Exception e) {
+					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+					_logger.warn(logMessage);
 				}
 
-				_logger.warn(logMessage);
-				_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/);
 				Map<String, String> tags = new HashMap<>();
+				tags.put("host", HOSTNAME);
+				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
+				tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
 			} finally {
@@ -696,7 +747,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "active");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/);
+		tags = new HashMap<>();
+		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("host", HOSTNAME);
+		tags.put("metric", metric.getIdentifier());
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), 1.0/*notification sent*/, tags);
 
 		String logMessage = MessageFormat.format("Sent alert notification and updated the cooldown: {0}",
 				getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, metric)));
@@ -715,18 +770,25 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		tags.put("status", "clear");
 		tags.put("type", SupportedNotifier.fromClassName(notification.getNotifierName()).name());
 		_monitorService.modifyCounter(Counter.NOTIFICATIONS_SENT, 1, tags);
-		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/);
+		tags = new HashMap<>();
+		tags.put("notification_id", notification.getId().intValue()+"");
+		tags.put("host", HOSTNAME);
+		tags.put("metric", metric.getIdentifier().hashCode()+"");
+		publishAlertTrackingMetric(Counter.NOTIFICATIONS_SENT.getMetric(), trigger.getAlert().getId(), -1.0/*notification cleared*/,tags);
 
 		String logMessage = MessageFormat.format("The notification {0} was cleared.", notification.getName());
 		_logger.info(logMessage);
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value) {
+	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
 		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
 		trackingMetric.addDatapoints(datapoints);
+		if(tags!=null) {
+		    trackingMetric.setTags(tags);
+		}
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
@@ -840,7 +902,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			// convert timestamp to nearest minute since cron is Least scale resolution of minute
 			datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
-			metric.setTag("host",SystemConfiguration.getHostname());
+			metric.setTag("host", HOSTNAME);
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
 

@@ -22,7 +22,7 @@
 
 angular.module('argus.urlConfig', [])
 .constant('CONFIG', {
-	version: '2.20',
+	version: '2.21',
 	wsUrl: 'http://localhost:8080/argusws/',
 	wsBetaUrl: 'http://localhost:8080/argusws/beta/',
 	emailUrl: 'https://mail.google.com/mail/?view=cm&fs=1&tf=1&to=argus-dev@mycompany.com',

@@ -22,7 +22,7 @@
     </div>
     <div class="col-md-1 text-right">
         <a class="btn btn-primary btn-sm" ng-click="refreshList()">
-          <span class="glyphicon glyphicon-refresh"></span>
+            <span class="glyphicon glyphicon-refresh"></span>
         </a>
     </div>
 </div>
@@ -30,76 +30,73 @@
     <tr>
         <th ng-repeat="(key, value) in colName" ng-click="(key==='state' || key==='cloneItem')||sort(key)">
             {{value}}
-            <span class="glyphicon sort-icon" ng-show="sortKey===key"
-                  ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"
-                  ng-if="key!=='state' || key!=='cloneItem'"></span>
+            <span class="glyphicon sort-icon" ng-show="sortKey===key" ng-class="{'glyphicon-chevron-up':reverse,'glyphicon-chevron-down':!reverse}"
+                ng-if="key!=='state' || key!=='cloneItem'"></span>
         </th>
         <th class="col-centered text-center">
-            <button class="btn btn-success btn-sm" type="button"
-                    ng-click="addItem()" tooltip-placement="top" tooltip="Create a new {{properties.title}}">
+            <button class="btn btn-success btn-sm" type="button" ng-if="properties.type !== 'Authorized Apps'" ng-click="addItem()" tooltip-placement="top"
+                tooltip="Create a new {{properties.title}}">
                 <i class="glyphicon glyphicon-plus"></i>
             </button>
+            <span ng-if="properties.type === 'Authorized Apps'">Action</span>
         </th>
     </tr>
-    <tr dir-paginate="item in results = (dataSet | filter:searchText) | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage" current-page="currentPage">
-    <td ng-if="colName.id">{{item.id}}</td>
-    <td ng-if="colName.name"><a ng-href="#/{{properties.type}}/{{item.id}}">{{item.name}}</a></td>
-    <td ng-if="colName.description">{{item.description}}</td>
-    <td ng-if="colName.cronEntry">{{item.cronEntry}}</td>
-    <td ng-if="colName.createdDate">{{item.createdDate| date:'medium'}}</td>
-    <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
-    <td ng-if="colName.ownerName">{{item.ownerName}}</td>
-    <td ng-if="colName.state" class="text-center">
-        <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' 
-            ng-show='!item.enabled'
-            ng-click='enableItem(item, true)'
-            ng-disabled="isDisabled(item)"
-            title="Enable {{properties.title}}">
+    <tr dir-paginate="item in results = (dataSet | filter:searchText) | orderBy:sortKey:reverse | itemsPerPage:itemsPerPage"
+        current-page="currentPage">
+        <td ng-if="colName.id">{{item.id}}</td>
+        <td ng-if="colName.name">
+            <a ng-if="properties.type !== 'Authorized Apps'" ng-href="#/{{properties.type}}/{{item.id}}">{{item.name}}</a>
+            <span ng-if="properties.type === 'Authorized Apps'">{{item.name}}</span>
+        </td>
+        <td ng-if="colName.description">{{item.description}}</td>
+        <td ng-if="colName.cronEntry">{{item.cronEntry}}</td>
+        <td ng-if="colName.createdDate">{{item.createdDate| date:'medium'}}</td>
+        <td ng-if="colName.modifiedDate">{{item.modifiedDate| date:'medium'}}</td>
+        <td ng-if="colName.ownerName">{{item.ownerName}}</td>
+        <td ng-if="colName.state" class="text-center">
+            <button class="btn btn-default btn-sm" type="button" title='Enable {{properties.title}}' ng-show='!item.enabled' ng-click='enableItem(item, true)'
+                ng-disabled="isDisabled(item)" title="Enable {{properties.title}}">
                 <i class="glyphicon glyphicon-play"></i>
-        </button>
-        <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' 
-            ng-show='item.enabled'
-            ng-click='enableItem(item, false)'
-            ng-disabled="isDisabled(item)">
+            </button>
+            <button class="btn btn-default btn-sm" type="button" title='Disable {{properties.title}}' ng-show='item.enabled' ng-click='enableItem(item, false)'
+                ng-disabled="isDisabled(item)">
                 <i class="glyphicon glyphicon-pause"></i>
-        </button>
-    </td>
-    <td ng-if="colName.cloneItem" class="text-center">
-        <button class="btn btn-info btn-sm" type="button"
-                confirm-click
-                confirm-title="Clone {{properties.title}} "
-                confirm-message="Clone '{{item.name}}'?"
+            </button>
+        </td>
+        <td ng-if="colName.cloneItem" class="text-center">
+            <button class="btn btn-info btn-sm" type="button" confirm-click confirm-title="Clone {{properties.title}} " confirm-message="Clone '{{item.name}}'?"
                 confirm-call="cloneItem(item)">
-        <i class="glyphicon glyphicon-duplicate"></i>
-        </button>
-    </td>
-    <td class="text-center">
-        <button class="btn btn-warning btn-sm" type="button"
-                confirm-click
-                confirm-title="Delete {{properties.title}} "
+                <i class="glyphicon glyphicon-duplicate"></i>
+            </button>
+        </td>
+        <td ng-if="properties.type !== 'Authorized Apps'" class="text-center">
+            <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Delete {{properties.title}} "
                 ng-disabled="isDisabled(item)"
-                confirm-message="Delete '{{item.name}}'?"
-                confirm-call="deleteItem(item)">
-            <i class="glyphicon glyphicon-trash"></i>
-        </button>
-    </td>
+                confirm-message="Delete &quot;{{item.name}}&quot;?" confirm-call="deleteItem(item)">
+                <i class="glyphicon glyphicon-trash"></i>
+            </button>
+        </td>
+        <td ng-if="properties.type === 'Authorized Apps'" class="text-center">
+            <button class="btn btn-warning btn-sm" type="button" confirm-click confirm-title="Remove Authorization "
+                confirm-message="Remove authorization for &quot;{{item.name}}&quot;?" confirm-call="deleteItem(item)">
+                <i class="glyphicon glyphicon-trash"></i>
+            </button>
+        </td>
     </tr>
 </table>
 
 <div ng-if="loaded">
-  <div class="row text-center" ng-show="searchText.length === 0">
-      <ng-pluralize count="dataSet.length"
-                    when="{'0': 'No {{properties.type}} to show.',
+    <div class="row text-center" ng-show="searchText.length === 0">
+        <ng-pluralize count="dataSet.length" when="{'0': 'No {{properties.type}} to show.',
                           'one': 'Showing 1 of 1 {{properties.type.slice(0,-1)}}.',
                           'other': 'Showing {{start}}-{{end}} of all {{dataSet.length}} {{properties.type}}.'}">
-      </ng-pluralize>
-  </div>
-  <!--after user type in searchText-->
-  <div class="row text-center" ng-show="searchText.length">
-      <ng-pluralize count="results.length"
-                    when="{'0': 'No results found...',
+        </ng-pluralize>
+    </div>
+    <!--after user type in searchText-->
+    <div class="row text-center" ng-show="searchText.length">
+        <ng-pluralize count="results.length" when="{'0': 'No results found...',
                           'one': '1 result found.',
                           'other': '{{results.length}} results found.'}">
-      </ng-pluralize>
-  </div>
+        </ng-pluralize>
+    </div>
 </div>

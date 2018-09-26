@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Dashboard;
@@ -140,10 +140,10 @@ public interface MonitorService extends Service {
      * @return  The runtime dashboard. Will not be null.
      */
     Dashboard getRuntimeDashboard();
-    
+
     /**
      * Returns boolean to indicate whether the data is lagging currently or not
-     * 
+     *
      * @return isDataLagging boolean flag
      */
     boolean isDataLagging();
@@ -221,10 +221,15 @@ public interface MonitorService extends Service {
         SCHEMARECORDS_WRITE_LATENCY("argus.core", "schemarecords.write.latency"),
         SCHEMARECORDS_QUERY_COUNT("argus.core", "schemarecords.query.count"),
         SCHEMARECORDS_QUERY_LATENCY("argus.core", "schemarecords.query.latency"),
-        
+
+        METATAGS_WRITTEN("argus.core", "metatags.written"),
+        METATAGS_WRITE_LATENCY("argus.core", "metatags.write.latency"),
+
+
         BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.approximate.element.count"),
         BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.only.approximate.element.count"),
-        BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count");
+        BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.scope.and.metric.only.approximate.element.count"),
+        BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT("argus.core", "bloomfilter.metatags.approximate.element.count");
 
         private final String _scope;
         private final String _metric;
