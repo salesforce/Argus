@@ -169,7 +169,7 @@ public class DerivativeTransformTest {
         assertThat(metrics.get(1).getDatapoints(), equalTo(expectedDps2));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void transform_withConstants() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
@@ -207,6 +207,41 @@ public class DerivativeTransformTest {
         expectedDps.put(2L, 6.0);
         expectedDps.put(3L, 2.0);
         assertEquals(metrics.get(0).getDatapoints(), expectedDps);
+    }
+    
+    @Test
+    public void transform_testWithStepSize() {
+        Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
+        Metric m1 = new Metric("test", "m1");
+        HashMap<Long, Double> dp = new HashMap<Long, Double>();
+
+        dp.put(1L, 4.0);
+        dp.put(2L, 6.0);
+        dp.put(3L, 8.0);
+        dp.put(8L, 18.0);
+
+        List<Metric> metrics = Arrays.asList(m1);
+        List<String> constants = new ArrayList<String>();
+        constants.add("1s");
+        List<Metric> results = derivativeTransform.transform(metrics, constants);
+        HashMap<Long, Double> resultDps = new HashMap<Long, Double>();
+        dp.put(2L, 2.0);
+        dp.put(3L, 2.0);
+        dp.put(8L, 2.0);
+        m1.setDatapoints(resultDps);
+
+        assertThat(results, equalTo(metrics));
+        
+        constants = new ArrayList<String>();
+        constants.add("0s");
+        results = derivativeTransform.transform(metrics, constants);
+        resultDps = new HashMap<Long, Double>();
+        dp.put(2L, 2.0);
+        dp.put(3L, 2.0);
+        dp.put(8L, 10.0);
+        m1.setDatapoints(resultDps);
+
+        assertThat(results, equalTo(metrics));
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
