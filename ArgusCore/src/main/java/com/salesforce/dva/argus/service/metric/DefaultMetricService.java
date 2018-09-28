@@ -31,6 +31,8 @@
 
 package com.salesforce.dva.argus.service.metric;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.salesforce.dva.argus.entity.Metric;

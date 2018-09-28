@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Dashboard;
+import com.salesforce.dva.argus.entity.Metric;
+
 import java.util.Map;
 
 /**
@@ -67,6 +69,7 @@ public interface MonitorService extends Service {
      */
     void updateCounter(Counter counter, double value, Map<String, String> tags);
 
+
     /**
      * Replaces the value of a custom counter.
      *
@@ -75,6 +78,14 @@ public interface MonitorService extends Service {
      * @param  tags   The tags representing the TSDB metric for this counter.
      */
     void updateCustomCounter(String name, double value, Map<String, String> tags);
+
+    /**
+     * Replaces the value of a custom metric (not counter object).
+     *
+     * @param  metric The metric to update. Cannot be null.
+     * @param  value  The new value. This assume metric take double value
+     */
+    void updateCustomMetric(Metric metric, double value);
 
     /**
      * Modifies the value of a counter.

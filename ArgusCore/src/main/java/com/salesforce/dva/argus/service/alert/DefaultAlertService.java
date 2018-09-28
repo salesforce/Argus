@@ -766,19 +766,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
+	private void publishAlertTrackingMetric(String metricSuffix, BigInteger alertId, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
-		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		Metric trackingMetric = new Metric("argus.core", "alert-" + alertId.intValue() + metricSuffix);
 		trackingMetric.addDatapoints(datapoints);
-		if(tags!=null) {
+		if (tags!=null) {
 		    trackingMetric.setTags(tags);
 		}
-		try {
+		
+		_monitorService.updateCustomMetric(trackingMetric, value);
+		/*try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
 			_logger.error("Exception occurred while adding alerts evaluated metric to tsdb - {}", ex.getMessage());
-		}
+		}*/
 	}
 
 	private void _updateNotificationSetActiveStatus(Trigger trigger, Metric metric, History history, Notification notification) {
