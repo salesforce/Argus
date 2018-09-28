@@ -200,7 +200,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 		_keyUidCache = CacheBuilder.newBuilder()
 				.maximumSize(100000)
-				.recordStats()
 				.expireAfterAccess(1, TimeUnit.HOURS)
 				.build();
 
@@ -451,7 +450,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				wrappers.add(wrapper);
 			}
 
-			_logger.info("putAnnotations CacheStats hitCount {} requestCount {} " +
+			_logger.debug("putAnnotations CacheStats hitCount {} requestCount {} " +
 							"evictionCount {} annotationsCount {}",
 					_keyUidCache.stats().hitCount(), _keyUidCache.stats().requestCount(),
 					_keyUidCache.stats().evictionCount(), annotations.size());
@@ -594,8 +593,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			while (chunkEnd < objects.size()) {
 				int chunkStart = chunkEnd;
 
-				long start = System.currentTimeMillis();
-
 				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
 				try {
 
@@ -603,11 +600,14 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 					StringEntity entity = new StringEntity(createBody);
 
+					if (endpoint.contains("put")) {
+						_logger.debug("createUrl {} createBody {}", endpoint, createBody);
+					}
+
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
 
-					_logger.info("Time to put Metrics = " + (System.currentTimeMillis() - start));
 				} catch (UnsupportedEncodingException ex) {
 					throw new SystemException("Error posting data", ex);
 				}
@@ -942,7 +942,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 		@Override
 		public List<Metric> call() {
-			_logger.info("TSDB requestUrl {} requestBody {}", _requestUrl, _requestBody);
+			_logger.debug("TSDB requestUrl {} requestBody {}", _requestUrl, _requestBody);
 
 			try {
 				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl, _readPortMap.get(_requestEndPoint), new StringEntity(_requestBody));

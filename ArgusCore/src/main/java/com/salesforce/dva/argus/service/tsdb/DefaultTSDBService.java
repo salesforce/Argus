@@ -122,7 +122,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
         for (MetricQuery query : queries) {
         	String requestBody = fromEntity(query);
 
-            _logger.info("requestUrl {} requestBody {}", requestUrl, requestBody);
+            _logger.debug("requestUrl {} requestBody {}", requestUrl, requestBody);
 
             futures.put(query, _executorService.submit(new QueryWorker(requestUrl, _readEndPoints.get(0), requestBody)));
             queryStartExecutionTime.put(query, System.currentTimeMillis());
@@ -148,7 +148,7 @@ public class DefaultTSDBService extends AbstractTSDBService{
                 throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
             }
         }
-        _logger.info("Time to get Metrics = " + (System.currentTimeMillis() - start));
+        _logger.debug("Time to get Metrics = " + (System.currentTimeMillis() - start));
         return metricsMap;
     }
 
