@@ -421,29 +421,29 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = datapoints.size();
 
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia - 1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia + 1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		expectedTriggerTime = datapoints.size();
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 	}
 
@@ -463,7 +463,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = startTime;
 
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -482,7 +482,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
 
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertNull(actualValue);
 	}
@@ -501,7 +501,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.putAll(_createDatapoints(0, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
 
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertNull(actualValue);
 	}
@@ -518,7 +518,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(0L, "1");
 		datapoints.put(inertia, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -536,7 +536,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(3*60*1000L, "1");
 		datapoints.put(inertia, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -553,7 +553,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(0L, "1");
 		datapoints.put(9*60*1000L, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=9*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -581,7 +581,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(7*60*1000L, 0.0);
 		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime = 6 * 60 * 1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -601,7 +601,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(7*60*1000L, 0.0);
 		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		assertNull(actualValue);
 	}
 	
@@ -618,7 +618,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(2*60*1000L, 0.0);
 		datapoints.put(inertia, 1.0);
 		metric.setDatapoints(datapoints);
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		assertNull(actualValue);
 	}
 	
