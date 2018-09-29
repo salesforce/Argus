@@ -194,17 +194,28 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		}
 		return objName;
 	}
-	private void _updateGauge(Metric metric, Double value) {
+	
+	/**
+	 * update new gauge with new value based on old metrics object 
+	 * @param metric the old internal metric object. It will be used to build the key of
+	 *               the new gauge
+	 * @param value  the value to be updated
+	 */
+	private void _updateGauge(Metric metric, double value, boolean isDelta) {
 		String objectName = this._createObjectNameForMetric(metric);
+
+		// change code to grab lock on _exportedMetrics instead of _metrics
+		// eventually, _exportedMetrics will take over.  
 		synchronized(_exportedMetrics) {
 			if (!_exportedMetrics.containsKey(objectName)){
 				MutableGauge gauge = new MutableGauge(objectName);
 				gauge.setValue(value);
-				_exportedMetrics.putIfAbsent(objectName, gauge);
+				_exportedMetrics.put(objectName, gauge);
 				try {
+					_logger.warn("_updateGauge(): !!!!!! come to register {} to JMX", objectName);
 					mbeanServer.registerMBean(gauge, new ObjectName(objectName));
 				} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
-					_logger.error("modifyCustomCounter(): failed to register counter {} to JMX {}", objectName, e);
+					_logger.error("_updateGauge(): failed to register internal counter {} to JMX {}", objectName, e);
 				}
 			} else {
 				_exportedMetrics.get(objectName).setValue(value);
@@ -312,8 +323,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
 		Metric metric = _constructCounterKey(name, tags);
+		
 		this._updateGauge(metric, value);
-
 		_logger.debug("Updating {} counter for {} to {}.", name, tags, value);
 		_metrics.put(metric, value);
 	}
@@ -333,15 +344,21 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 		Metric key = _constructCounterKey(name, tags);
 
-		synchronized (_metrics) {
+		double newValue = 0.0;
+		// lock _exportedMetrics instead of old _metrics, since we eventually will only use
+		// _exportedMetrics.  This to ensure just one thread that can create
+		synchronized (_exportedMetrics) {
 			Double value = _metrics.get(key);
-			double newValue = value == null ? delta : value + delta;			
-			this._updateGauge(key, newValue);
+			newValue = value == null ? delta : value + delta;			
 
 			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
-			return newValue;
 		}
+		
+		// this may cause two thread update the same key but since _updateGauge is 
+		// also synchorinized by _exportedMetrics, the operation is properly serialized
+		this._updateGauge(key, newValue);
+		return newValue;
 	}
 
 	@Override
@@ -366,7 +383,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		Metric metric = _constructCounterKey(name, tags);
 		Double value;
 
-		synchronized (_metrics) {
+		synchronized (_exportedMetrics) {
 			value = _metrics.get(metric);
 			if (value == null) {
 				value = Double.NaN;
@@ -450,7 +467,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 		List<Metric> toRemove = new LinkedList<>();
 
-		synchronized (_metrics) {
+		synchronized (_exportedMetrics) {
 			for (Metric metric : _metrics.keySet()) {
 				if (scope.equalsIgnoreCase(metric.getScope())) {
 					toRemove.add(metric);
@@ -459,6 +476,11 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			for (Metric metric : toRemove) {
 				_logger.debug("Resetting counter {}.", metric);
 				_metrics.remove(metric);
+				// mirror old metrics operation
+				String objName = this._createObjectNameForMetric(metric);
+				if (_exportedMetrics.containsKey(objName)) {
+					_exportedMetrics.get(objName).setValue(0.0);
+				}
 			}
 		}
 	}
@@ -737,7 +759,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			_updateJVMStatsCounters();
 
-			synchronized (_metrics) {
+			synchronized (_exportedMetrics) {
 				sizeJVMMetrics = _metrics.size();
 				counters.putAll(_metrics);
 				_metrics.clear();

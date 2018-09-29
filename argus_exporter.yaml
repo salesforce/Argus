@@ -10,5 +10,3 @@ rules:
     user: $3
   help: Argus internal metrics arugs.core:$1 at host $2
   type: GAUGE
-# default catch-all pattern
-- pattern: ".*"  
