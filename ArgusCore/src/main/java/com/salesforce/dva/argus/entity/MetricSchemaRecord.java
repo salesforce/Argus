@@ -46,6 +46,9 @@ import java.text.MessageFormat;
  */
 public class MetricSchemaRecord {
     public static final String RETENTION_DISCOVERY = "_retention_discovery_";
+    public static final String EXPIRATION_TS = "expiration_ts";
+
+    public static final int DEFAULT_RETENTION_DISCOVERY_DAYS = 45;
     public static final int MAX_RETENTION_DISCOVERY_DAYS = 120;
 
     //~ Instance fields ******************************************************************************************************************************

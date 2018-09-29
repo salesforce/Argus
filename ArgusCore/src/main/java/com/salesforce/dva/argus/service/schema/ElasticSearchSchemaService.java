@@ -20,6 +20,7 @@ import java.util.SortedSet;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -118,7 +119,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config, monitorService);
 
-		_mapper = _createObjectMapper();
+		_mapper = createObjectMapper();
 
 		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
 		_updateScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.UpdateSerializer());
@@ -1412,7 +1413,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private ObjectMapper _createObjectMapper() {
+	@VisibleForTesting
+	static ObjectMapper createObjectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
 
 		mapper.setSerializationInclusion(Include.NON_NULL);
