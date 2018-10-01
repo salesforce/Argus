@@ -25,6 +25,7 @@ before_script:
 - pip install --user codecov
 after_success:
 - codecov
+- du -h /home
 - df -h
 deploy:
   provider: script
