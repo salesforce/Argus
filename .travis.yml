@@ -25,8 +25,8 @@ before_script:
 - pip install --user codecov
 after_success:
 - codecov
-- du -h /home
 - df -h
+- du -h /home
 deploy:
   provider: script
   script: bash ${TRAVIS_BUILD_DIR}/.travis.deploy.sh
