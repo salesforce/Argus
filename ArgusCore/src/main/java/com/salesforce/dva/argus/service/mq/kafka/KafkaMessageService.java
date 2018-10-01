@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
+import static com.salesforce.dva.argus.system.SystemAssert.requireState;
 
 /**
  * The Kafka specific implementation of the message queue interface.
@@ -54,8 +55,8 @@ public class KafkaMessageService extends DefaultService implements MQService {
 
     //~ Instance fields ******************************************************************************************************************************
 
-    private final Producer _producer;
-    private final Consumer _consumer;
+    private Producer _producer = null;
+    private Consumer _consumer = null;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -68,15 +69,28 @@ public class KafkaMessageService extends DefaultService implements MQService {
     public KafkaMessageService(SystemConfiguration config) {
     	super(config);
         requireArgument(config != null, "System configuration cannot be null.");
-        _producer = new Producer(config);
-        _consumer = new Consumer(config);
+        if (!Boolean.parseBoolean(config.getValue(Property.KAFKA_DISABLE_PRODUCER.getName(), Property.KAFKA_DISABLE_PRODUCER.getDefaultValue()))) {
+            _producer = new Producer(config);
+        }
+        if (!Boolean.parseBoolean(config.getValue(Property.KAFKA_DISABLE_CONSUMER.getName(), Property.KAFKA_DISABLE_CONSUMER.getDefaultValue()))) {
+            _consumer = new Consumer(config);
+        }
     }
 
     //~ Methods **************************************************************************************************************************************
 
+    private void requireProducerEnabled() {
+        requireState(_producer != null, "Cannot perform this action when Producer is disabled");
+    }
+
+    private void requireConsumerEnabled() {
+        requireState(_consumer != null, "Cannot perform this action when Consumer is disabled");
+    }
+
     @Override
     public <T extends Serializable> void enqueue(String topic, T object) {
         requireNotDisposed();
+        requireProducerEnabled();
         requireArgument(object != null, "The object to enqueue cannot be null.");
 
         List<T> messages = new ArrayList<>(1);
@@ -88,6 +102,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
     @Override
     public <T extends Serializable> void enqueue(final String topic, List<T> objects) {
         requireNotDisposed();
+        requireProducerEnabled();
         requireArgument(topic != null && !topic.trim().isEmpty(), "Topic name cannot be null or empty.");
         requireArgument(objects != null, "The list of objects to enqueue cannot be null.");
         _producer.enqueue(topic, objects);
@@ -120,6 +135,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
     @Override
     public <T extends Serializable> List<T> dequeue(String topic, Class<T> type, int timeout, int limit) {
         requireNotDisposed();
+        requireConsumerEnabled();
         requireArgument(topic != null && !topic.trim().isEmpty(), "Topic cannot be null or empty.");
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
@@ -131,6 +147,7 @@ public class KafkaMessageService extends DefaultService implements MQService {
     @Override
     public <T extends Serializable> List<T> dequeue(String topic, JavaType type, int timeout, int limit) {
         requireNotDisposed();
+        requireConsumerEnabled();
         requireArgument(topic != null && !topic.trim().isEmpty(), "Topic cannot be null or empty.");
         requireArgument(type != null, "Result object runtime type cannot be null.");
         requireArgument(timeout > 0, "Timeout in milliseconds must be greater than zero.");
@@ -142,8 +159,12 @@ public class KafkaMessageService extends DefaultService implements MQService {
     @Override
     public void dispose() {
         super.dispose();
-        _producer.shutdown();
-        _consumer.shutdown();
+        if (_producer != null) {
+            _producer.shutdown();
+        }
+        if (_consumer != null) {
+            _consumer.shutdown();
+        }
     }
     
     @Override
@@ -185,8 +206,12 @@ public class KafkaMessageService extends DefaultService implements MQService {
         KAFKA_CONSUMER_OFFSET_RESET("service.property.mq.kafka.consumer.auto.offset.reset", "smallest"),
         /** Specifies the Kafka ZooKeeper connection endpoint. */
         ZOOKEEPER_CONNECT("service.property.mq.zookeeper.connect", "localhost:2185"),
-        /** SPecifies the Kafka Zookeeper connection timeout in milliseconds.  Default is 10000. */
-        ZOOKEEPER_CONNECTION_TIMEOUT_MS("service.property.mq.zookeeper.connection.timeout.ms", "10000");
+        /** Specifies the Kafka Zookeeper connection timeout in milliseconds.  Default is 10000. */
+        ZOOKEEPER_CONNECTION_TIMEOUT_MS("service.property.mq.zookeeper.connection.timeout.ms", "10000"),
+        /** Whether to disable KafkaProducer instances from being created */
+        KAFKA_DISABLE_PRODUCER("service.property.mq.kafka.producer.disable", "false"),
+        /** Whether to disable KafkaConsumer instances from being created */
+        KAFKA_DISABLE_CONSUMER("service.property.mq.kafka.consumer.disable", "false");
 
         private final String _name;
         private final String _defaultValue;

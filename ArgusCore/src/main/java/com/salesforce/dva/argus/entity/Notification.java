@@ -34,6 +34,7 @@ package com.salesforce.dva.argus.entity;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +71,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.salesforce.dva.argus.service.AlertService;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.math.ArgumentOutsideDomainException;
 import org.apache.commons.math.exception.OutOfRangeException;
 
@@ -222,6 +224,10 @@ public class Notification extends JPAEntity implements Serializable {
 		}
 		
 	}
+
+	// We allow a-zA-Z0-9-_+. in the name, then @ then a-zA-Z0-9- followed by . and a-zA-Z0-9.
+	// ToDo Consider email.contains("@") if we see more issues in future
+	private static final String EMAILREGEX = "[a-zA-Z0-9\\-\\_\\+\\.]+@[a-zA-Z0-9\\-]+\\.[a-zA-Z0-9]+";
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -440,8 +446,11 @@ public class Notification extends JPAEntity implements Serializable {
                 if (currentSubscription.length() < 10)
                     throw new IllegalArgumentException("GUS subjectId is incorrect.");
             } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
-                if (!currentSubscription.matches("[a-zA-Z0-9\\-\\_\\.]+@[a-zA-Z0-9\\-\\_\\.]+\\.[a-zA-Z0-9]{3}"))
-                    throw new IllegalArgumentException("Email Address is incorrect.");
+                if (!currentSubscription.matches(EMAILREGEX)) {
+                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed according to Regex {1}.",
+                            currentSubscription, EMAILREGEX);
+                    throw new IllegalArgumentException(errorMessage);
+                }
             }
         }
         if (subscriptions != null && !subscriptions.isEmpty()) {
@@ -611,7 +620,7 @@ public class Notification extends JPAEntity implements Serializable {
     public void setSRActionable(boolean isSRActionable) {
         this.isSRActionable = isSRActionable;
     }
-    
+
     /**
      * Gets the severity level of notification
      *

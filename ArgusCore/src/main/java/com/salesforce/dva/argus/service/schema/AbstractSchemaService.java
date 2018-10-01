@@ -12,6 +12,9 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +31,7 @@ import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.service.DefaultService;
 import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -52,7 +56,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	protected static BloomFilter<CharSequence> bloomFilter;
 	protected static BloomFilter<CharSequence> bloomFilterScopeOnly;
 	protected static BloomFilter<CharSequence> bloomFilterScopeAndMetricOnly;
-	
+	protected static BloomFilter<CharSequence> bloomFilterMetatags;
+
 	protected final MonitorService _monitorService;
 	private Random rand = new Random();
 	private int randomNumber = rand.nextInt();
@@ -62,6 +67,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private double bloomFilterScopeOnlyErrorRate;
 	private int bloomFilterScopeAndMetricOnlyExpectedNumberInsertions;
 	private double bloomFilterScopeAndMetricOnlyErrorRate;
+	private int bloomFilterMetatagsExpectedNumberInsertions;
+	private double bloomFilterMetatagsErrorRate;
 	private final Logger _logger = LoggerFactory.getLogger(getClass());
 	private final Thread _bloomFilterMonitorThread;
 	protected final boolean _syncPut;
@@ -70,7 +77,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
-		
+
 		_monitorService = monitorService;
 
 		bloomFilterExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(),
@@ -88,11 +95,20 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		bloomFilterScopeAndMetricOnlyErrorRate = Double.parseDouble(config.getValue(Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE.getName(),
 				Property.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE.getDefaultValue()));
 
+		bloomFilterMetatagsExpectedNumberInsertions =
+                    Integer.parseInt(config.getValue(Property.BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS.getName(),
+                                                     Property.BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
+		bloomFilterMetatagsErrorRate =
+                    Double.parseDouble(config.getValue(Property.BLOOMFILTER_METATAGS_ERROR_RATE.getName(),
+                                                       Property.BLOOMFILTER_METATAGS_ERROR_RATE.getDefaultValue()));
+
 		bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
 
 		bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
 		bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
 				bloomFilterScopeAndMetricOnlyExpectedNumberInsertions , bloomFilterScopeAndMetricOnlyErrorRate);
+		bloomFilterMetatags = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+				bloomFilterMetatagsExpectedNumberInsertions , bloomFilterMetatagsErrorRate);
 
 		_syncPut = Boolean.parseBoolean(
 				config.getValue(Property.SYNC_PUT.getName(), Property.SYNC_PUT.getDefaultValue()));
@@ -122,6 +138,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		Set<String> scopesToPut = new HashSet<>(metrics.size());
 
 		Set<Pair<String, String>> scopesAndMetricsNamesToPut = new HashSet<>(metrics.size());
+                Map<String, MetatagsRecord> metatagsToPut = new HashMap<>();
 
 		for(Metric metric : metrics) {
 			// check metric schema bloom filter
@@ -164,9 +181,21 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			if(!found) {
 				scopesAndMetricsNamesToPut.add(Pair.of(scopeName, metricName));
 			}
+
+                        // Check if metatags are present and populate accordingly
+                        MetatagsRecord mtags = metric.getMetatagsRecord();
+                        if(mtags != null) {
+                            key = mtags.getKey();
+                            if(key != null) {
+                                found = bloomFilterMetatags.mightContain(key);
+                                if(!found) {
+                                    metatagsToPut.put(key, mtags);
+                                }
+                            }
+                        }
 		}
 
-		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsNamesToPut);
+		implementationSpecificPut(metricsToPut, scopesToPut, scopesAndMetricsNamesToPut, metatagsToPut);
 	}
 
 	/*
@@ -176,8 +205,10 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 * @param  scopeNames The scope names that will be written to a separate index.
 	 * @param  scopesAndMetricNames The scope and metric names that will be written to a separate index.
 	 */
-	protected abstract void implementationSpecificPut(List<Metric> metrics, Set<String> scopeNames,
-													  Set<Pair<String, String>> scopesAndMetricNames);
+	protected abstract void implementationSpecificPut(List<Metric> metrics,
+                                                          Set<String> scopeNames,
+                                                          Set<Pair<String, String>> scopesAndMetricNames,
+                                                          Map<String, MetatagsRecord> metatagsToPut);
 
 	@Override
 	public void dispose() {
@@ -207,6 +238,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	@Override
 	public abstract List<MetricSchemaRecord> getUnique(MetricSchemaRecordQuery query, RecordType type);
+
+	@Override
+	public abstract List<String> browseUnique(MetricSchemaRecordQuery query, RecordType type, int indexLevel);
 
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
@@ -256,7 +290,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		return constructKey(scope, metric, null, null, null);
 	}
-	
+
 	protected int getNumHoursUntilTargetHour(int targetHour){
 		_logger.info("Initialized bloom filter flushing out, at {} hour of day", targetHour);
 		Calendar calendar = Calendar.getInstance();
@@ -277,7 +311,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		_logger.info("BloomFilter flush hour to start at {}th hour of day", bloomFilterFlushHourToStartAt);
 		return bloomFilterFlushHourToStartAt;
 	}
-	
+
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
@@ -295,7 +329,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			Thread.currentThread().interrupt();
 		}
 	}
-	
+
 	/**
 	 * The set of implementation specific configuration properties.
 	 *
@@ -324,7 +358,18 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		*/
 
 		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.scope.and.metric.only.expected.number.insertions", "40"),
-		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001");
+		BLOOMFILTER_SCOPE_AND_METRIC_ONLY_ERROR_RATE("service.property.schema.bloomfilter.scope.and.metric.only.error.rate", "0.00001"),
+
+		/*
+		* Estimated Filter Size using bloomFilter 1 million entries
+		* https://hur.st/bloomfilter/?n=1000000&p=1.0E-5&m=&k= 2.86MiB
+		* Storing in a Set 100K entries with avg length of 15 chars would be 100K * 15 * 2 B = 30B * 100K = 3 MB
+		* If # of entries is 1 million, then it would be 30 MB resulting in savings in space.
+		*/
+
+		BLOOMFILTER_METATAGS_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.metatags.expected.number.insertions", "1000000"),
+		BLOOMFILTER_METATAGS_ERROR_RATE("service.property.schema.bloomfilter.metatags.error.rate", "0.00001");
+
 
 		private final String _name;
 		private final String _defaultValue;
@@ -381,10 +426,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_APPROXIMATE_ELEMENT_COUNT, bloomFilter.approximateElementCount(), null);
 			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeOnly.approximateElementCount(), null);
 			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_SCOPE_AND_METRIC_ONLY_APPROXIMATE_ELEMENT_COUNT, bloomFilterScopeAndMetricOnly.approximateElementCount(), null);
-			
+			_monitorService.modifyCounter(MonitorService.Counter.BLOOMFILTER_METATAGS_APPROXIMATE_ELEMENT_COUNT, bloomFilterMetatags.approximateElementCount(), null);
+
 			_logger.info("Metrics Bloom expected error rate = {}", bloomFilter.expectedFpp());
 			_logger.info("Scope only Bloom expected error rate = {}", bloomFilterScopeOnly.expectedFpp());
 			_logger.info("Scope and metric only Bloom expected error rate = {}", bloomFilterScopeAndMetricOnly.expectedFpp());
+			_logger.info("Metic Metatags Bloom expected error rate = {}", bloomFilterMetatags.expectedFpp());
 		}
 
 		private void _sleepForPollPeriod() {
@@ -414,6 +461,8 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
 			bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
 					bloomFilterScopeAndMetricOnlyExpectedNumberInsertions , bloomFilterScopeAndMetricOnlyErrorRate);
+			bloomFilterMetatags = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+                                                                       bloomFilterMetatagsExpectedNumberInsertions , bloomFilterMetatagsErrorRate);
 			/* Don't need explicit synchronization to prevent slowness majority of the time*/
 			randomNumber = rand.nextInt();
 		}
