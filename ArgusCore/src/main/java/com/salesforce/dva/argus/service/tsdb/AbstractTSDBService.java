@@ -533,7 +533,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	/* gets objects in chunks.
-	public Map<MetricQuery, List<Metric>> get(List<MetricQuery> queries) {
+	public Map<MetricQuery, List<Metric>> get(List<MetricQuery> queries) throws IOException  {
 		requireNotDisposed();
 		requireArgument(queries != null, "Metric Queries cannot be null.");
 
