@@ -1,0 +1,350 @@
+Using CATALINA_BASE:   /usr/local/Cellar/tomcat/9.0.10/libexec
+Using CATALINA_HOME:   /usr/local/Cellar/tomcat/9.0.10/libexec
+Using CATALINA_TMPDIR: /usr/local/Cellar/tomcat/9.0.10/libexec/temp
+Using JRE_HOME:        /Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home
+Using CLASSPATH:       /usr/local/Cellar/tomcat/9.0.10/libexec/bin/bootstrap.jar:/usr/local/Cellar/tomcat/9.0.10/libexec/bin/tomcat-juli.jar
+16:10:33.575 [main] INFO com.salesforce.dva.argus.ws.listeners.ArgusWebServletListener - Initializing Argus web services.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:33.878 | main | [31m WARN[0;39m ] Unable to load properties file "/Users/yzou/argus/config/alert.properties". Reason: /Users/yzou/argus/config/alert.properties (No such file or directory)
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:33.882 | main | [31m WARN[0;39m ] Unable to load properties file "argus.properties". Reason: argus.properties (No such file or directory)
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:34.445 | main | [34m INFO[0;39m ] Starting SystemMain
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:34.446 | main | [34m INFO[0;39m ] Argus version 2.15.0 build 2018-07-11 19:42.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:34.446 | main | [34m INFO[0;39m ] Copyright Salesforce.com, 2018.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:34.446 | main | [34m INFO[0;39m ] SystemMain started.
+[EL Fine]: sql: 2018-07-13 16:10:36.314--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:36.489--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [2, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:36.869--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:37.083--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1, PrincipalUser]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.198 | Thread-5 | [34m INFO[0;39m ] Starting alert definitions cache refresh
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.218 | main | [34m INFO[0;39m ] Initialized bloom filter flushing out, at 2 hour of day
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.219 | -filter-monitor | [34m INFO[0;39m ] Initialized random number for bloom filter key = -1592742539
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.219 | -filter-monitor | [34m INFO[0;39m ] Sleeping for 600s before checking bloom filter statistics.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.250 | main | [34m INFO[0;39m ] Using the following configured values:
+	asynchbase.property.hbase.kerberos.regionserver.principal : argus_test@DEV6HDAAS-PRD.APP.ENG.SFDC.NET
+	asynchbase.property.hbase.rpc.protection : authentication
+	asynchbase.property.hbase.rpc.timeout : 60000
+	asynchbase.property.hbase.rpcs.batch.size : 16192
+	asynchbase.property.hbase.rpcs.buffered_flush_interval : 5000
+	asynchbase.property.hbase.sasl.clientconfig : AsynchbaseClient
+	asynchbase.property.hbase.security.auth.enable : true
+	asynchbase.property.hbase.security.authentication : kerberos
+	asynchbase.property.hbase.zookeeper.connect : dev6hdaas-mnds1-1-prd.eng.sfdc.net:2181,dev6hdaas-mnds2-1-prd.eng.sfdc.net:2181,dev6hdaas-mnds3-1-prd.eng.sfdc.net:2181
+	ldap.searchdn : CN=SVC_PERFENG TOOLS,OU=AMER,OU=Active,OU=SFDC_USERS,DC=internal,DC=salesforce,DC=com
+	notifier.property.alert.alerturl.template : https://argus-ui.data.sfdc.net/argus/#/alerts/$alertid$
+	notifier.property.alert.grant_type_pwd : ********
+	notifier.property.alert.gus_client_id : 3MVG92.uWdyphVj6UxPnhEXcGWKGUulhD6t5MX22jFwh.vpvswh0ugzWTNdzfKkS9WPOB0N4zuzx5pircZKrH
+	notifier.property.alert.gus_client_secret : ********
+	notifier.property.alert.gus_endpoint : https://gus.my.salesforce.com/services/oauth2/token
+	notifier.property.alert.gus_post_endpoint : https://gus.my.salesforce.com/services/data/v35.0/chatter/feed-elements?feedElementType=FeedItem
+	notifier.property.alert.gus_pwd : ********
+	notifier.property.alert.gus_user : argus-api@gus.com
+	notifier.property.alert.metricurl.template : https://argus-ui.data.sfdc.net/argus/#/viewmetrics?expression=$expression$
+	notifier.property.goc.alerturl.template : https://argus-ui.data.sfdc.net/argus/#/alerts/$alertid$
+	notifier.property.goc.client.id : 3MVG973QtA4.tpvlNZpXSsRVS..UEajb5xzL4uZ1xB87bvTYV1UKQYPSUy5voEl4nxmwFWla5gZlAuS5XPgYr
+	notifier.property.goc.client.secret : ********
+	notifier.property.goc.endpoint : https://login.salesforce.com
+	notifier.property.goc.metricurl.template : https://argus-ui.data.sfdc.net/argus/#/viewmetrics?expression=$expression$
+	notifier.property.goc.password : ********
+	notifier.property.goc.username : argusgoc@gus.com
+	notifier.property.proxy.host : public0-proxy1-0-prd.data.sfdc.net
+	notifier.property.proxy.port : 8080
+	service.binding.alert : com.salesforce.dva.argus.service.alert.DefaultAlertService
+	service.binding.audit : com.salesforce.dva.argus.service.audit.DefaultAuditService
+	service.binding.auth : com.salesforce.dva.argus.service.auth.LDAPAuthService
+	service.binding.cache : com.salesforce.dva.argus.service.cache.NoOperationCacheService
+	service.binding.callback : com.salesforce.dva.argus.service.callback.DefaultCallbackService
+	service.binding.history : com.salesforce.dva.argus.service.history.HBaseHistoryService
+	service.binding.mail : com.salesforce.dva.argus.service.mail.DefaultMailService
+	service.binding.mq : com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService
+	service.binding.scheduling : com.salesforce.dva.argus.service.schedule.DistributedDatabaseSchedulingService
+	service.binding.schema : com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService
+	service.binding.tsdb : com.salesforce.dva.argus.service.tsdb.DefaultTSDBService
+	service.binding.warden : com.salesforce.dva.argus.service.warden.DefaultWardenService
+	service.config.alert : /Users/yzou/argus/config/alert.properties
+	service.config.asynchbase : /Users/yzou/argus/config/asynchbase.properties
+	service.config.audit : argus.properties
+	service.config.auth : /Users/yzou/argus/config/ldap.properties
+	service.config.cache : /Users/yzou/argus/config/redis.properties
+	service.config.callback : argus.properties
+	service.config.history : /Users/yzou/argus/config/history.properties
+	service.config.mail : /Users/yzou/argus/config/mail.properties
+	service.config.mq : /Users/yzou/argus/config/kafka.properties
+	service.config.notifier : /Users/yzou/argus/config/notifier.properties
+	service.config.scheduling : /Users/yzou/argus/config/scheduling.properties
+	service.config.schema : /Users/yzou/argus/config/schema.properties
+	service.config.tsdb : /Users/yzou/argus/config/cachedtsdb.properties
+	service.config.warden : argus.properties
+	service.property.auth.ldap.authtype : simple
+	service.property.auth.ldap.endpoint : ldaps://ldaps.internal.salesforce.com:636
+	service.property.auth.ldap.searchbase : OU=Active,OU=SFDC_USERS,DC=internal,DC=salesforce,DC=com:OU=Service Accounts,OU=Resource Accounts,DC=internal,DC=salesforce,DC=com
+	service.property.auth.ldap.searchdn : CN=SVC_PERFENG TOOLS,OU=AMER,OU=Active,OU=SFDC_USERS,DC=internal,DC=salesforce,DC=com
+	service.property.auth.ldap.searchpwd : ********
+	service.property.auth.ldap.usernamefield : sAMAccountName
+	service.property.cache.redis.cache.expiry.in.sec : 3600
+	service.property.cache.redis.cluster : shared2-arguscachedev1-1-prd.eng.sfdc.net:6379,shared2-arguscachedev1-1-prd.eng.sfdc.net:6389,shared2-arguscachedev1-1-prd.eng.sfdc.net:6399
+	service.property.cache.redis.server.max.connections : 100
+	service.property.email.transport.protocol : smtp
+	service.property.history.hbase.sync.put : false
+	service.property.history.hbase.table : history-test
+	service.property.mail.smtp.auth : false
+	service.property.mail.smtp.host : smtp-prd-sp1.data.sfdc.net
+	service.property.mail.smtp.starttls.enable : false
+	service.property.mail.smtp.starttls.required : false
+	service.property.mq.kafka.brokers : shared2-argusmqdev1-3-prd.eng.sfdc.net:9092,shared2-argusmqdev2-1-prd.eng.sfdc.net:9092,shared2-argusmqdev2-2-prd.eng.sfdc.net:9092
+	service.property.mq.kafka.consumer.groupid : argus-consumer-qa-prd
+	service.property.mq.kafka.consumer.messages.to.buffer : 1
+	service.property.mq.kafka.consumer.streams.per.topic : 5
+	service.property.mq.kafka.producer.batch.size : 102400
+	service.property.mq.kafka.producer.block.on.buffer.full : true
+	service.property.mq.kafka.producer.buffer.memory : 100000000
+	service.property.mq.kafka.producer.connections : 10
+	service.property.mq.zookeeper.connect : shared2-argusmqzkdev1-1-prd.eng.sfdc.net:2181
+	service.property.mq.zookeeper.connection.timeout.ms : 10000
+	service.property.password : ********
+	service.property.scheduling.jobsBlockSize : 100000
+	service.property.scheduling.quartz.threadPool.threadCount : 10
+	service.property.schema.cache.schemarecords : true
+	service.property.schema.elasticsearch.connection.count : 50
+	service.property.schema.elasticsearch.endpoint : http://shared2-argusmqzkdev1-1-prd.eng.sfdc.net:9200,http://shared2-argusmqzkdev1-1-prd.eng.sfdc.net:9201,http://shared2-argusmqzkdev1-1-prd.eng.sfdc.net:9202
+	service.property.schema.elasticsearch.endpoint.connection.timeout : 10000
+	service.property.schema.elasticsearch.endpoint.socket.timeout : 10000
+	service.property.schema.elasticsearch.replication.factor : 2
+	service.property.schema.elasticsearch.shards.count : 10
+	service.property.schema.hbase.metricschema.table : metric-schema-new
+	service.property.schema.hbase.scopeschema.table : scope-schema-new
+	service.property.schema.sync.put : false
+	service.property.smtp.port : 25
+	service.property.tsdb.connection.count : 200
+	service.property.tsdb.endpoint.connection.timeout : 10000
+	service.property.tsdb.endpoint.read : http://shared2-argustsdbrdev1-1-prd.eng.sfdc.net:4466/
+	service.property.tsdb.endpoint.socket.timeout : 300000
+	service.property.tsdb.endpoint.write : http://shared2-argustsdbwdev1-1-prd.eng.sfdc.net:4477
+	service.property.username : 
+	system.property.admin.email : argus-admin@salesforce.com
+	system.property.build : 2018-07-11 19:42
+	system.property.client.connect.timeout : 10000
+	system.property.client.threads : 2
+	system.property.data.lag.expression : sampleExpression
+	system.property.data.lag.notification.emailId : someone@mycompany.com
+	system.property.data.lag.threshold.millis : 300000
+	system.property.data.lag.whitelisted.scopes : 
+	system.property.goc.enabled : true
+	system.property.gus.enabled : false
+	system.property.jpa.eclipselink.connection-pool.default.initial : 1
+	system.property.jpa.eclipselink.connection-pool.default.max : 5
+	system.property.jpa.eclipselink.connection-pool.default.min : 5
+	system.property.jpa.eclipselink.ddl-generation : none
+	system.property.jpa.eclipselink.logging.level.sql : FINE
+	system.property.jpa.javax.persistence.jdbc.driver : org.postgresql.Driver
+	system.property.jpa.javax.persistence.jdbc.password : ********
+	system.property.jpa.javax.persistence.jdbc.url : jdbc:postgresql://shared2-argusrdbmsdev1-1-prd.eng.sfdc.net:5432/argus
+	system.property.jpa.javax.persistence.jdbc.user : postgres
+	system.property.jpa.javax.persistence.schema-generation.database.action : none
+	system.property.log.level : INFO
+	system.property.mail.enabled : false
+	system.property.mail.exceptions : false
+	system.property.monitor.data.lag : false
+	system.property.version : 2.15.0
+
+[EL Fine]: sql: 2018-07-13 16:10:37.251--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE (((t1.owner_id = ?) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1, false, Alert]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.254 | main | [34m INFO[0;39m ] Performing database clean up.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.254 | main | [34m INFO[0;39m ] Deleting expired history for HBaseHistoryService is not explicitly needed.
+[EL Fine]: sql: 2018-07-13 16:10:37.379--ClientSession(41173535)--Connection(1183915441)--DELETE FROM AUDIT WHERE (CREATEDDATE < ?)
+	bind => [2018-06-29 16:10:37.257]
+[EL Fine]: sql: 2018-07-13 16:10:37.503--ServerSession(554511124)--Connection(159611398)--SELECT t2.ID, t2.DTYPE, t2.CREATEDDATE, t2.DELETED, t2.MODIFIEDDATE, t2.CREATEDBY_ID, t2.MODIFIEDBY_ID, t3.ID, t3.CRONENTRY, t3.ENABLED, t3.EXPRESSION, t3.MISSINGDATANOTIFICATIONENABLED, t3.name, t3.SHARED, t3.owner_id, t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.INERTIA, t1.name, t1.SECONDARYTHRESHOLD, t1.THRESHOLD, t1.TYPE, t1.alert_id, t4.ID, t4.DTYPE, t4.CREATEDDATE, t4.DELETED, t4.MODIFIEDDATE, t4.CREATEDBY_ID, t4.MODIFIEDBY_ID, t5.ID, t5.COOLDOWNPERIOD, t5.CUSTOMTEXT, t5.ISSRACTIONABLE, t5.name, t5.NOTIFIERNAME, t5.SEVERITYLEVEL, t5.alert_id, t6.ID, t6.DTYPE, t6.CREATEDDATE, t6.DELETED, t6.MODIFIEDDATE, t6.CREATEDBY_ID, t6.MODIFIEDBY_ID, t7.ID, t7.COOLDOWNPERIOD, t7.CUSTOMTEXT, t7.ISSRACTIONABLE, t7.name, t7.NOTIFIERNAME, t7.SEVERITYLEVEL, t7.alert_id, t8.ID, t8.DTYPE, t8.CREATEDDATE, t8.DELETED, t8.MODIFIEDDATE, t8.CREATEDBY_ID, t8.MODIFIEDBY_ID, t9.ID, t9.INERTIA, t9.name, t9.SECONDARYTHRESHOLD, t9.THRESHOLD, t9.TYPE, t9.alert_id, t12.METRICSTOANNOTATE, t13.SUBSCRIPTIONS FROM JPAENTITY t2 LEFT OUTER JOIN (JPAENTITY t0 JOIN TRIGGER t1 ON (t1.ID = t0.ID)) ON (t1.alert_id = t2.ID) LEFT OUTER JOIN (NOTIFICATION_TRIGGER t10 JOIN JPAENTITY t4 ON (t4.ID = t10.TRIGGER_ID) JOIN NOTIFICATION t5 ON (t5.ID = t4.ID)) ON (t10.NOTIFICATION_ID = t0.ID) LEFT OUTER JOIN (JPAENTITY t6 JOIN NOTIFICATION t7 ON (t7.ID = t6.ID)) ON (t7.alert_id = t2.ID) LEFT OUTER JOIN (NOTIFICATION_TRIGGER t11 JOIN JPAENTITY t8 ON (t8.ID = t11.NOTIFICATION_ID) JOIN TRIGGER t9 ON (t9.ID = t8.ID)) ON (t11.TRIGGER_ID = t6.ID) LEFT OUTER JOIN Notification_METRICSTOANNOTATE t12 ON (t12.Notification_ID = t6.ID) LEFT OUTER JOIN Notification_SUBSCRIPTIONS t13 ON (t13.Notification_ID = t6.ID), ALERT t3 WHERE (((t3.ENABLED = ?) AND t2.ID IN (SELECT t14.ID FROM JPAENTITY t14 WHERE ((t14.DELETED = ?) AND (t14.DTYPE = ?)))) AND ((t3.ID = t2.ID) AND (t2.DTYPE = ?))) ORDER BY t2.ID ASC
+	bind => [true, false, Alert, Alert]
+[EL Fine]: sql: 2018-07-13 16:10:37.614--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [106602, PrincipalUser]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.637 | main | [34m INFO[0;39m ] Deleted 0 expired audit entries.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.678 | main | [34m INFO[0;39m ] Starting alert scheduling thread.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.679 | main | [34m INFO[0;39m ] Alert scheduling thread started.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.682 | main | [34m INFO[0;39m ] Starting system monitor thread.
+[EL Fine]: sql: 2018-07-13 16:10:37.685--ServerSession(554511124)--Connection(1183915441)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.enabled, t1.SERVICE FROM JPAENTITY t0, SERVICE_MANAGEMENT_RECORD t1 WHERE ((t1.SERVICE = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [SCHEDULING, ServiceManagementRecord]
+[EL Fine]: sql: 2018-07-13 16:10:37.824--ServerSession(554511124)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-file_descriptors-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:37.827 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[EL Fine]: sql: 2018-07-13 16:10:37.827--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [101401, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:37.872--ServerSession(554511124)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-file_descriptors-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[EL Fine]: sql: 2018-07-13 16:10:37.943--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [102501, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:37.957--ClientSession(130366111)--Connection(2018673443)--UPDATE JPAENTITY SET MODIFIEDDATE = ? WHERE (ID = ?)
+	bind => [2018-07-13 16:10:37.956, 1359101]
+[EL Fine]: sql: 2018-07-13 16:10:38.124--ServerSession(554511124)--Connection(1324545376)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.EMAIL, t1.PRIVILEGED, t1.USERNAME FROM JPAENTITY t0, PRINCIPALUSER t1 WHERE ((t0.ID = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [101402, PrincipalUser]
+[EL Fine]: sql: 2018-07-13 16:10:38.192--ClientSession(130366111)--Connection(2018673443)--UPDATE ALERT SET ENABLED = ? WHERE (ID = ?)
+	bind => [true, 1359101]
+[EL Fine]: sql: 2018-07-13 16:10:38.258--ClientSession(130366111)--Connection(2018673443)--UPDATE SEQUENCE SET SEQ_COUNT = SEQ_COUNT + ? WHERE SEQ_NAME = ?
+	bind => [50, SEQ_GEN]
+[EL Fine]: sql: 2018-07-13 16:10:38.298--ClientSession(130366111)--Connection(2018673443)--SELECT SEQ_COUNT FROM SEQUENCE WHERE SEQ_NAME = ?
+	bind => [SEQ_GEN]
+[EL Fine]: sql: 2018-07-13 16:10:38.357--ClientSession(130366111)--Connection(2018673443)--INSERT INTO AUDIT (ID, CREATEDDATE, entity_id, HOSTNAME, MESSAGE) VALUES (?, ?, ?, ?, ?)
+	bind => [423966051, 2018-07-13 16:10:38.356, 1359101, yzou-ltm0.internal.salesforce.com, Updated alert to : Alert{name=monitor-file_descriptors-yzou-ltm0.internal.salesforce.com, expression=DIVIDE(-1h:argus.jvm:file.descriptor.open{host=yzou-ltm0.internal.salesforce.com}:avg, -1h:argus.jvm:file.descriptor.max{host=yzou-ltm0.internal.salesforce.com}:avg), cronEntry=0 * * * *, enabled=true, missingDataNotificationEnabled=false, notifications={IndirectList: not instantiated}, triggers={IndirectList: not instantiated}, owner=PrincipalUser{userName=admin, email=argus-admin@salesforce.com, preferences={IndirectMap: not instantiated}, privileged=true}, shared=false}]
+[EL Fine]: sql: 2018-07-13 16:10:38.403--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-physical_memory-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[EL Fine]: sql: 2018-07-13 16:10:38.461--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.COOLDOWNPERIOD, t1.CUSTOMTEXT, t1.ISSRACTIONABLE, t1.name, t1.NOTIFIERNAME, t1.SEVERITYLEVEL, t1.alert_id FROM JPAENTITY t0, NOTIFICATION t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359104, Notification]
+[EL Fine]: sql: 2018-07-13 16:10:38.533--ClientSession(130366111)--Connection(2018673443)--SELECT t0.METRICSTOANNOTATE FROM Notification_METRICSTOANNOTATE t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:38.612--ClientSession(130366111)--Connection(2018673443)--SELECT t0.SUBSCRIPTIONS FROM Notification_SUBSCRIPTIONS t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:38.678--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ACTIVESTATUSBYTRIGGERANDMETRIC, t0.ACTIVESTATUSBYTRIGGERANDMETRIC_KEY FROM Notification_ACTIVESTATUSBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:38.731--ClientSession(130366111)--Connection(2018673443)--SELECT t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC, t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC_KEY FROM Notification_COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:38.785--ClientSession(130366111)--Connection(2018673443)--SELECT t1.ID, t1.DTYPE, t1.CREATEDDATE, t1.DELETED, t1.MODIFIEDDATE, t1.CREATEDBY_ID, t1.MODIFIEDBY_ID, t2.ID, t2.INERTIA, t2.name, t2.SECONDARYTHRESHOLD, t2.THRESHOLD, t2.TYPE, t2.alert_id FROM NOTIFICATION_TRIGGER t0, TRIGGER t2, JPAENTITY t1 WHERE (((t0.TRIGGER_ID = ?) AND (t1.ID = t0.NOTIFICATION_ID)) AND ((t2.ID = t1.ID) AND (t1.DTYPE = ?)))
+	bind => [1359105, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:38.954--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.INERTIA, t1.name, t1.SECONDARYTHRESHOLD, t1.THRESHOLD, t1.TYPE, t1.alert_id FROM JPAENTITY t0, TRIGGER t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359104, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:39.015--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-physical_memory-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[EL Fine]: sql: 2018-07-13 16:10:39.067--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.COOLDOWNPERIOD, t1.CUSTOMTEXT, t1.ISSRACTIONABLE, t1.name, t1.NOTIFIERNAME, t1.SEVERITYLEVEL, t1.alert_id FROM JPAENTITY t0, NOTIFICATION t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359104, Notification]
+[EL Fine]: sql: 2018-07-13 16:10:39.13--ClientSession(130366111)--Connection(2018673443)--SELECT t0.METRICSTOANNOTATE FROM Notification_METRICSTOANNOTATE t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:39.183--ClientSession(130366111)--Connection(2018673443)--SELECT t0.SUBSCRIPTIONS FROM Notification_SUBSCRIPTIONS t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:39.246--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ACTIVESTATUSBYTRIGGERANDMETRIC, t0.ACTIVESTATUSBYTRIGGERANDMETRIC_KEY FROM Notification_ACTIVESTATUSBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:39.297--ClientSession(130366111)--Connection(2018673443)--SELECT t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC, t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC_KEY FROM Notification_COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359105]
+[EL Fine]: sql: 2018-07-13 16:10:39.347--ClientSession(130366111)--Connection(2018673443)--SELECT t1.ID, t1.DTYPE, t1.CREATEDDATE, t1.DELETED, t1.MODIFIEDDATE, t1.CREATEDBY_ID, t1.MODIFIEDBY_ID, t2.ID, t2.INERTIA, t2.name, t2.SECONDARYTHRESHOLD, t2.THRESHOLD, t2.TYPE, t2.alert_id FROM NOTIFICATION_TRIGGER t0, TRIGGER t2, JPAENTITY t1 WHERE (((t0.TRIGGER_ID = ?) AND (t1.ID = t0.NOTIFICATION_ID)) AND ((t2.ID = t1.ID) AND (t1.DTYPE = ?)))
+	bind => [1359105, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:39.481--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.INERTIA, t1.name, t1.SECONDARYTHRESHOLD, t1.THRESHOLD, t1.TYPE, t1.alert_id FROM JPAENTITY t0, TRIGGER t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359104, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:39.537--ClientSession(130366111)--Connection(2018673443)--UPDATE JPAENTITY SET MODIFIEDDATE = ? WHERE (ID = ?)
+	bind => [2018-07-13 16:10:39.537, 1359104]
+[EL Fine]: sql: 2018-07-13 16:10:39.704--ClientSession(130366111)--Connection(2018673443)--UPDATE ALERT SET ENABLED = ? WHERE (ID = ?)
+	bind => [true, 1359104]
+[EL Fine]: sql: 2018-07-13 16:10:39.76--ClientSession(130366111)--Connection(2018673443)--INSERT INTO AUDIT (ID, CREATEDDATE, entity_id, HOSTNAME, MESSAGE) VALUES (?, ?, ?, ?, ?)
+	bind => [423966052, 2018-07-13 16:10:39.759, 1359104, yzou-ltm0.internal.salesforce.com, Updated alert to : Alert{name=monitor-physical_memory-yzou-ltm0.internal.salesforce.com, expression=DIVIDE(-1h:argus.jvm:mem.physical.free{host=yzou-ltm0.internal.salesforce.com}:avg, -1h:argus.jvm:mem.physical.max{host=yzou-ltm0.internal.salesforce.com}:avg), cronEntry=0 * * * *, enabled=true, missingDataNotificationEnabled=false, notifications={[Notification{name=monitor_notification, notifierName=com.salesforce.dva.argus.service.alert.notifier.AuditNotifier, subscriptions={[]}, metricsToAnnotate={[]}, cooldownPeriod=60000, triggers={[Trigger{type=LESS_THAN, name=Free Mem < 5% of Tot Mem, threshold=0.05, secondaryThreshold=null, inertia=0}]}, severity=5, srActionable=false, customText;null}]}, triggers={[Trigger{type=LESS_THAN, name=Free Mem < 5% of Tot Mem, threshold=0.05, secondaryThreshold=null, inertia=0}]}, owner=PrincipalUser{userName=admin, email=argus-admin@salesforce.com, preferences={IndirectMap: not instantiated}, privileged=true}, shared=false}]
+[EL Fine]: sql: 2018-07-13 16:10:39.8--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-swap_space-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:39.829 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[EL Fine]: sql: 2018-07-13 16:10:39.865--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.COOLDOWNPERIOD, t1.CUSTOMTEXT, t1.ISSRACTIONABLE, t1.name, t1.NOTIFIERNAME, t1.SEVERITYLEVEL, t1.alert_id FROM JPAENTITY t0, NOTIFICATION t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359107, Notification]
+[EL Fine]: sql: 2018-07-13 16:10:39.928--ClientSession(130366111)--Connection(2018673443)--SELECT t0.METRICSTOANNOTATE FROM Notification_METRICSTOANNOTATE t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:39.978--ClientSession(130366111)--Connection(2018673443)--SELECT t0.SUBSCRIPTIONS FROM Notification_SUBSCRIPTIONS t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.042--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ACTIVESTATUSBYTRIGGERANDMETRIC, t0.ACTIVESTATUSBYTRIGGERANDMETRIC_KEY FROM Notification_ACTIVESTATUSBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.092--ClientSession(130366111)--Connection(2018673443)--SELECT t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC, t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC_KEY FROM Notification_COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.142--ClientSession(130366111)--Connection(2018673443)--SELECT t1.ID, t1.DTYPE, t1.CREATEDDATE, t1.DELETED, t1.MODIFIEDDATE, t1.CREATEDBY_ID, t1.MODIFIEDBY_ID, t2.ID, t2.INERTIA, t2.name, t2.SECONDARYTHRESHOLD, t2.THRESHOLD, t2.TYPE, t2.alert_id FROM NOTIFICATION_TRIGGER t0, TRIGGER t2, JPAENTITY t1 WHERE (((t0.TRIGGER_ID = ?) AND (t1.ID = t0.NOTIFICATION_ID)) AND ((t2.ID = t1.ID) AND (t1.DTYPE = ?)))
+	bind => [1359108, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:40.29--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.INERTIA, t1.name, t1.SECONDARYTHRESHOLD, t1.THRESHOLD, t1.TYPE, t1.alert_id FROM JPAENTITY t0, TRIGGER t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359107, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:40.376--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.CRONENTRY, t1.ENABLED, t1.EXPRESSION, t1.MISSINGDATANOTIFICATIONENABLED, t1.name, t1.SHARED, t1.owner_id FROM JPAENTITY t0, ALERT t1 WHERE ((((t1.name = ?) AND (t1.owner_id = ?)) AND t0.ID IN (SELECT t2.ID FROM JPAENTITY t2 WHERE (t2.DELETED = ?))) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [monitor-swap_space-yzou-ltm0.internal.salesforce.com, 1, false, Alert]
+[EL Fine]: sql: 2018-07-13 16:10:40.436--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.COOLDOWNPERIOD, t1.CUSTOMTEXT, t1.ISSRACTIONABLE, t1.name, t1.NOTIFIERNAME, t1.SEVERITYLEVEL, t1.alert_id FROM JPAENTITY t0, NOTIFICATION t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359107, Notification]
+[EL Fine]: sql: 2018-07-13 16:10:40.499--ClientSession(130366111)--Connection(2018673443)--SELECT t0.METRICSTOANNOTATE FROM Notification_METRICSTOANNOTATE t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.549--ClientSession(130366111)--Connection(2018673443)--SELECT t0.SUBSCRIPTIONS FROM Notification_SUBSCRIPTIONS t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.612--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ACTIVESTATUSBYTRIGGERANDMETRIC, t0.ACTIVESTATUSBYTRIGGERANDMETRIC_KEY FROM Notification_ACTIVESTATUSBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.663--ClientSession(130366111)--Connection(2018673443)--SELECT t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC, t0.COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC_KEY FROM Notification_COOLDOWNEXPIRATIONBYTRIGGERANDMETRIC t0 WHERE (t0.Notification_ID = ?)
+	bind => [1359108]
+[EL Fine]: sql: 2018-07-13 16:10:40.713--ClientSession(130366111)--Connection(2018673443)--SELECT t1.ID, t1.DTYPE, t1.CREATEDDATE, t1.DELETED, t1.MODIFIEDDATE, t1.CREATEDBY_ID, t1.MODIFIEDBY_ID, t2.ID, t2.INERTIA, t2.name, t2.SECONDARYTHRESHOLD, t2.THRESHOLD, t2.TYPE, t2.alert_id FROM NOTIFICATION_TRIGGER t0, TRIGGER t2, JPAENTITY t1 WHERE (((t0.TRIGGER_ID = ?) AND (t1.ID = t0.NOTIFICATION_ID)) AND ((t2.ID = t1.ID) AND (t1.DTYPE = ?)))
+	bind => [1359108, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:40.848--ClientSession(130366111)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.INERTIA, t1.name, t1.SECONDARYTHRESHOLD, t1.THRESHOLD, t1.TYPE, t1.alert_id FROM JPAENTITY t0, TRIGGER t1 WHERE ((t1.alert_id = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [1359107, Trigger]
+[EL Fine]: sql: 2018-07-13 16:10:40.903--ClientSession(130366111)--Connection(2018673443)--UPDATE JPAENTITY SET MODIFIEDDATE = ? WHERE (ID = ?)
+	bind => [2018-07-13 16:10:40.902, 1359107]
+[EL Fine]: sql: 2018-07-13 16:10:41.069--ClientSession(130366111)--Connection(2018673443)--UPDATE ALERT SET ENABLED = ? WHERE (ID = ?)
+	bind => [true, 1359107]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:41.125 | main | [34m INFO[0;39m ] System monitor thread started.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:41.125 | system-monitor | [34m INFO[0;39m ] Sleeping for 60s before pushing counters.
+[EL Fine]: sql: 2018-07-13 16:10:41.126--ClientSession(130366111)--Connection(2018673443)--INSERT INTO AUDIT (ID, CREATEDDATE, entity_id, HOSTNAME, MESSAGE) VALUES (?, ?, ?, ?, ?)
+	bind => [423966053, 2018-07-13 16:10:41.123, 1359107, yzou-ltm0.internal.salesforce.com, Updated alert to : Alert{name=monitor-swap_space-yzou-ltm0.internal.salesforce.com, expression=DIVIDE(-1h:argus.jvm:mem.swap.free{host=yzou-ltm0.internal.salesforce.com}:avg, -1h:argus.jvm:mem.swap.max{host=yzou-ltm0.internal.salesforce.com}:avg), cronEntry=0 * * * *, enabled=true, missingDataNotificationEnabled=false, notifications={[Notification{name=monitor_notification, notifierName=com.salesforce.dva.argus.service.alert.notifier.AuditNotifier, subscriptions={[]}, metricsToAnnotate={[]}, cooldownPeriod=60000, triggers={[Trigger{type=LESS_THAN, name=Free Swap Space < 5% of Tot Swap Space, threshold=0.05, secondaryThreshold=null, inertia=0}]}, severity=5, srActionable=false, customText;null}]}, triggers={[Trigger{type=LESS_THAN, name=Free Swap Space < 5% of Tot Swap Space, threshold=0.05, secondaryThreshold=null, inertia=0}]}, owner=PrincipalUser{userName=admin, email=argus-admin@salesforce.com, preferences={IndirectMap: not instantiated}, privileged=true}, shared=false}]
+[EL Fine]: sql: 2018-07-13 16:10:41.209--ServerSession(554511124)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.enabled, t1.SERVICE FROM JPAENTITY t0, SERVICE_MANAGEMENT_RECORD t1 WHERE ((t1.SERVICE = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [WARDEN, ServiceManagementRecord]
+[EL Fine]: sql: 2018-07-13 16:10:41.251--ServerSession(554511124)--Connection(2018673443)--SELECT t0.ID, t0.DTYPE, t0.CREATEDDATE, t0.DELETED, t0.MODIFIEDDATE, t0.CREATEDBY_ID, t0.MODIFIEDBY_ID, t1.ID, t1.enabled, t1.SERVICE FROM JPAENTITY t0, SERVICE_MANAGEMENT_RECORD t1 WHERE ((t1.SERVICE = ?) AND ((t1.ID = t0.ID) AND (t0.DTYPE = ?)))
+	bind => [WARDEN, ServiceManagementRecord]
+[EL Fine]: sql: 2018-07-13 16:10:41.292--ClientSession(728374554)--Connection(2018673443)--INSERT INTO AUDIT (ID, CREATEDDATE, entity_id, HOSTNAME, MESSAGE) VALUES (?, ?, ?, ?, ?)
+	bind => [423966054, 2018-07-13 16:10:41.292, 103451, yzou-ltm0.internal.salesforce.com, Updated service management record : ServiceManagementRecord{service=WARDEN, enabled=true}]
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:41.829 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:43.830 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:45.836 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:47.840 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:49.840 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:51.842 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:53.844 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:55.847 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:57.848 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:10:59.851 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:01.856 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:03.857 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:05.858 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:07.862 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:09.865 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:11.865 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:13.866 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:15.868 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:17.869 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:19.871 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:21.874 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:23.880 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:25.881 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:27.882 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:29.883 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:31.888 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:33.888 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:35.888 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:37.890 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:39.893 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:41.158 | system-monitor | [34m INFO[0;39m ] Pushing 20 monitoring metrics to TSDB.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:41.392 | system-monitor | [34m INFO[0;39m ] Sleeping for 60s before pushing counters.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:41.897 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:43.899 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:45.905 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:47.908 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:49.908 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:51.908 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:53.910 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:55.911 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:57.911 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:11:59.915 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:01.919 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:03.922 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:05.923 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:07.924 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:09.927 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:11.928 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:13.930 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:15.931 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:17.932 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:19.932 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:21.933 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:23.934 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:25.934 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:27.939 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:29.939 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:31.940 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:33.941 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:35.943 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:37.948 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:39.952 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:41.394 | system-monitor | [34m INFO[0;39m ] Pushing 20 monitoring metrics to TSDB.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:41.447 | system-monitor | [34m INFO[0;39m ] Sleeping for 60s before pushing counters.
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:41.955 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:43.956 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:45.958 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:47.959 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:49.964 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:51.967 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:53.970 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:55.972 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:57.977 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:12:59.980 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:13:01.984 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:13:03.987 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..
+[ [1;35mARGUS[0;39m | *NULLUSER* | *NULLTXID* | 2018-07-13 16:13:05.987 | schedule-alerts | [34m INFO[0;39m ] Waiting for alerts cache to be initialized. Sleeping for 2 seconds..

@@ -220,6 +220,8 @@ public final class SystemConfiguration extends Properties {
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
+        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+        
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
         
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),

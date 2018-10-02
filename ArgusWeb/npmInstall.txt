@@ -1,0 +1,24 @@
+
+> fsevents@1.1.2 install /Users/yzou/yjanezou/Argus/ArgusWeb/node_modules/fsevents
+> node install
+
+  SOLINK_MODULE(target) Release/.node
+  SOLINK_MODULE(target) Release/.node
+  CXX(target) Release/obj.target/fse/fsevents.o
+  CXX(target) Release/obj.target/fse/fsevents.o
+Failed to execute '/usr/local/Cellar/node/10.6.0/bin/node /usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js build --fallback-to-build --module=/Users/yzou/yjanezou/Argus/ArgusWeb/node_modules/fsevents/lib/binding/Release/node-v64-darwin-x64/fse.node --module_name=fse --module_path=/Users/yzou/yjanezou/Argus/ArgusWeb/node_modules/fsevents/lib/binding/Release/node-v64-darwin-x64' (1)
+
+> argus-web@ postinstall /Users/yzou/yjanezou/Argus/ArgusWeb
+> npm install --prefix ./app/
+
+
+> microtime@2.1.6 install /Users/yzou/yjanezou/Argus/ArgusWeb/app/node_modules/microtime
+> prebuild-install || node-gyp rebuild
+
+  CXX(target) Release/obj.target/microtime/src/microtime.o
+audited 728 packages in 3.614s
+found 13 vulnerabilities (5 low, 6 moderate, 2 high)
+  run `npm audit fix` to fix them, or `npm audit` for details
+audited 8353 packages in 11.416s
+found 136 vulnerabilities (100 low, 19 moderate, 17 high)
+  run `npm audit fix` to fix them, or `npm audit` for details

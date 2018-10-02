@@ -343,7 +343,7 @@ public interface AlertService extends Service {
 	 *
 	 * @author  Tom Valine (tvaline@salesforce.com)
 	 */
-	enum SupportedNotifier {
+	public enum SupportedNotifier {
 
 		DATABASE(AuditNotifier.class.getName()),
 		EMAIL(EmailNotifier.class.getName()),
@@ -351,7 +351,8 @@ public interface AlertService extends Service {
 		WARDENAPI(WardenApiNotifier.class.getName()),
 		WARDENPOSTING(WardenPostingNotifier.class.getName()),
 		GUS(GusNotifier.class.getName()),
-		CALLBACK(CallbackNotifier.class.getName());
+		CALLBACK(CallbackNotifier.class.getName()),
+		REFOCUS(RefocusNotifier.class.getName());
 
 		String name;
 
