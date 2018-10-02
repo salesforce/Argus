@@ -26,6 +26,9 @@ import com.salesforce.dva.argus.service.SchemaService.RecordType;
 
 import net.openhft.hashing.LongHashFunction;
 
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS;
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
+
 public class MetricSchemaRecordList {
 	
 	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
@@ -92,14 +95,20 @@ public class MetricSchemaRecordList {
 			
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.setSerializationInclusion(Include.NON_NULL);
-			
+			final long now = System.currentTimeMillis();
+
 			for(Map.Entry<String, MetricSchemaRecord> entry : list._idToSchemaRecordMap.entrySet()) {
 				jgen.writeRaw("{ \"create\" : {\"_id\" : \"" + entry.getKey() + "\"}}");
 				jgen.writeRaw(System.lineSeparator());
 				String fieldsData = mapper.writeValueAsString(entry.getValue());
-				String mtsField = "\"mts\":" + System.currentTimeMillis();
-				String ctsField = "\"cts\":" + System.currentTimeMillis();
-				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + mtsField + "," + ctsField + "}");
+
+				String mtsField = "\"mts\":" + now;
+				String ctsField = "\"cts\":" + now;
+				Integer retention = entry.getValue().getRetentionDiscovery();
+				Long expiration = now + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * 24 * 3600 * 1000;
+				String expirationField = "\"" + EXPIRATION_TS + "\":" + expiration;
+
+				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + mtsField + "," + ctsField + "," + expirationField + "}");
 				jgen.writeRaw(System.lineSeparator());
 			}
 		}
@@ -133,12 +142,14 @@ public class MetricSchemaRecordList {
 					JsonNode metricNode = source.get(RecordType.METRIC.getName());
 					JsonNode tagkNode = source.get(RecordType.TAGK.getName());
 					JsonNode tagvNode = source.get(RecordType.TAGV.getName());
+					JsonNode retentionNode = source.get(RecordType.RETENTION_DISCOVERY.getName());
 					
 					records.add(new MetricSchemaRecord(namespaceNode == null ? null : namespaceNode.asText(), 
-													   scopeNode.asText(), 
-													   metricNode.asText(), 
-													   tagkNode == null ? null : tagkNode.asText(), 
-													   tagvNode == null ? null : tagvNode.asText()));
+													   	scopeNode.asText(),
+													   	metricNode.asText(),
+													   	tagkNode == null ? null : tagkNode.asText(),
+													   	tagvNode == null ? null : tagvNode.asText(),
+														retentionNode == null? null : retentionNode.asInt()));
 				}
 			}
 			
