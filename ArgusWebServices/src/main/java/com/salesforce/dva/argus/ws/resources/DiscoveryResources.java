@@ -267,28 +267,10 @@ public class DiscoveryResources extends AbstractResource {
         List<String> result=new ArrayList<>();
 
         for(MetricSchemaRecord record:records){
-            result.add(_getValueForType(record, type));
+            result.add(record.getStringValueForType(type));
         }
 
         return result;
-    }
-    
-
-    private static String _getValueForType(MetricSchemaRecord record, RecordType type) {
-        switch (type) {
-            case NAMESPACE:
-                return record.getNamespace();
-            case SCOPE:
-                return record.getScope();
-            case METRIC:
-                return record.getMetric();
-            case TAGK:
-                return record.getTagKey();
-            case TAGV:
-                return record.getTagValue();
-            default:
-                return null;
-        }
     }
     
     private static void _formatToString(List<MetricSchemaRecord> schemaRecords, List<String> records) {
