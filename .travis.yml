@@ -26,6 +26,8 @@ before_script:
 after_success:
 - codecov
 - df -h
+- ls -lah /home/travis/
+- du -h /home
 deploy:
   provider: script
   script: bash ${TRAVIS_BUILD_DIR}/.travis.deploy.sh
