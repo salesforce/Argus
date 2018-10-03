@@ -117,4 +117,27 @@ public class MetatagsRecord {
     public String getKey() {
         return _key;
     }
+
+    /**
+     *  A way to get read access to the metatags
+     * @param metatagKey the key
+     * @return the metatag value, null if the key doesn't exist
+     */
+    public String getMetatagValue(String metatagKey) {
+        return _metatags.get(metatagKey);
+    }
+
+    /**
+     * Remove a metatag by its key.  MetatagsRecord currently is not immutable nor used in the
+     * hashcode()/equals() for {@link Metric}
+     *
+     * <br><br><b>NOTE: if the metatag is used to create the key for this MetatagsRecord, one might not
+     * be able to recreate the same key after the metatag is removed.</b>
+     *
+     * @param metatagKey the key
+     * @return the previous value associated with key, or null if there was no mapping for key
+     */
+    public String removeMetatag(String metatagKey) {
+        return _metatags.remove(metatagKey);
+    }
 }

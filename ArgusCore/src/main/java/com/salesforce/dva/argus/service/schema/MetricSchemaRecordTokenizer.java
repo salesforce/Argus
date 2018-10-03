@@ -4,9 +4,7 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService.RecordType;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -20,6 +18,9 @@ public class MetricSchemaRecordTokenizer {
         List<String> entries = _getValueForType(records, type);
 
         for(String entry : entries) {
+            if (entry == null) {    //it's entirely possible that a specified type has null value, which is permitted in ArrayList
+                continue;
+            }
 
             String[] allTokens = entry.split(_delimiterRegex);
 
@@ -35,26 +36,9 @@ public class MetricSchemaRecordTokenizer {
         List<String> result=new ArrayList<>();
 
         for(MetricSchemaRecord record:records){
-            result.add(_getValueForType(record, type));
+            result.add(record.getStringValueForType(type));
         }
 
         return result;
-    }
-
-    private static String _getValueForType(MetricSchemaRecord record, RecordType type) {
-        switch (type) {
-            case NAMESPACE:
-                return record.getNamespace();
-            case SCOPE:
-                return record.getScope();
-            case METRIC:
-                return record.getMetric();
-            case TAGK:
-                return record.getTagKey();
-            case TAGV:
-                return record.getTagValue();
-            default:
-                return null;
-        }
     }
 }

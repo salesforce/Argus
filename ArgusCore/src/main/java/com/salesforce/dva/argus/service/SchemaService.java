@@ -199,6 +199,8 @@ public interface SchemaService extends Service {
     		case NAMESPACE:
     			record.setNamespace(str);
     			break;
+            case RETENTION_DISCOVERY:
+                record.setRetentionDiscovery(Integer.valueOf(str));
     		default:
     			throw new IllegalArgumentException("Invalid record type: " + type);
     	}
@@ -236,7 +238,9 @@ public interface SchemaService extends Service {
         /** Match against the tag value field. */
         TAGV("tagv"),
         /** Match against the metatags value field. */
-        METATAGS("metatags");
+        METATAGS("metatags"),
+        /** Match against the retention discovery field */
+        RETENTION_DISCOVERY(MetricSchemaRecord.RETENTION_DISCOVERY);
 
         private String _name;
 

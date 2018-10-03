@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -7,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService;
@@ -21,10 +23,10 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 
 import static org.junit.Assert.assertEquals;
@@ -816,5 +818,16 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         }).when(spyService).extractResponse(any());
 
         return spyService;
+    }
+
+    @Test
+    public void testMetriccSchemaRecordListMapper() throws Exception {
+        ObjectMapper mapper = ElasticSearchSchemaService.createObjectMapper();
+
+        MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
+        MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2", 10);
+        MetricSchemaRecordList recordList = new MetricSchemaRecordList(Arrays.asList(record1, record2), MetricSchemaRecordList.HashAlgorithm.fromString("MD5"));
+
+        System.out.println(mapper.writeValueAsString(recordList));
     }
 }
