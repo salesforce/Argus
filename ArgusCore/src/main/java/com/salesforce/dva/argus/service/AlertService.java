@@ -343,7 +343,7 @@ public interface AlertService extends Service {
 	 *
 	 * @author  Tom Valine (tvaline@salesforce.com)
 	 */
-	public enum SupportedNotifier {
+	enum SupportedNotifier {
 
 		DATABASE(AuditNotifier.class.getName()),
 		EMAIL(EmailNotifier.class.getName()),
