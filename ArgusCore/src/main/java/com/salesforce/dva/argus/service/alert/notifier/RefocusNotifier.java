@@ -94,13 +94,9 @@ public class RefocusNotifier extends AuditNotifier {
 		return post;
 	}
 
-	/**
-	 * Update the global 'theEndpointInfo' state with a valid endpointInfo.
-	 */
 	private EndpointInfo getEndpoint() {
-		String endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_TOKEN.getDefaultValue());
+		String endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_ENDPOINT.getDefaultValue());
 		String token = _config.getValue(Property.REFOCUS_TOKEN.getName(), Property.REFOCUS_TOKEN.getDefaultValue());
-		_logger.info("Get Refocus endpoint (%s) access token: %s", endpoint, token);
 
 		return new EndpointInfo(endpoint, token);
 	}
