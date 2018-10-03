@@ -248,8 +248,6 @@ public class RefocusNotifier extends AuditNotifier {
 		private final String name;
 		private final int value; // Number(1, 0) 1 means fired while 0 means not fired
 
-		//~ Constructors *********************************************************************************************************************************
-
 		private RefocusSample(final String name, final int value) {
 			this.name = name;
 			this.value = value;
@@ -271,7 +269,7 @@ public class RefocusNotifier extends AuditNotifier {
 	}
 
 	/**
-	 * Manage Refocus connections, oAuth and timeouts.
+	 * Manage Refocus connection, proxy and timeouts.
 	 *
 	 * @author  Janine Zou (yzou@salesforce.com)
 	 */
