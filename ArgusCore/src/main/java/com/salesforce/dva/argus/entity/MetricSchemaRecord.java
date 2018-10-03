@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.salesforce.dva.argus.service.SchemaService;
+
+import javax.annotation.Nullable;
 import java.text.MessageFormat;
 
 /**
@@ -42,6 +45,11 @@ import java.text.MessageFormat;
  * @author  Tom Valine (tvaline@salesforce.com)
  */
 public class MetricSchemaRecord {
+    public static final String RETENTION_DISCOVERY = "_retention_discovery_";
+    public static final String EXPIRATION_TS = "expiration_ts";
+
+    public static final int DEFAULT_RETENTION_DISCOVERY_DAYS = 45;
+    public static final int MAX_RETENTION_DISCOVERY_DAYS = 120;
 
     //~ Instance fields ******************************************************************************************************************************
 
@@ -52,6 +60,8 @@ public class MetricSchemaRecord {
     private String tagKey;
     @JsonProperty("tagv")
     private String tagValue;
+    @JsonProperty(RETENTION_DISCOVERY)
+    private Integer retentionDiscovery;
 
     //~ Constructors *********************************************************************************************************************************
 
@@ -65,7 +75,7 @@ public class MetricSchemaRecord {
      * @param  metric  The metric schema name.
      */
     public MetricSchemaRecord(String scope, String metric) {
-        this(null, scope, metric, null, null);
+        this(null, scope, metric, null, null, null);
     }
 
     /**
@@ -78,11 +88,26 @@ public class MetricSchemaRecord {
      * @param  tagValue   The metric schema tag value.
      */
     public MetricSchemaRecord(String namespace, String scope, String metric, String tagKey, String tagValue) {
+        this(namespace, scope, metric, tagKey, tagValue, null);
+    }
+
+    /**
+     * Creates a new MetricSchemaRecord object.
+     *
+     * @param  namespace  The metric schema namespace.
+     * @param  scope      The metric schema scope.
+     * @param  metric     The metric schema name.
+     * @param  tagKey     The metric schema tag key.
+     * @param  tagValue   The metric schema tag value.
+     * @param  retentionDiscovery The metric schema retention discovery
+     */
+    public MetricSchemaRecord(String namespace, String scope, String metric, String tagKey, String tagValue, Integer retentionDiscovery) {
         setNamespace(namespace);
         setScope(scope);
         setMetric(metric);
         setTagKey(tagKey);
         setTagValue(tagValue);
+        setRetentionDiscovery(retentionDiscovery);
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -177,6 +202,25 @@ public class MetricSchemaRecord {
         this.tagValue = tagValue;
     }
 
+    public Integer getRetentionDiscovery() {
+        return retentionDiscovery;
+    }
+
+    public void setRetentionDiscovery(Integer retentionDiscovery) {
+        if (retentionDiscovery != null) {
+            if (retentionDiscovery > MAX_RETENTION_DISCOVERY_DAYS) {
+                this.retentionDiscovery = MAX_RETENTION_DISCOVERY_DAYS; //capped at max value
+            }
+            else if (retentionDiscovery > 0) {  //within the legal range
+                this.retentionDiscovery = retentionDiscovery;
+            }
+            // else ignore the incoming value
+        }
+        else {
+            this.retentionDiscovery = retentionDiscovery;
+        }
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -187,6 +231,7 @@ public class MetricSchemaRecord {
         result = prime * result + ((metric == null) ? 0 : metric.hashCode());
         result = prime * result + ((tagKey == null) ? 0 : tagKey.hashCode());
         result = prime * result + ((tagValue == null) ? 0 : tagValue.hashCode());
+        //member retentionDiscovery has been left out intentionally
         return result;
     }
 
@@ -239,13 +284,14 @@ public class MetricSchemaRecord {
         } else if (!tagValue.equals(other.tagValue)) {
             return false;
         }
+        //member retentionDiscovery has been left out intentionally
         return true;
     }
 
     @Override
     public String toString() {
-        return MessageFormat.format("MetricSchemaRecord = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4})", namespace,
-            scope, metric, tagKey, tagValue);
+        return MessageFormat.format("MetricSchemaRecord = (Namespace = {0}, Scope = {1}, Metric = {2}, TagKey = {3}, TagValue = {4}, RetentionDiscovery = {5})", namespace,
+            scope, metric, tagKey, tagValue, retentionDiscovery);
     }
     /*
      * Returns the Metric Schema Record constructed from a given string
@@ -272,9 +318,9 @@ public class MetricSchemaRecord {
 			tagKey=null;
 			tagValue=null;
 		}
-    	return new MetricSchemaRecord(namespace, scope, metric, tagKey, tagValue);
+    	return new MetricSchemaRecord(namespace, scope, metric, tagKey, tagValue, null);
     }
-    
+
     public static String print(MetricSchemaRecord msr) {
     	
     	StringBuilder sb = new StringBuilder(msr.getScope());
@@ -288,8 +334,37 @@ public class MetricSchemaRecord {
     	if(msr.getNamespace() != null) {
     		sb.append(":").append(msr.getNamespace());
     	}
-    	
+
+        //member retentionDiscovery has been left out intentionally
+
     	return sb.toString();
     }
+
+    /**
+     * consolidate this method to where it belongs without fixing its legacy expectation that
+     * all members are of string type.
+     * @param type which member
+     * @return String representation of the member or null if it's not set
+     */
+    @Nullable
+    public String getStringValueForType(SchemaService.RecordType type) {
+        switch (type) {
+            case NAMESPACE:
+                return getNamespace();
+            case SCOPE:
+                return getScope();
+            case METRIC:
+                return getMetric();
+            case TAGK:
+                return getTagKey();
+            case TAGV:
+                return getTagValue();
+            case RETENTION_DISCOVERY:
+                return getRetentionDiscovery()==null?null:getRetentionDiscovery().toString();
+            default:
+                return null;
+        }
+    }
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
