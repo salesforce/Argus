@@ -39,7 +39,6 @@ import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
-import com.salesforce.dva.argus.service.alert.notifier.utils.EndpointInfo;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.httpclient.HttpClient;
@@ -51,7 +50,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import javax.persistence.EntityManager;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Properties;
 
@@ -66,7 +64,7 @@ public class RefocusNotifier extends AuditNotifier {
 
 	@SLF4JTypeListener.InjectLogger
 	private Logger _logger;
-	private EndpointInfo endpointInfo;
+	private final String endpoint;
 
 
 	/**
@@ -83,52 +81,40 @@ public class RefocusNotifier extends AuditNotifier {
                            SystemConfiguration config, Provider<EntityManager> emf) {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
-		endpointInfo = getEndpoint();
-	}
-
-	private PostMethod getRequestMethod() throws UnsupportedEncodingException {
-		// Create upsert URI post method
-		PostMethod post = new PostMethod(String.format("%s/v1/samples/upsert", endpointInfo.getEndPoint()));
-
-		post.setRequestHeader("Authorization", endpointInfo.getToken());
-		return post;
-	}
-
-	private EndpointInfo getEndpoint() {
-		String endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_ENDPOINT.getDefaultValue());
-		String token = _config.getValue(Property.REFOCUS_TOKEN.getName(), Property.REFOCUS_TOKEN.getDefaultValue());
-
-		return new EndpointInfo(endpoint, token);
+		endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_ENDPOINT.getDefaultValue());
 	}
 
 	@Override
 	protected void sendAdditionalNotification(NotificationContext context) {
-		List<String> aspectPaths = context.getNotification().getSubscriptions();
-		if (aspectPaths != null && !aspectPaths.isEmpty()) {
-			for (String aspect : aspectPaths) {
-				sendMessage(aspect, true);
-			}
-		}
+		_sendRefocusNotification(context, true);
 	}
 
 	@Override
 	protected void clearAdditionalNotification(NotificationContext context) {
+		_sendRefocusNotification(context, false);
+	}
+
+	private void _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
 		List<String> aspectPaths = context.getNotification().getSubscriptions();
-		if (aspectPaths != null && !aspectPaths.isEmpty()) {
-			for (String aspect : aspectPaths) {
-				sendMessage(aspect, false);
-			}
+		String token = context.getNotification().getCustomText();
+
+		requireArgument(StringUtils.isNoneBlank(token), "Token(custom text) cannot be blank.");
+		requireArgument(aspectPaths!=null && !aspectPaths.isEmpty(), "aspect paths (subscriptions) cannot be empty.");
+
+		for (String aspect : aspectPaths) {
+			sendMessage(aspect, token, isTriggerActive);
 		}
+
 	}
 
 	/**
 	 * Sends an Refocus sample.
 	 *
 	 * @param  aspectPath    The Refocus aspect path.
-	 * @param  fired If the trigger is fired or not.
+	 * @param  token         The Customer token to access Refocus.
+	 * @param  fired         If the trigger is fired or not.
 	 */
-	public void sendMessage(String aspectPath, boolean fired) {
-		requireArgument(StringUtils.isNoneBlank(aspectPath), "aspect path cannot be blank.");
+	private void sendMessage(String aspectPath, String token, boolean fired) {
 		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.REFOCUS_ENABLED))) {
 			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_MAX_TIMES.getDefaultValue()));
 			try {
@@ -143,7 +129,8 @@ public class RefocusNotifier extends AuditNotifier {
 					PostMethod post = null;
 
 					try {
-						post=getRequestMethod();
+						post = new PostMethod(String.format("%s/v1/samples/upsert", endpoint));
+						post.setRequestHeader("Authorization", token);
 						post.setRequestEntity(new StringRequestEntity(refocusSample.toJSON(), "application/json", null));
 
 						int respCode = httpclient.executeMethod(post);
@@ -201,7 +188,7 @@ public class RefocusNotifier extends AuditNotifier {
 		/** The Refocus endpoint. */
 		REFOCUS_ENDPOINT("notifier.property.refocus.endpoint", "https://test.refocus.com"),
 		/** The Refocus access token. */
-		REFOCUS_TOKEN("notifier.property.refocus.token", "test-token"),
+		// REFOCUS_TOKEN("notifier.property.refocus.token", "test-token"),
 		/** The Refocus proxy host. */
 		REFOCUS_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The Refocus port. */

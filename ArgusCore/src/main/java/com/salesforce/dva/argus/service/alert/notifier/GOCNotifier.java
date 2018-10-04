@@ -44,7 +44,6 @@ import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
-import com.salesforce.dva.argus.service.alert.notifier.utils.EndpointInfo;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
