@@ -20,6 +20,10 @@
             <input type="checkbox" ng-model="includeAnnotations">
             Include annotations related to the metric
         </label>
+        <label class="checkbox-inline" ng-show="includeAnnotations">
+            Annotation type: 
+            <input type="text" ng-model="annotationType"/>
+        </label>
     </div>
 
     <div id="discoveryLookup" ng-show="showMetricDiscovery">
@@ -29,7 +33,7 @@
     <h4>Discovery lookup</h4>
 
     <p>Choose your search criteria from the categories below:<br />
-        <span style="font-size:12px; color:#AAA;">* Results make take several seconds to appear</span>
+        <span style="font-size:12px; color:#AAA;">* Results might take several seconds to appear</span>
     </p>
 
     <div class="fullBox">
