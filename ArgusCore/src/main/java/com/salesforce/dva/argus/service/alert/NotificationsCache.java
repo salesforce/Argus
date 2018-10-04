@@ -82,4 +82,8 @@ public class NotificationsCache {
 	public void setNotificationsCacheRefreshed(boolean isNotificationsCacheRefreshed) {
 		this.isNotificationsCacheRefreshed = isNotificationsCacheRefreshed;
 	}
+
+	public void dispose() {
+		refresherThread.stop();
+	}
 }
