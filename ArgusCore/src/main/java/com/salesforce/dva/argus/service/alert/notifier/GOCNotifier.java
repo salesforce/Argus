@@ -44,6 +44,7 @@ import com.salesforce.dva.argus.inject.SLF4JTypeListener;
 import com.salesforce.dva.argus.service.AnnotationService;
 import com.salesforce.dva.argus.service.AuditService;
 import com.salesforce.dva.argus.service.MetricService;
+import com.salesforce.dva.argus.service.AlertService.Notifier.NotificationStatus;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService.NotificationContext;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
@@ -775,7 +776,42 @@ public class GOCNotifier extends AuditNotifier {
 			}
 		}
 
+		//~ Inner Classes ********************************************************************************************************************************
+
 	}
 
+	/**
+	 * Utility class for endpoint information.
+	 *
+	 * @author  fiaz.hossain
+	 */
+	public class EndpointInfo {
+
+		private final String endPoint;
+		private final String token;
+
+		private EndpointInfo(final String endPoint, final String token) {
+			this.endPoint = endPoint;
+			this.token = token;
+		}
+
+		/**
+		 * Valid endpoint. Either from config or endpont after authentication
+		 *
+		 * @return  endpoint
+		 */
+		public String getEndPoint() {
+			return endPoint;
+		}
+
+		/**
+		 * Token can be either active, expired or a dummy value.
+		 *
+		 * @return  token
+		 */
+		public String getToken() {
+			return token;
+		}
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
