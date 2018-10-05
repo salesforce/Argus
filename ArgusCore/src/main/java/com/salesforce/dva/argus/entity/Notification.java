@@ -440,6 +440,13 @@ public class Notification extends JPAEntity implements Serializable {
      */
     public void setSubscriptions(List<String> subscriptions) {
         this.subscriptions.clear();
+        if(subscriptions == null) return;
+        for(String currentSubscription: subscriptions) {
+            if (this.getNotifierName().equals(AlertService.SupportedNotifier.GUS.getName())) {
+                if (currentSubscription.length() < 10)
+                    throw new IllegalArgumentException("GUS subjectId is incorrect.");
+            }
+        }
         if (subscriptions != null && !subscriptions.isEmpty()) {
             this.subscriptions.addAll(subscriptions);
         }
