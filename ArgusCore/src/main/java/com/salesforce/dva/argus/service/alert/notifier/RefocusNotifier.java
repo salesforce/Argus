@@ -98,6 +98,8 @@ public class RefocusNotifier extends AuditNotifier {
 		List<String> aspectPaths = context.getNotification().getSubscriptions();
 		String token = context.getNotification().getCustomText();
 
+		//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
+
 		requireArgument(StringUtils.isNoneBlank(token), "Token(custom text) cannot be blank.");
 		requireArgument(aspectPaths!=null && !aspectPaths.isEmpty(), "aspect paths (subscriptions) cannot be empty.");
 
@@ -118,6 +120,8 @@ public class RefocusNotifier extends AuditNotifier {
 		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.REFOCUS_ENABLED))) {
 			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_MAX_TIMES.getDefaultValue()));
 			try {
+
+				//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
 
 				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? 1:0);
 				RefocusTransport refocusTransport = RefocusTransport.getInstance();
