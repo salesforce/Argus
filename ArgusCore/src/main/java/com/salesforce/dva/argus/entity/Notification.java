@@ -445,12 +445,6 @@ public class Notification extends JPAEntity implements Serializable {
             if (this.getNotifierName().equals(AlertService.SupportedNotifier.GUS.getName())) {
                 if (currentSubscription.length() < 10)
                     throw new IllegalArgumentException("GUS subjectId is incorrect.");
-            } else if (this.getNotifierName().equals(AlertService.SupportedNotifier.EMAIL.getName())) {
-                if (!currentSubscription.matches(EMAILREGEX)) {
-                    String errorMessage = MessageFormat.format("Email Address {0} is not allowed according to Regex {1}.",
-                            currentSubscription, EMAILREGEX);
-                    throw new IllegalArgumentException(errorMessage);
-                }
             }
         }
         if (subscriptions != null && !subscriptions.isEmpty()) {
