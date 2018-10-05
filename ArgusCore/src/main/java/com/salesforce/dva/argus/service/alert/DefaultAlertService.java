@@ -1107,6 +1107,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void dispose() {
 		super.dispose();
 		_metricService.dispose();
+		_notificationsCache.dispose();
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.ByteArrayOutputStream;
@@ -388,7 +389,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				continue;
 			}
 
-			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(MetricSchemaRecord.RETENTION_DISCOVERY);
+			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(RETENTION_DISCOVERY);
 			Integer retentionInt = null;
 			if (retention != null) {
 				try {
@@ -471,7 +472,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
                 for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
                 	//remove this special metatag to prevent it from going to ES
-                	entry.getValue().removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
+                	entry.getValue().removeMetatag(RETENTION_DISCOVERY);
                     MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
                     records.add(mtag);
                     if(records.size() == _bulkIndexingSize) {
@@ -1498,14 +1499,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode propertiesNode = mapper.createObjectNode();
-		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
+		propertiesNode.set(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
+		propertiesNode.set(MetricSchemaRecord.EXPIRATION_TS, _createFieldNode(FIELD_TYPE_DATE));
 
-		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.set("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		ObjectNode typeNode = mapper.createObjectNode();
 		typeNode.put("properties", propertiesNode);
