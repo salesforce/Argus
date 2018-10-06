@@ -65,10 +65,17 @@ public class DataLagMonitor extends Thread{
 	@Override
 	public void run() {
 		_logger.info("Data lag monitor thread started");
+		boolean firstTime = true;
         for (String currentDC: _expressionPerDC.keySet()) {
             while (!isInterrupted()) {
                 try {
-                    sleep(SLEEP_INTERVAL_MILLIS);
+					if(!firstTime) {
+						sleep(SLEEP_INTERVAL_MILLIS);
+					}else {
+						// waiting 5 seconds for everything to initialize
+						sleep(5*1000);
+						firstTime = false;
+					}
                     long currTime = System.currentTimeMillis();
                     List<Metric> metrics = _metricService.getMetrics(_expressionPerDC.get(currentDC), currTime);
                     boolean isDataLagging = _isDataLagging.get(currentDC);

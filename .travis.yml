@@ -2,8 +2,6 @@ language: java
 jdk: oraclejdk8
 sudo: required
 group: deprecated-2017Q2
-services:
-- docker
 env:
   global:
   - secure: fnj9R9EOWNKwtMOqikrKF96AsA9J0uyFH4b7NxvuDkLiTHbTcpeF6aPNdQAfkjW7PQCVsnzYUJmpvG/Tc+VJK+oeBO7ncIagGVTFEpQNH0mllZDvCOCn6c0FKRmC23U51lWYi5KuRe/iCARS97s7vHpuM1kgggB7VpkJRt3fnjbU2YQIR+d0Kare3+3nvKZl9xGNYEgxjw2hFEm1WplyLlCDCuYdrIoXtuwgiVqA4bnUm8YV5cDHmh8LvpBNzdUukYiKDyC6k28QVm52mFTJxT5QkWD3sgbkQTrJl3ItL8DhkubDCtOCPXNabfOYFyQv2/H6EVtYOYe/qXZQjcmI0BrEpSw4WnUuvEHx5YDhukWDp6KrJUsyI0tTsW9UT85z8RZQkbGLv4kk4x4BrrJmsLoMQnn5ScxzIhaDoCEVr9iZKowUvKt4MkPUR5eMckqDsZ53uOkSVyATgcvy2F5O6jvrc37YGb4+WnjXZycKExmX9DbJdXkZFR4DkBHJLAE/VWl9CW6Y5grBaX7Ni32yOiUuwxZJExr7rv0Q3VykREKA1bueOK3kBNlx5QPeP5/j6FpPw5YURWr5ARW4NO/diysGD7FZ+0nOw7PMEdNapQavftE4r+DpG6xMzBt0x0XEUxy89DwgS0I8wg+n8LtCXmnChF7/nYCMCejU15MOPr8=
@@ -27,6 +25,9 @@ before_script:
 - pip install --user codecov
 after_success:
 - codecov
+- df -h
+- ls -lah /home/travis/
+- du -h /home
 deploy:
   provider: script
   script: bash ${TRAVIS_BUILD_DIR}/.travis.deploy.sh
