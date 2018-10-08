@@ -32,6 +32,9 @@
 package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Dashboard;
+import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.service.monitor.GaugeExporter;
+
 import java.util.Map;
 
 /**
@@ -147,6 +150,15 @@ public interface MonitorService extends Service {
      * @return isDataLagging boolean flag
      */
     boolean isDataLagging();
+
+	/**
+	 * Due to circular dependency exists between monitor service and alert service, I have to
+	 * add such interface so that every where in the system export metrics to JMX metric exporter
+	 * 
+	 * @param metric the metric to export
+	 * @param value  the value datapoint of the metric to be export
+	 */
+	void exportMetric(Metric metric, Double value);
 
     //~ Enums ****************************************************************************************************************************************
 

@@ -54,6 +54,7 @@ import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.AlertDefinitionsCache;
+import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -120,7 +121,8 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	 */
 	@Inject
 	DistributedDatabaseSchedulingService(AlertService alertService, UserService userService, TSDBService tsdbService, MetricService metricService,
-			ServiceManagementService serviceManagementRecordService, AuditService auditService, SystemConfiguration config, DistributedSchedulingLockService distributedSchedulingLockService) {
+			ServiceManagementService serviceManagementRecordService, AuditService auditService,
+			SystemConfiguration config, DistributedSchedulingLockService distributedSchedulingLockService) {
 		super(config);
 		requireArgument(alertService != null, "Alert service cannot be null.");
 		requireArgument(userService != null, "User service cannot be null.");
@@ -295,8 +297,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 	 */
 	private class SchedulingThread extends Thread {
 
-		private final LockType lockType;
-
 		/**
 		 * Creates a new SchedulingThread object.
 		 *
@@ -305,7 +305,6 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 		 */
 		public SchedulingThread(String name, LockType lockType) {
 			super(name);
-			this.lockType = lockType;
 		}
 
 		@Override
@@ -337,7 +336,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						if(startTimeForCurrMinute>System.currentTimeMillis()) {
 							startTimeForCurrMinute = startTimeForCurrMinute - 60*1000;
 						}
-						List<Alert> enabledAlerts = _alertDefinitionsCache.getEnabledAlertsForMinute(startTimeForCurrMinute);
+						List<Alert> enabledAlerts = AlertDefinitionsCache.getEnabledAlertsForMinute(startTimeForCurrMinute);
 						_logger.info("Enabled alerts for start time {} are {}, and from index is {}", startTimeForCurrMinute, enabledAlerts.size(), jobsFromIndex);
 						while(jobsFromIndex < enabledAlerts.size()){
 							int jobsToIndex = enabledAlerts.size()<(jobsFromIndex+jobsBlockSize)?enabledAlerts.size():jobsFromIndex+jobsBlockSize;
@@ -401,14 +400,18 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 						Metric schedulingQueueSizeMetric = new Metric(MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getScope(), MonitorService.Counter.ALERTS_SCHEDULING_QUEUE_SIZE.getMetric());
 						schedulingQueueSizeMetric.setTag("host",SystemConfiguration.getHostname());
 						Map<Long, Double> datapoints = new HashMap<>();
-						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertsQueue.size()));
+						double queueSize = Double.valueOf(_alertsQueue.size());
+						datapoints.put(nextMinuteStartTime, queueSize);
 						schedulingQueueSizeMetric.addDatapoints(datapoints);
+						_alertService.exportMetric(schedulingQueueSizeMetric, queueSize);
 
 						Metric enabledAlertsMetric = new Metric(MonitorService.Counter.ALERTS_ENABLED.getScope(), MonitorService.Counter.ALERTS_ENABLED.getMetric());
 						enabledAlertsMetric.setTag("host",SystemConfiguration.getHostname());
 						datapoints = new HashMap<>();
-						datapoints.put(nextMinuteStartTime, Double.valueOf(_alertDefinitionsCache.getEnabledAlertsForMinute(nextMinuteStartTime).size()));
+						double enabledCount = Double.valueOf(AlertDefinitionsCache.getEnabledAlertsForMinute(nextMinuteStartTime).size());
+						datapoints.put(nextMinuteStartTime, enabledCount);
 						enabledAlertsMetric.addDatapoints(datapoints);
+						_alertService.exportMetric(enabledAlertsMetric, enabledCount);
 
 						try {
 							_tsdbService.putMetrics(Arrays.asList(new Metric[] {schedulingQueueSizeMetric, enabledAlertsMetric}));

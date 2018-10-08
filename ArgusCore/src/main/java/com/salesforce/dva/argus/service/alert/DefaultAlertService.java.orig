@@ -35,6 +35,7 @@ import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static java.math.BigInteger.ZERO;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -367,6 +368,15 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		List<History> historyList = new ArrayList<>();
 		List<AlertWithTimestamp> alertsWithTimestamp = _mqService.dequeue(ALERT.getQueueName(), AlertWithTimestamp.class, timeout,
 				alertCount);
+		
+		/**
+		 * Tao: we suspect that evaluation has constant delay which contribute the difference,
+		 *      between scheduled and evaluated.  We want to see whether when picked up scheduled
+		 *      alerts(it always try to get all of them in one shot), it shows that this size
+		 *      is growing due to delay.  This is for investigation, may be dropped or changed
+		 *      later.
+		 */
+		_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP_LIST_SIZE, alertsWithTimestamp.size(), null);
 
 		List<Notification> allNotifications = new ArrayList<>();
 		Map<BigInteger, Alert> alertsByNotificationId = new HashMap<>();
@@ -431,6 +441,28 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			long jobStartTime = System.currentTimeMillis();
 			long jobEndTime = 0;
 			Long alertEnqueueTimestamp = 0L;
+			
+			/**
+			 * Tao: the pickedup alert counter count every alert that comes inside the processing loop.
+			 *      since currently system reports no data lagging and alert skipping, we want to put 
+			 *      counter before the lagging detection and skipping logic so that we
+			 *      can see whether the evaluated alert count = pickedup alert count as expected.
+			 *      this will also provide another validation of lagging detection / skipping logic
+			 *      which is hard to test.
+			 *      
+			 *      Since we assume there is time delay between picking up all scheduled alerts from the
+			 *      queue and try to evaluate each one of them, so this counter should not be the same 
+			 *      as the previous pickedup list size count.
+			 *      
+			 *      There also could be, depend our performance, time delay between pickedup alert counter
+			 *      and evaluated alert counter, we will see how it goes.
+			 *      
+			 *      We also want to the relationship between scheduled alert counter, and pickedup alert
+			 *      counter.
+			 */
+			Map<String, String> pickedup_counter_tags = new HashMap<>();
+			pickedup_counter_tags.put(USERTAG, alert.getOwner().getUserName());
+			_monitorService.modifyCounter(Counter.ALERTS_PICKEDUP, 1, pickedup_counter_tags);
 
 
 			String logMessage = null;
@@ -779,19 +811,21 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_appendMessageNUpdateHistory(history, logMessage, null, 0);
 	}
 
-	private void publishAlertTrackingMetric(String scope, BigInteger alertId, double value, Map<String, String> tags) {
+	private void publishAlertTrackingMetric(String metricSuffix, BigInteger alertId, double value, Map<String, String> tags) {
 		Map<Long, Double> datapoints = new HashMap<>();
 		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), value);
-		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
+		Metric trackingMetric = new Metric("argus.core", "alert-" + alertId.intValue() + metricSuffix);
 		trackingMetric.addDatapoints(datapoints);
-		if(tags!=null) {
-			trackingMetric.setTags(tags);
+		if (tags!=null) {
+		    trackingMetric.setTags(tags);
 		}
-		try {
+		
+		_monitorService.updateCustomMetric(trackingMetric, value);
+		/*try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
 			_logger.error("Exception occurred while adding alerts evaluated metric to tsdb - {}", ex.getMessage());
-		}
+		}*/
 	}
 
 	private void _updateNotificationSetActiveStatus(Trigger trigger, Metric metric, History history, Notification notification) {
@@ -890,20 +924,20 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		}
 
 		_mqService.enqueue(ALERT.getQueueName(), alertsWithTimestamp);
-
-
+		
+		Map<Long, Double> datapoints = new HashMap<>();
+		// convert timestamp to nearest minute since cron is Least scale resolution of minute
+		datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
+		String currentHostname = SystemConfiguration.getHostname();
+		
 		List<Metric> metricsAlertScheduled = new ArrayList<Metric>();
 
 		// Write alerts scheduled for evaluation as time series to TSDB
 		for (Alert alert : alerts) {
-			Map<Long, Double> datapoints = new HashMap<>();
-			// convert timestamp to nearest minute since cron is Least scale resolution of minute
-			datapoints.put(1000 * 60 * (System.currentTimeMillis()/(1000 *60)), 1.0);
 			Metric metric = new Metric("alerts.scheduled", "alert-" + alert.getId().toString());
 			metric.setTag("host", HOSTNAME);
 			metric.addDatapoints(datapoints);
 			metricsAlertScheduled.add(metric);
-
 			Map<String, String> tags = new HashMap<>();
 			tags.put(USERTAG, alert.getOwner().getUserName());
 			_monitorService.modifyCounter(Counter.ALERTS_SCHEDULED, 1, tags);
@@ -1072,7 +1106,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void dispose() {
 		super.dispose();
 		_metricService.dispose();
-		_notificationsCache.dispose();
 	}
 
 	/**
@@ -1391,13 +1424,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
 	}
-
-
-	@Override
-	public void exportMetric(Metric metric, Double value) {
-		this._monitorService.exportMetric(metric, value);
-	}
-
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

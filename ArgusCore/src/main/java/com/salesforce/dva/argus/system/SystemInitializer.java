@@ -53,7 +53,9 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
+import com.salesforce.dva.argus.service.monitor.CounterMetricJMXExporter;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
+import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
@@ -224,6 +226,7 @@ final class SystemInitializer extends AbstractModule {
     }
 
     private void configureServices() {
+        bindConcreteClass(CounterMetricJMXExporter.class, GaugeExporter.class);
         bindConcreteClass(Property.CACHE_SERVICE_IMPL_CLASS, CacheService.class);
         bindConcreteClass(Property.MQ_SERVICE_IMPL_CLASS, MQService.class);
         bindConcreteClass(Property.ALERT_SERVICE_IMPL_CLASS, AlertService.class);
