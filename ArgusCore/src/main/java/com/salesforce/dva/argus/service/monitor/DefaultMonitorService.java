@@ -31,12 +31,18 @@
 
 package com.salesforce.dva.argus.service.monitor;
 
+import com.codahale.metrics.DefaultObjectNameFactory;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.SharedMetricRegistries;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.persist.Transactional;
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.Dashboard;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.entity.MutableGauge;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.ServiceManagementRecord;
@@ -74,6 +80,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -95,11 +109,12 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private static final String ALERT_NAME_PREFIX = "monitor-";
 	private static final String HOSTNAME;
 	private static long TIME_BETWEEN_RECORDINGS = 60 * 1000;
-
+	private static final MBeanServer mbeanServer;
 	static {
+		mbeanServer = ManagementFactory.getPlatformMBeanServer();
 		HOSTNAME = SystemConfiguration.getHostname();
 	}
-
+	
 	//~ Instance fields ******************************************************************************************************************************
 
 	@SLF4JTypeListener.InjectLogger
@@ -112,6 +127,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private final MetricService _metricService;
 	private final MailService _mailService;
 	private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
+	private final Map<String, MutableGauge> _exportedMetrics = new ConcurrentHashMap<String, MutableGauge>();
 	private final PrincipalUser _adminUser;
 	private final SystemConfiguration _sysConfig;
 	private Thread _monitorThread;
@@ -167,6 +183,45 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		metric.setTags(tags);
 		metric.setTag("host", HOSTNAME);
 		return metric;
+	}
+	
+	private String _createObjectNameForMetric(Metric metric) {
+		String objName =  "ArgusMetrics:type=Counter,scope="  + metric.getScope() + ",metric=" + metric.getMetric();
+		if (null!= metric.getTags()) {
+			for (String key : metric.getTags().keySet()) {
+				objName = objName + "," + key + "=" + metric.getTags().get(key);
+			}
+		}
+		return objName;
+	}
+	
+	/**
+	 * update new gauge with new value based on old metrics object 
+	 * @param metric the old internal metric object. It will be used to build the key of
+	 *               the new gauge
+	 * @param value  the value to be updated
+	 */
+	private void _updateGauge(Metric metric, double value, boolean isDelta) {
+		String objectName = this._createObjectNameForMetric(metric);
+
+		// change code to grab lock on _exportedMetrics instead of _metrics
+		// eventually, _exportedMetrics will take over.  
+		synchronized(_exportedMetrics) {
+			if (!_exportedMetrics.containsKey(objectName)){
+				MutableGauge gauge = new MutableGauge(objectName);
+				gauge.setValue(value);
+				_exportedMetrics.put(objectName, gauge);
+				try {
+					_logger.warn("_updateGauge(): !!!!!! come to register {} to JMX", objectName);
+					mbeanServer.registerMBean(gauge, new ObjectName(objectName));
+				} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
+					_logger.error("_updateGauge(): failed to register internal counter {} to JMX {}", objectName, e);
+				}
+			} else {
+				_exportedMetrics.get(objectName).setValue(value);
+			}
+		}
+		
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -260,13 +315,16 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 	}
 
+	
+
 	@Override
 	public void updateCustomCounter(String name, double value, Map<String, String> tags) {
 		requireNotDisposed();
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
 		Metric metric = _constructCounterKey(name, tags);
-
+		
+		this._updateGauge(metric, value);
 		_logger.debug("Updating {} counter for {} to {}.", name, tags, value);
 		_metrics.put(metric, value);
 	}
@@ -286,14 +344,21 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 		Metric key = _constructCounterKey(name, tags);
 
-		synchronized (_metrics) {
+		double newValue = 0.0;
+		// lock _exportedMetrics instead of old _metrics, since we eventually will only use
+		// _exportedMetrics.  This to ensure just one thread that can create
+		synchronized (_exportedMetrics) {
 			Double value = _metrics.get(key);
-			double newValue = value == null ? delta : value + delta;
+			newValue = value == null ? delta : value + delta;			
 
 			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
-			return newValue;
 		}
+		
+		// this may cause two thread update the same key but since _updateGauge is 
+		// also synchorinized by _exportedMetrics, the operation is properly serialized
+		this._updateGauge(key, newValue);
+		return newValue;
 	}
 
 	@Override
@@ -318,7 +383,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		Metric metric = _constructCounterKey(name, tags);
 		Double value;
 
-		synchronized (_metrics) {
+		synchronized (_exportedMetrics) {
 			value = _metrics.get(metric);
 			if (value == null) {
 				value = Double.NaN;
@@ -402,7 +467,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 		List<Metric> toRemove = new LinkedList<>();
 
-		synchronized (_metrics) {
+		synchronized (_exportedMetrics) {
 			for (Metric metric : _metrics.keySet()) {
 				if (scope.equalsIgnoreCase(metric.getScope())) {
 					toRemove.add(metric);
@@ -411,6 +476,11 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			for (Metric metric : toRemove) {
 				_logger.debug("Resetting counter {}.", metric);
 				_metrics.remove(metric);
+				// mirror old metrics operation
+				String objName = this._createObjectNameForMetric(metric);
+				if (_exportedMetrics.containsKey(objName)) {
+					_exportedMetrics.get(objName).setValue(0.0);
+				}
 			}
 		}
 	}
@@ -689,7 +759,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			_updateJVMStatsCounters();
 
-			synchronized (_metrics) {
+			synchronized (_exportedMetrics) {
 				sizeJVMMetrics = _metrics.size();
 				counters.putAll(_metrics);
 				_metrics.clear();
@@ -726,5 +796,15 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			}
 		}
 	}
+
+	@Override
+	public void updateCustomMetric(Metric metric, double value) {
+		requireNotDisposed();
+		requireArgument(metric != null, "Cannot register null counter.");
+		this._updateGauge(metric, value);
+		_logger.debug("register {} counter value {} to report.", metric.getDisplayName(), value);
+		_metrics.put(metric, value);
+	}
+	
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

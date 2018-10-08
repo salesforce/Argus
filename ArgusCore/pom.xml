@@ -14,6 +14,7 @@
     <description>Argus core services. Business layer for the Argus Production Monitoring Tool.</description>
     <properties>
         <top>${project.basedir}/${project.parent.relativePath}</top>
+       <dropwizard.metrics.version>3.1.2</dropwizard.metrics.version>
     </properties>
     <build>
         <plugins>
@@ -290,10 +291,10 @@
             <artifactId>jopt-simple</artifactId>
             <version>3.2</version>
         </dependency>
-        <dependency>
-            <groupId>com.yammer.metrics</groupId>
+         <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>2.2.0</version>
+            <version>${dropwizard.metrics.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>

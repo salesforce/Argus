@@ -1,0 +1,12 @@
+---   
+lowercaseOutputLabelNames: true
+lowercaseOutputName: true
+rules:
+- pattern: "ArgusMetrics<type=Counter\\s*,\\s*scope=argus\\.core\\s*,\\s*metric=(.*)\\s*,\\s*host=(.*)\\s*,\\s*user=(.*)\\s*><(.*)>(.*):(.*)$"
+  name: ArgusMetrics_$1
+  labels:
+    host: $2
+    service: "ArgusMetrics"
+    user: $3
+  help: Argus internal metrics arugs.core:$1 at host $2
+  type: GAUGE
