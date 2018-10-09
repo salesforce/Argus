@@ -288,7 +288,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
-	
+
 	@Override
 	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
@@ -467,11 +467,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
-				if(trigger.getType().equals(TriggerType.NO_DATA)) {
+                if(trigger.getType().equals(TriggerType.NO_DATA)) {
 					missingDataTriggers.add(trigger);
 				}
 			}
-			
+
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
@@ -493,7 +493,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					if(missingDataTriggers.size()>0) {
 						for(Notification notification : alert.getNotifications()) {
 							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
 							}
 						}
 					}
@@ -505,7 +505,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
-							metrics, history);
+							metrics, history, alert.getExpression(), alertEnqueueTimestamp);
 
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
@@ -567,7 +567,6 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				_logger.warn(logMessage);
 
 				try {
-
 					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
 						_sendEmailToAdmin(alert, alert.getId(), ex);
 					}
@@ -710,13 +709,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
 	 * and the trigger fired time. 
 	 */
-	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history) {
+	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history, String queryExpression, Long alertEnqueueTimestamp) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
 
 		for(Trigger trigger : triggers) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = new HashMap<>(metrics.size());
 			for(Metric metric : metrics) {
-				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric);
+				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric, queryExpression, alertEnqueueTimestamp);
 
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
@@ -736,7 +735,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		double value = 0.0;
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-		    value = metric.getDatapoints().get(triggerFiredTime);
+			value = metric.getDatapoints().get(triggerFiredTime);
 		}
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
@@ -787,7 +786,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
-		    trackingMetric.setTags(tags);
+			trackingMetric.setTags(tags);
 		}
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
@@ -987,29 +986,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
 	}
-	
+
 	@Override
 	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
 		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset, searchText);
 	}
-	
+
 	@Override
 	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
-		
+
 		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
 		if (owner == null || !owner.isPrivileged()) {
 			return new ArrayList<>(0);
 		}
-		
+
 		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
 	}
 
 	@Override
 	public int countAlerts(AlertsCountContext context) {
 		requireNotDisposed();
-		
+
 		if (context == null) {
 			return 0;
 		}
@@ -1029,7 +1028,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if (owner == null || !owner.isPrivileged()) {
 				return 0;
 			}
-			
+
 			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner, context.getSearchText());
 		}
 
@@ -1074,6 +1073,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void dispose() {
 		super.dispose();
 		_metricService.dispose();
+		_notificationsCache.dispose();
 	}
 
 	/**
@@ -1084,7 +1084,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 *
 	 * @return  The time stamp of the last data point in metric at which the trigger was decided to be fired.
 	 */
-	public Long getTriggerFiredDatapointTime(Trigger trigger, Metric metric) {
+	public Long getTriggerFiredDatapointTime(Trigger trigger, Metric metric, String queryExpression, Long alertEnqueueTimestamp) {
 		List<Map.Entry<Long, Double>> sortedDatapoints = new ArrayList<>(metric.getDatapoints().entrySet());
 
 		if (metric.getDatapoints().isEmpty()) {
@@ -1111,13 +1111,32 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		int endIndex = sortedDatapoints.size();
 
-		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
-			if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
-				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
-				if(interval >= trigger.getInertia())
-					return sortedDatapoints.get(endIndex-1).getKey();
-			}else{
-				endIndex=startIndex;
+        if(trigger.getType().equals(TriggerType.NO_DATA)) {
+            Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
+            if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
+            	    return sortedDatapoints.get(0).getKey();
+            }
+            	
+            if((queryTimes[1] - sortedDatapoints.get(sortedDatapoints.size()-1).getKey()) > trigger.getInertia()) {
+            	    return sortedDatapoints.get(sortedDatapoints.size()-1).getKey();
+            }
+            
+            if(sortedDatapoints.size()>1) {
+            	    for(int i=1; i<sortedDatapoints.size(); i++) {
+            	    	    if((sortedDatapoints.get(i).getKey()-sortedDatapoints.get(i-1).getKey()) > trigger.getInertia()) {
+            	    	    	    return sortedDatapoints.get(i-1).getKey();
+            	    	    }
+            	    }
+            }
+		}else {
+			for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
+				if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
+					Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
+					if(interval >= trigger.getInertia())
+						return sortedDatapoints.get(endIndex-1).getKey();
+				}else{
+					endIndex=startIndex;
+				}
 			}
 		}
 		return null;

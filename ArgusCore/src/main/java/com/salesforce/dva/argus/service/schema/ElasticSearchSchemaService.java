@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.ByteArrayOutputStream;
@@ -20,6 +21,7 @@ import java.util.SortedSet;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.JsonSerializer;
+import com.google.common.annotations.VisibleForTesting;
 import com.salesforce.dva.argus.entity.KeywordQuery;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetricSchemaRecord;
@@ -47,14 +49,10 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -93,6 +91,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final int MAX_RETRY_TIMEOUT = 300 * 1000;
 	private static final String FIELD_TYPE_TEXT = "text";
 	private static final String FIELD_TYPE_DATE ="date";
+	private static final String FIELD_TYPE_INTEGER = "integer";
 
 	private final ObjectMapper _mapper;
 	private final ObjectMapper _createScopeOnlyMapper;
@@ -121,7 +120,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	public ElasticSearchSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config, monitorService);
 
-		_mapper = _createObjectMapper();
+		_mapper = createObjectMapper();
 
 		_createScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.CreateSerializer());
 		_updateScopeOnlyMapper = _getScopeOnlyObjectMapper(new ScopeOnlySchemaRecordList.UpdateSerializer());
@@ -390,9 +389,23 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				continue;
 			}
 
+			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(RETENTION_DISCOVERY);
+			Integer retentionInt = null;
+			if (retention != null) {
+				try {
+					retentionInt = Integer.parseInt(retention);
+				}
+				catch(NumberFormatException e) {
+					_logger.debug("expect _retention_discovery_ to be a numeric value; {} is invalid", retention);
+				}
+			}
 			for(Map.Entry<String, String> entry : metric.getTags().entrySet()) {
-				records.add(new MetricSchemaRecord(metric.getNamespace(), metric.getScope(), metric.getMetric(),
-						entry.getKey(), entry.getValue()));
+				records.add(new MetricSchemaRecord(metric.getNamespace(),
+													metric.getScope(),
+													metric.getMetric(),
+													entry.getKey(),
+													entry.getValue(),
+													retentionInt));
 				if(records.size() == _bulkIndexingSize) {
 					fracturedList.add(records);
 					records = new ArrayList<>(_bulkIndexingSize);
@@ -458,6 +471,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 
 		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
                 for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
+                	//remove this special metatag to prevent it from going to ES
+                	entry.getValue().removeMetatag(RETENTION_DISCOVERY);
                     MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
                     records.add(mtag);
                     if(records.size() == _bulkIndexingSize) {
@@ -1399,7 +1414,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		}
 	}
 
-	private ObjectMapper _createObjectMapper() {
+	@VisibleForTesting
+	static ObjectMapper createObjectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
 
 		mapper.setSerializationInclusion(Include.NON_NULL);
@@ -1483,13 +1499,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode propertiesNode = mapper.createObjectNode();
-		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
+		propertiesNode.set(MetricSchemaRecord.EXPIRATION_TS, _createFieldNode(FIELD_TYPE_DATE));
 
-		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.set("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		ObjectNode typeNode = mapper.createObjectNode();
 		typeNode.put("properties", propertiesNode);
