@@ -788,7 +788,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			trackingMetric.setTags(tags);
 		}
 		
-		this._monitorService.exportMetric(trackingMetric, value);
+		this.exportMetric(trackingMetric, value);
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
