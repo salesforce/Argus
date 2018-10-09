@@ -298,6 +298,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
+			_gaugeExporter.exportGauge(key, newValue);
 			return newValue;
 		}
 	}
@@ -715,6 +716,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 				dataPoints.put(timestamp, entry.getValue());
 				entry.getKey().setDatapoints(dataPoints);
+				_gaugeExporter.exportGauge(entry.getKey(), entry.getValue());
 			}
 			if (!isDisposed()) {
 				_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());

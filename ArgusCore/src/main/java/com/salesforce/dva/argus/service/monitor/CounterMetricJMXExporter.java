@@ -50,12 +50,13 @@ public class CounterMetricJMXExporter implements GaugeExporter {
 		// change code to grab lock on _exportedMetrics instead of _metrics
 		// eventually, _exportedMetrics will take over.
 		synchronized (_exportedMetrics) {
+			_logger.debug("exportGauge(): +++ set {} to {}", objectName, value);
 			if (!_exportedMetrics.containsKey(objectName)) {
 				MutableGauge gauge = new MutableGauge(objectName);
 				gauge.setValue(value);
 				_exportedMetrics.put(objectName, gauge);
 				try {
-					_logger.warn("exportGauge(): !!!!!! come to register {} to JMX", objectName);
+					_logger.debug("exportGauge(): !!!!!! come to register {} to JMX", objectName);
 					mbeanServer.registerMBean(gauge, new ObjectName(objectName));
 				} catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException
 						| MalformedObjectNameException e) {
