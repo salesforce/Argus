@@ -46,7 +46,6 @@ import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import javax.persistence.EntityManager;
@@ -65,6 +64,7 @@ public class RefocusNotifier extends AuditNotifier {
 	@SLF4JTypeListener.InjectLogger
 	private Logger _logger;
 	private final String endpoint;
+	private final String token;
 
 
 	/**
@@ -82,6 +82,7 @@ public class RefocusNotifier extends AuditNotifier {
 		super(metricService, annotationService, auditService, config, emf);
 		requireArgument(config != null, "The configuration cannot be null.");
 		endpoint = _config.getValue(Property.REFOCUS_ENDPOINT.getName(), Property.REFOCUS_ENDPOINT.getDefaultValue());
+		token = _config.getValue(Property.REFOCUS_TOKEN.getName(), Property.REFOCUS_TOKEN.getDefaultValue());
 	}
 
 	@Override
@@ -96,15 +97,13 @@ public class RefocusNotifier extends AuditNotifier {
 
 	private void _sendRefocusNotification(NotificationContext context, boolean isTriggerActive) {
 		List<String> aspectPaths = context.getNotification().getSubscriptions();
-		String token = context.getNotification().getCustomText();
 
 		//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
 
-		requireArgument(StringUtils.isNoneBlank(token), "Token(custom text) cannot be blank.");
 		requireArgument(aspectPaths!=null && !aspectPaths.isEmpty(), "aspect paths (subscriptions) cannot be empty.");
 
 		for (String aspect : aspectPaths) {
-			sendMessage(aspect, token, isTriggerActive);
+			sendMessage(aspect,  isTriggerActive);
 		}
 
 	}
@@ -113,29 +112,26 @@ public class RefocusNotifier extends AuditNotifier {
 	 * Sends an Refocus sample.
 	 *
 	 * @param  aspectPath    The Refocus aspect path.
-	 * @param  token         The Customer token to access Refocus.
 	 * @param  fired         If the trigger is fired or not.
 	 */
-	private void sendMessage(String aspectPath, String token, boolean fired) {
+	private void sendMessage(String aspectPath, boolean fired) {
 		if (Boolean.valueOf(_config.getValue(SystemConfiguration.Property.REFOCUS_ENABLED))) {
-			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_MAX_TIMES.getDefaultValue()));
+			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getDefaultValue()));
 			try {
 
 				//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
 
-				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? 1:0);
+				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? 1 : 0);
 				RefocusTransport refocusTransport = RefocusTransport.getInstance();
 				HttpClient httpclient = refocusTransport.getHttpClient(_config);
 
+				PostMethod post = null;
+				try {
+					post = new PostMethod(String.format("%s/v1/samples/upsert", endpoint));
+					post.setRequestHeader("Authorization", token);
+					post.setRequestEntity(new StringRequestEntity(refocusSample.toJSON(), "application/json", null));
 
-				for (int i = 0; i < 1+refreshMaxTimes; i++) {
-
-					PostMethod post = null;
-
-					try {
-						post = new PostMethod(String.format("%s/v1/samples/upsert", endpoint));
-						post.setRequestHeader("Authorization", token);
-						post.setRequestEntity(new StringRequestEntity(refocusSample.toJSON(), "application/json", null));
+					for (int i = 0; i < 1 + refreshMaxTimes; i++) {
 
 						int respCode = httpclient.executeMethod(post);
 
@@ -151,16 +147,17 @@ public class RefocusNotifier extends AuditNotifier {
 									refocusSample.toJSON(), respCode, post.getResponseBodyAsString());
 							break;
 						}
-					} catch (Exception e) {
-						_logger.error("Failure - send Refocus sample'{}'. Exception '{}'", refocusSample.toJSON(), e);
-					} finally {
-						if(post != null){
-							post.releaseConnection();
-						}
+					}
+				} catch (Exception e) {
+					_logger.error("Failure - send Refocus sample'{}'. Exception '{}'", refocusSample.toJSON(), e);
+				} finally {
+					if (post != null) {
+						post.releaseConnection();
 					}
 				}
+
 			} catch (RuntimeException ex) {
-				throw new SystemException("Failed to send an GOC++ notification.", ex);
+				throw new SystemException("Failed to send an Refocus notification.", ex);
 			}
 		} else {
 			_logger.info("Sending Refocus notification is disabled.  Not sending message for aspect '{}'.", aspectPath);
@@ -192,13 +189,13 @@ public class RefocusNotifier extends AuditNotifier {
 		/** The Refocus endpoint. */
 		REFOCUS_ENDPOINT("notifier.property.refocus.endpoint", "https://test.refocus.com"),
 		/** The Refocus access token. */
-		// REFOCUS_TOKEN("notifier.property.refocus.token", "test-token"),
+		REFOCUS_TOKEN("notifier.property.refocus.token", "test-token"),
 		/** The Refocus proxy host. */
 		REFOCUS_PROXY_HOST("notifier.property.proxy.host", ""),
 		/** The Refocus port. */
 		REFOCUS_PROXY_PORT("notifier.property.proxy.port", ""),
 		/** The Refocus connection refresh max times. */
-		REFOCUS_CONNECTION_MAX_TIMES("notifier.property.refocus.refreshMaxTimes", "0");
+		REFOCUS_CONNECTION_REFRESH_MAX_TIMES("notifier.property.refocus.refreshMaxTimes", "0");
 
 		private final String _name;
 		private final String _defaultValue;
@@ -237,7 +234,7 @@ public class RefocusNotifier extends AuditNotifier {
 		public static final String ASPECT_NAME_FIELD = "name";
 		public static final String ASPECT_VALUE_FIELD = "value";
 		private final String name;
-		private final int value; // Number(1, 0) 1 means fired while 0 means not fired
+		private final int value;
 
 		private RefocusSample(final String name, final int value) {
 			this.name = name;
