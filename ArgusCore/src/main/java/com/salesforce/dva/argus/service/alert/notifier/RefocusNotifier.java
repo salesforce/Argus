@@ -149,7 +149,7 @@ public class RefocusNotifier extends AuditNotifier {
 						}
 					}
 				} catch (Exception e) {
-					_logger.error("Failure - send Refocus sample'{}'. Exception '{}'", refocusSample.toJSON(), e);
+					_logger.error("Failure - send Refocus sample '{}'. Exception '{}'", refocusSample.toJSON(), e);
 				} finally {
 					if (post != null) {
 						post.releaseConnection();
