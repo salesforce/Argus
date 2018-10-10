@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,8 +65,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	protected static BloomFilter<CharSequence> bloomFilterMetatags;
 
 	protected final MonitorService _monitorService;
-	private Random rand = new Random();
-	private int randomNumber = rand.nextInt();
+        private int randomBloomAppend;
 	private int bloomFilterExpectedNumberInsertions;
 	private double bloomFilterErrorRate;
 	private int bloomFilterScopeOnlyExpectedNumberInsertions;
@@ -89,6 +87,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		_monitorService = monitorService;
 
+                try {
+                    randomBloomAppend = Math.abs(InetAddress.getLocalHost().getHostName().hashCode());
+                } catch (IOException io) {
+                    _logger.error("failed to create randomBloomAppend", io);
+                    randomBloomAppend = 12345;
+                }
                 String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
                                                         Property.BF_STATE_BASE_DIR.getDefaultValue());
                 bfTagsStateFilename = bfStateBaseDir + "/bloomfilter_tags.state." +
@@ -289,7 +293,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		// Add randomness for each instance of bloom filter running on different
 		// schema clients to reduce probability of false positives that metric schemas are not written to ES
-		sb.append('\0').append(randomNumber);
+		sb.append('\0').append(randomBloomAppend);
 
 		return sb.toString();
 	}
@@ -459,7 +463,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private class BloomFilterMonitorThread implements Runnable {
 		@Override
 		public void run() {
-			_logger.info("Initialized random number for bloom filter key = {}", randomNumber);
+			_logger.info("Initialized randomBloomAppend for bloom filter key = {}", randomBloomAppend);
 			while (!Thread.currentThread().isInterrupted()) {
 				_sleepForPollPeriod();
 				if (!Thread.currentThread().isInterrupted()) {
@@ -517,7 +521,6 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			bloomFilterMetatags = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
                                                                        bloomFilterMetatagsExpectedNumberInsertions , bloomFilterMetatagsErrorRate);
 			/* Don't need explicit synchronization to prevent slowness majority of the time*/
-			randomNumber = rand.nextInt();
 		}
 	}
 }
