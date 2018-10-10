@@ -14,6 +14,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.File;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,6 +54,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	private static final int DAY_IN_SECONDS = 24 * 60 * 60;
 	private static final int HOUR_IN_SECONDS = 60 * 60;
 
+
 	/* Have three separate bloom filters one for metrics schema, one only for scope names schema and one only for scope name and metric name schema.
 	 * Since scopes will continue to repeat more often on subsequent kafka batch reads, we can easily check this from the  bloom filter for scopes only.
 	 * Hence we can avoid the extra call to populate scopenames index on ES in subsequent Kafka reads.
@@ -74,11 +81,18 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	protected final boolean _syncPut;
 	private int bloomFilterFlushHourToStartAt;
 	private ScheduledExecutorService scheduledExecutorService;
+        private String bfTagsStateFilename;
+
 
 	protected AbstractSchemaService(SystemConfiguration config, MonitorService monitorService) {
 		super(config);
 
 		_monitorService = monitorService;
+
+                String bfStateBaseDir = config.getValue(Property.BF_STATE_BASE_DIR.getName(),
+                                                        Property.BF_STATE_BASE_DIR.getDefaultValue());
+                bfTagsStateFilename = bfStateBaseDir + "/bloomfilter_tags.state." +
+                    config.getValue(SystemConfiguration.ARGUS_INSTANCE_ID, "noid");
 
 		bloomFilterExpectedNumberInsertions = Integer.parseInt(config.getValue(Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getName(),
 				Property.BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS.getDefaultValue()));
@@ -101,8 +115,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		bloomFilterMetatagsErrorRate =
                     Double.parseDouble(config.getValue(Property.BLOOMFILTER_METATAGS_ERROR_RATE.getName(),
                                                        Property.BLOOMFILTER_METATAGS_ERROR_RATE.getDefaultValue()));
-
-		bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
+                createOrReadBloomFilter();
 
 		bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
 		bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
@@ -312,6 +325,42 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 		return bloomFilterFlushHourToStartAt;
 	}
 
+    private void createOrReadBloomFilter() {
+        File bfFile = new File(this.bfTagsStateFilename);
+        if (!bfFile.exists()) {
+            _logger.info("State file for BloomFilter tags NOT present, starting fresh bloom");
+            this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+                                                  bloomFilterExpectedNumberInsertions ,
+                                                  bloomFilterErrorRate);
+            return;
+        }
+
+        _logger.info("State file for BloomFilter tags exists, using it to pre-populate bloom");
+        try (InputStream inputStream = new FileInputStream(bfFile)) {
+            this.bloomFilter = BloomFilter.readFrom(inputStream,
+                                                    Funnels.stringFunnel(Charset.defaultCharset()));
+        } catch (IOException io) {
+            _logger.error("tags bloomfilter read error, not using prev state", io);
+            this.bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
+                                                  bloomFilterExpectedNumberInsertions ,
+                                                  bloomFilterErrorRate);
+        }
+    }
+
+    private void writeTagsBloomFilterToFile() {
+        File bfTagsFile = new File(this.bfTagsStateFilename);
+        if (!bfTagsFile.getParentFile().exists()) {
+            bfTagsFile.getParentFile().mkdir();
+        }
+        try (OutputStream out = new FileOutputStream(bfTagsFile)) {
+            bloomFilter.writeTo(out);
+            _logger.info("Succesfully wrote tags bloomfilter to file {}", this.bfTagsStateFilename);
+        } catch (IOException io) {
+            _logger.error("Failed to write tags bf to file", io);
+        }
+    }
+
+
 	private void createScheduledExecutorService(int targetHourToStartAt){
 		scheduledExecutorService = Executors.newScheduledThreadPool(1);
 		int initialDelayInSeconds = getNumHoursUntilTargetHour(targetHourToStartAt) * HOUR_IN_SECONDS;
@@ -337,6 +386,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	 */
 	public enum Property {
 		SYNC_PUT("service.property.schema.sync.put", "false"),
+                BF_STATE_BASE_DIR("service.property.schema.bf.state.base.dir", "bloomstate"),
 		BLOOMFILTER_EXPECTED_NUMBER_INSERTIONS("service.property.schema.bloomfilter.expected.number.insertions", "40"),
 		BLOOMFILTER_ERROR_RATE("service.property.schema.bloomfilter.error.rate", "0.00001"),
 
@@ -457,6 +507,9 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 		private void _flushBloomFilter() {
 			_logger.info("Flushing out bloom filter entries");
+                        // Write the main tags bloom filter to file first before flushing
+                        writeTagsBloomFilterToFile();
+
 			bloomFilter = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterExpectedNumberInsertions , bloomFilterErrorRate);
 			bloomFilterScopeOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()), bloomFilterScopeOnlyExpectedNumberInsertions , bloomFilterScopeOnlyErrorRate);
 			bloomFilterScopeAndMetricOnly = BloomFilter.create(Funnels.stringFunnel(Charset.defaultCharset()),
