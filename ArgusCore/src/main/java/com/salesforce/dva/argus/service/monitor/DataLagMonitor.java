@@ -3,6 +3,7 @@ package com.salesforce.dva.argus.service.monitor;
 import java.text.MessageFormat;
 import java.util.*;
 
+import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +19,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
  */
 public class DataLagMonitor extends Thread{
 
-	private String _dataLagQueryExpressions, _dataLagQueryExpressionsWithExceptions;
-
-	private ArrayList<String> _dataLagQueryDCLists, _dataLagQueryDCListsWithExceptions;
+	private String _dataLagQueryExpressions;
 
 	private long _dataLagThreshold;
 
@@ -40,25 +39,28 @@ public class DataLagMonitor extends Thread{
 
 	private final Logger _logger = LoggerFactory.getLogger(DataLagMonitor.class);
 
+	private SystemConfiguration _sysConfig;
+
 	public DataLagMonitor(SystemConfiguration sysConfig, MetricService metricService, MailService mailService) {
+	    _sysConfig = sysConfig;
 		_metricService = metricService;
 		_mailService = mailService;
-		_dataLagQueryExpressions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION);
-        _dataLagQueryExpressionsWithExceptions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION_EXCEPTIONS);
-        _dataLagQueryDCLists = new ArrayList<>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST).split(",")));
-        _dataLagQueryDCListsWithExceptions = new ArrayList<>(Arrays.asList(sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_DC_LIST_EXCEPTIONS).split(",")));
+		_dataLagQueryExpressions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_EXPRESSION);
         _dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		_dataLagNotificationEmailId = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_NOTIFICATION_EMAIL_ADDRESS);
 		_hostName = sysConfig.getHostname();
-		initExpressionList(_dataLagQueryDCLists, _dataLagQueryExpressions);
-        initExpressionList(_dataLagQueryDCListsWithExceptions, _dataLagQueryExpressionsWithExceptions);
+		initExpressionList(_dataLagQueryExpressions);
         _logger.info("Data lag monitor initialized");
 	}
 
-	private void initExpressionList(ArrayList<String> dcList, String expression) {
-        for(String currentDC: dcList) {
-            _expressionPerDC.put(currentDC, expression.replace("#DC#",currentDC));
-            _isDataLagging.put(currentDC, false);
+	private void initExpressionList(String dataLagQueryExpressions) {
+	    for(String expressionDCPair: dataLagQueryExpressions.split("&&")) {
+	        String [] currentExpressionDC = expressionDCPair.split("\\|\\|");
+	        String currentExpression = currentExpressionDC[0];
+            for (String currentDC : currentExpressionDC[1].split(",")) {
+                _expressionPerDC.put(currentDC, currentExpression.replace("#DC#", currentDC));
+                _isDataLagging.put(currentDC, false);
+            }
         }
     }
 
@@ -83,7 +85,7 @@ public class DataLagMonitor extends Thread{
                         _logger.info("Data lag detected as metric list is empty");
                         if (!isDataLagging) {
                             _isDataLagging.put(currentDC, true);
-                            sendDataLagEmailNotification(currentDC);
+                            sendDataLagNotification(currentDC);
                         }
                         continue;
                     }
@@ -94,7 +96,7 @@ public class DataLagMonitor extends Thread{
                         _logger.info("Data lag detected as data point list is empty");
                         if (!isDataLagging) {
                             _isDataLagging.put(currentDC, true);
-                            sendDataLagEmailNotification(currentDC);
+                            sendDataLagNotification(currentDC);
                         }
                         continue;
                     } else {
@@ -108,14 +110,14 @@ public class DataLagMonitor extends Thread{
                             _logger.info("Data lag detected as the last data point recieved is more than the data threshold of " + _dataLagThreshold + " ms");
                             if (!isDataLagging) {
                                 _isDataLagging.put(currentDC, true);
-                                sendDataLagEmailNotification(currentDC);
+                                sendDataLagNotification(currentDC);
                             }
                             continue;
                         }
                     }
                     if (isDataLagging) {
                         _isDataLagging.put(currentDC, false);
-                        sendDataLagEmailNotification(currentDC);
+                        sendDataLagNotification(currentDC);
                     }
                 } catch (Exception e) {
                     _logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
@@ -124,7 +126,7 @@ public class DataLagMonitor extends Thread{
 		}
 	}
 
-	private void sendDataLagEmailNotification(String currentDC) {
+	private void sendDataLagNotification(String currentDC) {
 		Set<String> emailAddresseses = new HashSet<String>();
 		emailAddresseses.add(_dataLagNotificationEmailId);
 		String subject = "";
@@ -139,6 +141,7 @@ public class DataLagMonitor extends Thread{
         body.append(MessageFormat.format("<b>Configured data lag threshold:  </b> {0}<br/>", _dataLagThreshold));
 		
 		_mailService.sendMessage(emailAddresseses, subject, body.toString(), "text/html; charset=utf-8", MailService.Priority.NORMAL);
+        GusNotifier.postToGus(new HashSet<String>(Arrays.asList(_sysConfig.getValue(SystemConfiguration.Property.ARGUS_GUS_GROUP_ID))), subject, _sysConfig);
 	}
 
 	public boolean isDataLagging(String currentDC) {

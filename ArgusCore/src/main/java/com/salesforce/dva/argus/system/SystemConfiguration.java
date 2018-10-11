@@ -222,15 +222,15 @@ public final class SystemConfiguration extends Properties {
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
+
+        ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
         
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
-        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression", "sampleExpression"),
-        DATA_LAG_QUERY_EXPRESSION_EXCEPTIONS("system.property.data.lag.expression.exceptions", "sampleExpression"),
-        DATA_LAG_QUERY_DC_LIST("system.property.dc.list", "listOfDCs"),
-        DATA_LAG_QUERY_DC_LIST_EXCEPTIONS("system.property.dc.list.exceptions", "ListOfDCs"),
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
+
+        DATA_LAG_EXPRESSION("system.property.data.lag.expression.1","-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_funnel_local:funnelpost.ResponseCount:avg:1m-sum||CDG,CDU,DFW,FRA,FRF,HND,IA2,IAD,ORD,PAR,PH2,PHX,PRD,SYD,UKB,XRD,YHU,YUL&&-1h:system.#DC#.NONE.ajna_local:CpuPerc.cpu.system:avg:1m-sum||CHI,CHX,LON,WAS&&-1h:funnel_writer.#DC#.NONE.opsinst:intake:avg:1m-sum||CAP,CRZ&&-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_ajna-sfz:funnelpost.ResponseCount:avg:1m-sum||SFZ"),
         
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),

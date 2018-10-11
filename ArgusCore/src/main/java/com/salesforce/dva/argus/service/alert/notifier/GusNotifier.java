@@ -85,10 +85,9 @@ public class GusNotifier extends AuditNotifier {
 
 	//~ Instance fields ******************************************************************************************************************************
 	@SLF4JTypeListener.InjectLogger
-	private Logger _logger;
-	private final MultiThreadedHttpConnectionManager theConnectionManager;
+	private static Logger _logger;
+	private static final MultiThreadedHttpConnectionManager theConnectionManager = new MultiThreadedHttpConnectionManager();
 	{
-		theConnectionManager = new MultiThreadedHttpConnectionManager();
 
 		HttpConnectionManagerParams params = theConnectionManager.getParams();
 
@@ -159,7 +158,7 @@ public class GusNotifier extends AuditNotifier {
 		Set<String> to = new HashSet<String>(notification.getSubscriptions());
 		String feed = generateGusFeed(notification, trigger, context, status);
 
-		postToGus(to, feed);
+		postToGus(to, feed, _config);
     }
 
 	private String generateGusFeed(Notification notification, Trigger trigger, NotificationContext context, NotificationStatus status) {
@@ -203,7 +202,7 @@ public class GusNotifier extends AuditNotifier {
 		return sb.toString();
 	}
 
-	private void postToGus(Set<String> to, String feed) {
+	public static void postToGus(Set<String> to, String feed, SystemConfiguration _config) {
 
 		if (Boolean.valueOf(_config.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.GUS_ENABLED))) {
 			// So far works for only one group, will accept a set of string in future.
@@ -211,13 +210,13 @@ public class GusNotifier extends AuditNotifier {
 			PostMethod gusPost = new PostMethod(_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()));
 
 			try {
-				gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken());
+				HttpClient httpclient = getHttpClient(_config);
+				gusPost.setRequestHeader("Authorization", "Bearer " + generateAccessToken(httpclient, _config));
 				String gusMessage = MessageFormat.format("{0}&subjectId={1}&text={2}",
 						_config.getValue(Property.POST_ENDPOINT.getName(), Property.POST_ENDPOINT.getDefaultValue()), groupId,
 						URLEncoder.encode(feed.toString(), "UTF-8"));
 
 				gusPost.setRequestEntity(new StringRequestEntity(gusMessage, "application/x-www-form-urlencoded", null));
-				HttpClient httpclient = getHttpClient(_config);
 				int respCode = httpclient.executeMethod(gusPost);
 				_logger.info("Gus message response code '{}'", respCode);
 				if (respCode == 201 || respCode == 204) {
@@ -235,9 +234,7 @@ public class GusNotifier extends AuditNotifier {
 		}
 	}
 
-	private String generateAccessToken() {
-		// Set up an HTTP client that makes a connection to REST API.
-		HttpClient httpclient = getHttpClient(_config);
+	private static String generateAccessToken(HttpClient httpClient, SystemConfiguration _config) {
 
 		// Send a post request to the OAuth URL.
 		PostMethod oauthPost = new PostMethod(_config.getValue(Property.GUS_ENDPOINT.getName(), Property.GUS_ENDPOINT.getDefaultValue()));
@@ -251,7 +248,7 @@ public class GusNotifier extends AuditNotifier {
 			oauthPost.addParameter("username", _config.getValue(Property.ARGUS_GUS_USER.getName(), Property.ARGUS_GUS_USER.getDefaultValue()));
 			oauthPost.addParameter("password", _config.getValue(Property.ARGUS_GUS_PWD.getName(), Property.ARGUS_GUS_PWD.getDefaultValue()));
 
-			int respCode = httpclient.executeMethod(oauthPost);
+			int respCode = httpClient.executeMethod(oauthPost);
 
 			_logger.info("Response code '{}'", respCode);
 
@@ -283,7 +280,7 @@ public class GusNotifier extends AuditNotifier {
 	 *
 	 * @return  HttpClient
 	 */
-	public  HttpClient getHttpClient(SystemConfiguration config) {
+	public  static HttpClient getHttpClient(SystemConfiguration config) {
 		HttpClient httpclient = new HttpClient(theConnectionManager);
 
 		// Wait for 2 seconds to get a connection from pool
