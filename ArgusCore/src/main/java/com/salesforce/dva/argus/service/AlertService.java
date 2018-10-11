@@ -351,7 +351,8 @@ public interface AlertService extends Service {
 		WARDENAPI(WardenApiNotifier.class.getName()),
 		WARDENPOSTING(WardenPostingNotifier.class.getName()),
 		GUS(GusNotifier.class.getName()),
-		CALLBACK(CallbackNotifier.class.getName());
+		CALLBACK(CallbackNotifier.class.getName()),
+		REFOCUS(RefocusNotifier.class.getName());
 
 		String name;
 
