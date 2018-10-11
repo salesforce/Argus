@@ -13,9 +13,11 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.Trigger;
 import com.salesforce.dva.argus.service.AlertService;
+import com.salesforce.dva.argus.service.MetricService;
 import com.salesforce.dva.argus.service.UserService;
 import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.metric.MetricReader;
+import com.salesforce.dva.argus.system.SystemMain;
 import org.junit.Test;
 
 public class AlertUtilsTest extends AbstractTest {
@@ -84,5 +86,21 @@ public class AlertUtilsTest extends AbstractTest {
 		}
 
 		assertEquals(expectedOutput, actualOutput);
+	}
+
+	@Test
+	public void testDetectDCFromExpression() {
+		MetricService _mService = system.getServiceFactory().getMetricService();
+		int idx = 0;
+		ArrayList<String> expressionList = new ArrayList<>(Arrays.asList(
+				"-2h:system.DC1.service:metric:max",
+				"-1m:system.DC2.service:metric{tagk=tagv}:min",
+				"DIVIDE(-15m:system.DC3.service:metric1:avg, -15m:system.DC4.service:metric2:avg)",
+				"-75m:system.dc5.service:metric:sum"));
+		String [][] actualOutput =  new String[][]{{"DC1"},{"DC2"},{"DC4","DC3"},{"DC5"}};
+		for(String currentExpression: expressionList) {
+			List<String> expectedOutput = _mService.getDCFromExpression(currentExpression);
+			assertEquals(expectedOutput, new ArrayList<>(Arrays.asList(actualOutput[idx++])));
+		}
 	}
 }

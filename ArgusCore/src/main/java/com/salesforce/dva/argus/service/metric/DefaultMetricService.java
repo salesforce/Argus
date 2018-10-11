@@ -43,6 +43,7 @@ import com.salesforce.dva.argus.system.SystemAssert;
 import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
+import com.salesforce.dva.argus.system.SystemMain;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -57,6 +62,7 @@ import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
  * Default implementation of the metric service.
  *
  * @author  Bhinav Sura (bhinav.sura@salesforce.com)
+ * @author	Sudhanshu Bahety (sudhanshu.bahety@salesforce.com)
  */
 public class DefaultMetricService extends DefaultService implements MetricService {
 
@@ -65,6 +71,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 	private final MonitorService _monitorService;
 	private final Provider<MetricReader<Metric>> _metricReaderProviderForMetrics;
 	private final Provider<MetricReader<MetricQuery>> _metricReaderProviderForQueries;
+	private final SystemConfiguration _configuration;
 	private String expandedTimeSeriesRange;
 	private String queryTimeWindow;
 	private Integer numDiscoveryResults = 0;
@@ -88,6 +95,8 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		_monitorService = monitorService;
 		_metricReaderProviderForMetrics = metricsprovider;
 		_metricReaderProviderForQueries = queryprovider;
+		_configuration = config;
+
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -226,6 +235,36 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			dataPointsSize += metric.getDatapoints().size();
 		}
 		return dataPointsSize;
+	}
+
+	public List<String> getDCFromExpression(String expression) {
+		Set<String> DC = new HashSet<String>();
+		Matcher m;
+		String dcList = _configuration.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DC_LIST).replaceAll(",","|");
+		String defaultDC = _configuration.getValue(SystemConfiguration.Property.DC_DEFAULT);
+		ArrayList<String> patterns = new ArrayList<>(Arrays.asList( "\\.(?i)(" + dcList + ")\\.",
+				":argus\\."));
+
+		if (expression == null || expression.isEmpty()) {
+			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value PRD.");
+			DC.add(defaultDC);
+		} else {
+			// Get all the expanded queries from MetricService and identify all different DCs.
+			List<MetricQuery> queries = getQueries(expression);
+			for(MetricQuery currentQuery: queries) {
+				m = Pattern.compile(patterns.get(0)).matcher(currentQuery.getScope());
+				while (m.find()) DC.add(m.group().substring(1, m.group().length() - 1).toUpperCase());
+
+				// If it matches ":argus., then it's argus metrics emitted by PRD."
+				m = Pattern.compile(patterns.get(1)).matcher(currentQuery.getScope());
+				if(m.find()) DC.add(defaultDC);
+			}
+		}
+		if (DC.size() == 0) {
+			_logger.info("Unable to identify DC from expression: " + expression +" . Returning default value PRD.");
+			DC.add(defaultDC);
+		}
+		return new ArrayList<>(DC);
 	}
 }
 	/* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
