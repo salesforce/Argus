@@ -509,6 +509,7 @@ public class DistributedDatabaseSchedulingService extends DefaultService impleme
 			Map<Long, Double> datapoints = new HashMap<>();
 			datapoints.put(timestamp, kpiValue);
 			kpiMetric.addDatapoints(datapoints);
+			_alertService.exportMetric(kpiMetric, kpiValue);
 			try {
 				_tsdbService.putMetrics(Arrays.asList(new Metric[] {kpiMetric}));
 			} catch (Exception ex) {
