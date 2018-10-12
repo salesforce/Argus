@@ -485,7 +485,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 	}
 
-	private void AddToWrapperList(List<Map<String, AnnotationWrapper>> wrapperList, AnnotationWrapper wrapper) {
+	static void AddToWrapperList(List<Map<String, AnnotationWrapper>> wrapperList, AnnotationWrapper wrapper) {
 
 		Boolean addedWrapper = false;
 
@@ -493,6 +493,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			if(!wrapperMap.containsKey(wrapper._uid)) {
 				wrapperMap.put(wrapper._uid, wrapper);
 				addedWrapper = true;
+				break;
 			}
 		}
 
