@@ -246,7 +246,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 				":argus\\."));
 
 		if (expression == null || expression.isEmpty()) {
-			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value PRD.");
+			_logger.error("Expression either null or empty. Cannot retrive DC from the expression. Returning default value " + defaultDC);
 			DC.add(defaultDC);
 		} else {
 			// Get all the expanded queries from MetricService and identify all different DCs.
@@ -261,7 +261,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			}
 		}
 		if (DC.size() == 0) {
-			_logger.info("Unable to identify DC from expression: " + expression +" . Returning default value PRD.");
+			_logger.info("Unable to identify DC from expression: " + expression +" . Returning default value PRD " + defaultDC);
 			DC.add(defaultDC);
 		}
 		return new ArrayList<>(DC);
