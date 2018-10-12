@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.system;
 
 import ch.qos.logback.classic.Level;
@@ -95,6 +95,8 @@ final class SystemInitializer extends AbstractModule {
             config = readConfigInfo();
         }
         _config = config;
+        _config.put(SystemConfiguration.ARGUS_INSTANCE_ID,
+                    System.getProperty(SystemConfiguration.ARGUS_INSTANCE_ID,"noid"));
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -174,7 +176,7 @@ final class SystemInitializer extends AbstractModule {
         app.setLevel(Level.toLevel(_systemConfiguration.getValue(SystemConfiguration.Property.LOG_LEVEL)));
         bind(SystemConfiguration.class).toInstance(_systemConfiguration);
         bindListener(Matchers.any(), new SLF4JTypeListener());
-        _systemConfiguration.putAll(getServiceSpecificProperties());      
+        _systemConfiguration.putAll(getServiceSpecificProperties());
     }
 
     private void configurePersistence() {
@@ -294,7 +296,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
-        readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
+        readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.OAUTH_SERVICE_PROPERTY_FILE));
