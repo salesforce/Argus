@@ -45,7 +45,7 @@ public class DataLagMonitor extends Thread{
 	    _sysConfig = sysConfig;
 		_metricService = metricService;
 		_mailService = mailService;
-		_dataLagQueryExpressions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_EXPRESSION);
+		_dataLagQueryExpressions = sysConfig.getValue(SystemConfiguration.Property.DATA_LAG_QUERY_EXPRESSION);
         _dataLagThreshold = Long.valueOf(sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_THRESHOLD));
 		_dataLagNotificationEmailId = sysConfig.getValue(com.salesforce.dva.argus.system.SystemConfiguration.Property.DATA_LAG_NOTIFICATION_EMAIL_ADDRESS);
 		_hostName = sysConfig.getHostname();

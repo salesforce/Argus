@@ -236,7 +236,7 @@ public final class SystemConfiguration extends Properties {
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
 
 
-        DATA_LAG_EXPRESSION("system.property.data.lag.expression.1","-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_funnel_local:funnelpost.ResponseCount:avg:1m-sum||CDG,CDU,DFW,FRA,FRF,HND,IA2,IAD,ORD,PAR,PH2,PHX,PRD,SYD,UKB,XRD,YHU,YUL&&-1h:system.#DC#.NONE.ajna_local:CpuPerc.cpu.system:avg:1m-sum||CHI,CHX,LON,WAS&&-1h:funnel_writer.#DC#.NONE.opsinst:intake:avg:1m-sum||CAP,CRZ&&-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_ajna-sfz:funnelpost.ResponseCount:avg:1m-sum||SFZ"),
+        DATA_LAG_QUERY_EXPRESSION("system.property.data.lag.expression.list","expressionListPerDC"),
 
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
