@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.system;
 
 import com.google.inject.Singleton;
@@ -65,10 +65,12 @@ public final class SystemConfiguration extends Properties {
 
     static final String LOCAL_CONFIG_LOCATION;
     static final String GLOBAL_CONFIG_LOCATION;
+    static public final String ARGUS_INSTANCE_ID;
 
     static {
         LOCAL_CONFIG_LOCATION = "argus.config.public.location";
         GLOBAL_CONFIG_LOCATION = "argus.config.private.location";
+        ARGUS_INSTANCE_ID = "argus.instance.id";
     }
 
     //~ Constructors *********************************************************************************************************************************
@@ -193,7 +195,7 @@ public final class SystemConfiguration extends Properties {
             allProperties.putIfAbsent(property.key(), property.defaultValue());
         }
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("Using the following configured values:\n");
         Pattern pattern = Pattern.compile("pwd|secret|password|passwd|token");
         Set<String> names = new TreeSet<>(allProperties.stringPropertyNames());
@@ -217,60 +219,67 @@ public final class SystemConfiguration extends Properties {
         LOG_LEVEL("system.property.log.level", "INFO"),
         VERSION("system.property.version", "X.X"),
         ADMIN_EMAIL("system.property.admin.email", "someone@mycompany.com"),
-        
+
         EMAIL_ENABLED("system.property.mail.enabled", "false"),
         GOC_ENABLED("system.property.goc.enabled", "false"),
         GUS_ENABLED("system.property.gus.enabled", "false"),
+
         EMAIL_EXCEPTIONS("system.property.mail.exceptions", "false"),
 
         ARGUS_GUS_GROUP_ID("notifier.property.argus.gus.group_id", "groupId"),
-        
+
+        REFOCUS_ENABLED("system.property.refocus.enabled", "false"),
+
         DATA_LAG_MONITOR_ENABLED("system.property.monitor.data.lag", "false"),
         DATA_LAG_THRESHOLD("system.property.data.lag.threshold.millis", "300000"),
         DATA_LAG_NOTIFICATION_EMAIL_ADDRESS("system.property.data.lag.notification.emailId", "someone@mycompany.com"),
         DATA_LAG_WHITE_LISTED_SCOPES("system.property.data.lag.whitelisted.scopes", ""),
 
+
         DATA_LAG_EXPRESSION("system.property.data.lag.expression.1","-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_funnel_local:funnelpost.ResponseCount:avg:1m-sum||CDG,CDU,DFW,FRA,FRF,HND,IA2,IAD,ORD,PAR,PH2,PHX,PRD,SYD,UKB,XRD,YHU,YUL&&-1h:system.#DC#.NONE.ajna_local:CpuPerc.cpu.system:avg:1m-sum||CHI,CHX,LON,WAS&&-1h:funnel_writer.#DC#.NONE.opsinst:intake:avg:1m-sum||CAP,CRZ&&-1h:ajna-rest-endpoint.#DC#.NONE.ajna-rest-endpoint_ajna-sfz:funnelpost.ResponseCount:avg:1m-sum||SFZ"),
-        
+
         CLIENT_THREADS("system.property.client.threads", "2"),
         CLIENT_CONNECT_TIMEOUT("system.property.client.connect.timeout", "10000"),
-        
+
+        DC_DEFAULT("system.property.dc.default", "defaultDC"),
+        DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
+
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
         CACHE_SERVICE_PROPERTY_FILE("service.config.cache","argus.properties"),
-        
+
         MQ_SERVICE_IMPL_CLASS("service.binding.mq", "com.salesforce.dva.argus.service.mq.kafka.KafkaMessageService"),
         MQ_SERVICE_PROPERTY_FILE("service.config.mq","argus.properties"),
-        
+
         ALERT_SERVICE_IMPL_CLASS("service.binding.alert", "com.salesforce.dva.argus.service.alert.DefaultAlertService"),
         ALERT_SERVICE_PROPERTY_FILE("service.config.alert","argus.properties"),
         NOTIFIER_PROPERTY_FILE("service.config.notifier","notifier.properties"),
-        
+
         SCHEDULING_SERVICE_IMPL_CLASS("service.binding.scheduling", "com.salesforce.dva.argus.service.schedule.DefaultSchedulingService"),
         SCHEDULING_SERVICE_PROPERTY_FILE("service.config.scheduling","argus.properties"),
-        
+
         MAIL_SERVICE_IMPL_CLASS("service.binding.mail", "com.salesforce.dva.argus.service.mail.DefaultMailService"),
         MAIL_SERVICE_PROPERTY_FILE("service.config.mail","argus.properties"),
-        
+
         CALLBACK_SERVICE_IMPL_CLASS("service.binding.callback", "com.salesforce.dva.argus.service.callback.DefaultCallbackService"),
         CALLBACK_SERVICE_PROPPERTY_FILE("service.config.callback", "argus.properties"),
-        
+
         AUTH_SERVICE_IMPL_CLASS("service.binding.auth", "com.salesforce.dva.argus.service.auth.LDAPAuthService"),
         AUTH_SERVICE_PROPERTY_FILE("service.config.auth","argus.properties"),
-        
+
         SCHEMA_SERVICE_IMPL_CLASS("service.binding.schema", "com.salesforce.dva.argus.service.schema.AsyncHbaseSchemaService"),
         SCHEMA_SERVICE_PROPERTY_FILE("service.config.schema","argus.properties"),
-        
+
         HISTORY_SERVICE_IMPL_CLASS("service.binding.history", "com.salesforce.dva.argus.service.history.HBaseHistoryService"),
         HISTORY_SERVICE_PROPERTY_FILE("service.config.history","argus.properties"),
-        
+
         AUDIT_SERVICE_IMPL_CLASS("service.binding.audit", "com.salesforce.dva.argus.service.audit.DefaultAuditService"),
         AUDIT_SERVICE_PROPERTY_FILE("service.config.audit","argus.properties"),
-        
+
         ASYNCHBASE_PROPERTY_FILE("service.config.asynchbase", "argus.properties"),
-        
+
         TSDB_SERVICE_IMPL_CLASS("service.binding.tsdb", "com.salesforce.dva.argus.service.tsdb.DefaultTSDBService"),
         TSDB_SERVICE_PROPERTY_FILE("service.config.tsdb","argus.properties"),
-        
+
         WARDEN_SERVICE_IMPL_CLASS("service.binding.warden", "com.salesforce.dva.argus.service.warden.DefaultWardenService"),
         WARDEN_SERVICE_PROPERTY_FILE("service.config.warden", "argus.properties"),
 
@@ -283,11 +292,11 @@ public final class SystemConfiguration extends Properties {
             _name = name;
             _defaultValue = defaultValue;
         }
-        
+
         private String defaultValue() {
             return _defaultValue;
         }
-        
+
         private String key() {
             return _name;
         }

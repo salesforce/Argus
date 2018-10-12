@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.persistence.EntityManager;
 import javax.persistence.Persistence;
 
+import com.salesforce.dva.argus.service.alert.notifier.RefocusNotifier;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -275,7 +276,101 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		//assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric));
 		
 	}
-	
+
+	@Test
+	public void testExecuteScheduledAlerts_OnCooldownWithRefocusNotifier() {
+		ServiceFactory sFactory = system.getServiceFactory();
+		UserService userService = sFactory.getUserService();
+
+		final AtomicInteger notificationCount = new AtomicInteger(0);
+		final AtomicInteger clearCount = new AtomicInteger(0);
+
+		Metric metric = new Metric("scope", "metric");
+		Map<Long, String> dps = new HashMap<Long, String>();
+		dps.put(1000L, "11");
+		dps.put(2000L, "21");
+		dps.put(3000L, "31");
+		metric.setDatapoints(_convertDatapoints(dps));
+
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+		_setAlertId(alert, "100001");
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		_setTriggerId(trigger, "100002");
+		Notification notification = new Notification("testNotification", alert, RefocusNotifier.class.getName(), new ArrayList<String>(),
+				600000); //cool down logic does not apply to Refocus notifier
+		_setNotificationId(notification, "100003");
+
+		alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+		alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+		notification.setTriggers(alert.getTriggers());
+		alert.setEnabled(true);
+
+		DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+				Arrays.asList(metric), alert, notification);
+
+		//This will set the notification on cooldown for the given metric and trigger.
+		spyAlertService.executeScheduledAlerts(1, 1000);
+		//This evaluation should still send notification for refocus. Hence notificationCount count would increase by 1.
+		spyAlertService.executeScheduledAlerts(1, 1000);
+
+		assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
+
+		assertEquals(2, notificationCount.get()); //notification was sent out even on cool down for refocus
+		assertEquals(0, notification.getCooldownExpirationMap().size()); //refocuse notifier does not record/persist cooldown info
+	}
+
+	@Test
+	public void testExecuteScheduledAlerts_ClearNotificationWithRefocusNotifier() {
+		UserService userService = system.getServiceFactory().getUserService();
+		final AtomicInteger notificationCount = new AtomicInteger(0);
+		final AtomicInteger clearCount = new AtomicInteger(0);
+
+		Metric metric = new Metric("scope", "metric");
+		Map<Long, String> dps = new HashMap<Long, String>();
+		dps.put(4000L, "11");
+		dps.put(5000L, "20");
+		dps.put(6000L, "30");
+		metric.setDatapoints(_convertDatapoints(dps));
+
+		Alert alert = new Alert(userService.findAdminUser(), userService.findAdminUser(), "testAlert", "-1h:scope:metric:avg", "* * * * *");
+		_setAlertId(alert, "100001");
+		Trigger trigger = new Trigger(alert, TriggerType.GREATER_THAN_OR_EQ, "testTrigger", 10, 0);
+		_setTriggerId(trigger, "100002");
+		Notification notification = new Notification("testNotification", alert, RefocusNotifier.class.getName(), new ArrayList<String>(), 0);
+		_setNotificationId(notification, "100003");
+
+		alert.setTriggers(Arrays.asList(new Trigger[] { trigger }));
+		alert.setNotifications(Arrays.asList(new Notification[] { notification }));
+		notification.setTriggers(alert.getTriggers());
+		alert.setEnabled(true);
+
+		DefaultAlertService spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount,
+				Arrays.asList(metric), alert, notification);
+
+		spyAlertService.executeScheduledAlerts(10, 1000);
+		assertEquals(1, notificationCount.get());
+		assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
+
+		notificationCount.set(0);
+		clearCount.set(0);
+
+		dps = new HashMap<Long, String>();
+		dps.put(4000L, "1");
+		dps.put(5000L, "2");
+		dps.put(6000L, "3");
+		metric.setDatapoints(_convertDatapoints(dps));
+
+		spyAlertService = _initializeSpyAlertServiceWithStubs(notificationCount, clearCount, Arrays.asList(metric),
+				alert, notification);
+
+		spyAlertService.executeScheduledAlerts(10, 1000);
+		assertEquals(0, notificationCount.get());
+		assertEquals(1, clearCount.get());
+		assertEquals(false, notification.isActiveForTriggerAndMetric(trigger, metric)); // refocus notification is stateless
+
+	}
+
+
 	@Test
 	public void testExecuteScheduledAlerts_AlertWithMultipleMetricsNotificationSentForEach() {
 		UserService userService = system.getServiceFactory().getUserService();
@@ -421,29 +516,29 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = datapoints.size();
 
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia - 1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(inertia + 1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		expectedTriggerTime = datapoints.size();
 		assertEquals(expectedTriggerTime, actualValue);
 		startTime = datapoints.size() + 1;
 		datapoints.putAll(_createDatapoints(201, thresholdValue, startTime, false));
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 		assertEquals(expectedTriggerTime, actualValue);
 	}
 
@@ -463,7 +558,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		metric.setDatapoints(_convertDatapoints(datapoints));
 		expectedTriggerTime = startTime;
 
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -482,7 +577,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.putAll(_createDatapoints(1, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
 
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertNull(actualValue);
 	}
@@ -501,7 +596,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.putAll(_createDatapoints(0, thresholdValue, startTime, true));
 		metric.setDatapoints(_convertDatapoints(datapoints));
 
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), startTime);
 
 		assertNull(actualValue);
 	}
@@ -518,7 +613,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(0L, "1");
 		datapoints.put(inertia, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -536,7 +631,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(3*60*1000L, "1");
 		datapoints.put(inertia, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=5*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -553,7 +648,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(0L, "1");
 		datapoints.put(9*60*1000L, "1");
 		metric.setDatapoints(_convertDatapoints(datapoints));
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime=9*60*1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -581,7 +676,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(7*60*1000L, 0.0);
 		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
-		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		long expectedTriggerTime = 6 * 60 * 1000;
 		assertEquals(expectedTriggerTime, actualValue);
 	}
@@ -601,7 +696,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(7*60*1000L, 0.0);
 		datapoints.put(9*60*1000L, 2.0);
 		metric.setDatapoints(datapoints);
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		assertNull(actualValue);
 	}
 	
@@ -618,7 +713,7 @@ public class DefaultAlertServiceTest extends AbstractTest {
 		datapoints.put(2*60*1000L, 0.0);
 		datapoints.put(inertia, 1.0);
 		metric.setDatapoints(datapoints);
-		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric);
+		Long actualValue = alertService.getTriggerFiredDatapointTime(trigger, metric, alert.getExpression(), 1L);
 		assertNull(actualValue);
 	}
 	

@@ -86,7 +86,7 @@ class Alerter implements Runnable {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Throwable ex) {
-                LOGGER.warn("Exception in alerter: {}", ExceptionUtils.getFullStackTrace(ex));
+                LOGGER.error("Exception in alerter: {}", ExceptionUtils.getFullStackTrace(ex));
             }
         }
         LOGGER.warn(MessageFormat.format("Alerter thread interrupted. {} alerts evaluated by this thread.", jobCounter.get()));

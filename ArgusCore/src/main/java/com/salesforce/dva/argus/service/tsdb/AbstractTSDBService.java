@@ -52,11 +52,20 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import org.apache.commons.lang.StringUtils;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import org.apache.http.ConnectionReuseStrategy;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -83,7 +92,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.entity.Annotation;
 import com.salesforce.dva.argus.entity.Metric;
@@ -113,11 +121,11 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	protected final Logger _logger = LoggerFactory.getLogger(getClass());
 
 	private final String[] _writeEndpoints;
-	protected final CloseableHttpClient _writeHttpClient;
+	protected CloseableHttpClient _writeHttpClient;
 
 	protected final List<String> _readEndPoints;
 	protected final List<String> _readBackupEndPoints;
-	protected final Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
+	protected Map<String, CloseableHttpClient> _readPortMap = new HashMap<>();
 	protected final Map<String, String> _readBackupEndPointsMap = new HashMap<>();
 
 	/** Round robin iterator for write endpoints. 
@@ -127,6 +135,18 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	protected final ExecutorService _executorService;
 	protected final MonitorService _monitorService;
 	private final int RETRY_COUNT;
+
+	/*
+		Given a key for an annotation, we cache its tuid obtained from TSDB
+		when storing the metric portion of annotation.
+		Annotations cannot directly be stored as metric_name and tags.
+		You need to store the metric_name with tags, get the generated tuid and store the annotation using the tuid.
+
+		Feature request to fix this is mentioned below.
+		https://github.com/OpenTSDB/opentsdb/issues/913
+
+	*/
+	private Cache<String, String> _keyUidCache;
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -180,16 +200,21 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		requireArgument(connCount >= 2, "At least two connections are required.");
 		requireArgument(connTimeout >= 1, "Timeout must be greater than 0.");
 
+		_keyUidCache = CacheBuilder.newBuilder()
+				.maximumSize(100000)
+				.expireAfterAccess(1, TimeUnit.HOURS)
+				.build();
+
 		try {
 			int index = 0;
 			for (String readEndpoint : _readEndPoints) {
-				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount ,readEndpoint));
+				_readPortMap.put(readEndpoint, getClient(connCount / 2, connTimeout, socketTimeout, tsdbConnectionReuseCount ,readEndpoint));
 				_readBackupEndPointsMap.put(readEndpoint, _readBackupEndPoints.get(index));
 				index ++;
 			}
 			for (String readBackupEndpoint : _readBackupEndPoints) {
 				if (!readBackupEndpoint.isEmpty())
-					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, readBackupEndpoint));
+					_readPortMap.put(readBackupEndpoint, getClient(connCount / 2, connTimeout, socketTimeout, tsdbConnectionReuseCount, readBackupEndpoint));
 			}
 
 			_writeHttpClient = getClient(connCount / 2, connTimeout, socketTimeout,tsdbConnectionReuseCount, _writeEndpoints);
@@ -203,6 +228,14 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	}
 
 	//~ Methods **************************************************************************************************************************************
+
+	/* Used in tests to mock Tsdb clients. */
+	void SetTsdbClients(CloseableHttpClient writeHttpClient, CloseableHttpClient readHttpClient) {
+		_writeHttpClient = writeHttpClient;
+		for(String key : _readPortMap.keySet()) {
+			_readPortMap.put(key, readHttpClient);
+		}
+	}
 
 	Iterator<String> constructCyclingIterator(String[] endpoints) {
 		// Return repeating, non-blocking iterator if single element
@@ -350,6 +383,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		List<Metric> fracturedList = new ArrayList<>();
 
 		for (Metric metric : metrics) {
+			MetatagsRecord metatagsRecord = metric.getMetatagsRecord();
+			if (metatagsRecord != null) {
+				//remove this special metatag to prevent it from going to TSDB
+				metatagsRecord.removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
+			}
+
 			if (metric.getDatapoints().size() <= TSDB_DATAPOINTS_WRITE_MAX_SIZE) {
 				fracturedList.add(metric);
 			} else {
@@ -386,7 +425,44 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	public void putAnnotations(List<Annotation> annotations) {
 		requireNotDisposed();
 		if (annotations != null) {
-			List<AnnotationWrapper> wrappers = reconcileWrappers(toAnnotationWrappers(annotations));
+
+			// Dictionary of annotation key and the annotation
+			Map<String, Annotation> keyAnnotationMap = new HashMap<>();
+
+			List<AnnotationWrapper> wrappers = new ArrayList<>();
+
+			for(Annotation annotation : annotations) {
+				String key = toAnnotationKey(annotation);
+				String uid = _keyUidCache.getIfPresent(key);
+
+				if(StringUtils.isEmpty(uid)) {
+					// Not in cache, populate keyAnnotationMap so that we can query TSDB.
+					keyAnnotationMap.put(key, annotation);
+				} else {
+					// If we find uid in the cache, we construct the AnnotationWrapper object.
+					AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
+					wrappers.add(wrapper);
+				}
+			}
+
+			// query TSDB to get uids for annotations.
+			Map<String, String> keyUidMap = getUidMapFromTsdb(keyAnnotationMap);
+
+			for(Map.Entry<String, String> keyUidEntry : keyUidMap.entrySet()) {
+
+				// We add new uids to the cache and create AnnotationWrapper objects.
+				_keyUidCache.put(keyUidEntry.getKey(), keyUidEntry.getValue());
+				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
+						keyAnnotationMap.get(keyUidEntry.getKey()));
+
+				wrappers.add(wrapper);
+			}
+
+			_logger.debug("putAnnotations CacheStats hitCount {} requestCount {} " +
+							"evictionCount {} annotationsCount {}",
+					_keyUidCache.stats().hitCount(), _keyUidCache.stats().requestCount(),
+					_keyUidCache.stats().evictionCount(), annotations.size());
+
 			String endpoint = _roundRobinIterator.next();
 
 			try {
@@ -396,6 +472,59 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				_retry(wrappers, _roundRobinIterator);
 			}
 		}
+	}
+
+	private Map<String, String> getUidMapFromTsdb(Map<String, Annotation> keyAnnotationMap) {
+
+		List<MetricQuery> queries = new ArrayList<>();
+		List<Metric> metrics = new ArrayList<>();
+
+		Map<Long, Double> datapoints = new HashMap<>();
+		datapoints.put(1L, 0.0);
+
+		for(Map.Entry<String, Annotation> annotationEntry : keyAnnotationMap.entrySet()) {
+			String annotationKey = annotationEntry.getKey();
+			Annotation annotation = annotationEntry.getValue();
+			String type = annotation.getType();
+			Map<String, String> tags = annotation.getTags();
+
+			Metric metric = new Metric(annotationKey, type);
+			metric.setDatapoints(datapoints);
+			metric.setTags(tags);
+			metrics.add(metric);
+
+			MetricQuery query = new MetricQuery(annotationKey, type, tags, 0L, 2L);
+			queries.add(query);
+		}
+
+		long backOff = 1000L;
+
+		for (int attempts = 0; attempts < 3; attempts++) {
+
+			putMetrics(metrics);
+			try {
+				Thread.sleep(backOff);
+			} catch (InterruptedException ex) {
+				// We continue if interrupted.
+			}
+
+			try {
+
+				Map<String, String> keyUidMap = new HashMap<>();
+				Map<MetricQuery, List<Metric>> metricMap = getMetrics(queries);
+				for(List<Metric> getMetrics : metricMap.values()) {
+					Metric firstMetric = getMetrics.get(0);
+					keyUidMap.put(firstMetric.getScope(), firstMetric.getUid());
+				}
+
+				return keyUidMap;
+
+			} catch (Exception e) {
+				backOff += 1000L;
+			}
+		}
+
+		throw new SystemException("Failed to create new annotation metric.");
 	}
 
 	private ObjectMapper getMapper() {
@@ -411,6 +540,59 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		return mapper;
 	}
 
+	/* gets objects in chunks.
+	public Map<MetricQuery, List<Metric>> get(List<MetricQuery> queries) throws IOException  {
+		requireNotDisposed();
+		requireArgument(queries != null, "Metric Queries cannot be null.");
+
+		Map<MetricQuery, List<Metric>> metricsMap = new HashMap<>();
+		Map<MetricQuery, Future<List<Metric>>> futures = new HashMap<>();
+		Map<MetricQuery, Long> queryStartExecutionTime = new HashMap<>();
+		// Only one endpoint for AbstractTSDBService
+		String requestUrl = _readEndPoints.get(0) + "/api/query";
+
+		int chunkEnd = 0;
+
+		while (chunkEnd < queries.size()) {
+			int chunkStart = chunkEnd;
+
+			long start = System.currentTimeMillis();
+
+			chunkEnd = Math.min(queries.size(), chunkStart + CHUNK_SIZE);
+
+			String requestBody = fromEntity(queries.subList(chunkStart, chunkEnd));
+
+			_logger.info("requestUrl {} requestBody {}", requestUrl, requestBody);
+
+			HttpResponse response = executeHttpRequest(HttpMethod.POST, requestUrl, _readPortMap.get(requestUrl), new StringEntity(requestBody));
+			List<Metric> metrics = toEntity(extractResponse(response), new TypeReference<ResultSet>() { }).getMetrics();
+		}
+
+		for (Map.Entry<MetricQuery, Future<List<Metric>>> entry : futures.entrySet()) {
+			try {
+				List<Metric> m = entry.getValue().get();
+				List<Metric> metrics = new ArrayList<>();
+
+				if (m != null) {
+					for (Metric metric : m) {
+						if (metric != null) {
+							metric.setQuery(entry.getKey());
+							metrics.add(metric);
+						}
+					}
+				}
+
+				instrumentQueryLatency(_monitorService, entry.getKey(), queryStartExecutionTime.get(entry.getKey()), "metrics");
+				metricsMap.put(entry.getKey(), metrics);
+			} catch (InterruptedException | ExecutionException e) {
+				throw new SystemException("Failed to get metrics. The query was: " + entry.getKey() + "\\n", e);
+			}
+		}
+		_logger.info("Time to get Metrics = " + (System.currentTimeMillis() - start));
+		return metricsMap;
+	}
+	*/
+
 	/* Writes objects in chunks. */
 	private <T> void put(List<T> objects, String endpoint, HttpMethod method) throws IOException {
 		if (objects != null) {
@@ -421,10 +603,19 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
 				try {
-					StringEntity entity = new StringEntity(fromEntity(objects.subList(chunkStart, chunkEnd)));
+
+					String createBody = fromEntity(objects.subList(chunkStart, chunkEnd));
+
+					StringEntity entity = new StringEntity(createBody);
+
+					if (endpoint.contains("put")) {
+						_logger.debug("createUrl {} createBody {}", endpoint, createBody);
+					}
+
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
 					extractResponse(response);
+
 				} catch (UnsupportedEncodingException ex) {
 					throw new SystemException("Error posting data", ex);
 				}
@@ -452,51 +643,6 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}else {
 			return HttpClients.custom().setConnectionManager(connMgr).setDefaultRequestConfig(reqConfig).build();
 		}
-	}
-
-	/* Converts a list of annotations into a list of annotation wrappers for use in serialization.  Resulting list is sorted by target annotation
-	 * scope and timestamp.
-	 */
-	private List<AnnotationWrapper> toAnnotationWrappers(List<Annotation> annotations) {
-		Map<String, Set<Annotation>> sortedByUid = new TreeMap<>();
-
-		for (Annotation annotation : annotations) {
-			String key = toAnnotationKey(annotation);
-			Set<Annotation> items = sortedByUid.get(key);
-
-			if (items == null) {
-				items = new HashSet<>();
-				sortedByUid.put(key, items);
-			}
-			items.add(annotation);
-		}
-
-		List<AnnotationWrapper> result = new LinkedList<>();
-
-		for (Set<Annotation> items : sortedByUid.values()) {
-			Map<Long, Set<Annotation>> sortedByUidAndTimestamp = new HashMap<>();
-
-			for (Annotation item : items) {
-				Long timestamp = item.getTimestamp();
-				Set<Annotation> itemsByTimestamp = sortedByUidAndTimestamp.get(timestamp);
-
-				if (itemsByTimestamp == null) {
-					itemsByTimestamp = new HashSet<>();
-					sortedByUidAndTimestamp.put(timestamp, itemsByTimestamp);
-				}
-				itemsByTimestamp.add(item);
-			}
-			for (Set<Annotation> itemsByTimestamp : sortedByUidAndTimestamp.values()) {
-				result.add(new AnnotationWrapper(itemsByTimestamp, this));
-			}
-		}
-		return result;
-	}
-
-	/* This method should merge and update existing annotations rather than adding a duplicate annotation. */
-	private List<AnnotationWrapper> reconcileWrappers(List<AnnotationWrapper> wrappers) {
-		_logger.debug("Reconciling and merging of duplicate annotations is not yet implemented.");
-		return wrappers;
 	}
 
 	/*
@@ -741,83 +887,29 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	static class AnnotationWrapper {
 
 		String _uid;
-		Long _timestamp;
-		Map<String, Annotation> _custom;
-		private TSDBService _service;
+		Annotation _annotation;
 
-		/** Creates a new AnnotationWrapper object. */
-		AnnotationWrapper() {
-			_custom = new HashMap<>();
+		AnnotationWrapper(String uid, Annotation annotation) {
+			_uid = uid;
+			_annotation = annotation;
 		}
 
-		/* Annotations should have the same scope, metric, type and tags and timestamp. */
-		private AnnotationWrapper(Set<Annotation> annotations, TSDBService service) {
-			this();
-			_service = service;
-			for (Annotation annotation : annotations) {
-				if (_uid == null) {
-					_uid = getUid(annotation);
-					_timestamp = annotation.getTimestamp();
-				}
-				_custom.put(annotation.getSource() + "." + annotation.getId(), annotation);
-			}
+		Annotation getAnnotation() {
+			return _annotation;
 		}
 
-		List<Annotation> getAnnotations() {
-			return new ArrayList<>(_custom.values());
+		String getUid() { return _uid; }
+
+		String getAnnotationKey() {
+			return _annotation.getSource() + "." + _annotation.getId();
 		}
 
-		private String getUid(Annotation annotation) {
-			String scope = toAnnotationKey(annotation);
-			String type = annotation.getType();
-			Map<String, String> tags = annotation.getTags();
-			MetricQuery query = new MetricQuery(scope, type, tags, 0L, 2L);
-			long backOff = 1000L;
-
-			for (int attempts = 0; attempts < 3; attempts++) {
-				try {
-					return _service.getMetrics(Arrays.asList(query)).get(query).get(0).getUid();
-				} catch (Exception e) {
-					Metric metric = new Metric(scope, type);
-					Map<Long, Double> datapoints = new HashMap<>();
-
-					datapoints.put(1L, 0.0);
-					metric.setDatapoints(datapoints);
-					metric.setTags(annotation.getTags());
-					_service.putMetrics(Arrays.asList(new Metric[] { metric }));
-					try {
-						Thread.sleep(backOff);
-					} catch (InterruptedException ex) {
-						break;
-					}
-					backOff += 1000L;
-				}
-			}
-			throw new SystemException("Failed to create new annotation metric.");
-		}
-
-		String getUid() {
-			return _uid;
-		}
-
-		Long getTimestamp() {
-			return _timestamp;
-		}
-
-		Map<String, Annotation> getCustom() {
-			return Collections.unmodifiableMap(_custom);
-		}
-
-		void setUid(String uid) {
+		public void setUid(String uid) {
 			_uid = uid;
 		}
 
-		void setTimestamp(Long timestamp) {
-			_timestamp = timestamp;
-		}
-
-		void setCustom(Map<String, Annotation> custom) {
-			_custom = custom;
+		public void setAnnotation(Annotation annotation) {
+			_annotation = annotation;
 		}
 	}
 
@@ -858,7 +950,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 		@Override
 		public List<Metric> call() {
-			_logger.debug("TSDB Query = " + _requestBody);
+			_logger.debug("TSDB requestUrl {} requestBody {}", _requestUrl, _requestBody);
 
 			try {
 				HttpResponse response = executeHttpRequest(HttpMethod.POST, _requestUrl, _readPortMap.get(_requestEndPoint), new StringEntity(_requestBody));
