@@ -338,8 +338,8 @@ public interface AlertService extends Service {
 	int countAlerts(AlertsCountContext context);
 	
 	/**
-	 * Due to circular dependency exists between monitor service and alert service, I have to
-	 * add such interface so that every where in the system export metrics to JMX metric exporter
+	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
+	 * system
 	 * 
 	 * @param metric the metric to export
 	 * @param value  the value datapoint of the metric to be export
