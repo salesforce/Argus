@@ -105,7 +105,7 @@ public class MetricSchemaRecordList {
 				String mtsField = "\"mts\":" + now;
 				String ctsField = "\"cts\":" + now;
 				Integer retention = entry.getValue().getRetentionDiscovery();
-				Long expiration = now + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * 24 * 3600 * 1000;
+				Long expiration = now + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * 24L * 3600L * 1000L;
 				String expirationField = "\"" + EXPIRATION_TS + "\":" + expiration;
 
 				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + mtsField + "," + ctsField + "," + expirationField + "}");

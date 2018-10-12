@@ -32,6 +32,7 @@
 package com.salesforce.dva.argus.ws.resources;
 
 import com.salesforce.dva.argus.entity.Annotation;
+import com.salesforce.dva.argus.entity.MetatagsRecord;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.service.CollectionService;
@@ -92,6 +93,9 @@ public class CollectionResources extends AbstractResource {
             try {
                 Metric metric = new Metric(metricDto.getScope(), metricDto.getMetric());
                 metric.setTags(metricDto.getTags());
+                if (metricDto.getMetatags() != null) {
+                    metric.setMetatagsRecord(new MetatagsRecord(metricDto.getMetatags(), metricDto.getMetatagsKey()));
+                }
 
                 copyProperties(metric, metricDto);
                 legalMetrics.add(metric);
