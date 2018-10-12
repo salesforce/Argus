@@ -40,6 +40,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -397,22 +398,22 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 
 		try {
-			put(fracturedList, endpoint + "/api/put", HttpMethod.POST);
-		} catch(IOException ex) {
-			_logger.warn("IOException while trying to push metrics", ex);
-			_retry(fracturedList, _roundRobinIterator);
+			put(fracturedList, endpoint + "/api/put", HttpMethod.POST, CHUNK_SIZE);
+		} catch(Exception ex) {
+			_logger.warn("Failure while trying to push metrics", ex);
+			_retry(fracturedList, _roundRobinIterator, "/api/put", HttpMethod.POST, CHUNK_SIZE);
 		}
 	}
 
-	public <T> void _retry(List<T> objects, Iterator<String> endPointIterator) {
+	public <T> void _retry(List<T> objects, Iterator<String> endPointIterator, String urlPath, HttpMethod httpMethod, int chunkSize) {
 		for(int i=0;i<RETRY_COUNT;i++) {
 			try {
 				String endpoint = endPointIterator.next();
 				_logger.info("Retrying using endpoint {}.", endpoint);
-				put(objects, endpoint + "/api/put", HttpMethod.POST);
+				put(objects, endpoint + urlPath, httpMethod, chunkSize);
 				return;
-			} catch(IOException ex) {
-				_logger.warn("IOException while trying to push data. We will retry for {} more times",RETRY_COUNT-i);
+			} catch(Exception ex) {
+				_logger.info("Failed while trying to push data. We will retry for {} more times", RETRY_COUNT-i);
 			}
 		}
 
@@ -429,7 +430,12 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 			// Dictionary of annotation key and the annotation
 			Map<String, Annotation> keyAnnotationMap = new HashMap<>();
 
-			List<AnnotationWrapper> wrappers = new ArrayList<>();
+			// List of Dictionary of annotation uid and annotation wrapper
+			// We observed occasional failures with tsdb when we are updating same annotation uid in a batch.
+			// To address that we maintain a list of dictionaries where each dictionary represents a batch that is updated.
+			// If we have multiple annotations with same uid, they get added to different dictionaries
+			// and get updated in multiple batches.
+			List<Map<String, AnnotationWrapper>> wrapperList = new ArrayList<>();
 
 			for(Annotation annotation : annotations) {
 				String key = toAnnotationKey(annotation);
@@ -441,7 +447,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				} else {
 					// If we find uid in the cache, we construct the AnnotationWrapper object.
 					AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
-					wrappers.add(wrapper);
+					AddToWrapperList(wrapperList, wrapper);
 				}
 			}
 
@@ -455,7 +461,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
 						keyAnnotationMap.get(keyUidEntry.getKey()));
 
-				wrappers.add(wrapper);
+				AddToWrapperList(wrapperList, wrapper);
 			}
 
 			_logger.debug("putAnnotations CacheStats hitCount {} requestCount {} " +
@@ -465,12 +471,36 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 
 			String endpoint = _roundRobinIterator.next();
 
-			try {
-				put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST);
-			} catch(IOException ex) {
-				_logger.warn("IOException while trying to push annotations", ex);
-				_retry(wrappers, _roundRobinIterator);
+			for(Map<String, AnnotationWrapper> wrapperMap : wrapperList) {
+
+				List<AnnotationWrapper> wrappers = new ArrayList<AnnotationWrapper>(wrapperMap.values());
+
+				try {
+					put(wrappers, endpoint + "/api/annotation/bulk", HttpMethod.POST, CHUNK_SIZE);
+				} catch (Exception ex) {
+					_logger.warn("Exception while trying to push annotations", ex);
+					_retry(wrappers, _roundRobinIterator, "/api/annotation/bulk", HttpMethod.POST, CHUNK_SIZE);
+				}
 			}
+		}
+	}
+
+	private void AddToWrapperList(List<Map<String, AnnotationWrapper>> wrapperList, AnnotationWrapper wrapper) {
+
+		Boolean addedWrapper = false;
+
+		for(Map<String, AnnotationWrapper> wrapperMap : wrapperList) {
+			if(!wrapperMap.containsKey(wrapper._uid)) {
+				wrapperMap.put(wrapper._uid, wrapper);
+				addedWrapper = true;
+			}
+		}
+
+		if(!addedWrapper) {
+			Map<String, AnnotationWrapper> wrapperMap = new HashMap<>();
+			wrapperMap.put(wrapper._uid, wrapper);
+			wrapperList.add(wrapperMap);
+			addedWrapper = true;
 		}
 	}
 
@@ -594,23 +624,21 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 	*/
 
 	/* Writes objects in chunks. */
-	private <T> void put(List<T> objects, String endpoint, HttpMethod method) throws IOException {
+	private <T> void put(List<T> objects, String endpoint, HttpMethod method, int chunkSize) throws IOException {
 		if (objects != null) {
 			int chunkEnd = 0;
 
 			while (chunkEnd < objects.size()) {
 				int chunkStart = chunkEnd;
 
-				chunkEnd = Math.min(objects.size(), chunkStart + CHUNK_SIZE);
+				chunkEnd = Math.min(objects.size(), chunkStart + chunkSize);
 				try {
 
 					String createBody = fromEntity(objects.subList(chunkStart, chunkEnd));
 
 					StringEntity entity = new StringEntity(createBody);
 
-					if (endpoint.contains("put")) {
-						_logger.debug("createUrl {} createBody {}", endpoint, createBody);
-					}
+					_logger.debug("createUrl {} createBody {}", endpoint, createBody);
 
 					HttpResponse response = executeHttpRequest(method, endpoint, _writeHttpClient, entity);
 
