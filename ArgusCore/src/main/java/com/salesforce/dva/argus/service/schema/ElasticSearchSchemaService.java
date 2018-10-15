@@ -95,6 +95,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String FIELD_TYPE_DATE ="date";
 	private static final String FIELD_TYPE_INTEGER = "integer";
 
+	private static final long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
+
 	private final ObjectMapper _mapper;
 	private final ObjectMapper _createScopeOnlyMapper;
 	private final ObjectMapper _updateScopeOnlyMapper;
@@ -1147,7 +1149,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 			}
 
 			Integer retention = record.getRetentionDiscovery();
-			Long expiration = currentTimeMillis + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * 24L * 3600L * 1000L;
+			Long expiration = currentTimeMillis + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * ONE_DAY_IN_MILLIS;
 
 			result.append("{\"update\" : {\"_id\" : \"").append(docId).append("\" } }")
 				.append(System.lineSeparator())
