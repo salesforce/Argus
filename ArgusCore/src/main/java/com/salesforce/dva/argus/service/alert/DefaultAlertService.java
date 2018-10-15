@@ -381,14 +381,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				String logMessage = MessageFormat.format("Failed to deserialize alert {0}. Full stack trace of exception {1}", serializedAlert, ExceptionUtils.getFullStackTrace(e));
 				_logger.warn(logMessage);
 
-				LogAlertStatsOnFailure(DEFAULTALERTID, DEFAULTUSER);
+				logAlertStatsOnFailure(DEFAULTALERTID, DEFAULTUSER);
 
 				continue;
 			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 
-				LogAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
+				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 				continue;
 			}
 
@@ -517,9 +517,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
-				HandleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
-				HandleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
 			} finally {
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -531,7 +531,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		return historyList;
 	}
 
-	private void LogAlertStatsOnFailure(BigInteger alertid, String user) {
+	private void logAlertStatsOnFailure(BigInteger alertid, String user) {
 		Map<String, String> tags = new HashMap<>();
 		tags.put("host", HOSTNAME);
 		publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alertid, -1.0/*failure*/, tags);
@@ -542,7 +542,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
 	}
 
-	private void HandleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
+	private void handleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
 												Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
 		long jobEndTime;
 		String logMessage;
@@ -578,7 +578,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			_logger.warn(logMessage);
 		}
 
-		LogAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
+		logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 	}
 
 	private boolean areDatapointsEmpty(List<Metric> metrics) {
