@@ -161,7 +161,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			// check metric schema bloom filter
 			if(metric.getTags().isEmpty()) {
 				// if metric does not have tags
-				String key = constructKey(metric, null);
+				String key = constructKey(metric, null, null);
 				boolean found = bloomFilter.mightContain(key);
 				if(!found) {
 					metricsToPut.add(metric);
@@ -170,7 +170,7 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 				// if metric has tags
 				boolean newTags = false;
 				for(Entry<String, String> tagEntry : metric.getTags().entrySet()) {
-					String key = constructKey(metric, tagEntry);
+					String key = constructKey(metric, tagEntry.getKey(), tagEntry.getValue());
 					boolean found = bloomFilter.mightContain(key);
 					if(!found) {
 						newTags = true;
@@ -262,16 +262,16 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 	@Override
 	public abstract List<MetricSchemaRecord> keywordSearch(KeywordQuery query);
 
-	protected String constructKey(Metric metric, Entry<String, String> tagEntry) {
-
-		if (tagEntry == null) {
-			return constructKey(metric.getScope(), metric.getMetric(), null, null, metric.getNamespace());
-		} else {
-			return constructKey(metric.getScope(), metric.getMetric(), tagEntry.getKey(), tagEntry.getValue(), metric.getNamespace());
-		}
+	protected String constructKey(Metric metric, String tagk, String tagv) {
+		return constructKey(metric.getScope(),
+				metric.getMetric(),
+				tagk,
+				tagv,
+				metric.getNamespace(),
+				metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(MetricSchemaRecord.RETENTION_DISCOVERY));
 	}
 
-	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace) {
+	protected String constructKey(String scope, String metric, String tagk, String tagv, String namespace, String retention) {
 
 		StringBuilder sb = new StringBuilder(scope);
 
@@ -291,6 +291,11 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 			sb.append('\0').append(tagv);
 		}
 
+		//there is use case where users simply want to update the retention without touching rest of a metric
+		if(!StringUtils.isEmpty(retention)) {
+			sb.append('\0').append(retention);
+		}
+
 		// Add randomness for each instance of bloom filter running on different
 		// schema clients to reduce probability of false positives that metric schemas are not written to ES
 		sb.append('\0').append(randomBloomAppend);
@@ -300,12 +305,12 @@ public abstract class AbstractSchemaService extends DefaultService implements Sc
 
 	protected String constructScopeOnlyKey(String scope) {
 
-		return constructKey(scope, null, null, null, null);
+		return constructKey(scope, null, null, null, null, null);
 	}
 
 	protected String constructScopeAndMetricOnlyKey(String scope, String metric) {
 
-		return constructKey(scope, metric, null, null, null);
+		return constructKey(scope, metric, null, null, null, null);
 	}
 
 	protected int getNumHoursUntilTargetHour(int targetHour){
