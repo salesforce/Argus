@@ -238,7 +238,6 @@ public final class SystemConfiguration extends Properties {
         DC_DEFAULT("system.property.dc.default", "defaultDC"),
         DC_LIST("system.property.dc.list", "DC1,DC2,DC3,DC4,DC5"),
 
-
         CACHE_SERVICE_IMPL_CLASS("service.binding.cache", "com.salesforce.dva.argus.service.cache.NoOperationCacheService"),
         CACHE_SERVICE_PROPERTY_FILE("service.config.cache","argus.properties"),
 
