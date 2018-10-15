@@ -1165,7 +1165,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
 		_logger.info("Adding {} records into bloom filter.", records.size());
 		for (MetricSchemaRecord record : records) {
-			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
+			String key = constructKey(record.getScope(),
+					record.getMetric(),
+					record.getTagKey(),
+					record.getTagValue(),
+					record.getNamespace(),
+					record.getRetentionDiscovery()==null?null:record.getRetentionDiscovery().toString());
 			bloomFilter.put(key);
 		}
 	}

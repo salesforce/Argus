@@ -113,7 +113,7 @@ public final class SystemMain extends SystemService {
             _persistService.start();
             _serviceFactory.getUserService().findAdminUser();
             _serviceFactory.getUserService().findDefaultUser();
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             _log.error(getName() + " startup aborted.", ex);
         } finally {
             _mergeServiceConfiguration();
@@ -216,7 +216,8 @@ public final class SystemMain extends SystemService {
                     Service service = Service.class.cast(method.invoke(_serviceFactory, new Object[]{}));
                     method.setAccessible(accessible);
                     _mergeProperties(service.getServiceProperties());
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    _log.error(e.getMessage(), e);
                     requireState(false, "Failed to load service properties for service factory method " + method.getName());
                 }
             }
