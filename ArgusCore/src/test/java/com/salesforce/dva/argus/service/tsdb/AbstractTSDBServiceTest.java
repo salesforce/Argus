@@ -275,10 +275,10 @@ public class AbstractTSDBServiceTest extends AbstractTest {
         AbstractTSDBService.AnnotationWrapper wrapper3 = new AbstractTSDBService.AnnotationWrapper("2", _constructAnnotation('3'));
         AbstractTSDBService.AnnotationWrapper wrapper4 = new AbstractTSDBService.AnnotationWrapper("3", _constructAnnotation('2'));
 
-        AbstractTSDBService.AddToWrapperList(wrapperList, wrapper1);
-        AbstractTSDBService.AddToWrapperList(wrapperList, wrapper2);
-        AbstractTSDBService.AddToWrapperList(wrapperList, wrapper3);
-        AbstractTSDBService.AddToWrapperList(wrapperList, wrapper4);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper1);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper2);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper3);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper4);
 
         assertEquals(wrapperList.get(0).size(), 3);
         assertEquals(wrapperList.get(1).size(), 1);

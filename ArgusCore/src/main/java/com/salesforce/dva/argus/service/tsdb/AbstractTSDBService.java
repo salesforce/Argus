@@ -447,7 +447,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				} else {
 					// If we find uid in the cache, we construct the AnnotationWrapper object.
 					AnnotationWrapper wrapper = new AnnotationWrapper(uid, annotation);
-					AddToWrapperList(wrapperList, wrapper);
+					addToWrapperList(wrapperList, wrapper);
 				}
 			}
 
@@ -461,7 +461,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 				AnnotationWrapper wrapper = new AnnotationWrapper(keyUidEntry.getValue(),
 						keyAnnotationMap.get(keyUidEntry.getKey()));
 
-				AddToWrapperList(wrapperList, wrapper);
+				addToWrapperList(wrapperList, wrapper);
 			}
 
 			_logger.debug("putAnnotations CacheStats hitCount {} requestCount {} " +
@@ -485,7 +485,7 @@ public class AbstractTSDBService extends DefaultService implements TSDBService {
 		}
 	}
 
-	static void AddToWrapperList(List<Map<String, AnnotationWrapper>> wrapperList, AnnotationWrapper wrapper) {
+	static void addToWrapperList(List<Map<String, AnnotationWrapper>> wrapperList, AnnotationWrapper wrapper) {
 
 		Boolean addedWrapper = false;
 
