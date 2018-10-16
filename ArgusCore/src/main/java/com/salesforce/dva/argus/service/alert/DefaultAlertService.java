@@ -35,7 +35,6 @@ import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static java.math.BigInteger.ZERO;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -820,6 +819,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		if(tags!=null) {
 			trackingMetric.setTags(tags);
 		}
+		
+		this.exportMetric(trackingMetric, value);
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
@@ -1426,6 +1427,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
 	}
+
+
+	@Override
+	public void exportMetric(Metric metric, Double value) {
+		this._monitorService.exportMetric(metric, value);
+	}
+
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
