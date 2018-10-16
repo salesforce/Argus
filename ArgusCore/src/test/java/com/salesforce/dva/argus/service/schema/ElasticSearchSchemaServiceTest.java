@@ -12,15 +12,20 @@ import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.RestClient;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -825,10 +830,45 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         ObjectMapper mapper = ElasticSearchSchemaService.createObjectMapper();
 
         MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
-        MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2", 10);
-        MetricSchemaRecordList recordList = new MetricSchemaRecordList(Arrays.asList(record1, record2), MetricSchemaRecordList.HashAlgorithm.fromString("MD5"));
+        //MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2", 10);
+        MetricSchemaRecordList recordList = new MetricSchemaRecordList(Arrays.asList(record1), MetricSchemaRecordList.HashAlgorithm.fromString("MD5"));
 
-        System.out.println(mapper.writeValueAsString(recordList));
+        String serialized = mapper.writeValueAsString(recordList);
+
+        assertTrue("expect the serialized record to have EXPIRATION_TS", serialized.contains(MetricSchemaRecord.EXPIRATION_TS));
+        assertTrue("expect the serialized record to have RETENTION_DISCOVERY", serialized.contains(MetricSchemaRecord.RETENTION_DISCOVERY));
+    }
+
+    @Test
+    public void testDoExtractResponse() throws Exception {
+        final String message = "this is a test";
+        BasicHttpEntity entity = new BasicHttpEntity();
+        try(ByteArrayInputStream bis = new ByteArrayInputStream(message.getBytes())) {
+            entity.setContent(bis);
+        }
+        catch (IOException e) {
+            throw e;
+        }
+
+        String responseMessage = ElasticSearchSchemaService.doExtractResponse(200, entity);
+        assertEquals("expect the entity to be equal after extraction", message, responseMessage);
+    }
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void testDoExtractResponse400() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("Status code: 400");
+        ElasticSearchSchemaService.doExtractResponse(400, null);
+    }
+
+    @Test
+    public void testDoExtractResponse500() {
+        expectedException.expect(SystemException.class);
+        expectedException.expectMessage("Status code: 500");
+        ElasticSearchSchemaService.doExtractResponse(500, null);
     }
 
     @Test

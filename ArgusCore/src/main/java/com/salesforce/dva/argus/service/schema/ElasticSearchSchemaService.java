@@ -1389,51 +1389,47 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		this._useScopeMetricNamesIndex = true;
 	}
 
-	/** Helper to process the response.
-	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
+	/** Helper to process the response. <br><br>
+	 * Throws IllegalArgumentException when the http status code is in the 400 range <br>
+	 * Throws SystemException when the http status code is outsdie of the 200 and 400 range
 	 * @param response ES response
 	 * @return	Stringified response
 	 */
 	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
 
-		int status = response.getStatusLine().getStatusCode();
-		String strResponse = extractStringResponse(response);
-
-		if ((status < HttpStatus.SC_OK) || (status >= HttpStatus.SC_MULTIPLE_CHOICES)) {
-			throw new SystemException("Status code: " + status + " .  Error occurred. " +  strResponse);
-		} else {
-			return strResponse;
-		}
+		return doExtractResponse(response.getStatusLine().getStatusCode(), response.getEntity());
 	}
 
-	private String extractStringResponse(Response content) {
-		requireArgument(content != null, "Response content is null.");
+	/**
+	 * testable version of {@link ElasticSearchSchemaService#extractResponse(Response)}
+	 * @param statusCode
+	 * @param entity
+	 * @return
+	 */
+	@VisibleForTesting
+	static String doExtractResponse(int statusCode, HttpEntity entity) {
+		String message = null;
 
-		String result;
-		HttpEntity entity = null;
-
-		try {
-			entity = content.getEntity();
-			if (entity == null) {
-				result = "";
-			} else {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
+		if (entity != null) {
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				entity.writeTo(baos);
-				result = baos.toString("UTF-8");
+				message = baos.toString("UTF-8");
 			}
-			return result;
-		} catch (IOException ex) {
-			throw new SystemException(ex);
-		} finally {
-			if (entity != null) {
-				try {
-					EntityUtils.consume(entity);
-				} catch (IOException ex) {
-					_logger.warn("Failed to close entity stream.", ex);
-				}
+			catch (IOException ex) {
+				throw new SystemException(ex);
 			}
+		}
+
+		//if the response is in the 400 range, use IllegalArgumentException, which currently translates to a 400 error
+		if (statusCode>= HttpStatus.SC_BAD_REQUEST && statusCode < HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+			throw new IllegalArgumentException("Status code: " + statusCode + " .  Error occurred. " +  message);
+		}
+		//everything else that's not in the 200 range, use SystemException, which translates to a 500 error.
+		if ((statusCode < HttpStatus.SC_OK) || (statusCode >= HttpStatus.SC_MULTIPLE_CHOICES)) {
+			throw new SystemException("Status code: " + statusCode + " .  Error occurred. " +  message);
+		} else {
+			return message;
 		}
 	}
 
