@@ -56,6 +56,10 @@ public class TemplateReplacer {
         return lowercasedString;
     }
 
+    private static String makeExceptionForCertainTag(String templateString) {
+        return templateString.replace("${device}", "${tag.device}");
+    }
+
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
         init();
@@ -77,6 +81,7 @@ public class TemplateReplacer {
         do {
             templateString = generatedString;
             templateString = replaceKeywordsToLowerCase(templateString);
+            templateString = makeExceptionForCertainTag(templateString);
             try {
                 Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
