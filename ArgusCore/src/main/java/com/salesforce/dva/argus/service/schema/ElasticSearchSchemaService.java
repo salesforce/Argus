@@ -1,5 +1,7 @@
 package com.salesforce.dva.argus.service.schema;
 
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS;
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
@@ -93,6 +95,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String FIELD_TYPE_DATE ="date";
 	private static final String FIELD_TYPE_INTEGER = "integer";
 
+	private static final long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
+
 	private final ObjectMapper _mapper;
 	private final ObjectMapper _createScopeOnlyMapper;
 	private final ObjectMapper _updateScopeOnlyMapper;
@@ -101,7 +105,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final ObjectMapper _createMetatagsMapper;
 	private final ObjectMapper _updateMetatagsMapper;
 
-	private Logger _logger = LoggerFactory.getLogger(getClass());
+	private static Logger _logger = LoggerFactory.getLogger(ElasticSearchSchemaService.class);
 	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
@@ -870,7 +874,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				}
 				if(updateMtsFieldList.size()>0) {
 					_logger.debug("mts filed will be updated for docs with ids {}", updateMtsFieldList);
-					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
+					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME, msrList);
 					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 					for(Item item: updateResponse.items) {
 						if(item.update != null && item.update.status != HttpStatus.SC_OK) {
@@ -1114,7 +1118,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return Pair.of(failedIds, updateRequiredIds);
 	}
 
-	protected Response updateMtsField(List<String> docIds, String index, String type) {
+	protected Response updateMtsField(List<String> docIds, String index, String type, MetricSchemaRecordList msrList) {
 		Response result= null;
 		if(docIds != null && docIds.size()>0) {
 			String requestUrl = new StringBuilder().append("/")
@@ -1125,7 +1129,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					.append("_bulk")
 					.toString();
 			try {
-				String requestBody = _getRequestBodyForMtsFieldUpdate(docIds);
+				String requestBody = _getRequestBodyForMtsFieldUpdate(docIds, msrList, System.currentTimeMillis());
 				result = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
 						new StringEntity(requestBody));
 			} catch (IOException e) {
@@ -1135,12 +1139,26 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return result;
 	}
 
-	private String _getRequestBodyForMtsFieldUpdate(List<String> docIds) {
+	static String _getRequestBodyForMtsFieldUpdate(List<String> docIds, MetricSchemaRecordList msrList, long currentTimeMillis) {
 		StringBuilder result = new StringBuilder();
 		for(String docId:docIds) {
-			result.append("{\"update\" : {\"_id\" : \"" + docId + "\" } }");
-			result.append(System.lineSeparator());
-			result.append("{\"doc\" : {\"mts\": " + System.currentTimeMillis() + "}}");
+			MetricSchemaRecord record = msrList.getRecord(docId);
+			if (record == null) {	//this should never happen
+				_logger.warn("ES create response contains ID {} that was not in original request", docId);
+				continue;
+			}
+
+			Integer retention = record.getRetentionDiscovery();
+			Long expiration = currentTimeMillis + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * ONE_DAY_IN_MILLIS;
+
+			result.append("{\"update\" : {\"_id\" : \"").append(docId).append("\" } }")
+				.append(System.lineSeparator())
+				.append("{\"doc\" : {\"mts\": ").append(currentTimeMillis)
+				.append(",\"").append(EXPIRATION_TS).append("\":").append(expiration);
+			if (retention != null) {
+				result.append(",\"").append(RETENTION_DISCOVERY).append("\":").append(retention);
+			}
+			result.append("}}");
 			result.append(System.lineSeparator());
 		}
 		return result.toString();
@@ -1149,7 +1167,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
 		_logger.info("Adding {} records into bloom filter.", records.size());
 		for (MetricSchemaRecord record : records) {
-			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
+			String key = constructKey(record.getScope(),
+					record.getMetric(),
+					record.getTagKey(),
+					record.getTagValue(),
+					record.getNamespace(),
+					record.getRetentionDiscovery()==null?null:record.getRetentionDiscovery().toString());
 			bloomFilter.put(key);
 		}
 	}
