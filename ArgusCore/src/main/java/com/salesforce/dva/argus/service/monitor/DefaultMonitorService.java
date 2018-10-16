@@ -52,6 +52,7 @@ import com.salesforce.dva.argus.service.MonitorService;
 import com.salesforce.dva.argus.service.ServiceManagementService;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.UserService;
+import com.salesforce.dva.argus.service.alert.DefaultAlertService;
 import com.salesforce.dva.argus.service.alert.notifier.AuditNotifier;
 import com.salesforce.dva.argus.service.jpa.DefaultJPAService;
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
@@ -61,6 +62,7 @@ import com.salesforce.dva.argus.system.SystemException;
 import com.sun.management.OperatingSystemMXBean;
 import com.sun.management.UnixOperatingSystemMXBean;
 import org.slf4j.Logger;
+
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryPoolMXBean;
@@ -111,11 +113,13 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	private final DashboardService _dashboardService;
 	private final MetricService _metricService;
 	private final MailService _mailService;
+	private final GaugeExporter _gaugeExporter;
 	private final Map<Metric, Double> _metrics = new ConcurrentHashMap<>();
 	private final PrincipalUser _adminUser;
 	private final SystemConfiguration _sysConfig;
 	private Thread _monitorThread;
 	private DataLagMonitor _dataLagMonitorThread;
+
 
 	//~ Constructors *********************************************************************************************************************************
 
@@ -133,7 +137,8 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 	 */
 	@Inject
 	public DefaultMonitorService(TSDBService tsdbService, UserService userService, AlertService alertService,
-			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, SystemConfiguration sysConfig) {
+			ServiceManagementService serviceManagementService, DashboardService dashboardService, MetricService metricService, MailService mailService, 
+			GaugeExporter gaugeExporter, SystemConfiguration sysConfig) {
 		super(null, sysConfig);
 		requireArgument(tsdbService != null, "TSDB service cannot be null.");
 		requireArgument(userService != null, "User service cannot be null.");
@@ -149,6 +154,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		_metricService = metricService;
 		_mailService = mailService;
 		_adminUser = _userService.findAdminUser();
+		_gaugeExporter = gaugeExporter;
 	}
 
 	//~ Methods **************************************************************************************************************************************
@@ -266,7 +272,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireArgument(name != null && !name.isEmpty(), "Cannot update a counter with null or empty name.");
 
 		Metric metric = _constructCounterKey(name, tags);
-
+		_gaugeExporter.exportGauge(metric, value);
 		_logger.debug("Updating {} counter for {} to {}.", name, tags, value);
 		_metrics.put(metric, value);
 	}
@@ -292,6 +298,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 			_logger.debug("Modifying {} counter from {} to {}.", name, value, newValue);
 			_metrics.put(key, newValue);
+			_gaugeExporter.exportGauge(key, newValue);
 			return newValue;
 		}
 	}
@@ -709,6 +716,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 
 				dataPoints.put(timestamp, entry.getValue());
 				entry.getKey().setDatapoints(dataPoints);
+				_gaugeExporter.exportGauge(entry.getKey(), entry.getValue());
 			}
 			if (!isDisposed()) {
 				_logger.info("Pushing {} monitoring metrics to TSDB.", counters.size());
@@ -726,5 +734,11 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			}
 		}
 	}
+
+	@Override
+	public void exportMetric(Metric metric, Double value) {
+		_gaugeExporter.exportGauge(metric, value);		
+	}
+
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
