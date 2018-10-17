@@ -52,7 +52,6 @@ public class MetricReader<T> {
   	private String queryTimeWindow;
   	private Integer numDiscoveryResults = 0;
   	private Integer numDiscoveryQueries = 0;
-  	private QueryContext currentQueryContext = null;
 
 	@Inject
     MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
@@ -288,13 +287,13 @@ private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Cl
         requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
-        (result = expression(relativeTo, syntaxOnly, clazz, new ArrayList<TSDBQueryExpression>()) | result = function(relativeTo, syntaxOnly, clazz))<EOF>
+        (result = expression(relativeTo, syntaxOnly, clazz, new ArrayList<TSDBQueryExpression>()) | result = function(relativeTo, syntaxOnly, clazz, new QueryContext()))<EOF>
 	{
         return result;
     }
 }
 
-private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContext currentQueryContext) :
 {
   	List<T> totalResult = new ArrayList<T>();
   	List<T> result = new ArrayList<T>();
@@ -305,7 +304,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	List<TSDBQueryExpression> queryExpressions = new ArrayList<TSDBQueryExpression>();
 }
 {
-	functionName = getFunctionNameAndUpdateContext()
+	functionName = getFunctionNameAndUpdateContext(currentQueryContext)
 	<LEFT_PARENTHESIS>
 		(
 		result = expression(relativeTo, syntaxOnly, clazz, queryExpressions)
@@ -314,7 +313,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 			constantsOnly = false;		
 		}
 		| 
-		result = function(relativeTo, syntaxOnly, clazz)
+		result = function(relativeTo, syntaxOnly, clazz, currentQueryContext)
 		{ 
 			totalResult.addAll(result);
 			constantsOnly = false;
@@ -333,7 +332,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
             result = expression(relativeTo, syntaxOnly, clazz, queryExpressions)
             { totalResult.addAll(result); }
 			|
-            result = function(relativeTo, syntaxOnly, clazz)
+            result = function(relativeTo, syntaxOnly, clazz, currentQueryContext)
             { totalResult.addAll(result); }
 			|
 			t = <CONSTANT>
@@ -348,7 +347,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 	{
 	    currentQueryContext.getChildExpressions().addAll(queryExpressions);
 	    currentQueryContext.setConstants(constants);
-	  	List<T> functionResult = evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly);
+	  	List<T> functionResult = evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly, currentQueryContext);
 	  	if(currentQueryContext.getParentContext()!=null){
 	  	    currentQueryContext = currentQueryContext.getParentContext();
 	  	}
@@ -356,361 +355,361 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 	}
 }
 
-private String getFunctionNameAndUpdateContext() :
+private String getFunctionNameAndUpdateContext(QueryContext context) :
 {
   	Token t = null;
 }
 {
 	t = <IDENTITY>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   		
 	|
 	t = <MULTIPLY>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <AVERAGE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <INTEGRAL>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <DERIVATIVE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <MIN>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <MAX>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ZEROIFMISSINGSUM>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ABSOLUTE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <UNION>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <COUNT>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <GROUP>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <AVERAGEBELOW>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <PERCENTILE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <MOVINGAVERAGE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <MOVING>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <SCALE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <SCALE_V>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <DIFF>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <DIFF_V>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <SUM>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <SUM_V>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <DIVIDE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <DIVIDE_V>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ALIAS>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ALIASBYTAG>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <PROPAGATE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <NORMALIZE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <NORMALIZE_V>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ABOVE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <BELOW>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <INCLUDE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <EXCLUDE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <HIGHEST>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <LOWEST>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <LIMIT>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <RANGE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <FILL>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <FILL_CALCULATE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <LOG>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <CULL_ABOVE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <CULL_BELOW>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <SORT>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <SHIFT>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <DOWNSAMPLE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <DEVIATION>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|	
 	t = <JOIN>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
     |    
     t = <CONSECUTIVE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }
 	|
 	t = <HW_FORECAST>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <HW_DEVIATION>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ANOMALY_STL>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
     |
 	t = <ANOMALY_DENSITY>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
 	t = <ANOMALY_ZSCORE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }   
 	|
     t = <ANOMALY_KMEANS>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }
     |
     t = <ANOMALY_RPCA>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }
     | 
     t = <GROUPBY>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }
     |
     t = <GROUPBYTAG>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }
     |
     t = <INTERPOLATE>
     { 
-        updateQueryContextWithFunction(t.image);
+        updateQueryContextWithFunction(t.image, context);
         return t.image; 
     }    
 }
 
-private void updateQueryContextWithFunction(String functionName) :
+private void updateQueryContextWithFunction(String functionName, QueryContext currentQueryContext) :
 {}
 {
     {
@@ -726,7 +725,7 @@ private void updateQueryContextWithFunction(String functionName) :
     }
 }
 
-private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly) :
+private List<T> evaluateFunction(String functionName, List<T> result, List<String> constants, long relativeTo, boolean syntaxOnly, Class<T> clazz, boolean constantsOnly, QueryContext currentQueryContext) :
 {}
 {
   	{
