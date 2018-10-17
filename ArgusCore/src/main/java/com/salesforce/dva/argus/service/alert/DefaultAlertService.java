@@ -259,7 +259,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		alert.setDeleted(true);
 		alert.setEnabled(false);
 		alert.setName(alert.getName() + System.currentTimeMillis());
-
+		alert.setModifiedDate(new Date());
 		Alert result = mergeEntity(em, alert);
 
 		em.flush();
