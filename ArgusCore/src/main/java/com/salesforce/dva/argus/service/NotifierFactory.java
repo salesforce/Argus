@@ -60,6 +60,9 @@ public final class NotifierFactory {
     private Provider<GusNotifier> _gusNotifierProvider;
     @Inject
     private Provider<CallbackNotifier> _callbackNotifierProvider;
+    @Inject
+    private Provider<RefocusNotifier> _refocusNotifierProvider;
+
 
     public synchronized CallbackNotifier getCallbackNotifier() { return _callbackNotifierProvider.get(); }
 
@@ -116,6 +119,15 @@ public final class NotifierFactory {
      */
     public synchronized GusNotifier getGusNotifier() {
         return _gusNotifierProvider.get();
+    }
+
+    /**
+     * Returns an instance of the Refocus Notifier.
+     *
+     * @return  An instance of the Refocus Notifier.
+     */
+    public synchronized RefocusNotifier getRefocusNotifier() {
+        return _refocusNotifierProvider.get();
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

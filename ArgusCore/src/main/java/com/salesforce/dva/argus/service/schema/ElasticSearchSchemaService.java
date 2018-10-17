@@ -1,5 +1,8 @@
 package com.salesforce.dva.argus.service.schema;
 
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTION_DISCOVERY_DAYS;
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
+import static com.salesforce.dva.argus.entity.MetricSchemaRecord.RETENTION_DISCOVERY;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 
 import java.io.ByteArrayOutputStream;
@@ -92,6 +95,8 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private static final String FIELD_TYPE_DATE ="date";
 	private static final String FIELD_TYPE_INTEGER = "integer";
 
+	private static final long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
+
 	private final ObjectMapper _mapper;
 	private final ObjectMapper _createScopeOnlyMapper;
 	private final ObjectMapper _updateScopeOnlyMapper;
@@ -100,7 +105,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	private final ObjectMapper _createMetatagsMapper;
 	private final ObjectMapper _updateMetatagsMapper;
 
-	private Logger _logger = LoggerFactory.getLogger(getClass());
+	private static Logger _logger = LoggerFactory.getLogger(ElasticSearchSchemaService.class);
 	private RestClient _esRestClient;
 	private final int _replicationFactor;
 	private final int _numShards;
@@ -388,7 +393,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				continue;
 			}
 
-			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(MetricSchemaRecord.RETENTION_DISCOVERY);
+			String retention  = metric.getMetatagsRecord()==null?null:metric.getMetatagsRecord().getMetatagValue(RETENTION_DISCOVERY);
 			Integer retentionInt = null;
 			if (retention != null) {
 				try {
@@ -471,7 +476,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		List<MetatagsRecord> records = new ArrayList<>(_bulkIndexingSize);
                 for(Map.Entry<String, MetatagsRecord> entry : metatagsToPut.entrySet()) {
                 	//remove this special metatag to prevent it from going to ES
-                	entry.getValue().removeMetatag(MetricSchemaRecord.RETENTION_DISCOVERY);
+                	entry.getValue().removeMetatag(RETENTION_DISCOVERY);
                     MetatagsRecord mtag = new MetatagsRecord(entry.getValue().getMetatags(), entry.getValue().getKey());
                     records.add(mtag);
                     if(records.size() == _bulkIndexingSize) {
@@ -869,7 +874,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 				}
 				if(updateMtsFieldList.size()>0) {
 					_logger.debug("mts filed will be updated for docs with ids {}", updateMtsFieldList);
-					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME);
+					Response response = updateMtsField(updateMtsFieldList,INDEX_NAME,TYPE_NAME, msrList);
 					PutResponse updateResponse = new ObjectMapper().readValue(extractResponse(response), PutResponse.class);
 					for(Item item: updateResponse.items) {
 						if(item.update != null && item.update.status != HttpStatus.SC_OK) {
@@ -1113,7 +1118,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return Pair.of(failedIds, updateRequiredIds);
 	}
 
-	protected Response updateMtsField(List<String> docIds, String index, String type) {
+	protected Response updateMtsField(List<String> docIds, String index, String type, MetricSchemaRecordList msrList) {
 		Response result= null;
 		if(docIds != null && docIds.size()>0) {
 			String requestUrl = new StringBuilder().append("/")
@@ -1124,7 +1129,7 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 					.append("_bulk")
 					.toString();
 			try {
-				String requestBody = _getRequestBodyForMtsFieldUpdate(docIds);
+				String requestBody = _getRequestBodyForMtsFieldUpdate(docIds, msrList, System.currentTimeMillis());
 				result = _esRestClient.performRequest(HttpMethod.POST.getName(), requestUrl, Collections.emptyMap(),
 						new StringEntity(requestBody));
 			} catch (IOException e) {
@@ -1134,12 +1139,26 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		return result;
 	}
 
-	private String _getRequestBodyForMtsFieldUpdate(List<String> docIds) {
+	static String _getRequestBodyForMtsFieldUpdate(List<String> docIds, MetricSchemaRecordList msrList, long currentTimeMillis) {
 		StringBuilder result = new StringBuilder();
 		for(String docId:docIds) {
-			result.append("{\"update\" : {\"_id\" : \"" + docId + "\" } }");
-			result.append(System.lineSeparator());
-			result.append("{\"doc\" : {\"mts\": " + System.currentTimeMillis() + "}}");
+			MetricSchemaRecord record = msrList.getRecord(docId);
+			if (record == null) {	//this should never happen
+				_logger.warn("ES create response contains ID {} that was not in original request", docId);
+				continue;
+			}
+
+			Integer retention = record.getRetentionDiscovery();
+			Long expiration = currentTimeMillis + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * ONE_DAY_IN_MILLIS;
+
+			result.append("{\"update\" : {\"_id\" : \"").append(docId).append("\" } }")
+				.append(System.lineSeparator())
+				.append("{\"doc\" : {\"mts\": ").append(currentTimeMillis)
+				.append(",\"").append(EXPIRATION_TS).append("\":").append(expiration);
+			if (retention != null) {
+				result.append(",\"").append(RETENTION_DISCOVERY).append("\":").append(retention);
+			}
+			result.append("}}");
 			result.append(System.lineSeparator());
 		}
 		return result.toString();
@@ -1148,7 +1167,12 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 	protected void _addToBloomFilter(List<MetricSchemaRecord> records){
 		_logger.info("Adding {} records into bloom filter.", records.size());
 		for (MetricSchemaRecord record : records) {
-			String key = constructKey(record.getScope(), record.getMetric(), record.getTagKey(), record.getTagValue(), record.getNamespace());
+			String key = constructKey(record.getScope(),
+					record.getMetric(),
+					record.getTagKey(),
+					record.getTagValue(),
+					record.getNamespace(),
+					record.getRetentionDiscovery()==null?null:record.getRetentionDiscovery().toString());
 			bloomFilter.put(key);
 		}
 	}
@@ -1365,51 +1389,47 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		this._useScopeMetricNamesIndex = true;
 	}
 
-	/** Helper to process the response.
-	 * Throws a SystemException when the http status code is outsdie of the range 200 - 300.
+	/** Helper to process the response. <br><br>
+	 * Throws IllegalArgumentException when the http status code is in the 400 range <br>
+	 * Throws SystemException when the http status code is outsdie of the 200 and 400 range
 	 * @param response ES response
 	 * @return	Stringified response
 	 */
 	protected String extractResponse(Response response) {
 		requireArgument(response != null, "HttpResponse object cannot be null.");
 
-		int status = response.getStatusLine().getStatusCode();
-		String strResponse = extractStringResponse(response);
-
-		if ((status < HttpStatus.SC_OK) || (status >= HttpStatus.SC_MULTIPLE_CHOICES)) {
-			throw new SystemException("Status code: " + status + " .  Error occurred. " +  strResponse);
-		} else {
-			return strResponse;
-		}
+		return doExtractResponse(response.getStatusLine().getStatusCode(), response.getEntity());
 	}
 
-	private String extractStringResponse(Response content) {
-		requireArgument(content != null, "Response content is null.");
+	/**
+	 * testable version of {@link ElasticSearchSchemaService#extractResponse(Response)}
+	 * @param statusCode
+	 * @param entity
+	 * @return
+	 */
+	@VisibleForTesting
+	static String doExtractResponse(int statusCode, HttpEntity entity) {
+		String message = null;
 
-		String result;
-		HttpEntity entity = null;
-
-		try {
-			entity = content.getEntity();
-			if (entity == null) {
-				result = "";
-			} else {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
+		if (entity != null) {
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				entity.writeTo(baos);
-				result = baos.toString("UTF-8");
+				message = baos.toString("UTF-8");
 			}
-			return result;
-		} catch (IOException ex) {
-			throw new SystemException(ex);
-		} finally {
-			if (entity != null) {
-				try {
-					EntityUtils.consume(entity);
-				} catch (IOException ex) {
-					_logger.warn("Failed to close entity stream.", ex);
-				}
+			catch (IOException ex) {
+				throw new SystemException(ex);
 			}
+		}
+
+		//if the response is in the 400 range, use IllegalArgumentException, which currently translates to a 400 error
+		if (statusCode>= HttpStatus.SC_BAD_REQUEST && statusCode < HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+			throw new IllegalArgumentException("Status code: " + statusCode + " .  Error occurred. " +  message);
+		}
+		//everything else that's not in the 200 range, use SystemException, which translates to a 500 error.
+		if ((statusCode < HttpStatus.SC_OK) || (statusCode >= HttpStatus.SC_MULTIPLE_CHOICES)) {
+			throw new SystemException("Status code: " + statusCode + " .  Error occurred. " +  message);
+		} else {
+			return message;
 		}
 	}
 
@@ -1498,14 +1518,15 @@ public class ElasticSearchSchemaService extends AbstractSchemaService {
 		ObjectMapper mapper = new ObjectMapper();
 
 		ObjectNode propertiesNode = mapper.createObjectNode();
-		propertiesNode.put(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
-		propertiesNode.put(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
+		propertiesNode.set(RecordType.SCOPE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.METRIC.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGK.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.TAGV.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.NAMESPACE.getName(), _createFieldNode(FIELD_TYPE_TEXT));
+		propertiesNode.set(RecordType.RETENTION_DISCOVERY.getName(), _createFieldNode(FIELD_TYPE_INTEGER));
+		propertiesNode.set(MetricSchemaRecord.EXPIRATION_TS, _createFieldNode(FIELD_TYPE_DATE));
 
-		propertiesNode.put("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
+		propertiesNode.set("mts", _createFieldNodeNoAnalyzer(FIELD_TYPE_DATE));
 
 		ObjectNode typeNode = mapper.createObjectNode();
 		typeNode.put("properties", propertiesNode);
