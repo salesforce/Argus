@@ -187,19 +187,18 @@ public class ShardedTSDBService extends AbstractTSDBService{
 
 				if (wrappers != null) {
 					for (AnnotationWrapper wrapper : wrappers) {
-						for (Annotation existing : wrapper.getAnnotations()) {
-							String source = existing.getSource();
-							String id = existing.getId();
-							String type = query.getType();
-							String scope = query.getScope();
-							String metric = query.getMetric();
-							Long timestamp = existing.getTimestamp();
-							Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
+						Annotation existing = wrapper.getAnnotation();
+						String source = existing.getSource();
+						String id = existing.getId();
+						String type = query.getType();
+						String scope = query.getScope();
+						String metric = query.getMetric();
+						Long timestamp = existing.getTimestamp();
+						Annotation updated = new Annotation(source, id, type, scope, metric, timestamp);
 
-							updated.setFields(existing.getFields());
-							updated.setTags(query.getTags());
-							annotations.add(updated);
-						}
+						updated.setFields(existing.getFields());
+						updated.setTags(query.getTags());
+						annotations.add(updated);
 					}
 				}
 			}

@@ -35,7 +35,6 @@ import static com.salesforce.dva.argus.service.MQService.MQQueue.ALERT;
 import static com.salesforce.dva.argus.system.SystemAssert.requireArgument;
 import static java.math.BigInteger.ZERO;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.text.MessageFormat;
@@ -288,7 +287,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		return metadataOnly ? Alert.findByOwnerMeta(_emProvider.get(), owner) : Alert.findByOwner(_emProvider.get(), owner);
 	}
-	
+
 	@Override
 	public List<Alert> findAlertsByOwnerPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
@@ -382,28 +381,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				String logMessage = MessageFormat.format("Failed to deserialize alert {0}. Full stack trace of exception {1}", serializedAlert, ExceptionUtils.getFullStackTrace(e));
 				_logger.warn(logMessage);
 
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), DEFAULTALERTID, -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, DEFAULTUSER);
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
-
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+				logAlertStatsOnFailure(DEFAULTALERTID, DEFAULTUSER);
 
 				continue;
 			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
-
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 				continue;
 			}
 
@@ -467,11 +452,11 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			Set<Trigger> missingDataTriggers = new HashSet<Trigger>();
 
 			for(Trigger trigger : alert.getTriggers()) {
-				if(trigger.getType().equals(TriggerType.NO_DATA)) {
+                if(trigger.getType().equals(TriggerType.NO_DATA)) {
 					missingDataTriggers.add(trigger);
 				}
 			}
-			
+
 			try {
 				alertEnqueueTimestamp = alertEnqueueTimestampsByAlertId.get(alert.getId());
 				List<Metric> metrics = _metricService.getMetrics(alert.getExpression(), alertEnqueueTimestamp);
@@ -493,7 +478,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					if(missingDataTriggers.size()>0) {
 						for(Notification notification : alert.getNotifications()) {
 							if (!notification.getTriggers().isEmpty()) {
-							    _processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
 							}
 						}
 					}
@@ -505,7 +490,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 					}
 
 					Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = _evaluateTriggers(triggersToEvaluate, 
-							metrics, history);
+							metrics, history, alert.getExpression(), alertEnqueueTimestamp);
 
 					for(Notification notification : alert.getNotifications()) {
 						if (notification.getTriggers().isEmpty()) {
@@ -532,73 +517,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
-				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
-				_logger.warn(logMessage);
-
-				try {
-					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-					if (alert.isMissingDataNotificationEnabled()) {
-						_sendNotificationForMissingData(alert);
-					}
-
-					if (missingDataTriggers.size() > 0) {
-						for (Notification notification : alert.getNotifications()) {
-							if (!notification.getTriggers().isEmpty()) {
-								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
-							}
-						}
-					}
-				}
-				catch (Exception e) {
-					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
-					_logger.warn(logMessage);
-				}
-
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
-				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
-				_logger.warn(logMessage);
-
-				try {
-
-					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-						_sendEmailToAdmin(alert, alert.getId(), ex);
-					}
-
-					if (logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
-						if (alert.isMissingDataNotificationEnabled()) {
-							_sendNotificationForMissingData(alert);
-						}
-
-						if (missingDataTriggers.size() > 0) {
-							for (Notification notification : alert.getNotifications()) {
-								if (!notification.getTriggers().isEmpty()) {
-									_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
-								}
-							}
-						}
-					}
-
-					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				}
-				catch (Exception e) {
-					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
-					_logger.warn(logMessage);
-				}
-
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
 			} finally {
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -608,6 +529,56 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		} // end for
 		return historyList;
+	}
+
+	private void logAlertStatsOnFailure(BigInteger alertid, String user) {
+		Map<String, String> tags = new HashMap<>();
+		tags.put("host", HOSTNAME);
+		publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alertid, -1.0/*failure*/, tags);
+		tags = new HashMap<>();
+		tags.put(USERTAG, user);
+		_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+	}
+
+	private void handleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
+												Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
+		long jobEndTime;
+		String logMessage;
+		jobEndTime = System.currentTimeMillis();
+		logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}",
+				alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+		_logger.warn(logMessage);
+
+		try {
+			if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+				_sendEmailToAdmin(alert, alert.getId(), ex);
+			}
+
+			_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+
+			if(logMessage.contains("net.opentsdb.tsd.BadRequestException") || isDataMissing) {
+
+				if (alert.isMissingDataNotificationEnabled()) {
+					_sendNotificationForMissingData(alert);
+				}
+
+				if (missingDataTriggers.size() > 0) {
+					for (Notification notification : alert.getNotifications()) {
+						if (!notification.getTriggers().isEmpty()) {
+							_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+						}
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+			_logger.warn(logMessage);
+		}
+
+		logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 	}
 
 	private boolean areDatapointsEmpty(List<Metric> metrics) {
@@ -629,6 +600,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	private void _processNotification(Alert alert, History history, List<Metric> metrics, 
 			Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger, Notification notification, Long alertEnqueueTimestamp) {
 
+		//refocus notifier does not need cool down logic, and every evaluation needs to send notification
+		boolean isRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName());
+
 		for(Trigger trigger : notification.getTriggers()) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = triggerFiredTimesAndMetricsByTrigger.get(trigger.getId());
 
@@ -636,6 +610,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				if(triggerFiredTimesForMetrics!=null && triggerFiredTimesForMetrics.containsKey(m)) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is fired.", trigger.getName(), m.getIdentifier());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+
+					if (isRefocusNotifier) {
+						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
+						continue;
+					}
+
 					if(!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						sendNotification(trigger, m, history, notification, alert, triggerFiredTimesForMetrics.get(m), alertEnqueueTimestamp);
@@ -646,6 +626,12 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				} else {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated against metric {1} and it is not fired.", trigger.getName(), m.getIdentifier());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
+
+					if (isRefocusNotifier) {
+						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
+						continue;
+					}
+
 					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
@@ -661,28 +647,45 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers associated with the missing data notification and updates the job history.
 	 */
 	private void _processMissingDataNotification(Alert alert, History history, Set<Trigger> triggers, Notification notification, boolean isDataMissing, Long alertEnqueueTimestamp) {
+
+		//refocus notifier does not need cool down logic, and every evaluation needs to send notification
+		boolean isRefocusNotifier = SupportedNotifier.REFOCUS.getName().equals(notification.getNotifierName());
+
 		for(Trigger trigger : notification.getTriggers()) {
 			if(triggers.contains(trigger)) {
 				Metric m = new Metric("argus","argus");
 				if(isDataMissing) {
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is fired as data for the metric expression {1} does not exist", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
-					if(!notification.onCooldown(trigger, m)) {
+
+					if(isRefocusNotifier) {
+						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
+						continue;
+					}
+
+					if (!notification.onCooldown(trigger, m)) {
 						_updateNotificationSetActiveStatus(trigger, m, history, notification);
 						sendNotification(trigger, m, history, notification, alert, System.currentTimeMillis(), alertEnqueueTimestamp);
 					} else {
 						logMessage = MessageFormat.format("The notification {0} is on cooldown until {1}.", notification.getName(), getDateMMDDYYYY(notification.getCooldownExpirationByTriggerAndMetric(trigger, m)));
 						_appendMessageNUpdateHistory(history, logMessage, null, 0);
 					}
-				} else {
+
+				} else {  // Data is not missing
 					String logMessage = MessageFormat.format("The trigger {0} was evaluated and it is not fired as data exists for the expression {1}", trigger.getName(), alert.getExpression());
 					_appendMessageNUpdateHistory(history, logMessage, null, 0);
-					if(notification.isActiveForTriggerAndMetric(trigger, m)) {
+
+					if(isRefocusNotifier) {
+						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
+						continue;
+					}
+					if (notification.isActiveForTriggerAndMetric(trigger, m)) {
 						// This is case when the notification was active for the given trigger, metric combination
 						// and the metric did not violate triggering condition on current evaluation. Hence we must clear it.
 						_updateNotificationClearActiveStatus(trigger, m, notification);
 						sendClearNotification(trigger, m, history, notification, alert, alertEnqueueTimestamp);
 					}
+
 				}
 			}
 		}
@@ -710,13 +713,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 * Evaluates all triggers for the given set of metrics and returns a map of triggerIds to a map containing the triggered metric
 	 * and the trigger fired time. 
 	 */
-	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history) {
+	private Map<BigInteger, Map<Metric, Long>> _evaluateTriggers(Set<Trigger> triggers, List<Metric> metrics, History history, String queryExpression, Long alertEnqueueTimestamp) {
 		Map<BigInteger, Map<Metric, Long>> triggerFiredTimesAndMetricsByTrigger = new HashMap<>();
 
 		for(Trigger trigger : triggers) {
 			Map<Metric, Long> triggerFiredTimesForMetrics = new HashMap<>(metrics.size());
 			for(Metric metric : metrics) {
-				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric);
+				Long triggerFiredTime = getTriggerFiredDatapointTime(trigger, metric, queryExpression, alertEnqueueTimestamp);
 
 				if (triggerFiredTime != null) {
 					triggerFiredTimesForMetrics.put(metric, triggerFiredTime);
@@ -736,7 +739,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		double value = 0.0;
 		if(!trigger.getType().equals(TriggerType.NO_DATA)){
-		    value = metric.getDatapoints().get(triggerFiredTime);
+			value = metric.getDatapoints().get(triggerFiredTime);
 		}
 		NotificationContext context = new NotificationContext(alert, trigger, notification, triggerFiredTime, value, metric);
 		context.setAlertEnqueueTimestamp(alertEnqueueTime);
@@ -787,8 +790,10 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		Metric trackingMetric = new Metric(scope, "alert-" + alertId.intValue());
 		trackingMetric.addDatapoints(datapoints);
 		if(tags!=null) {
-		    trackingMetric.setTags(tags);
+			trackingMetric.setTags(tags);
 		}
+		
+		this.exportMetric(trackingMetric, value);
 		try {
 			_tsdbService.putMetrics(Arrays.asList(new Metric[] {trackingMetric}));
 		} catch (Exception ex) {
@@ -987,29 +992,29 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 		requireNotDisposed();
 		return metadataOnly ? Alert.findSharedAlertsMeta(_emProvider.get(), owner, limit) : Alert.findSharedAlerts(_emProvider.get(), owner, limit);
 	}
-	
+
 	@Override
 	public List<Alert> findSharedAlertsPaged(Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
 		return Alert.findSharedAlertsMetaPaged(_emProvider.get(), limit, offset, searchText);
 	}
-	
+
 	@Override
 	public List<Alert> findPrivateAlertsForPrivilegedUserPaged(PrincipalUser owner, Integer limit, Integer offset, String searchText) {
 		requireNotDisposed();
-		
+
 		// Invalid user nor non-privileged user shall not view other's non-shared alerts, thus immediately return empty list
 		if (owner == null || !owner.isPrivileged()) {
 			return new ArrayList<>(0);
 		}
-		
+
 		return Alert.findPrivateAlertsForPrivilegedUserMetaPaged(_emProvider.get(), owner, limit, offset, searchText);
 	}
 
 	@Override
 	public int countAlerts(AlertsCountContext context) {
 		requireNotDisposed();
-		
+
 		if (context == null) {
 			return 0;
 		}
@@ -1029,7 +1034,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			if (owner == null || !owner.isPrivileged()) {
 				return 0;
 			}
-			
+
 			return Alert.countPrivateAlertsForPrivilegedUser(_emProvider.get(), owner, context.getSearchText());
 		}
 
@@ -1065,6 +1070,8 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			return _notifierFactory.getWardenPostingNotifier();
 		case GUS:
 			return _notifierFactory.getGusNotifier();
+		case REFOCUS:
+			return _notifierFactory.getRefocusNotifier();
 		default:
 			return _notifierFactory.getDBNotifier();
 		}
@@ -1074,6 +1081,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	public void dispose() {
 		super.dispose();
 		_metricService.dispose();
+		_notificationsCache.dispose();
 	}
 
 	/**
@@ -1084,7 +1092,7 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 	 *
 	 * @return  The time stamp of the last data point in metric at which the trigger was decided to be fired.
 	 */
-	public Long getTriggerFiredDatapointTime(Trigger trigger, Metric metric) {
+	public Long getTriggerFiredDatapointTime(Trigger trigger, Metric metric, String queryExpression, Long alertEnqueueTimestamp) {
 		List<Map.Entry<Long, Double>> sortedDatapoints = new ArrayList<>(metric.getDatapoints().entrySet());
 
 		if (metric.getDatapoints().isEmpty()) {
@@ -1111,13 +1119,32 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		int endIndex = sortedDatapoints.size();
 
-		for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
-			if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
-				Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
-				if(interval >= trigger.getInertia())
-					return sortedDatapoints.get(endIndex-1).getKey();
-			}else{
-				endIndex=startIndex;
+        if(trigger.getType().equals(TriggerType.NO_DATA)) {
+            Long[] queryTimes = AlertUtils.getStartAndEndTimes(queryExpression, alertEnqueueTimestamp);
+            if(((sortedDatapoints.get(0).getKey()-queryTimes[0]) > trigger.getInertia())){ 
+            	    return sortedDatapoints.get(0).getKey();
+            }
+            	
+            if((queryTimes[1] - sortedDatapoints.get(sortedDatapoints.size()-1).getKey()) > trigger.getInertia()) {
+            	    return sortedDatapoints.get(sortedDatapoints.size()-1).getKey();
+            }
+            
+            if(sortedDatapoints.size()>1) {
+            	    for(int i=1; i<sortedDatapoints.size(); i++) {
+            	    	    if((sortedDatapoints.get(i).getKey()-sortedDatapoints.get(i-1).getKey()) > trigger.getInertia()) {
+            	    	    	    return sortedDatapoints.get(i-1).getKey();
+            	    	    }
+            	    }
+            }
+		}else {
+			for(int startIndex=sortedDatapoints.size()-1; startIndex>=0; startIndex--){
+				if(Trigger.evaluateTrigger(trigger, sortedDatapoints.get(startIndex).getValue())){
+					Long interval = sortedDatapoints.get(endIndex-1).getKey() - sortedDatapoints.get(startIndex).getKey();
+					if(interval >= trigger.getInertia())
+						return sortedDatapoints.get(endIndex-1).getKey();
+				}else{
+					endIndex=startIndex;
+				}
 			}
 		}
 		return null;
@@ -1373,6 +1400,13 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 
 		public void setAlertEnqueueTimestamp(Long alertEnqueueTimestamp) { this.alertEnqueueTimestamp = alertEnqueueTimestamp; }
 	}
+
+
+	@Override
+	public void exportMetric(Metric metric, Double value) {
+		this._monitorService.exportMetric(metric, value);
+	}
+
 
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

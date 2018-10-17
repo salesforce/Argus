@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
  * Utility functions for the alert evaluation flow
  *
  * @author  Sundeep tiyyagura (stiyyagura@salesforce.com)
+ * @author  Sudhanshu Bahety (sudhanshu.bahety@salesforce.com)
+ *
  */
 public class AlertUtils {
 
@@ -27,19 +29,29 @@ public class AlertUtils {
 		}
 		return false;
 	}
+	
+	public static Long getMaximumIntervalLength(String queryExpression) {
+	     Long[] times = getStartAndEndTimes(queryExpression, System.currentTimeMillis());
+	     return times[1] - times[0];
+	}
 
-	public static Long getMaximumIntervalLength(String originalExpression) {
+	public static Long[] getStartAndEndTimes(String originalExpression, Long relativeTo) {
 		String expression = "@" + originalExpression.replaceAll("[\\s\\t\\r\\n\\f]*", "");
 		String regexMatcherWithStartAndEnd = "(?i)\\-[0-9]+(d|m|h|s):\\-[0-9]+(d|m|h|s)";
 		String regexMatcherWithFILL = "(?i)FILL\\(#\\-[0-9]+(d|h|m|s),#\\-[0-9]+(d|h|m|s)";
 		String regexMatcherWithoutEnd = "(?i)\\@\\-[0-9]+(d|m|h|s)|\\(\\-[0-9]+(d|m|h|s)|,\\-[0-9]+(d|m|h|s)";
-		Long relativeTo = System.currentTimeMillis(), longestLength = 0L;
+		Long longestLength = 0L;
+		Long[] startAndEndtimes = new Long[2];
 		try {
 			Matcher m = Pattern.compile(regexMatcherWithStartAndEnd).matcher(expression);
 			while (m.find()) {
 				String[] times = m.group().split(":");
 				Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
-				longestLength = Math.max(currentLength, longestLength);
+				if(currentLength > longestLength) {
+				    longestLength = currentLength;
+				    startAndEndtimes[0] = MetricReader.getTime(relativeTo, times[0]);
+				    startAndEndtimes[1] = MetricReader.getTime(relativeTo, times[1]);
+				}
 				expression = expression.replaceAll(m.group(),"");
 			}
 
@@ -47,7 +59,11 @@ public class AlertUtils {
 			while (m.find()) {
 				String[] times = m.group().substring(6, m.group().length() - 1).split("#,#");
 				Long currentLength = MetricReader.getTime(relativeTo, times[1]) - MetricReader.getTime(relativeTo, times[0]);
-				longestLength = Math.max(currentLength, longestLength);
+				if(currentLength > longestLength) {
+				    longestLength = currentLength;
+				    startAndEndtimes[0] = MetricReader.getTime(relativeTo, times[0]);
+				    startAndEndtimes[1] = MetricReader.getTime(relativeTo, times[1]);
+				}
 				expression = expression.replaceAll(m.group(),"");
 			}
 
@@ -55,13 +71,17 @@ public class AlertUtils {
 			while (m.find()) {
 				String timeStr = m.group();
 				Long currentLength = relativeTo - MetricReader.getTime(relativeTo, timeStr.substring(1));
-				longestLength = Math.max(currentLength, longestLength);
+				if(currentLength > longestLength) {
+				    longestLength = currentLength;
+				    startAndEndtimes[0] = MetricReader.getTime(relativeTo, timeStr.substring(1));
+				    startAndEndtimes[1] = relativeTo;
+				}
 			}
 		} catch (Exception ex) {
 			_logger.error(MessageFormat.format("Exception occurred while calculating the maximum time interval for expression {0}, with error message {1}", originalExpression, ex.getMessage()));
 		}
 
-		return longestLength;
+		return startAndEndtimes;
 	}
 
 	public static String getExpressionWithAbsoluteStartAndEndTimeStamps(DefaultAlertService.NotificationContext context) {

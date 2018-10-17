@@ -13,6 +13,8 @@ argus-build.properties
 .DS_Store
 /config
 
+ArgusCore/bloomstate/*
+
 # Eclipse ignore
 .metadata
 bin/

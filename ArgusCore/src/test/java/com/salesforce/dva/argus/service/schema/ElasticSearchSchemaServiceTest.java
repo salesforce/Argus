@@ -1,5 +1,6 @@
 package com.salesforce.dva.argus.service.schema;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -7,24 +8,30 @@ import com.google.gson.JsonParser;
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.MetatagsRecord;
+import com.salesforce.dva.argus.entity.MetricSchemaRecord;
 import com.salesforce.dva.argus.entity.MetricSchemaRecordQuery;
 import com.salesforce.dva.argus.entity.ScopeAndMetricOnlySchemaRecord;
 import com.salesforce.dva.argus.service.SchemaService;
+import com.salesforce.dva.argus.system.SystemException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.RestClient;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
 
 import static org.junit.Assert.assertEquals;
@@ -646,7 +653,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		metrics.add(m1);
 		metrics.add(m2);
 		spySchemaService.put(metrics);
-		verify(spySchemaService, never()).updateMtsField(any(), any(), any());
+		verify(spySchemaService, never()).updateMtsField(any(), any(), any(), any());
 	}
 
 	@Test
@@ -705,7 +712,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				assertEquals(1, updateDocIds.size());
 				return null;
 			}
-		}).when(spySchemaService).updateMtsField(any(), any(), any());
+		}).when(spySchemaService).updateMtsField(any(), any(), any(), any());
 
 		List<Metric> metrics = new ArrayList<>();
 		Metric m1= new Metric("scope1", "metric1");
@@ -713,7 +720,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		metrics.add(m1);
 		metrics.add(m2);
 		spySchemaService.put(metrics);
-		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
+		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any(), any());
 	}
 
 	@Test
@@ -772,7 +779,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 				assertEquals(2, updateDocIds.size());
 				return null;
 			}
-		}).when(spySchemaService).updateMtsField(any(), any(), any());
+		}).when(spySchemaService).updateMtsField(any(), any(), any(), any());
 
 		List<Metric> metrics = new ArrayList<>();
 		Metric m1= new Metric("scope1", "metric1");
@@ -780,7 +787,7 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
 		metrics.add(m1);
 		metrics.add(m2);
 		spySchemaService.put(metrics);
-		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any());
+		verify(spySchemaService, times(1)).updateMtsField(any(), any(), any(), any());
 	}
 
     private String convertToPrettyJson(String jsonString) {
@@ -816,5 +823,69 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
         }).when(spyService).extractResponse(any());
 
         return spyService;
+    }
+
+    @Test
+    public void testMetriccSchemaRecordListMapper() throws Exception {
+        ObjectMapper mapper = ElasticSearchSchemaService.createObjectMapper();
+
+        MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
+        //MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2", 10);
+        MetricSchemaRecordList recordList = new MetricSchemaRecordList(Arrays.asList(record1), MetricSchemaRecordList.HashAlgorithm.fromString("MD5"));
+
+        String serialized = mapper.writeValueAsString(recordList);
+
+        assertTrue("expect the serialized record to have EXPIRATION_TS", serialized.contains(MetricSchemaRecord.EXPIRATION_TS));
+        assertTrue("expect the serialized record to have RETENTION_DISCOVERY", serialized.contains(MetricSchemaRecord.RETENTION_DISCOVERY));
+    }
+
+    @Test
+    public void testDoExtractResponse() throws Exception {
+        final String message = "this is a test";
+        BasicHttpEntity entity = new BasicHttpEntity();
+        try(ByteArrayInputStream bis = new ByteArrayInputStream(message.getBytes())) {
+            entity.setContent(bis);
+        }
+        catch (IOException e) {
+            throw e;
+        }
+
+        String responseMessage = ElasticSearchSchemaService.doExtractResponse(200, entity);
+        assertEquals("expect the entity to be equal after extraction", message, responseMessage);
+    }
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void testDoExtractResponse400() {
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("Status code: 400");
+        ElasticSearchSchemaService.doExtractResponse(400, null);
+    }
+
+    @Test
+    public void testDoExtractResponse500() {
+        expectedException.expect(SystemException.class);
+        expectedException.expectMessage("Status code: 500");
+        ElasticSearchSchemaService.doExtractResponse(500, null);
+    }
+
+    @Test
+    public void testGetRequestBodyForMtsFieldUpdate() {
+        String expected = "{\"update\" : {\"_id\" : \"a303abc25d534dd8ff97121668e952e6\" } }\n" +
+                "{\"doc\" : {\"mts\": 0,\"ets\":3888000000}}\n" +
+                "{\"update\" : {\"_id\" : \"8b7f219c5131eeff5b02a6e798c9ec2d\" } }\n" +
+                "{\"doc\" : {\"mts\": 0,\"ets\":864000000,\"_retention_discovery_\":10}}\n";
+
+        MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
+        MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2");   //retention will be the default 45 days
+
+
+        MetricSchemaRecordList recordList = new MetricSchemaRecordList(Arrays.asList(record1, record2), MetricSchemaRecordList.HashAlgorithm.fromString("MD5"));
+
+        String requestBody = ElasticSearchSchemaService._getRequestBodyForMtsFieldUpdate(Arrays.asList("a303abc25d534dd8ff97121668e952e6", "8b7f219c5131eeff5b02a6e798c9ec2d"), recordList, 0);
+
+        assertEquals("the update request body is different", expected, requestBody);
     }
 }

@@ -285,10 +285,13 @@ public class AuditNotifier extends DefaultNotifier {
 	 */
 	public enum Property {
 
+		/** The prodoutage email to send notification. */
+		AUDIT_PRODOUTAGE_EMAIL_TEMPLATE("notifier.property.goc.prodoutage.email", "prodoutage@yourcompany.com"),
 		/** The alert URL template to use in notifications. */
 		AUDIT_ALERT_URL_TEMPLATE("notifier.property.alert.alerturl.template", "http://localhost:8080/argus/alertId"),
 		/** The metric URL template to use in notifications. */
 		AUDIT_METRIC_URL_TEMPLATE("notifier.property.alert.metricurl.template", "http://localhost:8080/argus/metrics");
+
 
 		private final String _name;
 		private final String _defaultValue;
