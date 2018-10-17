@@ -486,3 +486,10 @@ a.definition-tip, a.definition-tip:hover, a.definition-tip:visited {
   height: auto;
   z-index: ;
 }
+
+.search-options input[type=text] {
+    padding: 1px 8px;
+    color: #555;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+}
