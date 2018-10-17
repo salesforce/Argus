@@ -119,9 +119,9 @@ public class RefocusNotifier extends AuditNotifier {
 			int refreshMaxTimes = Integer.parseInt(_config.getValue(Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getName(), Property.REFOCUS_CONNECTION_REFRESH_MAX_TIMES.getDefaultValue()));
 			try {
 
-				//TODO: get customer specified refocus sample values when UI is ready, currently use 1 for active trigger and 0 for non-active trigger
+				//TODO: get customer specified refocus sample values when UI is ready, currently use '1' for active trigger and '0' for non-active trigger
 
-				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? 1 : 0);
+				RefocusSample refocusSample = new RefocusSample(aspectPath, fired ? "1" : "0");
 				RefocusTransport refocusTransport = RefocusTransport.getInstance();
 				HttpClient httpclient = refocusTransport.getHttpClient(_config);
 
@@ -234,9 +234,9 @@ public class RefocusNotifier extends AuditNotifier {
 		public static final String ASPECT_NAME_FIELD = "name";
 		public static final String ASPECT_VALUE_FIELD = "value";
 		private final String name;
-		private final int value;
+		private final String value;
 
-		private RefocusSample(final String name, final int value) {
+		private RefocusSample(final String name, final String value) {
 			this.name = name;
 			this.value = value;
 		}
