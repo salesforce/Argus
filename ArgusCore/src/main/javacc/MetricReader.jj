@@ -40,7 +40,7 @@ import com.salesforce.dva.argus.service.TSDBService.QueryTimeSeriesExpansion;
 import com.salesforce.dva.argus.system.SystemException;
 import com.google.inject.Inject;
 import com.salesforce.dva.argus.util.QueryContext;
-import com.salesforce.dva.argus.util.QueryExpression;
+import com.salesforce.dva.argus.util.TSDBQueryExpression;
 import static com.salesforce.dva.argus.system.SystemAssert.*;
 
 public class MetricReader<T> {
@@ -288,7 +288,7 @@ private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Cl
         requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
-        (result = expression(relativeTo, syntaxOnly, clazz, new ArrayList<QueryExpression>()) | result = function(relativeTo, syntaxOnly, clazz))<EOF>
+        (result = expression(relativeTo, syntaxOnly, clazz, new ArrayList<TSDBQueryExpression>()) | result = function(relativeTo, syntaxOnly, clazz))<EOF>
 	{
         return result;
     }
@@ -302,7 +302,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
   	String functionName, constant = "";
   	Token t = null;
   	boolean constantsOnly = true;
-  	List<QueryExpression> queryExpressions = new ArrayList<QueryExpression>();
+  	List<TSDBQueryExpression> queryExpressions = new ArrayList<TSDBQueryExpression>();
 }
 {
 	functionName = getFunctionNameAndUpdateContext()
@@ -762,7 +762,7 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
  * we decided to move it to the very end. 
  *  
  */
-private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, List<QueryExpression> queryExpressions) :
+private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, List<TSDBQueryExpression> queryExpressions) :
 {
   	Long startTimestamp = null;
   	Long endTimestamp = null;
@@ -774,7 +774,7 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	Aggregator downsampler = null;
   	Long downsamplingPeriod = null;
   	String downsampleTokenStr = null;
-  	QueryExpression expression = new QueryExpression();
+  	TSDBQueryExpression expression = new TSDBQueryExpression();
 }
 { 	
   	startTimestamp = getTime(relativeTo)<COLON>

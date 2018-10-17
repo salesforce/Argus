@@ -15,7 +15,7 @@ public class QueryContext {
     
     private List<QueryContext> childContexts = new ArrayList<QueryContext>();
     
-    private List<QueryExpression> childExpressions = new ArrayList<QueryExpression>();
+    private List<TSDBQueryExpression> childExpressions = new ArrayList<TSDBQueryExpression>();
 
  	public Function getTransformName() {
 		return transform;
@@ -49,11 +49,11 @@ public class QueryContext {
 		this.childContexts = childContexts;
 	}
 
-	public List<QueryExpression> getChildExpressions() {
+	public List<TSDBQueryExpression> getChildExpressions() {
 		return childExpressions;
 	}
 
-	public void setChildExpressions(List<QueryExpression> childExpressions) {
+	public void setChildExpressions(List<TSDBQueryExpression> childExpressions) {
 		this.childExpressions = childExpressions;
 	}
 

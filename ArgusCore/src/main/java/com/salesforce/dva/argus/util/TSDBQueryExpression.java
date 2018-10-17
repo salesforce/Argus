@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.salesforce.dva.argus.service.tsdb.MetricQuery.Aggregator;
 
-public class QueryExpression {
+public class TSDBQueryExpression {
 
 	private Long startTimestamp = null;
     
