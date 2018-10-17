@@ -381,28 +381,14 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				String logMessage = MessageFormat.format("Failed to deserialize alert {0}. Full stack trace of exception {1}", serializedAlert, ExceptionUtils.getFullStackTrace(e));
 				_logger.warn(logMessage);
 
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), DEFAULTALERTID, -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, DEFAULTUSER);
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
-
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+				logAlertStatsOnFailure(DEFAULTALERTID, DEFAULTUSER);
 
 				continue;
 			}
 
 			if(!_shouldEvaluateAlert(alert, alert.getId())) {
 
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
-
-				_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+				logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 				continue;
 			}
 
@@ -531,72 +517,9 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 				tags.put(USERTAG, alert.getOwner().getUserName());
 				_monitorService.modifyCounter(Counter.ALERTS_EVALUATION_LATENCY, evalLatency, tags);
 			} catch (MissingDataException mde) {
-				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(mde));
-				_logger.warn(logMessage);
-
-				try {
-					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-					if (alert.isMissingDataNotificationEnabled()) {
-						_sendNotificationForMissingData(alert);
-					}
-
-					if (missingDataTriggers.size() > 0) {
-						for (Notification notification : alert.getNotifications()) {
-							if (!notification.getTriggers().isEmpty()) {
-								_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
-							}
-						}
-					}
-				}
-				catch (Exception e) {
-					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
-					_logger.warn(logMessage);
-				}
-
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, mde, true);
 			} catch (Exception ex) {
-				jobEndTime = System.currentTimeMillis();
-				logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to an exception. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
-				_logger.warn(logMessage);
-
-				try {
-					if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
-						_sendEmailToAdmin(alert, alert.getId(), ex);
-					}
-
-					if (logMessage.contains("net.opentsdb.tsd.BadRequestException")) {
-						if (alert.isMissingDataNotificationEnabled()) {
-							_sendNotificationForMissingData(alert);
-						}
-
-						if (missingDataTriggers.size() > 0) {
-							for (Notification notification : alert.getNotifications()) {
-								if (!notification.getTriggers().isEmpty()) {
-									_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
-								}
-							}
-						}
-					}
-
-					_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
-				}
-				catch (Exception e) {
-					logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
-					_logger.warn(logMessage);
-				}
-
-				Map<String, String> tags = new HashMap<>();
-				tags.put("host", HOSTNAME);
-				publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alert.getId(), -1.0/*failure*/, tags);
-				tags = new HashMap<>();
-				tags.put(USERTAG, alert.getOwner().getUserName());
-				_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+				handleAlertEvaluationException(alert, jobStartTime, alertEnqueueTimestamp, history, missingDataTriggers, ex, false);
 			} finally {
 				Map<String, String> tags = new HashMap<>();
 				tags.put(USERTAG, alert.getOwner().getUserName());
@@ -606,6 +529,56 @@ public class DefaultAlertService extends DefaultJPAService implements AlertServi
 			}
 		} // end for
 		return historyList;
+	}
+
+	private void logAlertStatsOnFailure(BigInteger alertid, String user) {
+		Map<String, String> tags = new HashMap<>();
+		tags.put("host", HOSTNAME);
+		publishAlertTrackingMetric(Counter.ALERTS_EVALUATED.getMetric(), alertid, -1.0/*failure*/, tags);
+		tags = new HashMap<>();
+		tags.put(USERTAG, user);
+		_monitorService.modifyCounter(Counter.ALERTS_FAILED, 1, tags);
+
+		_monitorService.modifyCounter(Counter.ALERTS_EVALUATED, 1, tags);
+	}
+
+	private void handleAlertEvaluationException(Alert alert, long jobStartTime, Long alertEnqueueTimestamp, History history,
+												Set<Trigger> missingDataTriggers, Exception ex, Boolean isDataMissing) {
+		long jobEndTime;
+		String logMessage;
+		jobEndTime = System.currentTimeMillis();
+		logMessage = MessageFormat.format("Failed to evaluate alert : {0} due to missing data exception. Full stack trace of exception - {1}",
+				alert.getId().intValue(), ExceptionUtils.getFullStackTrace(ex));
+		_logger.warn(logMessage);
+
+		try {
+			if (Boolean.valueOf(_configuration.getValue(SystemConfiguration.Property.EMAIL_EXCEPTIONS))) {
+				_sendEmailToAdmin(alert, alert.getId(), ex);
+			}
+
+			_appendMessageNUpdateHistory(history, logMessage, JobStatus.FAILURE, jobEndTime - jobStartTime);
+
+			if(logMessage.contains("net.opentsdb.tsd.BadRequestException") || isDataMissing) {
+
+				if (alert.isMissingDataNotificationEnabled()) {
+					_sendNotificationForMissingData(alert);
+				}
+
+				if (missingDataTriggers.size() > 0) {
+					for (Notification notification : alert.getNotifications()) {
+						if (!notification.getTriggers().isEmpty()) {
+							_processMissingDataNotification(alert, history, missingDataTriggers, notification, true, alertEnqueueTimestamp);
+						}
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logMessage = MessageFormat.format("Unexpected exception evaluating alert : {0}. Full stack trace of exception - {1}", alert.getId().intValue(), ExceptionUtils.getFullStackTrace(e));
+			_logger.warn(logMessage);
+		}
+
+		logAlertStatsOnFailure(alert.getId(), alert.getOwner().getUserName());
 	}
 
 	private boolean areDatapointsEmpty(List<Metric> metrics) {
