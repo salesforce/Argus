@@ -52,7 +52,7 @@ public class MaxTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        maxTransform.transform(metrics, constants);
+        maxTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -60,7 +60,7 @@ public class MaxTransformTest {
         Transform maxTransform = new MetricReducerTransform(new MaxValueReducer());
         List<Metric> metrics = null;
 
-        maxTransform.transform(metrics);
+        maxTransform.transform(null, metrics);
     }
 
     @Test
@@ -97,7 +97,7 @@ public class MaxTransformTest {
         expected.put(2000L, 100.0);
         expected.put(3000L, 1000.0);
 
-        List<Metric> result = maxTransform.transform(metrics);
+        List<Metric> result = maxTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -136,7 +136,7 @@ public class MaxTransformTest {
         expected.putAll(datapoints_1);
         expected.putAll(datapoints_2);
 
-        List<Metric> result = maxTransform.transform(metrics);
+        List<Metric> result = maxTransform.transform(null, metrics);
 
         assertEquals(6, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -176,7 +176,7 @@ public class MaxTransformTest {
         expected.putAll(datapoints_2);
         expected.put(3000L, 1000.0);
 
-        List<Metric> result = maxTransform.transform(metrics);
+        List<Metric> result = maxTransform.transform(null, metrics);
 
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -216,7 +216,7 @@ public class MaxTransformTest {
         expected.putAll(datapoints_2);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = maxTransform.transform(metrics);
+        List<Metric> result = maxTransform.transform(null, metrics);
 
         assertEquals(5, result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -256,7 +256,7 @@ public class MaxTransformTest {
         expected.put(2000L, 100.0);
         expected.put(3000L, null);
 
-        List<Metric> result = maxTransform.transform(metrics);
+        List<Metric> result = maxTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());

@@ -76,7 +76,7 @@ public class AverageBelowTransformTest {
 
         constants.add("5");
 
-        List<Metric> result = averageBelowTransform.transform(metrics, constants);
+        List<Metric> result = averageBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
     }

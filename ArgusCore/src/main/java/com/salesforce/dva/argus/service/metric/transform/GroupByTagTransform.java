@@ -2,6 +2,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,12 +21,12 @@ public class GroupByTagTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		throw new UnsupportedOperationException("GroupByTag Transform is supposed to be used with 2 constants: A list of tags to group by and an aggregator function name.");
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
 		SystemAssert.requireArgument(constants != null && constants.size() >= 2, "Constants list cannot be null and its size must be 2 or more.");
 
@@ -73,7 +75,7 @@ public class GroupByTagTransform implements Transform {
 		for(Entry<String, List<Metric>> entry : groups.entrySet()) {
 			List<Metric> metricsInThisGroup = entry.getValue();
 			List<Metric> reducedMetrics = transformConstants.isEmpty() ?
-				transform.transform(metricsInThisGroup) : transform.transform(metricsInThisGroup, transformConstants);
+				transform.transform(null, metricsInThisGroup) : transform.transform(null, metricsInThisGroup, transformConstants);
 			for(Metric reducedMetric : reducedMetrics) {
 				reducedMetric.setScope(entry.getKey() != null && ! entry.getKey().trim().isEmpty() ?
 					entry.getKey() : "uncaptured-group");
@@ -85,7 +87,7 @@ public class GroupByTagTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... metrics) {
+	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
 		throw new UnsupportedOperationException("Group By Tags Transform doesn't need list of list!");
 	}
 

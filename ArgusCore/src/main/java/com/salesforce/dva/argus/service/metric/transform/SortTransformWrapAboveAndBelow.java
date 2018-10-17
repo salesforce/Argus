@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -55,12 +57,12 @@ public class SortTransformWrapAboveAndBelow implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         throw new UnsupportedOperationException("Sort transform need constants input.");
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireArgument(constants != null && constants.size() >= 2 && constants.size() <= 3,
             "Sort transform require type and order. Limit is optional.");
@@ -102,7 +104,7 @@ public class SortTransformWrapAboveAndBelow implements Transform {
         } else {
             throw new UnsupportedOperationException("Only ASC or DES are suppored for ordering option.");
         }
-        return sortTransform.transform(metrics, constants);
+        return sortTransform.transform(null, metrics, constants);
     }
 
     @Override
@@ -111,7 +113,7 @@ public class SortTransformWrapAboveAndBelow implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Sort transform doesn't support list of metric list!");
     }
 }

@@ -69,7 +69,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 100.0);
@@ -94,7 +94,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 3.59);
@@ -126,7 +126,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 1.37);
@@ -165,7 +165,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         String detectionInterval = "10s";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(2L, 0.0);
@@ -207,7 +207,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         String detectionInterval = "12h";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -251,7 +251,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         String detectionInterval = "7d";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -300,7 +300,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         String detectionInterval = "100d";  //Detection interval > time range of metricData
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics, constants);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -334,7 +334,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.0);
@@ -354,7 +354,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -374,7 +374,7 @@ public class AnomalyDetectionGaussianZScoreTransformTest {
         metrics.add(metric);
         metrics.add(metric_2);
 
-        List<Metric> results = gaussianZScoreTransform.transform(metrics);
+        List<Metric> results = gaussianZScoreTransform.transform(null, metrics);
     }
 
 }

@@ -52,7 +52,7 @@ public class AlertDefinitionsCacheRefresherThread extends Thread{
 	// keeping the refresh interval at 1 minute, as this corresponds to the minimum alert execution interval based on cron expression
 	private static final Long REFRESH_INTERVAL_MILLIS = 60*1000L;
 
-	private static final Long LOOKBACK_PERIOD_FOR_REFRESH_MILLIS = 2*REFRESH_INTERVAL_MILLIS;
+	private static final Long LOOKBACK_PERIOD_FOR_REFRESH_MILLIS = 5*REFRESH_INTERVAL_MILLIS;
 
 	private AlertDefinitionsCache alertDefinitionsCache = null;
 

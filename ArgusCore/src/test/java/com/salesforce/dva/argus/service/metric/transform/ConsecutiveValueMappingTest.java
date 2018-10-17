@@ -51,7 +51,7 @@ public class ConsecutiveValueMappingTest {
 
         constants.add("1s");
         constants.add("2s");
-        transform.transform(metrics, constants);
+        transform.transform(null, metrics, constants);
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -62,7 +62,7 @@ public class ConsecutiveValueMappingTest {
         metrics.add(metric_1);
         
         List<String> constants = new ArrayList<String>();
-        transform.transform(metrics, constants);
+        transform.transform(null, metrics, constants);
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -74,7 +74,7 @@ public class ConsecutiveValueMappingTest {
         
         List<String> constants = new ArrayList<String>();
         constants.add("1s");
-        transform.transform(metrics, constants);
+        transform.transform(null, metrics, constants);
     }
     
     @Test(expected = IllegalArgumentException.class)
@@ -87,7 +87,7 @@ public class ConsecutiveValueMappingTest {
         List<String> constants = new ArrayList<String>();
         constants.add("0");
         constants.add("0");
-        transform.transform(metrics, constants);
+        transform.transform(null, metrics, constants);
     }
     
     @Test
@@ -117,7 +117,7 @@ public class ConsecutiveValueMappingTest {
         expected.put(5000L, 1.0);
         expected.put(7000L, 1.0);
         expected.put(8000L, 1.0);
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
@@ -149,7 +149,7 @@ public class ConsecutiveValueMappingTest {
         expected.put(6000L, 1.0);
         expected.put(7000L, 1.0);
         expected.put(8000L, 1.0);
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
@@ -180,7 +180,7 @@ public class ConsecutiveValueMappingTest {
         expected.put(5000000L, 1.0);
         expected.put(5500000L, 1.0);
         expected.put(6000000L, 1.0);
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
@@ -205,7 +205,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("1s");
         
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
@@ -225,7 +225,7 @@ public class ConsecutiveValueMappingTest {
         constants.add("1s");
         
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
 
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected.size());
         assertEquals("Result value should match",expected, result.get(0).getDatapoints());
@@ -267,7 +267,7 @@ public class ConsecutiveValueMappingTest {
         expected_2.put(4000L, 0.0);
         expected_2.put(5000L, 1.0);
         expected_2.put(6000L, 1.0);
-        List<Metric> result = transform.transform(metrics,constants);
+        List<Metric> result = transform.transform(null,metrics, constants);
         assertEquals("Result length should match",result.get(0).getDatapoints().size(), expected_1.size());
         assertEquals("Result value should match",expected_1, result.get(0).getDatapoints());
         assertEquals("Result length should match",result.get(1).getDatapoints().size(), expected_2.size());

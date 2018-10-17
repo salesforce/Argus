@@ -35,6 +35,8 @@ import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.TSDBService;
 import com.salesforce.dva.argus.service.tsdb.MetricQuery;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -66,12 +68,12 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
     	throw new UnsupportedOperationException("HoltWintersDeviation is not supposed to be used without a constant");
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Metrics List cannot be null");
         SystemAssert.requireArgument(constants != null && constants.size() == 4, "Constants List cannot be null and its size must be equal to 4.");
 
@@ -114,7 +116,7 @@ public class HoltWintersDeviation extends HoltWintersAnalysis implements Transfo
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
     	throw new UnsupportedOperationException("HoltWintersDeviation doesn't need list of list!");
     }
 

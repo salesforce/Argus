@@ -60,7 +60,7 @@ public class PropagateTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        propagateTransform.transform(metrics, constants);
+        propagateTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -70,7 +70,7 @@ public class PropagateTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("9s");
-        propagateTransform.transform(metrics, constants);
+        propagateTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = SystemException.class)
@@ -93,7 +93,7 @@ public class PropagateTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5w");
-        propagateTransform.transform(metrics, constants);
+        propagateTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -127,7 +127,7 @@ public class PropagateTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -162,7 +162,7 @@ public class PropagateTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -197,7 +197,7 @@ public class PropagateTransformTest {
         expected.put(5000L, 5.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -233,7 +233,7 @@ public class PropagateTransformTest {
         expected.put(5000L, 3.0);
         expected.put(6000L, 6.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -289,7 +289,7 @@ public class PropagateTransformTest {
         expected_2.put(5000L, 23.0);
         expected_2.put(6000L, 26.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(result.get(1).getDatapoints().size(), 6);
@@ -320,7 +320,7 @@ public class PropagateTransformTest {
 
         expected.put(1000L, 1.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -353,7 +353,7 @@ public class PropagateTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -370,7 +370,7 @@ public class PropagateTransformTest {
         List<Metric> metrics = Arrays.asList(metric);
         List<String> constants = Arrays.asList("1m");
         
-        List<Metric> result = propagateTransform.transform(metrics, constants);
+        List<Metric> result = propagateTransform.transform(null, metrics, constants);
         assertEquals(metrics, result);
     }
     

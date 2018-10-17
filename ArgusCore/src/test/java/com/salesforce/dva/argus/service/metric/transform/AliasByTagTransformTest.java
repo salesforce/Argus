@@ -19,7 +19,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric)).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric)).get(0);
 		assertEquals("someDevice" + AliasByTagTransform.DELIMITER + "someTarget", actual.getDisplayName());
 	}
 	
@@ -30,7 +30,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric), Arrays.asList("device")).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("device")).get(0);
 		assertEquals("someDevice", actual.getDisplayName());
 	}
 	
@@ -41,7 +41,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric), Arrays.asList("device", "target")).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("device", "target")).get(0);
 		assertEquals("someDevice" + AliasByTagTransform.DELIMITER + "someTarget", actual.getDisplayName());
 	}
 	
@@ -51,7 +51,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric), Arrays.asList("devicessss")).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("devicessss")).get(0);
 		assertEquals(null, actual.getDisplayName());
 	}
 	
@@ -61,7 +61,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric), Arrays.asList("devicessss", "target")).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("devicessss", "target")).get(0);
 		assertEquals("someTarget", actual.getDisplayName());
 	}
 	
@@ -71,7 +71,7 @@ public class AliasByTagTransformTest {
 		metric.setTag("device", "someDevice");
 		metric.setTag("target", "someTarget");
 		
-		Metric actual = aliasByTagTransform.transform(Arrays.asList(metric), Arrays.asList("")).get(0);
+		Metric actual = aliasByTagTransform.transform(null, Arrays.asList(metric), Arrays.asList("")).get(0);
 		assertEquals(null, actual.getDisplayName());
 	}
 

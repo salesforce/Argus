@@ -49,7 +49,7 @@ public class LogTransformTest {
     public void testLogTransformWithoutMetrics() {
         List<Metric> metrics = null;
 
-        (new MetricMappingTransform(new LogValueMapping())).transform(metrics);
+        (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics);
     }
 
     @Test
@@ -63,7 +63,7 @@ public class LogTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(metrics);
+        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 
@@ -90,7 +90,7 @@ public class LogTransformTest {
 
         constants.add("2");
 
-        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(metrics, constants);
+        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics, constants);
 
         assertThat(result, equalTo(metrics));
 
@@ -121,7 +121,7 @@ public class LogTransformTest {
         m2.setDatapoints(dp_2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
-        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(metrics);
+        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 
@@ -163,7 +163,7 @@ public class LogTransformTest {
 
         constants.add("2");
 
-        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(metrics, constants);
+        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics, constants);
 
         assertThat(result, equalTo(metrics));
 
@@ -193,7 +193,7 @@ public class LogTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(metrics);
+        List<Metric> result = (new MetricMappingTransform(new LogValueMapping())).transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 

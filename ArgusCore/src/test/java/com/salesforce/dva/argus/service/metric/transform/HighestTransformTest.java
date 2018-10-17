@@ -64,7 +64,7 @@ public class HighestTransformTest {
 
         constants.add("5w");
         constants.add("average");
-        highestTransform.transform(metrics, constants);
+        highestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -86,7 +86,7 @@ public class HighestTransformTest {
 
         constants.add("5");
         constants.add("foobar");
-        highestTransform.transform(metrics, constants);
+        highestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -107,7 +107,7 @@ public class HighestTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("min");
-        highestTransform.transform(metrics, constants);
+        highestTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -118,7 +118,7 @@ public class HighestTransformTest {
 
         constants.add("2");
         constants.add("average");
-        highestTransform.transform(metrics, constants);
+        highestTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -176,7 +176,7 @@ public class HighestTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -239,7 +239,7 @@ public class HighestTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -308,7 +308,7 @@ public class HighestTransformTest {
         expected_3.put(2000L, 100.0);
         expected_3.put(3000L, 100.0);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -378,7 +378,7 @@ public class HighestTransformTest {
         expected_3.put(2000L, 1.0);
         expected_3.put(3000L, 100.0);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -442,7 +442,7 @@ public class HighestTransformTest {
         expected_2.put(2000L, 200.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -504,7 +504,7 @@ public class HighestTransformTest {
         expected_2.put(2000L, null);
         expected_2.put(3000L, null);
 
-        List<Metric> result = highestTransform.transform(metrics, constants);
+        List<Metric> result = highestTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());

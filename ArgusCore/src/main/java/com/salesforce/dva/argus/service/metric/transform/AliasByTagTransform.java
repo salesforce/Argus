@@ -5,13 +5,14 @@ import java.util.Map;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 public class AliasByTagTransform implements Transform {
 	
 	static final String DELIMITER = ",";
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
 		
 		for(Metric metric : metrics) {
@@ -30,7 +31,7 @@ public class AliasByTagTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Metric list cannot be null.");
 		SystemAssert.requireArgument(constants != null && !constants.isEmpty(), "Constant list cannot be null or empty.");
 		
@@ -55,7 +56,7 @@ public class AliasByTagTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... metrics) {
+	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
 		throw new UnsupportedOperationException("ALIASBYTAG doesn't need a list of lists!");
 	}
 

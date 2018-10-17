@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 import com.salesforce.dva.argus.util.TransformUtil;
 
 import java.util.ArrayList;
@@ -52,13 +53,13 @@ public class DerivativeTransform implements Transform {
 	//~ Methods **************************************************************************************************************************************
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
 		return computeDerivedValues(metrics, -1L);
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
 		SystemAssert.requireArgument(constants.size() == 1,
 				"Derivative Transform can have exactly one constant");
@@ -105,7 +106,7 @@ public class DerivativeTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
 		throw new UnsupportedOperationException("This class is deprecated!");
 	}
 }

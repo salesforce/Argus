@@ -62,7 +62,7 @@ public class UnionTransformTest {
 
         List<String> constants = new ArrayList<String>(1);
 
-        unionTransform.transform(metrics, constants);
+        unionTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -70,7 +70,7 @@ public class UnionTransformTest {
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
         List<Metric> metrics = null;
 
-        unionTransform.transform(metrics);
+        unionTransform.transform(null, metrics);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class UnionTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = unionTransform.transform(metrics);
+        List<Metric> result = unionTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -150,7 +150,7 @@ public class UnionTransformTest {
         expected.put(200L, 100.0);
         expected.put(300L, 1000.0);
 
-        List<Metric> result = unionTransform.transform(metrics);
+        List<Metric> result = unionTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -192,7 +192,7 @@ public class UnionTransformTest {
         expected.put(200L, 100.0);
         expected.put(300L, 1000.0);
 
-        List<Metric> result = unionTransform.transform(metrics);
+        List<Metric> result = unionTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -221,7 +221,7 @@ public class UnionTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = unionTransform.transform(metrics);
+        List<Metric> result = unionTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -262,7 +262,7 @@ public class UnionTransformTest {
         expected.put(3000L, 3.0);
         expected.put(300L, null);
 
-        List<Metric> result = unionTransform.transform(metrics);
+        List<Metric> result = unionTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());

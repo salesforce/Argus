@@ -67,7 +67,7 @@ public class SortTransformTest {
         constants.add("5w");
         constants.add("average");
         constants.add("ascending");
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -90,7 +90,7 @@ public class SortTransformTest {
         constants.add("5");
         constants.add("foobar");
         constants.add("ascending");
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -113,7 +113,7 @@ public class SortTransformTest {
         constants.add("5");
         constants.add("name");
         constants.add("bad-type");
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -125,7 +125,7 @@ public class SortTransformTest {
         constants.add("2");
         constants.add("average");
         constants.add("descending");
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -148,7 +148,7 @@ public class SortTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Ignore
@@ -181,9 +181,9 @@ public class SortTransformTest {
         expected.put(2000L, 1.0);
         expected.put(3000L, 1.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
         assertEquals(result.size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
     }
@@ -210,7 +210,7 @@ public class SortTransformTest {
 
         constants.add("2");
         constants.add("descending");
-        sortTransform.transform(metrics, constants);
+        sortTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -273,7 +273,7 @@ public class SortTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 2.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -343,7 +343,7 @@ public class SortTransformTest {
         expected_3.put(2000L, 300.0);
         expected_3.put(3000L, 300.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -414,7 +414,7 @@ public class SortTransformTest {
         expected_3.put(2000L, 1.0);
         expected_3.put(3000L, 100.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -479,7 +479,7 @@ public class SortTransformTest {
         expected_2.put(2000L, 3.0);
         expected_2.put(3000L, 5.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -549,7 +549,7 @@ public class SortTransformTest {
         expected_3.put(2000L, null);
         expected_3.put(3000L, 100.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -602,7 +602,7 @@ public class SortTransformTest {
         expected_2.put(60000L, 6.0);
         expected_2.put(120000L, 9.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -654,7 +654,7 @@ public class SortTransformTest {
         expected_2.put(60000L, 10.0);
         expected_2.put(120000L, 30.0);
 
-        List<Metric> result = sortTransform.transform(metrics, constants);
+        List<Metric> result = sortTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());

@@ -81,7 +81,7 @@ public class GroupTransformTest {
 
         List<String> constants = new ArrayList<String>(0);
 
-        groupTransform.transform(metrics, constants);
+        groupTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -89,7 +89,7 @@ public class GroupTransformTest {
         Transform groupTransform = new GroupTransformWrapUnion();
         List<Metric> metrics = null;
 
-        groupTransform.transform(metrics);
+        groupTransform.transform(null, metrics);
     }
 
     @Test
@@ -147,7 +147,7 @@ public class GroupTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -208,7 +208,7 @@ public class GroupTransformTest {
         expected.put(2000L, 99.0);
         expected.put(3000L, 999.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -272,7 +272,7 @@ public class GroupTransformTest {
         expected.put(200L, 100.0);
         expected.put(300L, 1000.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -333,7 +333,7 @@ public class GroupTransformTest {
         expected.put(2000L, 99.0);
         expected.put(3000L, 999.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -396,7 +396,7 @@ public class GroupTransformTest {
         expected.put(200L, 100.0);
         expected.put(300L, 1000.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -457,7 +457,7 @@ public class GroupTransformTest {
         expected.put(2000L, 99.0);
         expected.put(3000L, 999.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -493,7 +493,7 @@ public class GroupTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -523,7 +523,7 @@ public class GroupTransformTest {
         constants.add(TEST_METRIC_NAME_REGEX);
         constants.add(TEST_METRIC_TYPE_EXCLUSIVE);
 
-        List<Metric> result = groupTransform.transform(metrics, constants);
+        List<Metric> result = groupTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 0);
     }

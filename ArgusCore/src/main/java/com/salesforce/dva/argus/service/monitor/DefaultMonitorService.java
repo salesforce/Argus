@@ -177,7 +177,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireNotDisposed();
 		_logger.info("Globally enabling all system monitoring.");
 		_setServiceEnabled(true);
-		_checkAlertExistence(true);
+		//_checkAlertExistence(true);
 		_logger.info("All system monitoring globally enabled.");
 	}
 
@@ -187,7 +187,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 		requireNotDisposed();
 		_logger.info("Globally disabling all system monitoring.");
 		_setServiceEnabled(false);
-		_checkAlertExistence(false);
+		//_checkAlertExistence(false);
 		_logger.info("All system monitoring globally disabled.");
 	}
 
@@ -199,7 +199,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			_logger.info("Request to start system monitoring aborted as it is already running.");
 		} else {
 			_logger.info("Starting system monitor thread.");
-			_checkAlertExistence(true);
+			//_checkAlertExistence(true);
 			_monitorThread = new MonitorThread("system-monitor");
 
 			_monitorThread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -237,7 +237,7 @@ public class DefaultMonitorService extends DefaultJPAService implements MonitorS
 			} catch (InterruptedException ex) {
 				_logger.warn("System monitoring was interrupted while shutting down.");
 			}
-			_checkAlertExistence(false);
+			//_checkAlertExistence(false);
 			_logger.info("System monitoring stopped.");
 		} else {
 			_logger.info("Requested shutdown of system monitoring aborted as it is not yet running.");

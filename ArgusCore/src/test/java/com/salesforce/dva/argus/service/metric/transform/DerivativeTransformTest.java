@@ -51,13 +51,13 @@ public class DerivativeTransformTest {
     public void transform_shouldThrowIllegalArgumentExceptionWhenListIsNull() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
 
-        derivativeTransform.transform((List<Metric>) null);
+        derivativeTransform.transform(null, (List<Metric>) null);
     }
 
     public void transform_shouldReturnEmptyListWhenListIsEmpty() {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         List<Metric> metrics = new ArrayList<Metric>();
-        List<Metric> result = derivativeTransform.transform(metrics);
+        List<Metric> result = derivativeTransform.transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
     }
@@ -67,7 +67,7 @@ public class DerivativeTransformTest {
         Transform derivativeTransform = new MetricMappingTransform(new DerivativeValueMapping());
         Metric m1 = new Metric("test", "m1");
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertEquals(results, metrics);
     }
@@ -82,7 +82,7 @@ public class DerivativeTransformTest {
         m1.setDatapoints(dps);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 
@@ -102,7 +102,7 @@ public class DerivativeTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 
@@ -124,7 +124,7 @@ public class DerivativeTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 
@@ -153,7 +153,7 @@ public class DerivativeTransformTest {
         m2.setDatapoints(dp2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertEquals(results, metrics);
 
@@ -183,7 +183,7 @@ public class DerivativeTransformTest {
         List<Metric> metrics = Arrays.asList(m1);
         List<String> constants = new ArrayList<String>();
 
-        derivativeTransform.transform(metrics, constants);
+        derivativeTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -198,7 +198,7 @@ public class DerivativeTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> results = derivativeTransform.transform(metrics);
+        List<Metric> results = derivativeTransform.transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 
@@ -223,7 +223,7 @@ public class DerivativeTransformTest {
         List<Metric> metrics = Arrays.asList(m1);
         List<String> constants = new ArrayList<String>();
         constants.add("1s");
-        List<Metric> results = derivativeTransform.transform(metrics, constants);
+        List<Metric> results = derivativeTransform.transform(null, metrics, constants);
         HashMap<Long, Double> resultDps = new HashMap<Long, Double>();
         dp.put(2L, 2.0);
         dp.put(3L, 2.0);
@@ -234,7 +234,7 @@ public class DerivativeTransformTest {
         
         constants = new ArrayList<String>();
         constants.add("0s");
-        results = derivativeTransform.transform(metrics, constants);
+        results = derivativeTransform.transform(null, metrics, constants);
         resultDps = new HashMap<Long, Double>();
         dp.put(2L, 2.0);
         dp.put(3L, 2.0);

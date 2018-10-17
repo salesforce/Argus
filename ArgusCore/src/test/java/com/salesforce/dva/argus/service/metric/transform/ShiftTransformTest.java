@@ -52,7 +52,7 @@ public class ShiftTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("1s");
-        shiftTransform.transform(metrics, constants);
+        shiftTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -65,7 +65,7 @@ public class ShiftTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        shiftTransform.transform(metrics, constants);
+        shiftTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -79,7 +79,7 @@ public class ShiftTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("-w");
-        shiftTransform.transform(metrics, constants);
+        shiftTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class ShiftTransformTest {
         expected_1.put(22000L, 2.0);
         expected_1.put(32000L, 3.0);
 
-        List<Metric> result = shiftTransform.transform(metrics, constants);
+        List<Metric> result = shiftTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -176,7 +176,7 @@ public class ShiftTransformTest {
         expected_3.put(6000L, 0.01);
         expected_3.put(7000L, 0.0001);
 
-        List<Metric> result = shiftTransform.transform(metrics, constants);
+        List<Metric> result = shiftTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -211,7 +211,7 @@ public class ShiftTransformTest {
         expected_1.put(22000L, 2.0);
         expected_1.put(32000L, 3.0);
 
-        List<Metric> result = shiftTransform.transform(metrics, constants);
+        List<Metric> result = shiftTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());

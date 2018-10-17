@@ -35,6 +35,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -53,7 +54,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
      *
      * Ex: ANOMALY_DENSITY(-100d:-0d:foo:bar:sum, $7d), where the interval is 7 days
      */
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics");
         SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
 
@@ -80,7 +81,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... metrics) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... metrics) {
         throw new UnsupportedOperationException("This transform only supports anomaly detection on a single list of metrics");
     }
 
@@ -228,7 +229,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
             intervalRawDataMetrics.add(intervalMetric);
 
             //Apply the anomaly detection transform to each interval separately
-            Metric intervalAnomaliesMetric = transform(intervalRawDataMetrics).get(0);
+            Metric intervalAnomaliesMetric = transform(null, intervalRawDataMetrics).get(0);
             Map<Long, Double> intervalAnomaliesMetricData = intervalAnomaliesMetric.getDatapoints();
             predictionDatapoints.put(timestamps[i],
                     intervalAnomaliesMetricData.get(timestamps[i]));
@@ -265,7 +266,7 @@ public abstract class AnomalyDetectionTransform implements Transform {
     }
 
     @Override
-    abstract public List<Metric> transform(List<Metric> metrics);
+    abstract public List<Metric> transform(QueryContext context, List<Metric> metrics);
 
     @Override
     abstract public String getResultScopeName();

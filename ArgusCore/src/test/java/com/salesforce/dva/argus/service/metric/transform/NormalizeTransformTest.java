@@ -50,7 +50,7 @@ public class NormalizeTransformTest {
         Transform normalizeTransform = new NormalizeTransformWrap();
         List<Metric> metrics = null;
 
-        normalizeTransform.transform(metrics);
+        normalizeTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -65,7 +65,7 @@ public class NormalizeTransformTest {
 
         constants.add("1");
         constants.add("2");
-        normalizeTransform.transform(metrics, constants);
+        normalizeTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -108,7 +108,7 @@ public class NormalizeTransformTest {
         expected_2.put(2000L, 0.8);
         expected_2.put(3000L, 0.8);
 
-        List<Metric> result = normalizeTransform.transform(metrics);
+        List<Metric> result = normalizeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -155,7 +155,7 @@ public class NormalizeTransformTest {
         expected_2.put(2000L, 0.8);
         expected_2.put(3000L, 0.0);
 
-        List<Metric> result = normalizeTransform.transform(metrics);
+        List<Metric> result = normalizeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -203,7 +203,7 @@ public class NormalizeTransformTest {
         expected_2.put(2000L, 0.0);
         expected_2.put(3000L, 0.8);
 
-        List<Metric> result = normalizeTransform.transform(metrics);
+        List<Metric> result = normalizeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -255,7 +255,7 @@ public class NormalizeTransformTest {
         expected_2.put(2000L, 4.0);
         expected_2.put(3000L, 6.0);
 
-        List<Metric> result = normalizeTransform.transform(metrics, constants);
+        List<Metric> result = normalizeTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -307,7 +307,7 @@ public class NormalizeTransformTest {
         expected_2.put(2000L, 4.0);
         expected_2.put(3000L, 6.0);
 
-        List<Metric> result = normalizeTransform.transform(metrics, constants);
+        List<Metric> result = normalizeTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());

@@ -64,7 +64,7 @@ public class DiffTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5w");
-        diffTransform.transform(metrics, constants);
+        diffTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -74,7 +74,7 @@ public class DiffTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        diffTransform.transform(metrics, constants);
+        diffTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class DiffTransformTest {
         expected.put(2000L, -3.0);
         expected.put(3000L, -2.0);
 
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -154,7 +154,7 @@ public class DiffTransformTest {
         expected_2.put(2000L, 95.0);
         expected_2.put(3000L, 995.0);
 
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -174,7 +174,7 @@ public class DiffTransformTest {
 
         constants.add("5");
         constants.add("10");
-        diffTransform.transform(metrics, constants);
+        diffTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -212,7 +212,7 @@ public class DiffTransformTest {
         expected.put(2000L, -98.0);
         expected.put(3000L, -997.0);
 
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -248,7 +248,7 @@ public class DiffTransformTest {
 
         List<String> constants = new ArrayList<String>();
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -287,7 +287,7 @@ public class DiffTransformTest {
 
         expected.put(3000L, -997.0);
 
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -331,7 +331,7 @@ public class DiffTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, -997.0);
 
-        List<Metric> result = diffTransform.transform(metrics, constants);
+        List<Metric> result = diffTransform.transform(null, metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }

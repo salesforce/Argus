@@ -64,7 +64,7 @@ public class CullBelowTransformTest {
 
         constants.add("5");
         constants.add("average");
-        cullBelowTransform.transform(metrics, constants);
+        cullBelowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -86,7 +86,7 @@ public class CullBelowTransformTest {
 
         constants.add("100000");
         constants.add("percentile");
-        cullBelowTransform.transform(metrics, constants);
+        cullBelowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -107,7 +107,7 @@ public class CullBelowTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("value");
-        cullBelowTransform.transform(metrics, constants);
+        cullBelowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -128,7 +128,7 @@ public class CullBelowTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("100");
-        cullBelowTransform.transform(metrics, constants);
+        cullBelowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -139,7 +139,7 @@ public class CullBelowTransformTest {
 
         constants.add("2");
         constants.add("value");
-        cullBelowTransform.transform(metrics, constants);
+        cullBelowTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -170,7 +170,7 @@ public class CullBelowTransformTest {
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -203,7 +203,7 @@ public class CullBelowTransformTest {
         expected_1.put(1000L, 3.0);
         expected_1.put(2000L, 2.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -237,7 +237,7 @@ public class CullBelowTransformTest {
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -271,7 +271,7 @@ public class CullBelowTransformTest {
         expected_1.put(2000L, 2.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -303,7 +303,7 @@ public class CullBelowTransformTest {
 
         expected_1.put(1000L, 3.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -332,7 +332,7 @@ public class CullBelowTransformTest {
         constants.add("value");
 
         Map<Long, Double> expected_1 = new HashMap<Long, Double>();
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -382,7 +382,7 @@ public class CullBelowTransformTest {
         expected_2.put(2000L, 2.0);
         expected_2.put(3000L, 100.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -416,7 +416,7 @@ public class CullBelowTransformTest {
         expected_1.put(1000L, 3.0);
         expected_1.put(2000L, 2.0);
 
-        List<Metric> result = cullBelowTransform.transform(metrics, constants);
+        List<Metric> result = cullBelowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());

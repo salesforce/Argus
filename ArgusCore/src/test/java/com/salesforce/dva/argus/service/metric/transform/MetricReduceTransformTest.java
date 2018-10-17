@@ -57,7 +57,7 @@ public class MetricReduceTransformTest {
     @Test(expected = IllegalArgumentException.class)
     public void transform_shouldThrowExceptionWhenNullMetrics() {
         Mockito.when(mockValueReducer.name()).thenReturn("s");
-        new MetricReducerTransform(mockValueReducer).transform((List<Metric>) null);
+        new MetricReducerTransform(mockValueReducer).transform(null, (List<Metric>) null);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class MetricReduceTransformTest {
 
         Metric m = new Metric("s", "m1");
         Metric m2 = new Metric("s", "m2");
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
         List<Metric> expected = Arrays.asList(new Metric("s", TransformFactory.DEFAULT_METRIC_NAME));
 
         assertThat(results, equalTo(expected));
@@ -78,7 +78,7 @@ public class MetricReduceTransformTest {
 
         Metric m = new Metric("s", "m1");
         Metric m2 = new Metric("s", "m1");
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
         List<Metric> expected = Arrays.asList(new Metric("s", "m1"));
 
         assertThat(results, equalTo(expected));
@@ -90,7 +90,7 @@ public class MetricReduceTransformTest {
 
         Metric m = new Metric("s", "m");
         Metric m2 = new Metric("s1", "m");
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
         List<Metric> expected = Arrays.asList(new Metric("new scope", "m"));
 
         assertThat(results, equalTo(expected));
@@ -100,7 +100,7 @@ public class MetricReduceTransformTest {
     public void reduce_shouldUseDistilledScopeNameWhenCommon() {
         Metric m = new Metric("s", "m1");
         Metric m2 = new Metric("s", "m2");
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
         List<Metric> expected = Arrays.asList(new Metric("s", TransformFactory.DEFAULT_METRIC_NAME));
 
         assertThat(results, equalTo(expected));
@@ -121,7 +121,7 @@ public class MetricReduceTransformTest {
         m.setUnits("u");
 
         List<Metric> expected = Arrays.asList(m);
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, expected);
 
         assertThat(results, equalTo(expected));
 
@@ -146,7 +146,7 @@ public class MetricReduceTransformTest {
         m.setDatapoints(dps);
 
         List<Metric> expected = Arrays.asList(m);
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, expected);
 
         assertThat(results, equalTo(expected));
         verify(mockValueReducer).reduce(Arrays.asList(1.0));
@@ -171,7 +171,7 @@ public class MetricReduceTransformTest {
         m.setDatapoints(dps);
 
         List<Metric> expected = Arrays.asList(m);
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(expected);
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, expected);
 
         assertThat(results, equalTo(expected));
 
@@ -206,7 +206,7 @@ public class MetricReduceTransformTest {
         dps.put(2L, 4.0);
         m2.setDatapoints(dps);
 
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
         verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
@@ -238,7 +238,7 @@ public class MetricReduceTransformTest {
         dps.put(4L, 5.0);
         m2.setDatapoints(dps);
 
-        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(Arrays.asList(m, m2));
+        List<Metric> results = new MetricReducerTransform(mockValueReducer).transform(null, Arrays.asList(m, m2));
 
         assertThat(results, equalTo(Arrays.asList(m)));
         verify(mockValueReducer).reduce(Arrays.asList(1.0, 3.0));
@@ -266,7 +266,7 @@ public class MetricReduceTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
         List<String> constants = new ArrayList<String>();
 
-        new MetricReducerTransform(mockValueReducer).transform(metrics, constants);
+        new MetricReducerTransform(mockValueReducer).transform(null, metrics, constants);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

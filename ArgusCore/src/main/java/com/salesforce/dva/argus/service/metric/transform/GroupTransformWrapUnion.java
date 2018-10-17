@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,7 +55,7 @@ public class GroupTransformWrapUnion implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         if (metrics.isEmpty()) {
             return metrics;
@@ -61,11 +63,11 @@ public class GroupTransformWrapUnion implements Transform {
 
         Transform unionTransform = new MetricUnionTransform(new UnionValueUnionReducer());
 
-        return unionTransform.transform(metrics);
+        return unionTransform.transform(null, metrics);
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         if (metrics.isEmpty()) {
             return metrics;
@@ -79,7 +81,7 @@ public class GroupTransformWrapUnion implements Transform {
         String type = constants.get(1);
         List<Metric> matchMetrics = filterMetrics(metrics, expr, type);
 
-        return transform(matchMetrics);
+        return transform(null, matchMetrics);
     }
 
     private List<Metric> filterMetrics(List<Metric> metrics, String expr, String type) {
@@ -104,7 +106,7 @@ public class GroupTransformWrapUnion implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Group doesn't need list of list!");
     }
 }

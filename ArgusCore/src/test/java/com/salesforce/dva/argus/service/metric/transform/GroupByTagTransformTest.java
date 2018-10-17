@@ -66,7 +66,7 @@ public class GroupByTagTransformTest {
 		constants.add("dc");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 2);
 		for(Metric r : result) {
 			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
@@ -132,7 +132,7 @@ public class GroupByTagTransformTest {
 		constants.add("sp");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertEquals(3, result.size());
 		for(Metric r : result) {
 			assertTrue(
@@ -199,7 +199,7 @@ public class GroupByTagTransformTest {
 		constants.add("sp");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertEquals(3, result.size());
 		for(Metric r : result) {
 			assertTrue(
@@ -270,7 +270,7 @@ public class GroupByTagTransformTest {
 		constants.add("sp");
 		constants.add("SUM");
 
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertEquals(3, result.size());
 		for(Metric r : result) {
 			assertTrue(
@@ -347,7 +347,7 @@ public class GroupByTagTransformTest {
 		metrics.add(metric3);
 		metrics.add(metric4);
 
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertEquals(3, result.size());
 		for(Metric r : result) {
 			assertTrue(
@@ -395,7 +395,7 @@ public class GroupByTagTransformTest {
 		constants.add("union");
 
 		try {
-			List<Metric> result = transform.transform(metrics, constants);
+			List<Metric> result = transform.transform(null, metrics, constants);
 			fail("Should fail because no tags is provided");
 		}
 		catch (UnsupportedOperationException ex) {
@@ -430,7 +430,7 @@ public class GroupByTagTransformTest {
 		constants.add("union");
 
 		try {
-			List<Metric> result = transform.transform(metrics, constants);
+			List<Metric> result = transform.transform(null, metrics, constants);
 			fail("Should fail because no function is provided");
 		}
 		catch (UnsupportedOperationException ex) {

@@ -64,7 +64,7 @@ public class SumTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5w");
-        sumTransform.transform(metrics, constants);
+        sumTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -74,7 +74,7 @@ public class SumTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        sumTransform.transform(metrics, constants);
+        sumTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -104,7 +104,7 @@ public class SumTransformTest {
         expected.put(2000L, 7.0);
         expected.put(3000L, 8.0);
 
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -154,7 +154,7 @@ public class SumTransformTest {
         expected_2.put(2000L, 105.0);
         expected_2.put(3000L, 1005.0);
 
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -174,7 +174,7 @@ public class SumTransformTest {
 
         constants.add("5");
         constants.add("10");
-        sumTransform.transform(metrics, constants);
+        sumTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -212,7 +212,7 @@ public class SumTransformTest {
         expected.put(2000L, 102.0);
         expected.put(3000L, 1003.0);
 
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -248,7 +248,7 @@ public class SumTransformTest {
 
         List<String> constants = new ArrayList<String>();
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -287,7 +287,7 @@ public class SumTransformTest {
 
         expected.put(3000L, 1003.0);
 
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -329,7 +329,7 @@ public class SumTransformTest {
         expected.put(1000L, 1.0);
         expected.put(2000L, 2.0);
         expected.put(3000L, 1003.0);
-        List<Metric> result = sumTransform.transform(metrics, constants);
+        List<Metric> result = sumTransform.transform(null, metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }

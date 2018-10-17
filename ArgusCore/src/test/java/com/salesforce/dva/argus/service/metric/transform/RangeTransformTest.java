@@ -52,7 +52,7 @@ public class RangeTransformTest {
         Transform rangeTransform = new RangeTransformWrap();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        rangeTransform.transform(metrics);
+        rangeTransform.transform(null, metrics);
     }
 
     @Test
@@ -77,7 +77,7 @@ public class RangeTransformTest {
         expected.put(1000L, 1.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -94,7 +94,7 @@ public class RangeTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("5");
-        rangeTransform.transform(metrics, constants);
+        rangeTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -131,7 +131,7 @@ public class RangeTransformTest {
         expected.put(2000L, 98.0);
         expected.put(3000L, 997.0);
 
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -166,7 +166,7 @@ public class RangeTransformTest {
         metrics.add(metric_2);
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -204,7 +204,7 @@ public class RangeTransformTest {
 
         expected.put(3000L, 997.0);
 
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -232,7 +232,7 @@ public class RangeTransformTest {
         expected.put(1000L, 0.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 2);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -272,7 +272,7 @@ public class RangeTransformTest {
         expected.put(2000L, 100.0);
         expected.put(3000L, 1000.0);
 
-        List<Metric> result = rangeTransform.transform(metrics);
+        List<Metric> result = rangeTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());

@@ -66,7 +66,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 99.99);
@@ -91,7 +91,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 1.11);
@@ -123,7 +123,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.03);
@@ -162,7 +162,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         String detectionInterval = "10s";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(2L, 0.0);
@@ -204,7 +204,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         String detectionInterval = "12h";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -248,7 +248,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         String detectionInterval = "7d";
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -297,7 +297,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         String detectionInterval = "100d";  //Detection interval > time range of metricData
         constants.add(detectionInterval);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics, constants);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics, constants);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(0L, 0.0);
@@ -331,7 +331,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         expected.put(1000L, 0.0);
@@ -363,7 +363,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
         Map<Long, Double> resultDatapoints = results.get(0).getDatapoints();
 
         for (long i = 1; i < 10001; i++) {
@@ -382,7 +382,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metric.setDatapoints(metricData);
         metrics.add(metric);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -402,7 +402,7 @@ public class AnomalyDetectionGaussianDensityTransformTest {
         metrics.add(metric);
         metrics.add(metric_2);
 
-        List<Metric> results = gaussianDensityTransform.transform(metrics);
+        List<Metric> results = gaussianDensityTransform.transform(null, metrics);
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

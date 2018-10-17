@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 import java.util.*;
 
@@ -59,7 +60,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
     private static final String RESULT_METRIC_NAME = "RPCA anomaly score";
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireState(metrics.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
         SystemAssert.requireState(metrics.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
@@ -95,7 +96,7 @@ public class AnomalyDetectionRPCATransform extends AnomalyDetectionTransform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         throw new UnsupportedOperationException("RPCA transform requires a constant for the length of a season.");
     }
 

@@ -62,7 +62,7 @@ public class CountTransformTest {
 
         List<String> constants = new ArrayList<String>(1);
 
-        countTransform.transform(metrics, constants);
+        countTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -70,7 +70,7 @@ public class CountTransformTest {
         Transform countTransform = new CountTransformWrapUnion();
         List<Metric> metrics = null;
 
-        countTransform.transform(metrics);
+        countTransform.transform(null, metrics);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class CountTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 2.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -150,7 +150,7 @@ public class CountTransformTest {
         expected.put(2000L, 1.0);
         expected.put(3000L, 1.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 6);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -192,7 +192,7 @@ public class CountTransformTest {
         expected.put(2000L, 1.0);
         expected.put(3000L, 1.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 5);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -221,7 +221,7 @@ public class CountTransformTest {
         expected.put(2000L, 1.0);
         expected.put(3000L, 1.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -262,7 +262,7 @@ public class CountTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 1.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -312,7 +312,7 @@ public class CountTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = countTransform.transform(metrics);
+        List<Metric> result = countTransform.transform(null, metrics);
 
         //assertEquals(result.get(0).getDatapoints().size(), 4);
         assertEquals(expected, result.get(0).getDatapoints());

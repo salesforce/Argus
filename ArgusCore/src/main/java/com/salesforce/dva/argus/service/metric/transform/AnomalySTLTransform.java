@@ -35,6 +35,7 @@ import com.github.brandtg.stl.StlDecomposition;
 import com.github.brandtg.stl.StlResult;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 import java.util.*;
 
@@ -51,7 +52,7 @@ public class AnomalySTLTransform implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         List<String> l = new ArrayList<String>();
         int size = metrics.get(0).getDatapoints().size();
         if (size >= 52 * 2) {
@@ -59,11 +60,11 @@ public class AnomalySTLTransform implements Transform {
         } else {
             l.add(0, Integer.toString(size/2));
         }
-        return transform(metrics, l);
+        return transform(null, metrics, l);
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
         SystemAssert.requireState(metrics.size() == 1, "Anomaly Detection Transform can only be used on one metric.");
         SystemAssert.requireState(metrics.get(0) != null, "Anomaly Detection Transform cannot be used with a null " +
@@ -74,7 +75,7 @@ public class AnomalySTLTransform implements Transform {
                 "only be used if there are at least 4 points.");
 
         if (constants.size() == 0) {
-            return transform(metrics);
+            return transform(null, metrics);
         } else if (constants.size() == 2) {
             SystemAssert.requireState(constants.get(1).equals("resid") || constants.get(1).equals("anomalyScore"),
                     "The only options for STL Anomaly Detection Transform are '$resid' to view the residuals or " +
@@ -182,7 +183,7 @@ public class AnomalySTLTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("This class is deprecated!");
     }
 

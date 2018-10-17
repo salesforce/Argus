@@ -65,7 +65,7 @@ public class IncludeTransformTest {
         Transform includeTransform = new IncludeTransform();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        includeTransform.transform(metrics);
+        includeTransform.transform(null, metrics);
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -73,7 +73,7 @@ public class IncludeTransformTest {
         Transform includeTransform = new IncludeTransform();
         List<Metric> metrics = new ArrayList<Metric>();
 
-        includeTransform.transform(metrics);
+        includeTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -84,7 +84,7 @@ public class IncludeTransformTest {
 
         constants.add(TEST_INCLUDE_LITERAL);
         constants.add(TEST_BAD_STRING);
-        includeTransform.transform(metrics, constants);
+        includeTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -95,7 +95,7 @@ public class IncludeTransformTest {
 
         constants.add(TEST_INCLUDE_LITERAL);
         constants.add(TEST_BAD_STRING);
-        includeTransform.transform(metrics, constants);
+        includeTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -129,7 +129,7 @@ public class IncludeTransformTest {
 
         constants.add(TEST_INCLUDE_REGEX);
 
-        List<Metric> result = includeTransform.transform(metrics, constants);
+        List<Metric> result = includeTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals("test-metric1", result.get(0).getMetric());
@@ -167,7 +167,7 @@ public class IncludeTransformTest {
 
         constants.add(TEST_METRIC);
 
-        List<Metric> result = includeTransform.transform(metrics, constants);
+        List<Metric> result = includeTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 0);
     }

@@ -51,7 +51,7 @@ public class Scale_VTransformTest {
         Transform scale_vTransform = new MetricZipperTransform(new ScaleValueZipper());
         List<Metric> metrics = null;
 
-        scale_vTransform.transform(metrics);
+        scale_vTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -61,7 +61,7 @@ public class Scale_VTransformTest {
         Metric metric = new Metric(TEST_SCOPE, TEST_METRIC);
 
         metrics.add(metric);
-        scale_vTransform.transform(metrics);
+        scale_vTransform.transform(null, metrics);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -74,7 +74,7 @@ public class Scale_VTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        scale_vTransform.transform(metrics, constants);
+        scale_vTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -93,7 +93,7 @@ public class Scale_VTransformTest {
 
         metrics.add(metric);
         metrics.add(vector);
-        scale_vTransform.transform(metrics);
+        scale_vTransform.transform(null, metrics);
     }
 
     @Test
@@ -130,7 +130,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -171,7 +171,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -210,7 +210,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -249,7 +249,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -289,7 +289,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 2.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -329,7 +329,7 @@ public class Scale_VTransformTest {
         expected.put(2000L, 1.0);
         expected.put(3000L, 3.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -403,7 +403,7 @@ public class Scale_VTransformTest {
         expected_3.put(1000L, 0.1);
         expected_3.put(2000L, 0.01);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -486,7 +486,7 @@ public class Scale_VTransformTest {
         expected_3.put(4000L, 0.001);
         expected_3.put(5000L, 1.0);
 
-        List<Metric> result = scale_vTransform.transform(metrics);
+        List<Metric> result = scale_vTransform.transform(null, metrics);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -565,7 +565,7 @@ public class Scale_VTransformTest {
         expected_3.put(2000L, 10.0);
         expected_3.put(3000L, 1.0);
         
-        List<Metric> result = sum_vTransform.transform(metrics, Arrays.asList("UNION"));
+        List<Metric> result = sum_vTransform.transform(null, metrics, Arrays.asList("UNION"));
 
         assertEquals(3, result.get(0).getDatapoints().size());
         assertEquals(expected_1, result.get(0).getDatapoints());
