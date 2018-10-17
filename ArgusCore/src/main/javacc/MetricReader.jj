@@ -347,6 +347,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz) :
 	<RIGHT_PARENTHESIS>
 	{
 	    currentQueryContext.getChildExpressions().addAll(queryExpressions);
+	    currentQueryContext.setConstants(constants);
 	  	List<T> functionResult = evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly);
 	  	if(currentQueryContext.getParentContext()!=null){
 	  	    currentQueryContext = currentQueryContext.getParentContext();

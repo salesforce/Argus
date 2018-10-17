@@ -8,6 +8,8 @@ import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Functi
 public class QueryContext {
 
 	private Function transform = null;
+	
+	private List<String> constants = null;
     
     private QueryContext parentContext = null;
     
@@ -21,6 +23,14 @@ public class QueryContext {
 
 	public void setTransformName(String transformName) {
 		this.transform = Function.fromString(transformName.toUpperCase());
+	}
+
+	public List<String> getConstants() {
+		return constants;
+	}
+
+	public void setConstants(List<String> constants) {
+		this.constants = constants;
 	}
 	
 	public QueryContext getParentContext() {
