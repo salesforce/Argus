@@ -874,9 +874,9 @@ public class ElasticSearchSchemaServiceTest extends AbstractTest {
     @Test
     public void testGetRequestBodyForMtsFieldUpdate() {
         String expected = "{\"update\" : {\"_id\" : \"a303abc25d534dd8ff97121668e952e6\" } }\n" +
-                "{\"doc\" : {\"mts\": 0,\"expiration_ts\":3888000000}}\n" +
+                "{\"doc\" : {\"mts\": 0,\"ets\":3888000000}}\n" +
                 "{\"update\" : {\"_id\" : \"8b7f219c5131eeff5b02a6e798c9ec2d\" } }\n" +
-                "{\"doc\" : {\"mts\": 0,\"expiration_ts\":864000000,\"_retention_discovery_\":10}}\n";
+                "{\"doc\" : {\"mts\": 0,\"ets\":864000000,\"_retention_discovery_\":10}}\n";
 
         MetricSchemaRecord record1 = new MetricSchemaRecord("namespace1", "scope1", "metric1", "tagK1", "tagV1", 10);
         MetricSchemaRecord record2 = new MetricSchemaRecord("namespace2", "scope2", "metric2", "tagK2", "tagV2");   //retention will be the default 45 days

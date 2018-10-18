@@ -349,9 +349,9 @@ public abstract class JPAEntity implements Serializable, Identifiable {
     @PrePersist
     @PreUpdate
     protected void preUpdate() {
-        this.modifiedDate = new Date();
         if (this.createdDate == null) {
-            this.createdDate = this.modifiedDate;
+            this.createdDate = new Date();
+            this.modifiedDate = this.createdDate;
         }
     }
 
