@@ -17,6 +17,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for templatizing the components of alerts
+ *
+ * @author  Sudhanshu Bahety (sudhanshu.bahety@salesforce.com)
+ */
+
 public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);

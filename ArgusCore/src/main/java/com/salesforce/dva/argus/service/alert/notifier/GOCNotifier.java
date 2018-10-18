@@ -151,6 +151,9 @@ public class GOCNotifier extends AuditNotifier {
 					builder.withActive(true).withCreatedAt(lastNotified);
 				}
 				builder.withLastNotifiedAt(lastNotified);
+				if (srActionable == true) {
+					builder.withUserdefined2(_config.getValue(AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getName(), AuditNotifier.Property.AUDIT_PRODOUTAGE_EMAIL_TEMPLATE.getDefaultValue()));
+				}
 
 				GOCData gocData = builder.build();
 				boolean refresh = false;
@@ -421,6 +424,10 @@ public class GOCNotifier extends AuditNotifier {
 		private static final String SM_SEVERITY__C_FIELD = "SM_Severity__c";
 		private static final String SM_SOURCEDOMAIN__C_FIELD = "SM_SourceDomain__c";
 		private static final String SR_ACTIONABLE__C_FIELD = "SR_Actionable__c";
+		private static final String SM_USERDEFINED2__C_FIELD = "SR_Userdefined2__c";
+		private static final String SM_USERDEFINED3__C_FIELD = "SR_Userdefined3__c";
+		private static final String SM_USERDEFINED10__C_FIELD = "SR_Userdefined10__c";
+		private static final String SM_USERDEFINED12__C_FIELD = "SR_Userdefined12__c";
 
 		//~ Instance fields ******************************************************************************************************************************
 
@@ -436,12 +443,17 @@ public class GOCNotifier extends AuditNotifier {
 		private final int smSeverityc; // Number(1, 0) (External ID) --> 0 through 5
 		private final String smSourceDomainc;
 		private final boolean srActionablec; // Checkbox --> true if SR needs to respond to this alert
+		private final String smUserdefined2c;
+		private final String smUserdefined3c;
+		private final String smUserdefined10c;
+		private final String smUserdefined12c;
+
 
 		//~ Constructors *********************************************************************************************************************************
 
 		private GOCData(final boolean smActivec, final String smAlertIdc, final String smClassNamec, final long smClearedAtc, final long smCreatedAtc,
 						final String smElementNamec, final String smEventNamec, final String smEventTextc, final long smLastNotifiedAtc, final int smSeverityc,
-						final String smSourceDomainc, final boolean srActionablec) {
+						final String smSourceDomainc, final boolean srActionablec, final String smUserdefined2c, final String smUserdefined3c, final String smUserdefined10c, final String smUserdefined12c) {
 			this.smActivec = smActivec;
 			this.smAlertIdc = smAlertIdc;
 			this.smClassNamec = smClassNamec;
@@ -454,6 +466,11 @@ public class GOCNotifier extends AuditNotifier {
 			this.smSeverityc = smSeverityc;
 			this.smSourceDomainc = smSourceDomainc;
 			this.srActionablec = srActionablec;
+			this.smUserdefined2c = smUserdefined2c;
+			this.smUserdefined3c = smUserdefined3c;
+			this.smUserdefined10c = smUserdefined10c;
+			this.smUserdefined12c = smUserdefined12c;
+
 		}
 
 		//~ Methods **************************************************************************************************************************************
@@ -494,6 +511,18 @@ public class GOCNotifier extends AuditNotifier {
 			gocData.addProperty(SM_SEVERITY__C_FIELD, smSeverityc);
 			gocData.addProperty(SM_SOURCEDOMAIN__C_FIELD, smSourceDomainc);
 			gocData.addProperty(SR_ACTIONABLE__C_FIELD, srActionablec);
+			if(smUserdefined2c != null) {
+				gocData.addProperty(SM_USERDEFINED2__C_FIELD, smUserdefined2c);
+			}
+			if(smUserdefined3c != null) {
+				gocData.addProperty(SM_USERDEFINED3__C_FIELD, smUserdefined3c);
+			}
+			if(smUserdefined10c != null) {
+				gocData.addProperty(SM_USERDEFINED10__C_FIELD, smUserdefined10c);
+			}
+			if(smUserdefined12c != null) {
+				gocData.addProperty(SM_USERDEFINED12__C_FIELD, smUserdefined12c);
+			}
 			return gocData.toString();
 		}
 
@@ -521,6 +550,10 @@ public class GOCNotifier extends AuditNotifier {
 		private long smLastNotifiedAtc; // Date/Time --> timestamp
 		private int smSeverityc = 5; // Number(1, 0) (External ID) --> 0 through 5
 		private boolean srActionablec = false;
+		private String smUserdefined2c = null;
+		private String smUserdefined3c = null;
+		private String smUserdefined10c = null;
+		private String smUserdefined12c = null;
 
 		/** Creates a new GOCDataBuilder object. */
 		public GOCDataBuilder() { }
@@ -646,13 +679,61 @@ public class GOCNotifier extends AuditNotifier {
 		}
 
 		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smUserdefined2c  True if actionable.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withUserdefined2(final String smUserdefined2c) {
+			this.smUserdefined2c = smUserdefined2c;
+			return this;
+		}
+
+		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smUserdefined3c  True if actionable.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withUserdefined3(final String smUserdefined3c) {
+			this.smUserdefined3c = smUserdefined3c;
+			return this;
+		}
+
+		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smUserdefined10c  True if actionable.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withUserdefined10(final String smUserdefined10c) {
+			this.smUserdefined10c = smUserdefined10c;
+			return this;
+		}
+
+		/**
+		 * Specifies whether the userdefined2 field is defined.
+		 *
+		 * @param   smUserdefined12c  True if actionable.
+		 *
+		 * @return  The updated builder object.
+		 */
+		public GOCDataBuilder withUserdefined12(final String smUserdefined12c) {
+			this.smUserdefined12c = smUserdefined12c;
+			return this;
+		}
+
+		/**
 		 * Create the GOCData object, use defaults where needed.
 		 *
 		 * @return  GOCData created based on builder data
 		 */
 		public GOCData build() {
 			return new GOCData(smActivec, smElementNamec + ALERT_ID_SEPARATOR + smEventNamec, smClassNamec, smClearedAtc, smCreatedAtc,
-					smElementNamec, smEventNamec, smEventTextc, smLastNotifiedAtc, smSeverityc, SM_SOURCE_DOMAIN__C, srActionablec);
+					smElementNamec, smEventNamec, smEventTextc, smLastNotifiedAtc, smSeverityc, SM_SOURCE_DOMAIN__C, srActionablec, smUserdefined2c, smUserdefined3c, smUserdefined10c, smUserdefined12c);
 		}
 	}
 

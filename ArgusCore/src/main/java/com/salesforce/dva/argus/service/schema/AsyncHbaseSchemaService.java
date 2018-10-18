@@ -541,7 +541,7 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
                         String rowKey = Bytes.toString(row.get(0).key());
                         MetricSchemaRecord record = _constructMetricSchemaRecord(rowKey, metadata.tableName);
 
-                        if(records.add(_getValueForType(record, type))){
+                        if(records.add(record.getStringValueForType(type))){
                         	listMetricSchemarecords.add(record);
                         }
                         if (records.size() == query.getLimit()) {
@@ -682,23 +682,6 @@ public class AsyncHbaseSchemaService extends AbstractSchemaService {
 			}
         }
 	}
-
-    private String _getValueForType(MetricSchemaRecord record, RecordType type) {
-        switch (type) {
-            case NAMESPACE:
-                return record.getNamespace();
-            case SCOPE:
-                return record.getScope();
-            case METRIC:
-                return record.getMetric();
-            case TAGK:
-                return record.getTagKey();
-            case TAGV:
-                return record.getTagValue();
-            default:
-                return null;
-        }
-    }
 
     /**
      * Construct scan metadata depending on the query. This includes determining the table to query and the start and stop rows for the scan.

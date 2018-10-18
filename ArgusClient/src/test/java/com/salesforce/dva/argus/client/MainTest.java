@@ -33,12 +33,14 @@ package com.salesforce.dva.argus.client;
 
 import com.salesforce.dva.argus.AbstractTest;
 import com.salesforce.dva.argus.system.SystemException;
+import org.junit.Ignore;
 import org.junit.Test;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+@Ignore
 public class MainTest extends AbstractTest {
 
     @Test(timeout = 20000L)

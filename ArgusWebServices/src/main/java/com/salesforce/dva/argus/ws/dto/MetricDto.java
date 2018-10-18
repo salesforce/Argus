@@ -55,6 +55,9 @@ public class MetricDto extends TSDBEntityDto {
     private String units;
     private Map<Long, Double> datapoints;
 
+    private String metatagsKey;
+    private Map<String, String> metatags;
+
     //~ Methods **************************************************************************************************************************************
 
     /**
@@ -189,6 +192,38 @@ public class MetricDto extends TSDBEntityDto {
      */
     public void setDatapoints(Map<Long, Double> datapoints) {
         this.datapoints = datapoints;
+    }
+
+    /**
+     * Returns the user specified key for the metatags
+     * @return the metatags key
+     */
+    public String getMetatagsKey() {
+        return metatagsKey;
+    }
+
+    /**
+     * Sets a key for the metatags
+     * @param metatagsKey the key
+     */
+    public void setMetatagsKey(String metatagsKey) {
+        this.metatagsKey = metatagsKey;
+    }
+
+    /**
+     * Returns the metatags
+     * @return the metatags
+     */
+    public Map<String, String> getMetatags() {
+        return metatags;
+    }
+
+    /**
+     * Sets the metatags
+     * @param metatags the metatags
+     */
+    public void setMetatags(Map<String, String> metatags) {
+        this.metatags = metatags;
     }
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
