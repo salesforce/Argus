@@ -48,7 +48,7 @@ public interface Transform {
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     * @param context TODO
+     * @param context This contains details of the underlying tsdb query
      * @param   metrics  The list of metrics to which the transform will be applied. Cannot be null.
      *
      * @return  The result of the transform. Shall not be null.
@@ -58,7 +58,7 @@ public interface Transform {
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     * @param queryContext TODO
+     * @param queryContext This contains details of the underlying tsdb query
      * @param   metrics    The list of metrics to which the transform will be applied. Cannot be null.
      * @param   constants  The transform specific constants to use.
      *
@@ -69,7 +69,7 @@ public interface Transform {
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     * @param queryContext TODO
+     * @param queryContext This contains details of the underlying tsdb query
      * @param   metrics  The list of metrics to which the transform will be applied. Cannot be null.
      *
      * @return  The result of the transform. Shall not be null.

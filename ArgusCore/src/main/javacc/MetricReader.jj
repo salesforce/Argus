@@ -54,7 +54,7 @@ public class MetricReader<T> {
   	private Integer numDiscoveryQueries = 0;
 
 	@Inject
-    MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
+    public MetricReader(TSDBService tsdbService, DiscoveryService discoveryService, TransformFactory factory) {
         this((Reader)null);
         this.tsdbService = tsdbService;
         this.discoveryService = discoveryService;
@@ -265,20 +265,20 @@ boolean isValidExpression(String expression) :
 {}
 {
   	{
-  	  	return start(expression, 0, true, (Class<T>) Metric.class) != null;
+  	  	return start(expression, 0, true, (Class<T>) Metric.class, new QueryContext()) != null;
   	}
 }
 
-List<T> parse(String expression, long relativeTo, Class<T> clazz) :
+List<T> parse(String expression, long relativeTo, Class<T> clazz, QueryContext queryContextToUpdate) :
 {}
 {
   	{
-  	  	return start(expression, relativeTo, false, clazz);
+  	  	return start(expression, relativeTo, false, clazz, queryContextToUpdate);
   	}
 }
 
 
-private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Class<T> clazz) :
+private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContext queryContext) :
 {
   	List<T> result = new ArrayList<T>();
 }
@@ -287,7 +287,7 @@ private List<T> start(String expression, long relativeTo, boolean syntaxOnly, Cl
         requireState(syntaxOnly || tsdbService != null, "TSDB service can only be null when syntax validation is being performed.");
         ReInit(new StringReader(expression));
   	}
-        (result = expression(relativeTo, syntaxOnly, clazz, new ArrayList<TSDBQueryExpression>()) | result = function(relativeTo, syntaxOnly, clazz, new QueryContext()))<EOF>
+        (result = expression(relativeTo, syntaxOnly, clazz, queryContext) | result = function(relativeTo, syntaxOnly, clazz, queryContext))<EOF>
 	{
         return result;
     }
@@ -307,7 +307,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz, Qu
 	functionName = getFunctionNameAndUpdateContext(currentQueryContext)
 	<LEFT_PARENTHESIS>
 		(
-		result = expression(relativeTo, syntaxOnly, clazz, queryExpressions)
+		result = expression(relativeTo, syntaxOnly, clazz, currentQueryContext)
 		{ 
 			totalResult.addAll(result);
 			constantsOnly = false;		
@@ -329,7 +329,7 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz, Qu
 		(
 		  <COMMA>
           ( 
-            result = expression(relativeTo, syntaxOnly, clazz, queryExpressions)
+            result = expression(relativeTo, syntaxOnly, clazz, currentQueryContext)
             { totalResult.addAll(result); }
 			|
             result = function(relativeTo, syntaxOnly, clazz, currentQueryContext)
@@ -345,7 +345,6 @@ private List<T> function(long relativeTo, boolean syntaxOnly, Class<T> clazz, Qu
 		)*
 	<RIGHT_PARENTHESIS>
 	{
-	    currentQueryContext.getChildExpressions().addAll(queryExpressions);
 	    currentQueryContext.setConstants(constants);
 	  	List<T> functionResult = evaluateFunction(functionName, totalResult, constants, relativeTo, syntaxOnly, clazz, constantsOnly, currentQueryContext);
 	  	if(currentQueryContext.getParentContext()!=null){
@@ -761,7 +760,7 @@ private List<T> evaluateFunction(String functionName, List<T> result, List<Strin
  * we decided to move it to the very end. 
  *  
  */
-private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, List<TSDBQueryExpression> queryExpressions) :
+private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, QueryContext currentQueryContext) :
 {
   	Long startTimestamp = null;
   	Long endTimestamp = null;
@@ -791,7 +790,7 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
         expression.setTags(tags);
         expression.setStartTimestamp(startTimestamp);
         expression.setEndTimestamp(endTimestamp);
-        	queryExpressions.add(expression);
+        currentQueryContext.getChildExpressions().add(expression);
 	  	if(MetricQuery.class.equals(clazz)) {
 	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
 			downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
