@@ -33,7 +33,7 @@ public class CallbackServiceTest extends AbstractTest {
 				"* * * * *");
 		final Trigger trigger = new Trigger(alert, Trigger.TriggerType.GREATER_THAN_OR_EQ, "trigger_name", 2D, 5);
 
-		final String jsonBody = "{ \"uri\" : \"localhost:8080\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{\\\"triggerName\\\": \\\"«trigger.name>»\\\", \\\"alertName\\\": \\\"«alert.name»\\\"}\",\"template\": \"ST4\"}";
+		final String jsonBody = "{ \"uri\" : \"localhost:9600\", \"method\" : \"POST\", \"header\": { \"Content-Type\": \"application/json\" }, \"body\": \"{\\\"triggerName\\\": \\\"«trigger.name>»\\\", \\\"alertName\\\": \\\"«alert.name»\\\"}\",\"template\": \"ST4\"}";
 		final Notification notification = new Notification("notification_name",
 				alert,
 				"notifier_ame",

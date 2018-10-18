@@ -190,5 +190,13 @@ public interface MetricService extends Service {
      * @return  The number of discovery  queries that has been made to the discovery service.
      */    
     Integer getNumDiscoveryQueries();
+
+    /**
+     * Returns List of DCs from the expression.
+     * @param   expression  	The list of metric expressions to evaluate.  Cannot be null, but may be empty.  All entries must be a valid metric expression.
+     *
+     * @return  The list of DCs from the expression.
+     */
+    List<String> getDCFromExpression(String expression);
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */
