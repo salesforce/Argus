@@ -14,9 +14,9 @@ public class QueryUtils {
 
 	public static Long[] getStartAndEndTimesWithMaxInterval(String expression, Long relativeTo) {
 		try {
-			QueryContext context = new QueryContext();
-			metricReader.parse(expression, relativeTo, Metric.class, context);
-			return getStartAndEndTimesWithMaxInterval(context);
+			QueryContextHolder contextHolder = new QueryContextHolder();
+			metricReader.parse(expression, relativeTo, Metric.class, contextHolder);
+			return getStartAndEndTimesWithMaxInterval(contextHolder.getCurrentQueryContext());
 		}catch(ParseException e) {
 			throw new RuntimeException(e);
 		}

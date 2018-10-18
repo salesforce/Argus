@@ -44,7 +44,7 @@ import com.salesforce.dva.argus.system.SystemConfiguration;
 import com.salesforce.dva.argus.system.SystemException;
 
 import com.salesforce.dva.argus.system.SystemMain;
-import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.QueryContextHolder;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -134,7 +134,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 			numDiscoveryQueries = 0;
 			for (String expression : expressions) {
 				_logger.debug("Reading metric for expression {}", expression);
-				metrics.addAll(reader.parse(expression, relativeTo, Metric.class, new QueryContext()));
+				metrics.addAll(reader.parse(expression, relativeTo, Metric.class, new QueryContextHolder()));
 				expandedTimeSeriesRange = reader.getExpandedTimeSeriesRange();
 				queryTimeWindow = reader.getQueryTimeWindow();
 				numDiscoveryResults += reader.getNumDiscoveryResults();
@@ -184,7 +184,7 @@ public class DefaultMetricService extends DefaultService implements MetricServic
 		try {
 			for (String expression : expressions) {
 				_logger.debug("Creating metric query for expression {}", expression);
-				queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class, new QueryContext()));
+				queries.addAll(reader.parse(expression, relativeTo, MetricQuery.class, new QueryContextHolder()));
 			}
 		} catch (ParseException ex) {
 			throw new SystemException("Failed to parse the given expression", ex);

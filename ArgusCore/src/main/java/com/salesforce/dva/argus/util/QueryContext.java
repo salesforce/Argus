@@ -5,6 +5,14 @@ import java.util.List;
 
 import com.salesforce.dva.argus.service.metric.transform.TransformFactory.Function;
 
+/*
+ * This class encapsulates the parsed query expression tree. 
+ * 
+ * Each node in the tree corresponds to a transform function specified in the expression.
+ *  
+ * Moreover each node has references to its constants, child transforms, parent transform and the associated tsdb query expressions
+ * 
+ */
 public class QueryContext {
 
 	private Function transform = null;
@@ -17,11 +25,11 @@ public class QueryContext {
     
     private List<TSDBQueryExpression> childExpressions = new ArrayList<TSDBQueryExpression>();
 
- 	public Function getTransformName() {
+ 	public Function getTransform() {
 		return transform;
 	}
 
-	public void setTransformName(String transformName) {
+	public void setTransform(String transformName) {
 		this.transform = Function.fromString(transformName.toUpperCase());
 	}
 
