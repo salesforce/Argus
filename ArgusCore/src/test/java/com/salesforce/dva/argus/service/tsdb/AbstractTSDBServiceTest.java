@@ -266,6 +266,25 @@ public class AbstractTSDBServiceTest extends AbstractTest {
     }
 
     @Test
+    public void testWrapperListUsedInBatching() {
+
+        List<Map<String, AbstractTSDBService.AnnotationWrapper>> wrapperList = new ArrayList<>();
+
+        AbstractTSDBService.AnnotationWrapper wrapper1 = new AbstractTSDBService.AnnotationWrapper("1", _constructAnnotation('1'));
+        AbstractTSDBService.AnnotationWrapper wrapper2 = new AbstractTSDBService.AnnotationWrapper("1", _constructAnnotation('2'));
+        AbstractTSDBService.AnnotationWrapper wrapper3 = new AbstractTSDBService.AnnotationWrapper("2", _constructAnnotation('3'));
+        AbstractTSDBService.AnnotationWrapper wrapper4 = new AbstractTSDBService.AnnotationWrapper("3", _constructAnnotation('2'));
+
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper1);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper2);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper3);
+        AbstractTSDBService.addToWrapperList(wrapperList, wrapper4);
+
+        assertEquals(wrapperList.get(0).size(), 3);
+        assertEquals(wrapperList.get(1).size(), 1);
+    }
+
+    @Test
     public void testCyclingIterator() {
         AbstractTSDBService service = new AbstractTSDBService(system.getConfiguration(), system.getServiceFactory().getMonitorService());
         String[][] endpointTrials = {
