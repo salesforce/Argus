@@ -33,6 +33,7 @@ package com.salesforce.dva.argus.service;
 
 import com.salesforce.dva.argus.entity.Alert;
 import com.salesforce.dva.argus.entity.History;
+import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.entity.Notification;
 import com.salesforce.dva.argus.entity.PrincipalUser;
 import com.salesforce.dva.argus.entity.Trigger;
@@ -336,6 +337,15 @@ public interface AlertService extends Service {
 	 */
 	int countAlerts(AlertsCountContext context);
 	
+	/**
+	 * This is helper function so that we can export metrics to JMX metric exporter everywhere in the
+	 * system
+	 * 
+	 * @param metric the metric to export
+	 * @param value  the value datapoint of the metric to be export
+	 */
+	void exportMetric(Metric metric, Double value);
+	
 	//~ Enums ****************************************************************************************************************************************
 
 	/**
@@ -351,7 +361,8 @@ public interface AlertService extends Service {
 		WARDENAPI(WardenApiNotifier.class.getName()),
 		WARDENPOSTING(WardenPostingNotifier.class.getName()),
 		GUS(GusNotifier.class.getName()),
-		CALLBACK(CallbackNotifier.class.getName());
+		CALLBACK(CallbackNotifier.class.getName()),
+		REFOCUS(RefocusNotifier.class.getName());
 
 		String name;
 

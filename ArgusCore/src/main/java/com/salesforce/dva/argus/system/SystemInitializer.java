@@ -28,7 +28,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.system;
 
 import ch.qos.logback.classic.Level;
@@ -53,7 +53,9 @@ import com.salesforce.dva.argus.service.jpa.DefaultNamespaceService;
 import com.salesforce.dva.argus.service.jpa.DefaultServiceManagementService;
 import com.salesforce.dva.argus.service.management.DefaultManagementService;
 import com.salesforce.dva.argus.service.metric.AsyncMetricService;
+import com.salesforce.dva.argus.service.monitor.CounterMetricJMXExporter;
 import com.salesforce.dva.argus.service.monitor.DefaultMonitorService;
+import com.salesforce.dva.argus.service.monitor.GaugeExporter;
 import com.salesforce.dva.argus.service.oauth.DefaultOAuthAuthorizationCodeService;
 import com.salesforce.dva.argus.service.schema.CachedDiscoveryService;
 import com.salesforce.dva.argus.service.schema.DefaultDiscoveryService;
@@ -95,6 +97,8 @@ final class SystemInitializer extends AbstractModule {
             config = readConfigInfo();
         }
         _config = config;
+        _config.put(SystemConfiguration.ARGUS_INSTANCE_ID,
+                    System.getProperty(SystemConfiguration.ARGUS_INSTANCE_ID,"noid"));
     }
 
     //~ Methods **************************************************************************************************************************************
@@ -174,7 +178,7 @@ final class SystemInitializer extends AbstractModule {
         app.setLevel(Level.toLevel(_systemConfiguration.getValue(SystemConfiguration.Property.LOG_LEVEL)));
         bind(SystemConfiguration.class).toInstance(_systemConfiguration);
         bindListener(Matchers.any(), new SLF4JTypeListener());
-        _systemConfiguration.putAll(getServiceSpecificProperties());      
+        _systemConfiguration.putAll(getServiceSpecificProperties());
     }
 
     private void configurePersistence() {
@@ -224,6 +228,7 @@ final class SystemInitializer extends AbstractModule {
     }
 
     private void configureServices() {
+        bindConcreteClass(CounterMetricJMXExporter.class, GaugeExporter.class);
         bindConcreteClass(Property.CACHE_SERVICE_IMPL_CLASS, CacheService.class);
         bindConcreteClass(Property.MQ_SERVICE_IMPL_CLASS, MQService.class);
         bindConcreteClass(Property.ALERT_SERVICE_IMPL_CLASS, AlertService.class);
@@ -294,7 +299,7 @@ final class SystemInitializer extends AbstractModule {
         readFile(properties, _systemConfiguration.getValue(Property.SCHEMA_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.HISTORY_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.TSDB_SERVICE_PROPERTY_FILE));
-        readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE)); 
+        readFile(properties, _systemConfiguration.getValue(Property.NOTIFIER_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.ASYNCHBASE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.WARDEN_SERVICE_PROPERTY_FILE));
         readFile(properties, _systemConfiguration.getValue(Property.OAUTH_SERVICE_PROPERTY_FILE));

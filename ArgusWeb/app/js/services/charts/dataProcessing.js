@@ -354,7 +354,7 @@ angular.module('argus.services.charts.dataProcessing', [])
 			return result;
 		},
 
-		getAlertFlagExpression: function (metric) {
+		getAlertFlagExpression: function (metric, annotationType) {
 			if (metric && metric.datapoints) {
 				var range = this.getDatapointRange(metric.datapoints);
 				var scopeName = metric.scope;
@@ -362,7 +362,8 @@ angular.module('argus.services.charts.dataProcessing', [])
 				var tagData = metric.tags;
 				var result = range.start + ':' + range.end + ':' + scopeName + ':' + metricName;
 				result += createTagString(tagData);
-				result += ':ALERT';
+				if (!annotationType || annotationType === '') annotationType = 'ALERT';
+				result += (':' + annotationType);
 				return result;
 			} else {
 				return null;

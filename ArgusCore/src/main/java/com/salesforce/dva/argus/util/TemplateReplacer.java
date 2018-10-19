@@ -17,6 +17,12 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for templatizing the components of alerts
+ *
+ * @author  Sudhanshu Bahety (sudhanshu.bahety@salesforce.com)
+ */
+
 public class TemplateReplacer {
 
     private static final Logger _logger = LoggerFactory.getLogger(TemplateReplacer.class);
@@ -50,6 +56,10 @@ public class TemplateReplacer {
         return lowercasedString;
     }
 
+    private static String makeExceptionForCertainTag(String templateString) {
+        return templateString.replace("${device}", "${tag.device}");
+    }
+
     public static String applyTemplateChanges(DefaultAlertService.NotificationContext context, String templateString) {
 
         init();
@@ -71,6 +81,7 @@ public class TemplateReplacer {
         do {
             templateString = generatedString;
             templateString = replaceKeywordsToLowerCase(templateString);
+            templateString = makeExceptionForCertainTag(templateString);
             try {
                 Template configuredTemplate = new Template("configuredTemplate", new StringReader(templateString), cfg);
                 StringWriter stringWriter = new StringWriter();
