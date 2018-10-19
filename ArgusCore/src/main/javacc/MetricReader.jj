@@ -270,13 +270,13 @@ boolean isValidExpression(String expression) :
   	}
 }
 
-List<T> parse(String expression, long relativeTo, Class<T> clazz, QueryContextHolder queryContextHolder) :
+List<T> parse(String expression, long relativeTo, Class<T> clazz, QueryContextHolder queryContextHolder, boolean syntaxOnly) :
 {
     List<T> result = new ArrayList<T>();
 }
 {
   	{
-  	  	result = start(expression, relativeTo, false, clazz, queryContextHolder);
+  	  	result = start(expression, relativeTo, syntaxOnly, clazz, queryContextHolder);
   	    queryContextHolder.setContextToRootElement();
         return result;
   	}
@@ -786,6 +786,10 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
   	(LOOKAHEAD(2) <COLON>downsampleTokenStr = getDownsampleToken())?
   	(<COLON>namespace = getString())?
 	{
+	    	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
+	    downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
+	    endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
+        
 	    expression.setNamespace(namespace);
         expression.setScope(scope);
         expression.setMetric(metric);
@@ -793,14 +797,12 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
         expression.setTags(tags);
         expression.setStartTimestamp(startTimestamp);
         expression.setEndTimestamp(endTimestamp);
+        expression.setEndTimestamp(endTimestamp);
+        	expression.setDownsampler(downsampler);
+        expression.setDownsamplingPeriod(downsamplingPeriod);
         currentQueryContext.getChildExpressions().add(expression);
 	  	if(MetricQuery.class.equals(clazz)) {
-	  	  	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
-			downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-			endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
-			expression.setDownsampler(downsampler);
-            expression.setDownsamplingPeriod(downsamplingPeriod);
-            expression.setEndTimestamp(endTimestamp);
+	  	  
 	        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 	        query.setNamespace(namespace);
 	        query.setAggregator(aggregator);
@@ -812,12 +814,6 @@ private List<T> expression(long relativeTo, boolean syntaxOnly, Class<T> clazz, 
 			if(syntaxOnly) {
 	            return (List<T>) Arrays.asList( new Metric[] { new Metric("test","metric") });
 	        } else {
-	          	downsampler = downsampleTokenStr != null ? getDownsampler(downsampleTokenStr) : null;
-				downsamplingPeriod = downsampleTokenStr != null ? getDownsamplingPeriod(downsampleTokenStr): null;
-				endTimestamp = endTimestamp == null ? relativeTo : endTimestamp;
-				expression.setDownsampler(downsampler);
-                expression.setDownsamplingPeriod(downsamplingPeriod);
-                expression.setEndTimestamp(endTimestamp);
 		        MetricQuery query = new MetricQuery(scope, metric, tags, startTimestamp, endTimestamp);
 		        query.setNamespace(namespace);
 		        query.setAggregator(aggregator);

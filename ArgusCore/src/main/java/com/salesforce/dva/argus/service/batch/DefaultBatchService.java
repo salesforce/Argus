@@ -128,7 +128,7 @@ public class DefaultBatchService extends DefaultService implements BatchService 
 
         MetricReader<Metric> reader = _metricReaderProviderForMetrics.get();
         try {
-            List<Metric> results = reader.parse(query.getExpression(), query.getRelativeTo(), Metric.class, new QueryContextHolder());
+            List<Metric> results = reader.parse(query.getExpression(), query.getRelativeTo(), Metric.class, new QueryContextHolder(), false);
             query.setStatus(Status.DONE);
             if (results.size() != 0) {
                 query.setResult(results.get(0));
