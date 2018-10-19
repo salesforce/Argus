@@ -2,8 +2,10 @@ package com.salesforce.dva.argus.service.monitor;
 
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.*;
 
 import com.salesforce.dva.argus.service.alert.notifier.GusNotifier;
+import javafx.util.Pair;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ public class DataLagMonitor extends Thread{
 
 	private String _hostName;
 
-	private Map<String, Boolean> _isDataLagging = new TreeMap<>();
+	private Map<String, Boolean> _isDataLaggingbyDCMap = new TreeMap<>();
 
 	private Map<String, String> _expressionPerDC = new TreeMap<>();
 
@@ -59,7 +61,7 @@ public class DataLagMonitor extends Thread{
 	        String currentExpression = currentExpressionDC[0];
             for (String currentDC : currentExpressionDC[1].split(",")) {
                 _expressionPerDC.put(currentDC, currentExpression.replace("#DC#", currentDC));
-                _isDataLagging.put(currentDC, false);
+                _isDataLaggingbyDCMap.put(currentDC, false);
             }
         }
     }
@@ -67,24 +69,37 @@ public class DataLagMonitor extends Thread{
 	@Override
 	public void run() {
 		_logger.info("Data lag monitor thread started");
+        final ExecutorService pool = Executors.newFixedThreadPool(5);
+        final ExecutorCompletionService<Pair<String, List<Metric>>> completionService = new ExecutorCompletionService<>(pool);
+        long currTime = System.currentTimeMillis();
 		boolean firstTime = true;
-        for (String currentDC: _expressionPerDC.keySet()) {
-            while (!isInterrupted()) {
-                try {
-					if(!firstTime) {
-						sleep(SLEEP_INTERVAL_MILLIS);
-					}else {
-						// waiting 5 seconds for everything to initialize
-						sleep(5*1000);
-						firstTime = false;
-					}
-                    long currTime = System.currentTimeMillis();
-                    List<Metric> metrics = _metricService.getMetrics(_expressionPerDC.get(currentDC), currTime);
-                    boolean isDataLagging = _isDataLagging.get(currentDC);
+        while (!isInterrupted()) {
+            try {
+                if (!firstTime) {
+                    sleep(SLEEP_INTERVAL_MILLIS);
+                } else {
+                    // waiting 5 seconds for everything to initialize
+                    sleep(5 * 1000);
+                    firstTime = false;
+                }
+
+                for (String currentDC : _expressionPerDC.keySet()) {
+                    completionService.submit(() -> {
+                        List<Metric> metrics = _metricService.getMetrics(_expressionPerDC.get(currentDC), currTime);
+                        return new Pair<>(currentDC, metrics);
+                    });
+                }
+
+                for (int idx = 0; idx < _expressionPerDC.size(); ++idx) {
+                    Future<Pair<String, List<Metric>>> future = completionService.take();
+                    Pair<String, List<Metric>> result = future.get();
+                    String currentDC = result.getKey();
+                    List<Metric> metrics = result.getValue();
+                    boolean isDataLagging = _isDataLaggingbyDCMap.get(currentDC);
                     if (metrics == null || metrics.isEmpty()) {
                         _logger.info("Data lag detected as metric list is empty");
                         if (!isDataLagging) {
-                            _isDataLagging.put(currentDC, true);
+                            _isDataLaggingbyDCMap.put(currentDC, true);
                             sendDataLagNotification(currentDC);
                         }
                         continue;
@@ -95,7 +110,7 @@ public class DataLagMonitor extends Thread{
                     if (currMetric.getDatapoints() == null || currMetric.getDatapoints().size() == 0) {
                         _logger.info("Data lag detected as data point list is empty");
                         if (!isDataLagging) {
-                            _isDataLagging.put(currentDC, true);
+                            _isDataLaggingbyDCMap.put(currentDC, true);
                             sendDataLagNotification(currentDC);
                         }
                         continue;
@@ -109,28 +124,28 @@ public class DataLagMonitor extends Thread{
                         if ((currTime - lastDataPointTime) > _dataLagThreshold) {
                             _logger.info("Data lag detected as the last data point recieved is more than the data threshold of " + _dataLagThreshold + " ms");
                             if (!isDataLagging) {
-                                _isDataLagging.put(currentDC, true);
+                                _isDataLaggingbyDCMap.put(currentDC, true);
                                 sendDataLagNotification(currentDC);
                             }
                             continue;
                         }
                     }
                     if (isDataLagging) {
-                        _isDataLagging.put(currentDC, false);
+                        _isDataLaggingbyDCMap.put(currentDC, false);
                         sendDataLagNotification(currentDC);
                     }
-                } catch (Exception e) {
-                    _logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
                 }
+            } catch (Exception e) {
+                _logger.error("Exception thrown in data lag monitor thread - " + ExceptionUtils.getFullStackTrace(e));
             }
-		}
+        }
 	}
 
 	private void sendDataLagNotification(String currentDC) {
 		Set<String> emailAddresseses = new HashSet<String>();
 		emailAddresseses.add(_dataLagNotificationEmailId);
 		String subject = "";
-		if(_isDataLagging.get(currentDC)) {
+		if(_isDataLaggingbyDCMap.get(currentDC)) {
 			subject = "Alert evaluation on host - "+ _hostName + " has been stopped due to metric data lag in datacenter " + currentDC;
 		}else {
 			subject = "Alert evaluation on host - "+ _hostName + " has been resumed as the metric data lag has cleared";
@@ -145,6 +160,6 @@ public class DataLagMonitor extends Thread{
 	}
 
 	public boolean isDataLagging(String currentDC) {
-		return _isDataLagging.get(currentDC);
+		return _isDataLaggingbyDCMap.get(currentDC);
 	}
 }
