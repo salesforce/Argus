@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 public class GroupByTransform implements Transform {
 	
@@ -20,12 +21,12 @@ public class GroupByTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		throw new UnsupportedOperationException("GroupBy Transform is supposed to be used with 2 constants: A regex match criteria and an aggregator function name.");
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
 		SystemAssert.requireArgument(constants != null && constants.size() >= 2, "Constants list cannot be null and its size must be 2 or more.");
 		
@@ -62,7 +63,7 @@ public class GroupByTransform implements Transform {
 		List<Metric> result = new ArrayList<>();
 		for(Entry<String, List<Metric>> entry : groups.entrySet()) {
 			List<Metric> metricsInThisGroup = entry.getValue();
-			List<Metric> reducedMetrics = constants.isEmpty() ? transform.transform(metricsInThisGroup) : transform.transform(metricsInThisGroup, constants);
+			List<Metric> reducedMetrics = constants.isEmpty() ? transform.transform(null, metricsInThisGroup) : transform.transform(null, metricsInThisGroup, constants);
 			for(Metric reducedMetric : reducedMetrics) {
 				reducedMetric.setScope(entry.getKey() != null ? entry.getKey() : "uncaptured-group");
 			}
@@ -73,7 +74,7 @@ public class GroupByTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(@SuppressWarnings("unchecked") List<Metric>... metrics) {
+	public List<Metric> transform(QueryContext queryContext, @SuppressWarnings("unchecked") List<Metric>... metrics) {
 		throw new UnsupportedOperationException("Group By Transform doesn't need list of list!");
 	}
 

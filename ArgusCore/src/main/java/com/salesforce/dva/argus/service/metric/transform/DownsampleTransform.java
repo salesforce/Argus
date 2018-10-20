@@ -35,6 +35,9 @@ import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.service.metric.MetricReader;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.TransformUtil;
+
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
@@ -121,12 +124,12 @@ public class DownsampleTransform implements Transform {
 	//~ Methods **************************************************************************************************************************************
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		throw new UnsupportedOperationException("Downsample transform need constant input!");
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		SystemAssert.requireArgument(metrics != null, "Cannot transform null metrics");
 
 		if (metrics.isEmpty()) {
@@ -153,7 +156,7 @@ public class DownsampleTransform implements Transform {
 		}
 		// init windowSize
 		String windowSizeStr = expArr[0];
-		Long windowSize = getWindowInSeconds(windowSizeStr) * 1000;
+		Long windowSize = TransformUtil.getWindowInSeconds(windowSizeStr) * 1000;
 		String windowUnit = windowSizeStr.substring(windowSizeStr.length() - 1);
 		String downsampleType = expArr[1];
 
@@ -254,20 +257,8 @@ public class DownsampleTransform implements Transform {
 		return TransformFactory.Function.DOWNSAMPLE.name();
 	}
 
-	private long getWindowInSeconds(String window) {
-		MetricReader.TimeUnit timeunit = null;
-
-		try {
-			timeunit = MetricReader.TimeUnit.fromString(window.substring(window.length() - 1));
-			long timeDigits = Long.parseLong(window.substring(0, window.length() - 1));
-			return timeDigits * timeunit.getValue() / 1000;
-		} catch (Exception t) {
-			throw new IllegalArgumentException("Fail to parse window size!");
-		}
-	}
-
 	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
 		throw new UnsupportedOperationException("Downsample doesn't need list of list!");
 	}
 

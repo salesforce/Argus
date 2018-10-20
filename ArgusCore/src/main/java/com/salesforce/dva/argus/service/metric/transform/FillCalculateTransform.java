@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.primitives.Doubles;
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -113,12 +115,12 @@ public class FillCalculateTransform implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         throw new UnsupportedOperationException("Fill Transform need a type!");
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         List<Metric> fillCalculateMetricList = new ArrayList<Metric>();
 
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics!");
@@ -155,7 +157,7 @@ public class FillCalculateTransform implements Transform {
                 List<Metric> singleMetric = new ArrayList<>();
 
                 singleMetric.add(metric);
-                fillCalculateMetricListWithOffset.addAll(fillTransform.transform(singleMetric, newConstants));
+                fillCalculateMetricListWithOffset.addAll(fillTransform.transform(null, singleMetric, newConstants));
             }
             return fillCalculateMetricListWithOffset;
         }
@@ -168,7 +170,7 @@ public class FillCalculateTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Fill_Calculate doesn't need list of list!");
     }
 }

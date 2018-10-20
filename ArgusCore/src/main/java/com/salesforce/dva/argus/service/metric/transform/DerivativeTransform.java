@@ -28,11 +28,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-	 
+
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+import com.salesforce.dva.argus.util.TransformUtil;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,51 +50,64 @@ import java.util.TreeMap;
  */
 public class DerivativeTransform implements Transform {
 
-    //~ Methods **************************************************************************************************************************************
+	//~ Methods **************************************************************************************************************************************
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics) {
-        SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
+	@Override
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
+		SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
+		return computeDerivedValues(metrics, -1L);
+	}
 
-        List<Metric> result = new ArrayList<>(metrics.size());
+	@Override
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
+		SystemAssert.requireArgument(metrics != null, "Cannot transform null metric/metrics");
+		SystemAssert.requireArgument(constants.size() == 1,
+				"Derivative Transform can have exactly one constant");
+		String intervalSizeStr = constants.get(0);
+		Long intervalSizeInSeconds = TransformUtil.getWindowInSeconds(intervalSizeStr) * 1000;
+		return computeDerivedValues(metrics, intervalSizeInSeconds);
+	}
 
-        for (Metric metric : metrics) {
-            Map<Long, Double> sortedDatapoints = new TreeMap<>();
+	private List<Metric> computeDerivedValues(List<Metric> metrics, Long intervalWidth){
+		List<Metric> result = new ArrayList<>(metrics.size());
 
-            sortedDatapoints.putAll(metric.getDatapoints());
+		for (Metric metric : metrics) {
+			Map<Long, Double> sortedDatapoints = new TreeMap<>();
 
-            Map<Long, Double> derivativeDatapoints = new HashMap<>();
-            Double prev = null;
+			sortedDatapoints.putAll(metric.getDatapoints());
 
-            for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
-                Double curr = entry.getValue();
+			Map<Long, Double> derivativeDatapoints = new HashMap<>();
+			Entry<Long, Double> prevEntry = null;
 
-                if (prev == null) {
-                    derivativeDatapoints.put(entry.getKey(), null);
-                } else {
-                    derivativeDatapoints.put(entry.getKey(), curr - prev);
-                }
-                prev = curr;
-            }
-            metric.setDatapoints(derivativeDatapoints);
-            result.add(metric);
-        }
-        return result;
-    }
+			for (Entry<Long, Double> entry : sortedDatapoints.entrySet()) {
 
-    @Override
-    public String getResultScopeName() {
-        return TransformFactory.Function.DERIVATIVE.name();
-    }
+				if (prevEntry == null) {
+					continue;
+				} else {
+					if(intervalWidth<=0) {
+					    derivativeDatapoints.put(entry.getKey(), entry.getValue() - prevEntry.getValue());
+					}else {
+						derivativeDatapoints.put(entry.getKey(), ((entry.getValue() - prevEntry.getValue())*intervalWidth)/(entry.getKey()-prevEntry.getKey()));
+					}
+				}
+				prevEntry = entry;
+			}
+			metric.setDatapoints(derivativeDatapoints);
+			result.add(metric);
+		}
+		return result;
+	}
+	
+	
 
-    @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
-        throw new UnsupportedOperationException("Derivative Transform is not supposed to be used with a constant");
-    }
+	@Override
+	public String getResultScopeName() {
+		return TransformFactory.Function.DERIVATIVE.name();
+	}
 
-    @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
-        throw new UnsupportedOperationException("This class is deprecated!");
-    }
+	@Override
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
+		throw new UnsupportedOperationException("This class is deprecated!");
+	}
 }
 /* Copyright (c) 2016, Salesforce.com, Inc.  All rights reserved. */

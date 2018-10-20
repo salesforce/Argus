@@ -44,7 +44,7 @@ public class GroupByTransformTest {
 		constants.add("system\\.([A-Z]+)\\.xy.");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 2);
 		for(Metric r : result) {
 			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
@@ -82,7 +82,7 @@ public class GroupByTransformTest {
 		constants.add("system\\.([A-Z]+)\\.xy.");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 2);
 		for(Metric r : result) {
 			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
@@ -136,7 +136,7 @@ public class GroupByTransformTest {
 		constants.add("system\\.([A-Z]+)\\.SP.\\.([a-z]+).");
 		constants.add("DIVIDE");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 4);
 		for(Metric r : result) {
 			assertEquals(new Double(1.0), r.getDatapoints().get(1000L));
@@ -190,7 +190,7 @@ public class GroupByTransformTest {
 		constants.add("system\\.([A-Z]+)\\.SP.\\.[a-z][a-z]([0-9])");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 4);
 		
 	}
@@ -251,7 +251,7 @@ public class GroupByTransformTest {
 		constants.add("(device.*)");
 		constants.add("SCALE");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 4);
 	}
 	
@@ -302,7 +302,7 @@ public class GroupByTransformTest {
 		constants.add("(system\\.pod[0-9]:latency)");
 		constants.add("SUM");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 3);
 		for(Metric r : result) {
 			assertEquals(new Double(2.0), r.getDatapoints().get(1000L));
@@ -357,7 +357,7 @@ public class GroupByTransformTest {
 		constants.add("PERCENTILE");
 		constants.add("90");
 		
-		List<Metric> result = transform.transform(metrics, constants);
+		List<Metric> result = transform.transform(null, metrics, constants);
 		assertTrue(result.size() == 3);
 		for(Metric r : result) {
 			assertEquals(new Double(1.0), r.getDatapoints().get(1000L));

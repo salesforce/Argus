@@ -39,6 +39,7 @@ import java.util.Map;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
 
 /**
  * A general purpose metric reducer transform. Metrics are reduced based on the ValueReducer.
@@ -69,7 +70,7 @@ public class MetricReducerTransform implements Transform {
 	//~ Methods **************************************************************************************************************************************
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics) {
+	public List<Metric> transform(QueryContext context, List<Metric> metrics) {
 		return Arrays.asList(reduce(metrics));
 	}
 
@@ -136,12 +137,12 @@ public class MetricReducerTransform implements Transform {
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
 		throw new UnsupportedOperationException("Metric Reducer Transform is not supposed to be used with a constant");
 	}
 
 	@Override
-	public List<Metric> transform(List<Metric>... listOfList) {
+	public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
 		throw new UnsupportedOperationException("Reducer doesn't need list of list!");
 	}
 }
