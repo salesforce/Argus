@@ -17,19 +17,20 @@ angular.module('argus.directives.headerMenu', [])
         _alertUrl;
 
       // set routes
-      if ( _absUrl.lastIndexOf(':') !== -1 ) {
-        _alertUrl = _absUrl.substr(0, _absUrl.lastIndexOf(':'));
-
-        if ( _absUrl.lastIndexOf('localhost') !== -1 ) {
-          // LOCALHOST.
-          _alertUrl = _alertUrl + ':8000/#/alerts';
-        } else {
-          // QA
-          _alertUrl = _alertUrl + ':8080/argusmvp/index.html#/alerts';
-        }
-      } else {
-        // PROD
+      if ( !_absUrl.lastIndexOf('8080') ) {
+        // PROD or WIP servers
         _alertUrl = _absUrl.replace("argus", "argusmvp");
+      } else {
+        if ( _absUrl.lastIndexOf(':') !== -1 ) {
+          _alertUrl = _absUrl.substr(0, _absUrl.lastIndexOf(':'));
+          if ( _absUrl.lastIndexOf('localhost') !== -1 ) {
+            // LOCALHOST (dev)
+            _alertUrl = _alertUrl + ':8000/#/alerts';
+          } else {
+            // DataViz QA or Argus QA (non-wip)
+            _alertUrl = _alertUrl + ':8080/argusmvp/index.html#/alerts';
+          }
+        }
       }
 
       // set new alert url into scope
