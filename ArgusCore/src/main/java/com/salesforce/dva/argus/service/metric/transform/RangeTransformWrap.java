@@ -34,6 +34,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,16 +57,16 @@ public class RangeTransformWrap implements Transform {
     //~ Methods **************************************************************************************************************************************
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         if (metrics.size() == 1) {
             return rangeOfOneMetric(metrics.get(0));
         } else {
-            return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(metrics);
+            return new MetricReducerOrMappingTransform(new RangeValueReducerOrMapping()).transform(null, metrics);
         }
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         throw new UnsupportedOperationException("Range Transform doesn't accept constants!");
     }
 
@@ -118,7 +120,7 @@ public class RangeTransformWrap implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("Range Transform doesn't accept list of metric list!");
     }
 }

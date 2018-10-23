@@ -52,7 +52,7 @@ public class LimitTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("1");
-        limitTransform.transform(metrics, constants);
+        limitTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -65,7 +65,7 @@ public class LimitTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        limitTransform.transform(metrics, constants);
+        limitTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -79,7 +79,7 @@ public class LimitTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("-1");
-        limitTransform.transform(metrics, constants);
+        limitTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class LimitTransformTest {
         expected_2.put(5000L, 100.0);
         expected_2.put(6000L, 1000.0);
 
-        List<Metric> result = limitTransform.transform(metrics, constants);
+        List<Metric> result = limitTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 2);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -205,7 +205,7 @@ public class LimitTransformTest {
         expected_3.put(8000L, 0.01);
         expected_3.put(9000L, 0.0001);
 
-        List<Metric> result = limitTransform.transform(metrics, constants);
+        List<Metric> result = limitTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -274,7 +274,7 @@ public class LimitTransformTest {
         expected_3.put(8000L, 0.01);
         expected_3.put(9000L, 0.0001);
 
-        List<Metric> result = limitTransform.transform(metrics, constants);
+        List<Metric> result = limitTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());

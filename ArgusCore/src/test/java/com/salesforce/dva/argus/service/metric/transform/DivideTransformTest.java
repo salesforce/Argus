@@ -64,7 +64,7 @@ public class DivideTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5w");
-        divideTransform.transform(metrics, constants);
+        divideTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -85,7 +85,7 @@ public class DivideTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("0");
-        divideTransform.transform(metrics, constants);
+        divideTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -95,7 +95,7 @@ public class DivideTransformTest {
         List<String> constants = new ArrayList<String>(1);
 
         constants.add("5");
-        divideTransform.transform(metrics, constants);
+        divideTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class DivideTransformTest {
         expected.put(2000L, 4.0);
         expected.put(3000L, 6.0);
 
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -175,7 +175,7 @@ public class DivideTransformTest {
         expected_2.put(2000L, 20.0);
         expected_2.put(3000L, 200.0);
 
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -195,7 +195,7 @@ public class DivideTransformTest {
 
         constants.add("5");
         constants.add("10");
-        divideTransform.transform(metrics, constants);
+        divideTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = ArithmeticException.class)
@@ -228,7 +228,7 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        divideTransform.transform(metrics, constants);
+        divideTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -266,7 +266,7 @@ public class DivideTransformTest {
         expected.put(2000L, 0.02);
         expected.put(3000L, 0.003);
 
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 3);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -302,7 +302,7 @@ public class DivideTransformTest {
 
         List<String> constants = new ArrayList<String>();
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -341,7 +341,7 @@ public class DivideTransformTest {
 
         expected.put(3000L, 0.003);
 
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -385,7 +385,7 @@ public class DivideTransformTest {
         expected.put(2000L, 0.02);
         expected.put(300L, 1000.0);
         expected.put(3000L, 3.0);
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }
@@ -405,7 +405,7 @@ public class DivideTransformTest {
         List<Metric> metrics = new ArrayList<Metric>();
         metrics.add(metric_1);
         
-        divideTransform.transform(metrics);
+        divideTransform.transform(null, metrics);
     }
     
     @Test
@@ -431,7 +431,7 @@ public class DivideTransformTest {
         expected.put(2000L, 10.0);
         expected.put(3000L, 15.0);
         
-        List<Metric> result = divideTransform.transform(metrics, constants);
+        List<Metric> result = divideTransform.transform(null, metrics, constants);
         assertEquals(result.get(0).getDatapoints().size(), expected.size());
         assertEquals(expected, result.get(0).getDatapoints());
     }

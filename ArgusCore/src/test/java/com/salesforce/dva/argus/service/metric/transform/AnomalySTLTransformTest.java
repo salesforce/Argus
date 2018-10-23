@@ -34,14 +34,14 @@ public class AnomalySTLTransformTest {
 
     @Test(expected = IllegalStateException.class)
     public void NullMetricsSTLTest() {
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalStateException.class)
     public void NullMetricSTLTest() {
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -49,7 +49,7 @@ public class AnomalySTLTransformTest {
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -64,7 +64,7 @@ public class AnomalySTLTransformTest {
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -85,7 +85,7 @@ public class AnomalySTLTransformTest {
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
         Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 29.6493052);
@@ -125,7 +125,7 @@ public class AnomalySTLTransformTest {
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
         Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 12.83596);
@@ -168,7 +168,7 @@ public class AnomalySTLTransformTest {
         metric.setDatapoints(datapoints);
         metrics.add(metric);
 
-        List<Metric> transformedMetrics = anomalySTLTransform.transform(metrics, constants);
+        List<Metric> transformedMetrics = anomalySTLTransform.transform(null, metrics, constants);
         Map<Long, Double> anomalyScores = transformedMetrics.get(0).getDatapoints();
 
         expected.put(1000L, 0.932050);

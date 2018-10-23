@@ -54,7 +54,7 @@ public class AbsoluteTransformTest {
         m1.setDatapoints(dp);
 
         List<Metric> metrics = Arrays.asList(m1);
-        List<Metric> result = (new MetricMappingTransform(new AbsoluteValueMapping())).transform(metrics);
+        List<Metric> result = (new MetricMappingTransform(new AbsoluteValueMapping())).transform(null, metrics);
 
         assertThat(result, equalTo(metrics));
 
@@ -84,7 +84,7 @@ public class AbsoluteTransformTest {
         m2.setDatapoints(dp2);
 
         List<Metric> metrics = Arrays.asList(m1, m2);
-        List<Metric> results = (new MetricMappingTransform(new AbsoluteValueMapping())).transform(metrics);
+        List<Metric> results = (new MetricMappingTransform(new AbsoluteValueMapping())).transform(null, metrics);
 
         assertThat(results, equalTo(metrics));
 

@@ -33,6 +33,8 @@ package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -79,27 +81,26 @@ public class MetricReducerOrMappingTransform implements Transform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         return Arrays.asList(reduce(metrics, null));
     }
 
     /**
      * If constants is not null, apply mapping transform to metrics list. Otherwise, apply reduce transform to metrics list
-     *
      * @param   metrics    list of metrics
      * @param   constants  constants input
      *
      * @return  A list of metrics after mapping.
      */
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         if (constants == null || constants.isEmpty()) {
-            return transform(metrics);
+            return transform(null, metrics);
         }
         
         if (constants.size() == 1 && constants.get(0).toUpperCase().equals(FULLJOIN)){
         	fulljoinIndicator=true;
-        	return transform(metrics);
+        	return transform(null, metrics);
         }
         
         return mapping(metrics, constants);
@@ -205,7 +206,7 @@ public class MetricReducerOrMappingTransform implements Transform {
 
    
     @Override
-    public List<Metric> transform(List<Metric>... listOfList) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric>... listOfList) {
         throw new UnsupportedOperationException("ReducerOrMapping doesn't need list of list!");
     }
 
