@@ -92,7 +92,7 @@ public class CallbackNotifier extends AuditNotifier {
 					notificationName, response.getStatusLine().getReasonPhrase());
 
 			history.appendMessageNUpdateHistory(infoMessage, null, 0);
-			_logger.error(infoMessage);
+			_logger.info(infoMessage);
 		}
 	}
 }
