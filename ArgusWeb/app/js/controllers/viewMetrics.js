@@ -6,6 +6,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 	function ($location, $routeParams, $scope, $compile, growl, Metrics, Annotations, SearchService, Controls, ChartDataProcessingService, DateHandlerService, InputTracker) {
 		var lastParams;
 		var noMorePages = false;
+		$scope.annotationType = 'ALERT';
 		$scope.expression = $routeParams.expression ? $routeParams.expression : null;
 		$scope.includeAnnotations = InputTracker.getDefaultValue('viewMetricsWithAnnotation', true);
 		$scope.$watch('includeAnnotations', function (newValue) {
@@ -47,7 +48,7 @@ angular.module('argus.controllers.viewMetrics', ['ngResource'])
 						tempSeries = ChartDataProcessingService.copySeriesDataNSetOptions(data, {});
 						if ($scope.includeAnnotations) {
 							for (var i = 0; i < data.length; i++) {
-								annotationInfo.push(ChartDataProcessingService.getAlertFlagExpression(data[i]));
+								annotationInfo.push(ChartDataProcessingService.getAlertFlagExpression(data[i], $scope.annotationType));
 							}
 						}
 					} else {

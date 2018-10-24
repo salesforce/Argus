@@ -105,7 +105,7 @@ public class PercentileTransformTest {
 
         expected.put(1000L, 19.0);
 
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -175,7 +175,7 @@ public class PercentileTransformTest {
 
         expected.put(1000L, 19.0);
 
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 1);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -237,7 +237,7 @@ public class PercentileTransformTest {
         constants.add("30");
 
         Map<Long, Double> expected = new HashMap<Long, Double>();
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(result.get(0).getDatapoints().size(), 0);
         assertEquals(expected, result.get(0).getDatapoints());
@@ -306,7 +306,7 @@ public class PercentileTransformTest {
         constants.add("30");
         constants.add("UNION");
 
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
 
         assertEquals(expected.size(), result.get(0).getDatapoints().size());
         assertEquals(expected, result.get(0).getDatapoints());
@@ -323,7 +323,7 @@ public class PercentileTransformTest {
 
         List<String> constants = new ArrayList<String>();
 
-        percentileTransform.transform(metrics, constants);
+        percentileTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -338,7 +338,7 @@ public class PercentileTransformTest {
 
         constants.add("90");
         constants.add("3w");
-        percentileTransform.transform(metrics, constants);
+        percentileTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -353,7 +353,7 @@ public class PercentileTransformTest {
 
         constants.add("101");
         constants.add("3s");
-        percentileTransform.transform(metrics, constants);
+        percentileTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -364,7 +364,7 @@ public class PercentileTransformTest {
 
         constants.add("90");
         constants.add("3h");
-        percentileTransform.transform(metrics, constants);
+        percentileTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -396,7 +396,7 @@ public class PercentileTransformTest {
         constants.add("90");
         constants.add("3s");
 
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(1000L, 9.9);
@@ -443,7 +443,7 @@ public class PercentileTransformTest {
         List<Metric> metrics = Arrays.asList(metric1, metric2);
         List<String> constants = Arrays.asList("90", "3s");
         
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
         
         Map<Long, Double> expected = new HashMap<Long, Double>();
         expected.put(1000L, 9.9);
@@ -482,7 +482,7 @@ public class PercentileTransformTest {
         constants.add("90");
         constants.add("individual");
 
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
         Map<Long, Double> expected = new HashMap<Long, Double>();
 
         expected.put(1000L, 9.9);
@@ -529,7 +529,7 @@ public class PercentileTransformTest {
         List<Metric> metrics = Arrays.asList(metric1, metric2);
         List<String> constants = Arrays.asList("90", "individual");
         
-        List<Metric> result = percentileTransform.transform(metrics, constants);
+        List<Metric> result = percentileTransform.transform(null, metrics, constants);
         
         Map<Long, Double> expected = new HashMap<Long, Double>();
         expected.put(1000L, 9.9);

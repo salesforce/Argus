@@ -37,6 +37,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.salesforce.dva.argus.system.SystemAssert;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import weka.clusterers.SimpleKMeans;
 import weka.core.*;
 
@@ -62,7 +64,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     private static final String RESULT_METRIC_NAME = "K-means anomaly score";
 
     @Override
-    public List<Metric> transform(List<Metric> metrics) {
+    public List<Metric> transform(QueryContext context, List<Metric> metrics) {
         SystemAssert.requireArgument(k > 0, "K-means anomaly detection transform requires a positive integer " +
                                             "k constant.");
 
@@ -85,7 +87,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
     }
 
     @Override
-    public List<Metric> transform(List<Metric> metrics, List<String> constants) {
+    public List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants) {
         SystemAssert.requireArgument(metrics != null, "Cannot transform null or empty metrics");
         SystemAssert.requireArgument(metrics.size() == 1, "Anomaly Detection Transform can only be used with one metric.");
         SystemAssert.requireArgument(constants.size() > 0, "K-means anomaly detection transform requires a k constant.");
@@ -99,7 +101,7 @@ public class AnomalyDetectionKMeansTransform extends AnomalyDetectionTransform {
                                                     "k constant.");
         }
 
-        return transform(metrics);
+        return transform(null, metrics);
     }
 
     private void trainModel(Map<Long, Double> metricData) throws Exception {

@@ -30,7 +30,7 @@ import static com.salesforce.dva.argus.entity.MetricSchemaRecord.DEFAULT_RETENTI
 import static com.salesforce.dva.argus.entity.MetricSchemaRecord.EXPIRATION_TS;
 
 public class MetricSchemaRecordList {
-	
+	private final static long ONE_DAY_IN_MILLIS = 24L * 3600L * 1000L;
 	private Map<String, MetricSchemaRecord> _idToSchemaRecordMap = new HashMap<>();
 	private String _scrollID;
 	
@@ -105,7 +105,7 @@ public class MetricSchemaRecordList {
 				String mtsField = "\"mts\":" + now;
 				String ctsField = "\"cts\":" + now;
 				Integer retention = entry.getValue().getRetentionDiscovery();
-				Long expiration = now + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * 24 * 3600 * 1000;
+				Long expiration = now + (retention==null? DEFAULT_RETENTION_DISCOVERY_DAYS:retention) * ONE_DAY_IN_MILLIS;
 				String expirationField = "\"" + EXPIRATION_TS + "\":" + expiration;
 
 				jgen.writeRaw(fieldsData.substring(0, fieldsData.length()-1) + "," + mtsField + "," + ctsField + "," + expirationField + "}");

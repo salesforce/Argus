@@ -32,6 +32,8 @@
 package com.salesforce.dva.argus.service.metric.transform;
 
 import com.salesforce.dva.argus.entity.Metric;
+import com.salesforce.dva.argus.util.QueryContext;
+
 import java.util.List;
 
 /**
@@ -46,33 +48,33 @@ public interface Transform {
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     *
+     * @param context This contains details of the underlying tsdb query
      * @param   metrics  The list of metrics to which the transform will be applied. Cannot be null.
      *
      * @return  The result of the transform. Shall not be null.
      */
-    List<Metric> transform(List<Metric> metrics);
+    List<Metric> transform(QueryContext context, List<Metric> metrics);
 
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     *
+     * @param queryContext This contains details of the underlying tsdb query
      * @param   metrics    The list of metrics to which the transform will be applied. Cannot be null.
      * @param   constants  The transform specific constants to use.
      *
      * @return  The result of the transform.  Shall not be null.
      */
-    List<Metric> transform(List<Metric> metrics, List<String> constants);
+    List<Metric> transform(QueryContext queryContext, List<Metric> metrics, List<String> constants);
 
     /**
      * Applies the transform to one or metrics. Implementations of this interface method shall perform any validation on the list of input metrics as
      * required by the implementation.
-     *
+     * @param queryContext This contains details of the underlying tsdb query
      * @param   metrics  The list of metrics to which the transform will be applied. Cannot be null.
      *
      * @return  The result of the transform. Shall not be null.
      */
-    List<Metric> transform(List<Metric>... metrics);
+    List<Metric> transform(QueryContext queryContext, List<Metric>... metrics);
 
     /**
      * Returns the scope name for the result.

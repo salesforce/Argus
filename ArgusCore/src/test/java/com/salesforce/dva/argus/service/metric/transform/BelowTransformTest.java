@@ -64,7 +64,7 @@ public class BelowTransformTest {
 
         constants.add("5w");
         constants.add("average");
-        belowTransform.transform(metrics, constants);
+        belowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -86,7 +86,7 @@ public class BelowTransformTest {
 
         constants.add("5");
         constants.add("foobar");
-        belowTransform.transform(metrics, constants);
+        belowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -107,7 +107,7 @@ public class BelowTransformTest {
         List<String> constants = new ArrayList<String>();
 
         constants.add("min");
-        belowTransform.transform(metrics, constants);
+        belowTransform.transform(null, metrics, constants);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -118,7 +118,7 @@ public class BelowTransformTest {
 
         constants.add("2");
         constants.add("average");
-        belowTransform.transform(metrics, constants);
+        belowTransform.transform(null, metrics, constants);
     }
 
     @Test
@@ -170,7 +170,7 @@ public class BelowTransformTest {
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -226,7 +226,7 @@ public class BelowTransformTest {
         expected_1.put(2000L, 1.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -276,7 +276,7 @@ public class BelowTransformTest {
         constants.add("1");
         constants.add("min");
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 0);
     }
@@ -343,7 +343,7 @@ public class BelowTransformTest {
         expected_3.put(2000L, 3.0);
         expected_3.put(3000L, 300.0);
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 3);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -401,7 +401,7 @@ public class BelowTransformTest {
         expected_1.put(2000L, 300.0);
         expected_1.put(3000L, 1.0);
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
@@ -456,7 +456,7 @@ public class BelowTransformTest {
         expected_1.put(2000L, null);
         expected_1.put(3000L, null);
 
-        List<Metric> result = belowTransform.transform(metrics, constants);
+        List<Metric> result = belowTransform.transform(null, metrics, constants);
 
         assertEquals(result.size(), 1);
         assertEquals(expected_1, result.get(0).getDatapoints());
